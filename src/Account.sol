@@ -17,13 +17,17 @@ contract Account is ERC721 {
   uint nextId = 1;
   mapping(uint => IAbstractManager) manager;
   mapping(bytes32 => int) public balances;
-  mapping(bytes32 => mapping(address => MarginStructs.Allowance)) public delegateAllowances;
+  mapping(bytes32 => mapping(address => MarginStructs.Allowance)) public delegateSubIdAllowances;
+  mapping(bytes32 => mapping(address => MarginStructs.Allowance)) public delegateAssetAllowances;
+
   mapping(uint => MarginStructs.HeldAsset[]) heldAssets;
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ///////////////////
   // Account Admin //
   ///////////////////
+
+  function changeOwner(uint accountId, address newOwner) external {}
 
   function createAccount(IAbstractManager _manager) external returns (uint newId) {
     newId = nextId++;
@@ -32,15 +36,40 @@ contract Account is ERC721 {
     return newId;
   }
 
-  function setDelegateAllowances(
-    uint accountId, address delegate, MarginStructs.AssetAllowance[] memory allowances
+  function setDelegateAllowancesBySubId(
+    uint accountId, 
+    address delegate, 
+    IAbstractAsset[] memory assets,
+    uint[] memory subIds,
+    MarginStructs.Allowance[] memory allowances
   ) external {
     require(msg.sender == ownerOf(accountId));
 
-    uint allowancesLen = allowances.length;
-    for (uint i; i < allowancesLen; i++) {
-      delegateAllowances[
-        _getBalanceKey(accountId, allowances[i].asset, allowances[i].subId)
+    uint assetsLen = assets.length;
+    for (uint i; i < assetsLen; i++) {
+      delegateSubIdAllowances[
+        _getBalanceKey(accountId, assets[i], subIds[i])
+      ][delegate] = MarginStructs.Allowance({
+        positive: allowances[i].positive,
+        negative: allowances[i].negative
+      });
+    }
+  }
+
+  /// @dev same as setDelegateAllowances but for multiple subIds
+  function setDelegateAllowancesByAsset(
+    uint accountId, 
+    address delegate, 
+    IAbstractAsset[] memory assets,
+    MarginStructs.Allowance[] memory allowances  
+  ) external {
+    require(msg.sender == ownerOf(accountId));
+
+    uint assetsLen = assets.length;
+    for (uint i; i < assetsLen; i++) {
+      delegateAssetAllowances[
+        // using MAX_UINT for subId to keep same getBalanceKey scheme
+        _getBalanceKey(accountId, assets[i], type(uint).max)
       ][delegate] = MarginStructs.Allowance({
         positive: allowances[i].positive,
         negative: allowances[i].negative
@@ -49,8 +78,6 @@ contract Account is ERC721 {
   }
 
   function merge(uint[] memory accounts) external {}
-
-  function changeOwner(uint accountId, address newOwner) external {}
 
 
   /////////////////////////
@@ -100,8 +127,8 @@ contract Account is ERC721 {
       amount: assetTransfer.amount
     });
 
-    require(_delegateCheck(fromAccAdjustment, msg.sender), "delegate not approved by from-account");
-    require(_delegateCheck(toAccAdjustment, msg.sender), "delegate not approved by to-account");
+    _delegateCheck(fromAccAdjustment, msg.sender);
+    _delegateCheck(toAccAdjustment, msg.sender);
 
     _adjustBalance(fromAccAdjustment);
     _adjustBalance(toAccAdjustment);
@@ -144,29 +171,39 @@ contract Account is ERC721 {
 
   function _delegateCheck(
     MarginStructs.AssetAdjustment memory adjustment, address delegate
-  ) internal returns (bool isApproved) {
+  ) internal {
     // owner is by default delegate approved
-    if (delegate == ownerOf(adjustment.acc)) { return true; }
+    if (delegate == ownerOf(adjustment.acc)) { return; }
 
-    MarginStructs.Allowance storage allowance = 
-      delegateAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
+    MarginStructs.Allowance storage subIdAllowance = 
+      delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
 
-    bool isPositiveApproved = adjustment.amount >= 0 && 
-      SafeCast.toUint256(adjustment.amount) <= allowance.positive;
-    bool isNegativeApproved = adjustment.amount < 0 && 
-      SafeCast.toUint256(-adjustment.amount) <= allowance.negative;
+    MarginStructs.Allowance storage assetAllowance = 
+      delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, type(uint).max)][delegate];
 
-    if (isPositiveApproved) {
-      // positive transfer and delegate / counterparty approved
-      allowance.positive -= SafeCast.toUint256(adjustment.amount);
-      return true;
-    } else if (isNegativeApproved) {
-      // negative transfer and delegate / counterparty approved
-      allowance.negative -= SafeCast.toUint256(-adjustment.amount);
-      return true;
+    uint absAmount = _abs(adjustment.amount);
+
+    if (adjustment.amount > 0) {
+      require(absAmount <= subIdAllowance.positive + assetAllowance.positive, 
+        "positive adjustment not approved");
+      if (absAmount <= subIdAllowance.positive) {
+        subIdAllowance.positive -= absAmount;
+      } else {
+        // subId allowances are decremented first
+        subIdAllowance.positive = 0;
+        assetAllowance.positive -= absAmount - subIdAllowance.positive;
+      }
+
     } else {
-      // unapproved delegate / counterparty
-      return false;
+      require(absAmount <= subIdAllowance.negative + assetAllowance.negative, 
+        "negative adjustment not approved");
+      if (absAmount <= subIdAllowance.negative) {
+        subIdAllowance.negative -= absAmount;
+      } else {
+        // subId allowances are decremented first
+        subIdAllowance.negative = 0;
+        assetAllowance.negative -= absAmount - subIdAllowance.negative;
+      }
     }
   }
 
@@ -260,5 +297,9 @@ contract Account is ERC721 {
       }
     }
     revert("Invalid state");
+  }
+
+  function _abs(int amount) internal pure returns (uint absAmount) {
+    return (amount >= 0) ? uint256(amount) : SafeCast.toUint256(-amount);
   }
 }

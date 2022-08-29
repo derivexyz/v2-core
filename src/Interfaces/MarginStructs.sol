@@ -40,11 +40,4 @@ contract MarginStructs {
     uint positive;
     uint negative;
   }
-
-  struct AssetAllowance {
-    IAbstractAsset asset;
-    uint subId;
-    uint positive;
-    uint negative;
-  }
 }
