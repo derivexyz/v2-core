@@ -43,17 +43,8 @@ contract Account is ERC721 {
     uint[] memory subIds,
     MarginStructs.Allowance[] memory allowances
   ) external {
-    require(msg.sender == ownerOf(accountId));
+    _updateDelegateAllowances(accountId, delegate, assets, subIds, allowances);
 
-    uint assetsLen = assets.length;
-    for (uint i; i < assetsLen; i++) {
-      delegateSubIdAllowances[
-        _getBalanceKey(accountId, assets[i], subIds[i])
-      ][delegate] = MarginStructs.Allowance({
-        positive: allowances[i].positive,
-        negative: allowances[i].negative
-      });
-    }
   }
 
   /// @dev same as setDelegateAllowances but for multiple subIds
@@ -63,17 +54,32 @@ contract Account is ERC721 {
     IAbstractAsset[] memory assets,
     MarginStructs.Allowance[] memory allowances  
   ) external {
-    require(msg.sender == ownerOf(accountId));
+    _updateDelegateAllowances(accountId, delegate, assets, new uint[](0), allowances);
+  }
+
+  function _updateDelegateAllowances(
+    uint accountId, 
+    address delegate, 
+    IAbstractAsset[] memory assets,
+    uint[] memory subIds,
+    MarginStructs.Allowance[] memory allowances
+  ) internal {
+    require(msg.sender == ownerOf(accountId), "only owner");
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
-      delegateAssetAllowances[
-        // using MAX_UINT for subId to keep same getBalanceKey scheme
-        _getBalanceKey(accountId, assets[i], type(uint).max)
-      ][delegate] = MarginStructs.Allowance({
+      MarginStructs.Allowance memory allowance = MarginStructs.Allowance({
         positive: allowances[i].positive,
         negative: allowances[i].negative
       });
+
+      if (subIds.length > 0) {
+        delegateSubIdAllowances[
+          _getBalanceKey(accountId, assets[i], subIds[i])][delegate] = allowance;
+      } else {     // uses 0 when encoding key for delegateAssetAllowances key
+        delegateAssetAllowances[
+          _getBalanceKey(accountId, assets[i], 0)][delegate] = allowance;
+      }
     }
   }
 
@@ -179,7 +185,7 @@ contract Account is ERC721 {
       delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
 
     MarginStructs.Allowance storage assetAllowance = 
-      delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, type(uint).max)][delegate];
+      delegateAssetAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, 0][delegate];
 
     uint absAmount = _abs(adjustment.amount);
 
