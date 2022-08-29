@@ -185,7 +185,7 @@ contract Account is ERC721 {
       delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
 
     MarginStructs.Allowance storage assetAllowance = 
-      delegateAssetAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, 0][delegate];
+      delegateAssetAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, 0)][delegate];
 
     uint absAmount = _abs(adjustment.amount);
 
