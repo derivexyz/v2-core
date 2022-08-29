@@ -36,7 +36,10 @@ contract Account is ERC721 {
     return newId;
   }
 
-  function setDelegateAllowancesBySubId(
+  /// @dev set positive / negative allowances per subId
+  ///      the sum of asset allowances + subId allowances is used during _delegateCheck()
+  ///      subId allowances are decremented before asset allowances
+  function setDelegateSubIdAllowances(
     uint accountId, 
     address delegate, 
     IAbstractAsset[] memory assets,
@@ -47,8 +50,7 @@ contract Account is ERC721 {
 
   }
 
-  /// @dev same as setDelegateAllowances but for multiple subIds
-  function setDelegateAllowancesByAsset(
+  function setDelegateAssetAllowances(
     uint accountId, 
     address delegate, 
     IAbstractAsset[] memory assets,
