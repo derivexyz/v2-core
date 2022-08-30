@@ -174,14 +174,11 @@ contract Account is ERC721, Owned {
 
   /// @dev privileged function that only the asset can call to do things like minting and burning
   function adjustBalance(AccountStructs.AssetAdjustment memory adjustment) external returns (int postAdjustmentBalance) {
-    uint accountId = adjustment.acc;
+    require(msg.sender == address(manager[accountId]) || msg.sender == address(adjustment.asset),
+      "only managers and assets can make assymmetric adjustments");
+    
     _adjustBalance(adjustment);
-
-    if (msg.sender == address(adjustment.asset)) {
-      _managerCheck(accountId, msg.sender);
-    } else {
-      require(msg.sender == address(manager[accountId]));
-    }
+    _managerCheck(adjustment.acc, msg.sender); // since caller is passed, manager can internally decide to ignore check
     
     return balances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)];
   }
