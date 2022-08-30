@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "./interfaces/IAbstractAsset.sol";
 import "./interfaces/IAbstractManager.sol";
-import "./interfaces/MarginStructs.sol";
+import "./interfaces/AccountStructs.sol";
 
 import "forge-std/console2.sol";
 
@@ -16,33 +16,32 @@ contract Account is ERC721, Owned {
   // Variables //
   ///////////////
 
-  struct ProtocolFees {
-    IERC20 feeToken,
-    uint creationFee, // flat ERC20 fee
-    uint adjustmentFee, // flat ERC20 fee
-    address recipient
-  }
+  IERC20 public feeToken;
+  address public feeRecipient;
+  uint public creationFee;
 
-  ProtocolFees public fees;
   uint nextId = 1;
   mapping(uint => IAbstractManager) manager;
   mapping(bytes32 => int) public balances;
-  mapping(bytes32 => mapping(address => MarginStructs.Allowance)) public delegateSubIdAllowances;
-  mapping(bytes32 => mapping(address => MarginStructs.Allowance)) public delegateAssetAllowances;
+  mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateSubIdAllowances;
+  mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateAssetAllowances;
 
-  mapping(uint => MarginStructs.HeldAsset[]) heldAssets;
+  mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Owned() {}
 
   ////////////////////
   // Protocol Admin //
   ////////////////////
 
-  function setProtocolFees(ProtocolFees memory _fees) onlyOwner() {
+  function setCreationFee(address _feeToken,  address _feeRecipient, uint _creationFee) onlyOwner() external {
     require(
-      address(_fees.feeToken) != address(0) && _fees.recipient != address(0), 
+      _feeToken != address(0) && _feeRecipient != address(0), 
       "fee token & recipient cannot be zero address"
     );
-    fees = _fees;
+
+    creationFee = _creationFee;
+    feeToken = IERC20(_feeToken);
+    feeRecipient = _feeRecipient;
   }
 
   ///////////////////
@@ -56,8 +55,8 @@ contract Account is ERC721, Owned {
 
   function createAccount(IAbstractManager _manager) external returns (uint newId) {
     // charge a flat fee to prevent spam
-    if (fees.creationFee > 0) {
-      IERC20(fees.feeToken).transferFrom(msg.sender, fee.recipient, fee.creationFee);
+    if (creationFee > 0) {
+      feeToken.transferFrom(msg.sender, feeRecipient, creationFee);
     }
 
     // create account
@@ -75,7 +74,7 @@ contract Account is ERC721, Owned {
     address delegate, 
     IAbstractAsset[] memory assets,
     uint[] memory subIds,
-    MarginStructs.Allowance[] memory allowances
+    AccountStructs.Allowance[] memory allowances
   ) external {
     _updateDelegateAllowances(accountId, delegate, assets, subIds, allowances);
   }
@@ -84,7 +83,7 @@ contract Account is ERC721, Owned {
     uint accountId, 
     address delegate, 
     IAbstractAsset[] memory assets,
-    MarginStructs.Allowance[] memory allowances  
+    AccountStructs.Allowance[] memory allowances  
   ) external {
     _updateDelegateAllowances(accountId, delegate, assets, new uint[](0), allowances);
   }
@@ -94,13 +93,13 @@ contract Account is ERC721, Owned {
     address delegate, 
     IAbstractAsset[] memory assets,
     uint[] memory subIds,
-    MarginStructs.Allowance[] memory allowances
+    AccountStructs.Allowance[] memory allowances
   ) internal {
     require(msg.sender == ownerOf(accountId), "only owner");
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
-      MarginStructs.Allowance memory allowance = MarginStructs.Allowance({
+      AccountStructs.Allowance memory allowance = AccountStructs.Allowance({
         positive: allowances[i].positive,
         negative: allowances[i].negative
       });
@@ -122,7 +121,7 @@ contract Account is ERC721, Owned {
   // Balance Adjustments //
   /////////////////////////
 
-  function submitTransfers(MarginStructs.AssetTransfer[] memory assetTransfers) external {
+  function submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers) external {
     // Do the transfers
     uint transfersLen = assetTransfers.length;
 
@@ -150,15 +149,15 @@ contract Account is ERC721, Owned {
   }
 
 
-  function _transferAsset(MarginStructs.AssetTransfer memory assetTransfer) internal {
-    MarginStructs.AssetAdjustment memory fromAccAdjustment = MarginStructs.AssetAdjustment({
+  function _transferAsset(AccountStructs.AssetTransfer memory assetTransfer) internal {
+    AccountStructs.AssetAdjustment memory fromAccAdjustment = AccountStructs.AssetAdjustment({
       acc: assetTransfer.fromAcc,
       asset: assetTransfer.asset,
       subId: assetTransfer.subId,
       amount: -assetTransfer.amount
     });
 
-    MarginStructs.AssetAdjustment memory toAccAdjustment = MarginStructs.AssetAdjustment({
+    AccountStructs.AssetAdjustment memory toAccAdjustment = AccountStructs.AssetAdjustment({
       acc: assetTransfer.toAcc,
       asset: assetTransfer.asset,
       subId: assetTransfer.subId,
@@ -174,7 +173,7 @@ contract Account is ERC721, Owned {
   }
 
   /// @dev privileged function that only the asset can call to do things like minting and burning
-  function adjustBalance(MarginStructs.AssetAdjustment memory adjustment) external returns (int postAdjustmentBalance) {
+  function adjustBalance(AccountStructs.AssetAdjustment memory adjustment) external returns (int postAdjustmentBalance) {
     uint accountId = adjustment.acc;
     _adjustBalance(adjustment);
 
@@ -187,12 +186,7 @@ contract Account is ERC721, Owned {
     return balances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)];
   }
 
-  function _adjustBalance(MarginStructs.AssetAdjustment memory adjustment) internal {
-    // TODO: charge owner or delegate? owner seems better as you ensure no one is using your token deposits for their own fees
-    if (fees.adjustmentFee > 0) {
-      IERC20(fees.feeToken).transferFrom(ownerOf(adjustment.acc), fee.recipient, fee.adjustmentFee);
-    }
-
+  function _adjustBalance(AccountStructs.AssetAdjustment memory adjustment) internal {
     bytes32 balanceKey = _getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId);
 
     int preBalance = balances[balanceKey];
@@ -213,15 +207,15 @@ contract Account is ERC721, Owned {
   ////////////////////////////
 
   function _delegateCheck(
-    MarginStructs.AssetAdjustment memory adjustment, address delegate
+    AccountStructs.AssetAdjustment memory adjustment, address delegate
   ) internal {
     // owner is by default delegate approved
     if (delegate == ownerOf(adjustment.acc)) { return; }
 
-    MarginStructs.Allowance storage subIdAllowance = 
+    AccountStructs.Allowance storage subIdAllowance = 
       delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
 
-    MarginStructs.Allowance storage assetAllowance = 
+    AccountStructs.Allowance storage assetAllowance = 
       delegateAssetAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, 0)][delegate];
 
     uint absAmount = _abs(adjustment.amount);
@@ -275,20 +269,20 @@ contract Account is ERC721, Owned {
   // View //
   //////////
 
-  function getAccountBalances(uint accountId) external view returns (MarginStructs.AssetBalance[] memory assetBalances) {
+  function getAccountBalances(uint accountId) external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
     return _getAccountBalances(accountId);
   }
 
   function _getAccountBalances(uint accountId)
     internal
     view
-    returns (MarginStructs.AssetBalance[] memory assetBalances)
+    returns (AccountStructs.AssetBalance[] memory assetBalances)
   {
     uint allAssetBalancesLen = heldAssets[accountId].length;
-    assetBalances = new MarginStructs.AssetBalance[](allAssetBalancesLen);
+    assetBalances = new AccountStructs.AssetBalance[](allAssetBalancesLen);
     for (uint i; i < allAssetBalancesLen; i++) {
-      MarginStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
-      assetBalances[i] = MarginStructs.AssetBalance({
+      AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
+      assetBalances[i] = AccountStructs.AssetBalance({
         asset: heldAsset.asset,
         subId: heldAsset.subId,
         balance: balances[_getBalanceKey(accountId, heldAsset.asset, heldAsset.subId)]
@@ -311,13 +305,13 @@ contract Account is ERC721, Owned {
 
   /// @dev this should never be called if the account already holds the asset
   function _addHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
-    heldAssets[accountId].push(MarginStructs.HeldAsset({asset: asset, subId: subId}));
+    heldAssets[accountId].push(AccountStructs.HeldAsset({asset: asset, subId: subId}));
   }
 
   function _removeHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
     uint heldAssetLen = heldAssets[accountId].length;
     for (uint i; i < heldAssetLen; i++) {
-      MarginStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
+      AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
       if (heldAsset.asset == asset && heldAsset.subId == subId) {
         if (i != heldAssetLen - 1) {
           heldAssets[accountId][i] = heldAssets[accountId][heldAssetLen - 1];

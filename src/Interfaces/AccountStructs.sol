@@ -18,7 +18,6 @@ contract AccountStructs {
   }
 
   // Adjustments
-
   struct AssetTransfer {
     uint fromAcc;
     uint toAcc;

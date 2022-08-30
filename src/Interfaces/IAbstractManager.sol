@@ -1,7 +1,7 @@
 pragma solidity ^0.8.13;
 
-import "./MarginStructs.sol";
+import "./AccountStructs.sol";
 
 interface IAbstractManager {
-  function handleAdjustment(uint marginAccountId, MarginStructs.AssetBalance[] memory assets, address caller) external;
+  function handleAdjustment(uint marginAccountId, AccountStructs.AssetBalance[] memory assets, address caller) external;
 }
