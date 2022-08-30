@@ -48,18 +48,12 @@ contract Account is ERC721, Owned {
   // Account Admin //
   ///////////////////
 
-  /// @dev simple wrapper of ERC721.transferFrom()
-  function changeOwner(uint accountId, address newOwner) external {
-    transferFrom(ownerOf(accountId), newOwner, accountId);
-  }
-
   function createAccount(IAbstractManager _manager) external returns (uint newId) {
     // charge a flat fee to prevent spam
     if (creationFee > 0) {
       feeToken.transferFrom(msg.sender, feeRecipient, creationFee);
     }
 
-    // create account
     newId = nextId++;
     manager[newId] = _manager;
     _mint(msg.sender, newId);
@@ -203,6 +197,26 @@ contract Account is ERC721, Owned {
   // Checks and Permissions //
   ////////////////////////////
 
+  function _managerCheck(
+    uint accountId, 
+    address caller
+  ) internal {
+    manager[accountId].handleAdjustment(accountId, _getAccountBalances(accountId), caller);
+  }
+
+  function _assetCheck(
+    IAbstractAsset asset, 
+    uint subId, 
+    uint accountId,
+    int preBalance, 
+    int postBalance, 
+    address caller
+  ) internal {
+    asset.handleAdjustment(
+      accountId, preBalance, postBalance, subId, manager[accountId], caller
+    );
+  }
+
   function _delegateCheck(
     AccountStructs.AssetAdjustment memory adjustment, address delegate
   ) internal {
@@ -240,26 +254,6 @@ contract Account is ERC721, Owned {
         assetAllowance.negative -= absAmount - subIdAllowance.negative;
       }
     }
-  }
-
-  function _managerCheck(
-    uint accountId, 
-    address caller
-  ) internal {
-    manager[accountId].handleAdjustment(accountId, _getAccountBalances(accountId), caller);
-  }
-
-  function _assetCheck(
-    IAbstractAsset asset, 
-    uint subId, 
-    uint accountId,
-    int preBalance, 
-    int postBalance, 
-    address caller
-  ) internal {
-    asset.handleAdjustment(
-      accountId, preBalance, postBalance, subId, manager[accountId], caller
-    );
   }
 
   //////////
