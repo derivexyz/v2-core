@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "./IAbstractAsset.sol";
 
-contract MarginStructs {
+contract AccountStructs {
   
   // Balances
 

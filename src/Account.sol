@@ -1,19 +1,29 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "synthetix/Owned.sol";
 import "./interfaces/IAbstractAsset.sol";
 import "./interfaces/IAbstractManager.sol";
 import "./interfaces/MarginStructs.sol";
 
 import "forge-std/console2.sol";
 
-contract Account is ERC721 {
+contract Account is ERC721, Owned {
 
   ///////////////
   // Variables //
   ///////////////
 
+  struct ProtocolFees {
+    IERC20 feeToken,
+    uint creationFee, // flat ERC20 fee
+    uint adjustmentFee, // flat ERC20 fee
+    address recipient
+  }
+
+  ProtocolFees public fees;
   uint nextId = 1;
   mapping(uint => IAbstractManager) manager;
   mapping(bytes32 => int) public balances;
@@ -21,15 +31,36 @@ contract Account is ERC721 {
   mapping(bytes32 => mapping(address => MarginStructs.Allowance)) public delegateAssetAllowances;
 
   mapping(uint => MarginStructs.HeldAsset[]) heldAssets;
-  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
+  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Owned() {}
+
+  ////////////////////
+  // Protocol Admin //
+  ////////////////////
+
+  function setProtocolFees(ProtocolFees memory _fees) onlyOwner() {
+    require(
+      address(_fees.feeToken) != address(0) && _fees.recipient != address(0), 
+      "fee token & recipient cannot be zero address"
+    );
+    fees = _fees;
+  }
 
   ///////////////////
   // Account Admin //
   ///////////////////
 
-  function changeOwner(uint accountId, address newOwner) external {}
+  /// @dev simple wrapper of ERC721.transferFrom()
+  function changeOwner(uint accountId, address newOwner) external {
+    transferFrom(ownerOf(accountId), newOwner, accountId);
+  }
 
   function createAccount(IAbstractManager _manager) external returns (uint newId) {
+    // charge a flat fee to prevent spam
+    if (fees.creationFee > 0) {
+      IERC20(fees.feeToken).transferFrom(msg.sender, fee.recipient, fee.creationFee);
+    }
+
+    // create account
     newId = nextId++;
     manager[newId] = _manager;
     _mint(msg.sender, newId);
@@ -47,7 +78,6 @@ contract Account is ERC721 {
     MarginStructs.Allowance[] memory allowances
   ) external {
     _updateDelegateAllowances(accountId, delegate, assets, subIds, allowances);
-
   }
 
   function setDelegateAssetAllowances(
@@ -158,6 +188,11 @@ contract Account is ERC721 {
   }
 
   function _adjustBalance(MarginStructs.AssetAdjustment memory adjustment) internal {
+    // TODO: charge owner or delegate? owner seems better as you ensure no one is using your token deposits for their own fees
+    if (fees.adjustmentFee > 0) {
+      IERC20(fees.feeToken).transferFrom(ownerOf(adjustment.acc), fee.recipient, fee.adjustmentFee);
+    }
+
     bytes32 balanceKey = _getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId);
 
     int preBalance = balances[balanceKey];
@@ -191,6 +226,7 @@ contract Account is ERC721 {
 
     uint absAmount = _abs(adjustment.amount);
 
+    // TODO: a bit repetitive, can probably clean up a bit
     if (adjustment.amount > 0) {
       require(absAmount <= subIdAllowance.positive + assetAllowance.positive, 
         "positive adjustment not approved");
@@ -273,20 +309,6 @@ contract Account is ERC721 {
     return keccak256(abi.encodePacked(accountId, address(asset), subId));
   } 
 
-  function _findInArray(uint[] memory array, uint toFind) internal pure returns (bool found) {
-    /// TODO: Binary search? :cringeGrin: We do have the array max length
-    uint arrayLen = array.length;
-    for (uint i; i < arrayLen; ++i) {
-      if (array[i] == 0) {
-        return false;
-      }
-      if (array[i] == toFind) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   /// @dev this should never be called if the account already holds the asset
   function _addHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
     heldAssets[accountId].push(MarginStructs.HeldAsset({asset: asset, subId: subId}));
@@ -309,5 +331,19 @@ contract Account is ERC721 {
 
   function _abs(int amount) internal pure returns (uint absAmount) {
     return (amount >= 0) ? uint256(amount) : SafeCast.toUint256(-amount);
+  }
+
+  function _findInArray(uint[] memory array, uint toFind) internal pure returns (bool found) {
+    /// TODO: Binary search? :cringeGrin: We do have the array max length
+    uint arrayLen = array.length;
+    for (uint i; i < arrayLen; ++i) {
+      if (array[i] == 0) {
+        return false;
+      }
+      if (array[i] == toFind) {
+        return true;
+      }
+    }
+    return false;
   }
 }
