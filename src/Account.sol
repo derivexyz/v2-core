@@ -57,6 +57,8 @@ contract Account is ERC721, Owned {
     newId = nextId++;
     manager[newId] = _manager;
     _mint(msg.sender, newId);
+    // give RM ability to transfer account ownereship
+    _approve(address(_manager), newId); 
     return newId;
   }
 
@@ -168,7 +170,7 @@ contract Account is ERC721, Owned {
 
   /// @dev privileged function that only the asset can call to do things like minting and burning
   function adjustBalance(AccountStructs.AssetAdjustment memory adjustment) external returns (int postAdjustmentBalance) {
-    require(msg.sender == address(manager[accountId]) || msg.sender == address(adjustment.asset),
+    require(msg.sender == address(manager[adjustment.acc]) || msg.sender == address(adjustment.asset),
       "only managers and assets can make assymmetric adjustments");
     
     _adjustBalance(adjustment);
