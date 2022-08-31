@@ -48,7 +48,7 @@ contract Account is ERC721, Owned {
   // Account Admin //
   ///////////////////
 
-  function createAccount(IAbstractManager _manager) external returns (uint newId) {
+  function createAccount(IAbstractManager _manager, address owner) public returns (uint newId) {
     // charge a flat fee to prevent spam
     if (creationFee > 0) {
       feeToken.transferFrom(msg.sender, feeRecipient, creationFee);
@@ -56,16 +56,32 @@ contract Account is ERC721, Owned {
 
     newId = nextId++;
     manager[newId] = _manager;
-    _mint(msg.sender, newId);
-    // give RM ability to transfer account ownereship
-    _approve(address(_manager), newId); 
+    _mint(owner, newId);
     return newId;
   }
 
-  /// @dev set positive / negative allowances per subId
-  ///      the sum of asset allowances + subId allowances is used during _delegateCheck()
+  /// @dev blanket allowance over transfers, merges, splits, account transfers 
+  ///      only one blanket delegate allowed
+  function setFullDelegate(
+    uint accountId,
+    address delegate
+  ) external {
+    _approve(delegate, accountId);
+  }
+
+  /// @dev the sum of asset allowances + subId allowances is used during _delegateCheck()
   ///      subId allowances are decremented before asset allowances
-  function setDelegateSubIdAllowances(
+  ///      cannot merge with this type of allowance
+  function setAssetDelegateAllowances(
+    uint accountId, 
+    address delegate, 
+    IAbstractAsset[] memory assets,
+    AccountStructs.Allowance[] memory allowances  
+  ) external {
+    _updateDelegateAllowances(accountId, delegate, assets, new uint[](0), allowances);
+  }
+
+  function setSubIdDelegateAllowances(
     uint accountId, 
     address delegate, 
     IAbstractAsset[] memory assets,
@@ -73,15 +89,6 @@ contract Account is ERC721, Owned {
     AccountStructs.Allowance[] memory allowances
   ) external {
     _updateDelegateAllowances(accountId, delegate, assets, subIds, allowances);
-  }
-
-  function setDelegateAssetAllowances(
-    uint accountId, 
-    address delegate, 
-    IAbstractAsset[] memory assets,
-    AccountStructs.Allowance[] memory allowances  
-  ) external {
-    _updateDelegateAllowances(accountId, delegate, assets, new uint[](0), allowances);
   }
 
   function _updateDelegateAllowances(
@@ -110,14 +117,78 @@ contract Account is ERC721, Owned {
     }
   }
 
-  function merge(uint[] memory accounts) external {}
+  /// @dev Merges all accounts into first account and leaves remaining empty but not burned
+  ///      This ensures accounts can be reused after being merged
+  function merge(uint targetAccount, uint[] memory accountsToMerge) external {
+    // does not use _delegateCheck() for gas efficiency
+    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be ERC721 approved to merge");
 
+    uint mergingAccLen = accountsToMerge.length;
+    for (uint i = 0; i < mergingAccLen; i++) {
+      require(_isApprovedOrOwner(msg.sender, accountsToMerge[i]), "must be ERC721 approved to merge");
+      require(manager[targetAccount] == manager[accountsToMerge[i]], "accounts use different risk models");
+
+      uint heldAssetLen = heldAssets[accountsToMerge[i]].length;
+      for (uint j; j < heldAssetLen; j++) {
+        AccountStructs.HeldAsset memory heldAsset = heldAssets[accountsToMerge[i]][j];
+        bytes32 targetKey = _getBalanceKey(targetAccount, heldAsset.asset, heldAsset.subId);
+        bytes32 mergeAccountKey = _getBalanceKey(accountsToMerge[i], heldAsset.asset, heldAsset.subId);
+
+        // TODO: test max number of assets this can support
+
+        // add asset if not held by target account
+        int preBalance = balances[targetKey];
+        int balanceToAdd = balances[mergeAccountKey];
+        if (preBalance == 0) {
+          // TODO: gas will depend on both size of target and merging acccounts
+          _addHeldAsset(targetAccount, heldAsset.asset, heldAsset.subId);
+        } else if (preBalance + balanceToAdd == 0) {
+          _removeHeldAsset(targetAccount, heldAsset.asset, heldAsset.subId);
+        }
+
+        // increment target account balance and set merging account to 0
+        balances[targetKey] = preBalance + balanceToAdd;
+        balances[mergeAccountKey] = 0;
+      }
+
+      delete heldAssets[accountsToMerge[i]];
+    }
+  }
+
+  /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
+  ///      msg.sender must be delegate approved to split
+  function split(uint accountToSplitId, AccountStructs.AssetTransfer[] memory assetTransfers, address splitAccountOwner) external {
+    uint newAccountId = createAccount(manager[accountToSplitId], msg.sender);
+
+    uint transfersLen = assetTransfers.length;
+    for (uint i; i < transfersLen; ++i) {
+      assetTransfers[i].toAcc = newAccountId;
+    }
+
+    submitTransfers(assetTransfers);
+
+    if (splitAccountOwner != msg.sender) {
+      transferFrom(msg.sender, splitAccountOwner, newAccountId);
+    }
+  }
+
+  /// @dev giving managers exclusive rights to transfer account ownerships
+  function _isApprovedOrOwner(address spender, uint256 tokenId) internal view override returns (bool) {
+    address owner = ERC721.ownerOf(tokenId);
+    bool isManager = ownerOf(tokenId) == msg.sender;
+    return (
+      spender == owner || 
+      isApprovedForAll(owner, spender) || 
+      getApproved(tokenId) == spender || 
+      isManager
+    );
+  }
 
   /////////////////////////
   // Balance Adjustments //
   /////////////////////////
 
-  function submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers) external {
+  function submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers) public {
     // Do the transfers
     uint transfersLen = assetTransfers.length;
 
@@ -169,7 +240,9 @@ contract Account is ERC721, Owned {
   }
 
   /// @dev privileged function that only the asset can call to do things like minting and burning
-  function adjustBalance(AccountStructs.AssetAdjustment memory adjustment) external returns (int postAdjustmentBalance) {
+  function adjustBalance(
+    AccountStructs.AssetAdjustment memory adjustment
+  ) onlyManagerOrAsset(adjustment.acc, adjustment.asset) external returns (int postAdjustmentBalance) {
     require(msg.sender == address(manager[adjustment.acc]) || msg.sender == address(adjustment.asset),
       "only managers and assets can make assymmetric adjustments");
     
@@ -222,8 +295,8 @@ contract Account is ERC721, Owned {
   function _delegateCheck(
     AccountStructs.AssetAdjustment memory adjustment, address delegate
   ) internal {
-    // owner is by default delegate approved
-    if (delegate == ownerOf(adjustment.acc)) { return; }
+    // ERC721 approved or owner get blanket allowance
+    if (_isApprovedOrOwner(msg.sender, adjustment.acc)) { return; }
 
     AccountStructs.Allowance storage subIdAllowance = 
       delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
@@ -333,4 +406,17 @@ contract Account is ERC721, Owned {
     }
     return false;
   }
+
+  ///////////////
+  // Modifiers //
+  ///////////////
+
+  modifier onlyManagerOrAsset(uint accountId, IAbstractAsset asset) {
+    require(msg.sender == ownerOf(accountId) || 
+      msg.sender == address(asset), 
+    "only manager or asset");
+    _;
+  }
+
+
 }
