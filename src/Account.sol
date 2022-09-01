@@ -27,6 +27,8 @@ contract Account is ERC721, Owned {
   mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateAssetAllowances;
 
   mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
+  mapping(bytes32 => uint) heldOrder;
+
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Owned() {}
 
   ////////////////////
@@ -109,10 +111,10 @@ contract Account is ERC721, Owned {
 
       if (subIds.length > 0) {
         delegateSubIdAllowances[
-          _getBalanceKey(accountId, assets[i], subIds[i])][delegate] = allowance;
+          _getEntryKey(accountId, assets[i], subIds[i])][delegate] = allowance;
       } else {     // uses 0 when encoding key for delegateAssetAllowances key
         delegateAssetAllowances[
-          _getBalanceKey(accountId, assets[i], 0)][delegate] = allowance;
+          _getEntryKey(accountId, assets[i], 0)][delegate] = allowance;
       }
     }
   }
@@ -131,8 +133,8 @@ contract Account is ERC721, Owned {
       uint heldAssetLen = heldAssets[accountsToMerge[i]].length;
       for (uint j; j < heldAssetLen; j++) {
         AccountStructs.HeldAsset memory heldAsset = heldAssets[accountsToMerge[i]][j];
-        bytes32 targetKey = _getBalanceKey(targetAccount, heldAsset.asset, heldAsset.subId);
-        bytes32 mergeAccountKey = _getBalanceKey(accountsToMerge[i], heldAsset.asset, heldAsset.subId);
+        bytes32 targetKey = _getEntryKey(targetAccount, heldAsset.asset, heldAsset.subId);
+        bytes32 mergeAccountKey = _getEntryKey(accountsToMerge[i], heldAsset.asset, heldAsset.subId);
 
         // TODO: test max number of assets this can support
 
@@ -248,11 +250,11 @@ contract Account is ERC721, Owned {
     _adjustBalance(adjustment);
     _managerCheck(adjustment.acc, msg.sender); // since caller is passed, manager can internally decide to ignore check
     
-    return balances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)];
+    return balances[_getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId)];
   }
 
   function _adjustBalance(AccountStructs.AssetAdjustment memory adjustment) internal {
-    bytes32 balanceKey = _getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId);
+    bytes32 balanceKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
 
     int preBalance = balances[balanceKey];
     balances[balanceKey] += adjustment.amount;
@@ -298,9 +300,9 @@ contract Account is ERC721, Owned {
     if (_isApprovedOrOwner(msg.sender, adjustment.acc)) { return; }
 
     AccountStructs.Allowance storage subIdAllowance = 
-      delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
+      delegateSubIdAllowances[_getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
     AccountStructs.Allowance storage assetAllowance = 
-      delegateAssetAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, 0)][delegate];
+      delegateAssetAllowances[_getEntryKey(adjustment.acc, adjustment.asset, 0)][delegate];
 
     uint absAmount = _abs(adjustment.amount);
 
@@ -319,7 +321,7 @@ contract Account is ERC721, Owned {
         assetAllowance.positive -= absAmount - subIdAllowance.positive;
       }
     } else {
-      if (isAllowanceEnough <= subIdAllowance.negative) {
+      if (absAmount <= subIdAllowance.negative) {
         subIdAllowance.negative -= absAmount;
       } else {
         subIdAllowance.negative = 0;
@@ -348,7 +350,7 @@ contract Account is ERC721, Owned {
       assetBalances[i] = AccountStructs.AssetBalance({
         asset: heldAsset.asset,
         subId: heldAsset.subId,
-        balance: balances[_getBalanceKey(accountId, heldAsset.asset, heldAsset.subId)]
+        balance: balances[_getEntryKey(accountId, heldAsset.asset, heldAsset.subId)]
       });
     }
     return assetBalances;
@@ -360,7 +362,7 @@ contract Account is ERC721, Owned {
   //////////
 
   /// @dev keep mappings succinct and gas efficient
-  function _getBalanceKey(
+  function _getEntryKey(
     uint accountId, IAbstractAsset asset, uint subId
   ) internal pure returns (bytes32 balanceKey) {
     return keccak256(abi.encodePacked(accountId, address(asset), subId));
@@ -369,21 +371,25 @@ contract Account is ERC721, Owned {
   /// @dev this should never be called if the account already holds the asset
   function _addHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
     heldAssets[accountId].push(AccountStructs.HeldAsset({asset: asset, subId: subId}));
+    heldOrder[_getEntryKey(accountId, asset, subId)] = heldAssets[accountId].length - 1;
   }
 
   function _removeHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
+    uint currentAssetOrder = heldOrder[_getEntryKey(accountId, asset, subId)];
+    require(currentAssetOrder != type(uint).max, "asset not present");
+
+    // remove asset from heldOrder
+    heldOrder[_getEntryKey(accountId, asset, subId)] = type(uint).max;
+
+    // swap orders if middle asset removed
     uint heldAssetLen = heldAssets[accountId].length;
-    for (uint i; i < heldAssetLen; i++) {
-      AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
-      if (heldAsset.asset == asset && heldAsset.subId == subId) {
-        if (i != heldAssetLen - 1) {
-          heldAssets[accountId][i] = heldAssets[accountId][heldAssetLen - 1];
-        }
-        heldAssets[accountId].pop();
-        return;
-      }
+    if (currentAssetOrder != heldAssetLen - 1) { 
+      heldAssets[accountId][currentAssetOrder] = heldAssets[accountId][heldAssetLen - 1];
+      heldOrder[_getEntryKey(accountId, asset, subId)] = currentAssetOrder;
     }
-    revert("Invalid state");
+
+    // remove asset from heldAsset
+    heldAssets[accountId].pop();
   }
 
   function _abs(int amount) internal pure returns (uint absAmount) {
