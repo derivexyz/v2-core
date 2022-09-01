@@ -27,7 +27,7 @@ contract Account is ERC721, Owned {
   mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateAssetAllowances;
 
   mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
-  mapping(bytes32 => uint) heldOrder;
+  mapping(bytes32 => uint) heldOrder; // starts at 1
 
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Owned() {}
 
@@ -371,21 +371,22 @@ contract Account is ERC721, Owned {
   /// @dev this should never be called if the account already holds the asset
   function _addHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
     heldAssets[accountId].push(AccountStructs.HeldAsset({asset: asset, subId: subId}));
-    heldOrder[_getEntryKey(accountId, asset, subId)] = heldAssets[accountId].length - 1;
+    // extra 20k gas
+    heldOrder[_getEntryKey(accountId, asset, subId)] = heldAssets[accountId].length;
   }
 
   function _removeHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
     uint currentAssetOrder = heldOrder[_getEntryKey(accountId, asset, subId)];
-    require(currentAssetOrder != type(uint).max, "asset not present");
+    require(currentAssetOrder != 0, "asset not present");
 
     // remove asset from heldOrder
-    heldOrder[_getEntryKey(accountId, asset, subId)] = type(uint).max;
+    heldOrder[_getEntryKey(accountId, asset, subId)] = 0; // 5k refund
 
     // swap orders if middle asset removed
     uint heldAssetLen = heldAssets[accountId].length;
-    if (currentAssetOrder != heldAssetLen - 1) { 
-      heldAssets[accountId][currentAssetOrder] = heldAssets[accountId][heldAssetLen - 1];
-      heldOrder[_getEntryKey(accountId, asset, subId)] = currentAssetOrder;
+    if (currentAssetOrder != heldAssetLen) { 
+      heldAssets[accountId][currentAssetOrder - 1] = heldAssets[accountId][heldAssetLen - 1];
+      heldOrder[_getEntryKey(accountId, asset, subId)] = currentAssetOrder; // 3k gas 
     }
 
     // remove asset from heldAsset
