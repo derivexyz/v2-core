@@ -136,13 +136,12 @@ contract Account is ERC721, Owned {
 
         // TODO: test max number of assets this can support
 
-        // add asset if not held by target account
         int preBalance = balances[targetKey];
         int balanceToAdd = balances[mergeAccountKey];
-        if (preBalance == 0) {
-          // TODO: gas will depend on both size of target and merging acccounts
+        if (preBalance == 0) { // add asset if not present 
           _addHeldAsset(targetAccount, heldAsset.asset, heldAsset.subId);
-        } else if (preBalance + balanceToAdd == 0) {
+        } else if (preBalance + balanceToAdd == 0) { // remove if balance = 0
+          // TODO: gas will depend on both size of target
           _removeHeldAsset(targetAccount, heldAsset.asset, heldAsset.subId);
         }
 
@@ -300,35 +299,33 @@ contract Account is ERC721, Owned {
 
     AccountStructs.Allowance storage subIdAllowance = 
       delegateSubIdAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
-
     AccountStructs.Allowance storage assetAllowance = 
       delegateAssetAllowances[_getBalanceKey(adjustment.acc, adjustment.asset, 0)][delegate];
 
     uint absAmount = _abs(adjustment.amount);
 
-    // TODO: a bit repetitive, can probably clean up a bit
-    if (adjustment.amount > 0) {
-      require(absAmount <= subIdAllowance.positive + assetAllowance.positive, 
-        "positive adjustment not approved");
+    bool isPositiveAdjustment = adjustment.amount > 0;
+    bool isAllowanceEnough = (isPositiveAdjustment)
+      ? absAmount <= subIdAllowance.positive + assetAllowance.positive
+      : absAmount <= subIdAllowance.negative + assetAllowance.negative;
+
+    require(isAllowanceEnough, "delegate does not have enough allowance");
+
+    if (isAllowanceEnough && isPositiveAdjustment) {
       if (absAmount <= subIdAllowance.positive) {
         subIdAllowance.positive -= absAmount;
-      } else {
-        // subId allowances are decremented first
+      } else { // subId allowances are decremented first
         subIdAllowance.positive = 0;
         assetAllowance.positive -= absAmount - subIdAllowance.positive;
       }
-
     } else {
-      require(absAmount <= subIdAllowance.negative + assetAllowance.negative, 
-        "negative adjustment not approved");
-      if (absAmount <= subIdAllowance.negative) {
+      if (isAllowanceEnough <= subIdAllowance.negative) {
         subIdAllowance.negative -= absAmount;
       } else {
-        // subId allowances are decremented first
         subIdAllowance.negative = 0;
         assetAllowance.negative -= absAmount - subIdAllowance.negative;
       }
-    }
+    } 
   }
 
   //////////
