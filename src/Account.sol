@@ -371,10 +371,16 @@ contract Account is ERC721, Owned {
   /// @dev this should never be called if the account already holds the asset
   function _addHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
     heldAssets[accountId].push(AccountStructs.HeldAsset({asset: asset, subId: subId}));
-    // extra 20k gas
+    // extra 20k gas, but improvement over 2k * 100 positions during 1x removeHeldAsset
     heldOrder[_getEntryKey(accountId, asset, subId)] = heldAssets[accountId].length;
   }
+  
 
+  /// @dev uses heldOrder mapping to make removals gas efficient 
+  ///      moves static 20k per added asset overhead
+  ///      (1) removes $200k bottleneck from removeHeldAsset
+  ///      (2) reduces overall gas spent during large splits
+  ///      (3) low overhead for everyday traders with 1-3 transfers 
   function _removeHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
     uint currentAssetOrder = heldOrder[_getEntryKey(accountId, asset, subId)];
     require(currentAssetOrder != 0, "asset not present");
