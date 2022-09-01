@@ -152,7 +152,7 @@ contract Account is ERC721, Owned {
         balances[mergeAccountKey] = 0;
       }
 
-      delete heldAssets[accountsToMerge[i]];
+      _clearHeldAssets(accountsToMerge[i]);
     }
   }
 
@@ -397,6 +397,16 @@ contract Account is ERC721, Owned {
 
     // remove asset from heldAsset
     heldAssets[accountId].pop();
+  }
+
+  /// @dev used when blanket deleting all assets
+  function _clearHeldAssets(uint accountId) internal {
+    AccountStructs.HeldAsset[] memory assets = heldAssets[accountId];
+    uint heldAssetLen = assets.length;
+    for (uint i; i < heldAssetLen; i++) {
+      heldOrder[_getEntryKey(accountId, assets[i].asset, assets[i].subId)] = 0;
+    }
+    delete heldAssets[accountId];
   }
 
   function _abs(int amount) internal pure returns (uint absAmount) {
