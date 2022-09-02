@@ -3,22 +3,17 @@ pragma solidity ^0.8.13;
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "synthetix/Owned.sol";
 import "./interfaces/IAbstractAsset.sol";
 import "./interfaces/IAbstractManager.sol";
 import "./interfaces/AccountStructs.sol";
 
 import "forge-std/console2.sol";
 
-contract Account is ERC721, Owned {
+contract Account is ERC721 {
 
   ///////////////
   // Variables //
   ///////////////
-
-  IERC20 public feeToken;
-  address public feeRecipient;
-  uint public creationFee;
 
   uint nextId = 1;
   mapping(uint => IAbstractManager) manager;
@@ -29,33 +24,13 @@ contract Account is ERC721, Owned {
   mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
   mapping(bytes32 => uint) heldOrder; // starts at 1
 
-  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Owned() {}
-
-  ////////////////////
-  // Protocol Admin //
-  ////////////////////
-
-  function setCreationFee(address _feeToken,  address _feeRecipient, uint _creationFee) onlyOwner() external {
-    require(
-      _feeToken != address(0) && _feeRecipient != address(0), 
-      "fee token & recipient cannot be zero address"
-    );
-
-    creationFee = _creationFee;
-    feeToken = IERC20(_feeToken);
-    feeRecipient = _feeRecipient;
-  }
+  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ///////////////////
   // Account Admin //
   ///////////////////
 
   function createAccount(IAbstractManager _manager, address owner) public returns (uint newId) {
-    // charge a flat fee to prevent spam
-    if (creationFee > 0) {
-      feeToken.transferFrom(msg.sender, feeRecipient, creationFee);
-    }
-
     newId = nextId++;
     manager[newId] = _manager;
     _mint(owner, newId);
