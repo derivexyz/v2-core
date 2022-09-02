@@ -102,33 +102,11 @@ contract Account is ERC721 {
 
     uint mergingAccLen = accountsToMerge.length;
     for (uint i = 0; i < mergingAccLen; i++) {
-      require(_isApprovedOrOwner(msg.sender, accountsToMerge[i]), "must be ERC721 approved to merge");
-      require(manager[targetAccount] == manager[accountsToMerge[i]], "accounts use different risk models");
-
-      uint heldAssetLen = heldAssets[accountsToMerge[i]].length;
-      for (uint j; j < heldAssetLen; j++) {
-        AccountStructs.HeldAsset memory heldAsset = heldAssets[accountsToMerge[i]][j];
-        bytes32 targetKey = _getEntryKey(targetAccount, heldAsset.asset, heldAsset.subId);
-        bytes32 mergeAccountKey = _getEntryKey(accountsToMerge[i], heldAsset.asset, heldAsset.subId);
-
-        // TODO: test max number of assets this can support
-
-        int preBalance = balances[targetKey];
-        int balanceToAdd = balances[mergeAccountKey];
-        if (preBalance == 0) { // add asset if not present 
-          _addHeldAsset(targetAccount, heldAsset.asset, heldAsset.subId);
-        } else if (preBalance + balanceToAdd == 0) { // remove if balance = 0
-          // TODO: gas will depend on both size of target
-          _removeHeldAsset(targetAccount, heldAsset.asset, heldAsset.subId);
-        }
-
-        // increment target account balance and set merging account to 0
-        balances[targetKey] = preBalance + balanceToAdd;
-        balances[mergeAccountKey] = 0;
-      }
-
-      _clearHeldAssets(accountsToMerge[i]);
+      _transferAll(accountsToMerge[i], targetAccount);
+      _managerCheck(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
     }
+
+    _managerCheck(targetAccount, msg.sender);
   }
 
   /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
@@ -191,7 +169,6 @@ contract Account is ERC721 {
     }
   }
 
-
   function _transferAsset(AccountStructs.AssetTransfer memory assetTransfer) internal {
     AccountStructs.AssetAdjustment memory fromAccAdjustment = AccountStructs.AssetAdjustment({
       acc: assetTransfer.fromAcc,
@@ -212,7 +189,39 @@ contract Account is ERC721 {
 
     _adjustBalance(fromAccAdjustment);
     _adjustBalance(toAccAdjustment);
+  }
 
+  function transferAll(uint fromAccountId, uint toAccountId) external {
+    _transferAll(fromAccountId, toAccountId);
+    _managerCheck(fromAccountId, msg.sender);
+    _managerCheck(toAccountId, msg.sender);
+  }
+
+
+  function _transferAll(uint fromAccountId, uint toAccountId) internal {
+    require(_isApprovedOrOwner(msg.sender, fromAccountId) && _isApprovedOrOwner(msg.sender, toAccountId), 
+      "msg.sender must be full delegate or owner of both accounts");
+
+    AccountStructs.HeldAsset[] memory fromAssets = heldAssets[fromAccountId];
+    uint heldAssetLen = fromAssets.length;
+    for (uint i; i < heldAssetLen; i++) {
+      _adjustBalance(AccountStructs.AssetAdjustment({
+        acc: toAccountId,
+        asset: fromAssets[i].asset,
+        subId: fromAssets[i].subId,
+        amount: balances[_getEntryKey(fromAccountId, fromAssets[i].asset, fromAssets[i].subId)]
+      }));
+
+      _adjustBalanceWithoutHeldAssetUpdate(AccountStructs.AssetAdjustment({
+        acc: fromAccountId,
+        asset: fromAssets[i].asset,
+        subId: fromAssets[i].subId,
+        amount: -balances[_getEntryKey(fromAccountId, fromAssets[i].asset, fromAssets[i].subId)]
+      }));
+    }
+
+    // gas efficient to simply clear assets of fromAccount
+    _clearHeldAssets(fromAccountId);
   }
 
   /// @dev privileged function that only the asset can call to do things like minting and burning
@@ -229,19 +238,25 @@ contract Account is ERC721 {
   }
 
   function _adjustBalance(AccountStructs.AssetAdjustment memory adjustment) internal {
-    bytes32 balanceKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
-
-    int preBalance = balances[balanceKey];
-    balances[balanceKey] += adjustment.amount;
-    int postBalance = balances[balanceKey];
-
-    _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
+    (int preBalance, int postBalance) = _adjustBalanceWithoutHeldAssetUpdate(adjustment);
 
     if (preBalance != 0 && postBalance == 0) {
       _removeHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     } else if (preBalance == 0 && postBalance != 0) {
       _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     }
+  }
+
+  function _adjustBalanceWithoutHeldAssetUpdate(
+    AccountStructs.AssetAdjustment memory adjustment
+  ) internal returns (int preBalance, int postBalance){
+    bytes32 balanceKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
+
+    preBalance = balances[balanceKey];
+    balances[balanceKey] += adjustment.amount;
+    postBalance = balances[balanceKey];
+
+    _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
   }
 
   ////////////////////////////
