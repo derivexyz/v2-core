@@ -142,6 +142,12 @@ contract Account is ERC721 {
   // Balance Adjustments //
   /////////////////////////
 
+  function submitTransfer(AccountStructs.AssetTransfer memory assetTransfer) public {
+    _transferAsset(assetTransfer);
+    _managerCheck(assetTransfer.fromAcc, msg.sender);
+    _managerCheck(assetTransfer.toAcc, msg.sender);
+  }
+
   function submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers) public {
     // Do the transfers
     uint transfersLen = assetTransfers.length;
@@ -220,7 +226,7 @@ contract Account is ERC721 {
       }));
     }
 
-    // gas efficient to simply clear assets of fromAccount
+    // gas efficient to batch clear assets
     _clearHeldAssets(fromAccountId);
   }
 
@@ -323,6 +329,14 @@ contract Account is ERC721 {
   //////////
   // View //
   //////////
+
+  function getAssetBalance(
+    uint accountId, 
+    IAbstractAsset asset, 
+    uint subId
+  ) external view returns (int balance){
+    return balances[_getEntryKey(accountId, asset, subId)];
+  }
 
   function getAccountBalances(uint accountId) external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
     return _getAccountBalances(accountId);
