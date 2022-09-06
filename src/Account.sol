@@ -75,7 +75,7 @@ contract Account is ERC721 {
     uint[] memory subIds,
     AccountStructs.Allowance[] memory allowances
   ) internal {
-    require(msg.sender == ownerOf(accountId), "only owner");
+    require(_isApprovedOrOwner(msg.sender, accountId), "must be ERC721 approved to merge");
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
@@ -246,21 +246,26 @@ contract Account is ERC721 {
   function _adjustBalance(AccountStructs.AssetAdjustment memory adjustment) internal {
     (int preBalance, int postBalance) = _adjustBalanceWithoutHeldAssetUpdate(adjustment);
 
+    console2.log("start held asset removals");
+    uint startGas = gasleft();
     if (preBalance != 0 && postBalance == 0) {
       _removeHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     } else if (preBalance == 0 && postBalance != 0) {
       _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     }
+    console2.log(startGas - gasleft());
   }
 
   function _adjustBalanceWithoutHeldAssetUpdate(
     AccountStructs.AssetAdjustment memory adjustment
   ) internal returns (int preBalance, int postBalance){
+    uint startGas = gasleft();
     bytes32 balanceKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
 
     preBalance = balances[balanceKey];
     balances[balanceKey] += adjustment.amount;
     postBalance = balances[balanceKey];
+    console2.log(startGas - gasleft());
 
     _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
   }

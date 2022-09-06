@@ -174,9 +174,12 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
         AccountStructs.AssetBalance memory assetBalance = assets[k];
 
         if (assetBalance.asset == IAbstractAsset(optionToken)) {
+          // swap out to remov BS price:
+          scenarioValue += 0;
+
           // call external valuation contract assigned to subId
-          scenarioValue +=
-            optionToken.getValue(assetBalance.subId, assetBalance.balance, shockedSpot, scenarios[j].ivShock);
+          // scenarioValue +=
+          //   optionToken.getValue(assetBalance.subId, assetBalance.balance, shockedSpot, scenarios[j].ivShock);
         } else if (assetBalance.asset == IAbstractAsset(baseAsset)) {
           scenarioValue += int(shockedSpot).multiplyDecimal(assetBalance.balance);
         } else if (assetBalance.asset == IAbstractAsset(quoteAsset)) {

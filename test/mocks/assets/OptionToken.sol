@@ -38,7 +38,9 @@ contract OptionToken is IAbstractAsset, Owned {
 
   mapping(uint => uint) liquidationCount;
 
-  constructor(Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) {
+  constructor(
+    Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_
+  ) Owned() {
     account = account_;
     priceFeeds = feeds_;
     settlementPricer = settlementPricer_;
