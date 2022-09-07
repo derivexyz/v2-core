@@ -168,7 +168,7 @@ contract OptionToken is IAbstractAsset, Owned {
    * bits 128-256 => strikePrice
    */
   function subIdToListing(uint subId) public pure returns (Listing memory) {
-    return Listing({strikePrice: uint(uint128(subId)), expiry: uint(uint64(subId >> 128)), isCall: subId >> 255 == 1});
+    return Listing({strikePrice: uint(uint128(subId)), expiry: uint(uint(subId >> 128)), isCall: subId >> 255 == 1});
   }
 
   function listingToSubId(Listing memory listing) public pure returns (uint subId) {

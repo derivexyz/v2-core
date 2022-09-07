@@ -75,7 +75,7 @@ contract Account is ERC721 {
     uint[] memory subIds,
     AccountStructs.Allowance[] memory allowances
   ) internal {
-    require(_isApprovedOrOwner(msg.sender, accountId), "must be ERC721 approved to merge");
+    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
@@ -98,7 +98,7 @@ contract Account is ERC721 {
   ///      This ensures accounts can be reused after being merged
   function merge(uint targetAccount, uint[] memory accountsToMerge) external {
     // does not use _delegateCheck() for gas efficiency
-    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be ERC721 approved to merge");
+    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
 
     uint mergingAccLen = accountsToMerge.length;
     for (uint i = 0; i < mergingAccLen; i++) {
@@ -107,6 +107,19 @@ contract Account is ERC721 {
     }
 
     _managerCheck(targetAccount, msg.sender);
+  }
+
+  /// @dev gas efficient method for migrating AMMs
+  function changeManager(uint accountId, IAbstractManager _manager) external {
+    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
+
+    // check with old manager if ok to empty account
+    AccountStructs.AssetBalance[] memory emptyBalances;
+    manager[accountId].handleAdjustment(accountId, emptyBalances, msg.sender);
+
+    // check with new manager if new account ok
+    manager[accountId] = _manager;
+    _managerCheck(accountId, msg.sender);
   }
 
   /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
@@ -246,26 +259,24 @@ contract Account is ERC721 {
   function _adjustBalance(AccountStructs.AssetAdjustment memory adjustment) internal {
     (int preBalance, int postBalance) = _adjustBalanceWithoutHeldAssetUpdate(adjustment);
 
-    console2.log("start held asset removals");
-    uint startGas = gasleft();
     if (preBalance != 0 && postBalance == 0) {
       _removeHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     } else if (preBalance == 0 && postBalance != 0) {
+      console2.log("add held asset");
+      uint addGas = gasleft();
       _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
+      console2.log(addGas - gasleft());
     }
-    console2.log(startGas - gasleft());
   }
 
   function _adjustBalanceWithoutHeldAssetUpdate(
     AccountStructs.AssetAdjustment memory adjustment
   ) internal returns (int preBalance, int postBalance){
-    uint startGas = gasleft();
     bytes32 balanceKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
 
     preBalance = balances[balanceKey];
     balances[balanceKey] += adjustment.amount;
     postBalance = balances[balanceKey];
-    console2.log(startGas - gasleft());
 
     _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
   }
@@ -352,6 +363,8 @@ contract Account is ERC721 {
     view
     returns (AccountStructs.AssetBalance[] memory assetBalances)
   {
+    console2.log("getAccountBalances");
+    uint startGas = gasleft();
     uint allAssetBalancesLen = heldAssets[accountId].length;
     assetBalances = new AccountStructs.AssetBalance[](allAssetBalancesLen);
     for (uint i; i < allAssetBalancesLen; i++) {
@@ -362,6 +375,7 @@ contract Account is ERC721 {
         balance: balances[_getEntryKey(accountId, heldAsset.asset, heldAsset.subId)]
       });
     }
+    console2.log(startGas - gasleft());
     return assetBalances;
   }
 
@@ -386,26 +400,43 @@ contract Account is ERC721 {
   
 
   /// @dev uses heldOrder mapping to make removals gas efficient 
-  ///      moves static 20k per added asset overhead
-  ///      (1) removes $200k bottleneck from removeHeldAsset
+  ///      moves static 20k per added asset overhead to addHeldAsset
+  ///      (1) removes 2k * 100 positions bottleneck from removeHeldAsset
   ///      (2) reduces overall gas spent during large splits
   ///      (3) low overhead for everyday traders with 1-3 transfers 
   function _removeHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
+    console2.log("remove held asset");
+    uint startGas = gasleft();
     uint currentAssetOrder = heldOrder[_getEntryKey(accountId, asset, subId)];
     require(currentAssetOrder != 0, "asset not present");
 
+    console2.log(startGas - gasleft());
+    startGas = gasleft();
     // remove asset from heldOrder
     heldOrder[_getEntryKey(accountId, asset, subId)] = 0; // 5k refund
+    console2.log(startGas - gasleft());
+    startGas = gasleft();
 
     // swap orders if middle asset removed
     uint heldAssetLen = heldAssets[accountId].length;
+
+    console2.log(startGas - gasleft());
+    startGas = gasleft();
     if (currentAssetOrder != heldAssetLen) { 
-      heldAssets[accountId][currentAssetOrder - 1] = heldAssets[accountId][heldAssetLen - 1];
-      heldOrder[_getEntryKey(accountId, asset, subId)] = currentAssetOrder; // 3k gas 
+      console2.log(startGas - gasleft());
+      startGas = gasleft();
+      AccountStructs.HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1];
+      heldAssets[accountId][currentAssetOrder - 1] = assetToMove;
+      console2.log(startGas - gasleft());
+      startGas = gasleft();
+      heldOrder[_getEntryKey(accountId, assetToMove.asset, assetToMove.subId)] = currentAssetOrder; // 3k gas 
     }
+    console2.log(startGas - gasleft());
+    startGas = gasleft();
 
     // remove asset from heldAsset
     heldAssets[accountId].pop();
+    console2.log(startGas - gasleft());
   }
 
   /// @dev used when blanket deleting all assets

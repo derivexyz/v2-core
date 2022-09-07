@@ -7,6 +7,8 @@ import "../util/LyraHelper.sol";
 
 contract TransferGasTest is Test, LyraHelper {
   address liquidator = vm.addr(5);
+  uint aliceAcc;
+  uint bobAcc;
 
   function setUp() public {
     deployPRMSystem();
@@ -16,6 +18,8 @@ contract TransferGasTest is Test, LyraHelper {
     scenarios[0] = PortfolioRiskManager.Scenario({spotShock: uint(85e16), ivShock: 10e18});
 
     setScenarios(scenarios);
+
+    (aliceAcc, bobAcc) = mintAndDepositUSDC(10000000e18, 10000000e18);
   }
 
   /// @dev ~300k total cost
@@ -25,10 +29,9 @@ contract TransferGasTest is Test, LyraHelper {
   ///      so account cost: 185k (mostly fixed)
   ///         ~2x 25k cold SSTORES
   ///         ~2x 1k warm SSTORES
-  ///         ~2x 70k held asset removals
+  ///         ~2x 70k add held asset
 
   function testSingleTransfer() public {
-    (uint aliceAcc, uint bobAcc) = mintAndDepositUSDC(10000000e18, 10000000e18);
     setupAssetAllowances(bob, bobAcc, alice);
     
     // two-way transfer option
@@ -60,7 +63,6 @@ contract TransferGasTest is Test, LyraHelper {
 
   /// @dev 100 batched transfers
   function testBulkTransfer() public {
-    (uint aliceAcc, uint bobAcc) = mintAndDepositUSDC(10000000e18, 10000000e18);
     setupAssetAllowances(bob, bobAcc, alice);
     
     // two-way transfer option
@@ -86,11 +88,71 @@ contract TransferGasTest is Test, LyraHelper {
     
     for (uint i; i < 50; i++) {
       transferBatch[i * 2] = optionTransfer;
-      transferBatch[i * 2 + 1] = optionTransfer;
+      transferBatch[i * 2 + 1] = premiumTransfer;
     }
 
     account.submitTransfers(transferBatch);
     vm.stopPrank();
+  }
+
+  function testTransferBulkAdditionsAndRemovals() public {
+    setupAssetAllowances(bob, bobAcc, alice);
+    // setupAssetAllowances(alice, aliceAcc, bob);
+
+    // two-way transfer option
+    vm.startPrank(alice);
+    AccountStructs.AssetTransfer[] memory initialTransfers =
+      composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18));
+    account.submitTransfers(initialTransfers);  
+
+    AccountStructs.AssetTransfer[] memory finalTransfers =
+      composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18));
+    account.submitTransfers(finalTransfers);  
+
+    vm.stopPrank();
+
+  }
+
+  function testTransferSingleWithLargeAccount() public {
+    setupAssetAllowances(bob, bobAcc, alice);
+    // setupAssetAllowances(alice, aliceAcc, bob);
+
+    // two-way transfer option
+    vm.startPrank(alice);
+    AccountStructs.AssetTransfer[] memory initialTransfers =
+      composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18));
+    account.submitTransfers(initialTransfers);  
+
+    AccountStructs.AssetTransfer[] memory singleTransfer = new AccountStructs.AssetTransfer[](1);
+    singleTransfer[0] = AccountStructs.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: IAbstractAsset(optionAdapter),
+        subId: optionAdapter.listingParamsToSubId(1000e18, 123456, true),
+        amount: 1e17
+      });
+    account.submitTransfers(singleTransfer);  
+
+    vm.stopPrank();
+
+  }
+
+  function composeBulkUniqueTransfers(
+    uint fromAcc, uint toAcc, int amount
+  ) internal view returns (AccountStructs.AssetTransfer[] memory transferBatch) {
+    transferBatch = new AccountStructs.AssetTransfer[](100);
+
+    for (uint i; i < 100; i++) {
+      transferBatch[i] = AccountStructs.AssetTransfer({
+        fromAcc: fromAcc,
+        toAcc: toAcc,
+        asset: IAbstractAsset(optionAdapter),
+        subId: optionAdapter.listingParamsToSubId(1000e18 + i * 10, 123456, true),
+        amount: amount
+      });
+    }
+
+    return transferBatch;
   }
 
   function setupAssetAllowances(address owner, uint ownerAcc, address delegate) internal {
