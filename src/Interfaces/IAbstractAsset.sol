@@ -12,4 +12,6 @@ interface IAbstractAsset {
     IAbstractManager manager,
     address caller
   ) external;
+
+  function handleManagerChange(uint accountId, IAbstractManager oldManager, IAbstractManager newManager) external;
 }

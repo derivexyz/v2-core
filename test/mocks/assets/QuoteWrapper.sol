@@ -49,4 +49,6 @@ contract QuoteWrapper is IAbstractAsset, Owned {
   function handleAdjustment(uint, int, int, uint subId, IAbstractManager riskModel, address) external view override {
     require(subId == 0 && riskModelAllowList[riskModel]);
   }
+
+  function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
 }

@@ -189,4 +189,6 @@ contract OptionToken is IAbstractAsset, Owned {
     // for socialised losses
     return int(DecimalMath.UNIT * totalShorts[subId] / totalLongs[subId]) * balance / SignedDecimalMath.UNIT;
   }
+
+  function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
 }

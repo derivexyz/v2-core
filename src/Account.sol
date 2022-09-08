@@ -110,15 +110,17 @@ contract Account is ERC721 {
   }
 
   /// @dev gas efficient method for migrating AMMs
-  function changeManager(uint accountId, IAbstractManager _manager) external {
+  function changeManager(uint accountId, IAbstractManager newManager) external {
     require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
 
-    // check with old manager if ok to empty account
-    AccountStructs.AssetBalance[] memory emptyBalances;
-    manager[accountId].handleAdjustment(accountId, emptyBalances, msg.sender);
+    manager[accountId].handleManagerChange(accountId, manager[accountId], newManager);
 
-    // check with new manager if new account ok
-    manager[accountId] = _manager;
+    uint heldAssetLen = heldAssets[accountId].length;
+    for (uint i; i < heldAssetLen; i++) {
+      heldAssets[accountId][i].asset.handleManagerChange(accountId, manager[accountId], newManager);
+    }
+
+    manager[accountId] = newManager;
     _managerCheck(accountId, msg.sender);
   }
 
