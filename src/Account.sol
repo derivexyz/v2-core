@@ -115,9 +115,19 @@ contract Account is ERC721 {
 
     manager[accountId].handleManagerChange(accountId, manager[accountId], newManager);
 
-    uint heldAssetLen = heldAssets[accountId].length;
-    for (uint i; i < heldAssetLen; i++) {
-      heldAssets[accountId][i].asset.handleManagerChange(accountId, manager[accountId], newManager);
+    // only call to asset once 
+    AccountStructs.HeldAsset[] memory accountAssets = heldAssets[accountId];
+    IAbstractAsset[] memory seenAssets = new IAbstractAsset[](accountAssets.length);
+    uint nextSeenId;
+
+    for (uint i; i < accountAssets.length; ++i) {
+      if (!_findInArray(seenAssets, accountAssets[i].asset)) {
+        seenAssets[nextSeenId++] = accountAssets[i].asset;
+      }
+    }
+
+    for (uint i; i < nextSeenId; ++i) {
+      seenAssets[i].handleManagerChange(accountId, manager[accountId], newManager);
     }
 
     manager[accountId] = newManager;
@@ -456,10 +466,22 @@ contract Account is ERC721 {
   }
 
   function _findInArray(uint[] memory array, uint toFind) internal pure returns (bool found) {
-    /// TODO: Binary search? :cringeGrin: We do have the array max length
     uint arrayLen = array.length;
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == 0) {
+        return false;
+      }
+      if (array[i] == toFind) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function _findInArray(IAbstractAsset[] memory array, IAbstractAsset toFind) internal pure returns (bool found) {
+    uint arrayLen = array.length;
+    for (uint i; i < arrayLen; ++i) {
+      if (array[i] == IAbstractAsset(address(0))) {
         return false;
       }
       if (array[i] == toFind) {
