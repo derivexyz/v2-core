@@ -10,8 +10,8 @@ import "./interfaces/AccountStructs.sol";
 import "forge-std/console2.sol";
 
 contract Account is ERC721 {
-  using SafeCast for int256; // BalanceAndOrder.balance
-  using SafeCast for uint256; // BalanceAndOrder.order
+  using SafeCast for int; // BalanceAndOrder.balance
+  using SafeCast for uint; // BalanceAndOrder.order
 
   ///////////////
   // Variables //
@@ -152,7 +152,7 @@ contract Account is ERC721 {
   }
 
   /// @dev giving managers exclusive rights to transfer account ownerships
-  function _isApprovedOrOwner(address spender, uint256 tokenId) internal view override returns (bool) {
+  function _isApprovedOrOwner(address spender, uint tokenId) internal view override returns (bool) {
     address owner = ERC721.ownerOf(tokenId);
     bool isManager = ownerOf(tokenId) == msg.sender;
     return (
@@ -232,7 +232,6 @@ contract Account is ERC721 {
     _managerCheck(toAccountId, msg.sender);
   }
 
-
   function _transferAll(uint fromAccountId, uint toAccountId) internal {
     require(_isApprovedOrOwner(msg.sender, fromAccountId) && _isApprovedOrOwner(msg.sender, toAccountId), 
       "msg.sender must be full delegate or owner of both accounts");
@@ -247,7 +246,7 @@ contract Account is ERC721 {
           acc: toAccountId,
           asset: fromAssets[i].asset,
           subId: fromAssets[i].subId,
-          amount: int256(userBalanceAndOrder.balance)
+          amount: int(userBalanceAndOrder.balance)
         }), 
         userBalanceAndOrder
       );
@@ -256,7 +255,7 @@ contract Account is ERC721 {
           acc: fromAccountId,
           asset: fromAssets[i].asset,
           subId: fromAssets[i].subId,
-          amount: -int256(userBalanceAndOrder.balance)
+          amount: -int(userBalanceAndOrder.balance)
         }), 
         userBalanceAndOrder
       );
@@ -279,15 +278,15 @@ contract Account is ERC721 {
     _adjustBalance(adjustment, userBalanceAndOrder);
     _managerCheck(adjustment.acc, msg.sender); // since caller is passed, manager can internally decide to ignore check
 
-    postAdjustmentBalance = int256(userBalanceAndOrder.balance);
+    postAdjustmentBalance = int(userBalanceAndOrder.balance);
   }
 
   function _adjustBalance(
     AccountStructs.AssetAdjustment memory adjustment, 
     AccountStructs.BalanceAndOrder storage userBalanceAndOrder
 ) internal {
-    int preBalance = int256(userBalanceAndOrder.balance);
-    int postBalance = int256(userBalanceAndOrder.balance) + adjustment.amount;
+    int preBalance = int(userBalanceAndOrder.balance);
+    int postBalance = int(userBalanceAndOrder.balance) + adjustment.amount;
 
     // removeHeldAsset does not change order, instead
     // returns newOrder and stores balance and order in one word
@@ -308,8 +307,8 @@ contract Account is ERC721 {
     AccountStructs.AssetAdjustment memory adjustment,
     AccountStructs.BalanceAndOrder storage userBalanceAndOrder
   ) internal{
-    int preBalance = int256(userBalanceAndOrder.balance);
-    int postBalance = int256(userBalanceAndOrder.balance) + adjustment.amount;
+    int preBalance = int(userBalanceAndOrder.balance);
+    int postBalance = int(userBalanceAndOrder.balance) + adjustment.amount;
 
     userBalanceAndOrder.balance = postBalance.toInt240();
 
@@ -389,7 +388,7 @@ contract Account is ERC721 {
   ) external view returns (int balance){
     AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
             balanceAndOrder[_getEntryKey(accountId, asset, subId)];
-    return int256(userBalanceAndOrder.balance);
+    return int(userBalanceAndOrder.balance);
   }
 
   function getAccountBalances(uint accountId) external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
@@ -437,11 +436,10 @@ contract Account is ERC721 {
     newOrder = (heldAssets[accountId].length - 1).toUint16();
   }
   
-  /// @dev uses heldOrder mapping to make removals gas efficient 
-  ///      moves static 20k per added asset overhead to addHeldAsset
-  ///      (1) removes 2k * 100 positions bottleneck from removeHeldAsset
-  ///      (2) reduces overall gas spent during large splits
-  ///      (3) low overhead for everyday traders with 1-3 transfers 
+  /// @dev this should never be called if account doesn't hold asset
+  ///      using heldOrder mapping to remove
+  ///      ~200000 gas overhead for 100 position portfolio
+
   function _removeHeldAsset(
     uint accountId, 
     AccountStructs.BalanceAndOrder memory userBalanceAndOrder
@@ -467,7 +465,7 @@ contract Account is ERC721 {
     return 0;
   }
 
-  /// @dev used when blanket deleting all assets
+  /// @dev used for gas efficient transferAll
   function _clearHeldAssets(uint accountId) internal {
     AccountStructs.HeldAsset[] memory assets = heldAssets[accountId];
     uint heldAssetLen = assets.length;
@@ -481,7 +479,7 @@ contract Account is ERC721 {
   }
 
   function _abs(int amount) internal pure returns (uint absAmount) {
-    return (amount >= 0) ? uint256(amount) : SafeCast.toUint256(-amount);
+    return (amount >= 0) ? uint(amount) : SafeCast.toUint256(-amount);
   }
 
   function _findInArray(uint[] memory array, uint toFind) internal pure returns (bool found) {

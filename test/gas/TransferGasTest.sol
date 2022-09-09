@@ -22,14 +22,13 @@ contract TransferGasTest is Test, LyraHelper {
     (aliceAcc, bobAcc) = mintAndDepositUSDC(10000000e18, 10000000e18);
   }
 
-  /// @dev ~300k total cost
-  ///      ~2x 25k manager.handleAdjustments
-  ///      ~2x 30k option.handleAdjustments [only 2k overhead per call]
-  ///      ~2x 2.5k option.handleAdjustments [only 2k overhead per call]
-  ///      so account cost: 185k (mostly fixed)
-  ///         ~2x 25k cold SSTORES
-  ///         ~2x 1k warm SSTORES
-  ///         ~2x 70k add held asset
+  /// @dev ~100k + manager / option hooks per transfer
+  ///      ~2x manager.handleAdjustments [2k overhead per external call]
+  ///      ~2x option.handleAdjustments [2k overhead per external call]
+  ///      account cost: 50k (mostly fixed)
+  ///         ~2x balanceAndOrder SSTORE: 20k
+  ///         ~2x heldAsset.push(): 20k
+  ///         ~2x getAccountBalances: 2k
 
   function testSingleTransfer() public {
     setupAssetAllowances(bob, bobAcc, alice);

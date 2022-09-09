@@ -167,6 +167,9 @@ contract OptionToken is IAbstractAsset, Owned {
    * bits 64-128 => expiry
    * bits 128-256 => strikePrice
    */
+
+  // TODO: need to remove subId encoding to make work with uint96 subId
+
   function subIdToListing(uint subId) public pure returns (Listing memory) {
     return Listing({strikePrice: uint(uint128(subId)), expiry: uint(uint(subId >> 128)), isCall: subId >> 255 == 1});
   }
