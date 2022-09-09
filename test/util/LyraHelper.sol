@@ -108,10 +108,10 @@ abstract contract LyraHelper is Test {
 
   function mintAndDepositUSDC(uint aliceBal, uint bobBal) public returns (uint aliceAcc, uint bobAcc) {
     vm.startPrank(alice);
-    aliceAcc = account.createAccount(IAbstractManager(rm), alice);
+    aliceAcc = account.createAccount(alice, IAbstractManager(rm));
     vm.stopPrank();
     vm.startPrank(bob);
-    bobAcc = account.createAccount(IAbstractManager(rm), bob);
+    bobAcc = account.createAccount(bob, IAbstractManager(rm));
     vm.stopPrank();
 
     assertEq(aliceAcc, 1);

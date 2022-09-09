@@ -30,83 +30,15 @@ contract Account is ERC721 {
   // Account Admin //
   ///////////////////
 
-  function createAccount(IAbstractManager _manager, address owner) public returns (uint newId) {
-    newId = nextId++;
+  function createAccount(address owner, IAbstractManager _manager) external returns (uint newId) {
+    return _createAccount(owner, _manager);
+  }
+
+  function _createAccount(address owner, IAbstractManager _manager) internal returns (uint newId) {
+    newId = ++nextId;
     manager[newId] = _manager;
     _mint(owner, newId);
     return newId;
-  }
-
-  /// @dev blanket allowance over transfers, merges, splits, account transfers 
-  ///      only one blanket delegate allowed
-  function setFullDelegate(
-    uint accountId,
-    address delegate
-  ) external {
-    _approve(delegate, accountId);
-  }
-
-  /// @dev the sum of asset allowances + subId allowances is used during _delegateCheck()
-  ///      subId allowances are decremented before asset allowances
-  ///      cannot merge with this type of allowance
-  function setAssetDelegateAllowances(
-    uint accountId, 
-    address delegate, 
-    IAbstractAsset[] memory assets,
-    AccountStructs.Allowance[] memory allowances  
-  ) external {
-    _updateDelegateAllowances(accountId, delegate, assets, new uint[](0), allowances);
-  }
-
-  function setSubIdDelegateAllowances(
-    uint accountId, 
-    address delegate, 
-    IAbstractAsset[] memory assets,
-    uint[] memory subIds,
-    AccountStructs.Allowance[] memory allowances
-  ) external {
-    _updateDelegateAllowances(accountId, delegate, assets, subIds, allowances);
-  }
-
-  function _updateDelegateAllowances(
-    uint accountId, 
-    address delegate, 
-    IAbstractAsset[] memory assets,
-    uint[] memory subIds,
-    AccountStructs.Allowance[] memory allowances
-  ) internal {
-    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
-
-    uint assetsLen = assets.length;
-    for (uint i; i < assetsLen; i++) {
-      AccountStructs.Allowance memory allowance = AccountStructs.Allowance({
-        positive: allowances[i].positive,
-        negative: allowances[i].negative
-      });
-
-      if (subIds.length > 0) {
-        delegateSubIdAllowances[
-          _getEntryKey(accountId, assets[i], subIds[i])][delegate] = allowance;
-      } else {     // uses 0 when encoding key for delegateAssetAllowances key
-        delegateAssetAllowances[
-          _getEntryKey(accountId, assets[i], 0)][delegate] = allowance;
-      }
-    }
-  }
-
-  /// @dev Merges all accounts into first account and leaves remaining empty but not burned
-  ///      This ensures accounts can be reused after being merged
-  function merge(uint targetAccount, uint[] memory accountsToMerge) external {
-    // does not use _delegateCheck() for gas efficiency
-    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
-
-    uint mergingAccLen = accountsToMerge.length;
-    for (uint i = 0; i < mergingAccLen; i++) {
-      _transferAll(accountsToMerge[i], targetAccount);
-      _managerCheck(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
-    }
-
-    _managerCheck(targetAccount, msg.sender);
   }
 
   /// @dev gas efficient method for migrating AMMs
@@ -134,27 +66,69 @@ contract Account is ERC721 {
     _managerCheck(accountId, msg.sender);
   }
 
-  /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
-  ///      msg.sender must be delegate approved to split
-  function split(uint accountToSplitId, AccountStructs.AssetTransfer[] memory assetTransfers, address splitAccountOwner) external {
-    uint newAccountId = createAccount(manager[accountToSplitId], msg.sender);
+  ///////////////
+  // Approvals //
+  ///////////////
 
-    uint transfersLen = assetTransfers.length;
-    for (uint i; i < transfersLen; ++i) {
-      assetTransfers[i].toAcc = newAccountId;
-    }
+  /// @dev blanket allowance over transfers, merges, splits, account transfers 
+  ///      only one blanket delegate allowed
+  function setFullDelegate(
+    uint accountId,
+    address delegate
+  ) external {
+    _approve(delegate, accountId);
+  }
 
-    submitTransfers(assetTransfers);
+  /// @dev the sum of asset allowances + subId allowances is used during _delegateCheck()
+  ///      subId allowances are decremented before asset allowances
+  ///      cannot merge with this type of allowance
+  function setAssetDelegateAllowances(
+    uint accountId, 
+    address delegate, 
+    IAbstractAsset[] memory assets,
+    AccountStructs.Allowance[] memory allowances  
+  ) external {
+    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
 
-    if (splitAccountOwner != msg.sender) {
-      transferFrom(msg.sender, splitAccountOwner, newAccountId);
+    uint assetsLen = assets.length;
+    for (uint i; i < assetsLen; i++) {
+      AccountStructs.Allowance memory allowance = AccountStructs.Allowance({
+        positive: allowances[i].positive,
+        negative: allowances[i].negative
+      });
+
+      delegateAssetAllowances
+        [_getEntryKey(accountId, assets[i], 0)]
+        [delegate] = allowance;
     }
   }
+
+  function setSubIdDelegateAllowances(
+    uint accountId, 
+    address delegate, 
+    IAbstractAsset[] memory assets,
+    uint[] memory subIds,
+    AccountStructs.Allowance[] memory allowances
+  ) external {
+    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
+
+    uint assetsLen = assets.length;
+    for (uint i; i < assetsLen; i++) {
+      AccountStructs.Allowance memory allowance = AccountStructs.Allowance({
+        positive: allowances[i].positive,
+        negative: allowances[i].negative
+      });
+
+      delegateSubIdAllowances
+        [_getEntryKey(accountId, assets[i], subIds[i])]
+        [delegate] = allowance;
+    }
+}
 
   /// @dev giving managers exclusive rights to transfer account ownerships
   function _isApprovedOrOwner(address spender, uint tokenId) internal view override returns (bool) {
     address owner = ERC721.ownerOf(tokenId);
-    bool isManager = ownerOf(tokenId) == msg.sender;
+    bool isManager = address(manager[tokenId]) == msg.sender;
     return (
       spender == owner || 
       isApprovedForAll(owner, spender) || 
@@ -167,13 +141,49 @@ contract Account is ERC721 {
   // Balance Adjustments //
   /////////////////////////
 
-  function submitTransfer(AccountStructs.AssetTransfer memory assetTransfer) public {
+  /// @dev Merges all accounts into first account and leaves remaining empty but not burned
+  ///      This ensures accounts can be reused after being merged
+  function merge(uint targetAccount, uint[] memory accountsToMerge) external {
+    // does not use _delegateCheck() for gas efficiency
+    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
+
+    uint mergingAccLen = accountsToMerge.length;
+    for (uint i = 0; i < mergingAccLen; i++) {
+      _transferAll(accountsToMerge[i], targetAccount);
+      _managerCheck(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
+    }
+
+    _managerCheck(targetAccount, msg.sender);
+  }
+
+    /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
+  ///      msg.sender must be delegate approved to split
+  function split(uint accountToSplitId, AccountStructs.AssetTransfer[] memory assetTransfers, address splitAccountOwner) external {
+    uint newAccountId = _createAccount(msg.sender, manager[accountToSplitId]);
+
+    uint transfersLen = assetTransfers.length;
+    for (uint i; i < transfersLen; ++i) {
+      assetTransfers[i].toAcc = newAccountId;
+    }
+
+    _submitTransfers(assetTransfers);
+
+    if (splitAccountOwner != msg.sender) {
+      transferFrom(msg.sender, splitAccountOwner, newAccountId);
+    }
+  }
+
+  function submitTransfer(AccountStructs.AssetTransfer memory assetTransfer) external {
     _transferAsset(assetTransfer);
     _managerCheck(assetTransfer.fromAcc, msg.sender);
     _managerCheck(assetTransfer.toAcc, msg.sender);
   }
 
-  function submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers) public {
+  function submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers) external {
+    _submitTransfers(assetTransfers);
+  }
+
+  function _submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers) internal {
     // Do the transfers
     uint transfersLen = assetTransfers.length;
 
@@ -262,7 +272,7 @@ contract Account is ERC721 {
     }
 
     // gas efficient to batch clear assets
-    _clearHeldAssets(fromAccountId);
+    _clearAllHeldAssets(fromAccountId);
   }
 
   /// @dev privileged function that only the asset can call to do things like minting and burning
@@ -314,7 +324,6 @@ contract Account is ERC721 {
 
     _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
   }
-
 
   ////////////////////////////
   // Checks and Permissions //
@@ -378,46 +387,6 @@ contract Account is ERC721 {
   }
 
   //////////
-  // View //
-  //////////
-
-  function getAssetBalance(
-    uint accountId, 
-    IAbstractAsset asset, 
-    uint subId
-  ) external view returns (int balance){
-    AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
-            balanceAndOrder[_getEntryKey(accountId, asset, subId)];
-    return int(userBalanceAndOrder.balance);
-  }
-
-  function getAccountBalances(uint accountId) external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
-    return _getAccountBalances(accountId);
-  }
-
-  function _getAccountBalances(uint accountId)
-    internal
-    view
-    returns (AccountStructs.AssetBalance[] memory assetBalances)
-  {
-    uint allAssetBalancesLen = heldAssets[accountId].length;
-    assetBalances = new AccountStructs.AssetBalance[](allAssetBalancesLen);
-    for (uint i; i < allAssetBalancesLen; i++) {
-      AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
-      AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
-            balanceAndOrder[_getEntryKey(accountId, heldAsset.asset, uint(heldAsset.subId))];
-
-      assetBalances[i] = AccountStructs.AssetBalance({
-        asset: heldAsset.asset,
-        subId: uint(heldAsset.subId),
-        balance: int(userBalanceAndOrder.balance)
-      });
-    }
-    return assetBalances;
-  }
-
-
-  //////////
   // Util //
   //////////
 
@@ -466,7 +435,7 @@ contract Account is ERC721 {
   }
 
   /// @dev used for gas efficient transferAll
-  function _clearHeldAssets(uint accountId) internal {
+  function _clearAllHeldAssets(uint accountId) internal {
     AccountStructs.HeldAsset[] memory assets = heldAssets[accountId];
     uint heldAssetLen = assets.length;
     for (uint i; i < heldAssetLen; i++) {
@@ -506,6 +475,45 @@ contract Account is ERC721 {
       }
     }
     return false;
+  }
+
+  //////////
+  // View //
+  //////////
+
+  function getAssetBalance(
+    uint accountId, 
+    IAbstractAsset asset, 
+    uint subId
+  ) external view returns (int balance){
+    AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
+            balanceAndOrder[_getEntryKey(accountId, asset, subId)];
+    return int(userBalanceAndOrder.balance);
+  }
+
+  function getAccountBalances(uint accountId) external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
+    return _getAccountBalances(accountId);
+  }
+
+  function _getAccountBalances(uint accountId)
+    internal
+    view
+    returns (AccountStructs.AssetBalance[] memory assetBalances)
+  {
+    uint allAssetBalancesLen = heldAssets[accountId].length;
+    assetBalances = new AccountStructs.AssetBalance[](allAssetBalancesLen);
+    for (uint i; i < allAssetBalancesLen; i++) {
+      AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
+      AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
+            balanceAndOrder[_getEntryKey(accountId, heldAsset.asset, uint(heldAsset.subId))];
+
+      assetBalances[i] = AccountStructs.AssetBalance({
+        asset: heldAsset.asset,
+        subId: uint(heldAsset.subId),
+        balance: int(userBalanceAndOrder.balance)
+      });
+    }
+    return assetBalances;
   }
 
   ///////////////
