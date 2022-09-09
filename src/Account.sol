@@ -10,6 +10,8 @@ import "./interfaces/AccountStructs.sol";
 import "forge-std/console2.sol";
 
 contract Account is ERC721 {
+  using SafeCast for int256; // BalanceAndOrder.balance
+  using SafeCast for uint256; // BalanceAndOrder.order
 
   ///////////////
   // Variables //
@@ -17,13 +19,11 @@ contract Account is ERC721 {
 
   uint nextId = 1;
   mapping(uint => IAbstractManager) manager;
-  mapping(bytes32 => int) public balances;
+  mapping(bytes32 => AccountStructs.BalanceAndOrder) public balanceAndOrder;
+  mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
+
   mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateSubIdAllowances;
   mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateAssetAllowances;
-
-  mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
-  mapping(bytes32 => uint) heldOrder; // starts at 1
-
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ///////////////////
@@ -207,6 +207,8 @@ contract Account is ERC721 {
       subId: assetTransfer.subId,
       amount: -assetTransfer.amount
     });
+    AccountStructs.BalanceAndOrder storage fromBalanceAndOrder = 
+      balanceAndOrder[_getEntryKey(assetTransfer.fromAcc, assetTransfer.asset, assetTransfer.subId)];
 
     AccountStructs.AssetAdjustment memory toAccAdjustment = AccountStructs.AssetAdjustment({
       acc: assetTransfer.toAcc,
@@ -214,12 +216,14 @@ contract Account is ERC721 {
       subId: assetTransfer.subId,
       amount: assetTransfer.amount
     });
+    AccountStructs.BalanceAndOrder storage toBalanceAndOrder = 
+      balanceAndOrder[_getEntryKey(assetTransfer.fromAcc, assetTransfer.asset, assetTransfer.subId)];
 
     _delegateCheck(fromAccAdjustment, msg.sender);
     _delegateCheck(toAccAdjustment, msg.sender);
 
-    _adjustBalance(fromAccAdjustment);
-    _adjustBalance(toAccAdjustment);
+    _adjustBalance(fromAccAdjustment, fromBalanceAndOrder);
+    _adjustBalance(toAccAdjustment, toBalanceAndOrder);
   }
 
   function transferAll(uint fromAccountId, uint toAccountId) external {
@@ -236,19 +240,26 @@ contract Account is ERC721 {
     AccountStructs.HeldAsset[] memory fromAssets = heldAssets[fromAccountId];
     uint heldAssetLen = fromAssets.length;
     for (uint i; i < heldAssetLen; i++) {
+      AccountStructs.BalanceAndOrder storage userBalanceAndOrder = 
+        balanceAndOrder[_getEntryKey(fromAccountId, fromAssets[i].asset, fromAssets[i].subId)];
+
       _adjustBalance(AccountStructs.AssetAdjustment({
-        acc: toAccountId,
-        asset: fromAssets[i].asset,
-        subId: fromAssets[i].subId,
-        amount: balances[_getEntryKey(fromAccountId, fromAssets[i].asset, fromAssets[i].subId)]
-      }));
+          acc: toAccountId,
+          asset: fromAssets[i].asset,
+          subId: fromAssets[i].subId,
+          amount: int256(userBalanceAndOrder.balance)
+        }), 
+        userBalanceAndOrder
+      );
 
       _adjustBalanceWithoutHeldAssetUpdate(AccountStructs.AssetAdjustment({
-        acc: fromAccountId,
-        asset: fromAssets[i].asset,
-        subId: fromAssets[i].subId,
-        amount: -balances[_getEntryKey(fromAccountId, fromAssets[i].asset, fromAssets[i].subId)]
-      }));
+          acc: fromAccountId,
+          asset: fromAssets[i].asset,
+          subId: fromAssets[i].subId,
+          amount: -int256(userBalanceAndOrder.balance)
+        }), 
+        userBalanceAndOrder
+      );
     }
 
     // gas efficient to batch clear assets
@@ -262,36 +273,49 @@ contract Account is ERC721 {
     require(msg.sender == address(manager[adjustment.acc]) || msg.sender == address(adjustment.asset),
       "only managers and assets can make assymmetric adjustments");
     
-    _adjustBalance(adjustment);
+    AccountStructs.BalanceAndOrder storage userBalanceAndOrder = 
+        balanceAndOrder[_getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId)];
+
+    _adjustBalance(adjustment, userBalanceAndOrder);
     _managerCheck(adjustment.acc, msg.sender); // since caller is passed, manager can internally decide to ignore check
-    
-    return balances[_getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId)];
+
+    postAdjustmentBalance = int256(userBalanceAndOrder.balance);
   }
 
-  function _adjustBalance(AccountStructs.AssetAdjustment memory adjustment) internal {
-    (int preBalance, int postBalance) = _adjustBalanceWithoutHeldAssetUpdate(adjustment);
+  function _adjustBalance(
+    AccountStructs.AssetAdjustment memory adjustment, 
+    AccountStructs.BalanceAndOrder storage userBalanceAndOrder
+) internal {
+    int preBalance = int256(userBalanceAndOrder.balance);
+    int postBalance = int256(userBalanceAndOrder.balance) + adjustment.amount;
 
+    // removeHeldAsset does not change order, instead
+    // returns newOrder and stores balance and order in one word
+    uint16 newOrder = userBalanceAndOrder.order;
     if (preBalance != 0 && postBalance == 0) {
-      _removeHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
+      newOrder = _removeHeldAsset(adjustment.acc, userBalanceAndOrder);
     } else if (preBalance == 0 && postBalance != 0) {
-      console2.log("add held asset");
-      uint addGas = gasleft();
-      _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
-      console2.log(addGas - gasleft());
-    }
-  }
+      newOrder = _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
+    } 
 
-  function _adjustBalanceWithoutHeldAssetUpdate(
-    AccountStructs.AssetAdjustment memory adjustment
-  ) internal returns (int preBalance, int postBalance){
-    bytes32 balanceKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
-
-    preBalance = balances[balanceKey];
-    balances[balanceKey] += adjustment.amount;
-    postBalance = balances[balanceKey];
+    userBalanceAndOrder.balance = postBalance.toInt240();
+    userBalanceAndOrder.order = newOrder;
 
     _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
   }
+
+  function _adjustBalanceWithoutHeldAssetUpdate(
+    AccountStructs.AssetAdjustment memory adjustment,
+    AccountStructs.BalanceAndOrder storage userBalanceAndOrder
+  ) internal{
+    int preBalance = int256(userBalanceAndOrder.balance);
+    int postBalance = int256(userBalanceAndOrder.balance) + adjustment.amount;
+
+    userBalanceAndOrder.balance = postBalance.toInt240();
+
+    _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
+  }
+
 
   ////////////////////////////
   // Checks and Permissions //
@@ -363,7 +387,9 @@ contract Account is ERC721 {
     IAbstractAsset asset, 
     uint subId
   ) external view returns (int balance){
-    return balances[_getEntryKey(accountId, asset, subId)];
+    AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
+            balanceAndOrder[_getEntryKey(accountId, asset, subId)];
+    return int256(userBalanceAndOrder.balance);
   }
 
   function getAccountBalances(uint accountId) external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
@@ -375,19 +401,19 @@ contract Account is ERC721 {
     view
     returns (AccountStructs.AssetBalance[] memory assetBalances)
   {
-    console2.log("getAccountBalances");
-    uint startGas = gasleft();
     uint allAssetBalancesLen = heldAssets[accountId].length;
     assetBalances = new AccountStructs.AssetBalance[](allAssetBalancesLen);
     for (uint i; i < allAssetBalancesLen; i++) {
       AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
+      AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
+            balanceAndOrder[_getEntryKey(accountId, heldAsset.asset, heldAsset.subId)];
+
       assetBalances[i] = AccountStructs.AssetBalance({
         asset: heldAsset.asset,
         subId: heldAsset.subId,
-        balance: balances[_getEntryKey(accountId, heldAsset.asset, heldAsset.subId)]
+        balance: int256(userBalanceAndOrder.balance)
       });
     }
-    console2.log(startGas - gasleft());
     return assetBalances;
   }
 
@@ -404,51 +430,41 @@ contract Account is ERC721 {
   } 
 
   /// @dev this should never be called if the account already holds the asset
-  function _addHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
+  function _addHeldAsset(
+    uint accountId, IAbstractAsset asset, uint subId
+  ) internal returns (uint16 newOrder) {
     heldAssets[accountId].push(AccountStructs.HeldAsset({asset: asset, subId: subId}));
-    // extra 20k gas, but improvement over 2k * 100 positions during 1x removeHeldAsset
-    heldOrder[_getEntryKey(accountId, asset, subId)] = heldAssets[accountId].length;
+    newOrder = (heldAssets[accountId].length - 1).toUint16();
   }
   
-
   /// @dev uses heldOrder mapping to make removals gas efficient 
   ///      moves static 20k per added asset overhead to addHeldAsset
   ///      (1) removes 2k * 100 positions bottleneck from removeHeldAsset
   ///      (2) reduces overall gas spent during large splits
   ///      (3) low overhead for everyday traders with 1-3 transfers 
-  function _removeHeldAsset(uint accountId, IAbstractAsset asset, uint subId) internal {
-    console2.log("remove held asset");
-    uint startGas = gasleft();
-    uint currentAssetOrder = heldOrder[_getEntryKey(accountId, asset, subId)];
-    require(currentAssetOrder != 0, "asset not present");
+  function _removeHeldAsset(
+    uint accountId, 
+    AccountStructs.BalanceAndOrder memory userBalanceAndOrder
+  ) internal returns (uint16 newOrder) {
 
-    console2.log(startGas - gasleft());
-    startGas = gasleft();
-    // remove asset from heldOrder
-    heldOrder[_getEntryKey(accountId, asset, subId)] = 0; // 5k refund
-    console2.log(startGas - gasleft());
-    startGas = gasleft();
+    uint16 currentAssetOrder = userBalanceAndOrder.order; // 100 gas
 
     // swap orders if middle asset removed
     uint heldAssetLen = heldAssets[accountId].length;
 
-    console2.log(startGas - gasleft());
-    startGas = gasleft();
-    if (currentAssetOrder != heldAssetLen) { 
-      console2.log(startGas - gasleft());
-      startGas = gasleft();
-      AccountStructs.HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1];
-      heldAssets[accountId][currentAssetOrder - 1] = assetToMove;
-      console2.log(startGas - gasleft());
-      startGas = gasleft();
-      heldOrder[_getEntryKey(accountId, assetToMove.asset, assetToMove.subId)] = currentAssetOrder; // 3k gas 
+    if (currentAssetOrder != heldAssetLen.toUint16() - 1) { 
+      AccountStructs.HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1]; // 2k gas
+      // TODO: can you index with uint16?
+      heldAssets[accountId][currentAssetOrder] = assetToMove; // 5k gas
+
+      AccountStructs.BalanceAndOrder storage toMoveBalanceAndOrder = 
+        balanceAndOrder[_getEntryKey(accountId, assetToMove.asset, assetToMove.subId)];
+      toMoveBalanceAndOrder.order = currentAssetOrder; // 5k gas 
     }
-    console2.log(startGas - gasleft());
-    startGas = gasleft();
 
     // remove asset from heldAsset
-    heldAssets[accountId].pop();
-    console2.log(startGas - gasleft());
+    heldAssets[accountId].pop(); // 200 gas
+    return 0;
   }
 
   /// @dev used when blanket deleting all assets
@@ -456,7 +472,10 @@ contract Account is ERC721 {
     AccountStructs.HeldAsset[] memory assets = heldAssets[accountId];
     uint heldAssetLen = assets.length;
     for (uint i; i < heldAssetLen; i++) {
-      heldOrder[_getEntryKey(accountId, assets[i].asset, assets[i].subId)] = 0;
+      AccountStructs.BalanceAndOrder storage orderToClear = 
+        balanceAndOrder[_getEntryKey(accountId, assets[i].asset, assets[i].subId)];
+
+      orderToClear.order = 0;
     }
     delete heldAssets[accountId];
   }

@@ -102,11 +102,11 @@ contract TransferGasTest is Test, LyraHelper {
     // two-way transfer option
     vm.startPrank(alice);
     AccountStructs.AssetTransfer[] memory initialTransfers =
-      composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18));
+      composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 5);
     account.submitTransfers(initialTransfers);  
 
     AccountStructs.AssetTransfer[] memory finalTransfers =
-      composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18));
+      composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18), 5);
     account.submitTransfers(finalTransfers);  
 
     vm.stopPrank();
@@ -120,7 +120,7 @@ contract TransferGasTest is Test, LyraHelper {
     // two-way transfer option
     vm.startPrank(alice);
     AccountStructs.AssetTransfer[] memory initialTransfers =
-      composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18));
+      composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 100);
     account.submitTransfers(initialTransfers);  
 
     AccountStructs.AssetTransfer[] memory singleTransfer = new AccountStructs.AssetTransfer[](1);
@@ -138,11 +138,11 @@ contract TransferGasTest is Test, LyraHelper {
   }
 
   function composeBulkUniqueTransfers(
-    uint fromAcc, uint toAcc, int amount
+    uint fromAcc, uint toAcc, int amount, uint numOfTransfers
   ) internal view returns (AccountStructs.AssetTransfer[] memory transferBatch) {
-    transferBatch = new AccountStructs.AssetTransfer[](100);
+    transferBatch = new AccountStructs.AssetTransfer[](numOfTransfers);
 
-    for (uint i; i < 100; i++) {
+    for (uint i; i < numOfTransfers; i++) {
       transferBatch[i] = AccountStructs.AssetTransfer({
         fromAcc: fromAcc,
         toAcc: toAcc,

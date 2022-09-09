@@ -5,6 +5,11 @@ import "./IAbstractAsset.sol";
 contract AccountStructs {
   
   // Balances
+  struct BalanceAndOrder {
+    // significantly reduces cost of addHeldAsset (since order can be stored there?)
+    int240 balance;
+    uint16 order;
+  }
 
   struct HeldAsset {
     IAbstractAsset asset;
