@@ -13,7 +13,7 @@ contract AccountStructs {
 
   struct HeldAsset {
     IAbstractAsset asset;
-    uint subId;
+    uint96 subId;
   }
 
   struct AssetBalance {

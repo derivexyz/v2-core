@@ -241,7 +241,7 @@ contract Account is ERC721 {
     uint heldAssetLen = fromAssets.length;
     for (uint i; i < heldAssetLen; i++) {
       AccountStructs.BalanceAndOrder storage userBalanceAndOrder = 
-        balanceAndOrder[_getEntryKey(fromAccountId, fromAssets[i].asset, fromAssets[i].subId)];
+        balanceAndOrder[_getEntryKey(fromAccountId, fromAssets[i].asset, uint(fromAssets[i].subId))];
 
       _adjustBalance(AccountStructs.AssetAdjustment({
           acc: toAccountId,
@@ -406,12 +406,12 @@ contract Account is ERC721 {
     for (uint i; i < allAssetBalancesLen; i++) {
       AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
       AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
-            balanceAndOrder[_getEntryKey(accountId, heldAsset.asset, heldAsset.subId)];
+            balanceAndOrder[_getEntryKey(accountId, heldAsset.asset, uint(heldAsset.subId))];
 
       assetBalances[i] = AccountStructs.AssetBalance({
         asset: heldAsset.asset,
-        subId: heldAsset.subId,
-        balance: int256(userBalanceAndOrder.balance)
+        subId: uint(heldAsset.subId),
+        balance: int(userBalanceAndOrder.balance)
       });
     }
     return assetBalances;
@@ -433,7 +433,7 @@ contract Account is ERC721 {
   function _addHeldAsset(
     uint accountId, IAbstractAsset asset, uint subId
   ) internal returns (uint16 newOrder) {
-    heldAssets[accountId].push(AccountStructs.HeldAsset({asset: asset, subId: subId}));
+    heldAssets[accountId].push(AccountStructs.HeldAsset({asset: asset, subId: subId.toUint96()}));
     newOrder = (heldAssets[accountId].length - 1).toUint16();
   }
   
@@ -458,7 +458,7 @@ contract Account is ERC721 {
       heldAssets[accountId][currentAssetOrder] = assetToMove; // 5k gas
 
       AccountStructs.BalanceAndOrder storage toMoveBalanceAndOrder = 
-        balanceAndOrder[_getEntryKey(accountId, assetToMove.asset, assetToMove.subId)];
+        balanceAndOrder[_getEntryKey(accountId, assetToMove.asset, uint(assetToMove.subId))];
       toMoveBalanceAndOrder.order = currentAssetOrder; // 5k gas 
     }
 
@@ -473,7 +473,7 @@ contract Account is ERC721 {
     uint heldAssetLen = assets.length;
     for (uint i; i < heldAssetLen; i++) {
       AccountStructs.BalanceAndOrder storage orderToClear = 
-        balanceAndOrder[_getEntryKey(accountId, assets[i].asset, assets[i].subId)];
+        balanceAndOrder[_getEntryKey(accountId, assets[i].asset, uint(assets[i].subId))];
 
       orderToClear.order = 0;
     }
