@@ -22,8 +22,11 @@ contract Account is ERC721 {
   mapping(bytes32 => AccountStructs.BalanceAndOrder) public balanceAndOrder;
   mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
 
-  mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateSubIdAllowances;
-  mapping(bytes32 => mapping(address => AccountStructs.Allowance)) public delegateAssetAllowances;
+  mapping(bytes32 => mapping(address => uint)) public positiveSubIdAllowance;
+  mapping(bytes32 => mapping(address => uint)) public negativeSubIdAllowance;
+  mapping(bytes32 => mapping(address => uint)) public positiveAssetAllowance;
+  mapping(bytes32 => mapping(address => uint)) public negativeAssetAllowance;
+
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ///////////////////
@@ -72,56 +75,48 @@ contract Account is ERC721 {
 
   /// @dev blanket allowance over transfers, merges, splits, account transfers 
   ///      only one blanket delegate allowed
-  function setFullDelegate(
+  function setFullAllowance(
     uint accountId,
     address delegate
   ) external {
     _approve(delegate, accountId);
   }
 
-  /// @dev the sum of asset allowances + subId allowances is used during _delegateCheck()
+  /// @dev the sum of asset allowances + subId allowances is used during _allowanceCheck()
   ///      subId allowances are decremented before asset allowances
   ///      cannot merge with this type of allowance
-  function setAssetDelegateAllowances(
+  function setAssetAllowances(
     uint accountId, 
     address delegate, 
     IAbstractAsset[] memory assets,
-    AccountStructs.Allowance[] memory allowances  
+    uint[] memory positiveAllowances,
+    uint[] memory negativeAllowances
   ) external {
     require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
-      AccountStructs.Allowance memory allowance = AccountStructs.Allowance({
-        positive: allowances[i].positive,
-        negative: allowances[i].negative
-      });
-
-      delegateAssetAllowances
-        [_getEntryKey(accountId, assets[i], 0)]
-        [delegate] = allowance;
+      bytes32 assetKey = _getEntryKey(accountId, assets[i], 0);
+      positiveAssetAllowance[assetKey][delegate] = positiveAllowances[i];
+      negativeAssetAllowance[assetKey][delegate] = negativeAllowances[i];
     }
   }
 
-  function setSubIdDelegateAllowances(
+  function setSubIdAllowances(
     uint accountId, 
     address delegate, 
     IAbstractAsset[] memory assets,
     uint[] memory subIds,
-    AccountStructs.Allowance[] memory allowances
+    uint[] memory positiveAllowances,
+    uint[] memory negativeAllowances
   ) external {
     require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
-      AccountStructs.Allowance memory allowance = AccountStructs.Allowance({
-        positive: allowances[i].positive,
-        negative: allowances[i].negative
-      });
-
-      delegateSubIdAllowances
-        [_getEntryKey(accountId, assets[i], subIds[i])]
-        [delegate] = allowance;
+      bytes32 subIdKey = _getEntryKey(accountId, assets[i], subIds[i]);
+      positiveSubIdAllowance[subIdKey][delegate] = positiveAllowances[i];
+      negativeSubIdAllowance[subIdKey][delegate] = negativeAllowances[i];
     }
 }
 
@@ -144,7 +139,7 @@ contract Account is ERC721 {
   /// @dev Merges all accounts into first account and leaves remaining empty but not burned
   ///      This ensures accounts can be reused after being merged
   function merge(uint targetAccount, uint[] memory accountsToMerge) external {
-    // does not use _delegateCheck() for gas efficiency
+    // does not use _allowanceCheck() for gas efficiency
     require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
 
     uint mergingAccLen = accountsToMerge.length;
@@ -229,8 +224,8 @@ contract Account is ERC721 {
     AccountStructs.BalanceAndOrder storage toBalanceAndOrder = 
       balanceAndOrder[_getEntryKey(assetTransfer.fromAcc, assetTransfer.asset, assetTransfer.subId)];
 
-    _delegateCheck(fromAccAdjustment, msg.sender);
-    _delegateCheck(toAccAdjustment, msg.sender);
+    _allowanceCheck(fromAccAdjustment, msg.sender);
+    _allowanceCheck(toAccAdjustment, msg.sender);
 
     _adjustBalance(fromAccAdjustment, fromBalanceAndOrder);
     _adjustBalance(toAccAdjustment, toBalanceAndOrder);
@@ -349,42 +344,56 @@ contract Account is ERC721 {
     );
   }
 
-  function _delegateCheck(
+  function _allowanceCheck(
     AccountStructs.AssetAdjustment memory adjustment, address delegate
   ) internal {
     // ERC721 approved or owner get blanket allowance
     if (_isApprovedOrOwner(msg.sender, adjustment.acc)) { return; }
 
-    AccountStructs.Allowance storage subIdAllowance = 
-      delegateSubIdAllowances[_getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId)][delegate];
-    AccountStructs.Allowance storage assetAllowance = 
-      delegateAssetAllowances[_getEntryKey(adjustment.acc, adjustment.asset, 0)][delegate];
+    bytes32 subIdKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
+    bytes32 assetKey = _getEntryKey(adjustment.acc, adjustment.asset, 0);
 
-    uint absAmount = _abs(adjustment.amount);
-
-    bool isPositiveAdjustment = adjustment.amount > 0;
-    bool isAllowanceEnough = (isPositiveAdjustment)
-      ? absAmount <= subIdAllowance.positive + assetAllowance.positive
-      : absAmount <= subIdAllowance.negative + assetAllowance.negative;
-
-    require(isAllowanceEnough, "delegate does not have enough allowance");
-
-    if (isAllowanceEnough && isPositiveAdjustment) {
-      if (absAmount <= subIdAllowance.positive) {
-        subIdAllowance.positive -= absAmount;
-      } else { // subId allowances are decremented first
-        subIdAllowance.positive = 0;
-        assetAllowance.positive -= absAmount - subIdAllowance.positive;
-      }
+    // determine if positive vs negative allowance is needed
+    if (adjustment.amount > 0) {
+      _absAllowanceCheck(
+        positiveSubIdAllowance[subIdKey],
+        positiveAssetAllowance[assetKey],
+        delegate,
+        adjustment.amount
+      );
     } else {
-      if (absAmount <= subIdAllowance.negative) {
-        subIdAllowance.negative -= absAmount;
-      } else {
-        subIdAllowance.negative = 0;
-        assetAllowance.negative -= absAmount - subIdAllowance.negative;
-      }
-    } 
+      _absAllowanceCheck(
+        negativeSubIdAllowance[subIdKey],
+        negativeAssetAllowance[assetKey],
+        delegate,
+        adjustment.amount
+      );
+    }
+
   }
+
+  function _absAllowanceCheck(
+    mapping(address => uint) storage allowancesForSubId,
+    mapping(address => uint) storage allowancesForAsset,
+    address delegate,
+    int amount
+  ) internal {
+     // check allowance
+    uint subIdAllowance = allowancesForSubId[delegate];
+    uint assetAllowance = allowancesForAsset[delegate];
+
+    // subId allowances are decremented first
+    uint absAmount = _abs(amount); 
+    if (absAmount <= subIdAllowance) {
+      allowancesForSubId[delegate] -= absAmount;
+    } else if (absAmount <= subIdAllowance + assetAllowance) { 
+      allowancesForSubId[delegate] = 0;
+      allowancesForAsset[delegate] -= absAmount - subIdAllowance;
+    } else {
+      revert("delegate does not have enough allowance");
+    }
+  }
+
 
   //////////
   // Util //

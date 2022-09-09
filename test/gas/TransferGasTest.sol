@@ -159,11 +159,14 @@ contract TransferGasTest is Test, LyraHelper {
     IAbstractAsset[] memory assets = new IAbstractAsset[](2);
     assets[0] = IAbstractAsset(optionAdapter);
     assets[1] = IAbstractAsset(usdcAdapter);
-    AccountStructs.Allowance[] memory allowances = new AccountStructs.Allowance[](2);
-    allowances[0] = AccountStructs.Allowance({positive: type(uint).max, negative: type(uint).max});
-    allowances[1] = AccountStructs.Allowance({positive: type(uint).max, negative: type(uint).max});
+    uint[] memory posAllowances = new uint[](2);
+    uint[] memory negAllowances = new uint[](2);
+    posAllowances[0] = type(uint).max;
+    posAllowances[1] = type(uint).max;
+    negAllowances[0] = type(uint).max;
+    negAllowances[1] = type(uint).max;
 
-    account.setAssetDelegateAllowances(ownerAcc, delegate, assets, allowances);
+    account.setAssetAllowances(ownerAcc, delegate, assets, posAllowances, negAllowances);
     vm.stopPrank();
   }
 }
