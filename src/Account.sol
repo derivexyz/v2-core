@@ -7,8 +7,6 @@ import "./interfaces/IAbstractAsset.sol";
 import "./interfaces/IAbstractManager.sol";
 import "./interfaces/AccountStructs.sol";
 
-import "forge-std/console2.sol";
-
 contract Account is ERC721 {
   using SafeCast for int; // BalanceAndOrder.balance
   using SafeCast for uint; // BalanceAndOrder.order
@@ -158,6 +156,9 @@ contract Account is ERC721 {
   function _merge(uint targetAccount, uint[] memory accountsToMerge) internal {
     uint mergingAccLen = accountsToMerge.length;
     for (uint i = 0; i < mergingAccLen; i++) {
+      require(_isApprovedOrOwner(msg.sender, accountsToMerge[i]), 
+        "msg.sender must be full delegate"
+      );
       _transferAll(accountsToMerge[i], targetAccount);
       _managerCheck(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
     }
@@ -239,22 +240,23 @@ contract Account is ERC721 {
 
     _allowanceCheck(fromAccAdjustment, msg.sender);
     _allowanceCheck(toAccAdjustment, msg.sender);
-
+    
     _adjustBalance(fromAccAdjustment, fromBalanceAndOrder);
     _adjustBalance(toAccAdjustment, toBalanceAndOrder);
   }
 
   function transferAll(uint fromAccountId, uint toAccountId) external {
+    require(
+      _isApprovedOrOwner(msg.sender, fromAccountId) && 
+      _isApprovedOrOwner(msg.sender, toAccountId), 
+      "msg.sender must be full delegate or owner of both accounts"
+    );
     _transferAll(fromAccountId, toAccountId);
     _managerCheck(fromAccountId, msg.sender);
     _managerCheck(toAccountId, msg.sender);
   }
 
   function _transferAll(uint fromAccountId, uint toAccountId) internal {
-    // TODO: move the allowance check to outside
-    require(_isApprovedOrOwner(msg.sender, fromAccountId) && _isApprovedOrOwner(msg.sender, toAccountId), 
-      "msg.sender must be full delegate or owner of both accounts");
-
     AccountStructs.HeldAsset[] memory fromAssets = heldAssets[fromAccountId];
     uint heldAssetLen = fromAssets.length;
     for (uint i; i < heldAssetLen; i++) {
