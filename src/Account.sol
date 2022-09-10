@@ -125,9 +125,6 @@ contract Account is ERC721 {
     }
   }
 
-  // TODO: also remove the keys
-  function clearAssetAndSubIdAllowances() external {}
-
   /// @dev giving managers exclusive rights to transfer account ownerships
   function _isApprovedOrOwner(address spender, uint tokenId) internal view override returns (bool) {
     address owner = ERC721.ownerOf(tokenId);
