@@ -19,14 +19,14 @@ contract Account is ERC721 {
 
   uint nextId = 1;
   mapping(uint => IAbstractManager) manager;
-  mapping(bytes32 => AccountStructs.BalanceAndOrder) public balanceAndOrder;
+  mapping(uint => mapping(IAbstractAsset => mapping(uint => AccountStructs.BalanceAndOrder))) public balanceAndOrder;
   mapping(uint => AccountStructs.HeldAsset[]) heldAssets;
 
-  mapping(bytes32 => mapping(address => uint)) public positiveSubIdAllowance;
-  mapping(bytes32 => mapping(address => uint)) public negativeSubIdAllowance;
-  mapping(bytes32 => mapping(address => uint)) public positiveAssetAllowance;
-  mapping(bytes32 => mapping(address => uint)) public negativeAssetAllowance;
-
+  mapping(uint => mapping(IAbstractAsset => mapping(uint => mapping(address => uint)))) public positiveSubIdAllowance;
+  mapping(uint => mapping(IAbstractAsset => mapping(uint => mapping(address => uint)))) public negativeSubIdAllowance;
+  mapping(uint => mapping(IAbstractAsset => mapping(address => uint))) public positiveAssetAllowance;
+  mapping(uint => mapping(IAbstractAsset => mapping(address => uint))) public negativeAssetAllowance;
+  
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ///////////////////
@@ -42,6 +42,19 @@ contract Account is ERC721 {
     manager[newId] = _manager;
     _mint(owner, newId);
     return newId;
+  }
+
+  function burnAccounts(uint[] memory accountIds) external {
+    _burnAccounts(accountIds);
+  }
+
+  function _burnAccounts(uint[] memory accountIds) internal {
+    uint accountsLen = accountIds.length;
+    for (uint i; i < accountsLen; i++) {
+      require(_isApprovedOrOwner(msg.sender, accountIds[i]), "must be full delegate or owner");
+      require(heldAssets[accountIds[i]].length == 0, "cannot burn account with held assets");
+      _burn(accountIds[i]);
+    }
   }
 
   /// @dev gas efficient method for migrating AMMs
@@ -73,18 +86,12 @@ contract Account is ERC721 {
   // Approvals //
   ///////////////
 
-  /// @dev blanket allowance over transfers, merges, splits, account transfers 
-  ///      only one blanket delegate allowed
-  function setFullAllowance(
-    uint accountId,
-    address delegate
-  ) external {
-    _approve(delegate, accountId);
-  }
 
   /// @dev the sum of asset allowances + subId allowances is used during _allowanceCheck()
   ///      subId allowances are decremented before asset allowances
   ///      cannot merge with this type of allowance
+  ///      NOTE: can use ERC721.approve() for blanket allowances
+  ///      TODO: change error message to not say "full delegate"
   function setAssetAllowances(
     uint accountId, 
     address delegate, 
@@ -96,9 +103,8 @@ contract Account is ERC721 {
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
-      bytes32 assetKey = _getEntryKey(accountId, assets[i], 0);
-      positiveAssetAllowance[assetKey][delegate] = positiveAllowances[i];
-      negativeAssetAllowance[assetKey][delegate] = negativeAllowances[i];
+      positiveAssetAllowance[accountId][assets[i]][delegate] = positiveAllowances[i];
+      negativeAssetAllowance[accountId][assets[i]][delegate] = negativeAllowances[i];
     }
   }
 
@@ -114,11 +120,13 @@ contract Account is ERC721 {
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
-      bytes32 subIdKey = _getEntryKey(accountId, assets[i], subIds[i]);
-      positiveSubIdAllowance[subIdKey][delegate] = positiveAllowances[i];
-      negativeSubIdAllowance[subIdKey][delegate] = negativeAllowances[i];
+      positiveSubIdAllowance[accountId][assets[i]][subIds[i]][delegate] = positiveAllowances[i];
+      negativeSubIdAllowance[accountId][assets[i]][subIds[i]][delegate] = negativeAllowances[i];
     }
-}
+  }
+
+  // TODO: also remove the keys
+  function clearAssetAndSubIdAllowances() external {}
 
   /// @dev giving managers exclusive rights to transfer account ownerships
   function _isApprovedOrOwner(address spender, uint tokenId) internal view override returns (bool) {
@@ -136,22 +144,30 @@ contract Account is ERC721 {
   // Balance Adjustments //
   /////////////////////////
 
-  /// @dev Merges all accounts into first account and leaves remaining empty but not burned
-  ///      This ensures accounts can be reused after being merged
-  function merge(uint targetAccount, uint[] memory accountsToMerge) external {
-    // does not use _allowanceCheck() for gas efficiency
-    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
 
+  /// @dev Merges all accounts into first account and leaves remaining empty but not burned
+  function merge(uint targetAccount, uint[] memory accountsToMerge) external {
+    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
+    _merge(targetAccount, accountsToMerge);
+  }
+
+  /// @dev Merges all accounts into first account and burns merged accounts
+  function mergeAndBurn(uint targetAccount, uint[] memory accountsToMerge) external {
+    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
+    _merge(targetAccount, accountsToMerge);
+    _burnAccounts(accountsToMerge);
+  }
+
+  function _merge(uint targetAccount, uint[] memory accountsToMerge) internal {
     uint mergingAccLen = accountsToMerge.length;
     for (uint i = 0; i < mergingAccLen; i++) {
       _transferAll(accountsToMerge[i], targetAccount);
       _managerCheck(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
     }
-
     _managerCheck(targetAccount, msg.sender);
   }
 
-    /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
+  /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
   ///      msg.sender must be delegate approved to split
   function split(uint accountToSplitId, AccountStructs.AssetTransfer[] memory assetTransfers, address splitAccountOwner) external {
     uint newAccountId = _createAccount(msg.sender, manager[accountToSplitId]);
@@ -213,7 +229,7 @@ contract Account is ERC721 {
       amount: -assetTransfer.amount
     });
     AccountStructs.BalanceAndOrder storage fromBalanceAndOrder = 
-      balanceAndOrder[_getEntryKey(assetTransfer.fromAcc, assetTransfer.asset, assetTransfer.subId)];
+      balanceAndOrder[assetTransfer.fromAcc][assetTransfer.asset][assetTransfer.subId];
 
     AccountStructs.AssetAdjustment memory toAccAdjustment = AccountStructs.AssetAdjustment({
       acc: assetTransfer.toAcc,
@@ -222,7 +238,7 @@ contract Account is ERC721 {
       amount: assetTransfer.amount
     });
     AccountStructs.BalanceAndOrder storage toBalanceAndOrder = 
-      balanceAndOrder[_getEntryKey(assetTransfer.fromAcc, assetTransfer.asset, assetTransfer.subId)];
+      balanceAndOrder[assetTransfer.fromAcc][assetTransfer.asset][assetTransfer.subId];
 
     _allowanceCheck(fromAccAdjustment, msg.sender);
     _allowanceCheck(toAccAdjustment, msg.sender);
@@ -238,6 +254,7 @@ contract Account is ERC721 {
   }
 
   function _transferAll(uint fromAccountId, uint toAccountId) internal {
+    // TODO: move the allowance check to outside
     require(_isApprovedOrOwner(msg.sender, fromAccountId) && _isApprovedOrOwner(msg.sender, toAccountId), 
       "msg.sender must be full delegate or owner of both accounts");
 
@@ -245,22 +262,22 @@ contract Account is ERC721 {
     uint heldAssetLen = fromAssets.length;
     for (uint i; i < heldAssetLen; i++) {
       AccountStructs.BalanceAndOrder storage userBalanceAndOrder = 
-        balanceAndOrder[_getEntryKey(fromAccountId, fromAssets[i].asset, uint(fromAssets[i].subId))];
+        balanceAndOrder[toAccountId][fromAssets[i].asset][fromAssets[i].subId];
+      
+      _adjustBalanceWithoutHeldAssetUpdate(AccountStructs.AssetAdjustment({
+          acc: fromAccountId,
+          asset: fromAssets[i].asset,
+          subId: fromAssets[i].subId,
+          amount: -int(userBalanceAndOrder.balance)
+        }), 
+        userBalanceAndOrder
+      );
 
       _adjustBalance(AccountStructs.AssetAdjustment({
           acc: toAccountId,
           asset: fromAssets[i].asset,
           subId: fromAssets[i].subId,
           amount: int(userBalanceAndOrder.balance)
-        }), 
-        userBalanceAndOrder
-      );
-
-      _adjustBalanceWithoutHeldAssetUpdate(AccountStructs.AssetAdjustment({
-          acc: fromAccountId,
-          asset: fromAssets[i].asset,
-          subId: fromAssets[i].subId,
-          amount: -int(userBalanceAndOrder.balance)
         }), 
         userBalanceAndOrder
       );
@@ -278,7 +295,7 @@ contract Account is ERC721 {
       "only managers and assets can make assymmetric adjustments");
     
     AccountStructs.BalanceAndOrder storage userBalanceAndOrder = 
-        balanceAndOrder[_getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId)];
+        balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
 
     _adjustBalance(adjustment, userBalanceAndOrder);
     _managerCheck(adjustment.acc, msg.sender); // since caller is passed, manager can internally decide to ignore check
@@ -350,21 +367,18 @@ contract Account is ERC721 {
     // ERC721 approved or owner get blanket allowance
     if (_isApprovedOrOwner(msg.sender, adjustment.acc)) { return; }
 
-    bytes32 subIdKey = _getEntryKey(adjustment.acc, adjustment.asset, adjustment.subId);
-    bytes32 assetKey = _getEntryKey(adjustment.acc, adjustment.asset, 0);
-
     // determine if positive vs negative allowance is needed
     if (adjustment.amount > 0) {
       _absAllowanceCheck(
-        positiveSubIdAllowance[subIdKey],
-        positiveAssetAllowance[assetKey],
+        positiveSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
+        positiveAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
         adjustment.amount
       );
     } else {
       _absAllowanceCheck(
-        negativeSubIdAllowance[subIdKey],
-        negativeAssetAllowance[assetKey],
+        negativeSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
+        negativeAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
         adjustment.amount
       );
@@ -399,13 +413,6 @@ contract Account is ERC721 {
   // Util //
   //////////
 
-  /// @dev keep mappings succinct and gas efficient
-  function _getEntryKey(
-    uint accountId, IAbstractAsset asset, uint subId
-  ) internal pure returns (bytes32 balanceKey) {
-    return keccak256(abi.encodePacked(accountId, address(asset), subId));
-  } 
-
   /// @dev this should never be called if the account already holds the asset
   function _addHeldAsset(
     uint accountId, IAbstractAsset asset, uint subId
@@ -430,11 +437,10 @@ contract Account is ERC721 {
 
     if (currentAssetOrder != heldAssetLen.toUint16() - 1) { 
       AccountStructs.HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1]; // 2k gas
-      // TODO: can you index with uint16?
       heldAssets[accountId][currentAssetOrder] = assetToMove; // 5k gas
 
       AccountStructs.BalanceAndOrder storage toMoveBalanceAndOrder = 
-        balanceAndOrder[_getEntryKey(accountId, assetToMove.asset, uint(assetToMove.subId))];
+        balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)];
       toMoveBalanceAndOrder.order = currentAssetOrder; // 5k gas 
     }
 
@@ -449,7 +455,7 @@ contract Account is ERC721 {
     uint heldAssetLen = assets.length;
     for (uint i; i < heldAssetLen; i++) {
       AccountStructs.BalanceAndOrder storage orderToClear = 
-        balanceAndOrder[_getEntryKey(accountId, assets[i].asset, uint(assets[i].subId))];
+        balanceAndOrder[accountId][assets[i].asset][uint(assets[i].subId)];
 
       orderToClear.order = 0;
     }
@@ -496,7 +502,7 @@ contract Account is ERC721 {
     uint subId
   ) external view returns (int balance){
     AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
-            balanceAndOrder[_getEntryKey(accountId, asset, subId)];
+            balanceAndOrder[accountId][asset][subId];
     return int(userBalanceAndOrder.balance);
   }
 
@@ -514,7 +520,7 @@ contract Account is ERC721 {
     for (uint i; i < allAssetBalancesLen; i++) {
       AccountStructs.HeldAsset memory heldAsset = heldAssets[accountId][i];
       AccountStructs.BalanceAndOrder memory userBalanceAndOrder = 
-            balanceAndOrder[_getEntryKey(accountId, heldAsset.asset, uint(heldAsset.subId))];
+            balanceAndOrder[accountId][heldAsset.asset][uint(heldAsset.subId)];
 
       assetBalances[i] = AccountStructs.AssetBalance({
         asset: heldAsset.asset,
@@ -536,5 +542,49 @@ contract Account is ERC721 {
     _;
   }
 
+  ////////////
+  // Events //
+  ////////////
 
+  /**
+   * @dev Emitted account created or split
+   */
+  event AccountCreated(
+    address indexed owner, 
+    uint indexed accountId, 
+    address indexed manager
+  );
+
+  /**
+   * @dev Emitted account burned
+   */
+  event AccountBurned(
+    address indexed owner, 
+    uint indexed accountId, 
+    address indexed manager
+  );
+
+  /**
+   * @dev Emitted when account manager changed
+   */
+  event AccountManagerChanged(
+    uint indexed accountId, 
+    address indexed oldManager, 
+    address indexed newManager
+  );
+
+  /**
+   * @dev Emitted during any balance change event. This includes:
+   *      1. single transfer
+   *      2. batch transfer
+   *      3. transferAll / merge / split
+   *      4. manager or asset initiated adjustments
+   */
+  event BalanceAdjusted(
+    uint indexed accountId, 
+    address indexed manager, 
+    AccountStructs.HeldAsset indexed assetAndSubId, 
+    int preBalance, 
+    int postBalance
+  );
 }
