@@ -7,9 +7,19 @@ import "./interfaces/IAbstractAsset.sol";
 import "./interfaces/IAbstractManager.sol";
 import "./interfaces/IAccount.sol";
 
+/**
+ * @title Account
+ * @author Lyra
+ * @notice Base layer that manages:
+ *         1. balances for each (account, asset, subId)
+ *         2. routing of manager, asset, allowance hooks / checks 
+ *            during any balance adjustment event
+ *         3. account creation / manager assignment
+ */
+
 contract Account is IAccount, ERC721 {
-  using SafeCast for int; // BalanceAndOrder.balance
-  using SafeCast for uint; // BalanceAndOrder.order
+  using SafeCast for int;
+  using SafeCast for uint;
 
   ///////////////
   // Variables //
@@ -100,7 +110,7 @@ contract Account is IAccount, ERC721 {
     }
 
     manager[accountId] = newManager;
-    _managerCheck(accountId, msg.sender);
+    _managerHook(accountId, msg.sender);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
@@ -214,9 +224,9 @@ contract Account is IAccount, ERC721 {
     for (uint i = 0; i < mergingAccLen; i++) {
       _requireERC721ApprovedOrOwner(msg.sender, accountsToMerge[i]);
       _transferAll(accountsToMerge[i], targetAccount);
-      _managerCheck(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
+      _managerHook(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
     }
-    _managerCheck(targetAccount, msg.sender);
+    _managerHook(targetAccount, msg.sender);
   }
 
   /** 
@@ -256,14 +266,14 @@ contract Account is IAccount, ERC721 {
    */
   function submitTransfer(AssetTransfer memory assetTransfer) external {
     _transferAsset(assetTransfer);
-    _managerCheck(assetTransfer.fromAcc, msg.sender);
-    _managerCheck(assetTransfer.toAcc, msg.sender);
+    _managerHook(assetTransfer.fromAcc, msg.sender);
+    _managerHook(assetTransfer.toAcc, msg.sender);
   }
 
   /** 
    * @notice Batch several transfers
    *         Gas efficient when modifying the same account several times,
-   *         as _managerCheck() is only performed once per account
+   *         as _managerHook() is only performed once per account
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
    */
   function submitTransfers(AssetTransfer[] memory assetTransfers) external {
@@ -293,7 +303,7 @@ contract Account is IAccount, ERC721 {
 
     // Assess the risk for all modified balances
     for (uint i; i < nextSeenId; i++) {
-      _managerCheck(seenAccounts[i], msg.sender);
+      _managerHook(seenAccounts[i], msg.sender);
     }
   }
 
@@ -334,8 +344,8 @@ contract Account is IAccount, ERC721 {
     _requireERC721ApprovedOrOwner(msg.sender, toAccountId);
 
     _transferAll(fromAccountId, toAccountId);
-    _managerCheck(fromAccountId, msg.sender);
-    _managerCheck(toAccountId, msg.sender);
+    _managerHook(fromAccountId, msg.sender);
+    _managerHook(toAccountId, msg.sender);
   }
 
   function _transferAll(uint fromAccountId, uint toAccountId) internal {
@@ -370,7 +380,7 @@ contract Account is IAccount, ERC721 {
 
   /** 
    * @notice Assymetric balance adjustment reserved for managers or asset 
-   *         Must still pass both _managerCheck() and _assetCheck()
+   *         Must still pass both _managerHook() and _assetHook()
    * @param adjustment assymetric adjustment of amount for (asset, subId)
    */
   function adjustBalance(
@@ -380,7 +390,7 @@ contract Account is IAccount, ERC721 {
         balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
 
     _adjustBalance(adjustment, userBalanceAndOrder);
-    _managerCheck(adjustment.acc, msg.sender); // since caller is passed, manager can internally decide to ignore check
+    _managerHook(adjustment.acc, msg.sender); // since caller is passed, manager can internally decide to ignore check
 
     postAdjustmentBalance = int(userBalanceAndOrder.balance);
   }
@@ -404,7 +414,7 @@ contract Account is IAccount, ERC721 {
     userBalanceAndOrder.balance = postBalance.toInt240();
     userBalanceAndOrder.order = newOrder;
 
-    _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
+    _assetHook(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
     emit BalanceAdjusted(
       adjustment.acc, 
       address(manager[adjustment.acc]), 
@@ -426,7 +436,7 @@ contract Account is IAccount, ERC721 {
 
     userBalanceAndOrder.balance = postBalance.toInt240();
 
-    _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
+    _assetHook(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
   }
 
   ////////////////////////////
@@ -441,7 +451,7 @@ contract Account is IAccount, ERC721 {
    * @param accountId ID of account being checked
    * @param caller address of msg.sender initiating balance adjustment
    */
-  function _managerCheck(
+  function _managerHook(
     uint accountId, 
     address caller
   ) internal {
@@ -452,7 +462,7 @@ contract Account is IAccount, ERC721 {
    * @notice Hook that calls the asset during:
    *         1. Transfers / Merges / Splits
    *         2. Assymetric balance adjustments
-   * @dev as hook is called for every asset transfer (unlike _managerCheck())
+   * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage 
    * @param asset IAbstractAsset being called to
    * @param subId subId of asset being transfered
@@ -461,7 +471,7 @@ contract Account is IAccount, ERC721 {
    * @param postBalance balance after adjustment
    * @param caller address of msg.sender initiating balance adjustment
    */
-  function _assetCheck(
+  function _assetHook(
     IAbstractAsset asset, 
     uint subId, 
     uint accountId,
