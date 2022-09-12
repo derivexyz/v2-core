@@ -16,9 +16,9 @@ contract Account is IAccount, ERC721 {
   ///////////////
 
   uint nextId = 1;
-  mapping(uint => IAbstractManager) manager;
+  mapping(uint => IAbstractManager) public manager;
   mapping(uint => mapping(IAbstractAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
-  mapping(uint => HeldAsset[]) heldAssets;
+  mapping(uint => HeldAsset[]) public heldAssets;
 
   mapping(uint => mapping(IAbstractAsset => mapping(uint => mapping(address => uint)))) public positiveSubIdAllowance;
   mapping(uint => mapping(IAbstractAsset => mapping(uint => mapping(address => uint)))) public negativeSubIdAllowance;
@@ -520,7 +520,7 @@ contract Account is IAccount, ERC721 {
   // View //
   //////////
 
-  function getAssetBalance(
+  function getBalance(
     uint accountId, 
     IAbstractAsset asset, 
     uint subId

@@ -123,7 +123,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
     // iterate through all held assets and trigger settlement
     uint assetLen = assetsToSettle.length;
     for (uint i; i < assetLen; i++) {
-      int balance = account.getAssetBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
+      int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
 
       (int PnL, bool settled) = ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
 
