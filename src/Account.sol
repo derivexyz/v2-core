@@ -39,6 +39,7 @@ contract Account is ERC721 {
     newId = ++nextId;
     manager[newId] = _manager;
     _mint(owner, newId);
+    emit AccountCreated(owner, newId, address(_manager));
     return newId;
   }
 
@@ -56,6 +57,7 @@ contract Account is ERC721 {
         revert CannotBurnAccountWithHeldAssets(address(this), msg.sender, accountIds[i], heldAssetLen);
       }
       _burn(accountIds[i]);
+      emit AccountBurned(ownerOf(accountIds[i]), accountIds[i], address(manager[accountIds[i]]));
     }
   }
 
@@ -63,7 +65,8 @@ contract Account is ERC721 {
   function changeManager(uint accountId, IAbstractManager newManager) external {
     _revertIfNotERC721ApprovedOrOwner(msg.sender, accountId);
 
-    manager[accountId].handleManagerChange(accountId, manager[accountId], newManager);
+    IAbstractManager oldManager = manager[accountId];
+    oldManager.handleManagerChange(accountId, newManager);
 
     // only call to asset once 
     AccountStructs.HeldAsset[] memory accountAssets = heldAssets[accountId];
@@ -77,11 +80,13 @@ contract Account is ERC721 {
     }
 
     for (uint i; i < nextSeenId; ++i) {
-      seenAssets[i].handleManagerChange(accountId, manager[accountId], newManager);
+      seenAssets[i].handleManagerChange(accountId, oldManager, newManager);
     }
 
     manager[accountId] = newManager;
     _managerCheck(accountId, msg.sender);
+
+    emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
 
   ///////////////
@@ -331,6 +336,16 @@ contract Account is ERC721 {
     userBalanceAndOrder.order = newOrder;
 
     _assetCheck(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender);
+    emit BalanceAdjusted(
+      adjustment.acc, 
+      address(manager[adjustment.acc]), 
+      AccountStructs.HeldAsset({
+        asset: adjustment.asset, 
+        subId: SafeCast.toUint96(adjustment.subId)
+      }), 
+      preBalance, 
+      postBalance
+    );
   }
 
   function _adjustBalanceWithoutHeldAssetUpdate(
@@ -593,7 +608,7 @@ contract Account is ERC721 {
    */
   event BalanceAdjusted(
     uint indexed accountId,
-    address indexed manager, 
+    address indexed manager,
     AccountStructs.HeldAsset indexed assetAndSubId, 
     int preBalance, 
     int postBalance

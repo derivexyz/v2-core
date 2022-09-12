@@ -4,5 +4,5 @@ import "./AccountStructs.sol";
 
 interface IAbstractManager {
   function handleAdjustment(uint accountId, AccountStructs.AssetBalance[] memory assets, address caller) external;
-  function handleManagerChange(uint accountId, IAbstractManager oldManager, IAbstractManager newManager) external;
+  function handleManagerChange(uint accountId, IAbstractManager newManager) external;
 }
