@@ -48,16 +48,20 @@ contract Account is ERC721 {
 
   function _burnAccounts(uint[] memory accountIds) internal {
     uint accountsLen = accountIds.length;
+    uint heldAssetLen;
     for (uint i; i < accountsLen; i++) {
-      require(_isApprovedOrOwner(msg.sender, accountIds[i]), "must be full delegate or owner");
-      require(heldAssets[accountIds[i]].length == 0, "cannot burn account with held assets");
+      _revertIfNotERC721ApprovedOrOwner(msg.sender, accountIds[i]);
+      heldAssetLen = heldAssets[accountIds[i]].length;
+      if (heldAssetLen > 0) {
+        revert CannotBurnAccountWithHeldAssets(address(this), msg.sender, accountIds[i], heldAssetLen);
+      }
       _burn(accountIds[i]);
     }
   }
 
   /// @dev gas efficient method for migrating AMMs
   function changeManager(uint accountId, IAbstractManager newManager) external {
-    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
+    _revertIfNotERC721ApprovedOrOwner(msg.sender, accountId);
 
     manager[accountId].handleManagerChange(accountId, manager[accountId], newManager);
 
@@ -97,7 +101,7 @@ contract Account is ERC721 {
     uint[] memory positiveAllowances,
     uint[] memory negativeAllowances
   ) external {
-    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
+    _revertIfNotERC721ApprovedOrOwner(msg.sender, accountId);
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
@@ -114,12 +118,20 @@ contract Account is ERC721 {
     uint[] memory positiveAllowances,
     uint[] memory negativeAllowances
   ) external {
-    require(_isApprovedOrOwner(msg.sender, accountId), "must be full delegate or owner");
+    _revertIfNotERC721ApprovedOrOwner(msg.sender, accountId);
 
     uint assetsLen = assets.length;
     for (uint i; i < assetsLen; i++) {
       positiveSubIdAllowance[accountId][assets[i]][subIds[i]][delegate] = positiveAllowances[i];
       negativeSubIdAllowance[accountId][assets[i]][subIds[i]][delegate] = negativeAllowances[i];
+    }
+  }
+
+  function _revertIfNotERC721ApprovedOrOwner(address sender, uint accountId) internal view {
+    if (!_isApprovedOrOwner(sender, accountId)) {
+      revert NotOwnerOrERC721Approved(
+        address(this), sender, ownerOf(accountId), accountId
+      );
     }
   }
 
@@ -142,13 +154,13 @@ contract Account is ERC721 {
 
   /// @dev Merges all accounts into first account and leaves remaining empty but not burned
   function merge(uint targetAccount, uint[] memory accountsToMerge) external {
-    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
+    _revertIfNotERC721ApprovedOrOwner(msg.sender, targetAccount);
     _merge(targetAccount, accountsToMerge);
   }
 
   /// @dev Merges all accounts into first account and burns merged accounts
   function mergeAndBurn(uint targetAccount, uint[] memory accountsToMerge) external {
-    require(_isApprovedOrOwner(msg.sender, targetAccount), "must be full delegate or owner");
+    _revertIfNotERC721ApprovedOrOwner(msg.sender, targetAccount);
     _merge(targetAccount, accountsToMerge);
     _burnAccounts(accountsToMerge);
   }
@@ -156,9 +168,7 @@ contract Account is ERC721 {
   function _merge(uint targetAccount, uint[] memory accountsToMerge) internal {
     uint mergingAccLen = accountsToMerge.length;
     for (uint i = 0; i < mergingAccLen; i++) {
-      require(_isApprovedOrOwner(msg.sender, accountsToMerge[i]), 
-        "msg.sender must be full delegate"
-      );
+      _revertIfNotERC721ApprovedOrOwner(msg.sender, accountsToMerge[i]);
       _transferAll(accountsToMerge[i], targetAccount);
       _managerCheck(accountsToMerge[i], msg.sender); // incase certain accounts cannot be emptied
     }
@@ -167,7 +177,11 @@ contract Account is ERC721 {
 
   /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
   ///      msg.sender must be delegate approved to split
-  function split(uint accountToSplitId, AccountStructs.AssetTransfer[] memory assetTransfers, address splitAccountOwner) external {
+  function split(
+    uint accountToSplitId, 
+    AccountStructs.AssetTransfer[] memory assetTransfers, 
+    address splitAccountOwner
+  ) external {
     uint newAccountId = _createAccount(msg.sender, manager[accountToSplitId]);
 
     uint transfersLen = assetTransfers.length;
@@ -240,17 +254,15 @@ contract Account is ERC721 {
 
     _allowanceCheck(fromAccAdjustment, msg.sender);
     _allowanceCheck(toAccAdjustment, msg.sender);
-    
+
     _adjustBalance(fromAccAdjustment, fromBalanceAndOrder);
     _adjustBalance(toAccAdjustment, toBalanceAndOrder);
   }
 
   function transferAll(uint fromAccountId, uint toAccountId) external {
-    require(
-      _isApprovedOrOwner(msg.sender, fromAccountId) && 
-      _isApprovedOrOwner(msg.sender, toAccountId), 
-      "msg.sender must be full delegate or owner of both accounts"
-    );
+    _revertIfNotERC721ApprovedOrOwner(msg.sender, fromAccountId);
+    _revertIfNotERC721ApprovedOrOwner(msg.sender, toAccountId);
+
     _transferAll(fromAccountId, toAccountId);
     _managerCheck(fromAccountId, msg.sender);
     _managerCheck(toAccountId, msg.sender);
@@ -289,10 +301,7 @@ contract Account is ERC721 {
   /// @dev privileged function that only the asset can call to do things like minting and burning
   function adjustBalance(
     AccountStructs.AssetAdjustment memory adjustment
-  ) onlyManagerOrAsset(adjustment.acc, adjustment.asset) external returns (int postAdjustmentBalance) {
-    require(msg.sender == address(manager[adjustment.acc]) || msg.sender == address(adjustment.asset),
-      "only managers and assets can make assymmetric adjustments");
-    
+  ) onlyManagerOrAsset(adjustment.acc, adjustment.asset) external returns (int postAdjustmentBalance) {    
     AccountStructs.BalanceAndOrder storage userBalanceAndOrder = 
         balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
 
@@ -391,7 +400,8 @@ contract Account is ERC721 {
     address delegate,
     int amount
   ) internal {
-     // check allowance
+    // check allowance
+    // TODO: could go back to negative/positive struct to reduce SLOADs
     uint subIdAllowance = allowancesForSubId[delegate];
     uint assetAllowance = allowancesForAsset[delegate];
 
@@ -403,7 +413,7 @@ contract Account is ERC721 {
       allowancesForSubId[delegate] = 0;
       allowancesForAsset[delegate] -= absAmount - subIdAllowance;
     } else {
-      revert("delegate does not have enough allowance");
+      revert NotEnoughSubIdOrAssetAllowances(address(this), msg.sender, absAmount, subIdAllowance, assetAllowance);
     }
   }
 
@@ -505,7 +515,8 @@ contract Account is ERC721 {
     return int(userBalanceAndOrder.balance);
   }
 
-  function getAccountBalances(uint accountId) external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
+  function getAccountBalances(uint accountId) 
+    external view returns (AccountStructs.AssetBalance[] memory assetBalances) {
     return _getAccountBalances(accountId);
   }
 
@@ -535,9 +546,10 @@ contract Account is ERC721 {
   ///////////////
 
   modifier onlyManagerOrAsset(uint accountId, IAbstractAsset asset) {
-    require(msg.sender == ownerOf(accountId) || 
-      msg.sender == address(asset), 
-    "only manager or asset");
+    address accountManager = address(manager[accountId]);
+    if (msg.sender != accountManager && msg.sender != address(asset)) {
+      revert OnlyManagerOrAssetAllowed(address(this), msg.sender, accountManager, address(asset));
+    }
     _;
   }
 
@@ -580,10 +592,25 @@ contract Account is ERC721 {
    *      4. manager or asset initiated adjustments
    */
   event BalanceAdjusted(
-    uint indexed accountId, 
+    uint indexed accountId,
     address indexed manager, 
     AccountStructs.HeldAsset indexed assetAndSubId, 
     int preBalance, 
     int postBalance
   );
+
+  ////////////
+  // Errors //
+  ////////////
+
+  error OnlyManagerOrAssetAllowed(address thrower, address caller, address manager, address asset);
+  error NotOwnerOrERC721Approved(address thrower, address caller, address accountOwner, uint accountId);
+  error NotEnoughSubIdOrAssetAllowances(
+    address thower, 
+    address caller, 
+    uint absAmount, 
+    uint subIdAllowance, 
+    uint assetAllowance
+  );
+  error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
 }
