@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 import "./IAbstractAsset.sol";
 import "./IAbstractManager.sol";
 
+// For full documentation refer to src/Account.sol";
 interface IAccount {
 
   /////////////
@@ -10,8 +11,10 @@ interface IAccount {
   /////////////
   
   struct BalanceAndOrder {
+    // balance of (asset, subId)
     int240 balance;
-    uint16 order;
+    // index in heldAssets() or getAccountBalances() 
+    uint16 order; 
   }
 
   struct HeldAsset {
@@ -25,7 +28,9 @@ interface IAccount {
   }
 
   struct AssetTransfer {
+    // credited by amount
     uint fromAcc;
+    // debited by amount
     uint toAcc;
     IAbstractAsset asset;
     uint subId;
@@ -44,7 +49,9 @@ interface IAccount {
   ///////////////////
 
   function createAccount(address owner, IAbstractManager _manager) external returns (uint newId);
+
   function burnAccounts(uint[] memory accountIds) external;
+
   function changeManager(uint accountId, IAbstractManager newManager) external;
 
   ///////////////
@@ -73,16 +80,21 @@ interface IAccount {
   /////////////////////////
 
   function merge(uint targetAccount, uint[] memory accountsToMerge) external;
+
   function mergeAndBurn(uint targetAccount, uint[] memory accountsToMerge) external;
+
   function split(
     uint accountToSplitId, 
-    AssetTransfer[] memory assetTransfers, 
+    AssetBalance[] memory splitAccountAssetBalances, 
     address splitAccountOwner
   ) external;
 
   function submitTransfer(AssetTransfer memory assetTransfer) external;
+
   function submitTransfers(AssetTransfer[] memory assetTransfers) external;
+
   function transferAll(uint fromAccountId, uint toAccountId) external;
+
   function adjustBalance(AssetAdjustment memory adjustment) external returns (int postBalance);
 
   //////////
@@ -90,6 +102,7 @@ interface IAccount {
   //////////
 
   function manager(uint accountId) external view returns (IAbstractManager);
+
   function balanceAndOrder(
     uint accountId, IAbstractAsset asset, uint subId
   ) external view returns (int240 balance, uint16 order);
@@ -97,12 +110,15 @@ interface IAccount {
   function positiveSubIdAllowance(
     uint accountId, IAbstractAsset asset, uint subId, address spender
   ) external view returns (uint);
+  
   function negativeSubIdAllowance(
     uint accountId, IAbstractAsset asset, uint subId, address spender
   ) external view returns (uint);
+
   function positiveAssetAllowance(
     uint accountId, IAbstractAsset asset, address spender
   ) external view returns (uint);
+
   function negativeAssetAllowance(
     uint accountId, IAbstractAsset asset, address spender
   ) external view returns (uint);
@@ -110,6 +126,7 @@ interface IAccount {
   function getBalance(
     uint accountId, IAbstractAsset asset, uint subId
   ) external view returns (int balance);
+
   function getAccountBalances(uint accountId) 
     external view returns (AssetBalance[] memory assetBalances);
 

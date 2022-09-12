@@ -31,6 +31,12 @@ contract Account is IAccount, ERC721 {
   // Account Admin //
   ///////////////////
 
+  /** 
+   * @notice Creates account with new accountId
+   * @param owner new account owner
+   * @param _manager IAbstractManager of new account
+   * @return newId ID of new account
+   */
   function createAccount(address owner, IAbstractManager _manager) external returns (uint newId) {
     return _createAccount(owner, _manager);
   }
@@ -43,6 +49,11 @@ contract Account is IAccount, ERC721 {
     return newId;
   }
 
+  /** 
+   * @notice Burns multiple accounts using ERC721._burn(). 
+   *         Account must not hold any assets.
+   * @param accountIds account ID array
+   */
   function burnAccounts(uint[] memory accountIds) external {
     _burnAccounts(accountIds);
   }
@@ -61,7 +72,12 @@ contract Account is IAccount, ERC721 {
     }
   }
 
-  /// @dev gas efficient method for migrating AMMs
+  /** 
+   * @notice Assigns new manager to account. No balances are adjusted.
+   *         msg.sender must be ERC721 approved or owner
+   * @param accountId ID of account
+   * @param newManager new IAbstractManager
+   */
   function changeManager(uint accountId, IAbstractManager newManager) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
 
@@ -94,11 +110,16 @@ contract Account is IAccount, ERC721 {
   ///////////////
 
 
-  /// @dev the sum of asset allowances + subId allowances is used during _allowanceCheck()
-  ///      subId allowances are decremented before asset allowances
-  ///      cannot merge with this type of allowance
-  ///      NOTE: can use ERC721.approve() for blanket allowances
-  ///      TODO: change error message to not say "full delegate"
+  /** 
+   * @notice Sets bidirectional allowances for all subIds of an asset. 
+   *         During a balance adjustment, if msg.sender not ERC721 approved or owner, 
+   *         asset allowance + subId allowance must be >= amount 
+   * @param accountId ID of account
+   * @param delegate address to assign allowance to
+   * @param assets array of assets to set allowance for
+   * @param positiveAllowances allowances in positive direction
+   * @param negativeAllowances allowances in negative direction
+   */
   function setAssetAllowances(
     uint accountId, 
     address delegate, 
@@ -115,6 +136,16 @@ contract Account is IAccount, ERC721 {
     }
   }
 
+  /** 
+   * @notice Sets bidirectional allowances for a specific subId. 
+   *         During a balance adjustment, the subId allowance is decremented first 
+   * @param accountId ID of account
+   * @param delegate address to assign allowance to
+   * @param assets array of assets to set allowance for
+   * @param subIds array of subIds, must be in same order as assets
+   * @param positiveAllowances allowances in positive direction
+   * @param negativeAllowances allowances in negative direction
+   */
   function setSubIdAllowances(
     uint accountId, 
     address delegate, 
@@ -157,13 +188,21 @@ contract Account is IAccount, ERC721 {
   /////////////////////////
 
 
-  /// @dev Merges all accounts into first account and leaves remaining empty but not burned
+  /** 
+   * @notice Merges all accounts into the target account but does not burn accounts
+   * @param targetAccount ID of account to merge all accounts into
+   * @param accountsToMerge IDs of accounts to merge into targetAccount
+   */
   function merge(uint targetAccount, uint[] memory accountsToMerge) external {
     _requireERC721ApprovedOrOwner(msg.sender, targetAccount);
     _merge(targetAccount, accountsToMerge);
   }
 
-  /// @dev Merges all accounts into first account and burns merged accounts
+  /** 
+   * @notice Merges all accounts into the target account and burns accounts
+   * @param targetAccount ID of account to merge all accounts into
+   * @param accountsToMerge IDs of accounts to merge into targetAccount
+   */  
   function mergeAndBurn(uint targetAccount, uint[] memory accountsToMerge) external {
     _requireERC721ApprovedOrOwner(msg.sender, targetAccount);
     _merge(targetAccount, accountsToMerge);
@@ -180,33 +219,53 @@ contract Account is IAccount, ERC721 {
     _managerCheck(targetAccount, msg.sender);
   }
 
-  /// @dev same as (1) create account (2) submit transfers [the `AssetTranfser.toAcc` field is overwritten]
-  ///      msg.sender must be delegate approved to split
+  /** 
+   * @notice Creates a new account and transfers assets into new account
+   *         Each transfer must pass _manager/assetChecks()
+   * @param accountToSplitId ID of account to split
+   * @param splitAccountAssetBalances final balances of the new split account
+   * @param splitAccountOwner address of the owner of the split account
+   */
   function split(
     uint accountToSplitId, 
-    AssetTransfer[] memory assetTransfers, 
+    AssetBalance[] memory splitAccountAssetBalances, 
     address splitAccountOwner
   ) external {
     uint newAccountId = _createAccount(msg.sender, manager[accountToSplitId]);
-
-    uint transfersLen = assetTransfers.length;
+    uint transfersLen = splitAccountAssetBalances.length;
+    AssetTransfer[] memory assetTransfers = new AssetTransfer[](transfersLen);
     for (uint i; i < transfersLen; ++i) {
-      assetTransfers[i].toAcc = newAccountId;
+      assetTransfers[i] = AssetTransfer({
+        fromAcc: accountToSplitId,
+        toAcc: newAccountId,
+        asset: splitAccountAssetBalances[i].asset,
+        subId: splitAccountAssetBalances[i].subId,
+        amount: splitAccountAssetBalances[i].balance
+      });
     }
 
     _submitTransfers(assetTransfers);
-
     if (splitAccountOwner != msg.sender) {
       transferFrom(msg.sender, splitAccountOwner, newAccountId);
     }
   }
 
+  /** 
+   * @notice Transfer an amount from one account to another for a specific (asset, subId)
+   * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
+   */
   function submitTransfer(AssetTransfer memory assetTransfer) external {
     _transferAsset(assetTransfer);
     _managerCheck(assetTransfer.fromAcc, msg.sender);
     _managerCheck(assetTransfer.toAcc, msg.sender);
   }
 
+  /** 
+   * @notice Batch several transfers
+   *         Gas efficient when modifying the same account several times,
+   *         as _managerCheck() is only performed once per account
+   * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
+   */
   function submitTransfers(AssetTransfer[] memory assetTransfers) external {
     _submitTransfers(assetTransfers);
   }
@@ -264,6 +323,12 @@ contract Account is IAccount, ERC721 {
     _adjustBalance(toAccAdjustment, toBalanceAndOrder);
   }
 
+  /** 
+   * @notice Transfers all balances from one account to another
+   *         More gas efficient than submitTransfers()
+   * @param fromAccountId ID of sender account
+   * @param toAccountId ID of recipient account
+   */
   function transferAll(uint fromAccountId, uint toAccountId) external {
     _requireERC721ApprovedOrOwner(msg.sender, fromAccountId);
     _requireERC721ApprovedOrOwner(msg.sender, toAccountId);
@@ -303,7 +368,11 @@ contract Account is IAccount, ERC721 {
     _clearAllHeldAssets(fromAccountId);
   }
 
-  /// @dev privileged function that only the asset can call to do things like minting and burning
+  /** 
+   * @notice Assymetric balance adjustment reserved for managers or asset 
+   *         Must still pass both _managerCheck() and _assetCheck()
+   * @param adjustment assymetric adjustment of amount for (asset, subId)
+   */
   function adjustBalance(
     AssetAdjustment memory adjustment
   ) onlyManagerOrAsset(adjustment.acc, adjustment.asset) external returns (int postAdjustmentBalance) {    
@@ -364,6 +433,14 @@ contract Account is IAccount, ERC721 {
   // Checks and Permissions //
   ////////////////////////////
 
+  /** 
+   * @notice Hook that calls the manager once per account during:
+   *         1. Transfers / Merges / Splits
+   *         2. Assymetric balance adjustments
+   *         
+   * @param accountId ID of account being checked
+   * @param caller address of msg.sender initiating balance adjustment
+   */
   function _managerCheck(
     uint accountId, 
     address caller
@@ -371,6 +448,19 @@ contract Account is IAccount, ERC721 {
     manager[accountId].handleAdjustment(accountId, _getAccountBalances(accountId), caller);
   }
 
+  /** 
+   * @notice Hook that calls the asset during:
+   *         1. Transfers / Merges / Splits
+   *         2. Assymetric balance adjustments
+   * @dev as hook is called for every asset transfer (unlike _managerCheck())
+   *      care must be given to reduce gas usage 
+   * @param asset IAbstractAsset being called to
+   * @param subId subId of asset being transfered
+   * @param accountId ID of account being checked 
+   * @param preBalance balance before adjustment
+   * @param postBalance balance after adjustment
+   * @param caller address of msg.sender initiating balance adjustment
+   */
   function _assetCheck(
     IAbstractAsset asset, 
     uint subId, 
@@ -384,6 +474,15 @@ contract Account is IAccount, ERC721 {
     );
   }
 
+  /** 
+   * @notice Checks allowances during transfers / merges / splits
+   *         Not checked during adjustBalance()
+   *         1. If delegate ERC721 approved or owner, blanket allowance given
+   *         2. Otherwise, sum of subId and asset bidirectional allowances used
+   *         The subId allowance is decremented before the asset-wide allowance
+   * @param adjustment amount of balance adjustment for an (asset, subId)
+   * @param delegate address of msg.sender initiating change
+   */
   function _allowanceCheck(
     AssetAdjustment memory adjustment, address delegate
   ) internal {
@@ -409,6 +508,7 @@ contract Account is IAccount, ERC721 {
 
   }
 
+  // TODO: could go back to negative/positive struct to reduce SLOADs?
   function _absAllowanceCheck(
     mapping(address => uint) storage allowancesForSubId,
     mapping(address => uint) storage allowancesForAsset,
@@ -416,7 +516,6 @@ contract Account is IAccount, ERC721 {
     int amount
   ) internal {
     // check allowance
-    // TODO: could go back to negative/positive struct to reduce SLOADs
     uint subIdAllowance = allowancesForSubId[delegate];
     uint assetAllowance = allowancesForAsset[delegate];
 
@@ -437,7 +536,10 @@ contract Account is IAccount, ERC721 {
   // Util //
   //////////
 
-  /// @dev this should never be called if the account already holds the asset
+  /** 
+   * @notice Called when the account does not already hold the (asset, subId)
+   * @dev Useful for managers to check the risk of the whole account
+   */
   function _addHeldAsset(
     uint accountId, IAbstractAsset asset, uint subId
   ) internal returns (uint16 newOrder) {
@@ -445,10 +547,12 @@ contract Account is IAccount, ERC721 {
     newOrder = (heldAssets[accountId].length - 1).toUint16();
   }
   
-  /// @dev this should never be called if account doesn't hold asset
-  ///      using heldOrder mapping to remove
-  ///      ~200000 gas overhead for 100 position portfolio
-
+  /** 
+   * @notice Called when the balance of a (asset, subId) returns to zero
+   * @dev BalanceAndOrder.order used to gas efficiently remove assets from large accounts
+   *      1. removes ~200k gas overhead for a 100 position portfolio
+   *      2. for expiration with strikes, reduces gas overheada by ~150k
+   */
   function _removeHeldAsset(
     uint accountId, 
     BalanceAndOrder memory userBalanceAndOrder
@@ -473,7 +577,7 @@ contract Account is IAccount, ERC721 {
     return 0;
   }
 
-  /// @dev used for gas efficient transferAll
+  /** @dev used for gas efficient transferAll() */
   function _clearAllHeldAssets(uint accountId) internal {
     HeldAsset[] memory assets = heldAssets[accountId];
     uint heldAssetLen = assets.length;
@@ -520,6 +624,12 @@ contract Account is IAccount, ERC721 {
   // View //
   //////////
 
+  /** 
+   * @notice Gets an account's balance for an (asset, subId)
+   * @param accountId ID of account
+   * @param asset IAbstractAsset of balance
+   * @param subId subId of balance
+   */
   function getBalance(
     uint accountId, 
     IAbstractAsset asset, 
@@ -530,6 +640,11 @@ contract Account is IAccount, ERC721 {
     return int(userBalanceAndOrder.balance);
   }
 
+  /** 
+   * @notice Gets a list of all asset balances of an account
+   * @dev can use balanceAndOrder() to get the index of a specific balance
+   * @param accountId ID of account
+  */
   function getAccountBalances(uint accountId) 
     external view returns (AssetBalance[] memory assetBalances) {
     return _getAccountBalances(accountId);
