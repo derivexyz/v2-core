@@ -77,7 +77,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
   // Liquidations
 
   function flagLiquidation(uint accountId) external {
-    AccountStructs.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
+    IAccount.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
     if (!liquidationFlagged[accountId] && _isAccountLiquidatable(accountId, assetBals)) {
       liquidationFlagged[accountId] = true;
     } else {
@@ -98,16 +98,16 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
 
     // TODO: check owner of accountForCollat
     account.adjustBalance(
-      AccountStructs.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: -extraCollateral})
+      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: -extraCollateral})
     );
     assessRisk(accountForCollateral, account.getAccountBalances(accountForCollateral));
 
     account.adjustBalance(
-      AccountStructs.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: extraCollateral})
+      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: extraCollateral})
     );
     account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
 
-    AccountStructs.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
+    IAccount.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
     for (uint i; i < assetBals.length; i++) {
       if (assetBals[i].asset == IAbstractAsset(optionToken)) {
         optionToken.decrementLiquidations(assetBals[i].subId);
@@ -119,7 +119,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
   ////
   // Settlement
 
-  function settleAssets(uint accountId, AccountStructs.HeldAsset[] memory assetsToSettle) external {
+  function settleAssets(uint accountId, IAccount.HeldAsset[] memory assetsToSettle) external {
     // iterate through all held assets and trigger settlement
     uint assetLen = assetsToSettle.length;
     for (uint i; i < assetLen; i++) {
@@ -130,7 +130,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
       if (settled) {
         // NOTE: RM A at risk of RM B not properly implementing settling
         account.adjustBalance(
-          AccountStructs.AssetAdjustment({
+          IAccount.AssetAdjustment({
             acc: accountId,
             asset: assetsToSettle[i].asset,
             subId: assetsToSettle[i].subId,
@@ -138,7 +138,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
           })
         );
 
-        account.adjustBalance(AccountStructs.AssetAdjustment({acc: accountId, asset: quoteAsset, subId: 0, amount: PnL}));
+        account.adjustBalance(IAccount.AssetAdjustment({acc: accountId, asset: quoteAsset, subId: 0, amount: PnL}));
       }
     }
   }
@@ -146,11 +146,11 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
   ////
   // Views
 
-  function handleAdjustment(uint accountId, AccountStructs.AssetBalance[] memory assets, address) public view override {
+  function handleAdjustment(uint accountId, IAccount.AssetBalance[] memory assets, address) public view override {
     assessRisk(accountId, assets);
   }
 
-  function assessRisk(uint accountId, AccountStructs.AssetBalance[] memory assets) public view {
+  function assessRisk(uint accountId, IAccount.AssetBalance[] memory assets) public view {
     if (liquidationFlagged[accountId]) {
       revert("Account flagged for liquidation");
     }
@@ -159,7 +159,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
     }
   }
 
-  function _isAccountLiquidatable(uint, AccountStructs.AssetBalance[] memory assets) internal view returns (bool) {
+  function _isAccountLiquidatable(uint, IAccount.AssetBalance[] memory assets) internal view returns (bool) {
     uint assetLen = assets.length;
     uint scenarioLen = scenarios.length;
 
@@ -171,7 +171,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
       int scenarioValue = 0;
       uint shockedSpot = baseSpotPrice.multiplyDecimal(scenarios[j].spotShock);
       for (uint k; k < assetLen; k++) {
-        AccountStructs.AssetBalance memory assetBalance = assets[k];
+        IAccount.AssetBalance memory assetBalance = assets[k];
 
         if (assetBalance.asset == IAbstractAsset(optionToken)) {
           // swap out to remov BS price:

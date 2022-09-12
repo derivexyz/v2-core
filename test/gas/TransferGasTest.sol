@@ -36,7 +36,7 @@ contract TransferGasTest is Test, LyraHelper {
     // two-way transfer option
     console2.log("start");
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAbstractAsset(optionAdapter),
@@ -44,7 +44,7 @@ contract TransferGasTest is Test, LyraHelper {
       amount: int(1e18)
     });
 
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAbstractAsset(usdcAdapter),
@@ -52,7 +52,7 @@ contract TransferGasTest is Test, LyraHelper {
       amount: int(100e18)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
@@ -66,7 +66,7 @@ contract TransferGasTest is Test, LyraHelper {
     
     // two-way transfer option
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAbstractAsset(optionAdapter),
@@ -74,7 +74,7 @@ contract TransferGasTest is Test, LyraHelper {
       amount: int(1e18)
     });
 
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAbstractAsset(usdcAdapter),
@@ -82,8 +82,8 @@ contract TransferGasTest is Test, LyraHelper {
       amount: int(100e18)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = 
-      new AccountStructs.AssetTransfer[](100);
+    IAccount.AssetTransfer[] memory transferBatch = 
+      new IAccount.AssetTransfer[](100);
     
     for (uint i; i < 50; i++) {
       transferBatch[i * 2] = optionTransfer;
@@ -100,11 +100,11 @@ contract TransferGasTest is Test, LyraHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer[] memory initialTransfers =
+    IAccount.AssetTransfer[] memory initialTransfers =
       composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 5);
     account.submitTransfers(initialTransfers);  
 
-    AccountStructs.AssetTransfer[] memory finalTransfers =
+    IAccount.AssetTransfer[] memory finalTransfers =
       composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18), 5);
     account.submitTransfers(finalTransfers);  
 
@@ -118,12 +118,12 @@ contract TransferGasTest is Test, LyraHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer[] memory initialTransfers =
+    IAccount.AssetTransfer[] memory initialTransfers =
       composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 100);
     account.submitTransfers(initialTransfers);  
 
-    AccountStructs.AssetTransfer[] memory singleTransfer = new AccountStructs.AssetTransfer[](1);
-    singleTransfer[0] = AccountStructs.AssetTransfer({
+    IAccount.AssetTransfer[] memory singleTransfer = new IAccount.AssetTransfer[](1);
+    singleTransfer[0] = IAccount.AssetTransfer({
         fromAcc: aliceAcc,
         toAcc: bobAcc,
         asset: IAbstractAsset(optionAdapter),
@@ -138,11 +138,11 @@ contract TransferGasTest is Test, LyraHelper {
 
   function composeBulkUniqueTransfers(
     uint fromAcc, uint toAcc, int amount, uint numOfTransfers
-  ) internal view returns (AccountStructs.AssetTransfer[] memory transferBatch) {
-    transferBatch = new AccountStructs.AssetTransfer[](numOfTransfers);
+  ) internal view returns (IAccount.AssetTransfer[] memory transferBatch) {
+    transferBatch = new IAccount.AssetTransfer[](numOfTransfers);
 
     for (uint i; i < numOfTransfers; i++) {
-      transferBatch[i] = AccountStructs.AssetTransfer({
+      transferBatch[i] = IAccount.AssetTransfer({
         fromAcc: fromAcc,
         toAcc: toAcc,
         asset: IAbstractAsset(optionAdapter),

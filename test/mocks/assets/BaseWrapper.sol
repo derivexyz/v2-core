@@ -22,7 +22,7 @@ contract BaseWrapper is IAbstractAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.adjustBalance(
-      AccountStructs.AssetAdjustment({
+      IAccount.AssetAdjustment({
         acc: recipientAccount,
         asset: IAbstractAsset(address(this)),
         subId: 0,
@@ -34,7 +34,7 @@ contract BaseWrapper is IAbstractAsset, Owned {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     int postBalance = account.adjustBalance(
-      AccountStructs.AssetAdjustment({acc: accountId, asset: IAbstractAsset(address(this)), subId: 0, amount: -int(amount)})
+      IAccount.AssetAdjustment({acc: accountId, asset: IAbstractAsset(address(this)), subId: 0, amount: -int(amount)})
     );
     require(postBalance >= 0);
     token.transfer(recipientAccount, amount);

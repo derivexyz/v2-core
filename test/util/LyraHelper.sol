@@ -70,7 +70,7 @@ abstract contract LyraHelper is Test {
   }
 
   function openCallOption(uint longAcc, uint shortAcc, uint amount, uint premium, uint optionSubId) public {
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
       asset: IAbstractAsset(optionAdapter),
@@ -78,7 +78,7 @@ abstract contract LyraHelper is Test {
       amount: int(amount)
     });
 
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
       asset: IAbstractAsset(usdcAdapter),
@@ -86,7 +86,7 @@ abstract contract LyraHelper is Test {
       amount: int(premium)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
