@@ -219,6 +219,6 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
     return false;
   }
 
-  function handleManagerChange(uint, IAbstractManager, bytes memory) external {}
+  function handleManagerChange(uint, IAbstractManager) external {}
 
 }

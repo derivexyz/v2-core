@@ -91,14 +91,15 @@ contract Account is IAccount, ERC721 {
    *         msg.sender must be ERC721 approved or owner
    * @param accountId ID of account
    * @param newManager new IAbstractManager
+   * @param newManagerData data to be passed to manager._managerHook 
    */
   function changeManager(
-    uint accountId, IAbstractManager newManager, bytes memory managerData
+    uint accountId, IAbstractManager newManager, bytes memory newManagerData
   ) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
 
     IAbstractManager oldManager = manager[accountId];
-    oldManager.handleManagerChange(accountId, newManager, managerData);
+    oldManager.handleManagerChange(accountId, newManager);
 
     // only call to asset once 
     HeldAsset[] memory accountAssets = heldAssets[accountId];
@@ -116,7 +117,7 @@ contract Account is IAccount, ERC721 {
     }
 
     manager[accountId] = newManager;
-    _managerHook(accountId, msg.sender, managerData);
+    _managerHook(accountId, msg.sender, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
