@@ -214,6 +214,7 @@ contract Account is IAccount, ERC721 {
   /** 
    * @notice Transfer an amount from one account to another for a specific (asset, subId)
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData data passed to managers of both accounts 
    */
   function submitTransfer(
     AssetTransfer memory assetTransfer, bytes memory managerData
@@ -228,6 +229,7 @@ contract Account is IAccount, ERC721 {
    *         Gas efficient when modifying the same account several times,
    *         as _managerHook() is only performed once per account
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData data passed to every manager involved in trade 
    */
   function submitTransfers(
     AssetTransfer[] memory assetTransfers, bytes memory managerData
@@ -299,6 +301,8 @@ contract Account is IAccount, ERC721 {
    *         More gas efficient than submitTransfers()
    * @param fromAccountId ID of sender account
    * @param toAccountId ID of recipient account
+   * @param allAssetData bytes32 data per heldAsset which is passed into asset.handleAdjustment()
+   * @dev allAssetData can be left empty, otherwise require(allAssetData.length == heldAssets[acc].length()
    */
   function transferAll(
     uint fromAccountId, uint toAccountId, bytes memory managerData, bytes32[] memory allAssetData
@@ -358,6 +362,7 @@ contract Account is IAccount, ERC721 {
    * @notice Assymetric balance adjustment reserved for managers or asset 
    *         Must still pass both _managerHook() and _assetHook()
    * @param adjustment assymetric adjustment of amount for (asset, subId)
+   * @param managerData data passed to manager of account
    */
   function adjustBalance(
     AssetAdjustment memory adjustment,
@@ -439,6 +444,7 @@ contract Account is IAccount, ERC721 {
    *         
    * @param accountId ID of account being checked
    * @param caller address of msg.sender initiating balance adjustment
+   * @param managerData open ended data passed to manager
    */
   function _managerHook(
     uint accountId, 
@@ -462,6 +468,7 @@ contract Account is IAccount, ERC721 {
    * @param preBalance balance before adjustment
    * @param postBalance balance after adjustment
    * @param caller address of msg.sender initiating balance adjustment
+   * @param assetData data passed to asset for each subId transfer
    */
   function _assetHook(
     IAbstractAsset asset, 
@@ -511,7 +518,6 @@ contract Account is IAccount, ERC721 {
 
   }
 
-  // TODO: could go back to negative/positive struct to reduce SLOADs?
   function _absAllowanceCheck(
     mapping(address => uint) storage allowancesForSubId,
     mapping(address => uint) storage allowancesForAsset,

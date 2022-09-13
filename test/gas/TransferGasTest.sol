@@ -34,7 +34,6 @@ contract TransferGasTest is Test, LyraHelper {
     setupAssetAllowances(bob, bobAcc, alice);
     
     // two-way transfer option
-    console2.log("start");
     vm.startPrank(alice);
     IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: aliceAcc,
