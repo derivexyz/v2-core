@@ -75,7 +75,8 @@ abstract contract LyraHelper is Test {
       toAcc: longAcc,
       asset: IAbstractAsset(optionAdapter),
       subId: optionSubId,
-      amount: int(amount)
+      amount: int(amount),
+      assetData: bytes32(0)
     });
 
     IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
@@ -83,14 +84,15 @@ abstract contract LyraHelper is Test {
       toAcc: shortAcc,
       asset: IAbstractAsset(usdcAdapter),
       subId: 0,
-      amount: int(premium)
+      amount: int(premium),
+      assetData: bytes32(0)
     });
 
     IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
-    account.submitTransfers(transferBatch, "", "");
+    account.submitTransfers(transferBatch, "");
   }
 
   function setupDefaultScenarios() public {

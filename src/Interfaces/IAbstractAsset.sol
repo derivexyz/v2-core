@@ -10,13 +10,12 @@ interface IAbstractAsset {
     uint subId,
     IAbstractManager manager,
     address caller,
-    bytes memory data
-  ) external;
+    bytes32 data
+  ) external returns (int finalBalance);
 
   function handleManagerChange(
     uint accountId, 
     IAbstractManager oldManager, 
-    IAbstractManager newManager,
-    bytes memory data
+    IAbstractManager newManager
   ) external;
 }

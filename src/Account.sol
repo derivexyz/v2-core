@@ -93,7 +93,7 @@ contract Account is IAccount, ERC721 {
    * @param newManager new IAbstractManager
    */
   function changeManager(
-    uint accountId, IAbstractManager newManager, bytes memory managerData, bytes memory assetData
+    uint accountId, IAbstractManager newManager, bytes memory managerData
   ) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
 
@@ -112,7 +112,7 @@ contract Account is IAccount, ERC721 {
     }
 
     for (uint i; i < nextSeenId; ++i) {
-      seenAssets[i].handleManagerChange(accountId, oldManager, newManager, assetData);
+      seenAssets[i].handleManagerChange(accountId, oldManager, newManager);
     }
 
     manager[accountId] = newManager;
@@ -212,9 +212,9 @@ contract Account is IAccount, ERC721 {
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    */
   function submitTransfer(
-    AssetTransfer memory assetTransfer, bytes memory managerData, bytes memory assetData
+    AssetTransfer memory assetTransfer, bytes memory managerData
   ) external {
-    _transferAsset(assetTransfer, assetData);
+    _transferAsset(assetTransfer);
     _managerHook(assetTransfer.fromAcc, msg.sender, managerData);
     _managerHook(assetTransfer.toAcc, msg.sender, managerData);
   }
@@ -226,13 +226,13 @@ contract Account is IAccount, ERC721 {
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
    */
   function submitTransfers(
-    AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData
+    AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external {
-    _submitTransfers(assetTransfers, managerData, assetData);
+    _submitTransfers(assetTransfers, managerData);
   }
 
   function _submitTransfers(
-    AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData
+    AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) internal {
     // Do the transfers
     uint transfersLen = assetTransfers.length;
@@ -242,7 +242,7 @@ contract Account is IAccount, ERC721 {
     uint nextSeenId = 0;
 
     for (uint i; i < transfersLen; ++i) {
-      _transferAsset(assetTransfers[i], assetData);
+      _transferAsset(assetTransfers[i]);
 
       uint fromAcc = assetTransfers[i].fromAcc;
       if (!_findInArray(seenAccounts, fromAcc)) {
@@ -261,13 +261,14 @@ contract Account is IAccount, ERC721 {
   }
 
   function _transferAsset(
-    AssetTransfer memory assetTransfer, bytes memory assetData
+    AssetTransfer memory assetTransfer
   ) internal {
     AssetAdjustment memory fromAccAdjustment = AssetAdjustment({
       acc: assetTransfer.fromAcc,
       asset: assetTransfer.asset,
       subId: assetTransfer.subId,
-      amount: -assetTransfer.amount
+      amount: -assetTransfer.amount,
+      assetData: assetTransfer.assetData
     });
     BalanceAndOrder storage fromBalanceAndOrder = 
       balanceAndOrder[assetTransfer.fromAcc][assetTransfer.asset][assetTransfer.subId];
@@ -276,7 +277,8 @@ contract Account is IAccount, ERC721 {
       acc: assetTransfer.toAcc,
       asset: assetTransfer.asset,
       subId: assetTransfer.subId,
-      amount: assetTransfer.amount
+      amount: assetTransfer.amount,
+      assetData: assetTransfer.assetData
     });
     BalanceAndOrder storage toBalanceAndOrder = 
       balanceAndOrder[assetTransfer.fromAcc][assetTransfer.asset][assetTransfer.subId];
@@ -284,8 +286,8 @@ contract Account is IAccount, ERC721 {
     _allowanceCheck(fromAccAdjustment, msg.sender);
     _allowanceCheck(toAccAdjustment, msg.sender);
 
-    _adjustBalance(fromAccAdjustment, fromBalanceAndOrder, assetData);
-    _adjustBalance(toAccAdjustment, toBalanceAndOrder, assetData);
+    _adjustBalance(fromAccAdjustment, fromBalanceAndOrder);
+    _adjustBalance(toAccAdjustment, toBalanceAndOrder);
   }
 
   /** 
@@ -295,21 +297,30 @@ contract Account is IAccount, ERC721 {
    * @param toAccountId ID of recipient account
    */
   function transferAll(
-    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes memory assetData
+    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes32[] memory allAssetData
   ) external {
     _requireERC721ApprovedOrOwner(msg.sender, fromAccountId);
     _requireERC721ApprovedOrOwner(msg.sender, toAccountId);
 
-    _transferAll(fromAccountId, toAccountId, assetData);
+    _transferAll(fromAccountId, toAccountId, allAssetData);
     _managerHook(fromAccountId, msg.sender, managerData);
     _managerHook(toAccountId, msg.sender, managerData);
   }
 
   function _transferAll(
-    uint fromAccountId, uint toAccountId, bytes memory assetData
+    uint fromAccountId, uint toAccountId, bytes32[] memory allAssetData
   ) internal {
     HeldAsset[] memory fromAssets = heldAssets[fromAccountId];
     uint heldAssetLen = fromAssets.length;
+    uint allAssetDataLen = allAssetData.length;
+
+    bytes32[] memory formattedAssetData = new bytes32[](heldAssetLen);
+    if (allAssetDataLen == heldAssetLen) {
+      formattedAssetData = allAssetData;
+    } else if (allAssetDataLen != 0 && allAssetDataLen != heldAssetLen) {
+      revert AssetDataDoesNotMatchHeldAssets(address(this), allAssetDataLen, heldAssetLen);
+    }
+
     for (uint i; i < heldAssetLen; i++) {
       BalanceAndOrder storage userBalanceAndOrder = 
         balanceAndOrder[toAccountId][fromAssets[i].asset][fromAssets[i].subId];
@@ -318,20 +329,20 @@ contract Account is IAccount, ERC721 {
           acc: fromAccountId,
           asset: fromAssets[i].asset,
           subId: fromAssets[i].subId,
-          amount: -int(userBalanceAndOrder.balance)
+          amount: -int(userBalanceAndOrder.balance),
+          assetData: formattedAssetData[i]
         }), 
-        userBalanceAndOrder,
-        assetData
+        userBalanceAndOrder
       );
 
       _adjustBalance(AssetAdjustment({
           acc: toAccountId,
           asset: fromAssets[i].asset,
           subId: fromAssets[i].subId,
-          amount: int(userBalanceAndOrder.balance)
+          amount: int(userBalanceAndOrder.balance),
+          assetData: formattedAssetData[i]
         }), 
-        userBalanceAndOrder,
-        assetData
+        userBalanceAndOrder
       );
     }
 
@@ -346,13 +357,12 @@ contract Account is IAccount, ERC721 {
    */
   function adjustBalance(
     AssetAdjustment memory adjustment,
-    bytes memory managerData,
-    bytes memory assetData
+    bytes memory managerData
   ) onlyManagerOrAsset(adjustment.acc, adjustment.asset) external returns (int postAdjustmentBalance) {    
     BalanceAndOrder storage userBalanceAndOrder = 
         balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
 
-    _adjustBalance(adjustment, userBalanceAndOrder, assetData);
+    _adjustBalance(adjustment, userBalanceAndOrder);
     _managerHook(adjustment.acc, msg.sender, managerData); // since caller is passed, manager can internally decide to ignore check
 
     postAdjustmentBalance = int(userBalanceAndOrder.balance);
@@ -360,27 +370,30 @@ contract Account is IAccount, ERC721 {
 
   function _adjustBalance(
     AssetAdjustment memory adjustment, 
-    BalanceAndOrder storage userBalanceAndOrder,
-    bytes memory assetData
+    BalanceAndOrder storage userBalanceAndOrder
 ) internal {
     int preBalance = int(userBalanceAndOrder.balance);
-    int postBalance = int(userBalanceAndOrder.balance) + adjustment.amount;
 
+    // allow asset to modify adjustment in special cases (e.g. socialized losses / interest accruals)
+    int postBalance = _assetHook(
+      adjustment.asset, 
+      adjustment.subId, 
+      adjustment.acc, 
+      preBalance, 
+      int(userBalanceAndOrder.balance) + adjustment.amount, 
+      msg.sender, 
+      adjustment.assetData
+    );
+    
     // removeHeldAsset does not change order, instead
     // returns newOrder and stores balance and order in one word
-    uint16 newOrder = userBalanceAndOrder.order;
+    userBalanceAndOrder.balance = postBalance.toInt240();
     if (preBalance != 0 && postBalance == 0) {
-      newOrder = _removeHeldAsset(adjustment.acc, userBalanceAndOrder);
+      userBalanceAndOrder.order = _removeHeldAsset(adjustment.acc, userBalanceAndOrder);
     } else if (preBalance == 0 && postBalance != 0) {
-      newOrder = _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
+      userBalanceAndOrder.order = _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     } 
 
-    userBalanceAndOrder.balance = postBalance.toInt240();
-    userBalanceAndOrder.order = newOrder;
-
-    _assetHook(
-      adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender, assetData
-    );
     emit BalanceAdjusted(
       adjustment.acc, 
       address(manager[adjustment.acc]), 
@@ -393,20 +406,22 @@ contract Account is IAccount, ERC721 {
     );
   }
 
-  // TODO: have _assetHook() return postBalance in case of socialized losses?
   function _adjustBalanceWithoutHeldAssetUpdate(
     AssetAdjustment memory adjustment,
-    BalanceAndOrder storage userBalanceAndOrder,
-    bytes memory assetData
+    BalanceAndOrder storage userBalanceAndOrder
   ) internal{
     int preBalance = int(userBalanceAndOrder.balance);
-    int postBalance = int(userBalanceAndOrder.balance) + adjustment.amount;
+    int postBalance = _assetHook(
+      adjustment.asset, 
+      adjustment.subId,
+      adjustment.acc, 
+      preBalance, 
+      int(userBalanceAndOrder.balance) + adjustment.amount, 
+      msg.sender, 
+      adjustment.assetData
+    );
 
     userBalanceAndOrder.balance = postBalance.toInt240();
-
-    _assetHook(
-      adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender, assetData
-    );
   }
 
   ////////////////////////////
@@ -451,9 +466,9 @@ contract Account is IAccount, ERC721 {
     int preBalance, 
     int postBalance, 
     address caller,
-    bytes memory assetData
-  ) internal {
-    asset.handleAdjustment(
+    bytes32 assetData
+  ) internal returns (int finalBalance) {
+    return asset.handleAdjustment(
       accountId, preBalance, postBalance, subId, manager[accountId], caller, assetData
     );
   }

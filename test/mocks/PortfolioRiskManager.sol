@@ -98,14 +98,26 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
 
     // TODO: check owner of accountForCollat
     account.adjustBalance(
-      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: -extraCollateral}),
-      "", ""
+      IAccount.AssetAdjustment({
+        acc: accountForCollateral, 
+        asset: quoteAsset, 
+        subId: 0, 
+        amount: -extraCollateral,
+        assetData: bytes32(0)
+      }),
+      ""
     );
     assessRisk(accountForCollateral, account.getAccountBalances(accountForCollateral));
 
     account.adjustBalance(
-      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: extraCollateral}),
-      "", ""
+      IAccount.AssetAdjustment({
+        acc: accountForCollateral, 
+        asset: quoteAsset, 
+        subId: 0, 
+        amount: extraCollateral,
+        assetData: bytes32(0)
+      }),
+      ""
     );
     account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
 
@@ -136,13 +148,20 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
             acc: accountId,
             asset: assetsToSettle[i].asset,
             subId: assetsToSettle[i].subId,
-            amount: -balance // set back to zero
+            amount: -balance, // set back to zero
+            assetData: bytes32(0)
           }), 
-          "",
           ""
         );
 
-        account.adjustBalance(IAccount.AssetAdjustment({acc: accountId, asset: quoteAsset, subId: 0, amount: PnL}), "", "");
+        account.adjustBalance(IAccount.AssetAdjustment({
+          acc: accountId, 
+          asset: quoteAsset, 
+          subId: 0, 
+          amount: PnL,
+          assetData: bytes32(0)
+        }), 
+        "");
       }
     }
   }

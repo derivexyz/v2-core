@@ -35,6 +35,7 @@ interface IAccount {
     IAbstractAsset asset;
     uint subId;
     int amount;
+    bytes32 assetData;
   }
 
   struct AssetAdjustment {
@@ -42,6 +43,7 @@ interface IAccount {
     IAbstractAsset asset;
     uint subId;
     int amount;
+    bytes32 assetData;
   }  
 
   ///////////////////
@@ -53,7 +55,7 @@ interface IAccount {
   function burnAccounts(uint[] memory accountIds) external;
 
   function changeManager(
-    uint accountId, IAbstractManager newManager, bytes memory managerData, bytes memory assetData
+    uint accountId, IAbstractManager newManager, bytes memory managerData
   ) external;
 
   ///////////////
@@ -82,19 +84,19 @@ interface IAccount {
   /////////////////////////
 
   function submitTransfer(
-    AssetTransfer memory assetTransfer, bytes memory managerData, bytes memory assetData
+    AssetTransfer memory assetTransfer, bytes memory managerData
   ) external;
 
   function submitTransfers(
-    AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData
+    AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external;
 
   function transferAll(
-    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes memory assetData
+    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes32[] memory allAssetData
   ) external;
 
   function adjustBalance(
-    AssetAdjustment memory adjustment, bytes memory managerData, bytes memory assetData
+    AssetAdjustment memory adjustment, bytes memory managerData
   ) external returns (int postBalance);
 
   //////////
@@ -190,4 +192,5 @@ interface IAccount {
     uint assetAllowance
   );
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
+  error AssetDataDoesNotMatchHeldAssets(address thrower, uint assetDataLen, uint heldAssetLen);
 }

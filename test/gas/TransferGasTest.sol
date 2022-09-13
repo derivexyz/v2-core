@@ -41,7 +41,8 @@ contract TransferGasTest is Test, LyraHelper {
       toAcc: bobAcc,
       asset: IAbstractAsset(optionAdapter),
       subId: optionAdapter.listingParamsToSubId(1500e18, 123456, true),
-      amount: int(1e18)
+      amount: int(1e18),
+      assetData: bytes32(0)
     });
 
     IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
@@ -49,14 +50,15 @@ contract TransferGasTest is Test, LyraHelper {
       toAcc: aliceAcc,
       asset: IAbstractAsset(usdcAdapter),
       subId: 0,
-      amount: int(100e18)
+      amount: int(100e18),
+      assetData: bytes32(0)
     });
 
     IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
-    account.submitTransfers(transferBatch, "", "");
+    account.submitTransfers(transferBatch, "");
     vm.stopPrank();
   }
 
@@ -71,7 +73,8 @@ contract TransferGasTest is Test, LyraHelper {
       toAcc: bobAcc,
       asset: IAbstractAsset(optionAdapter),
       subId: optionAdapter.listingParamsToSubId(1500e18, 123456, true),
-      amount: int(1e18)
+      amount: int(1e18),
+      assetData: bytes32(0)
     });
 
     IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
@@ -79,7 +82,8 @@ contract TransferGasTest is Test, LyraHelper {
       toAcc: aliceAcc,
       asset: IAbstractAsset(usdcAdapter),
       subId: 0,
-      amount: int(100e18)
+      amount: int(100e18),
+      assetData: bytes32(0)
     });
 
     IAccount.AssetTransfer[] memory transferBatch = 
@@ -90,7 +94,7 @@ contract TransferGasTest is Test, LyraHelper {
       transferBatch[i * 2 + 1] = premiumTransfer;
     }
 
-    account.submitTransfers(transferBatch, "", "");
+    account.submitTransfers(transferBatch, "");
     vm.stopPrank();
   }
 
@@ -102,11 +106,11 @@ contract TransferGasTest is Test, LyraHelper {
     vm.startPrank(alice);
     IAccount.AssetTransfer[] memory initialTransfers =
       composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 5);
-    account.submitTransfers(initialTransfers, "", "");  
+    account.submitTransfers(initialTransfers, "");  
 
     IAccount.AssetTransfer[] memory finalTransfers =
       composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18), 5);
-    account.submitTransfers(finalTransfers, "", "");  
+    account.submitTransfers(finalTransfers, "");  
 
     vm.stopPrank();
 
@@ -120,7 +124,7 @@ contract TransferGasTest is Test, LyraHelper {
     vm.startPrank(alice);
     IAccount.AssetTransfer[] memory initialTransfers =
       composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 100);
-    account.submitTransfers(initialTransfers, "", "");  
+    account.submitTransfers(initialTransfers, "");  
 
     IAccount.AssetTransfer[] memory singleTransfer = new IAccount.AssetTransfer[](1);
     singleTransfer[0] = IAccount.AssetTransfer({
@@ -128,9 +132,10 @@ contract TransferGasTest is Test, LyraHelper {
         toAcc: bobAcc,
         asset: IAbstractAsset(optionAdapter),
         subId: optionAdapter.listingParamsToSubId(1000e18, 123456, true),
-        amount: 1e17
+        amount: 1e17,
+        assetData: bytes32(0)
       });
-    account.submitTransfers(singleTransfer, "", "");  
+    account.submitTransfers(singleTransfer, "");  
 
     vm.stopPrank();
 
@@ -147,7 +152,8 @@ contract TransferGasTest is Test, LyraHelper {
         toAcc: toAcc,
         asset: IAbstractAsset(optionAdapter),
         subId: optionAdapter.listingParamsToSubId(1000e18 + i * 10, 123456, true),
-        amount: amount
+        amount: amount,
+        assetData: bytes32(0)
       });
     }
 

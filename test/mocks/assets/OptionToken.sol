@@ -60,16 +60,16 @@ contract OptionToken is IAbstractAsset, Owned {
   // Transfer
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
-  function handleAdjustment(uint, int preBal, int postBal, uint subId, IAbstractManager riskModel, address caller, bytes memory)
-    external
-    override
+  function handleAdjustment(
+    uint, int preBal, int postBal, uint subId, IAbstractManager riskModel, address caller, bytes32
+    ) external override returns (int finalBalance)
   {
     Listing memory listing = subIdToListing(subId);
 
     if (block.timestamp >= listing.expiry) {
       require(riskModelAllowList[IAbstractManager(caller)], "only RM settles");
       require(preBal != 0 && postBal == 0);
-      return;
+      return postBal;
     }
 
     require(listing.expiry != 0 && riskModelAllowList[riskModel]);
@@ -85,6 +85,8 @@ contract OptionToken is IAbstractAsset, Owned {
     } else {
       totalLongs[subId] += uint(postBal);
     }
+
+    return postBal;
   }
 
   ////
@@ -193,5 +195,5 @@ contract OptionToken is IAbstractAsset, Owned {
     return int(DecimalMath.UNIT * totalShorts[subId] / totalLongs[subId]) * balance / SignedDecimalMath.UNIT;
   }
 
-  function handleManagerChange(uint, IAbstractManager, IAbstractManager, bytes memory) external pure override {}
+  function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
 }
