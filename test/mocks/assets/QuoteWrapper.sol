@@ -56,7 +56,7 @@ contract QuoteWrapper is IAbstractAsset, Owned {
   }
 
   function handleAdjustment(
-    uint, int, int postBal, uint subId, IAbstractManager riskModel, address, bytes32
+    uint, int, int postBal, uint96 subId, IAbstractManager riskModel, address, bytes32
   ) external view override returns (int finalBalance) {
     require(subId == 0 && riskModelAllowList[riskModel]);
     return postBal;

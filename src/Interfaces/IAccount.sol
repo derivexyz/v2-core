@@ -55,7 +55,7 @@ interface IAccount {
   function burnAccounts(uint[] memory accountIds) external;
 
   function changeManager(
-    uint accountId, IAbstractManager newManager, bytes memory managerData
+    uint accountId, IAbstractManager newManager, bytes memory newManagerData
   ) external;
 
   ///////////////

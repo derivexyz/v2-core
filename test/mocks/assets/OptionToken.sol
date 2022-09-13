@@ -30,14 +30,14 @@ contract OptionToken is IAbstractAsset, Owned {
   SettlementPricer settlementPricer;
 
   uint feedId;
-  uint nextId = 0;
+  uint96 nextId = 0;
   mapping(IAbstractManager => bool) riskModelAllowList;
 
   mapping(uint => uint) totalLongs;
   mapping(uint => uint) totalShorts;
-
   mapping(uint => uint) liquidationCount;
 
+  mapping(uint96 => Listing) subIdToListing;
   constructor(
     Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_
   ) Owned() {
@@ -61,10 +61,10 @@ contract OptionToken is IAbstractAsset, Owned {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    uint, int preBal, int postBal, uint subId, IAbstractManager riskModel, address caller, bytes32
+    uint, int preBal, int postBal, uint96 subId, IAbstractManager riskModel, address caller, bytes32
     ) external override returns (int finalBalance)
   {
-    Listing memory listing = subIdToListing(subId);
+    Listing memory listing = subIdToListing[subId];
 
     if (block.timestamp >= listing.expiry) {
       require(riskModelAllowList[IAbstractManager(caller)], "only RM settles");
@@ -109,7 +109,7 @@ contract OptionToken is IAbstractAsset, Owned {
 
   // currently hard-coded to optionToken but can have multiple assets if sharing the same logic
   function getValue(uint subId, int balance, uint spotPrice, uint iv) external view returns (int value) {
-    Listing memory listing = subIdToListing(subId);
+    Listing memory listing = subIdToListing[uint96(subId)];
     balance = _ratiodBalance(subId, balance);
 
     if (block.timestamp > listing.expiry) {
@@ -134,7 +134,7 @@ contract OptionToken is IAbstractAsset, Owned {
   // Settlement
 
   function calculateSettlement(uint subId, int balance) external view returns (int PnL, bool settled) {
-    Listing memory listing = subIdToListing(subId);
+    Listing memory listing = subIdToListing[uint96(subId)];
     SettlementPricer.SettlementDetails memory settlementDetails = settlementPricer.maybeGetSettlementDetails(feedId, listing.expiry);
 
     if (listing.expiry < block.timestamp || settlementDetails.price == 0) {
@@ -170,23 +170,6 @@ contract OptionToken is IAbstractAsset, Owned {
    * bits 128-256 => strikePrice
    */
 
-  // TODO: need to remove subId encoding to make work with uint96 subId
-
-  function subIdToListing(uint subId) public pure returns (Listing memory) {
-    return Listing({strikePrice: uint(uint128(subId)), expiry: uint(uint(subId >> 128)), isCall: subId >> 255 == 1});
-  }
-
-  function listingToSubId(Listing memory listing) public pure returns (uint subId) {
-    require(listing.strikePrice < 2 ** 128);
-    require(listing.expiry < 2 ** 64);
-    subId = listing.isCall ? uint(1 << 255) : 0;
-    return subId + (listing.expiry << 128) + (listing.strikePrice);
-  }
-
-  function listingParamsToSubId(uint strikePrice, uint expiry, bool isCall) public pure returns (uint subId) {
-    return listingToSubId(Listing({strikePrice: strikePrice, expiry: expiry, isCall: isCall}));
-  }
-
   function _ratiodBalance(uint subId, int balance) internal view returns (int ratiodBalance) {
     if (totalLongs[subId] == 0) {
       return balance;
@@ -196,4 +179,15 @@ contract OptionToken is IAbstractAsset, Owned {
   }
 
   function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
+
+  function addListing(uint strike, uint expiry, bool isCall) external returns (uint subId) {
+    Listing memory newListing = Listing({
+      strikePrice: strike,
+      expiry: expiry,
+      isCall: isCall
+    });
+    subIdToListing[nextId] = newListing;
+    ++nextId;
+    return uint256(nextId) - 1;
+  }
 }

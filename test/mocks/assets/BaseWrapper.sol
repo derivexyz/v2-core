@@ -50,7 +50,7 @@ contract BaseWrapper is IAbstractAsset, Owned {
   }
 
   function handleAdjustment(
-    uint, int, int postBal, uint subId, IAbstractManager, address, bytes32
+    uint, int, int postBal, uint96 subId, IAbstractManager, address, bytes32
   ) external pure override returns (int finalBalance) {
     require(subId == 0 && postBal >= 0);
     return postBal;

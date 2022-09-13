@@ -7,6 +7,9 @@ import "./interfaces/IAbstractAsset.sol";
 import "./interfaces/IAbstractManager.sol";
 import "./interfaces/IAccount.sol";
 
+import "forge-std/console2.sol";
+
+
 /**
  * @title Account
  * @author Lyra
@@ -25,7 +28,7 @@ contract Account is IAccount, ERC721 {
   // Variables //
   ///////////////
 
-  uint nextId = 1;
+  uint nextId = 0;
   mapping(uint => IAbstractManager) public manager;
   mapping(uint => mapping(IAbstractAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
   mapping(uint => HeldAsset[]) public heldAssets;
@@ -282,7 +285,7 @@ contract Account is IAccount, ERC721 {
       assetData: assetTransfer.assetData
     });
     BalanceAndOrder storage toBalanceAndOrder = 
-      balanceAndOrder[assetTransfer.fromAcc][assetTransfer.asset][assetTransfer.subId];
+      balanceAndOrder[assetTransfer.toAcc][assetTransfer.asset][assetTransfer.subId];
 
     _allowanceCheck(fromAccAdjustment, msg.sender);
     _allowanceCheck(toAccAdjustment, msg.sender);
@@ -470,7 +473,7 @@ contract Account is IAccount, ERC721 {
     bytes32 assetData
   ) internal returns (int finalBalance) {
     return asset.handleAdjustment(
-      accountId, preBalance, postBalance, subId, manager[accountId], caller, assetData
+      accountId, preBalance, postBalance, subId.toUint96(), manager[accountId], caller, assetData
     );
   }
 

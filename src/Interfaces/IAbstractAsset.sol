@@ -7,7 +7,7 @@ interface IAbstractAsset {
     uint account,
     int preBal,
     int postBal,
-    uint subId,
+    uint96 subId,
     IAbstractManager manager,
     address caller,
     bytes32 data

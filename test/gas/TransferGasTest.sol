@@ -40,7 +40,7 @@ contract TransferGasTest is Test, LyraHelper {
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAbstractAsset(optionAdapter),
-      subId: optionAdapter.listingParamsToSubId(1500e18, 123456, true),
+      subId: optionAdapter.addListing(1500e18, block.timestamp + 604800, true),
       amount: int(1e18),
       assetData: bytes32(0)
     });
@@ -72,7 +72,7 @@ contract TransferGasTest is Test, LyraHelper {
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAbstractAsset(optionAdapter),
-      subId: optionAdapter.listingParamsToSubId(1500e18, 123456, true),
+      subId: optionAdapter.addListing(1500e18, block.timestamp + 604800, true),
       amount: int(1e18),
       assetData: bytes32(0)
     });
@@ -131,7 +131,7 @@ contract TransferGasTest is Test, LyraHelper {
         fromAcc: aliceAcc,
         toAcc: bobAcc,
         asset: IAbstractAsset(optionAdapter),
-        subId: optionAdapter.listingParamsToSubId(1000e18, 123456, true),
+        subId: optionAdapter.addListing(1000e18, block.timestamp + 604800, true),
         amount: 1e17,
         assetData: bytes32(0)
       });
@@ -143,7 +143,7 @@ contract TransferGasTest is Test, LyraHelper {
 
   function composeBulkUniqueTransfers(
     uint fromAcc, uint toAcc, int amount, uint numOfTransfers
-  ) internal view returns (IAccount.AssetTransfer[] memory transferBatch) {
+  ) internal returns (IAccount.AssetTransfer[] memory transferBatch) {
     transferBatch = new IAccount.AssetTransfer[](numOfTransfers);
 
     for (uint i; i < numOfTransfers; i++) {
@@ -151,7 +151,7 @@ contract TransferGasTest is Test, LyraHelper {
         fromAcc: fromAcc,
         toAcc: toAcc,
         asset: IAbstractAsset(optionAdapter),
-        subId: optionAdapter.listingParamsToSubId(1000e18 + i * 10, 123456, true),
+        subId: optionAdapter.addListing(1000e18 + i * 10, block.timestamp + 604800, true),
         amount: amount,
         assetData: bytes32(0)
       });
