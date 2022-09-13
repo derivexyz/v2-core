@@ -33,7 +33,9 @@ contract QuoteWrapper is IAbstractAsset, Owned {
         asset: IAbstractAsset(address(this)),
         subId: 0,
         amount: int(amount)
-      })
+      }),
+      "",
+      ""
     );
     token.transferFrom(msg.sender, address(this), amount);
   }
@@ -41,14 +43,18 @@ contract QuoteWrapper is IAbstractAsset, Owned {
   // Note: balances can go negative for quote but not base
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.adjustBalance(
-      IAccount.AssetAdjustment({acc: accountId, asset: IAbstractAsset(address(this)), subId: 0, amount: -int(amount)})
+      IAccount.AssetAdjustment({
+        acc: accountId, asset: IAbstractAsset(address(this)), subId: 0, amount: -int(amount)
+      }),
+      "", 
+      ""
     );
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(uint, int, int, uint subId, IAbstractManager riskModel, address) external view override {
+  function handleAdjustment(uint, int, int, uint subId, IAbstractManager riskModel, address, bytes memory) external view override {
     require(subId == 0 && riskModelAllowList[riskModel]);
   }
 
-  function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
+  function handleManagerChange(uint, IAbstractManager, IAbstractManager, bytes memory) external pure override {}
 }

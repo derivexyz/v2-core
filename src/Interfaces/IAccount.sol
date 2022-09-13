@@ -52,7 +52,9 @@ interface IAccount {
 
   function burnAccounts(uint[] memory accountIds) external;
 
-  function changeManager(uint accountId, IAbstractManager newManager) external;
+  function changeManager(
+    uint accountId, IAbstractManager newManager, bytes memory managerData, bytes memory assetData
+  ) external;
 
   ///////////////
   // Approvals //
@@ -79,23 +81,25 @@ interface IAccount {
   // Balance Adjustments //
   /////////////////////////
 
-  function merge(uint targetAccount, uint[] memory accountsToMerge) external;
+  function merge(uint targetAccount, uint[] memory accountsToMerge, bytes memory managerData, bytes memory assetData) external;
 
-  function mergeAndBurn(uint targetAccount, uint[] memory accountsToMerge) external;
+  function mergeAndBurn(uint targetAccount, uint[] memory accountsToMerge, bytes memory managerData, bytes memory assetData) external;
 
   function split(
     uint accountToSplitId, 
     AssetBalance[] memory splitAccountAssetBalances, 
-    address splitAccountOwner
+    address splitAccountOwner,
+    bytes memory managerData, 
+    bytes memory assetData
   ) external;
 
-  function submitTransfer(AssetTransfer memory assetTransfer) external;
+  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData, bytes memory assetData) external;
 
-  function submitTransfers(AssetTransfer[] memory assetTransfers) external;
+  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData) external;
 
-  function transferAll(uint fromAccountId, uint toAccountId) external;
+  function transferAll(uint fromAccountId, uint toAccountId, bytes memory managerData, bytes memory assetData) external;
 
-  function adjustBalance(AssetAdjustment memory adjustment) external returns (int postBalance);
+  function adjustBalance(AssetAdjustment memory adjustment, bytes memory managerData, bytes memory assetData) external returns (int postBalance);
 
   //////////
   // View //

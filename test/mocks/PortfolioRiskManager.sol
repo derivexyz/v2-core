@@ -98,12 +98,14 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
 
     // TODO: check owner of accountForCollat
     account.adjustBalance(
-      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: -extraCollateral})
+      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: -extraCollateral}),
+      "", ""
     );
     assessRisk(accountForCollateral, account.getAccountBalances(accountForCollateral));
 
     account.adjustBalance(
-      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: extraCollateral})
+      IAccount.AssetAdjustment({acc: accountForCollateral, asset: quoteAsset, subId: 0, amount: extraCollateral}),
+      "", ""
     );
     account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
 
@@ -135,10 +137,12 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
             asset: assetsToSettle[i].asset,
             subId: assetsToSettle[i].subId,
             amount: -balance // set back to zero
-          })
+          }), 
+          "",
+          ""
         );
 
-        account.adjustBalance(IAccount.AssetAdjustment({acc: accountId, asset: quoteAsset, subId: 0, amount: PnL}));
+        account.adjustBalance(IAccount.AssetAdjustment({acc: accountId, asset: quoteAsset, subId: 0, amount: PnL}), "", "");
       }
     }
   }
@@ -146,7 +150,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
   ////
   // Views
 
-  function handleAdjustment(uint accountId, IAccount.AssetBalance[] memory assets, address) public view override {
+  function handleAdjustment(uint accountId, IAccount.AssetBalance[] memory assets, address, bytes memory) public view override {
     assessRisk(accountId, assets);
   }
 
@@ -196,6 +200,6 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
     return false;
   }
 
-  function handleManagerChange(uint, IAbstractManager) external {}
+  function handleManagerChange(uint, IAbstractManager, bytes memory) external {}
 
 }

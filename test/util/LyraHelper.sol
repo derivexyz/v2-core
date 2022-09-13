@@ -90,7 +90,7 @@ abstract contract LyraHelper is Test {
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
-    account.submitTransfers(transferBatch);
+    account.submitTransfers(transferBatch, "", "");
   }
 
   function setupDefaultScenarios() public {

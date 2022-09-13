@@ -60,7 +60,7 @@ contract OptionToken is IAbstractAsset, Owned {
   // Transfer
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
-  function handleAdjustment(uint, int preBal, int postBal, uint subId, IAbstractManager riskModel, address caller)
+  function handleAdjustment(uint, int preBal, int postBal, uint subId, IAbstractManager riskModel, address caller, bytes memory)
     external
     override
   {
@@ -193,5 +193,5 @@ contract OptionToken is IAbstractAsset, Owned {
     return int(DecimalMath.UNIT * totalShorts[subId] / totalLongs[subId]) * balance / SignedDecimalMath.UNIT;
   }
 
-  function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
+  function handleManagerChange(uint, IAbstractManager, IAbstractManager, bytes memory) external pure override {}
 }

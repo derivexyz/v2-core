@@ -10,8 +10,14 @@ interface IAbstractAsset {
     int postBal,
     uint subId,
     IAbstractManager manager,
-    address caller
+    address caller,
+    bytes memory data
   ) external;
 
-  function handleManagerChange(uint accountId, IAbstractManager oldManager, IAbstractManager newManager) external;
+  function handleManagerChange(
+    uint accountId, 
+    IAbstractManager oldManager, 
+    IAbstractManager newManager,
+    bytes memory data
+  ) external;
 }
