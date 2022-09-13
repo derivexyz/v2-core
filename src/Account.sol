@@ -47,11 +47,15 @@ contract Account is IAccount, ERC721 {
    * @param _manager IAbstractManager of new account
    * @return newId ID of new account
    */
-  function createAccount(address owner, IAbstractManager _manager) external returns (uint newId) {
+  function createAccount(
+    address owner, IAbstractManager _manager
+  ) external returns (uint newId) {
     return _createAccount(owner, _manager);
   }
 
-  function _createAccount(address owner, IAbstractManager _manager) internal returns (uint newId) {
+  function _createAccount(
+    address owner, IAbstractManager _manager
+  ) internal returns (uint newId) {
     newId = ++nextId;
     manager[newId] = _manager;
     _mint(owner, newId);
@@ -88,7 +92,9 @@ contract Account is IAccount, ERC721 {
    * @param accountId ID of account
    * @param newManager new IAbstractManager
    */
-  function changeManager(uint accountId, IAbstractManager newManager, bytes memory managerData, bytes memory assetData) external {
+  function changeManager(
+    uint accountId, IAbstractManager newManager, bytes memory managerData, bytes memory assetData
+  ) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
 
     IAbstractManager oldManager = manager[accountId];
@@ -173,7 +179,9 @@ contract Account is IAccount, ERC721 {
     }
   }
 
-  function _requireERC721ApprovedOrOwner(address sender, uint accountId) internal view {
+  function _requireERC721ApprovedOrOwner(
+    address sender, uint accountId
+  ) internal view {
     if (!_isApprovedOrOwner(sender, accountId)) {
       revert NotOwnerOrERC721Approved(
         address(this), sender, ownerOf(accountId), accountId
@@ -182,7 +190,9 @@ contract Account is IAccount, ERC721 {
   }
 
   /// @dev giving managers exclusive rights to transfer account ownerships
-  function _isApprovedOrOwner(address spender, uint tokenId) internal view override returns (bool) {
+  function _isApprovedOrOwner(
+    address spender, uint tokenId
+  ) internal view override returns (bool) {
     address owner = ERC721.ownerOf(tokenId);
     bool isManager = address(manager[tokenId]) == msg.sender;
     return (
@@ -197,82 +207,13 @@ contract Account is IAccount, ERC721 {
   // Balance Adjustments //
   /////////////////////////
 
-
-  /** 
-   * @notice Merges all accounts into the target account but does not burn accounts
-   * @param targetAccount ID of account to merge all accounts into
-   * @param accountsToMerge IDs of accounts to merge into targetAccount
-   */
-  function merge(
-    uint targetAccount, uint[] memory accountsToMerge, bytes memory managerData, bytes memory assetData
-  ) external {
-    _requireERC721ApprovedOrOwner(msg.sender, targetAccount);
-    _merge(targetAccount, accountsToMerge, managerData, assetData);
-  }
-
-  /** 
-   * @notice Merges all accounts into the target account and burns accounts
-   * @param targetAccount ID of account to merge all accounts into
-   * @param accountsToMerge IDs of accounts to merge into targetAccount
-   */  
-  function mergeAndBurn(
-    uint targetAccount, uint[] memory accountsToMerge, bytes memory managerData, bytes memory assetData
-  ) external {
-    _requireERC721ApprovedOrOwner(msg.sender, targetAccount);
-    _merge(targetAccount, accountsToMerge, managerData, assetData);
-    _burnAccounts(accountsToMerge);
-  }
-
-  function _merge(
-    uint targetAccount, uint[] memory accountsToMerge, bytes memory managerData, bytes memory assetData
-  ) internal {
-    uint mergingAccLen = accountsToMerge.length;
-    for (uint i = 0; i < mergingAccLen; i++) {
-      _requireERC721ApprovedOrOwner(msg.sender, accountsToMerge[i]);
-      _transferAll(accountsToMerge[i], targetAccount, assetData);
-      _managerHook(accountsToMerge[i], msg.sender, managerData); // incase certain accounts cannot be emptied
-    }
-    _managerHook(targetAccount, msg.sender, managerData);
-  }
-
-  /** 
-   * @notice Creates a new account and transfers assets into new account
-   *         Each transfer must pass _manager/assetChecks()
-   * @param accountToSplitId ID of account to split
-   * @param splitAccountAssetBalances final balances of the new split account
-   * @param splitAccountOwner address of the owner of the split account
-   */
-  function split(
-    uint accountToSplitId, 
-    AssetBalance[] memory splitAccountAssetBalances, 
-    address splitAccountOwner,
-    bytes memory managerData,
-    bytes memory assetData
-  ) external {
-    uint newAccountId = _createAccount(msg.sender, manager[accountToSplitId]);
-    uint transfersLen = splitAccountAssetBalances.length;
-    AssetTransfer[] memory assetTransfers = new AssetTransfer[](transfersLen);
-    for (uint i; i < transfersLen; ++i) {
-      assetTransfers[i] = AssetTransfer({
-        fromAcc: accountToSplitId,
-        toAcc: newAccountId,
-        asset: splitAccountAssetBalances[i].asset,
-        subId: splitAccountAssetBalances[i].subId,
-        amount: splitAccountAssetBalances[i].balance
-      });
-    }
-
-    _submitTransfers(assetTransfers, managerData, assetData);
-    if (splitAccountOwner != msg.sender) {
-      transferFrom(msg.sender, splitAccountOwner, newAccountId);
-    }
-  }
-
   /** 
    * @notice Transfer an amount from one account to another for a specific (asset, subId)
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    */
-  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData, bytes memory assetData) external {
+  function submitTransfer(
+    AssetTransfer memory assetTransfer, bytes memory managerData, bytes memory assetData
+  ) external {
     _transferAsset(assetTransfer, assetData);
     _managerHook(assetTransfer.fromAcc, msg.sender, managerData);
     _managerHook(assetTransfer.toAcc, msg.sender, managerData);
@@ -284,11 +225,15 @@ contract Account is IAccount, ERC721 {
    *         as _managerHook() is only performed once per account
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
    */
-  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData) external {
+  function submitTransfers(
+    AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData
+  ) external {
     _submitTransfers(assetTransfers, managerData, assetData);
   }
 
-  function _submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData) internal {
+  function _submitTransfers(
+    AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData
+  ) internal {
     // Do the transfers
     uint transfersLen = assetTransfers.length;
 
@@ -315,7 +260,9 @@ contract Account is IAccount, ERC721 {
     }
   }
 
-  function _transferAsset(AssetTransfer memory assetTransfer, bytes memory assetData) internal {
+  function _transferAsset(
+    AssetTransfer memory assetTransfer, bytes memory assetData
+  ) internal {
     AssetAdjustment memory fromAccAdjustment = AssetAdjustment({
       acc: assetTransfer.fromAcc,
       asset: assetTransfer.asset,
@@ -347,7 +294,9 @@ contract Account is IAccount, ERC721 {
    * @param fromAccountId ID of sender account
    * @param toAccountId ID of recipient account
    */
-  function transferAll(uint fromAccountId, uint toAccountId, bytes memory managerData, bytes memory assetData) external {
+  function transferAll(
+    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes memory assetData
+  ) external {
     _requireERC721ApprovedOrOwner(msg.sender, fromAccountId);
     _requireERC721ApprovedOrOwner(msg.sender, toAccountId);
 
@@ -356,7 +305,9 @@ contract Account is IAccount, ERC721 {
     _managerHook(toAccountId, msg.sender, managerData);
   }
 
-  function _transferAll(uint fromAccountId, uint toAccountId, bytes memory assetData) internal {
+  function _transferAll(
+    uint fromAccountId, uint toAccountId, bytes memory assetData
+  ) internal {
     HeldAsset[] memory fromAssets = heldAssets[fromAccountId];
     uint heldAssetLen = fromAssets.length;
     for (uint i; i < heldAssetLen; i++) {
@@ -427,7 +378,9 @@ contract Account is IAccount, ERC721 {
     userBalanceAndOrder.balance = postBalance.toInt240();
     userBalanceAndOrder.order = newOrder;
 
-    _assetHook(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender, assetData);
+    _assetHook(
+      adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender, assetData
+    );
     emit BalanceAdjusted(
       adjustment.acc, 
       address(manager[adjustment.acc]), 
@@ -451,7 +404,9 @@ contract Account is IAccount, ERC721 {
 
     userBalanceAndOrder.balance = postBalance.toInt240();
 
-    _assetHook(adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender, assetData);
+    _assetHook(
+      adjustment.asset, adjustment.subId, adjustment.acc, preBalance, postBalance, msg.sender, assetData
+    );
   }
 
   ////////////////////////////
@@ -471,7 +426,9 @@ contract Account is IAccount, ERC721 {
     address caller,
     bytes memory managerData
   ) internal {
-    manager[accountId].handleAdjustment(accountId, _getAccountBalances(accountId), caller, managerData);
+    manager[accountId].handleAdjustment(
+      accountId, _getAccountBalances(accountId), caller, managerData
+    );
   }
 
   /** 
@@ -621,7 +578,9 @@ contract Account is IAccount, ERC721 {
     return (amount >= 0) ? uint(amount) : SafeCast.toUint256(-amount);
   }
 
-  function _findInArray(uint[] memory array, uint toFind) internal pure returns (bool found) {
+  function _findInArray(
+    uint[] memory array, uint toFind
+  ) internal pure returns (bool found) {
     uint arrayLen = array.length;
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == 0) {
@@ -634,7 +593,9 @@ contract Account is IAccount, ERC721 {
     return false;
   }
 
-  function _findInArray(IAbstractAsset[] memory array, IAbstractAsset toFind) internal pure returns (bool found) {
+  function _findInArray(
+    IAbstractAsset[] memory array, IAbstractAsset toFind
+  ) internal pure returns (bool found) {
     uint arrayLen = array.length;
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == IAbstractAsset(address(0))) {

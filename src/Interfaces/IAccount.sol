@@ -81,25 +81,21 @@ interface IAccount {
   // Balance Adjustments //
   /////////////////////////
 
-  function merge(uint targetAccount, uint[] memory accountsToMerge, bytes memory managerData, bytes memory assetData) external;
-
-  function mergeAndBurn(uint targetAccount, uint[] memory accountsToMerge, bytes memory managerData, bytes memory assetData) external;
-
-  function split(
-    uint accountToSplitId, 
-    AssetBalance[] memory splitAccountAssetBalances, 
-    address splitAccountOwner,
-    bytes memory managerData, 
-    bytes memory assetData
+  function submitTransfer(
+    AssetTransfer memory assetTransfer, bytes memory managerData, bytes memory assetData
   ) external;
 
-  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData, bytes memory assetData) external;
+  function submitTransfers(
+    AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData
+  ) external;
 
-  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData, bytes memory assetData) external;
+  function transferAll(
+    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes memory assetData
+  ) external;
 
-  function transferAll(uint fromAccountId, uint toAccountId, bytes memory managerData, bytes memory assetData) external;
-
-  function adjustBalance(AssetAdjustment memory adjustment, bytes memory managerData, bytes memory assetData) external returns (int postBalance);
+  function adjustBalance(
+    AssetAdjustment memory adjustment, bytes memory managerData, bytes memory assetData
+  ) external returns (int postBalance);
 
   //////////
   // View //
