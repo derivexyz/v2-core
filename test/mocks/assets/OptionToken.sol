@@ -32,9 +32,11 @@ contract OptionToken is IAbstractAsset, Owned {
   uint feedId;
   uint96 nextId = 0;
   mapping(IAbstractManager => bool) riskModelAllowList;
-
+  
   mapping(uint => uint) totalLongs;
   mapping(uint => uint) totalShorts;
+  // need to write down ratio as totalOIs change atomically during transfers
+  mapping(uint => uint) ratios;
   mapping(uint => uint) liquidationCount;
 
   mapping(uint96 => Listing) subIdToListing;
@@ -65,7 +67,7 @@ contract OptionToken is IAbstractAsset, Owned {
     ) external override returns (int finalBalance)
   {
     Listing memory listing = subIdToListing[subId];
-    int postBal = preBal + amount;
+    int postBal = _getPostBalWithRatio(preBal, amount, subId);
 
     if (block.timestamp >= listing.expiry) {
       require(riskModelAllowList[IAbstractManager(caller)], "only RM settles");
@@ -101,7 +103,7 @@ contract OptionToken is IAbstractAsset, Owned {
   // currently hard-coded to optionToken but can have multiple assets if sharing the same logic
   function getValue(uint subId, int balance, uint spotPrice, uint iv) external view returns (int value) {
     Listing memory listing = subIdToListing[uint96(subId)];
-    balance = _ratiodBalance(subId, balance);
+    balance = _ratiodBalance(balance, subId);
 
     if (block.timestamp > listing.expiry) {
       SettlementPricer.SettlementDetails memory settlementDetails = settlementPricer.maybeGetSettlementDetails(feedId, listing.expiry);
@@ -131,7 +133,7 @@ contract OptionToken is IAbstractAsset, Owned {
     if (listing.expiry < block.timestamp || settlementDetails.price == 0) {
       return (0, false);
     }
-    balance = _ratiodBalance(subId, balance);
+    balance = _ratiodBalance(balance, subId);
 
     return (_getSettlementValue(listing, balance, settlementDetails.price), true);
   }
@@ -161,12 +163,13 @@ contract OptionToken is IAbstractAsset, Owned {
    * bits 128-256 => strikePrice
    */
 
-  function _ratiodBalance(uint subId, int balance) internal view returns (int ratiodBalance) {
-    if (totalLongs[subId] == 0) {
-      return balance;
+  function _ratiodBalance(int balance, uint subId) internal view returns (int ratiodBalance) {
+    if (ratios[nextId] < 1e17) {
+      // create some hardcoded limit to where asset freezes at certain levels of socialized losses
+      revert("Socialized lossess too high");
     }
     // for socialised losses
-    return int(DecimalMath.UNIT * totalShorts[subId] / totalLongs[subId]) * balance / SignedDecimalMath.UNIT;
+    return _applyRatio(balance, subId);
   }
 
   function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
@@ -178,6 +181,7 @@ contract OptionToken is IAbstractAsset, Owned {
       isCall: isCall
     });
     subIdToListing[nextId] = newListing;
+    ratios[nextId] = 1e18;
     ++nextId;
     return uint256(nextId) - 1;
   }
@@ -199,26 +203,47 @@ contract OptionToken is IAbstractAsset, Owned {
       ""
     );
 
+    ratios[subId] = DecimalMath.UNIT * totalShorts[subId] / totalLongs[subId];
+
     _updateOI(preBal, postBal, subId);
   }
 
-  // function _modifyWithRatio(int preBal, int postBal, uint subId) internal {
-  //   uint amount = _absDifference(preBal, postBal);
-  //   bool isPositiveDirection = (postBal - preBal > 0) 
-  //     ? true 
-  //     : false;
-    
-  //   preBal = (isPositiveDirection && )
-  // }
+  function _getPostBalWithRatio(int preBal, int amount, uint subId) internal view returns (int postBal) {
+    bool crossesZero;
+    if (preBal < 0) {
+      crossesZero = _abs(preBal) < _abs(amount) && amount > 0
+        ? true 
+        : false;
+
+      if (crossesZero) {
+        return _applyInverseRatio((amount - preBal), subId);
+      } else {
+        return preBal + amount;
+      }
+    } else {
+      crossesZero = 
+        _abs(preBal) < _abs(_applyInverseRatio(amount, subId)) && amount < 0
+        ? true 
+        : false;
+
+      if (crossesZero) {
+        return amount + _applyRatio(preBal, subId);
+      } else {
+        return preBal + _applyInverseRatio(amount , subId);
+      }
+    }
+  }
+
+  function _applyRatio(int amount, uint subId) internal view returns (int) {
+    return int(ratios[subId]) * amount / SignedDecimalMath.UNIT;
+  }
+
+  function _applyInverseRatio(int amount, uint subId) internal view returns (int) {
+    int inverseRatio = SignedDecimalMath.UNIT / int(ratios[subId]);
+    return inverseRatio * amount / SignedDecimalMath.UNIT;
+  }
 
   function _updateOI(int preBal, int postBal, uint subId) internal {
-    // bool isPositiveDirection = (postBal - preBal > 0) 
-    //   ? true 
-    //   : false;
-    
-    // preBal = (isPositiveDirection && )
-
-    // must ensure that ratio stays the same
     if (preBal < 0) {
       totalShorts[subId] -= uint(-preBal);
     } else {
@@ -232,9 +257,7 @@ contract OptionToken is IAbstractAsset, Owned {
     }
   }
 
-  function _absDifference(int pre, int post) internal pure returns (uint absAmount) {
-    int diff = post - pre;
-    // TODO: overflow error, but ok for testing
-    return (diff >= 0) ? uint(diff) : uint(-diff);
+  function _abs(int x) internal pure returns (uint absAmount) {
+ return (x >= 0) ? uint(x) : uint(-x);
   }
 }

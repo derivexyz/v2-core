@@ -35,9 +35,14 @@ contract TransferGasTest is Test, LyraHelper {
       toAcc: aliceAcc,
       asset: IAbstractAsset(optionAdapter),
       subId: 0,
+      // TODO: this breaks when amount == totalShortOI
       amount: int(10e18),
       assetData: bytes32(0)
     });
+
+    IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](1);
+    transferBatch[0] = optionTransfer;
+    account.submitTransfers(transferBatch, "");
     vm.stopPrank();
 
     // mock bob being insolvent and losing 1x short
