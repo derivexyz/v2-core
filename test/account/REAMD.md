@@ -1,0 +1,44 @@
+## Accounts.sol testing scaffold
+
+- [ ]  `submitTransfers`
+    - [ ]  Single option transfer between empty accounts
+    - [ ]  Single asset transfer using submitTransfers
+        - [ ]  block transfer if msg.sender doesn’t have allowance
+        - [ ]  allow transfer if allowances not enough, but ERC721 approved
+        - [ ]  allow transfer if allowances not enough, but ERC721 approvedForAll
+    - [ ]  Multi subId transfer
+        - [ ]  block transfer if msg.sender doesn’t have allowance for specific subId
+    - [ ]  Multi account / subId transfer
+        - [ ]  block transfer if msg.sender doesn’t have allowance for one account
+- [ ]  `transferAll()`
+    - [ ]  AMM 100 position manager migration
+    - [ ]  merge - bypass PoM
+    - [ ]  split -
+    - [ ]  proportionate split?
+- [ ]  `manager.handleAdjustment`
+    - [ ]  block unsupported asset
+    - [ ]  pass transfer between different risk managers
+- [ ]  `asset.handleAdjustment`
+    - [ ]  Asset mock interest accrual upon transfer
+    - [ ]  USDC wrapper blocks negative adjustments
+    - [ ]  USDC wrapper blocks manager from moving funds asymmetrically?
+    - [ ]  block unsupported manager
+- [ ]  asset `adjustBalance()`
+    - [ ]  Manager force transfer on settlement
+- [ ]  manager `adjustBalance()`
+- [ ]  Liquidations
+    - [ ]  Forceful auctions
+- [ ]  Socialized losses
+    - [ ]  Asset ratio of balance
+    - [ ]  Asset augment finalBalance during transfer (positive → negative?)
+- [ ]  Lending
+    - [ ]  accrue interest
+
+### Accounts gas benchmarks
+- [ ]  Gas Testing
+    - [ ]  Large
+        - [ ]  100x position account to transfer 50x positions out to 0 (Expiration).
+        - [ ]  100x position account to transfer 50x positions out to non-zero (split).
+        - [ ]  100x position account to transfer 4x positions out to non-zero (split).
+    - [ ]  Small
+        - [ ]  0x position account to get 10x positions

@@ -389,7 +389,7 @@ contract Account is IAccount, ERC721 {
       adjustment.subId, 
       adjustment.acc, 
       preBalance, 
-      int(userBalanceAndOrder.balance) + adjustment.amount, 
+      adjustment.amount, 
       msg.sender, 
       adjustment.assetData
     );

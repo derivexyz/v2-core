@@ -23,7 +23,9 @@ interface IAccount {
   }
   struct AssetBalance {
     IAbstractAsset asset;
+    // adjustments will revert if >uint96
     uint subId;
+    // base layer only stores up to uint240
     int balance;
   }
 
@@ -33,16 +35,22 @@ interface IAccount {
     // debited by amount
     uint toAcc;
     IAbstractAsset asset;
+    // adjustments will revert if >uint96
     uint subId;
+    // reverts if transfser amount > uint240
     int amount;
+    // data passed into asset.handleAdjustment()
     bytes32 assetData;
   }
 
   struct AssetAdjustment {
     uint acc;
     IAbstractAsset asset;
+    // reverts for subIds > uint96
     uint subId;
+    // reverts if transfser amount > uint240
     int amount;
+    // data passed into asset.handleAdjustment()
     bytes32 assetData;
   }  
 

@@ -61,10 +61,11 @@ contract OptionToken is IAbstractAsset, Owned {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    uint, int preBal, int postBal, uint96 subId, IAbstractManager riskModel, address caller, bytes32
+    uint, int preBal, int amount, uint96 subId, IAbstractManager riskModel, address caller, bytes32
     ) external override returns (int finalBalance)
   {
     Listing memory listing = subIdToListing[subId];
+    int postBal = preBal + amount;
 
     if (block.timestamp >= listing.expiry) {
       require(riskModelAllowList[IAbstractManager(caller)], "only RM settles");
@@ -74,17 +75,7 @@ contract OptionToken is IAbstractAsset, Owned {
 
     require(listing.expiry != 0 && riskModelAllowList[riskModel]);
 
-    if (preBal < 0) {
-      totalShorts[subId] -= uint(-preBal);
-    } else {
-      totalLongs[subId] -= uint(preBal);
-    }
-
-    if (postBal < 0) {
-      totalShorts[subId] += uint(-postBal);
-    } else {
-      totalLongs[subId] += uint(postBal);
-    }
+    _updateOI(preBal, postBal, subId);
 
     return postBal;
   }
@@ -189,5 +180,61 @@ contract OptionToken is IAbstractAsset, Owned {
     subIdToListing[nextId] = newListing;
     ++nextId;
     return uint256(nextId) - 1;
+  }
+
+  function socializeLoss(uint insolventAcc, uint subId, int reduction) external {
+    require(riskModelAllowList[IAbstractManager(msg.sender)], "only RM socializes losses");
+
+    int preBal = account.getBalance(insolventAcc, IAbstractAsset(address(this)), subId);
+    int postBal = preBal + reduction;
+
+    account.adjustBalance(
+      IAccount.AssetAdjustment({
+        acc: insolventAcc,
+        asset: IAbstractAsset(address(this)),
+        subId: subId,
+        amount: reduction,
+        assetData: bytes32(0)
+      }),
+      ""
+    );
+
+    _updateOI(preBal, postBal, subId);
+  }
+
+  // function _modifyWithRatio(int preBal, int postBal, uint subId) internal {
+  //   uint amount = _absDifference(preBal, postBal);
+  //   bool isPositiveDirection = (postBal - preBal > 0) 
+  //     ? true 
+  //     : false;
+    
+  //   preBal = (isPositiveDirection && )
+  // }
+
+  function _updateOI(int preBal, int postBal, uint subId) internal {
+    // bool isPositiveDirection = (postBal - preBal > 0) 
+    //   ? true 
+    //   : false;
+    
+    // preBal = (isPositiveDirection && )
+
+    // must ensure that ratio stays the same
+    if (preBal < 0) {
+      totalShorts[subId] -= uint(-preBal);
+    } else {
+      totalLongs[subId] -= uint(preBal);
+    }
+
+    if (postBal < 0) {
+      totalShorts[subId] += uint(-postBal);
+    } else {
+      totalLongs[subId] += uint(postBal);
+    }
+  }
+
+  function _absDifference(int pre, int post) internal pure returns (uint absAmount) {
+    int diff = post - pre;
+    // TODO: overflow error, but ok for testing
+    return (diff >= 0) ? uint(diff) : uint(-diff);
   }
 }

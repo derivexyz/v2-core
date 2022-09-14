@@ -158,20 +158,4 @@ contract TransferGasTest is Test, LyraHelper {
 
     return transferBatch;
   }
-
-  function setupAssetAllowances(address owner, uint ownerAcc, address delegate) internal {
-    vm.startPrank(owner);
-    IAbstractAsset[] memory assets = new IAbstractAsset[](2);
-    assets[0] = IAbstractAsset(optionAdapter);
-    assets[1] = IAbstractAsset(usdcAdapter);
-    uint[] memory posAllowances = new uint[](2);
-    uint[] memory negAllowances = new uint[](2);
-    posAllowances[0] = type(uint).max;
-    posAllowances[1] = type(uint).max;
-    negAllowances[0] = type(uint).max;
-    negAllowances[1] = type(uint).max;
-
-    account.setAssetAllowances(ownerAcc, delegate, assets, posAllowances, negAllowances);
-    vm.stopPrank();
-  }
 }

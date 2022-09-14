@@ -6,7 +6,7 @@ interface IAbstractAsset {
   function handleAdjustment(
     uint account,
     int preBal,
-    int postBal,
+    int amount,
     uint96 subId,
     IAbstractManager manager,
     address caller,
