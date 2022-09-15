@@ -21,15 +21,15 @@ contract SocializedLosses is Test, LyraHelper {
 
     setScenarios(scenarios);
 
-    (aliceAcc, bobAcc) = mintAndDepositUSDC(10000000e18, 10000000e18);
+    aliceAcc = createAccountAndDepositUSDC(alice, 10000000e18);
+    bobAcc = createAccountAndDepositUSDC(bob, 10000000e18);
   }
 
   function testSocializedLossRatioAdjustment() public {
     setupAssetAllowances(bob, bobAcc, alice);
 
     // open subId = 0 option
-    optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-    uint subId = 0;
+    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     // open call w/o premium payment
     vm.startPrank(alice);
@@ -79,7 +79,6 @@ contract SocializedLosses is Test, LyraHelper {
 
     // make sure balance of david is actually 1.1
     assertEq(account.getBalance(davidAcc, optionAdapter, 0), 1111111111111111111);
-
 
     // do sign change -> charlie goes from -1 -> 2
     vm.startPrank(charlie);

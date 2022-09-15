@@ -19,7 +19,8 @@ contract Transfers is Test, LyraHelper {
 
     setScenarios(scenarios);
 
-    (aliceAcc, bobAcc) = mintAndDepositUSDC(10000000e18, 10000000e18);
+    aliceAcc = createAccountAndDepositUSDC(alice, 10000000e18);
+    bobAcc = createAccountAndDepositUSDC(bob, 10000000e18);
   }
 
   /// @dev ~100k + manager / option hooks per transfer

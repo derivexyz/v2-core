@@ -1,17 +1,19 @@
 ## Accounts.sol testing scaffold
 
-- [ ]  `submitTransfers`
-    - [ ]  Single option transfer between empty accounts
-    - [ ]  Single asset transfer using submitTransfers
-        - [ ]  block transfer if msg.sender doesn’t have allowance
-        - [ ]  allow transfer if allowances not enough, but ERC721 approved
-        - [ ]  allow transfer if allowances not enough, but ERC721 approvedForAll
-        - [ ]  correct final balances post multiple transfers
-    - [ ]  Multi subId transfer
-        - [ ]  block transfer if msg.sender doesn’t have allowance for specific subId
-    - [ ]  Multi account / subId transfer
-        - [ ]  block transfer if msg.sender doesn’t have allowance for one account
-    - [ ]  Create account → deposit USDC → open position in 2x transactions
+- [x]  `Allowances`
+    - [x]  Single option transfer between empty accounts
+    - [x]  Single asset transfer using submitTransfers
+        - [x]  block if msg.sender doesn’t have allowance
+        - [x]  block if subId + asset allowance < amount
+        - [x]  allow if allowances not enough, but ERC721 approved
+        - [x]  allow if allowances not enough, but ERC721 approvedForAll
+        - [x]  correct final balances post multiple transfers
+    - [x]  Multi subId transfer
+        - [x]  block transfer if msg.sender doesn’t have allowance for specific subId
+    - [x]  Multi account / subId transfer
+        - [x]  block transfer if msg.sender doesn’t have allowance for one account
+- [ ]  `submitTransfer/s()`
+    - [ ] Adjusts balances correctly
 - [ ]  `transferAll()`
     - [ ]  AMM 100 position manager migration
     - [ ]  merge - bypass PoM
@@ -31,9 +33,9 @@
 - [ ]  Liquidations
     - [ ]  Forceful auctions
 - [ ]  Socialized losses
-    - [ ]  Option asset ratio post socialized loss
-    - [ ]  Asset augment finalBalance during transfer (positive → negative?)
-    - [ ]  Asset ratio stays the same with trade post socialized loss
+    - [x]  Option asset ratio post socialized loss
+    - [x]  Asset augment finalBalance during transfer (positive → negative?)
+    - [x]  Asset ratio stays the same with trade post socialized loss
 - [ ]  Lending
     - [ ]  accrue interest
 

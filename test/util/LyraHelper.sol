@@ -70,7 +70,7 @@ abstract contract LyraHelper is Test {
     vm.stopPrank();
   }
 
-  function openCallOption(uint longAcc, uint shortAcc, uint amount, uint premium, uint optionSubId) public {
+  function tradeCallOption(uint longAcc, uint shortAcc, uint amount, uint premium, uint optionSubId) public {
     IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
@@ -109,32 +109,22 @@ abstract contract LyraHelper is Test {
     vm.stopPrank();
   }
 
-  function mintAndDepositUSDC(uint aliceBal, uint bobBal) public returns (uint aliceAcc, uint bobAcc) {
-    vm.startPrank(alice);
-    aliceAcc = account.createAccount(alice, IAbstractManager(rm));
-    vm.stopPrank();
-    vm.startPrank(bob);
-    bobAcc = account.createAccount(bob, IAbstractManager(rm));
+  function createAccountAndDepositUSDC(address user, uint balance) public returns (uint accountId) {
+    vm.startPrank(user);
+    accountId = account.createAccount(user, IAbstractManager(rm));
     vm.stopPrank();
 
-    assertEq(aliceAcc, 1);
-    assertEq(bobAcc, 2);
+    if (balance > 0) {
+       vm.startPrank(owner);
+      usdc.mint(user, balance);
+      vm.stopPrank();
 
-    vm.startPrank(owner);
-    usdc.mint(alice, aliceBal);
-    usdc.mint(bob, bobBal);
-    vm.stopPrank();
-
-    vm.startPrank(alice);
-    usdc.approve(address(usdcAdapter), type(uint).max);
-    usdcAdapter.deposit(aliceAcc, aliceBal);
-    vm.stopPrank();
-
-    vm.startPrank(bob);
-    usdc.approve(address(usdcAdapter), type(uint).max);
-    usdcAdapter.deposit(bobAcc, bobBal);
-    vm.stopPrank();
-    return (aliceAcc, bobAcc);
+      vm.startPrank(user);
+      usdc.approve(address(usdcAdapter), type(uint).max);
+      usdcAdapter.deposit(accountId, balance);
+      vm.stopPrank();
+    }
+    return accountId;
   }
 
   function setupAssetAllowances(address ownerAdd, uint ownerAcc, address delegate) internal {
