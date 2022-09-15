@@ -64,10 +64,10 @@ contract SocializedLosses is Test, LyraHelper {
 
     // trade post loss
     vm.startPrank(charlie);
-    charlieAcc = account.createAccount(charlie, IAbstractManager(rm));
+    charlieAcc = account.createAccount(charlie, IManager(rm));
     vm.stopPrank();
     vm.startPrank(david);
-    davidAcc = account.createAccount(david, IAbstractManager(rm));
+    davidAcc = account.createAccount(david, IManager(rm));
     vm.stopPrank();
 
     // open 1x new option
@@ -93,7 +93,7 @@ contract SocializedLosses is Test, LyraHelper {
     IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
-      asset: IAbstractAsset(optionAdapter),
+      asset: IAsset(optionAdapter),
       subId: subId,
       // TODO: this breaks when amount == totalShortOI
       amount: amount,

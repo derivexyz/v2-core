@@ -3,8 +3,8 @@ pragma solidity ^0.8.13;
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "./interfaces/IAbstractAsset.sol";
-import "./interfaces/IAbstractManager.sol";
+import "./interfaces/IAsset.sol";
+import "./interfaces/IManager.sol";
 import "./interfaces/IAccount.sol";
 
 import "forge-std/console2.sol";
@@ -29,14 +29,14 @@ contract Account is IAccount, ERC721 {
   ///////////////
 
   uint nextId = 0;
-  mapping(uint => IAbstractManager) public manager;
-  mapping(uint => mapping(IAbstractAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
+  mapping(uint => IManager) public manager;
+  mapping(uint => mapping(IAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
   mapping(uint => HeldAsset[]) public heldAssets;
 
-  mapping(uint => mapping(IAbstractAsset => mapping(uint => mapping(address => uint)))) public positiveSubIdAllowance;
-  mapping(uint => mapping(IAbstractAsset => mapping(uint => mapping(address => uint)))) public negativeSubIdAllowance;
-  mapping(uint => mapping(IAbstractAsset => mapping(address => uint))) public positiveAssetAllowance;
-  mapping(uint => mapping(IAbstractAsset => mapping(address => uint))) public negativeAssetAllowance;
+  mapping(uint => mapping(IAsset => mapping(uint => mapping(address => uint)))) public positiveSubIdAllowance;
+  mapping(uint => mapping(IAsset => mapping(uint => mapping(address => uint)))) public negativeSubIdAllowance;
+  mapping(uint => mapping(IAsset => mapping(address => uint))) public positiveAssetAllowance;
+  mapping(uint => mapping(IAsset => mapping(address => uint))) public negativeAssetAllowance;
   
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
@@ -47,11 +47,11 @@ contract Account is IAccount, ERC721 {
   /** 
    * @notice Creates account with new accountId
    * @param owner new account owner
-   * @param _manager IAbstractManager of new account
+   * @param _manager IManager of new account
    * @return newId ID of new account
    */
   function createAccount(
-    address owner, IAbstractManager _manager
+    address owner, IManager _manager
   ) external returns (uint newId) {
     return _createAccount(owner, _manager);
   }
@@ -60,11 +60,11 @@ contract Account is IAccount, ERC721 {
    * @notice Creates account and gives spender full allowance
    * @param owner new account owner
    * @param spender give address ERC721 approval
-   * @param _manager IAbstractManager of new account
+   * @param _manager IManager of new account
    * @return newId ID of new account
    */
   function createAccount(
-    address owner, address spender, IAbstractManager _manager
+    address owner, address spender, IManager _manager
   ) external returns (uint newId) {
     newId = _createAccount(owner, _manager);
     _approve(spender, newId);
@@ -72,7 +72,7 @@ contract Account is IAccount, ERC721 {
   }
 
   function _createAccount(
-    address owner, IAbstractManager _manager
+    address owner, IManager _manager
   ) internal returns (uint newId) {
     newId = ++nextId;
     manager[newId] = _manager;
@@ -108,20 +108,20 @@ contract Account is IAccount, ERC721 {
    * @notice Assigns new manager to account. No balances are adjusted.
    *         msg.sender must be ERC721 approved or owner
    * @param accountId ID of account
-   * @param newManager new IAbstractManager
+   * @param newManager new IManager
    * @param newManagerData data to be passed to manager._managerHook 
    */
   function changeManager(
-    uint accountId, IAbstractManager newManager, bytes memory newManagerData
+    uint accountId, IManager newManager, bytes memory newManagerData
   ) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
 
-    IAbstractManager oldManager = manager[accountId];
+    IManager oldManager = manager[accountId];
     oldManager.handleManagerChange(accountId, newManager);
 
     // only call to asset once 
     HeldAsset[] memory accountAssets = heldAssets[accountId];
-    IAbstractAsset[] memory seenAssets = new IAbstractAsset[](accountAssets.length);
+    IAsset[] memory seenAssets = new IAsset[](accountAssets.length);
     uint nextSeenId;
 
     for (uint i; i < accountAssets.length; ++i) {
@@ -158,7 +158,7 @@ contract Account is IAccount, ERC721 {
   function setAssetAllowances(
     uint accountId, 
     address delegate, 
-    IAbstractAsset[] memory assets,
+    IAsset[] memory assets,
     uint[] memory positiveAllowances,
     uint[] memory negativeAllowances
   ) external {
@@ -184,7 +184,7 @@ contract Account is IAccount, ERC721 {
   function setSubIdAllowances(
     uint accountId, 
     address delegate, 
-    IAbstractAsset[] memory assets,
+    IAsset[] memory assets,
     uint[] memory subIds,
     uint[] memory positiveAllowances,
     uint[] memory negativeAllowances
@@ -477,7 +477,7 @@ contract Account is IAccount, ERC721 {
    *         2. Assymetric balance adjustments
    * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage 
-   * @param asset IAbstractAsset being called to
+   * @param asset IAsset being called to
    * @param subId subId of asset being transfered
    * @param accountId ID of account being checked 
    * @param preBalance balance before adjustment
@@ -486,7 +486,7 @@ contract Account is IAccount, ERC721 {
    * @param assetData data passed to asset for each subId transfer
    */
   function _assetHook(
-    IAbstractAsset asset, 
+    IAsset asset, 
     uint subId, 
     uint accountId,
     int preBalance, 
@@ -568,7 +568,7 @@ contract Account is IAccount, ERC721 {
    * @dev Useful for managers to check the risk of the whole account
    */
   function _addHeldAsset(
-    uint accountId, IAbstractAsset asset, uint subId
+    uint accountId, IAsset asset, uint subId
   ) internal returns (uint16 newOrder) {
     heldAssets[accountId].push(HeldAsset({asset: asset, subId: subId.toUint96()}));
     newOrder = (heldAssets[accountId].length - 1).toUint16();
@@ -637,11 +637,11 @@ contract Account is IAccount, ERC721 {
   }
 
   function _findInArray(
-    IAbstractAsset[] memory array, IAbstractAsset toFind
+    IAsset[] memory array, IAsset toFind
   ) internal pure returns (bool found) {
     uint arrayLen = array.length;
     for (uint i; i < arrayLen; ++i) {
-      if (array[i] == IAbstractAsset(address(0))) {
+      if (array[i] == IAsset(address(0))) {
         return false;
       }
       if (array[i] == toFind) {
@@ -658,12 +658,12 @@ contract Account is IAccount, ERC721 {
   /** 
    * @notice Gets an account's balance for an (asset, subId)
    * @param accountId ID of account
-   * @param asset IAbstractAsset of balance
+   * @param asset IAsset of balance
    * @param subId subId of balance
    */
   function getBalance(
     uint accountId, 
-    IAbstractAsset asset, 
+    IAsset asset, 
     uint subId
   ) external view returns (int balance){
     BalanceAndOrder memory userBalanceAndOrder = 
@@ -706,7 +706,7 @@ contract Account is IAccount, ERC721 {
   // Modifiers //
   ///////////////
 
-  modifier onlyManagerOrAsset(uint accountId, IAbstractAsset asset) {
+  modifier onlyManagerOrAsset(uint accountId, IAsset asset) {
     address accountManager = address(manager[accountId]);
     if (msg.sender != accountManager && msg.sender != address(asset)) {
       revert OnlyManagerOrAssetAllowed(address(this), msg.sender, accountManager, address(asset));

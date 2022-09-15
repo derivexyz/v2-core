@@ -7,14 +7,14 @@ import "util/BlackScholesV2.sol";
 import "forge-std/console2.sol";
 
 import "src/Account.sol";
-import "src/interfaces/IAbstractAsset.sol";
+import "src/interfaces/IAsset.sol";
 
 import "../assets/QuoteWrapper.sol";
 import "../feeds/SettlementPricer.sol";
 import "../feeds/PriceFeeds.sol";
 
 // Adapter condenses all deposited positions into a single position per subId
-contract OptionToken is IAbstractAsset, Owned {
+contract OptionToken is IAsset, Owned {
   using SignedDecimalMath for int;
   using BlackScholesV2 for BlackScholesV2.BlackScholesInputs;
   using DecimalMath for uint;
@@ -31,7 +31,7 @@ contract OptionToken is IAbstractAsset, Owned {
 
   uint feedId;
   uint96 nextId = 0;
-  mapping(IAbstractManager => bool) riskModelAllowList;
+  mapping(IManager => bool) riskModelAllowList;
   
   mapping(uint => uint) public totalLongs;
   mapping(uint => uint) public totalShorts;
@@ -48,13 +48,13 @@ contract OptionToken is IAbstractAsset, Owned {
     settlementPricer = settlementPricer_;
     feedId = feedId_;
 
-    priceFeeds.assignFeedToAsset(IAbstractAsset(address(this)), feedId);
+    priceFeeds.assignFeedToAsset(IAsset(address(this)), feedId);
   }
 
   //////////
   // Admin
 
-  function setRiskModelAllowed(IAbstractManager riskModel, bool allowed) external onlyOwner {
+  function setRiskModelAllowed(IManager riskModel, bool allowed) external onlyOwner {
     riskModelAllowList[riskModel] = allowed;
   }
 
@@ -63,14 +63,14 @@ contract OptionToken is IAbstractAsset, Owned {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    uint, int preBal, int amount, uint96 subId, IAbstractManager riskModel, address caller, bytes32
+    uint, int preBal, int amount, uint96 subId, IManager riskModel, address caller, bytes32
     ) external override returns (int finalBalance)
   {
     Listing memory listing = subIdToListing[subId];
     int postBal = _getPostBalWithRatio(preBal, amount, subId);
 
     if (block.timestamp >= listing.expiry) {
-      require(riskModelAllowList[IAbstractManager(caller)], "only RM settles");
+      require(riskModelAllowList[IManager(caller)], "only RM settles");
       require(preBal != 0 && postBal == 0);
       return postBal;
     }
@@ -86,13 +86,13 @@ contract OptionToken is IAbstractAsset, Owned {
   // Liquidation
 
   function incrementLiquidations(uint subId) external {
-    require(riskModelAllowList[IAbstractManager(msg.sender)], "only RM");
+    require(riskModelAllowList[IManager(msg.sender)], "only RM");
     liquidationCount[subId]++;
     // delay settlement for subid by n min
   }
 
   function decrementLiquidations(uint subId) external {
-    require(riskModelAllowList[IAbstractManager(msg.sender)], "only RM");
+    require(riskModelAllowList[IManager(msg.sender)], "only RM");
     liquidationCount[subId]--;
     // delay settlement for subid by n min
   }
@@ -165,7 +165,7 @@ contract OptionToken is IAbstractAsset, Owned {
     return _applyRatio(balance, subId);
   }
 
-  function handleManagerChange(uint, IAbstractManager, IAbstractManager) external pure override {}
+  function handleManagerChange(uint, IManager, IManager) external pure override {}
 
   function addListing(uint strike, uint expiry, bool isCall) external returns (uint subId) {
     Listing memory newListing = Listing({
@@ -180,14 +180,14 @@ contract OptionToken is IAbstractAsset, Owned {
   }
 
   function socializeLoss(uint insolventAcc, uint subId, uint burnAmount) external {
-    require(riskModelAllowList[IAbstractManager(msg.sender)], "only RM socializes losses");
+    require(riskModelAllowList[IManager(msg.sender)], "only RM socializes losses");
     
     // only shorts can be socialized
     // open interest modified during handleAdjustment
     account.adjustBalance(
       IAccount.AssetAdjustment({
         acc: insolventAcc,
-        asset: IAbstractAsset(address(this)),
+        asset: IAsset(address(this)),
         subId: subId,
         amount: int(burnAmount),
         assetData: bytes32(0)

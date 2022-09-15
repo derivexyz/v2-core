@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "src/Account.sol";
-import "src/interfaces/IAbstractManager.sol";
+import "src/interfaces/IManager.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -52,8 +52,8 @@ abstract contract LyraHelper is Test {
 
     rm = new PortfolioRiskManager(account, PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter);
 
-    usdcAdapter.setRiskModelAllowed(IAbstractManager(rm), true);
-    optionAdapter.setRiskModelAllowed(IAbstractManager(rm), true);
+    usdcAdapter.setRiskModelAllowed(IManager(rm), true);
+    optionAdapter.setRiskModelAllowed(IManager(rm), true);
     vm.stopPrank();
   }
 
@@ -74,7 +74,7 @@ abstract contract LyraHelper is Test {
     IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
-      asset: IAbstractAsset(optionAdapter),
+      asset: IAsset(optionAdapter),
       subId: optionSubId,
       amount: int(amount),
       assetData: bytes32(0)
@@ -83,7 +83,7 @@ abstract contract LyraHelper is Test {
     IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
-      asset: IAbstractAsset(usdcAdapter),
+      asset: IAsset(usdcAdapter),
       subId: 0,
       amount: int(premium),
       assetData: bytes32(0)
@@ -111,7 +111,7 @@ abstract contract LyraHelper is Test {
 
   function createAccountAndDepositUSDC(address user, uint balance) public returns (uint accountId) {
     vm.startPrank(user);
-    accountId = account.createAccount(user, IAbstractManager(rm));
+    accountId = account.createAccount(user, IManager(rm));
     vm.stopPrank();
 
     if (balance > 0) {
@@ -129,9 +129,9 @@ abstract contract LyraHelper is Test {
 
   function setupAssetAllowances(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
-    IAbstractAsset[] memory assets = new IAbstractAsset[](2);
-    assets[0] = IAbstractAsset(optionAdapter);
-    assets[1] = IAbstractAsset(usdcAdapter);
+    IAsset[] memory assets = new IAsset[](2);
+    assets[0] = IAsset(optionAdapter);
+    assets[1] = IAsset(usdcAdapter);
     uint[] memory posAllowances = new uint[](2);
     uint[] memory negAllowances = new uint[](2);
     posAllowances[0] = type(uint).max;

@@ -7,7 +7,7 @@ import "synthetix/SignedDecimalMath.sol";
 import "synthetix/DecimalMath.sol";
 import "forge-std/console2.sol";
 
-import "src/interfaces/IAbstractAsset.sol";
+import "src/interfaces/IAsset.sol";
 import "src/Account.sol";
 
 import "./assets/QuoteWrapper.sol";
@@ -15,7 +15,7 @@ import "./assets/BaseWrapper.sol";
 import "./assets/OptionToken.sol";
 import "./assets/ISettleable.sol";
 
-contract PortfolioRiskManager is Owned, IAbstractManager {
+contract PortfolioRiskManager is Owned, IManager {
   using DecimalMath for uint;
   using SafeCast for uint;
   using SignedDecimalMath for int;
@@ -84,7 +84,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
       revert("cannot be liquidated");
     }
     for (uint i; i < assetBals.length; i++) {
-      if (assetBals[i].asset == IAbstractAsset(optionToken)) {
+      if (assetBals[i].asset == IAsset(optionToken)) {
         // Have a counter for which subIds are involved in liquidations to pause settlement for them
         optionToken.incrementLiquidations(assetBals[i].subId);
       }
@@ -123,7 +123,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
 
     IAccount.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
     for (uint i; i < assetBals.length; i++) {
-      if (assetBals[i].asset == IAbstractAsset(optionToken)) {
+      if (assetBals[i].asset == IAsset(optionToken)) {
         optionToken.decrementLiquidations(assetBals[i].subId);
       }
     }
@@ -187,7 +187,7 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
     uint scenarioLen = scenarios.length;
 
     // create spot and iv cache in memory;
-    uint baseSpotPrice = priceFeeds.getSpotForAsset(IAbstractAsset(baseAsset));
+    uint baseSpotPrice = priceFeeds.getSpotForAsset(IAsset(baseAsset));
 
     // assess each scenario
     for (uint j; j < scenarioLen; j++) {
@@ -196,16 +196,16 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
       for (uint k; k < assetLen; k++) {
         IAccount.AssetBalance memory assetBalance = assets[k];
 
-        if (assetBalance.asset == IAbstractAsset(optionToken)) {
+        if (assetBalance.asset == IAsset(optionToken)) {
           // swap out to remov BS price:
           scenarioValue += 0;
 
           // call external valuation contract assigned to subId
           // scenarioValue +=
           //   optionToken.getValue(assetBalance.subId, assetBalance.balance, shockedSpot, scenarios[j].ivShock);
-        } else if (assetBalance.asset == IAbstractAsset(baseAsset)) {
+        } else if (assetBalance.asset == IAsset(baseAsset)) {
           scenarioValue += int(shockedSpot).multiplyDecimal(assetBalance.balance);
-        } else if (assetBalance.asset == IAbstractAsset(quoteAsset)) {
+        } else if (assetBalance.asset == IAsset(quoteAsset)) {
           scenarioValue += assetBalance.balance;
         } else {
           revert("Risk model does not support given asset");
@@ -219,6 +219,6 @@ contract PortfolioRiskManager is Owned, IAbstractManager {
     return false;
   }
 
-  function handleManagerChange(uint, IAbstractManager) external {}
+  function handleManagerChange(uint, IManager) external {}
 
 }

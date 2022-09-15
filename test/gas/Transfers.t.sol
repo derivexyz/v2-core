@@ -39,7 +39,7 @@ contract Transfers is Test, LyraHelper {
     IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
-      asset: IAbstractAsset(optionAdapter),
+      asset: IAsset(optionAdapter),
       subId: optionAdapter.addListing(1500e18, block.timestamp + 604800, true),
       amount: int(1e18),
       assetData: bytes32(0)
@@ -48,7 +48,7 @@ contract Transfers is Test, LyraHelper {
     IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
-      asset: IAbstractAsset(usdcAdapter),
+      asset: IAsset(usdcAdapter),
       subId: 0,
       amount: int(100e18),
       assetData: bytes32(0)
@@ -71,7 +71,7 @@ contract Transfers is Test, LyraHelper {
     IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
-      asset: IAbstractAsset(optionAdapter),
+      asset: IAsset(optionAdapter),
       subId: optionAdapter.addListing(1500e18, block.timestamp + 604800, true),
       amount: int(1e18),
       assetData: bytes32(0)
@@ -80,7 +80,7 @@ contract Transfers is Test, LyraHelper {
     IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
-      asset: IAbstractAsset(usdcAdapter),
+      asset: IAsset(usdcAdapter),
       subId: 0,
       amount: int(100e18),
       assetData: bytes32(0)
@@ -130,7 +130,7 @@ contract Transfers is Test, LyraHelper {
     singleTransfer[0] = IAccount.AssetTransfer({
         fromAcc: aliceAcc,
         toAcc: bobAcc,
-        asset: IAbstractAsset(optionAdapter),
+        asset: IAsset(optionAdapter),
         subId: optionAdapter.addListing(1000e18, block.timestamp + 604800, true),
         amount: 1e17,
         assetData: bytes32(0)
@@ -150,7 +150,7 @@ contract Transfers is Test, LyraHelper {
       transferBatch[i] = IAccount.AssetTransfer({
         fromAcc: fromAcc,
         toAcc: toAcc,
-        asset: IAbstractAsset(optionAdapter),
+        asset: IAsset(optionAdapter),
         subId: optionAdapter.addListing(1000e18 + i * 10, block.timestamp + 604800, true),
         amount: amount,
         assetData: bytes32(0)

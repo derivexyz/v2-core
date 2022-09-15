@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "./IAccount.sol";
 
-interface IAbstractManager {
+interface IManager {
   function handleAdjustment(
     uint accountId, 
     IAccount.AssetBalance[] memory assets, 
@@ -12,6 +12,6 @@ interface IAbstractManager {
 
   function handleManagerChange(
     uint accountId, 
-    IAbstractManager newManager
+    IManager newManager
   ) external;
 }

@@ -47,9 +47,9 @@ contract Allowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAbstractAsset[] memory assets = new IAbstractAsset[](2);
-    assets[0] = IAbstractAsset(optionAdapter);
-    assets[1] = IAbstractAsset(usdcAdapter);
+    IAsset[] memory assets = new IAsset[](2);
+    assets[0] = IAsset(optionAdapter);
+    assets[1] = IAsset(usdcAdapter);
     uint[] memory posAllowances = new uint[](2);
     uint[] memory negAllowances = new uint[](2);
     posAllowances[0] = 5e17;
@@ -90,8 +90,8 @@ contract Allowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAbstractAsset[] memory assets = new IAbstractAsset[](1);
-    assets[0] = IAbstractAsset(usdcAdapter);
+    IAsset[] memory assets = new IAsset[](1);
+    assets[0] = IAsset(usdcAdapter);
     uint[] memory posAllowances = new uint[](1);
     uint[] memory negAllowances = new uint[](1);
     posAllowances[0] = type(uint).max;
@@ -119,9 +119,9 @@ contract Allowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAbstractAsset[] memory assets = new IAbstractAsset[](2);
-    assets[0] = IAbstractAsset(optionAdapter);
-    assets[1] = IAbstractAsset(usdcAdapter);
+    IAsset[] memory assets = new IAsset[](2);
+    assets[0] = IAsset(optionAdapter);
+    assets[1] = IAsset(usdcAdapter);
     uint[] memory posAllowances = new uint[](2);
     uint[] memory negAllowances = new uint[](2);
     posAllowances[0] = 5e17;
@@ -165,9 +165,9 @@ contract Allowances is Test, LyraHelper {
     address orderbook = charlie;
 
     // give orderbook allowance over both
-    IAbstractAsset[] memory assets = new IAbstractAsset[](2);
-    assets[0] = IAbstractAsset(optionAdapter);
-    assets[1] = IAbstractAsset(usdcAdapter);
+    IAsset[] memory assets = new IAsset[](2);
+    assets[0] = IAsset(optionAdapter);
+    assets[1] = IAsset(usdcAdapter);
 
     uint[] memory posAllowances = new uint[](2);
     uint[] memory negAllowances = new uint[](2);
@@ -195,9 +195,9 @@ contract Allowances is Test, LyraHelper {
     address orderbook = charlie;
 
     // give orderbook allowance over both
-    IAbstractAsset[] memory assets = new IAbstractAsset[](2);
-    assets[0] = IAbstractAsset(optionAdapter);
-    assets[1] = IAbstractAsset(usdcAdapter);
+    IAsset[] memory assets = new IAsset[](2);
+    assets[0] = IAsset(optionAdapter);
+    assets[1] = IAsset(usdcAdapter);
 
     uint[] memory posAllowances = new uint[](2);
     uint[] memory negAllowances = new uint[](2);
@@ -296,7 +296,7 @@ contract Allowances is Test, LyraHelper {
     // new user account with spender allowance
     vm.startPrank(alice);
     address user = vm.addr(100);
-    uint userAcc = account.createAccount(user, bob, IAbstractManager(rm));
+    uint userAcc = account.createAccount(user, bob, IManager(rm));
     vm.stopPrank();
 
     // successful trade without allowances
@@ -311,7 +311,7 @@ contract Allowances is Test, LyraHelper {
     IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
-      asset: IAbstractAsset(optionAdapter),
+      asset: IAsset(optionAdapter),
       subId: optionSubId,
       amount: int(optionAmount),
       assetData: bytes32(0)
@@ -320,7 +320,7 @@ contract Allowances is Test, LyraHelper {
     IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
-      asset: IAbstractAsset(usdcAdapter),
+      asset: IAsset(usdcAdapter),
       subId: 0,
       amount: int(usdcAmount),
       assetData: bytes32(0)

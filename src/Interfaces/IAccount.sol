@@ -1,7 +1,7 @@
 pragma solidity ^0.8.13;
 
-import "./IAbstractAsset.sol";
-import "./IAbstractManager.sol";
+import "./IAsset.sol";
+import "./IManager.sol";
 
 // For full documentation refer to src/Account.sol";
 interface IAccount {
@@ -18,11 +18,11 @@ interface IAccount {
   }
 
   struct HeldAsset {
-    IAbstractAsset asset;
+    IAsset asset;
     uint96 subId;
   }
   struct AssetBalance {
-    IAbstractAsset asset;
+    IAsset asset;
     // adjustments will revert if >uint96
     uint subId;
     // base layer only stores up to uint240
@@ -34,7 +34,7 @@ interface IAccount {
     uint fromAcc;
     // debited by amount
     uint toAcc;
-    IAbstractAsset asset;
+    IAsset asset;
     // adjustments will revert if >uint96
     uint subId;
     // reverts if transfser amount > uint240
@@ -45,7 +45,7 @@ interface IAccount {
 
   struct AssetAdjustment {
     uint acc;
-    IAbstractAsset asset;
+    IAsset asset;
     // reverts for subIds > uint96
     uint subId;
     // reverts if transfser amount > uint240
@@ -58,16 +58,16 @@ interface IAccount {
   // Account Admin //
   ///////////////////
 
-  function createAccount(address owner, IAbstractManager _manager) external returns (uint newId);
+  function createAccount(address owner, IManager _manager) external returns (uint newId);
 
   function createAccount(
-    address owner, address spender, IAbstractManager _manager
+    address owner, address spender, IManager _manager
   ) external returns (uint newId);
 
   function burnAccounts(uint[] memory accountIds) external;
 
   function changeManager(
-    uint accountId, IAbstractManager newManager, bytes memory newManagerData
+    uint accountId, IManager newManager, bytes memory newManagerData
   ) external;
 
   ///////////////
@@ -77,7 +77,7 @@ interface IAccount {
   function setAssetAllowances(
     uint accountId, 
     address delegate, 
-    IAbstractAsset[] memory assets,
+    IAsset[] memory assets,
     uint[] memory positiveAllowances,
     uint[] memory negativeAllowances
   ) external;
@@ -85,7 +85,7 @@ interface IAccount {
   function setSubIdAllowances(
     uint accountId, 
     address delegate, 
-    IAbstractAsset[] memory assets,
+    IAsset[] memory assets,
     uint[] memory subIds,
     uint[] memory positiveAllowances,
     uint[] memory negativeAllowances
@@ -115,30 +115,30 @@ interface IAccount {
   // View //
   //////////
 
-  function manager(uint accountId) external view returns (IAbstractManager);
+  function manager(uint accountId) external view returns (IManager);
 
   function balanceAndOrder(
-    uint accountId, IAbstractAsset asset, uint subId
+    uint accountId, IAsset asset, uint subId
   ) external view returns (int240 balance, uint16 order);
 
   function positiveSubIdAllowance(
-    uint accountId, IAbstractAsset asset, uint subId, address spender
+    uint accountId, IAsset asset, uint subId, address spender
   ) external view returns (uint);
   
   function negativeSubIdAllowance(
-    uint accountId, IAbstractAsset asset, uint subId, address spender
+    uint accountId, IAsset asset, uint subId, address spender
   ) external view returns (uint);
 
   function positiveAssetAllowance(
-    uint accountId, IAbstractAsset asset, address spender
+    uint accountId, IAsset asset, address spender
   ) external view returns (uint);
 
   function negativeAssetAllowance(
-    uint accountId, IAbstractAsset asset, address spender
+    uint accountId, IAsset asset, address spender
   ) external view returns (uint);
 
   function getBalance(
-    uint accountId, IAbstractAsset asset, uint subId
+    uint accountId, IAsset asset, uint subId
   ) external view returns (int balance);
 
   function getAccountBalances(uint accountId) 

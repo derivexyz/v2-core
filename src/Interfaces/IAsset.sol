@@ -1,21 +1,21 @@
 pragma solidity ^0.8.13;
 
-import "./IAbstractManager.sol";
+import "./IManager.sol";
 
-interface IAbstractAsset {
+interface IAsset {
   function handleAdjustment(
     uint account,
     int preBal,
     int amount,
     uint96 subId,
-    IAbstractManager manager,
+    IManager manager,
     address caller,
     bytes32 data
   ) external returns (int finalBalance);
 
   function handleManagerChange(
     uint accountId, 
-    IAbstractManager oldManager, 
-    IAbstractManager newManager
+    IManager oldManager, 
+    IManager newManager
   ) external;
 }

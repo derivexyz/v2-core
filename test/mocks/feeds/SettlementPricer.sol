@@ -38,7 +38,7 @@ contract SettlementPricer {
     return settlementDetails[feedId][expiry];
   }
 
-  function getSettlementDetailsForAsset(IAbstractAsset asset, uint expiry) external view returns (SettlementDetails memory) {
+  function getSettlementDetailsForAsset(IAsset asset, uint expiry) external view returns (SettlementDetails memory) {
     return getSettlementDetails(priceFeeds.assetToFeedId(asset), expiry);
   }
 }

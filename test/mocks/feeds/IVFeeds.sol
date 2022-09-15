@@ -1,11 +1,11 @@
 pragma solidity ^0.8.13;
 
 import "synthetix/Owned.sol";
-import "src/interfaces/IAbstractAsset.sol";
+import "src/interfaces/IAsset.sol";
 
 // simple single IV oracle
 contract IVFeeds is Owned {
-  mapping(IAbstractAsset => mapping(uint => uint)) public feedIds; // asset => subId => feedId;
+  mapping(IAsset => mapping(uint => uint)) public feedIds; // asset => subId => feedId;
   mapping(uint => uint) IVs; // feedId => iv;
 
   constructor() Owned() {}
@@ -20,11 +20,11 @@ contract IVFeeds is Owned {
     return iv;
   }
 
-  function assignFeedToSubId(IAbstractAsset asset, uint subId, uint feedId) external {
+  function assignFeedToSubId(IAsset asset, uint subId, uint feedId) external {
     feedIds[asset][subId] = feedId;
   }
 
-  function getIVForSubId(IAbstractAsset asset, uint subId) external view returns (uint iv) {
+  function getIVForSubId(IAsset asset, uint subId) external view returns (uint iv) {
     return getIVForFeed(feedIds[asset][subId]);
   }
 }
