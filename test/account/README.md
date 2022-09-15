@@ -6,10 +6,12 @@
         - [ ]  block transfer if msg.sender doesn’t have allowance
         - [ ]  allow transfer if allowances not enough, but ERC721 approved
         - [ ]  allow transfer if allowances not enough, but ERC721 approvedForAll
+        - [ ]  correct final balances post multiple transfers
     - [ ]  Multi subId transfer
         - [ ]  block transfer if msg.sender doesn’t have allowance for specific subId
     - [ ]  Multi account / subId transfer
         - [ ]  block transfer if msg.sender doesn’t have allowance for one account
+    - [ ]  Create account → deposit USDC → open position in 2x transactions
 - [ ]  `transferAll()`
     - [ ]  AMM 100 position manager migration
     - [ ]  merge - bypass PoM
@@ -23,14 +25,15 @@
     - [ ]  USDC wrapper blocks negative adjustments
     - [ ]  USDC wrapper blocks manager from moving funds asymmetrically?
     - [ ]  block unsupported manager
-- [ ]  asset `adjustBalance()`
-    - [ ]  Manager force transfer on settlement
 - [ ]  manager `adjustBalance()`
+    - [ ]  Manager force transfer on settlement
+- [ ]  asset `adjustBalance()`
 - [ ]  Liquidations
     - [ ]  Forceful auctions
 - [ ]  Socialized losses
-    - [ ]  Asset ratio of balance
+    - [ ]  Option asset ratio post socialized loss
     - [ ]  Asset augment finalBalance during transfer (positive → negative?)
+    - [ ]  Asset ratio stays the same with trade post socialized loss
 - [ ]  Lending
     - [ ]  accrue interest
 

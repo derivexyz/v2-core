@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../util/LyraHelper.sol";
 
-contract TransferGasTest is Test, LyraHelper {
+contract Transfers is Test, LyraHelper {
   address liquidator = vm.addr(5);
   uint aliceAcc;
   uint bobAcc;

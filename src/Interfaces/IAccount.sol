@@ -60,6 +60,10 @@ interface IAccount {
 
   function createAccount(address owner, IAbstractManager _manager) external returns (uint newId);
 
+  function createAccount(
+    address owner, address spender, IAbstractManager _manager
+  ) external returns (uint newId);
+
   function burnAccounts(uint[] memory accountIds) external;
 
   function changeManager(

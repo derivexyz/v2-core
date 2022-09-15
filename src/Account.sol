@@ -56,6 +56,21 @@ contract Account is IAccount, ERC721 {
     return _createAccount(owner, _manager);
   }
 
+  /** 
+   * @notice Creates account and gives spender full allowance
+   * @param owner new account owner
+   * @param spender give address ERC721 approval
+   * @param _manager IAbstractManager of new account
+   * @return newId ID of new account
+   */
+  function createAccount(
+    address owner, address spender, IAbstractManager _manager
+  ) external returns (uint newId) {
+    newId = _createAccount(owner, _manager);
+    _approve(spender, newId);
+    return newId;
+  }
+
   function _createAccount(
     address owner, IAbstractManager _manager
   ) internal returns (uint newId) {
