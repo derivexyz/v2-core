@@ -206,7 +206,7 @@ contract OptionToken is IAbstractAsset, Owned {
         : false;
 
       if (crossesZero) {
-        return _applyInverseRatio((amount - preBal), subId);
+        return _applyInverseRatio((amount + preBal), subId);
       } else {
         return preBal + amount;
       }
@@ -229,8 +229,8 @@ contract OptionToken is IAbstractAsset, Owned {
   }
 
   function _applyInverseRatio(int amount, uint subId) internal view returns (int) {
-    int inverseRatio = SignedDecimalMath.UNIT / int(ratios[subId]) * SignedDecimalMath.UNIT;
-    return inverseRatio * amount / SignedDecimalMath.UNIT;
+    int inverseRatio = SignedDecimalMath.UNIT.divideDecimal(int(ratios[subId]));
+    return (inverseRatio * amount / SignedDecimalMath.UNIT);
   }
 
   function _updateOI(int preBal, int postBal, uint subId) internal {

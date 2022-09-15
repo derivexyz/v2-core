@@ -31,6 +31,7 @@ abstract contract LyraHelper is Test {
   address alice = vm.addr(2);
   address bob = vm.addr(3);
   address charlie = vm.addr(4);
+  address david = vm.addr(5);
 
   function deployPRMSystem() public {
     vm.startPrank(owner);
