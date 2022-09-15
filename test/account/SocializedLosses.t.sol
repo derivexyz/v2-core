@@ -27,6 +27,7 @@ contract TransferGasTest is Test, LyraHelper {
 
     // open subId = 0 option
     optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+    uint subId = 0;
 
     // open call w/o premium payment
     vm.startPrank(alice);
@@ -34,7 +35,7 @@ contract TransferGasTest is Test, LyraHelper {
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAbstractAsset(optionAdapter),
-      subId: 0,
+      subId: subId,
       // TODO: this breaks when amount == totalShortOI
       amount: int(10e18),
       assetData: bytes32(0)
@@ -47,10 +48,15 @@ contract TransferGasTest is Test, LyraHelper {
 
     // mock bob being insolvent and losing 1x short
     vm.startPrank(address(rm));
-    optionAdapter.socializeLoss(bobAcc, 0, -1e18);
+    optionAdapter.socializeLoss(bobAcc, subId, 1e18);
     vm.stopPrank();
 
-    // 
+    // new ratio should be 0.9
+    uint storedRatio = optionAdapter.ratios(subId);
+    uint effectiveRatio = 
+      DecimalMath.UNIT * optionAdapter.totalShorts(subId) / optionAdapter.totalLongs(subId);
+    assertEq(storedRatio, 9e17);
+    assertEq(effectiveRatio, 9e17);
 
   }
 

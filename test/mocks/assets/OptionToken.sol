@@ -33,13 +33,13 @@ contract OptionToken is IAbstractAsset, Owned {
   uint96 nextId = 0;
   mapping(IAbstractManager => bool) riskModelAllowList;
   
-  mapping(uint => uint) totalLongs;
-  mapping(uint => uint) totalShorts;
+  mapping(uint => uint) public totalLongs;
+  mapping(uint => uint) public totalShorts;
   // need to write down ratio as totalOIs change atomically during transfers
-  mapping(uint => uint) ratios;
-  mapping(uint => uint) liquidationCount;
+  mapping(uint => uint) public ratios;
+  mapping(uint => uint) public liquidationCount;
 
-  mapping(uint96 => Listing) subIdToListing;
+  mapping(uint96 => Listing) public subIdToListing;
   constructor(
     Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_
   ) Owned() {
@@ -156,13 +156,6 @@ contract OptionToken is IAbstractAsset, Owned {
   //////
   // Views
 
-  /**
-   * subId encodes strike, expiry and isCall
-   * bit 0 => isCall
-   * bits 64-128 => expiry
-   * bits 128-256 => strikePrice
-   */
-
   function _ratiodBalance(int balance, uint subId) internal view returns (int ratiodBalance) {
     if (ratios[nextId] < 1e17) {
       // create some hardcoded limit to where asset freezes at certain levels of socialized losses
@@ -186,26 +179,23 @@ contract OptionToken is IAbstractAsset, Owned {
     return uint256(nextId) - 1;
   }
 
-  function socializeLoss(uint insolventAcc, uint subId, int reduction) external {
+  function socializeLoss(uint insolventAcc, uint subId, uint burnAmount) external {
     require(riskModelAllowList[IAbstractManager(msg.sender)], "only RM socializes losses");
-
-    int preBal = account.getBalance(insolventAcc, IAbstractAsset(address(this)), subId);
-    int postBal = preBal + reduction;
-
+    
+    // only shorts can be socialized
+    // open interest modified during handleAdjustment
     account.adjustBalance(
       IAccount.AssetAdjustment({
         acc: insolventAcc,
         asset: IAbstractAsset(address(this)),
         subId: subId,
-        amount: reduction,
+        amount: int(burnAmount),
         assetData: bytes32(0)
       }),
       ""
     );
 
     ratios[subId] = DecimalMath.UNIT * totalShorts[subId] / totalLongs[subId];
-
-    _updateOI(preBal, postBal, subId);
   }
 
   function _getPostBalWithRatio(int preBal, int amount, uint subId) internal view returns (int postBal) {
@@ -239,11 +229,12 @@ contract OptionToken is IAbstractAsset, Owned {
   }
 
   function _applyInverseRatio(int amount, uint subId) internal view returns (int) {
-    int inverseRatio = SignedDecimalMath.UNIT / int(ratios[subId]);
+    int inverseRatio = SignedDecimalMath.UNIT / int(ratios[subId]) * SignedDecimalMath.UNIT;
     return inverseRatio * amount / SignedDecimalMath.UNIT;
   }
 
   function _updateOI(int preBal, int postBal, uint subId) internal {
+
     if (preBal < 0) {
       totalShorts[subId] -= uint(-preBal);
     } else {
@@ -255,6 +246,7 @@ contract OptionToken is IAbstractAsset, Owned {
     } else {
       totalLongs[subId] += uint(postBal);
     }
+
   }
 
   function _abs(int x) internal pure returns (uint absAmount) {
