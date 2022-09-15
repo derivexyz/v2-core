@@ -517,6 +517,7 @@ contract Account is IAccount, ERC721 {
     // determine if positive vs negative allowance is needed
     if (adjustment.amount > 0) {
       _absAllowanceCheck(
+        adjustment.acc,
         positiveSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         positiveAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
@@ -524,6 +525,7 @@ contract Account is IAccount, ERC721 {
       );
     } else {
       _absAllowanceCheck(
+        adjustment.acc,
         negativeSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         negativeAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
@@ -534,6 +536,7 @@ contract Account is IAccount, ERC721 {
   }
 
   function _absAllowanceCheck(
+    uint accountId,
     mapping(address => uint) storage allowancesForSubId,
     mapping(address => uint) storage allowancesForAsset,
     address delegate,
@@ -551,7 +554,7 @@ contract Account is IAccount, ERC721 {
       allowancesForSubId[delegate] = 0;
       allowancesForAsset[delegate] -= absAmount - subIdAllowance;
     } else {
-      revert NotEnoughSubIdOrAssetAllowances(address(this), msg.sender, absAmount, subIdAllowance, assetAllowance);
+      revert NotEnoughSubIdOrAssetAllowances(address(this), msg.sender, accountId, absAmount, subIdAllowance, assetAllowance);
     }
   }
 

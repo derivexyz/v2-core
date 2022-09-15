@@ -197,8 +197,9 @@ interface IAccount {
   error OnlyManagerOrAssetAllowed(address thrower, address caller, address manager, address asset);
   error NotOwnerOrERC721Approved(address thrower, address caller, address accountOwner, uint accountId);
   error NotEnoughSubIdOrAssetAllowances(
-    address thower, 
-    address caller, 
+    address thower,
+    address caller,
+    uint accountId,
     uint absAmount, 
     uint subIdAllowance, 
     uint assetAllowance
