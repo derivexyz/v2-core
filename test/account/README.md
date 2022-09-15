@@ -12,34 +12,38 @@
         - [x]  block transfer if msg.sender doesn’t have allowance for specific subId
     - [x]  Multi account / subId transfer
         - [x]  block transfer if msg.sender doesn’t have allowance for one account
+    - [x]  Manager initiated transfer without allowances
+    - [x]  Auto spender allowance when using `createAccount(owner, spender, _manager)`
 - [ ]  `submitTransfer/s()`
-    - [ ] Adjusts balances correctly
+    - [ ]  Correct balance transfer post single transfer
+    - [ ]  Correct balance transfer post 3-way transfer
 - [ ]  `transferAll()`
     - [ ]  AMM 100 position manager migration
-    - [ ]  merge - bypass PoM
-    - [ ]  split -
-    - [ ]  proportionate split?
+    - [ ]  merge - bypass PoM 
+    - [ ]  split
+    - [ ]  proportionate split - bypass PoM
 - [ ]  `manager.handleAdjustment`
+    - [ ]  transfer between different risk managers
     - [ ]  block unsupported asset
-    - [ ]  pass transfer between different risk managers
+    - [ ]  liquidations
+        - [ ]  Forceful auctions
 - [ ]  `asset.handleAdjustment`
-    - [ ]  Asset mock interest accrual upon transfer
-    - [ ]  USDC wrapper blocks negative adjustments
-    - [ ]  USDC wrapper blocks manager from moving funds asymmetrically?
+    - [ ]  positive-only USDC wrapper blocks negative adjustments
+    - [ ]  positive-only USDC wrapper blocks manager from moving funds asymmetrically?
     - [ ]  block unsupported manager
-- [ ]  manager `adjustBalance()`
-    - [ ]  Manager force transfer on settlement
-- [ ]  asset `adjustBalance()`
-- [ ]  Liquidations
-    - [ ]  Forceful auctions
-- [ ]  Socialized losses
-    - [x]  Option asset ratio post socialized loss
-    - [x]  Asset augment finalBalance during transfer (positive → negative?)
-    - [x]  Asset ratio stays the same with trade post socialized loss
-- [ ]  Lending
-    - [ ]  accrue interest
-
-### Accounts gas benchmarks
+    - [x]  socialized losses
+        - [x]  Option asset ratio post socialized loss
+        - [x]  Asset augment finalBalance during transfer (positive → negative?)
+        - [x]  Asset ratio stays the same with trade post socialized loss
+- [ ]  manager initiated `adjustBalance()`
+    - [ ]  Settlement
+- [ ]  asset initiated `adjustBalance()`
+    - [ ]  Deposits / Withdrawals
+    - [ ]  Lending
+        - [ ]  accrue interest
+- [ ]  `createAccount()`
+    - [ ]  increment ID properly
+### Accounts gas benchmarks (possibly use hardhat or cast)
 - [ ]  Gas Testing
     - [ ]  Large
         - [ ]  100x position account to transfer 50x positions out to 0 (Expiration).

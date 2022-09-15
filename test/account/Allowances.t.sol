@@ -281,6 +281,30 @@ contract Allowances is Test, LyraHelper {
     vm.stopPrank();
   }
 
+  function testManagerInitiatedTransfer() public {    
+    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+
+    // successful trade without allowances
+    vm.startPrank(address(rm));
+    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
+    vm.stopPrank();
+  }
+
+  function testAutoAllowanceWithNewAccount() public {    
+    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+
+    // new user account with spender allowance
+    vm.startPrank(alice);
+    address user = vm.addr(100);
+    uint userAcc = account.createAccount(user, bob, IAbstractManager(rm));
+    vm.stopPrank();
+
+    // successful trade without allowances
+    vm.startPrank(bob);
+    tradeOptionWithUSDC(userAcc, bobAcc, 1e18, 100e18, subId);
+    vm.stopPrank();
+  }
+
   function tradeOptionWithUSDC(
     uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId
   ) internal {
