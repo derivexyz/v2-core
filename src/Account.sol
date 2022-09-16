@@ -84,24 +84,16 @@ contract Account is IAccount, ERC721 {
   /** 
    * @notice Burns multiple accounts using ERC721._burn(). 
    *         Account must not hold any assets.
-   * @param accountIds account ID array
+   *         This account can never be reused.
+   * @param accountId accountId to burn
    */
-  function burnAccounts(uint[] memory accountIds) external {
-    _burnAccounts(accountIds);
-  }
-
-  function _burnAccounts(uint[] memory accountIds) internal {
-    uint accountsLen = accountIds.length;
-    uint heldAssetLen;
-    for (uint i; i < accountsLen; ++i) {
-      _requireERC721ApprovedOrOwner(msg.sender, accountIds[i]);
-      heldAssetLen = heldAssets[accountIds[i]].length;
-      if (heldAssetLen > 0) {
-        revert CannotBurnAccountWithHeldAssets(address(this), msg.sender, accountIds[i], heldAssetLen);
-      }
-      _burn(accountIds[i]);
-      emit AccountBurned(ownerOf(accountIds[i]), accountIds[i], address(manager[accountIds[i]]));
+  function burnAccount(uint accountId) external onlyERC721ApprovedOrOwner(msg.sender, accountId) {
+    uint heldAssetLen = heldAssets[accountId].length;
+    if (heldAssetLen > 0) {
+      revert CannotBurnAccountWithHeldAssets(address(this), msg.sender, accountId, heldAssetLen);
     }
+    _burn(accountId);
+    emit AccountBurned(ownerOf(accountId), accountId, address(manager[accountId]));
   }
 
   /** 
@@ -113,9 +105,7 @@ contract Account is IAccount, ERC721 {
    */
   function changeManager(
     uint accountId, IManager newManager, bytes memory newManagerData
-  ) external {
-    _requireERC721ApprovedOrOwner(msg.sender, accountId);
-    
+  ) external onlyERC721ApprovedOrOwner(msg.sender, accountId) {    
     IManager oldManager = manager[accountId];
     if (oldManager == newManager) { 
       revert CannotChangeToSameManager(address(this), msg.sender, accountId); 
@@ -153,9 +143,7 @@ contract Account is IAccount, ERC721 {
     uint accountId, 
     address delegate,
     AssetAllowance[] memory allowances
-  ) external {
-    _requireERC721ApprovedOrOwner(msg.sender, accountId);
-
+  ) external onlyERC721ApprovedOrOwner(msg.sender, accountId) {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
       positiveAssetAllowance[accountId][allowances[i].asset][delegate] = allowances[i].positive;
@@ -174,23 +162,11 @@ contract Account is IAccount, ERC721 {
     uint accountId, 
     address delegate,
     SubIdAllowance[] memory allowances
-  ) external {
-    _requireERC721ApprovedOrOwner(msg.sender, accountId);
-
+  ) external onlyERC721ApprovedOrOwner(msg.sender, accountId) {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
       positiveSubIdAllowance[accountId][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].positive;
       negativeSubIdAllowance[accountId][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].negative;
-    }
-  }
-
-  function _requireERC721ApprovedOrOwner(
-    address sender, uint accountId
-  ) internal view {
-    if (!_isApprovedOrOwner(sender, accountId)) {
-      revert NotOwnerOrERC721Approved(
-        address(this), sender, ownerOf(accountId), accountId
-      );
     }
   }
 
@@ -338,7 +314,7 @@ contract Account is IAccount, ERC721 {
     bytes32[] memory formattedAssetData = new bytes32[](heldAssetLen);
     if (allAssetDataLen == heldAssetLen) {
       formattedAssetData = allAssetData;
-    } else if (allAssetDataLen != 0 && allAssetDataLen != heldAssetLen) {
+    } else if (allAssetDataLen != heldAssetLen) {
       revert AssetDataDoesNotMatchHeldAssets(address(this), allAssetDataLen, heldAssetLen);
     }
 
@@ -695,8 +671,33 @@ contract Account is IAccount, ERC721 {
   modifier onlyManagerOrAsset(uint accountId, IAsset asset) {
     address accountManager = address(manager[accountId]);
     if (msg.sender != accountManager && msg.sender != address(asset)) {
-      revert OnlyManagerOrAssetAllowed(address(this), msg.sender, accountManager, address(asset));
+      revert OnlyManagerOrAssetAllowed(
+        address(this), 
+        msg.sender, 
+        accountManager, 
+        address(asset)
+      );
     }
     _;
+  }
+
+  modifier onlyERC721ApprovedOrOwner(address sender, uint accountId) {
+    _requireERC721ApprovedOrOwner(sender, accountId);
+    _;
+  }
+
+  function _requireERC721ApprovedOrOwner(
+    address sender, uint accountId
+  ) internal view {
+    if (!_isApprovedOrOwner(sender, accountId)) {
+      revert NotOwnerOrERC721Approved(
+        address(this), 
+        sender, 
+        accountId, 
+        ownerOf(accountId), 
+        manager[accountId], 
+        getApproved(accountId)
+      );
+    }
   }
 }

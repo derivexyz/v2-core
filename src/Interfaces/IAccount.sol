@@ -77,7 +77,7 @@ interface IAccount {
     address owner, address spender, IManager _manager
   ) external returns (uint newId);
 
-  function burnAccounts(uint[] memory accountIds) external;
+  function burnAccount(uint accountId) external;
 
   function changeManager(
     uint accountId, IManager newManager, bytes memory newManagerData
@@ -203,7 +203,8 @@ interface IAccount {
   ////////////
 
   error OnlyManagerOrAssetAllowed(address thrower, address caller, address manager, address asset);
-  error NotOwnerOrERC721Approved(address thrower, address caller, address accountOwner, uint accountId);
+  error NotOwnerOrERC721Approved(
+    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved);
   error NotEnoughSubIdOrAssetAllowances(
     address thower,
     address caller,
