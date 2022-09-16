@@ -56,10 +56,10 @@ contract QuoteWrapper is IAsset, Owned {
   }
 
   function handleAdjustment(
-    uint, int preBal, int amount, uint96 subId, IManager riskModel, address, bytes32
+    IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
   ) external view override returns (int finalBalance) {
-    require(subId == 0 && riskModelAllowList[riskModel]);
-    return preBal + amount;
+    require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
+    return preBal + adjustment.amount;
   }
 
   function handleManagerChange(uint, IManager, IManager) external pure override {}

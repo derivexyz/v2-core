@@ -93,7 +93,7 @@ contract Account is IAccount, ERC721 {
   function _burnAccounts(uint[] memory accountIds) internal {
     uint accountsLen = accountIds.length;
     uint heldAssetLen;
-    for (uint i; i < accountsLen; i++) {
+    for (uint i; i < accountsLen; ++i) {
       _requireERC721ApprovedOrOwner(msg.sender, accountIds[i]);
       heldAssetLen = heldAssets[accountIds[i]].length;
       if (heldAssetLen > 0) {
@@ -115,23 +115,19 @@ contract Account is IAccount, ERC721 {
     uint accountId, IManager newManager, bytes memory newManagerData
   ) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
-
+    
     IManager oldManager = manager[accountId];
+    if (oldManager == newManager) { 
+      revert CannotChangeToSameManager(address(this), msg.sender, accountId); 
+    }
     oldManager.handleManagerChange(accountId, newManager);
 
     // only call to asset once 
     HeldAsset[] memory accountAssets = heldAssets[accountId];
-    IAsset[] memory seenAssets = new IAsset[](accountAssets.length);
-    uint nextSeenId;
+    (IAsset[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(accountAssets);
 
-    for (uint i; i < accountAssets.length; ++i) {
-      if (!_findInArray(seenAssets, accountAssets[i].asset)) {
-        seenAssets[nextSeenId++] = accountAssets[i].asset;
-      }
-    }
-
-    for (uint i; i < nextSeenId; ++i) {
-      seenAssets[i].handleManagerChange(accountId, oldManager, newManager);
+    for (uint i; i < uniqueLength; ++i) {
+      uniqueAssets[i].handleManagerChange(accountId, oldManager, newManager);
     }
 
     manager[accountId] = newManager;
@@ -151,23 +147,19 @@ contract Account is IAccount, ERC721 {
    *         asset allowance + subId allowance must be >= amount 
    * @param accountId ID of account
    * @param delegate address to assign allowance to
-   * @param assets array of assets to set allowance for
-   * @param positiveAllowances allowances in positive direction
-   * @param negativeAllowances allowances in negative direction
+   * @param allowances positive and negative amounts for each asset
    */
   function setAssetAllowances(
     uint accountId, 
-    address delegate, 
-    IAsset[] memory assets,
-    uint[] memory positiveAllowances,
-    uint[] memory negativeAllowances
+    address delegate,
+    AssetAllowance[] memory allowances
   ) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
 
-    uint assetsLen = assets.length;
-    for (uint i; i < assetsLen; i++) {
-      positiveAssetAllowance[accountId][assets[i]][delegate] = positiveAllowances[i];
-      negativeAssetAllowance[accountId][assets[i]][delegate] = negativeAllowances[i];
+    uint allowancesLen = allowances.length;
+    for (uint i; i < allowancesLen; i++) {
+      positiveAssetAllowance[accountId][allowances[i].asset][delegate] = allowances[i].positive;
+      negativeAssetAllowance[accountId][allowances[i].asset][delegate] = allowances[i].negative;
     }
   }
 
@@ -176,25 +168,19 @@ contract Account is IAccount, ERC721 {
    *         During a balance adjustment, the subId allowance is decremented first 
    * @param accountId ID of account
    * @param delegate address to assign allowance to
-   * @param assets array of assets to set allowance for
-   * @param subIds array of subIds, must be in same order as assets
-   * @param positiveAllowances allowances in positive direction
-   * @param negativeAllowances allowances in negative direction
+   * @param allowances positive and negative amounts for each (asset, subId)
    */
   function setSubIdAllowances(
     uint accountId, 
-    address delegate, 
-    IAsset[] memory assets,
-    uint[] memory subIds,
-    uint[] memory positiveAllowances,
-    uint[] memory negativeAllowances
+    address delegate,
+    SubIdAllowance[] memory allowances
   ) external {
     _requireERC721ApprovedOrOwner(msg.sender, accountId);
 
-    uint assetsLen = assets.length;
-    for (uint i; i < assetsLen; i++) {
-      positiveSubIdAllowance[accountId][assets[i]][subIds[i]][delegate] = positiveAllowances[i];
-      negativeSubIdAllowance[accountId][assets[i]][subIds[i]][delegate] = negativeAllowances[i];
+    uint allowancesLen = allowances.length;
+    for (uint i; i < allowancesLen; i++) {
+      positiveSubIdAllowance[accountId][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].positive;
+      negativeSubIdAllowance[accountId][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].negative;
     }
   }
 
@@ -284,6 +270,14 @@ contract Account is IAccount, ERC721 {
   function _transferAsset(
     AssetTransfer memory assetTransfer
   ) internal {
+
+    if (assetTransfer.fromAcc == assetTransfer.toAcc) {
+      revert CannotTransferAssetToOneself(address(this), msg.sender, assetTransfer.toAcc);
+    }
+    if (assetTransfer.amount == 0) {
+      revert CannotTransferZeroAmount(address(this), msg.sender, assetTransfer.fromAcc, assetTransfer.toAcc);
+    }
+
     AssetAdjustment memory fromAccAdjustment = AssetAdjustment({
       acc: assetTransfer.fromAcc,
       asset: assetTransfer.asset,
@@ -304,8 +298,8 @@ contract Account is IAccount, ERC721 {
     BalanceAndOrder storage toBalanceAndOrder = 
       balanceAndOrder[assetTransfer.toAcc][assetTransfer.asset][assetTransfer.subId];
 
-    _allowanceCheck(fromAccAdjustment, msg.sender);
-    _allowanceCheck(toAccAdjustment, msg.sender);
+    _spendAllowance(fromAccAdjustment, msg.sender);
+    _spendAllowance(toAccAdjustment, msg.sender);
 
     _adjustBalance(fromAccAdjustment, fromBalanceAndOrder);
     _adjustBalance(toAccAdjustment, toBalanceAndOrder);
@@ -333,6 +327,10 @@ contract Account is IAccount, ERC721 {
   function _transferAll(
     uint fromAccountId, uint toAccountId, bytes32[] memory allAssetData
   ) internal {
+    if (fromAccountId == toAccountId) {
+      revert CannotTransferAssetToOneself(address(this), msg.sender, fromAccountId);
+    }
+
     HeldAsset[] memory fromAssets = heldAssets[fromAccountId];
     uint heldAssetLen = fromAssets.length;
     uint allAssetDataLen = allAssetData.length;
@@ -348,6 +346,7 @@ contract Account is IAccount, ERC721 {
       BalanceAndOrder storage userBalanceAndOrder = 
         balanceAndOrder[toAccountId][fromAssets[i].asset][fromAssets[i].subId];
       
+      // balances set to zero here
       _adjustBalanceWithoutHeldAssetUpdate(AssetAdjustment({
           acc: fromAccountId,
           asset: fromAssets[i].asset,
@@ -369,8 +368,8 @@ contract Account is IAccount, ERC721 {
       );
     }
 
-    // gas efficient to batch clear assets
-    _clearAllHeldAssets(fromAccountId);
+    // leave all orders as non-zero
+    delete heldAssets[fromAccountId];
   }
 
   /** 
@@ -392,6 +391,10 @@ contract Account is IAccount, ERC721 {
     postAdjustmentBalance = int(userBalanceAndOrder.balance);
   }
 
+  /**
+   * @dev the order field is never set back to 0 to safe on gas
+   *      ensure balance != 0 when using the BalandAnceOrder.order field
+   */
   function _adjustBalance(
     AssetAdjustment memory adjustment, 
     BalanceAndOrder storage userBalanceAndOrder
@@ -400,20 +403,16 @@ contract Account is IAccount, ERC721 {
 
     // allow asset to modify adjustment in special cases (e.g. socialized losses / interest accruals)
     int postBalance = _assetHook(
-      adjustment.asset, 
-      adjustment.subId, 
-      adjustment.acc, 
+      adjustment, 
       preBalance, 
-      adjustment.amount, 
-      msg.sender, 
-      adjustment.assetData
+      msg.sender
     );
     
     // removeHeldAsset does not change order, instead
     // returns newOrder and stores balance and order in one word
     userBalanceAndOrder.balance = postBalance.toInt240();
     if (preBalance != 0 && postBalance == 0) {
-      userBalanceAndOrder.order = _removeHeldAsset(adjustment.acc, userBalanceAndOrder);
+      _removeHeldAsset(adjustment.acc, userBalanceAndOrder);
     } else if (preBalance == 0 && postBalance != 0) {
       userBalanceAndOrder.order = _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     } 
@@ -435,15 +434,7 @@ contract Account is IAccount, ERC721 {
     BalanceAndOrder storage userBalanceAndOrder
   ) internal{
     int preBalance = int(userBalanceAndOrder.balance);
-    int postBalance = _assetHook(
-      adjustment.asset, 
-      adjustment.subId,
-      adjustment.acc, 
-      preBalance, 
-      int(userBalanceAndOrder.balance) + adjustment.amount, 
-      msg.sender, 
-      adjustment.assetData
-    );
+    int postBalance = _assetHook(adjustment, preBalance, msg.sender);
 
     userBalanceAndOrder.balance = postBalance.toInt240();
   }
@@ -477,25 +468,17 @@ contract Account is IAccount, ERC721 {
    *         2. Assymetric balance adjustments
    * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage 
-   * @param asset IAsset being called to
-   * @param subId subId of asset being transfered
-   * @param accountId ID of account being checked 
+   * @param adjustment all details related to balance adjustment
    * @param preBalance balance before adjustment
-   * @param postBalance balance after adjustment
    * @param caller address of msg.sender initiating balance adjustment
-   * @param assetData data passed to asset for each subId transfer
    */
   function _assetHook(
-    IAsset asset, 
-    uint subId, 
-    uint accountId,
+    AssetAdjustment memory adjustment,
     int preBalance, 
-    int postBalance, 
-    address caller,
-    bytes32 assetData
+    address caller
   ) internal returns (int finalBalance) {
-    return asset.handleAdjustment(
-      accountId, preBalance, postBalance, subId.toUint96(), manager[accountId], caller, assetData
+    return adjustment.asset.handleAdjustment(
+      adjustment, preBalance, manager[adjustment.acc], caller
     );
   }
 
@@ -505,10 +488,11 @@ contract Account is IAccount, ERC721 {
    *         1. If delegate ERC721 approved or owner, blanket allowance given
    *         2. Otherwise, sum of subId and asset bidirectional allowances used
    *         The subId allowance is decremented before the asset-wide allowance
+   * @dev finalBalance adjustments tweaked by the asset not considered in allowances 
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param delegate address of msg.sender initiating change
    */
-  function _allowanceCheck(
+  function _spendAllowance(
     AssetAdjustment memory adjustment, address delegate
   ) internal {
     // ERC721 approved or owner get blanket allowance
@@ -516,7 +500,7 @@ contract Account is IAccount, ERC721 {
 
     // determine if positive vs negative allowance is needed
     if (adjustment.amount > 0) {
-      _absAllowanceCheck(
+      _spendAbsAllowance(
         adjustment.acc,
         positiveSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         positiveAssetAllowance[adjustment.acc][adjustment.asset],
@@ -524,7 +508,7 @@ contract Account is IAccount, ERC721 {
         adjustment.amount
       );
     } else {
-      _absAllowanceCheck(
+      _spendAbsAllowance(
         adjustment.acc,
         negativeSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         negativeAssetAllowance[adjustment.acc][adjustment.asset],
@@ -535,7 +519,7 @@ contract Account is IAccount, ERC721 {
 
   }
 
-  function _absAllowanceCheck(
+  function _spendAbsAllowance(
     uint accountId,
     mapping(address => uint) storage allowancesForSubId,
     mapping(address => uint) storage allowancesForAsset,
@@ -554,7 +538,13 @@ contract Account is IAccount, ERC721 {
       allowancesForSubId[delegate] = 0;
       allowancesForAsset[delegate] -= absAmount - subIdAllowance;
     } else {
-      revert NotEnoughSubIdOrAssetAllowances(address(this), msg.sender, accountId, absAmount, subIdAllowance, assetAllowance);
+      revert NotEnoughSubIdOrAssetAllowances(
+        address(this), 
+        msg.sender, 
+        accountId, 
+        amount, 
+        subIdAllowance, 
+        assetAllowance);
     }
   }
 
@@ -582,8 +572,8 @@ contract Account is IAccount, ERC721 {
    */
   function _removeHeldAsset(
     uint accountId, 
-    BalanceAndOrder memory userBalanceAndOrder
-  ) internal returns (uint16 newOrder) {
+    BalanceAndOrder storage userBalanceAndOrder
+  ) internal {
 
     uint16 currentAssetOrder = userBalanceAndOrder.order; // 100 gas
 
@@ -601,24 +591,22 @@ contract Account is IAccount, ERC721 {
 
     // remove asset from heldAsset
     heldAssets[accountId].pop(); // 200 gas
-    return 0;
-  }
-
-  /** @dev used for gas efficient transferAll() */
-  function _clearAllHeldAssets(uint accountId) internal {
-    HeldAsset[] memory assets = heldAssets[accountId];
-    uint heldAssetLen = assets.length;
-    for (uint i; i < heldAssetLen; i++) {
-      BalanceAndOrder storage orderToClear = 
-        balanceAndOrder[accountId][assets[i].asset][uint(assets[i].subId)];
-
-      orderToClear.order = 0;
-    }
-    delete heldAssets[accountId];
   }
 
   function _abs(int amount) internal pure returns (uint absAmount) {
-    return (amount >= 0) ? uint(amount) : SafeCast.toUint256(-amount);
+    return amount >= 0 ? uint(amount) : SafeCast.toUint256(-amount);
+  }
+
+  function _getUniqueAssets(
+    HeldAsset[] memory assets
+  ) internal pure returns (IAsset[] memory uniqueAssets, uint length) {
+    uniqueAssets = new IAsset[](assets.length);
+
+    for (uint i; i < assets.length; ++i) {
+      if (!_findInArray(uniqueAssets, assets[i].asset)) {
+        uniqueAssets[length++] = assets[i].asset;
+      }
+    }
   }
 
   function _findInArray(
@@ -627,13 +615,12 @@ contract Account is IAccount, ERC721 {
     uint arrayLen = array.length;
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == 0) {
-        return false;
+        break;
       }
       if (array[i] == toFind) {
         return true;
       }
     }
-    return false;
   }
 
   function _findInArray(
@@ -642,13 +629,12 @@ contract Account is IAccount, ERC721 {
     uint arrayLen = array.length;
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == IAsset(address(0))) {
-        return false;
+        break;
       }
       if (array[i] == toFind) {
         return true;
       }
     }
-    return false;
   }
 
   //////////

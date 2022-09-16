@@ -5,6 +5,9 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../util/LyraHelper.sol";
 
+// TODO: forge treats storage slots as WARM for all tests within a contract
+//       may need to use hardhat or cast
+
 contract Transfers is Test, LyraHelper {
   address liquidator = vm.addr(5);
   uint aliceAcc;
@@ -23,13 +26,11 @@ contract Transfers is Test, LyraHelper {
     bobAcc = createAccountAndDepositUSDC(bob, 10000000e18);
   }
 
-  /// @dev ~100k + manager / option hooks per transfer
-  ///      ~2x manager.handleAdjustments [2k overhead per external call]
-  ///      ~2x option.handleAdjustments [2k overhead per external call]
-  ///      account cost: 50k (mostly fixed)
-  ///         ~2x balanceAndOrder SSTORE: 20k
-  ///         ~2x heldAsset.push(): 20k
-  ///         ~2x getAccountBalances: 2k
+  /// @dev - Transfer 2x subIds (e.g. cash and option) between two empty accounts
+  ///        - ~50k * 2x * numOfSubIds → ~100k on balance/order SSTORE
+  ///        - ~50k * 2x * numOfSubIds → ~100k on heldAsset pushes
+  ///        - extras + sharing balances with manager + external calls → ~75k
+  ///        - Total: `~275k gas overhead` from accounts + asset / manager checks
 
   function testSingleTransfer() public {
     setupAssetAllowances(bob, bobAcc, alice);

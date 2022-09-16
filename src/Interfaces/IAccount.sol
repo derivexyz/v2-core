@@ -37,7 +37,7 @@ interface IAccount {
     IAsset asset;
     // adjustments will revert if >uint96
     uint subId;
-    // reverts if transfser amount > uint240
+    // reverts if transfer amount > uint240
     int amount;
     // data passed into asset.handleAdjustment()
     bytes32 assetData;
@@ -48,11 +48,24 @@ interface IAccount {
     IAsset asset;
     // reverts for subIds > uint96
     uint subId;
-    // reverts if transfser amount > uint240
+    // reverts if transfer amount > uint240
     int amount;
     // data passed into asset.handleAdjustment()
     bytes32 assetData;
   }  
+
+  struct AssetAllowance {
+    IAsset asset;
+    uint positive;
+    uint negative;
+  } 
+
+  struct SubIdAllowance {
+    IAsset asset;
+    uint subId;
+    uint positive;
+    uint negative;
+  } 
 
   ///////////////////
   // Account Admin //
@@ -76,19 +89,14 @@ interface IAccount {
 
   function setAssetAllowances(
     uint accountId, 
-    address delegate, 
-    IAsset[] memory assets,
-    uint[] memory positiveAllowances,
-    uint[] memory negativeAllowances
+    address delegate,
+    AssetAllowance[] memory allowances
   ) external;
 
   function setSubIdAllowances(
     uint accountId, 
-    address delegate, 
-    IAsset[] memory assets,
-    uint[] memory subIds,
-    uint[] memory positiveAllowances,
-    uint[] memory negativeAllowances
+    address delegate,
+    SubIdAllowance[] memory allowances
   ) external;
 
   /////////////////////////
@@ -200,10 +208,13 @@ interface IAccount {
     address thower,
     address caller,
     uint accountId,
-    uint absAmount, 
+    int amount, 
     uint subIdAllowance, 
     uint assetAllowance
   );
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
   error AssetDataDoesNotMatchHeldAssets(address thrower, uint assetDataLen, uint heldAssetLen);
+  error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
+  error CannotTransferZeroAmount(address thrower, address caller, uint fromAcc, uint toAcc);
+  error CannotChangeToSameManager(address thrower, address caller, uint accountId);
 }

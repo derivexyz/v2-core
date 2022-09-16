@@ -63,11 +63,11 @@ contract OptionToken is IAsset, Owned {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    uint, int preBal, int amount, uint96 subId, IManager riskModel, address caller, bytes32
+    IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address caller
     ) external override returns (int finalBalance)
   {
-    Listing memory listing = subIdToListing[subId];
-    int postBal = _getPostBalWithRatio(preBal, amount, subId);
+    Listing memory listing = subIdToListing[uint96(adjustment.subId)]; // TODO: can overflow
+    int postBal = _getPostBalWithRatio(preBal, adjustment.amount, adjustment.subId);
 
     if (block.timestamp >= listing.expiry) {
       require(riskModelAllowList[IManager(caller)], "only RM settles");
@@ -77,7 +77,7 @@ contract OptionToken is IAsset, Owned {
 
     require(listing.expiry != 0 && riskModelAllowList[riskModel]);
 
-    _updateOI(preBal, postBal, subId);
+    _updateOI(preBal, postBal, adjustment.subId);
 
     return postBal;
   }

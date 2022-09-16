@@ -4,13 +4,10 @@ import "./IManager.sol";
 
 interface IAsset {
   function handleAdjustment(
-    uint account,
-    int preBal,
-    int amount,
-    uint96 subId,
-    IManager manager,
-    address caller,
-    bytes32 data
+    IAccount.AssetAdjustment memory adjustment, 
+    int preBalance, 
+    IManager manager, 
+    address caller
   ) external returns (int finalBalance);
 
   function handleManagerChange(

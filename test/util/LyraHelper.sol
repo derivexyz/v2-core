@@ -129,17 +129,19 @@ abstract contract LyraHelper is Test {
 
   function setupAssetAllowances(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
-    IAsset[] memory assets = new IAsset[](2);
-    assets[0] = IAsset(optionAdapter);
-    assets[1] = IAsset(usdcAdapter);
-    uint[] memory posAllowances = new uint[](2);
-    uint[] memory negAllowances = new uint[](2);
-    posAllowances[0] = type(uint).max;
-    posAllowances[1] = type(uint).max;
-    negAllowances[0] = type(uint).max;
-    negAllowances[1] = type(uint).max;
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: IAsset(optionAdapter),
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
+    assetAllowances[1] = IAccount.AssetAllowance({
+      asset: IAsset(usdcAdapter),
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
 
-    account.setAssetAllowances(ownerAcc, delegate, assets, posAllowances, negAllowances);
+    account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
   }
 }
