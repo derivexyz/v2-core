@@ -282,73 +282,6 @@ contract Account is IAccount, ERC721 {
   }
 
   /** 
-   * @notice Transfers all balances from one account to another
-   *         More gas efficient than submitTransfers()
-   * @param fromAccountId ID of sender account
-   * @param toAccountId ID of recipient account
-   * @param allAssetData bytes32 data per heldAsset which is passed into asset.handleAdjustment()
-   * @dev allAssetData can be left empty, otherwise require(allAssetData.length == heldAssets[acc].length()
-   */
-  function transferAll(
-    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes32[] memory allAssetData
-  ) external {
-    _requireERC721ApprovedOrOwner(msg.sender, fromAccountId);
-    _requireERC721ApprovedOrOwner(msg.sender, toAccountId);
-
-    _transferAll(fromAccountId, toAccountId, allAssetData);
-    _managerHook(fromAccountId, msg.sender, managerData);
-    _managerHook(toAccountId, msg.sender, managerData);
-  }
-
-  function _transferAll(
-    uint fromAccountId, uint toAccountId, bytes32[] memory allAssetData
-  ) internal {
-    if (fromAccountId == toAccountId) {
-      revert CannotTransferAssetToOneself(address(this), msg.sender, fromAccountId);
-    }
-
-    HeldAsset[] memory fromAssets = heldAssets[fromAccountId];
-    uint heldAssetLen = fromAssets.length;
-    uint allAssetDataLen = allAssetData.length;
-
-    bytes32[] memory formattedAssetData = new bytes32[](heldAssetLen);
-    if (allAssetDataLen == heldAssetLen) {
-      formattedAssetData = allAssetData;
-    } else if (allAssetDataLen != heldAssetLen) {
-      revert AssetDataDoesNotMatchHeldAssets(address(this), allAssetDataLen, heldAssetLen);
-    }
-
-    for (uint i; i < heldAssetLen; i++) {
-      BalanceAndOrder storage userBalanceAndOrder = 
-        balanceAndOrder[toAccountId][fromAssets[i].asset][fromAssets[i].subId];
-      
-      // balances set to zero here
-      _adjustBalanceWithoutHeldAssetUpdate(AssetAdjustment({
-          acc: fromAccountId,
-          asset: fromAssets[i].asset,
-          subId: fromAssets[i].subId,
-          amount: -int(userBalanceAndOrder.balance),
-          assetData: formattedAssetData[i]
-        }), 
-        userBalanceAndOrder
-      );
-
-      _adjustBalance(AssetAdjustment({
-          acc: toAccountId,
-          asset: fromAssets[i].asset,
-          subId: fromAssets[i].subId,
-          amount: int(userBalanceAndOrder.balance),
-          assetData: formattedAssetData[i]
-        }), 
-        userBalanceAndOrder
-      );
-    }
-
-    // leave all orders as non-zero
-    delete heldAssets[fromAccountId];
-  }
-
-  /** 
    * @notice Assymetric balance adjustment reserved for managers or asset 
    *         Must still pass both _managerHook() and _assetHook()
    * @param adjustment assymetric adjustment of amount for (asset, subId)
@@ -403,16 +336,6 @@ contract Account is IAccount, ERC721 {
       preBalance, 
       postBalance
     );
-  }
-
-  function _adjustBalanceWithoutHeldAssetUpdate(
-    AssetAdjustment memory adjustment,
-    BalanceAndOrder storage userBalanceAndOrder
-  ) internal{
-    int preBalance = int(userBalanceAndOrder.balance);
-    int postBalance = _assetHook(adjustment, preBalance, msg.sender);
-
-    userBalanceAndOrder.balance = postBalance.toInt240();
   }
 
   ////////////////////////////
@@ -550,7 +473,6 @@ contract Account is IAccount, ERC721 {
     uint accountId, 
     BalanceAndOrder storage userBalanceAndOrder
   ) internal {
-
     uint16 currentAssetOrder = userBalanceAndOrder.order; // 100 gas
 
     // swap orders if middle asset removed
@@ -682,13 +604,6 @@ contract Account is IAccount, ERC721 {
   }
 
   modifier onlyERC721ApprovedOrOwner(address sender, uint accountId) {
-    _requireERC721ApprovedOrOwner(sender, accountId);
-    _;
-  }
-
-  function _requireERC721ApprovedOrOwner(
-    address sender, uint accountId
-  ) internal view {
     if (!_isApprovedOrOwner(sender, accountId)) {
       revert NotOwnerOrERC721Approved(
         address(this), 
@@ -699,5 +614,6 @@ contract Account is IAccount, ERC721 {
         getApproved(accountId)
       );
     }
+    _;
   }
 }

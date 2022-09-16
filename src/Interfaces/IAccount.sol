@@ -111,10 +111,6 @@ interface IAccount {
     AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external;
 
-  function transferAll(
-    uint fromAccountId, uint toAccountId, bytes memory managerData, bytes32[] memory allAssetData
-  ) external;
-
   function adjustBalance(
     AssetAdjustment memory adjustment, bytes memory managerData
   ) external returns (int postBalance);
@@ -214,7 +210,6 @@ interface IAccount {
     uint assetAllowance
   );
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
-  error AssetDataDoesNotMatchHeldAssets(address thrower, uint assetDataLen, uint heldAssetLen);
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
   error CannotTransferZeroAmount(address thrower, address caller, uint fromAcc, uint toAcc);
   error CannotChangeToSameManager(address thrower, address caller, uint accountId);
