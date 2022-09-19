@@ -110,7 +110,7 @@ contract Account is IAccount, ERC721 {
     }
     oldManager.handleManagerChange(accountId, newManager);
 
-    // only call to asset once 
+    /* get unique assets to only call to asset once */
     HeldAsset[] memory accountAssets = heldAssets[accountId];
     (IAsset[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(accountAssets);
 
@@ -209,10 +209,9 @@ contract Account is IAccount, ERC721 {
   function submitTransfers(
     AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external {
-    // Do the transfers
     uint transfersLen = assetTransfers.length;
 
-    // Keep track of seen accounts to assess risk later
+    /* Keep track of seen accounts to assess risk once per account */
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
     uint nextSeenId = 0;
 
@@ -229,7 +228,6 @@ contract Account is IAccount, ERC721 {
       }
     }
 
-    // Assess the risk for all modified balances
     for (uint i; i < nextSeenId; i++) {
       _managerHook(seenAccounts[i], msg.sender, managerData);
     }
@@ -302,15 +300,14 @@ contract Account is IAccount, ERC721 {
 ) internal {
     int preBalance = int(userBalanceAndOrder.balance);
 
-    // allow asset to modify adjustment in special cases (e.g. socialized losses / interest accruals)
+    /* allow asset to modify final balance in special cases */
     int postBalance = _assetHook(
       adjustment, 
       preBalance, 
       msg.sender
     );
     
-    // removeHeldAsset does not change order, instead
-    // returns newOrder and stores balance and order in one word
+    /* for gas efficiency, order unchanged when asset removed */
     userBalanceAndOrder.balance = postBalance.toInt240();
     if (preBalance != 0 && postBalance == 0) {
       _removeHeldAsset(adjustment.acc, userBalanceAndOrder);
@@ -386,10 +383,10 @@ contract Account is IAccount, ERC721 {
   function _spendAllowance(
     AssetAdjustment memory adjustment, address delegate
   ) internal {
-    // ERC721 approved or owner get blanket allowance
+    /* ERC721 approved, manager or owner get blanket allowance */
     if (_isApprovedOrOwner(msg.sender, adjustment.acc)) { return; }
 
-    // determine if positive vs negative allowance is needed
+    /* determine if positive vs negative allowance is needed */
     if (adjustment.amount > 0) {
       _spendAbsAllowance(
         adjustment.acc,
@@ -417,11 +414,10 @@ contract Account is IAccount, ERC721 {
     address delegate,
     int amount
   ) internal {
-    // check allowance
     uint subIdAllowance = allowancesForSubId[delegate];
     uint assetAllowance = allowancesForAsset[delegate];
 
-    // subId allowances are decremented first
+    /* subId allowances are decremented before asset allowances */
     uint absAmount = _abs(amount); 
     if (absAmount <= subIdAllowance) {
       allowancesForSubId[delegate] -= absAmount;
@@ -467,7 +463,7 @@ contract Account is IAccount, ERC721 {
   ) internal {
     uint16 currentAssetOrder = userBalanceAndOrder.order; // 100 gas
 
-    // swap orders if middle asset removed
+    /* swap order value if middle asset removed */
     uint heldAssetLen = heldAssets[accountId].length;
 
     if (currentAssetOrder != heldAssetLen.toUint16() - 1) { 
@@ -479,7 +475,6 @@ contract Account is IAccount, ERC721 {
       toMoveBalanceAndOrder.order = currentAssetOrder; // 5k gas 
     }
 
-    // remove asset from heldAsset
     heldAssets[accountId].pop(); // 200 gas
   }
 

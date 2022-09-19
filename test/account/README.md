@@ -17,11 +17,6 @@
 - [ ]  `submitTransfer/s()`
     - [ ]  Correct balance transfer post single transfer
     - [ ]  Correct balance transfer post 3-way transfer
-- [ ]  `transferAll()`
-    - [ ]  AMM 100 position manager migration
-    - [ ]  merge - bypass PoM 
-    - [ ]  split
-    - [ ]  proportionate split - bypass PoM
 - [ ]  `manager.handleAdjustment`
     - [ ]  transfer between different risk managers
     - [ ]  block unsupported asset
@@ -38,9 +33,10 @@
 - [ ]  manager initiated `adjustBalance()`
     - [ ]  Settlement
 - [ ]  asset initiated `adjustBalance()`
-    - [ ]  Deposits / Withdrawals
     - [ ]  Lending
         - [ ]  accrue interest
+        - [ ]  Deposits / Withdrawals
+    - [ ]  Positive only DAI wrapper
 - [ ]  `createAccount()`
     - [ ]  increment ID properly
 
