@@ -6,9 +6,7 @@ import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./interfaces/IAccount.sol";
-
 import "forge-std/console2.sol";
-
 
 /**
  * @title Account
@@ -211,12 +209,6 @@ contract Account is IAccount, ERC721 {
   function submitTransfers(
     AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external {
-    _submitTransfers(assetTransfers, managerData);
-  }
-
-  function _submitTransfers(
-    AssetTransfer[] memory assetTransfers, bytes memory managerData
-  ) internal {
     // Do the transfers
     uint transfersLen = assetTransfers.length;
 
