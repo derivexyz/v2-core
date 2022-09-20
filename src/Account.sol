@@ -240,9 +240,6 @@ contract Account is IAccount, ERC721 {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
       revert CannotTransferAssetToOneself(address(this), msg.sender, assetTransfer.toAcc);
     }
-    if (assetTransfer.amount == 0) {
-      revert CannotTransferZeroAmount(address(this), msg.sender, assetTransfer.fromAcc, assetTransfer.toAcc);
-    }
 
     AssetAdjustment memory fromAccAdjustment = AssetAdjustment({
       acc: assetTransfer.fromAcc,
@@ -322,6 +319,7 @@ contract Account is IAccount, ERC721 {
         asset: adjustment.asset, 
         subId: SafeCast.toUint96(adjustment.subId)
       }), 
+      adjustment.amount,
       preBalance, 
       postBalance
     );
@@ -395,7 +393,7 @@ contract Account is IAccount, ERC721 {
         delegate,
         adjustment.amount
       );
-    } else {
+    } else if (adjustment.amount < 0) {
       _spendAbsAllowance(
         adjustment.acc,
         negativeSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
@@ -403,6 +401,9 @@ contract Account is IAccount, ERC721 {
         delegate,
         adjustment.amount
       );
+    } else {
+    /* handle amount = 0 case */
+      return;
     }
 
   }

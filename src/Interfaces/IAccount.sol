@@ -185,11 +185,13 @@ interface IAccount {
    *      2. batch transfer
    *      3. transferAll / merge / split
    *      4. manager or asset initiated adjustments
+   *      PreBalance + amount not necessarily = postBalance
    */
   event BalanceAdjusted(
     uint indexed accountId,
     address indexed manager,
     HeldAsset indexed assetAndSubId, 
+    int amount,
     int preBalance, 
     int postBalance
   );
@@ -211,6 +213,5 @@ interface IAccount {
   );
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
-  error CannotTransferZeroAmount(address thrower, address caller, uint fromAcc, uint toAcc);
   error CannotChangeToSameManager(address thrower, address caller, uint accountId);
 }
