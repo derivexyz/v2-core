@@ -78,10 +78,9 @@ contract ContinuousJumpRateModel is InterestRateModel {
       uint blockDelta, uint cash, uint borrows
     ) override external view returns (uint) {
       uint r = getBorrowRate(cash, borrows);
-      uint t = (blockDelta * DecimalMath.UNIT / BLOCKS_PER_YEAR); // fraction of year
-      int x = r.multiplyDecimal(t).toInt256();
-
-      return FixedPointMathLib.exp(x);
+      return FixedPointMathLib.exp(
+        (blockDelta * r / BLOCKS_PER_YEAR).toInt256()
+      );
     }
 
   /**

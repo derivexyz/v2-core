@@ -174,7 +174,6 @@ contract Lending is IAsset, Owned {
 
     /* Read the previous values out of storage */
     uint borrowPrior = totalBorrow;
-    uint reservePrior = accruedFees;
     uint supplyPrior = totalSupply;
 
     /* Calculate the number of blocks elapsed since the last accrual */
@@ -187,7 +186,7 @@ contract Lending is IAsset, Owned {
     /* SSTORE global variables */
     accrualBlockNumber = block.number;
     totalBorrow = interestAccumulated + borrowPrior;
-    accruedFees = interestAccumulated.multiplyDecimal(feeFactor) + reservePrior;
+    accruedFees += interestAccumulated.multiplyDecimal(feeFactor);
     totalSupply = interestAccumulated.multiplyDecimal(DecimalMath.UNIT - feeFactor) + supplyPrior;
 
     borrowIndex = totalBorrow.divideDecimal(borrowPrior).multiplyDecimal(borrowIndex);
