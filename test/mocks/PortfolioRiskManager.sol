@@ -14,6 +14,7 @@ import "./assets/QuoteWrapper.sol";
 import "./assets/BaseWrapper.sol";
 import "./assets/OptionToken.sol";
 import "./assets/ISettleable.sol";
+import "./assets/lending/Lending.sol";
 
 contract PortfolioRiskManager is Owned, IManager {
   using DecimalMath for uint;
@@ -169,11 +170,11 @@ contract PortfolioRiskManager is Owned, IManager {
   ////
   // Views
 
-  function handleAdjustment(uint accountId, IAccount.AssetBalance[] memory assets, address, bytes memory) public view override {
+  function handleAdjustment(uint accountId, IAccount.AssetBalance[] memory assets, address, bytes memory) public override {
     assessRisk(accountId, assets);
   }
 
-  function assessRisk(uint accountId, IAccount.AssetBalance[] memory assets) public view {
+  function assessRisk(uint accountId, IAccount.AssetBalance[] memory assets) public {
     if (liquidationFlagged[accountId]) {
       revert("Account flagged for liquidation");
     }
@@ -182,7 +183,7 @@ contract PortfolioRiskManager is Owned, IManager {
     }
   }
 
-  function _isAccountLiquidatable(uint, IAccount.AssetBalance[] memory assets) internal view returns (bool) {
+  function _isAccountLiquidatable(uint accountId, IAccount.AssetBalance[] memory assets) internal returns (bool) {
     uint assetLen = assets.length;
     uint scenarioLen = scenarios.length;
 
@@ -207,6 +208,9 @@ contract PortfolioRiskManager is Owned, IManager {
           scenarioValue += int(shockedSpot).multiplyDecimal(assetBalance.balance);
         } else if (assetBalance.asset == IAsset(quoteAsset)) {
           scenarioValue += assetBalance.balance;
+        } else if (assetBalance.asset == IAsset(address(0))) { // placeholder for lending asset
+          int freshBalance = Lending(address(assetBalance.asset)).getBalance(accountId);
+          scenarioValue += freshBalance;
         } else {
           revert("Risk model does not support given asset");
         }

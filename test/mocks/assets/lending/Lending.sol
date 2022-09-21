@@ -20,17 +20,17 @@ contract Lending is IAsset, Owned {
   Account account;
   InterestRateModel interestRateModel;
 
-  uint reserveFactor; // fee taken by asset from interest
+  uint feeFactor; // fee taken by asset from interest
 
   uint totalBorrow;
   uint totalSupply;
-  uint totalReserve;
+  uint accruedFees;
 
   uint accrualBlockNumber; // block number of last update to indices
   uint borrowIndex; // used to apply interest accruals to individual borrow balances
   uint supplyIndex; // used to apply interest accruals to individual supply balances
 
-  mapping(uint => uint) accountIndex; // could be borrow or supply index
+  mapping(uint => uint) public accountIndex; // could be borrow or supply index
 
   constructor(
     IERC20 token_, 
@@ -54,6 +54,9 @@ contract Lending is IAsset, Owned {
     IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
   ) external override returns (int finalBal) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
+
+    /* Makes a continuous compounding interest calculation
+       so that number of interactions does not affect effective APR */ 
     accrueInterest();
 
     if (preBal == 0 && adjustment.amount == 0) {
@@ -76,6 +79,32 @@ contract Lending is IAsset, Owned {
   //////////////////
   // User Actions // 
   //////////////////
+
+  /** @notice returns latest balance without updating accounts but will update market indices
+    * @dev can be used by manager for risk assessments
+    */
+  function getBalance(uint accountId) external returns (int balance) {
+    accrueInterest();
+    return _getBalanceFresh(
+      accountId, 
+      account.getBalance(accountId, IAsset(address(this)), 0)
+    );
+  }
+
+
+  function updateBalance(uint accountId) external returns (int balance) {
+    /* This will eventually call asset.handleAdjustment() and accrue interest */
+    balance = account.adjustBalance(
+      IAccount.AssetAdjustment({
+        acc: accountId, 
+        asset: IAsset(address(this)), 
+        subId: 0,
+        amount: 0,
+        assetData: bytes32(0)
+      }),
+      ""
+    );
+  }
 
   function deposit(uint recipientAccount, uint amount) external {
     account.adjustBalance(
@@ -112,7 +141,7 @@ contract Lending is IAsset, Owned {
   function _getBalanceFresh(
     uint accountId, 
     int preBalance
-  ) internal returns (int freshBalance) {
+  ) internal view returns (int freshBalance) {
     /* expect interest to accrue before fresh balance is returned */
     if (accrualBlockNumber != block.number) {
       revert InterestAccrualStale(address(this), accrualBlockNumber, block.number);
@@ -120,19 +149,18 @@ contract Lending is IAsset, Owned {
 
     uint currentMarketIndex;
     if (preBalance > 0) {
-      currentMarketIndex = borrowIndex;
-    } else if (preBalance < 0) {
       currentMarketIndex = supplyIndex;
+    } else if (preBalance < 0) {
+      currentMarketIndex = borrowIndex;
     } else {
       return 0;
     }
     uint currentAccountIndex = accountIndex[accountId];
 
     return preBalance
-      .multiplyDecimal(currentAccountIndex.toInt256())
-      .divideDecimal(currentMarketIndex.toInt256());
+      .multiplyDecimal(currentMarketIndex.toInt256())
+      .divideDecimal(currentAccountIndex.toInt256());
   }
-
 
   /**
     * @notice Applies accrued interest to total borrows, supply and reserves
@@ -146,22 +174,21 @@ contract Lending is IAsset, Owned {
 
     /* Read the previous values out of storage */
     uint borrowPrior = totalBorrow;
-    uint reservePrior = totalReserve;
+    uint reservePrior = accruedFees;
     uint supplyPrior = totalSupply;
-
-    /* Calculate the current borrow interest rate */
-    uint borrowRate = interestRateModel.getBorrowRate(getCash(), borrowPrior, reservePrior);
 
     /* Calculate the number of blocks elapsed since the last accrual */
     uint blockDelta = block.number - accrualBlockNumberPrior;
 
-    /* Compound.Finance inspired non-compounding interest accrual  */
-    uint interestAccumulated = borrowPrior.multiplyDecimal(blockDelta.multiplyDecimal(borrowRate));
-
+    /* Continuously compounding interest accrual  */
+    uint interestFactor = interestRateModel.getBorrowInterestFactor(blockDelta, getCash(), borrowPrior);
+    uint interestAccumulated = borrowPrior.multiplyDecimal(interestFactor);
+    
+    /* SSTORE global variables */
     accrualBlockNumber = block.number;
     totalBorrow = interestAccumulated + borrowPrior;
-    totalReserve = interestAccumulated.multiplyDecimal(reserveFactor) + reservePrior;
-    totalSupply = interestAccumulated.multiplyDecimal(DecimalMath.UNIT - reserveFactor) + supplyPrior;
+    accruedFees = interestAccumulated.multiplyDecimal(feeFactor) + reservePrior;
+    totalSupply = interestAccumulated.multiplyDecimal(DecimalMath.UNIT - feeFactor) + supplyPrior;
 
     borrowIndex = totalBorrow.divideDecimal(borrowPrior).multiplyDecimal(borrowIndex);
     supplyIndex = totalSupply.divideDecimal(supplyPrior).multiplyDecimal(supplyIndex);
@@ -242,19 +269,19 @@ contract Lending is IAsset, Owned {
       revert NotEnoughCashForWithdrawal(address(this), getCash(), reduceAmount);
     }
 
-    // Check reduceAmount ≤ reserves[n] (totalReserve)
-    uint totalReservePrior = totalReserve;
-    if (reduceAmount > totalReservePrior) {
-      revert ReduceAmountGreaterThanReserve(address(this), totalReservePrior, reduceAmount);
+    // Check reduceAmount ≤ reserves[n] (accruedFees)
+    uint accruedFeesPrior = accruedFees;
+    if (reduceAmount > accruedFeesPrior) {
+      revert ReduceAmountGreaterThanAccrued(address(this), accruedFeesPrior, reduceAmount);
     }
 
-    totalReserve = totalReservePrior - reduceAmount;
+    accruedFees = accruedFeesPrior - reduceAmount;
 
     // TODO: implement token specific transfer for various types of stables
     // doTransferOut(admin, reduceAmount);
     token.transfer(recipientAccount, reduceAmount);
 
-    emit ReservesReduced(msg.sender, reduceAmount, totalReserve);
+    emit FeeClaimed(msg.sender, reduceAmount, accruedFees);
   }
 
 
@@ -280,10 +307,10 @@ contract Lending is IAsset, Owned {
   /**
     * @notice Event emitted when the reserves are reduced
     */
-  event ReservesReduced(
+  event FeeClaimed(
     address owner, 
     uint reduceAmount, 
-    uint newTotalReserves
+    uint newAccruedFees
   );
 
   ////////////
@@ -292,6 +319,6 @@ contract Lending is IAsset, Owned {
 
   error InterestAccrualStale(address thrower, uint lastUpdatedBlock, uint currentBlock);
   error NotEnoughCashForWithdrawal(address thrower, uint currentCash, uint withdrawalAmount);
-  error ReduceAmountGreaterThanReserve(address thrower, uint totalReserve, uint reduceAmount);
+  error ReduceAmountGreaterThanAccrued(address thrower, uint accruedFees, uint reduceAmount);
 
 }
