@@ -214,6 +214,28 @@ contract Lending is IAsset, Owned {
   // Admin //
   ///////////
 
+  function socializeLoss(uint accountId, uint borrowAmountToSocialize) public {
+    // TODO: this will need some onlyManager modifier
+
+    // this will accrue the latest interest
+    account.adjustBalance(
+      IAccount.AssetAdjustment({
+        acc: accountId, 
+        asset: IAsset(address(this)), 
+        subId: 0, 
+        amount: int(borrowAmountToSocialize),
+        assetData: bytes32(0)
+      }),
+      ""
+    );
+
+    uint supplyPrior = totalSupply;
+    uint newSupplyIndex = (supplyPrior - borrowAmountToSocialize)
+      .divideDecimal(supplyPrior).multiplyDecimal(supplyIndex);
+
+    supplyIndex = newSupplyIndex;
+  }
+
   function setRiskModelAllowed(IManager riskModel, bool allowed) external onlyOwner {
     riskModelAllowList[riskModel] = allowed;
   }
