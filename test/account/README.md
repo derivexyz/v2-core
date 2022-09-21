@@ -39,6 +39,7 @@
     - [ ]  Positive only DAI wrapper
 - [ ]  `createAccount()`
     - [ ]  increment ID properly
+- [ ]  any other unique usecases in V2 roadmap?
 
 ### Accounts gas benchmarks (possibly use hardhat or cast)
 - [ ]  Gas Testing
