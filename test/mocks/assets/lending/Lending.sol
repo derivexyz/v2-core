@@ -26,7 +26,7 @@ contract Lending is IAsset, Owned {
   uint totalSupply;
   uint accruedFees;
 
-  uint accrualBlockNumber; // block number of last update to indices
+  uint accrualTimestamp; // epoch time of last update to indices
   uint borrowIndex; // used to apply interest accruals to individual borrow balances
   uint supplyIndex; // used to apply interest accruals to individual supply balances
 
@@ -40,7 +40,7 @@ contract Lending is IAsset, Owned {
     token = token_;
     account = account_;
 
-    accrualBlockNumber = block.number;
+    accrualTimestamp = block.timestamp;
     _setInterestRateModelFresh(_interestRateModel);
     borrowIndex = DecimalMath.UNIT;
     supplyIndex = DecimalMath.UNIT;
@@ -143,8 +143,8 @@ contract Lending is IAsset, Owned {
     int preBalance
   ) internal view returns (int freshBalance) {
     /* expect interest to accrue before fresh balance is returned */
-    if (accrualBlockNumber != block.number) {
-      revert InterestAccrualStale(address(this), accrualBlockNumber, block.number);
+    if (accrualTimestamp != block.timestamp) {
+      revert InterestAccrualStale(address(this), accrualTimestamp, block.timestamp);
     }
 
     uint currentMarketIndex;
@@ -169,22 +169,23 @@ contract Lending is IAsset, Owned {
     */
   function accrueInterest() public {
     /* Short-circuit accumulating 0 interest */
-    uint accrualBlockNumberPrior = accrualBlockNumber;
-    if (accrualBlockNumberPrior == block.number) { return; }
+    uint accrualTimestampPrior = accrualTimestamp;
+    if (accrualTimestampPrior == block.timestamp) { return; }
 
     /* Read the previous values out of storage */
     uint borrowPrior = totalBorrow;
     uint supplyPrior = totalSupply;
 
     /* Calculate the number of blocks elapsed since the last accrual */
-    uint blockDelta = block.number - accrualBlockNumberPrior;
+    uint elapsedTime = block.timestamp - accrualTimestampPrior;
 
     /* Continuously compounding interest accrual  */
-    uint interestFactor = interestRateModel.getBorrowInterestFactor(blockDelta, getCash(), borrowPrior);
+    uint interestFactor = interestRateModel.getBorrowInterestFactor(elapsedTime, getCash(), borrowPrior);
     uint interestAccumulated = borrowPrior.multiplyDecimal(interestFactor);
     
     /* SSTORE global variables */
-    accrualBlockNumber = block.number;
+    accrualTimestamp = block.timestamp;
+
     totalBorrow = interestAccumulated + borrowPrior;
     accruedFees += interestAccumulated.multiplyDecimal(feeFactor);
     totalSupply = interestAccumulated.multiplyDecimal(DecimalMath.UNIT - feeFactor) + supplyPrior;
@@ -236,7 +237,7 @@ contract Lending is IAsset, Owned {
     supplyIndex = newSupplyIndex;
   }
 
-  function setRiskModelAllowed(IManager riskModel, bool allowed) external onlyOwner {
+  function setManagerAllowed(IManager riskModel, bool allowed) external onlyOwner {
     riskModelAllowList[riskModel] = allowed;
   }
 
@@ -253,8 +254,8 @@ contract Lending is IAsset, Owned {
     InterestRateModel oldInterestRateModel = interestRateModel;
 
     /* We fail gracefully unless market's block number equals current block number */
-    if (accrualBlockNumber != block.number) {
-      revert InterestAccrualStale(address(this), accrualBlockNumber, block.number);
+    if (accrualTimestamp != block.timestamp) {
+      revert InterestAccrualStale(address(this), accrualTimestamp, block.timestamp);
     }
 
     /* newInterestRateModel.isInterestRateModel() must return true */
@@ -281,8 +282,8 @@ contract Lending is IAsset, Owned {
     /* Later on, this separation will allow for different underlying ERC20 types */
 
     // We fail gracefully unless market's block number equals current block number
-    if (accrualBlockNumber != block.number) {
-        revert InterestAccrualStale(address(this), accrualBlockNumber, block.number);
+    if (accrualTimestamp != block.timestamp) {
+        revert InterestAccrualStale(address(this), accrualTimestamp, block.timestamp);
     }
 
     // Fail gracefully if protocol has insufficient underlying cash
@@ -338,7 +339,7 @@ contract Lending is IAsset, Owned {
   // Errors //
   ////////////
 
-  error InterestAccrualStale(address thrower, uint lastUpdatedBlock, uint currentBlock);
+  error InterestAccrualStale(address thrower, uint lastUpdatedAt, uint currentTimestamp);
   error NotEnoughCashForWithdrawal(address thrower, uint currentCash, uint withdrawalAmount);
   error ReduceAmountGreaterThanAccrued(address thrower, uint accruedFees, uint reduceAmount);
 

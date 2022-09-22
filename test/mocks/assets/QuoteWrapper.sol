@@ -22,7 +22,7 @@ contract QuoteWrapper is IAsset, Owned {
 
   // Need to limit the allowed risk models as someone could spin one up that allows for the generation of
   // -infinite quote and sends it to another account?
-  function setRiskModelAllowed(IManager riskModel, bool allowed) external onlyOwner {
+  function setManagerAllowed(IManager riskModel, bool allowed) external onlyOwner {
     riskModelAllowList[riskModel] = allowed;
   }
 

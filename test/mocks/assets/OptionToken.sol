@@ -54,7 +54,7 @@ contract OptionToken is IAsset, Owned {
   //////////
   // Admin
 
-  function setRiskModelAllowed(IManager riskModel, bool allowed) external onlyOwner {
+  function setManagerAllowed(IManager riskModel, bool allowed) external onlyOwner {
     riskModelAllowList[riskModel] = allowed;
   }
 

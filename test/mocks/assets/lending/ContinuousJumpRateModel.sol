@@ -17,10 +17,9 @@ contract ContinuousJumpRateModel is InterestRateModel {
   using SafeCast for uint;
 
   /**
-    * @notice The approximate number of blocks per year 
-    *         that is assumed by the interest rate model
+    * @notice The approximate number of seconds per year 
     */
-  uint public constant BLOCKS_PER_YEAR = 2102400;
+  uint public constant SECONDS_PER_YEAR = 31536000;
 
   /**
     * @notice The multiplier of utilization rate that 
@@ -69,17 +68,17 @@ contract ContinuousJumpRateModel is InterestRateModel {
     * @notice Function to calculate the interest using a compounded interest rate formula
     *         P_0 * e ^(rt) = Principal with accrued interest
     * 
-    * @param blockDelta blocks since last interest accrual
+    * @param elapsedTime seconds since last interest accrual
     * @param cash underlying ERC20 balance
     * @param borrows total outstanding debt
     * @return InterestFactor : e^(rt)
     */  
   function getBorrowInterestFactor(
-      uint blockDelta, uint cash, uint borrows
+      uint elapsedTime, uint cash, uint borrows
     ) override external view returns (uint) {
       uint r = getBorrowRate(cash, borrows);
       return FixedPointMathLib.exp(
-        (blockDelta * r / BLOCKS_PER_YEAR).toInt256()
+        (elapsedTime * r / SECONDS_PER_YEAR).toInt256()
       );
     }
 
