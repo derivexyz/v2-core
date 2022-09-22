@@ -21,14 +21,29 @@ contract SocializedLosses is Test, LyraHelper {
 
     setScenarios(scenarios);
 
-    aliceAcc = createAccountAndDepositUSDC(alice, 10000000e18);
-    bobAcc = createAccountAndDepositUSDC(bob, 10000000e18);
+    aliceAcc = createAccountAndDepositDaiLending(alice, 10000000e18);
+    bobAcc = createAccountAndDepositDaiLending(bob, 10000000e18);
   }
 
-  function testSocializedLossRatioAdjustment() public {
-    
+  function testDeposit() public {
+    charlieAcc = createAccountAndDepositDaiLending(charlie, 5000e18);
+    // base layer should only reflect pure balance
+    assertEq(account.getBalance(charlieAcc, daiLending, 0), 5000e18);
+
+    // asset level fresh balance should also be the same as no borrows
+    assertEq(daiLending.getBalance(charlieAcc), 5000e18);
   }
 
-  
+  function testWithdrawal() public {
+    daiLending.withdraw(aliceAcc, 10000000e18, charlie);
+
+    // base layer should only reflect pure balance
+    assertEq(account.getBalance(aliceAcc, daiLending, 0), 0);
+
+    // asset level fresh balance should also be the same as no borrows
+    assertEq(daiLending.getBalance(aliceAcc), 0);
+
+    assertEq(dai.balanceOf(charlie), 10000000e18);
+  }
 
 }

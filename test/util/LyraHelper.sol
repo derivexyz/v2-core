@@ -143,6 +143,24 @@ abstract contract LyraHelper is Test {
     return accountId;
   }
 
+  function createAccountAndDepositDaiLending(address user, uint balance) public returns (uint accountId) {
+    vm.startPrank(user);
+    accountId = account.createAccount(user, IManager(rm));
+    vm.stopPrank();
+
+    if (balance > 0) {
+       vm.startPrank(owner);
+      dai.mint(user, balance);
+      vm.stopPrank();
+
+      vm.startPrank(user);
+      dai.approve(address(daiLending), type(uint).max);
+      daiLending.deposit(accountId, balance);
+      vm.stopPrank();
+    }
+    return accountId;
+  }
+
   function setupAssetAllowances(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
     IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
