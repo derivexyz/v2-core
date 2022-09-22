@@ -34,7 +34,9 @@
     - [ ]  Settlement
 - [ ]  asset initiated `adjustBalance()`
     - [ ]  Lending
-        - [ ]  accrue interest
+        - [ ]  accrue interest when assessing risk
+        - [ ]  accrue interest when adjusting balance
+        - [ ]  apply socialized losses
         - [ ]  Deposits / Withdrawals
     - [ ]  Positive only DAI wrapper
 - [ ]  `createAccount()`
@@ -51,3 +53,7 @@
     - [ ]  Small
         - [ ]  0x position account to get 10x positions
         - [x]  2x subId transfer between two 0x position accounts [275k gas]
+
+### BONUS
+- [ ]  Method where user can pass a "signature" to submitTransfers() to grant one-time allowance to spender
+       This would probably be a custom method with custom data structures?

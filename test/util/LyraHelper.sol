@@ -10,6 +10,9 @@ import "forge-std/console2.sol";
 import "../mocks/assets/OptionToken.sol";
 import "../mocks/assets/BaseWrapper.sol";
 import "../mocks/assets/QuoteWrapper.sol";
+import "../mocks/assets/lending/Lending.sol";
+import "../mocks/assets/lending/ContinuousJumpRateModel.sol";
+import "../mocks/assets/lending/InterestRateModel.sol";
 import "../mocks/PortfolioRiskManager.sol";
 import "../mocks/TestERC20.sol";
 
@@ -17,11 +20,14 @@ abstract contract LyraHelper is Test {
   Account account;
   TestERC20 weth;
   TestERC20 usdc;
+  TestERC20 dai;
   BaseWrapper wethAdapter;
   QuoteWrapper usdcAdapter;
+  Lending daiLending;
   OptionToken optionAdapter;
   TestPriceFeeds priceFeeds;
   SettlementPricer settlementPricer;
+  InterestRateModel interestRateModel;
   PortfolioRiskManager rm;
 
   uint usdcFeedId = 0;
@@ -36,24 +42,34 @@ abstract contract LyraHelper is Test {
   function deployPRMSystem() public {
     vm.startPrank(owner);
 
+    /* Base Layer */
     account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    weth = new TestERC20("wrapped eth", "wETH");
-    usdc = new TestERC20("usdc", "USDC");
-
+    /* Feeds | Oracles | Vol Engine */
     priceFeeds = new TestPriceFeeds();
-    settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
 
+    /* Wrappers */
+    usdc = new TestERC20("usdc", "USDC");
     usdcAdapter = new QuoteWrapper(IERC20(usdc), account, priceFeeds, 0);
-
+    weth = new TestERC20("wrapped eth", "wETH");
     wethAdapter = new BaseWrapper(IERC20(weth), account, priceFeeds, 1);
 
+    /* Lending */
+    dai = new TestERC20("dai", "DAI");
+    // starts at 5%, increases to 10% at 50% util, then grows by 2% for every 10% util increase
+    interestRateModel = new ContinuousJumpRateModel(5e16, 1e17, 2e17, 5e17);
+    daiLending = new Lending(IERC20(dai), account, interestRateModel);
+
+    /* Options */
+    settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
     optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
 
-    rm = new PortfolioRiskManager(account, PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter);
+    /* Risk Manager */
+    rm = new PortfolioRiskManager(account, PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
+    usdcAdapter.setManagerAllowed(IManager(rm), true);
+    optionAdapter.setManagerAllowed(IManager(rm), true);
+    daiLending.setManagerAllowed(IManager(rm), true);
 
-    usdcAdapter.setRiskModelAllowed(IManager(rm), true);
-    optionAdapter.setRiskModelAllowed(IManager(rm), true);
     vm.stopPrank();
   }
 
