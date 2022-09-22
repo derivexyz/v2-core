@@ -35,6 +35,7 @@ contract PortfolioRiskManager is Owned, IManager {
   BaseWrapper baseAsset;
   uint baseFeedId;
   OptionToken optionToken;
+  Lending lending;
 
   ////
   // Data feeds
@@ -52,7 +53,8 @@ contract PortfolioRiskManager is Owned, IManager {
     uint quoteFeedId_,
     BaseWrapper baseAsset_,
     uint baseFeedId_,
-    OptionToken optionToken_
+    OptionToken optionToken_,
+    Lending lending_
   ) Owned() {
     account = account_;
     priceFeeds = priceFeed_;
@@ -61,6 +63,7 @@ contract PortfolioRiskManager is Owned, IManager {
     baseAsset = baseAsset_;
     baseFeedId = baseFeedId_;
     optionToken = optionToken_;
+    lending = lending_;
   }
 
   ////
@@ -184,6 +187,10 @@ contract PortfolioRiskManager is Owned, IManager {
   }
 
   function _isAccountLiquidatable(uint accountId, IAccount.AssetBalance[] memory assets) internal returns (bool) {
+    // Get fresh lending balance once in the beginning
+    int freshLendingBalance = lending.getBalance(accountId);
+
+    // begin each scenario
     uint assetLen = assets.length;
     uint scenarioLen = scenarios.length;
 
@@ -208,9 +215,8 @@ contract PortfolioRiskManager is Owned, IManager {
           scenarioValue += int(shockedSpot).multiplyDecimal(assetBalance.balance);
         } else if (assetBalance.asset == IAsset(quoteAsset)) {
           scenarioValue += assetBalance.balance;
-        } else if (assetBalance.asset == IAsset(address(0))) { // placeholder for lending asset
-          int freshBalance = Lending(address(assetBalance.asset)).getBalance(accountId);
-          scenarioValue += freshBalance;
+        } else if (assetBalance.asset == IAsset(lending)) { // placeholder for lending asset
+          scenarioValue += freshLendingBalance;
         } else {
           revert("Risk model does not support given asset");
         }
