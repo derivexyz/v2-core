@@ -87,10 +87,6 @@ contract SocializedLosses is Test, LyraHelper {
     // warp by a year
     skip(SECONDS_PER_YEAR);
 
-    console2.log("totals");
-    console2.log(daiLending.totalBorrow());
-    console2.log(daiLending.totalSupply());
-
     // accrueInterest(), check balances
     assertApproxEqAbs(daiLending.getBalance(aliceAcc), 20701139e18, 1e18);
     assertApproxEqAbs(daiLending.getBalance(bobAcc), 10350569e18, 1e18);
@@ -100,7 +96,10 @@ contract SocializedLosses is Test, LyraHelper {
     assertEq(account.getBalance(charlieAcc, daiLending, 0), -10000000e18);
 
     // check borrow and supply indices
-    
+    assertApproxEqAbs(daiLending.totalBorrow(), 11051709e18, 1e18);
+    assertApproxEqAbs(daiLending.totalSupply(), 31051709e18, 1e18);
+    assertApproxEqAbs(daiLending.borrowIndex(), 110e16, 1e18);
+    assertApproxEqAbs(daiLending.supplyIndex(), 103e16, 1e18);
 
   }
 
