@@ -6,11 +6,14 @@ import "forge-std/console2.sol";
 import "../util/LyraHelper.sol";
 
 contract SocializedLosses is Test, LyraHelper {
+  uint public constant SECONDS_PER_YEAR = 31536000;
+
+
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;
   uint davidAcc;
-
+  address orderbook = vm.addr(10);
 
   function setUp() public {
     deployPRMSystem();
@@ -45,5 +48,62 @@ contract SocializedLosses is Test, LyraHelper {
 
     assertEq(dai.balanceOf(charlie), 10000000e18);
   }
+
+  function testInterestAccrual() public {
+    // Alice and Bob both have 20mln DAI lending each
+    // We have Charlie deposit 20mln USDC 
+    charlieAcc = createAccountAndDepositUSDC(charlie, 20000000e18);
+
+    // set allowances
+    setupMaxSingleAssetAllowance(alice, aliceAcc, orderbook, daiLending);
+    setupMaxSingleAssetAllowance(bob, bobAcc, orderbook, daiLending);
+    setupMaxSingleAssetAllowance(charlie, charlieAcc, orderbook, daiLending);
+
+    // charlie then transfers 10mln DAI to alice: borrowing Dai from system
+    vm.startPrank(orderbook);
+    IAccount.AssetTransfer memory daiLoan = IAccount.AssetTransfer({
+      fromAcc: charlieAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(daiLending),
+      subId: 0,
+      amount: int(10000000e18),
+      assetData: bytes32(0)
+    });
+    account.submitTransfer(daiLoan, "");
+    vm.stopPrank();
+
+    // ensure all balances are correct before interests accrue
+    assertEq(account.getBalance(aliceAcc, daiLending, 0), 20000000e18);
+    assertEq(account.getBalance(bobAcc, daiLending, 0), 10000000e18);
+    assertEq(account.getBalance(charlieAcc, daiLending, 0), -10000000e18);
+    assertEq(daiLending.getBalance(aliceAcc), 20000000e18);
+    assertEq(daiLending.getBalance(bobAcc), 10000000e18);
+    assertEq(daiLending.getBalance(charlieAcc), -10000000e18);
+
+    // totals
+    assertEq(daiLending.totalBorrow(), 10000000e18);
+    assertEq(daiLending.totalSupply(), 30000000e18);
+
+    // warp by a year
+    skip(SECONDS_PER_YEAR);
+
+    console2.log("totals");
+    console2.log(daiLending.totalBorrow());
+    console2.log(daiLending.totalSupply());
+
+    // accrueInterest(), check balances
+    assertApproxEqAbs(daiLending.getBalance(aliceAcc), 20701139e18, 1e18);
+    assertApproxEqAbs(daiLending.getBalance(bobAcc), 10350569e18, 1e18);
+    assertApproxEqAbs(daiLending.getBalance(charlieAcc), -11051709e18, 1e18);
+    assertEq(account.getBalance(aliceAcc, daiLending, 0), 20000000e18);
+    assertEq(account.getBalance(bobAcc, daiLending, 0), 10000000e18);
+    assertEq(account.getBalance(charlieAcc, daiLending, 0), -10000000e18);
+
+    // check borrow and supply indices
+    
+
+  }
+
+  function testInterestAccrualWithMultipleInteractions() public {}
 
 }

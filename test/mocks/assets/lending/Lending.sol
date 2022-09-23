@@ -14,21 +14,22 @@ contract Lending is IAsset, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
+  using SafeCast for int;
 
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
   Account account;
   InterestRateModel interestRateModel;
 
-  uint feeFactor; // fee taken by asset from interest
+  uint public feeFactor; // fee taken by asset from interest
 
-  uint totalBorrow;
-  uint totalSupply;
-  uint accruedFees;
+  uint public totalBorrow;
+  uint public totalSupply;
+  uint public accruedFees;
 
-  uint accrualTimestamp; // epoch time of last update to indices
-  uint borrowIndex; // used to apply interest accruals to individual borrow balances
-  uint supplyIndex; // used to apply interest accruals to individual supply balances
+  uint public accrualTimestamp; // epoch time of last update to indices
+  uint public borrowIndex; // used to apply interest accruals to individual borrow balances
+  uint public supplyIndex; // used to apply interest accruals to individual supply balances
 
   mapping(uint => uint) public accountIndex; // could be borrow or supply index
 
@@ -55,8 +56,8 @@ contract Lending is IAsset, Owned {
   ) external override returns (int finalBal) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
 
-    /* Makes a continuous compounding interest calculation
-       so that number of interactions does not affect effective APR */ 
+    /* Makes a continuous compounding interest calculation.
+       (a) updates totalBorrow and totalSupply according to accrual */ 
     accrueInterest();
 
     if (preBal == 0 && adjustment.amount == 0) {
@@ -72,6 +73,20 @@ contract Lending is IAsset, Owned {
     } else if (finalBal > 0) {
       accountIndex[adjustment.acc] = supplyIndex;
     } 
+
+    /* (b) updates totalBorrows and totalSupply according to adjustment */
+    // TODO: need to clean up
+    if (freshBal <= 0 && finalBal <= 0) {
+      totalBorrow = (totalBorrow.toInt256() + (freshBal - finalBal)).toUint256();
+    } else if (freshBal >= 0 && finalBal >= 0) {
+      totalSupply = (totalSupply.toInt256() + (finalBal - freshBal)).toUint256();
+    } else if (freshBal < 0 && finalBal > 0) {
+      totalBorrow -= (-freshBal).toUint256();
+      totalSupply += finalBal.toUint256();
+    } else { // (freshBal > 0 && finalBal < 0)
+      totalBorrow += (-finalBal).toUint256();
+      totalSupply -= freshBal.toUint256();
+    }
   }
 
   function handleManagerChange(uint, IManager, IManager) external pure override {}
@@ -187,8 +202,8 @@ contract Lending is IAsset, Owned {
     accrualTimestamp = block.timestamp;
 
     totalBorrow = interestAccumulated + borrowPrior;
-    accruedFees += interestAccumulated.multiplyDecimal(feeFactor);
     totalSupply = interestAccumulated.multiplyDecimal(DecimalMath.UNIT - feeFactor) + supplyPrior;
+    accruedFees += interestAccumulated.multiplyDecimal(feeFactor);
 
     borrowIndex = totalBorrow.divideDecimal(borrowPrior).multiplyDecimal(borrowIndex);
     supplyIndex = totalSupply.divideDecimal(supplyPrior).multiplyDecimal(supplyIndex);

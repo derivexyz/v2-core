@@ -6,6 +6,7 @@ import "synthetix/SignedDecimalMath.sol";
 import "util/FixedPointMathLib.sol";
 
 import "./InterestRateModel.sol";
+import "forge-std/console2.sol";
 
 
 /**
@@ -71,7 +72,7 @@ contract ContinuousJumpRateModel is InterestRateModel {
     * @param elapsedTime seconds since last interest accrual
     * @param cash underlying ERC20 balance
     * @param borrows total outstanding debt
-    * @return InterestFactor : e^(rt)
+    * @return InterestFactor : e^(rt) - 1
     */  
   function getBorrowInterestFactor(
       uint elapsedTime, uint cash, uint borrows
@@ -79,7 +80,7 @@ contract ContinuousJumpRateModel is InterestRateModel {
       uint r = getBorrowRate(cash, borrows);
       return FixedPointMathLib.exp(
         (elapsedTime * r / SECONDS_PER_YEAR).toInt256()
-      );
+      ) - DecimalMath.UNIT;
     }
 
   /**

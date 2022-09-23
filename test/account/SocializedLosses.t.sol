@@ -26,7 +26,7 @@ contract SocializedLosses is Test, LyraHelper {
   }
 
   function testSocializedLossRatioAdjustment() public {
-    setupAssetAllowances(bob, bobAcc, alice);
+    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
 
     // open subId = 0 option
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
@@ -50,7 +50,7 @@ contract SocializedLosses is Test, LyraHelper {
   }
 
   function testTradePostSocializedLoss() public {
-    setupAssetAllowances(bob, bobAcc, alice);
+    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
 
     // 10% socialized loss
     optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
@@ -71,8 +71,8 @@ contract SocializedLosses is Test, LyraHelper {
     vm.stopPrank();
 
     // open 1x new option
-    setupAssetAllowances(david, davidAcc, charlie);
-    setupAssetAllowances(alice, aliceAcc, charlie);
+    setupMaxAssetAllowancesForAll(david, davidAcc, charlie);
+    setupMaxAssetAllowancesForAll(alice, aliceAcc, charlie);
     vm.startPrank(charlie);
     openCallOption(charlieAcc, davidAcc, 1e18, 0);
     vm.stopPrank();

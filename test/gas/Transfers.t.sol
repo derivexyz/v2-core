@@ -33,7 +33,7 @@ contract Transfers is Test, LyraHelper {
   ///        - Total: `~275k gas overhead` from accounts + asset / manager checks
 
   function testSingleTransfer() public {
-    setupAssetAllowances(bob, bobAcc, alice);
+    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
     
     // two-way transfer option
     vm.startPrank(alice);
@@ -65,7 +65,7 @@ contract Transfers is Test, LyraHelper {
 
   /// @dev 100 batched transfers
   function testBulkTransfer() public {
-    setupAssetAllowances(bob, bobAcc, alice);
+    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
     
     // two-way transfer option
     vm.startPrank(alice);
@@ -100,8 +100,8 @@ contract Transfers is Test, LyraHelper {
   }
 
   function testTransferBulkAdditionsAndRemovals() public {
-    setupAssetAllowances(bob, bobAcc, alice);
-    // setupAssetAllowances(alice, aliceAcc, bob);
+    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
+    // setupMaxAssetAllowancesForAll(alice, aliceAcc, bob);
 
     // two-way transfer option
     vm.startPrank(alice);
@@ -118,8 +118,8 @@ contract Transfers is Test, LyraHelper {
   }
 
   function testTransferSingleWithLargeAccount() public {
-    setupAssetAllowances(bob, bobAcc, alice);
-    // setupAssetAllowances(alice, aliceAcc, bob);
+    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
+    // setupMaxAssetAllowancesForAll(alice, aliceAcc, bob);
 
     // two-way transfer option
     vm.startPrank(alice);

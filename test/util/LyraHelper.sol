@@ -161,7 +161,7 @@ abstract contract LyraHelper is Test {
     return accountId;
   }
 
-  function setupAssetAllowances(address ownerAdd, uint ownerAcc, address delegate) internal {
+  function setupMaxAssetAllowancesForAll(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
     IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
     assetAllowances[0] = IAccount.AssetAllowance({
@@ -171,6 +171,19 @@ abstract contract LyraHelper is Test {
     });
     assetAllowances[1] = IAccount.AssetAllowance({
       asset: IAsset(usdcAdapter),
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
+
+    account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
+    vm.stopPrank();
+  }
+
+  function setupMaxSingleAssetAllowance(address ownerAdd, uint ownerAcc, address delegate, IAsset asset) internal {
+    vm.startPrank(ownerAdd);
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: IAsset(asset),
       positive: type(uint).max,
       negative: type(uint).max
     });
