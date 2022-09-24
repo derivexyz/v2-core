@@ -30,6 +30,8 @@ contract Account is IAccount, ERC721 {
 
   /// @dev account Id to manager 
   mapping(uint => IManager) public manager;
+
+  /// @dev account Id => asset => subId => BalanceAndOrder struct
   mapping(uint => mapping(IAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
 
   /// @dev account Id to non-zero assets array
@@ -173,6 +175,7 @@ contract Account is IAccount, ERC721 {
   }
 
   /// @dev giving managers exclusive rights to transfer account ownerships
+  /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
   function _isApprovedOrOwner(
     address spender, uint tokenId
   ) internal view override returns (bool) {
@@ -389,7 +392,7 @@ contract Account is IAccount, ERC721 {
     AssetAdjustment memory adjustment, address delegate
   ) internal {
     /* ERC721 approved, manager or owner get blanket allowance */
-    if (_isApprovedOrOwner(msg.sender, adjustment.acc)) { return; }
+    if (_isApprovedOrOwner(delegate, adjustment.acc)) { return; }
 
     /* determine if positive vs negative allowance is needed */
     if (adjustment.amount > 0) {
@@ -490,6 +493,11 @@ contract Account is IAccount, ERC721 {
     return amount >= 0 ? uint(amount) : uint(-amount);
   }
 
+  /**
+   * @dev get unique assets from heldAssets. heldAssets can hold multiple entries with same asset but different subId
+   * @return uniqueAssets list of address
+   * @return length max index of returned address that is non-zero
+   */
   function _getUniqueAssets(
     HeldAsset[] memory assets
   ) internal pure returns (IAsset[] memory uniqueAssets, uint length) {
