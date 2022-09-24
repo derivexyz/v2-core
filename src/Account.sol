@@ -82,7 +82,6 @@ contract Account is IAccount, ERC721 {
     manager[newId] = _manager;
     _mint(owner, newId);
     emit AccountCreated(owner, newId, address(_manager));
-    return newId;
   }
 
   /** 
