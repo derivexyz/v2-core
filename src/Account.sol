@@ -313,7 +313,7 @@ contract Account is IAccount, ERC721 {
     /* for gas efficiency, order unchanged when asset removed */
     userBalanceAndOrder.balance = postBalance.toInt240();
     if (preBalance != 0 && postBalance == 0) {
-      _removeHeldAsset(adjustment.acc, userBalanceAndOrder);
+      _removeHeldAsset(adjustment.acc, userBalanceAndOrder.order);
     } else if (preBalance == 0 && postBalance != 0) {
       userBalanceAndOrder.order = _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
     } 
@@ -460,26 +460,23 @@ contract Account is IAccount, ERC721 {
   
   /** 
    * @notice Called when the balance of a (asset, subId) returns to zero
-   * @dev BalanceAndOrder.order used to gas efficiently remove assets from large accounts
+   * @dev order used to gas efficiently remove assets from large accounts
    *      1. removes ~200k gas overhead for a 100 position portfolio
    *      2. for expiration with strikes, reduces gas overheada by ~150k
    */
   function _removeHeldAsset(
     uint accountId, 
-    BalanceAndOrder storage userBalanceAndOrder
+    uint16 order
   ) internal {
-    uint16 currentAssetOrder = userBalanceAndOrder.order; // 100 gas
-
     /* swap order value if middle asset removed */
     uint heldAssetLen = heldAssets[accountId].length;
 
-    if (currentAssetOrder != heldAssetLen.toUint16() - 1) { 
+    if (order != heldAssetLen.toUint16() - 1) { 
       HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1]; // 2k gas
-      heldAssets[accountId][currentAssetOrder] = assetToMove; // 5k gas
+      heldAssets[accountId][order] = assetToMove; // 5k gas
 
-      BalanceAndOrder storage toMoveBalanceAndOrder = 
-        balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)];
-      toMoveBalanceAndOrder.order = currentAssetOrder; // 5k gas 
+      // update the "order" field of the moved asset for an account 
+      balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)].order = order; // 5k gas 
     }
 
     heldAssets[accountId].pop(); // 200 gas
