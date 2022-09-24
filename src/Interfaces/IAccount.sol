@@ -207,7 +207,7 @@ interface IAccount {
     address thower,
     address caller,
     uint accountId,
-    int amount, 
+    uint absAmount, 
     uint subIdAllowance, 
     uint assetAllowance
   );

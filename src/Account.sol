@@ -395,13 +395,14 @@ contract Account is IAccount, ERC721 {
     if (_isApprovedOrOwner(delegate, adjustment.acc)) { return; }
 
     /* determine if positive vs negative allowance is needed */
+    uint256 absAmount = _abs(adjustment.amount);
     if (adjustment.amount > 0) {
       _spendAbsAllowance(
         adjustment.acc,
         positiveSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         positiveAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
-        adjustment.amount
+        absAmount
       );
     } else if (adjustment.amount < 0) {
       _spendAbsAllowance(
@@ -409,7 +410,7 @@ contract Account is IAccount, ERC721 {
         negativeSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         negativeAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
-        adjustment.amount
+        absAmount
       );
     } else {
     /* handle amount = 0 case */
@@ -423,24 +424,24 @@ contract Account is IAccount, ERC721 {
     mapping(address => uint) storage allowancesForSubId,
     mapping(address => uint) storage allowancesForAsset,
     address delegate,
-    int amount
+    uint256 absAmount
   ) internal {
     uint subIdAllowance = allowancesForSubId[delegate];
     uint assetAllowance = allowancesForAsset[delegate];
 
     /* subId allowances are decremented before asset allowances */
-    uint absAmount = _abs(amount); 
+    // uint absAmount = _abs(amount); 
     if (absAmount <= subIdAllowance) {
-      allowancesForSubId[delegate] -= absAmount;
+      allowancesForSubId[delegate] = subIdAllowance - absAmount;
     } else if (absAmount <= subIdAllowance + assetAllowance) { 
       allowancesForSubId[delegate] = 0;
-      allowancesForAsset[delegate] -= absAmount - subIdAllowance;
+      allowancesForAsset[delegate] = assetAllowance - (absAmount - subIdAllowance);
     } else {
       revert NotEnoughSubIdOrAssetAllowances(
         address(this), 
         msg.sender, 
         accountId, 
-        amount, 
+        absAmount,
         subIdAllowance, 
         assetAllowance);
     }
