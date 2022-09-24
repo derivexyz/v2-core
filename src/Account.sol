@@ -27,8 +27,12 @@ contract Account is IAccount, ERC721 {
   ///////////////
 
   uint nextId = 0;
+
+  /// @dev account Id to manager 
   mapping(uint => IManager) public manager;
   mapping(uint => mapping(IAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
+
+  /// @dev account Id to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
 
   mapping(uint => mapping(IAsset => mapping(uint => mapping(address => uint)))) public positiveSubIdAllowance;
@@ -173,13 +177,16 @@ contract Account is IAccount, ERC721 {
     address spender, uint tokenId
   ) internal view override returns (bool) {
     address owner = ERC721.ownerOf(tokenId);
-    bool isManager = address(manager[tokenId]) == msg.sender;
-    return (
+    
+    // return early if msg.sender is owner
+    if (
       spender == owner || 
       isApprovedForAll(owner, spender) || 
-      getApproved(tokenId) == spender || 
-      isManager
-    );
+      getApproved(tokenId) == spender
+    ) return true;
+
+    // check if caller is manager
+    return address(manager[tokenId]) == msg.sender;
   }
 
   /////////////////////////
