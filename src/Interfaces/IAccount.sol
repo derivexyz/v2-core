@@ -6,9 +6,9 @@ import "./IManager.sol";
 // For full documentation refer to src/Account.sol";
 interface IAccount {
 
-  /////////////
-  // Structs //
-  /////////////
+  /////////////////////
+  // Storage Structs //
+  /////////////////////
   
   struct BalanceAndOrder {
     // balance of (asset, subId)
@@ -21,11 +21,16 @@ interface IAccount {
     IAsset asset;
     uint96 subId;
   }
+
+  /////////////////////////
+  // Memory-only Structs //
+  /////////////////////////
+
   struct AssetBalance {
     IAsset asset;
-    // adjustments will revert if >uint96
+    // adjustments will revert if > uint96
     uint subId;
-    // base layer only stores up to uint240
+    // base layer only stores up to int240
     int balance;
   }
 
