@@ -290,31 +290,26 @@ contract Account is IAccount, ERC721 {
     AssetAdjustment memory adjustment,
     bytes memory managerData
   ) onlyManagerOrAsset(adjustment.acc, adjustment.asset) external returns (int postAdjustmentBalance) {    
-    BalanceAndOrder storage userBalanceAndOrder = 
-        balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
-
-    _adjustBalance(adjustment);
+    postAdjustmentBalance = _adjustBalance(adjustment);
     _managerHook(adjustment.acc, msg.sender, managerData); // since caller is passed, manager can internally decide to ignore check
-
-    postAdjustmentBalance = int(userBalanceAndOrder.balance);
   }
 
   /**
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
    */
-  function _adjustBalance(AssetAdjustment memory adjustment) internal {
+  function _adjustBalance(AssetAdjustment memory adjustment) internal returns (int256 postBalance) {
     BalanceAndOrder storage userBalanceAndOrder 
       = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
     int preBalance = int(userBalanceAndOrder.balance);
 
     /* allow asset to modify final balance in special cases */
-    int postBalance = _assetHook(
+    postBalance = _assetHook(
       adjustment, 
       preBalance, 
       msg.sender
     );
-    
+
     /* for gas efficiency, order unchanged when asset removed */
     userBalanceAndOrder.balance = postBalance.toInt240();
     if (preBalance != 0 && postBalance == 0) {
@@ -431,7 +426,6 @@ contract Account is IAccount, ERC721 {
     uint assetAllowance = allowancesForAsset[delegate];
 
     /* subId allowances are decremented before asset allowances */
-    // uint absAmount = _abs(amount); 
     if (absAmount <= subIdAllowance) {
       allowancesForSubId[delegate] = subIdAllowance - absAmount;
     } else if (absAmount <= subIdAllowance + assetAllowance) { 
