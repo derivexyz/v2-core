@@ -72,7 +72,6 @@ contract Account is IAccount, ERC721 {
   ) external returns (uint newId) {
     newId = _createAccount(owner, _manager);
     _approve(spender, newId);
-    return newId;
   }
 
   function _createAccount(
@@ -124,6 +123,8 @@ contract Account is IAccount, ERC721 {
     }
 
     manager[accountId] = newManager;
+    
+    // trigger the manager hook on the new manager. Same as post-transfer checks
     _managerHook(accountId, msg.sender, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
@@ -242,6 +243,12 @@ contract Account is IAccount, ERC721 {
     }
   }
 
+
+  /** 
+   * @notice Transfer an amount from one account to another for a specific (asset, subId)
+   * @dev    update the allowance and balanceAndOrder storage
+   * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
+   */
   function _transferAsset(
     AssetTransfer memory assetTransfer
   ) internal {
@@ -257,8 +264,6 @@ contract Account is IAccount, ERC721 {
       amount: -assetTransfer.amount,
       assetData: assetTransfer.assetData
     });
-    BalanceAndOrder storage fromBalanceAndOrder = 
-      balanceAndOrder[assetTransfer.fromAcc][assetTransfer.asset][assetTransfer.subId];
 
     AssetAdjustment memory toAccAdjustment = AssetAdjustment({
       acc: assetTransfer.toAcc,
@@ -267,14 +272,12 @@ contract Account is IAccount, ERC721 {
       amount: assetTransfer.amount,
       assetData: assetTransfer.assetData
     });
-    BalanceAndOrder storage toBalanceAndOrder = 
-      balanceAndOrder[assetTransfer.toAcc][assetTransfer.asset][assetTransfer.subId];
 
     _spendAllowance(fromAccAdjustment, msg.sender);
     _spendAllowance(toAccAdjustment, msg.sender);
 
-    _adjustBalance(fromAccAdjustment, fromBalanceAndOrder);
-    _adjustBalance(toAccAdjustment, toBalanceAndOrder);
+    _adjustBalance(fromAccAdjustment);
+    _adjustBalance(toAccAdjustment);
   }
 
   /** 
@@ -290,7 +293,7 @@ contract Account is IAccount, ERC721 {
     BalanceAndOrder storage userBalanceAndOrder = 
         balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
 
-    _adjustBalance(adjustment, userBalanceAndOrder);
+    _adjustBalance(adjustment);
     _managerHook(adjustment.acc, msg.sender, managerData); // since caller is passed, manager can internally decide to ignore check
 
     postAdjustmentBalance = int(userBalanceAndOrder.balance);
@@ -300,10 +303,9 @@ contract Account is IAccount, ERC721 {
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
    */
-  function _adjustBalance(
-    AssetAdjustment memory adjustment, 
-    BalanceAndOrder storage userBalanceAndOrder
-) internal {
+  function _adjustBalance(AssetAdjustment memory adjustment) internal {
+    BalanceAndOrder storage userBalanceAndOrder 
+      = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
     int preBalance = int(userBalanceAndOrder.balance);
 
     /* allow asset to modify final balance in special cases */
