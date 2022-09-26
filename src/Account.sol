@@ -344,7 +344,7 @@ contract Account is IAccount, ERC721 {
     bytes memory managerData
   ) internal {
     manager[accountId].handleAdjustment(
-      accountId, _getAccountBalances(accountId), caller, managerData
+      accountId, caller, managerData
     );
   }
 

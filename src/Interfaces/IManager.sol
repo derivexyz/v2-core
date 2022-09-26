@@ -4,9 +4,7 @@ import "./IAccount.sol";
 
 interface IManager {
   function handleAdjustment(
-    uint accountId, 
-    // TODO: should this not be forced?
-    IAccount.AssetBalance[] memory assets, 
+    uint accountId,
     address caller, 
     bytes memory data
   ) external;
