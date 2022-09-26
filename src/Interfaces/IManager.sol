@@ -5,8 +5,8 @@ import "./IAccount.sol";
 interface IManager {
 
   /**
-   * @notice triggered when any balance of an account is updated
-   * @dev a manager should properly handle final state check on an account
+   * @notice triggered at the end of a tx when any balance of the account is updated
+   * @dev a manager should properly check the final stateo of an account
    */
   function handleAdjustment(
     uint accountId,
