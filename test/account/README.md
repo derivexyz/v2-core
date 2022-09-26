@@ -58,3 +58,5 @@
 ### BONUS
 - [ ]  Method where user can pass a "signature" to submitTransfers() to grant one-time allowance to spender
        This would probably be a custom method with custom data structures?
+       - https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/draft-ERC20Permit.sol
+
