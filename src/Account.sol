@@ -144,6 +144,7 @@ contract Account is IAccount, ERC721 {
   ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
+      // TODO: think about whether we need to clear asset / subId allowances
       positiveAssetAllowance[accountId][allowances[i].asset][delegate] = allowances[i].positive;
       negativeAssetAllowance[accountId][allowances[i].asset][delegate] = allowances[i].negative;
     }

@@ -35,10 +35,10 @@
     - [ ]  Settlement
 - [ ]  asset initiated `adjustBalance()`
     - [ ]  Lending
-        - [ ]  accrue interest when assessing risk
-        - [ ]  accrue interest when adjusting balance
+        - [x]  accrue interest when assessing risk
+        - [x]  accrue interest when adjusting balance
         - [ ]  apply socialized losses
-        - [ ]  Deposits / Withdrawals
+        - [x]  Deposits / Withdrawals
     - [ ]  Positive only DAI wrapper
 - [ ]  `createAccount()`
     - [ ]  increment ID properly
