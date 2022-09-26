@@ -480,7 +480,7 @@ contract Account is IAccount, ERC721 {
   }
 
   function _abs(int amount) internal pure returns (uint absAmount) {
-    return amount >= 0 ? uint(amount) : SafeCast.toUint256(-amount);
+    return amount >= 0 ? uint(amount) : uint(-amount);
   }
 
   function _getUniqueAssets(
