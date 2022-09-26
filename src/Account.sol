@@ -363,6 +363,7 @@ contract Account is IAccount, ERC721 {
    * @param adjustment all details related to balance adjustment
    * @param preBalance balance before adjustment
    * @param caller address of msg.sender initiating balance adjustment
+   * @return finalBalance the amount should be written as final balance
    */
   function _assetHook(
     AssetAdjustment memory adjustment,
