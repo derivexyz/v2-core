@@ -12,7 +12,6 @@ interface IAsset {
 
   function handleManagerChange(
     uint accountId, 
-    IManager oldManager, 
     IManager newManager
   ) external;
 }

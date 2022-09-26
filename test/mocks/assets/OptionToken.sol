@@ -165,7 +165,7 @@ contract OptionToken is IAsset, Owned {
     return _applyRatio(balance, subId);
   }
 
-  function handleManagerChange(uint, IManager, IManager) external pure override {}
+  function handleManagerChange(uint, IManager) external pure override {}
 
   function addListing(uint strike, uint expiry, bool isCall) external returns (uint subId) {
     Listing memory newListing = Listing({

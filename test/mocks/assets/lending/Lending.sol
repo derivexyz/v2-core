@@ -89,7 +89,7 @@ contract Lending is IAsset, Owned {
     }
   }
 
-  function handleManagerChange(uint, IManager, IManager) external pure override {}
+  function handleManagerChange(uint, IManager) external pure override {}
 
   //////////////////
   // User Actions // 

@@ -56,6 +56,6 @@ contract BaseWrapper is IAsset, Owned {
     return preBal + adjustment.amount;
   }
 
-    function handleManagerChange(uint, IManager, IManager) external pure override {}
+    function handleManagerChange(uint, IManager) external pure override {}
 
 }

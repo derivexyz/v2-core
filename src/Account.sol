@@ -115,7 +115,7 @@ contract Account is IAccount, ERC721 {
     (IAsset[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(accountAssets);
 
     for (uint i; i < uniqueLength; ++i) {
-      uniqueAssets[i].handleManagerChange(accountId, oldManager, newManager);
+      uniqueAssets[i].handleManagerChange(accountId, newManager);
     }
 
     manager[accountId] = newManager;
