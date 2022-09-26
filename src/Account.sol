@@ -392,14 +392,13 @@ contract Account is IAccount, ERC721 {
     if (_isApprovedOrOwner(delegate, adjustment.acc)) { return; }
 
     /* determine if positive vs negative allowance is needed */
-    uint256 absAmount = _abs(adjustment.amount);
     if (adjustment.amount > 0) {
       _spendAbsAllowance(
         adjustment.acc,
         positiveSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         positiveAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
-        absAmount
+        adjustment.amount
       );
     } else if (adjustment.amount < 0) {
       _spendAbsAllowance(
@@ -407,7 +406,7 @@ contract Account is IAccount, ERC721 {
         negativeSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
         negativeAssetAllowance[adjustment.acc][adjustment.asset],
         delegate,
-        absAmount
+        adjustment.amount
       );
     } else {
     /* handle amount = 0 case */
@@ -421,11 +420,12 @@ contract Account is IAccount, ERC721 {
     mapping(address => uint) storage allowancesForSubId,
     mapping(address => uint) storage allowancesForAsset,
     address delegate,
-    uint256 absAmount
+    int256 amount
   ) internal {
     uint subIdAllowance = allowancesForSubId[delegate];
     uint assetAllowance = allowancesForAsset[delegate];
 
+    uint256 absAmount = _abs(amount);
     /* subId allowances are decremented before asset allowances */
     if (absAmount <= subIdAllowance) {
       allowancesForSubId[delegate] = subIdAllowance - absAmount;
@@ -437,7 +437,7 @@ contract Account is IAccount, ERC721 {
         address(this), 
         msg.sender, 
         accountId, 
-        absAmount,
+        amount,
         subIdAllowance, 
         assetAllowance);
     }

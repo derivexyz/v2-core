@@ -212,7 +212,7 @@ interface IAccount {
     address thower,
     address caller,
     uint accountId,
-    uint absAmount, 
+    int amount, 
     uint subIdAllowance, 
     uint assetAllowance
   );
