@@ -161,15 +161,15 @@ contract Allowances is Test, LyraHelper {
     vm.stopPrank();
 
     // ensure subid allowance decremented first
-    assertEq(account.positiveSubIdAllowance(bobAcc, optionAdapter, 0, alice), 0);
-    assertEq(account.negativeSubIdAllowance(bobAcc, optionAdapter, 0, alice), 0);
-    assertEq(account.positiveAssetAllowance(bobAcc, optionAdapter, alice), 3e17);
-    assertEq(account.negativeAssetAllowance(bobAcc, optionAdapter, alice), 0);
+    assertEq(account.positiveSubIdAllowance(bobAcc, bob, optionAdapter, 0, alice), 0);
+    assertEq(account.negativeSubIdAllowance(bobAcc, bob, optionAdapter, 0, alice), 0);
+    assertEq(account.positiveAssetAllowance(bobAcc, bob, optionAdapter, alice), 3e17);
+    assertEq(account.negativeAssetAllowance(bobAcc, bob, optionAdapter, alice), 0);
 
-    assertEq(account.positiveSubIdAllowance(bobAcc, usdcAdapter, 0, alice), 0);
-    assertEq(account.negativeSubIdAllowance(bobAcc, usdcAdapter, 0, alice), 0);
-    assertEq(account.positiveAssetAllowance(bobAcc, usdcAdapter, alice), 0);
-    assertEq(account.negativeAssetAllowance(bobAcc, usdcAdapter, alice), 5e18);
+    assertEq(account.positiveSubIdAllowance(bobAcc, bob, usdcAdapter, 0, alice), 0);
+    assertEq(account.negativeSubIdAllowance(bobAcc, bob, usdcAdapter, 0, alice), 0);
+    assertEq(account.positiveAssetAllowance(bobAcc, bob, usdcAdapter, alice), 0);
+    assertEq(account.negativeAssetAllowance(bobAcc, bob, usdcAdapter, alice), 5e18);
   }
 
   function test3rdPartyAllowance() public {    

@@ -131,19 +131,19 @@ interface IAccount {
   ) external view returns (int240 balance, uint16 order);
 
   function positiveSubIdAllowance(
-    uint accountId, IAsset asset, uint subId, address spender
+    uint accountId, address owner, IAsset asset, uint subId, address spender
   ) external view returns (uint);
   
   function negativeSubIdAllowance(
-    uint accountId, IAsset asset, uint subId, address spender
+    uint accountId, address owner, IAsset asset, uint subId, address spender
   ) external view returns (uint);
 
   function positiveAssetAllowance(
-    uint accountId, IAsset asset, address spender
+    uint accountId, address owner, IAsset asset, address spender
   ) external view returns (uint);
 
   function negativeAssetAllowance(
-    uint accountId, IAsset asset, address spender
+    uint accountId, address owner, IAsset asset, address spender
   ) external view returns (uint);
 
   function getBalance(

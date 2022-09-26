@@ -15,6 +15,7 @@
         - [x]  block transfer if msg.sender doesn’t have allowance for one account
     - [x]  Manager initiated transfer without allowances
     - [x]  Auto spender allowance when using `createAccount(owner, spender, _manager)`
+    - [ ] Asset / subId allowances not transfered upon ownership change 
 - [ ]  `submitTransfer/s()`
     - [ ]  Correct balance transfer post single transfer
     - [ ]  Correct balance transfer post 3-way transfer
