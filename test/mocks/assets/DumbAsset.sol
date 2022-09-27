@@ -16,12 +16,12 @@ contract DumbAsset is IAsset {
     account = account_;
   }
 
-  function deposit(uint recipientAccount, uint amount) external {
+  function deposit(uint recipientAccount, uint256 subId, uint amount) external {
     account.adjustBalance(
       IAccount.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
-        subId: 0,
+        subId: subId,
         amount: int(amount),
         assetData: bytes32(0)
       }),
@@ -47,7 +47,9 @@ contract DumbAsset is IAsset {
   function handleAdjustment(
     IAccount.AssetAdjustment memory adjustment, int preBal, IManager /*riskModel*/, address
   ) external pure override returns (int finalBalance) {
-    return preBal + adjustment.amount;
+    int result = preBal + adjustment.amount;
+    if (result < 0) revert("negative balance");
+    return result;
   }
 
   function handleManagerChange(uint, IManager) external pure override {}
