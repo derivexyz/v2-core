@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../../util/LyraHelper.sol";
 
-contract SocializedLosses is Test, LyraHelper {
+contract POC_Lending is Test, LyraHelper {
   uint public constant SECONDS_PER_YEAR = 31536000;
 
 
