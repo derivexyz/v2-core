@@ -90,8 +90,10 @@ contract POC_Allowances is Test, LyraHelper {
     uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
-        address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
+      abi.encodeWithSelector(Allowances.NotEnoughSu
+        bIdOrAssetAllowances.selector,address(account), 
+        address(account), 
+        address(alice),
         bobNewAcc,
         -100e18,
         0,
