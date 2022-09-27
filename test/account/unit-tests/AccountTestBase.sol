@@ -25,6 +25,8 @@ contract AccountTestBase is Test {
 
     Account account;
 
+    uint tokenSubId = 1000;
+
     function setUpAccounts() public {
         alice = address(0xaa);
         bob = address(0xbb);
@@ -49,6 +51,7 @@ contract AccountTestBase is Test {
             aliceAcc,
             usdc,
             usdcAsset,
+            0,
             10000000e18
         );
         mintAndDeposit(
@@ -56,6 +59,7 @@ contract AccountTestBase is Test {
             bobAcc,
             coolToken,
             coolAsset,
+            tokenSubId,
             10000000e18
         );
     }
@@ -65,13 +69,14 @@ contract AccountTestBase is Test {
         uint256 accountId,
         TestERC20 token,
         DumbAsset assetWrapper,
+        uint256 subId,
         uint256 amount
     ) public {
         token.mint(user, amount);
 
         vm.startPrank(user);
         token.approve(address(assetWrapper), type(uint256).max);
-        assetWrapper.deposit(accountId, amount);
+        assetWrapper.deposit(accountId, subId, amount);
         vm.stopPrank();
     }
 
