@@ -128,7 +128,7 @@ contract Account is IAccount, ERC721 {
 
   /** 
    * @notice Sets bidirectional allowances for all subIds of an asset. 
-   *         During a balance adjustment, if msg.sender not ERC721 approved or owner, 
+   *         During a balance adjustment, if msgallowances.sender not ERC721 approved or owner, 
    *         asset allowance + subId allowance must be >= amount 
    * @param accountId ID of account
    * @param delegate address to assign allowance to
@@ -450,7 +450,8 @@ contract Account is IAccount, ERC721 {
         accountId, 
         amount,
         subIdAllowance, 
-        assetAllowance);
+        assetAllowance
+      );
     }
   }
 

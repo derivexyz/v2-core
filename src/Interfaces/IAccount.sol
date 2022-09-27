@@ -220,8 +220,8 @@ interface IAccount {
     address caller,
     uint accountId,
     int amount, 
-    uint subIdAllowance, 
-    uint assetAllowance
+    uint assetAllowance,
+    uint subIdAllowance
   );
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
