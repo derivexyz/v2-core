@@ -30,7 +30,121 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
-  function testCannotTransferWithPartialAllowanceFromReceiver() public {    
+  function testTransferWithEnoughAssetAllowance() public {
+    uint tradeAmount = 1e18;
+    uint subId = 10000;
+
+    vm.startPrank(bob);
+    // bob allow alice to move its cool token, agree to receive USDC
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: coolAsset,
+      positive: 0,
+      negative: tradeAmount
+    });
+    assetAllowances[1] = IAccount.AssetAllowance({
+      asset: IAsset(usdcAsset),
+      positive: tradeAmount,
+      negative: 0
+    });
+    account.setAssetAllowances(bobAcc, alice, assetAllowances);
+    vm.stopPrank();
+
+    // expect revert
+    vm.startPrank(alice);
+    // alice trade USDC in echange of Bob's coolToken
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, subId);
+    vm.stopPrank();
+
+    // test end state
+    uint256 usdcAllowanceLeft = account.positiveAssetAllowance(bobAcc, usdcAsset, alice);
+    uint256 tokenAllowanceLeft = account.negativeAssetAllowance(bobAcc, coolAsset, alice);
+    assertEq(usdcAllowanceLeft, 0);
+    assertEq(tokenAllowanceLeft, 0);
+  }
+
+  function testTransferWithEnoughSubIdAllowance() public {
+    uint tradeAmount = 1e18;
+    uint subId = 10000;
+
+    vm.startPrank(bob);
+    // bob allow alice to move its cool token, agree to receive USDC
+    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
+    subIdAllowances[0] = IAccount.SubIdAllowance({
+      asset: coolAsset,
+      subId: subId,
+      positive: 0,
+      negative: tradeAmount
+    });
+    subIdAllowances[1] = IAccount.SubIdAllowance({
+      asset: IAsset(usdcAsset),
+      subId: 0,
+      positive: tradeAmount,
+      negative: 0
+    });
+    account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
+    vm.stopPrank();
+
+    // alice trade USDC in echange of Bob's coolToken
+    vm.startPrank(alice);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 1e18, 0, subId);
+    vm.stopPrank();
+
+    // test end state
+    uint256 usdcAllowanceLeft = account.positiveSubIdAllowance(bobAcc, usdcAsset, 0, alice);
+    uint256 tokenAllowanceLeft = account.negativeSubIdAllowance(bobAcc, coolAsset, subId, alice);
+    assertEq(usdcAllowanceLeft, 0);
+    assertEq(tokenAllowanceLeft, 0);
+  }
+
+  function testTransferWithEnoughTotalAllowance() public {
+    uint tradeAmount = 1e18;
+    uint subId = 10000;
+
+    vm.startPrank(bob);
+    // bob allow alice to move its cool token, agree to receive USDC
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: coolAsset,
+      positive: 0,
+      negative: tradeAmount / 2
+    });
+    assetAllowances[1] = IAccount.AssetAllowance({
+      asset: IAsset(usdcAsset),
+      positive: tradeAmount / 2,
+      negative: 0
+    });
+    account.setAssetAllowances(bobAcc, alice, assetAllowances);
+
+    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
+    subIdAllowances[0] = IAccount.SubIdAllowance({
+      asset: coolAsset,
+      subId: subId,
+      positive: 0,
+      negative: tradeAmount / 2
+    });
+    subIdAllowances[1] = IAccount.SubIdAllowance({
+      asset: IAsset(usdcAsset),
+      subId: 0,
+      positive: tradeAmount / 2,
+      negative: 0
+    });
+    account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
+    vm.stopPrank();
+
+    // alice trade USDC in echange of Bob's coolToken
+    vm.startPrank(alice);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, subId);
+    vm.stopPrank();
+
+    // all allowance are spent now
+    assertEq(account.positiveSubIdAllowance(bobAcc, usdcAsset, 0, alice), 0);
+    assertEq(account.negativeSubIdAllowance(bobAcc, coolAsset, subId, alice), 0);
+    assertEq(account.positiveAssetAllowance(bobAcc, usdcAsset, alice), 0);
+    assertEq(account.negativeAssetAllowance(bobAcc, coolAsset, alice), 0);
+  }
+
+  function testCannotTransferWithPartialNegativeAllowance() public {    
     uint subId = 10000;
 
     vm.startPrank(bob);
@@ -82,6 +196,40 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
+  function testCannotTransferWithPartialPositiveAllowance() public {    
+    // trade will revert if receiver doesn't specify allowance to increase its position
+    uint subId = 10000;
+    uint tradeAmount = 1e18;
+
+    vm.startPrank(bob);
+    // bob allow alice to move its cool token
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](1);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: coolAsset,
+      positive: 0,
+      negative: tradeAmount
+    });
+    account.setAssetAllowances(bobAcc, alice, assetAllowances);
+    vm.stopPrank();
+
+    // expect revert
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+        address(account), 
+        alice,
+        bobAcc,
+        tradeAmount, // cannot increase amount!
+        0, // subId allowance
+        0  // asset allowance
+      )
+    );
+
+    // alice trade USDC in echange of Bob's coolToken
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, subId);
+    vm.stopPrank();
+  }
+
   // function testNotEnoughAllowance() public {    
   //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
 
@@ -111,56 +259,6 @@ contract Unit_Allowances is Test, AccountTestBase {
   //   vm.stopPrank();
   // }
 
-  // function testSuccessfulDecrementOfAllowance() public {    
-  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
-
-  //   vm.startPrank(bob);
-  //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-  //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(coolAsset),
-  //     positive: 5e17,
-  //     negative: 0
-  //   });
-  //   assetAllowances[1] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAsset),
-  //     positive: 0,
-  //     negative: 50e18
-  //   });
-  //   account.setAssetAllowances(bobAcc, alice, assetAllowances);
-
-  //   IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
-  //   subIdAllowances[0] = IAccount.SubIdAllowance({
-  //     asset: IAsset(coolAsset),
-  //     subId: 0,
-  //     positive: 8e17,
-  //     negative: 0
-  //   });
-  //   subIdAllowances[1] = IAccount.SubIdAllowance({
-  //     asset: IAsset(usdcAsset),
-  //     subId: 0,
-  //     positive: 0,
-  //     negative: 55e18
-  //   });
-  //   account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
-  //   vm.stopPrank();
-
-
-  //   // expect revert
-  //   vm.startPrank(alice);
-  //   tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-  //   vm.stopPrank();
-
-  //   // ensure subid allowance decremented first
-  //   assertEq(account.positiveSubIdAllowance(bobAcc, coolAsset, 0, alice), 0);
-  //   assertEq(account.negativeSubIdAllowance(bobAcc, coolAsset, 0, alice), 0);
-  //   assertEq(account.positiveAssetAllowance(bobAcc, coolAsset, alice), 3e17);
-  //   assertEq(account.negativeAssetAllowance(bobAcc, coolAsset, alice), 0);
-
-  //   assertEq(account.positiveSubIdAllowance(bobAcc, usdcAsset, 0, alice), 0);
-  //   assertEq(account.negativeSubIdAllowance(bobAcc, usdcAsset, 0, alice), 0);
-  //   assertEq(account.positiveAssetAllowance(bobAcc, usdcAsset, alice), 0);
-  //   assertEq(account.negativeAssetAllowance(bobAcc, usdcAsset, alice), 5e18);
-  // }
 
   // function test3rdPartyAllowance() public {    
   //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
