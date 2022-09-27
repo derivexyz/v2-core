@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "../util/LyraHelper.sol";
+import "../../util/LyraHelper.sol";
 
 contract SocializedLosses is Test, LyraHelper {
   uint aliceAcc;
