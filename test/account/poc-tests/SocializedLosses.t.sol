@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../../util/LyraHelper.sol";
 
-contract SocializedLosses is Test, LyraHelper {
+contract POC_SocializedLosses is Test, LyraHelper {
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;
