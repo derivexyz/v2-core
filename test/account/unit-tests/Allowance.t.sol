@@ -50,9 +50,8 @@ contract Unit_Allowances is Test, AccountTestBase {
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
     vm.stopPrank();
 
-    // expect revert
-    vm.startPrank(alice);
     // alice trade USDC in echange of Bob's coolToken
+    vm.startPrank(alice);
     tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, subId);
     vm.stopPrank();
 
@@ -196,7 +195,7 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
-  function testCannotTransferWithPartialPositiveAllowance() public {    
+  function testCannotTransferWithInsufficientPositiveAllowance() public {    
     // trade will revert if receiver doesn't specify allowance to increase its position
     uint subId = 10000;
     uint tradeAmount = 1e18;
