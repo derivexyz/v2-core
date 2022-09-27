@@ -5,15 +5,19 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 
 /**
- * @title DumbAsset is design for us to wrap ERC20 into our account system. Only supports deposit and withdraw
+ * @title DumbAsset is the easiest Asset wrapper that wraps ERC20 into account system.
+ * @dev   deployer can set DumbAsset to not allow balance go negative. 
+ *        if set to "allowNegative = false", token must be deposited before using
  */
 contract DumbAsset is IAsset {
   IERC20 token;
   IAccount account;
+  bool immutable allowNegative;
 
-  constructor(IERC20 token_, IAccount account_){
+  constructor(IERC20 token_, IAccount account_, bool allowNegative_){
     token = token_;
     account = account_;
+    allowNegative = allowNegative_;
   }
 
   function deposit(uint recipientAccount, uint amount) external {
@@ -46,9 +50,9 @@ contract DumbAsset is IAsset {
 
   function handleAdjustment(
     IAccount.AssetAdjustment memory adjustment, int preBal, IManager /*riskModel*/, address
-  ) external pure override returns (int finalBalance) {
+  ) external view override returns (int finalBalance) {
     int result = preBal + adjustment.amount;
-    if (result < 0) revert("negative balance");
+    if (result < 0 && !allowNegative) revert("negative balance");
     return result;
   }
 
