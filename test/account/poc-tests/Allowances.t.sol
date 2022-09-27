@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../../util/LyraHelper.sol";
 
-contract TestAllowances is Test, LyraHelper {
+contract POC_Allowances is Test, LyraHelper {
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;
@@ -41,111 +41,6 @@ contract TestAllowances is Test, LyraHelper {
     );
     tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
     vm.stopPrank();
-  }
-
-  function testCannotTransferWithPartialAllowance() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    vm.startPrank(bob);
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
-    assetAllowances[0] = AccountStructs.AssetAllowance({
-      asset: IAsset(usdcAdapter),
-      positive: 0,
-      negative: 50e18
-    });
-    account.setAssetAllowances(bobAcc, alice, assetAllowances);
-
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    
-    subIdAllowances[0] = AccountStructs.SubIdAllowance({
-      asset: IAsset(usdcAdapter),
-      subId: 0,
-      positive: 0,
-      negative: 40e18
-    });
-    account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
-    vm.stopPrank();
-
-    // expect revert
-    vm.startPrank(alice);
-    vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(account), 
-        alice,
-        bobAcc,
-        -100e18,
-        40e18,
-        50e18
-      )
-    );
-    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-  }
-
-  function testCanTradeWithoutAllowanceToIncreaseIfAssetAllows() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    vm.startPrank(bob);
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
-    assetAllowances[0] = AccountStructs.AssetAllowance({
-      asset: IAsset(usdcAdapter),
-      positive: 0,
-      negative: type(uint).max
-    });
-    account.setAssetAllowances(bobAcc, alice, assetAllowances);
-    vm.stopPrank();
-
-    // expect revert
-    vm.startPrank(alice);
-    vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(account), 
-        alice,
-        bobAcc,
-        1000000000000000000,
-        0,
-        0
-      )
-    );
-    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-  }
-
-  function testSuccessfulDecrementOfAllowance() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    vm.startPrank(bob);
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
-    assetAllowances[0] = AccountStructs.AssetAllowance({
-      asset: IAsset(usdcAdapter),
-      positive: 0,
-      negative: 50e18
-    });
-    account.setAssetAllowances(bobAcc, alice, assetAllowances);
-
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance({
-      asset: IAsset(usdcAdapter),
-      subId: 0,
-      positive: 0,
-      negative: 55e18
-    });
-    account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
-    vm.stopPrank();
-
-
-    // expect revert
-    vm.startPrank(alice);
-    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-
-    // ensure subid allowance decremented first
-    assertEq(account.negativeSubIdAllowance(bobAcc, bob, optionAdapter, 0, alice), 0);
-    assertEq(account.negativeAssetAllowance(bobAcc, bob, optionAdapter, alice), 0);
-
-    
-    assertEq(account.negativeSubIdAllowance(bobAcc, bob, usdcAdapter, 0, alice), 0);
-    assertEq(account.negativeAssetAllowance(bobAcc, bob, usdcAdapter, alice), 5e18);
   }
 
   function test3rdPartyAllowance() public {    
