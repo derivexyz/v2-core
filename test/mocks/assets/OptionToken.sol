@@ -184,7 +184,7 @@ contract OptionToken is IAsset, Owned {
     
     // only shorts can be socialized
     // open interest modified during handleAdjustment
-    account.adjustBalance(
+    account.adjustBalanceByAsset(
       IAccount.AssetAdjustment({
         acc: insolventAcc,
         asset: IAsset(address(this)),

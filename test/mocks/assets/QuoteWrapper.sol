@@ -27,7 +27,7 @@ contract QuoteWrapper is IAsset, Owned {
   }
 
   function deposit(uint recipientAccount, uint amount) external {
-    account.adjustBalance(
+    account.adjustBalanceByAsset(
       IAccount.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
@@ -42,7 +42,7 @@ contract QuoteWrapper is IAsset, Owned {
 
   // Note: balances can go negative for quote but not base
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
-    account.adjustBalance(
+    account.adjustBalanceByAsset(
       IAccount.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 

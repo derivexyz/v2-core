@@ -101,27 +101,25 @@ contract PortfolioRiskManager is Owned, IManager {
     require(price >= 0 && liquidationFlagged[accountId] && extraCollateral >= 0);
 
     // TODO: check owner of accountForCollat
-    account.adjustBalance(
+    account.adjustBalanceByManager(
       IAccount.AssetAdjustment({
         acc: accountForCollateral, 
         asset: quoteAsset, 
         subId: 0, 
         amount: -extraCollateral,
         assetData: bytes32(0)
-      }),
-      ""
+      })
     );
     assessRisk(accountForCollateral, account.getAccountBalances(accountForCollateral));
 
-    account.adjustBalance(
+    account.adjustBalanceByManager(
       IAccount.AssetAdjustment({
         acc: accountForCollateral, 
         asset: quoteAsset, 
         subId: 0, 
         amount: extraCollateral,
         assetData: bytes32(0)
-      }),
-      ""
+      })
     );
     account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
 
@@ -147,25 +145,24 @@ contract PortfolioRiskManager is Owned, IManager {
 
       if (settled) {
         // NOTE: RM A at risk of RM B not properly implementing settling
-        account.adjustBalance(
+        account.adjustBalanceByManager(
           IAccount.AssetAdjustment({
             acc: accountId,
             asset: assetsToSettle[i].asset,
             subId: assetsToSettle[i].subId,
             amount: -balance, // set back to zero
             assetData: bytes32(0)
-          }), 
-          ""
+          })
         );
 
-        account.adjustBalance(IAccount.AssetAdjustment({
+        account.adjustBalanceByManager(IAccount.AssetAdjustment({
           acc: accountId, 
           asset: quoteAsset, 
           subId: 0, 
           amount: PnL,
           assetData: bytes32(0)
-        }), 
-        "");
+        })
+        );
       }
     }
   }
