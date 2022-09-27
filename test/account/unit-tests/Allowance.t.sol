@@ -259,7 +259,7 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
-  function testCannotTransferWithoutAllowanceForAll() public {    
+  function testCannotTransferBy3rdPartyWithoutAllowance() public {    
     uint subId = 1000;
     address orderbook = address(0xb00c);
 
@@ -314,57 +314,49 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
-  // function testERC721Approval() public {    
-  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
+  function testERC721Approval() public {    
+    uint subId = 1000;
+    uint tradeAmount = 1e18;
+    
+    vm.startPrank(bob);
+    account.approve(alice, bobAcc);
+    vm.stopPrank();
 
-  //   vm.startPrank(bob);
-  //   account.approve(alice, bobAcc);
-  //   vm.stopPrank();
+    // successful trade
+    vm.startPrank(alice);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, subId);
+    vm.stopPrank();
+  }
 
-  //   // successful trade
-  //   vm.startPrank(alice);
-  //   tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-  //   vm.stopPrank();
+  function testERC721ApprovalForAll() public {    
+    uint subId = 1000;
+    uint tradeAmount = 1e18;
 
-  //   // revert with new account
-  //   uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
-  //   vm.startPrank(alice);
-  //   vm.expectRevert(
-  //     abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-  //       address(account), 
-  //       address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
-  //       bobNewAcc,
-  //       1000000000000000000,
-  //       0,
-  //       0
-  //     )
-  //   );
-  //   tradeOptionWithUSDC(aliceAcc, bobNewAcc, 1e18, 100e18, subId);
-  //   vm.stopPrank();
-  // }
+    vm.startPrank(bob);
+    account.setApprovalForAll(alice, true);
+    vm.stopPrank();
 
-  // function testERC721ApprovalForAll() public {    
-  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
+    // successful trade
+    vm.startPrank(alice);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, subId);
+    vm.stopPrank();
 
-  //   vm.startPrank(bob);
-  //   account.setApprovalForAll(alice, true);
-  //   vm.stopPrank();
+    // successful trade even with new account from same user
+    uint bobNewAcc = account.createAccount(bob, dumbManager);
+    mintAndDeposit(
+      bob,
+      bobAcc,
+      coolToken,
+      coolAsset,
+      tradeAmount
+    );    
 
-  //   // successful trade
-  //   vm.startPrank(alice);
-  //   tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-  //   vm.stopPrank();
-
-  //   // successful trade even with new account from same user
-  //   uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
-  //   vm.startPrank(alice);
-  //   tradeOptionWithUSDC(aliceAcc, bobNewAcc, 1e18, 100e18, subId);
-  //   vm.stopPrank();
-  // }
+    vm.startPrank(alice);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, subId);
+    vm.stopPrank();
+  }
 
   // function testManagerInitiatedTransfer() public {    
-  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
-
   //   // successful trade without allowances
   //   vm.startPrank(address(rm));
   //   tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
