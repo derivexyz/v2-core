@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../../util/LyraHelper.sol";
 
-contract Allowances is Test, LyraHelper {
+contract POC_Allowances is Test, LyraHelper {
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;
@@ -37,55 +37,6 @@ contract Allowances is Test, LyraHelper {
         1000000000000000000,
         0,
         0
-      )
-    );
-    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-  }
-
-  function testCannotTransferWithPartialAllowance() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    vm.startPrank(bob);
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-    assetAllowances[0] = IAccount.AssetAllowance({
-      asset: IAsset(optionAdapter),
-      positive: 5e17,
-      negative: 0
-    });
-    assetAllowances[1] = IAccount.AssetAllowance({
-      asset: IAsset(usdcAdapter),
-      positive: 0,
-      negative: 50e18
-    });
-    account.setAssetAllowances(bobAcc, alice, assetAllowances);
-
-    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
-    subIdAllowances[0] = IAccount.SubIdAllowance({
-      asset: IAsset(optionAdapter),
-      subId: 0,
-      positive: 4e17,
-      negative: 0
-    });
-    subIdAllowances[1] = IAccount.SubIdAllowance({
-      asset: IAsset(usdcAdapter),
-      subId: 0,
-      positive: 0,
-      negative: 50e18
-    });
-    account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
-    vm.stopPrank();
-
-    // expect revert
-    vm.startPrank(alice);
-    vm.expectRevert(
-      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-        address(account), 
-        alice,
-        bobAcc,
-        1000000000000000000,
-        400000000000000000,
-        500000000000000000
       )
     );
     tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
