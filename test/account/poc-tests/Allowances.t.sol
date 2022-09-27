@@ -31,7 +31,7 @@ contract Allowances is Test, LyraHelper {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+        address(account), 
         alice,
         bobAcc,
         1000000000000000000,
@@ -80,7 +80,7 @@ contract Allowances is Test, LyraHelper {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+        address(account), 
         alice,
         bobAcc,
         1000000000000000000,
@@ -109,7 +109,7 @@ contract Allowances is Test, LyraHelper {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+        address(account), 
         alice,
         bobAcc,
         1000000000000000000,
@@ -246,7 +246,7 @@ contract Allowances is Test, LyraHelper {
     vm.startPrank(orderbook);
     vm.expectRevert(
       abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+        address(account), 
         orderbook,
         aliceAcc,
         50000000000000000000,
@@ -275,7 +275,7 @@ contract Allowances is Test, LyraHelper {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+        address(account), 
         address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
         bobNewAcc,
         1000000000000000000,
