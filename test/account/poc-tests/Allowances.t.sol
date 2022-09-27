@@ -30,8 +30,7 @@ contract TestAllowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
         alice,
         bobAcc,
         1000000000000000000,
@@ -79,8 +78,7 @@ contract TestAllowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
         alice,
         bobAcc,
         1000000000000000000,
@@ -108,8 +106,7 @@ contract TestAllowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
         alice,
         bobAcc,
         1000000000000000000,
@@ -245,8 +242,7 @@ contract TestAllowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(orderbook);
     vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
         orderbook,
         aliceAcc,
         50000000000000000000,
@@ -274,8 +270,7 @@ contract TestAllowances is Test, LyraHelper {
     uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
         address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
         bobNewAcc,
         1000000000000000000,
