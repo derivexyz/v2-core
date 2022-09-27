@@ -11,11 +11,11 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
 
-import "./assets/QuoteWrapper.sol";
-import "./assets/BaseWrapper.sol";
-import "./assets/OptionToken.sol";
-import "./assets/ISettleable.sol";
-import "./assets/lending/Lending.sol";
+import "./../assets/QuoteWrapper.sol";
+import "./../assets/BaseWrapper.sol";
+import "./../assets/OptionToken.sol";
+import "./../assets/ISettleable.sol";
+import "./../assets/lending/Lending.sol";
 
 contract PortfolioRiskManager is Owned, IManager {
   using DecimalMath for uint;

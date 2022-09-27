@@ -15,7 +15,7 @@ import "../mocks/assets/QuoteWrapper.sol";
 import "../mocks/assets/lending/Lending.sol";
 import "../mocks/assets/lending/ContinuousJumpRateModel.sol";
 import "../mocks/assets/lending/InterestRateModel.sol";
-import "../mocks/PortfolioRiskManager.sol";
+import "../mocks/managers/PortfolioRiskManager.sol";
 import "../mocks/TestERC20.sol";
 
 abstract contract LyraHelper is Test {
