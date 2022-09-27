@@ -26,66 +26,69 @@ contract Unit_Allowances is Test, AccountTestBase {
         0
       )
     );
-    tradeTokens(aliceAcc, bobAcc, address(usdc), address(coolToken), 10e18, 10e18, 0, 0);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 10e18, 10e18, 0, 0);
     vm.stopPrank();
   }
 
-  // function testCannotTransferWithPartialAllowance() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  function testCannotTransferWithPartialAllowanceFromReceiver() public {    
+    uint subId = 10000;
 
-  //   vm.startPrank(bob);
-  //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-  //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(optionAdapter),
-  //     positive: 5e17,
-  //     negative: 0
-  //   });
-  //   assetAllowances[1] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAdapter),
-  //     positive: 0,
-  //     negative: 50e18
-  //   });
-  //   account.setAssetAllowances(bobAcc, alice, assetAllowances);
+    vm.startPrank(bob);
+    // bob allow alice to move its cool token, agree to receive USDC
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: coolAsset,
+      positive: 0,
+      negative: 5e17
+    });
+    assetAllowances[1] = IAccount.AssetAllowance({
+      asset: IAsset(usdcAsset),
+      positive: 1e18,
+      negative: 0
+    });
+    account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-  //   IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
-  //   subIdAllowances[0] = IAccount.SubIdAllowance({
-  //     asset: IAsset(optionAdapter),
-  //     subId: 0,
-  //     positive: 4e17,
-  //     negative: 0
-  //   });
-  //   subIdAllowances[1] = IAccount.SubIdAllowance({
-  //     asset: IAsset(usdcAdapter),
-  //     subId: 0,
-  //     positive: 0,
-  //     negative: 50e18
-  //   });
-  //   account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
-  //   vm.stopPrank();
+    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
+    subIdAllowances[0] = IAccount.SubIdAllowance({
+      asset: coolAsset,
+      subId: subId,
+      positive: 0,
+      negative: 4e17
+    });
+    subIdAllowances[1] = IAccount.SubIdAllowance({
+      asset: IAsset(usdcAsset),
+      subId: 0,
+      positive: 1e18,
+      negative: 0
+    });
+    account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
+    vm.stopPrank();
 
-  //   // expect revert
-  //   vm.startPrank(alice);
-  //   vm.expectRevert(
-  //     abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-  //       address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
-  //       alice,
-  //       bobAcc,
-  //       1000000000000000000,
-  //       400000000000000000,
-  //       500000000000000000
-  //     )
-  //   );
-  //   tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-  //   vm.stopPrank();
-  // }
+    // expect revert
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+        address(account), 
+        alice,
+        bobAcc,
+        -1e18,
+        4e17, // subId allowance
+        5e17  // asset allowance
+      )
+    );
+
+    // alice trade USDC in echange of Bob's coolToken
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 1e18, 0, subId);
+    vm.stopPrank();
+  }
 
   // function testNotEnoughAllowance() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
 
   //   vm.startPrank(bob);
   //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](1);
   //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAdapter),
+  //     asset: IAsset(usdcAsset),
   //     positive: type(uint).max,
   //     negative: type(uint).max
   //   });
@@ -96,7 +99,7 @@ contract Unit_Allowances is Test, AccountTestBase {
   //   vm.startPrank(alice);
   //   vm.expectRevert(
   //     abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-  //       address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+  //       address(account), 
   //       alice,
   //       bobAcc,
   //       1000000000000000000,
@@ -109,17 +112,17 @@ contract Unit_Allowances is Test, AccountTestBase {
   // }
 
   // function testSuccessfulDecrementOfAllowance() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
 
   //   vm.startPrank(bob);
   //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
   //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(optionAdapter),
+  //     asset: IAsset(coolAsset),
   //     positive: 5e17,
   //     negative: 0
   //   });
   //   assetAllowances[1] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAdapter),
+  //     asset: IAsset(usdcAsset),
   //     positive: 0,
   //     negative: 50e18
   //   });
@@ -127,13 +130,13 @@ contract Unit_Allowances is Test, AccountTestBase {
 
   //   IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
   //   subIdAllowances[0] = IAccount.SubIdAllowance({
-  //     asset: IAsset(optionAdapter),
+  //     asset: IAsset(coolAsset),
   //     subId: 0,
   //     positive: 8e17,
   //     negative: 0
   //   });
   //   subIdAllowances[1] = IAccount.SubIdAllowance({
-  //     asset: IAsset(usdcAdapter),
+  //     asset: IAsset(usdcAsset),
   //     subId: 0,
   //     positive: 0,
   //     negative: 55e18
@@ -148,30 +151,30 @@ contract Unit_Allowances is Test, AccountTestBase {
   //   vm.stopPrank();
 
   //   // ensure subid allowance decremented first
-  //   assertEq(account.positiveSubIdAllowance(bobAcc, optionAdapter, 0, alice), 0);
-  //   assertEq(account.negativeSubIdAllowance(bobAcc, optionAdapter, 0, alice), 0);
-  //   assertEq(account.positiveAssetAllowance(bobAcc, optionAdapter, alice), 3e17);
-  //   assertEq(account.negativeAssetAllowance(bobAcc, optionAdapter, alice), 0);
+  //   assertEq(account.positiveSubIdAllowance(bobAcc, coolAsset, 0, alice), 0);
+  //   assertEq(account.negativeSubIdAllowance(bobAcc, coolAsset, 0, alice), 0);
+  //   assertEq(account.positiveAssetAllowance(bobAcc, coolAsset, alice), 3e17);
+  //   assertEq(account.negativeAssetAllowance(bobAcc, coolAsset, alice), 0);
 
-  //   assertEq(account.positiveSubIdAllowance(bobAcc, usdcAdapter, 0, alice), 0);
-  //   assertEq(account.negativeSubIdAllowance(bobAcc, usdcAdapter, 0, alice), 0);
-  //   assertEq(account.positiveAssetAllowance(bobAcc, usdcAdapter, alice), 0);
-  //   assertEq(account.negativeAssetAllowance(bobAcc, usdcAdapter, alice), 5e18);
+  //   assertEq(account.positiveSubIdAllowance(bobAcc, usdcAsset, 0, alice), 0);
+  //   assertEq(account.negativeSubIdAllowance(bobAcc, usdcAsset, 0, alice), 0);
+  //   assertEq(account.positiveAssetAllowance(bobAcc, usdcAsset, alice), 0);
+  //   assertEq(account.negativeAssetAllowance(bobAcc, usdcAsset, alice), 5e18);
   // }
 
   // function test3rdPartyAllowance() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
   //   address orderbook = charlie;
 
   //   // give orderbook allowance over both
   //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
   //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(optionAdapter),
+  //     asset: IAsset(coolAsset),
   //     positive: type(uint).max,
   //     negative: type(uint).max
   //   });
   //   assetAllowances[1] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAdapter),
+  //     asset: IAsset(usdcAsset),
   //     positive: type(uint).max,
   //     negative: type(uint).max
   //   });
@@ -191,18 +194,18 @@ contract Unit_Allowances is Test, AccountTestBase {
   // }
 
   // function testCannotTransferWithoutAllowanceForAll() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
   //   address orderbook = charlie;
 
   //   // give orderbook allowance over both
   //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
   //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(optionAdapter),
+  //     asset: IAsset(coolAsset),
   //     positive: type(uint).max,
   //     negative: type(uint).max
   //   });
   //   assetAllowances[1] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAdapter),
+  //     asset: IAsset(usdcAsset),
   //     positive: type(uint).max,
   //     negative: type(uint).max
   //   });
@@ -215,13 +218,13 @@ contract Unit_Allowances is Test, AccountTestBase {
   //   vm.startPrank(alice);
   //   IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
   //   subIdAllowances[0] = IAccount.SubIdAllowance({
-  //     asset: IAsset(optionAdapter),
+  //     asset: IAsset(coolAsset),
   //     subId: 1, // wrong subId 
   //     positive: type(uint).max,
   //     negative: type(uint).max
   //   });
   //   subIdAllowances[1] = IAccount.SubIdAllowance({
-  //     asset: IAsset(usdcAdapter),
+  //     asset: IAsset(usdcAsset),
   //     subId: 0,
   //     positive: type(uint).max,
   //     negative: type(uint).max
@@ -233,7 +236,7 @@ contract Unit_Allowances is Test, AccountTestBase {
   //   vm.startPrank(orderbook);
   //   vm.expectRevert(
   //     abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-  //       address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+  //       address(account), 
   //       orderbook,
   //       aliceAcc,
   //       50000000000000000000,
@@ -246,7 +249,7 @@ contract Unit_Allowances is Test, AccountTestBase {
   // }
 
   // function testERC721Approval() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
 
   //   vm.startPrank(bob);
   //   account.approve(alice, bobAcc);
@@ -262,7 +265,7 @@ contract Unit_Allowances is Test, AccountTestBase {
   //   vm.startPrank(alice);
   //   vm.expectRevert(
   //     abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-  //       address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
+  //       address(account), 
   //       address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
   //       bobNewAcc,
   //       1000000000000000000,
@@ -275,7 +278,7 @@ contract Unit_Allowances is Test, AccountTestBase {
   // }
 
   // function testERC721ApprovalForAll() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
 
   //   vm.startPrank(bob);
   //   account.setApprovalForAll(alice, true);
@@ -294,7 +297,7 @@ contract Unit_Allowances is Test, AccountTestBase {
   // }
 
   // function testManagerInitiatedTransfer() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
 
   //   // successful trade without allowances
   //   vm.startPrank(address(rm));
@@ -303,7 +306,7 @@ contract Unit_Allowances is Test, AccountTestBase {
   // }
 
   // function testAutoAllowanceWithNewAccount() public {    
-  //   uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
 
   //   // new user account with spender allowance
   //   vm.startPrank(alice);

@@ -46,8 +46,8 @@ contract DumbAsset is IAsset {
   }
 
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
-  ) external view override returns (int finalBalance) {
+    IAccount.AssetAdjustment memory adjustment, int preBal, IManager /*riskModel*/, address
+  ) external pure override returns (int finalBalance) {
     return preBal + adjustment.amount;
   }
 

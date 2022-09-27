@@ -81,8 +81,8 @@ contract AccountTestBase is Test {
         address assetA,
         address assetB,
         uint256 tokenAAmounts,
-        uint256 tokenASubId,
         uint256 tokenBAmounts,
+        uint256 tokenASubId,
         uint256 tokenBSubId
     ) internal {
         IAccount.AssetTransfer memory tokenATransfer = IAccount.AssetTransfer({
@@ -98,7 +98,7 @@ contract AccountTestBase is Test {
             fromAcc: toAcc,
             toAcc: fromAcc,
             asset: IAsset(assetB),
-            subId: 0,
+            subId: tokenBSubId,
             amount: int256(tokenBAmounts),
             assetData: bytes32(0)
         });

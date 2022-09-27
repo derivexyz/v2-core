@@ -189,6 +189,14 @@ interface IAccount is IAllowances {
   
   error NotOwnerOrERC721Approved(
     address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved);
+  error NotEnoughSubIdOrAssetAllowances(
+    address thower,
+    address caller,
+    uint accountId,
+    int amount, 
+    uint assetAllowance,
+    uint subIdAllowance
+  );
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
   error CannotChangeToSameManager(address thrower, address caller, uint accountId);
