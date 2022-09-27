@@ -108,8 +108,7 @@ contract PortfolioRiskManager is Owned, IManager {
         subId: 0, 
         amount: -extraCollateral,
         assetData: bytes32(0)
-      }),
-      ""
+      })
     );
     assessRisk(accountForCollateral, account.getAccountBalances(accountForCollateral));
 
@@ -120,8 +119,7 @@ contract PortfolioRiskManager is Owned, IManager {
         subId: 0, 
         amount: extraCollateral,
         assetData: bytes32(0)
-      }),
-      ""
+      })
     );
     account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
 
@@ -154,8 +152,7 @@ contract PortfolioRiskManager is Owned, IManager {
             subId: assetsToSettle[i].subId,
             amount: -balance, // set back to zero
             assetData: bytes32(0)
-          }), 
-          ""
+          })
         );
 
         account.adjustBalance(IAccount.AssetAdjustment({
@@ -164,8 +161,8 @@ contract PortfolioRiskManager is Owned, IManager {
           subId: 0, 
           amount: PnL,
           assetData: bytes32(0)
-        }), 
-        "");
+        })
+        );
       }
     }
   }

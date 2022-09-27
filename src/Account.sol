@@ -281,22 +281,40 @@ contract Account is IAccount, ERC721 {
     _spendAllowance(fromAccAdjustment, msg.sender);
     _spendAllowance(toAccAdjustment, msg.sender);
 
+    // balance is adjusted based on asset hook
     _adjustBalance(fromAccAdjustment);
     _adjustBalance(toAccAdjustment);
   }
 
   /** 
-   * @notice Assymetric balance adjustment reserved for managers or asset 
-   *         Must still pass both _managerHook() and _assetHook()
+   * @notice Assymetric balance adjustment reserved for managers
+   *         Must still pass both _assetHook()
+   * @param adjustment assymetric adjustment of amount for (asset, subId)
+   */
+  function adjustBalance(
+    AssetAdjustment memory adjustment
+  ) onlyManager(adjustment.acc) external returns (int postAdjustmentBalance) {    
+
+    // balance is adjusted based on asset hook
+    postAdjustmentBalance = _adjustBalance(adjustment);
+  }
+
+  /** 
+   * @notice Assymetric balance adjustment reserved for assets
+   *         Must still pass both _managerHook()
    * @param adjustment assymetric adjustment of amount for (asset, subId)
    * @param managerData data passed to manager of account
    */
   function adjustBalance(
     AssetAdjustment memory adjustment,
     bytes memory managerData
-  ) onlyManagerOrAsset(adjustment.acc, adjustment.asset) external returns (int postAdjustmentBalance) {    
+  ) onlyAsset(adjustment.asset) external returns (int postAdjustmentBalance) {    
+
+    // balance adjustment is routed through asset again 
     postAdjustmentBalance = _adjustBalance(adjustment);
-    _managerHook(adjustment.acc, msg.sender, managerData); // since caller is passed, manager can internally decide to ignore check
+
+    // check manager hook
+    _managerHook(adjustment.acc, msg.sender, managerData);
   }
 
   /**
@@ -308,7 +326,7 @@ contract Account is IAccount, ERC721 {
       = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
     int preBalance = int(userBalanceAndOrder.balance);
 
-    /* allow asset to modify final balance in special cases */
+    // allow asset to modify final balance in special cases
     postBalance = _assetHook(
       adjustment, 
       preBalance, 
@@ -592,17 +610,15 @@ contract Account is IAccount, ERC721 {
   // Modifiers //
   ///////////////
 
-  modifier onlyManagerOrAsset(uint accountId, IAsset asset) {
+  modifier onlyManager(uint256 accountId) {
     address accountManager = address(manager[accountId]);
-    if (msg.sender != accountManager && msg.sender != address(asset)) {
-      revert OnlyManagerOrAssetAllowed(
-        address(this), 
-        msg.sender, 
-        accountManager, 
-        address(asset)
-      );
-    }
-    _;
+    if (msg.sender != accountManager) revert OnlyManager(address(this), msg.sender, accountManager); 
+      _;
+  }
+
+  modifier onlyAsset (IAsset asset) {
+    if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset)); 
+      _;
   }
 
   modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {

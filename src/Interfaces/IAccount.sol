@@ -116,8 +116,14 @@ interface IAccount {
     AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external;
 
+  /// @dev adjust balance by assets
   function adjustBalance(
     AssetAdjustment memory adjustment, bytes memory managerData
+  ) external returns (int postBalance);
+
+  /// @dev adjust balance by managers
+  function adjustBalance(
+    AssetAdjustment memory adjustment
   ) external returns (int postBalance);
 
   //////////
@@ -205,7 +211,10 @@ interface IAccount {
   // Errors //
   ////////////
 
-  error OnlyManagerOrAssetAllowed(address thrower, address caller, address manager, address asset);
+  error OnlyManager(address thrower, address caller, address manager);
+
+  error OnlyAsset(address thrower, address caller, address asset);
+  
   error NotOwnerOrERC721Approved(
     address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved);
   error NotEnoughSubIdOrAssetAllowances(
