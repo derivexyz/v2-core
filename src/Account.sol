@@ -28,19 +28,22 @@ contract Account is IAccount, ERC721 {
 
   uint nextId = 0;
 
-  /// @dev account Id to manager 
+  /// @dev accountId to manager 
   mapping(uint => IManager) public manager;
 
-  /// @dev account Id => asset => subId => BalanceAndOrder struct
+  /// @dev accountId => asset => subId => BalanceAndOrder struct
   mapping(uint => mapping(IAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
 
-  /// @dev account Id to non-zero assets array
+  /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
 
-  mapping(uint => mapping(IAsset => mapping(uint => mapping(address => uint)))) public positiveSubIdAllowance;
-  mapping(uint => mapping(IAsset => mapping(uint => mapping(address => uint)))) public negativeSubIdAllowance;
-  mapping(uint => mapping(IAsset => mapping(address => uint))) public positiveAssetAllowance;
-  mapping(uint => mapping(IAsset => mapping(address => uint))) public negativeAssetAllowance;
+  /// @dev accountId => owner => asset => subId => delegate => allowance
+  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public positiveSubIdAllowance;
+  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public negativeSubIdAllowance;
+
+  /// @dev accountId => owner => asset => delegate => allowance
+  mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public positiveAssetAllowance;
+  mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public negativeAssetAllowance;
   
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
@@ -148,11 +151,11 @@ contract Account is IAccount, ERC721 {
     address delegate,
     AssetAllowance[] memory allowances
   ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
+    address owner = ownerOf(accountId);
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
-      // TODO: think about whether we need to clear asset / subId allowances
-      positiveAssetAllowance[accountId][allowances[i].asset][delegate] = allowances[i].positive;
-      negativeAssetAllowance[accountId][allowances[i].asset][delegate] = allowances[i].negative;
+      positiveAssetAllowance[accountId][owner][allowances[i].asset][delegate] = allowances[i].positive;
+      negativeAssetAllowance[accountId][owner][allowances[i].asset][delegate] = allowances[i].negative;
     }
   }
 
@@ -168,10 +171,11 @@ contract Account is IAccount, ERC721 {
     address delegate,
     SubIdAllowance[] memory allowances
   ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
+    address owner = ownerOf(accountId);
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
-      positiveSubIdAllowance[accountId][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].positive;
-      negativeSubIdAllowance[accountId][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].negative;
+      positiveSubIdAllowance[accountId][owner][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].positive;
+      negativeSubIdAllowance[accountId][owner][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].negative;
     }
   }
 
@@ -392,28 +396,28 @@ contract Account is IAccount, ERC721 {
     /* ERC721 approved, manager or owner get blanket allowance */
     if (_isApprovedOrOwner(delegate, adjustment.acc)) { return; }
 
+    /* Early return if amount == 0 */
+    if (adjustment.amount == 0) { return; }
+
     /* determine if positive vs negative allowance is needed */
+    address owner = ownerOf(adjustment.acc);
     if (adjustment.amount > 0) {
       _spendAbsAllowance(
         adjustment.acc,
-        positiveSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
-        positiveAssetAllowance[adjustment.acc][adjustment.asset],
+        positiveSubIdAllowance[adjustment.acc][owner][adjustment.asset][adjustment.subId],
+        positiveAssetAllowance[adjustment.acc][owner][adjustment.asset],
         delegate,
         adjustment.amount
       );
-    } else if (adjustment.amount < 0) {
+    } else { // adjustment.amount < 0
       _spendAbsAllowance(
         adjustment.acc,
-        negativeSubIdAllowance[adjustment.acc][adjustment.asset][adjustment.subId],
-        negativeAssetAllowance[adjustment.acc][adjustment.asset],
+        negativeSubIdAllowance[adjustment.acc][owner][adjustment.asset][adjustment.subId],
+        negativeAssetAllowance[adjustment.acc][owner][adjustment.asset],
         delegate,
         adjustment.amount
       );
-    } else {
-    /* handle amount = 0 case */
-      return;
     }
-
   }
 
   function _spendAbsAllowance(
