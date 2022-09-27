@@ -179,60 +179,6 @@ contract TestAllowances is Test, LyraHelper {
     vm.stopPrank();
   }
 
-  function testCannotTransferWithoutAllowanceForAll() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-    address orderbook = charlie;
-
-    // give orderbook allowance over both
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
-    assetAllowances[0] = AccountStructs.AssetAllowance({
-      asset: IAsset(optionAdapter),
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-    assetAllowances[1] = AccountStructs.AssetAllowance({
-      asset: IAsset(usdcAdapter),
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-
-    vm.startPrank(bob);
-    account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
-    vm.stopPrank();
-
-    // giving wrong subId allowance for option asset
-    vm.startPrank(alice);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](2);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance({
-      asset: IAsset(optionAdapter),
-      subId: 1, // wrong subId 
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-    subIdAllowances[1] = AccountStructs.SubIdAllowance({
-      asset: IAsset(usdcAdapter),
-      subId: 0,
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-    account.setSubIdAllowances(aliceAcc, orderbook, subIdAllowances);
-    vm.stopPrank();
-
-    // expect revert
-    vm.startPrank(orderbook);
-    vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
-        orderbook,
-        aliceAcc,
-        50000000000000000000,
-        0,
-        0
-      )
-    );
-    tradeOptionWithUSDC(bobAcc, aliceAcc, 50e18, 1000e18, subId);
-    vm.stopPrank();
-  }
-
   function testERC721Approval() public {    
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
@@ -286,21 +232,6 @@ contract TestAllowances is Test, LyraHelper {
     // successful trade without allowances
     vm.startPrank(address(rm));
     tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-  }
-
-  function testAutoAllowanceWithNewAccount() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    // new user account with spender allowance
-    vm.startPrank(alice);
-    address user = vm.addr(100);
-    uint userAcc = account.createAccountWithApproval(user, bob, IManager(rm));
-    vm.stopPrank();
-
-    // successful trade without allowances
-    vm.startPrank(bob);
-    tradeOptionWithUSDC(userAcc, bobAcc, 1e18, 100e18, subId);
     vm.stopPrank();
   }
 
