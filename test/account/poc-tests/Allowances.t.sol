@@ -90,7 +90,8 @@ contract POC_Allowances is Test, LyraHelper {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,address(account), 
-        address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
+        address(account), 
+        address(alice),
         bobNewAcc,
         1000000000000000000,
         0,
