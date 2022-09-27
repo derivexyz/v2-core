@@ -43,7 +43,7 @@ contract Unit_Allowances is Test, AccountTestBase {
       negative: tradeAmount
     });
     assetAllowances[1] = IAccount.AssetAllowance({
-      asset: IAsset(usdcAsset),
+      asset: usdcAsset,
       positive: tradeAmount,
       negative: 0
     });
@@ -76,7 +76,7 @@ contract Unit_Allowances is Test, AccountTestBase {
       negative: tradeAmount
     });
     subIdAllowances[1] = IAccount.SubIdAllowance({
-      asset: IAsset(usdcAsset),
+      asset: usdcAsset,
       subId: 0,
       positive: tradeAmount,
       negative: 0
@@ -109,7 +109,7 @@ contract Unit_Allowances is Test, AccountTestBase {
       negative: tradeAmount / 2
     });
     assetAllowances[1] = IAccount.AssetAllowance({
-      asset: IAsset(usdcAsset),
+      asset: usdcAsset,
       positive: tradeAmount / 2,
       negative: 0
     });
@@ -123,7 +123,7 @@ contract Unit_Allowances is Test, AccountTestBase {
       negative: tradeAmount / 2
     });
     subIdAllowances[1] = IAccount.SubIdAllowance({
-      asset: IAsset(usdcAsset),
+      asset: usdcAsset,
       subId: 0,
       positive: tradeAmount / 2,
       negative: 0
@@ -155,7 +155,7 @@ contract Unit_Allowances is Test, AccountTestBase {
       negative: 5e17
     });
     assetAllowances[1] = IAccount.AssetAllowance({
-      asset: IAsset(usdcAsset),
+      asset: usdcAsset,
       positive: 1e18,
       negative: 0
     });
@@ -169,7 +169,7 @@ contract Unit_Allowances is Test, AccountTestBase {
       negative: 4e17
     });
     subIdAllowances[1] = IAccount.SubIdAllowance({
-      asset: IAsset(usdcAsset),
+      asset: usdcAsset,
       subId: 0,
       positive: 1e18,
       negative: 0
@@ -229,121 +229,90 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
-  // function testNotEnoughAllowance() public {    
-  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
+  function test3rdPartyAllowance() public {    
+    uint subId = 1000;
+    address orderbook = address(0xb00c);
 
-  //   vm.startPrank(bob);
-  //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](1);
-  //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAsset),
-  //     positive: type(uint).max,
-  //     negative: type(uint).max
-  //   });
-  //   account.setAssetAllowances(bobAcc, alice, assetAllowances);
-  //   vm.stopPrank();
+    // give orderbook allowance over both
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: coolAsset,
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
+    assetAllowances[1] = IAccount.AssetAllowance({
+      asset: usdcAsset,
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
 
-  //   // expect revert
-  //   vm.startPrank(alice);
-  //   vm.expectRevert(
-  //     abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-  //       address(account), 
-  //       alice,
-  //       bobAcc,
-  //       1000000000000000000,
-  //       0,
-  //       0
-  //     )
-  //   );
-  //   tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-  //   vm.stopPrank();
-  // }
+    vm.startPrank(bob);
+    account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
+    vm.stopPrank();
 
+    vm.startPrank(alice);
+    account.setAssetAllowances(aliceAcc, orderbook, assetAllowances);
+    vm.stopPrank();
 
-  // function test3rdPartyAllowance() public {    
-  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
-  //   address orderbook = charlie;
+    vm.startPrank(orderbook);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 2e18, 0, subId);
+    vm.stopPrank();
+  }
 
-  //   // give orderbook allowance over both
-  //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-  //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(coolAsset),
-  //     positive: type(uint).max,
-  //     negative: type(uint).max
-  //   });
-  //   assetAllowances[1] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAsset),
-  //     positive: type(uint).max,
-  //     negative: type(uint).max
-  //   });
+  function testCannotTransferWithoutAllowanceForAll() public {    
+    uint subId = 1000;
+    address orderbook = address(0xb00c);
 
-  //   vm.startPrank(bob);
-  //   account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
-  //   vm.stopPrank();
+    // bob give orderbook allowance over both
+    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
+    assetAllowances[0] = IAccount.AssetAllowance({
+      asset: coolAsset,
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
+    assetAllowances[1] = IAccount.AssetAllowance({
+      asset: usdcAsset,
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
 
-  //   vm.startPrank(alice);
-  //   account.setAssetAllowances(aliceAcc, orderbook, assetAllowances);
-  //   vm.stopPrank();
+    vm.startPrank(bob);
+    account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
+    vm.stopPrank();
 
-  //   // expect revert
-  //   vm.startPrank(orderbook);
-  //   tradeOptionWithUSDC(bobAcc, aliceAcc, 50e18, 1000e18, subId);
-  //   vm.stopPrank();
-  // }
+    // alice gives wrong subId allowance for tokenAsset asset
+    vm.startPrank(alice);
+    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
+    subIdAllowances[0] = IAccount.SubIdAllowance({
+      asset: coolAsset,
+      subId: subId + 1, // wrong subId 
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
+    subIdAllowances[1] = IAccount.SubIdAllowance({
+      asset: usdcAsset,
+      subId: 0,
+      positive: type(uint).max,
+      negative: type(uint).max
+    });
+    account.setSubIdAllowances(aliceAcc, orderbook, subIdAllowances);
+    vm.stopPrank();
 
-  // function testCannotTransferWithoutAllowanceForAll() public {    
-  //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
-  //   address orderbook = charlie;
-
-  //   // give orderbook allowance over both
-  //   IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-  //   assetAllowances[0] = IAccount.AssetAllowance({
-  //     asset: IAsset(coolAsset),
-  //     positive: type(uint).max,
-  //     negative: type(uint).max
-  //   });
-  //   assetAllowances[1] = IAccount.AssetAllowance({
-  //     asset: IAsset(usdcAsset),
-  //     positive: type(uint).max,
-  //     negative: type(uint).max
-  //   });
-
-  //   vm.startPrank(bob);
-  //   account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
-  //   vm.stopPrank();
-
-  //   // giving wrong subId allowance for option asset
-  //   vm.startPrank(alice);
-  //   IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
-  //   subIdAllowances[0] = IAccount.SubIdAllowance({
-  //     asset: IAsset(coolAsset),
-  //     subId: 1, // wrong subId 
-  //     positive: type(uint).max,
-  //     negative: type(uint).max
-  //   });
-  //   subIdAllowances[1] = IAccount.SubIdAllowance({
-  //     asset: IAsset(usdcAsset),
-  //     subId: 0,
-  //     positive: type(uint).max,
-  //     negative: type(uint).max
-  //   });
-  //   account.setSubIdAllowances(aliceAcc, orderbook, subIdAllowances);
-  //   vm.stopPrank();
-
-  //   // expect revert
-  //   vm.startPrank(orderbook);
-  //   vm.expectRevert(
-  //     abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
-  //       address(account), 
-  //       orderbook,
-  //       aliceAcc,
-  //       50000000000000000000,
-  //       0,
-  //       0
-  //     )
-  //   );
-  //   tradeOptionWithUSDC(bobAcc, aliceAcc, 50e18, 1000e18, subId);
-  //   vm.stopPrank();
-  // }
+    // expect revert
+    vm.startPrank(orderbook);
+    vm.expectRevert(
+      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+        address(account), 
+        orderbook,
+        aliceAcc,
+        5e17,
+        0,
+        0
+      )
+    );
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 5e17, 0, subId);
+    vm.stopPrank();
+  }
 
   // function testERC721Approval() public {    
   //   uint subId = coolAsset.addListing(1500e18, block.timestamp + 604800, true);
