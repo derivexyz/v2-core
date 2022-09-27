@@ -35,10 +35,10 @@ contract AccountTestBase is Test {
 
         /* mock tokens that can be deposited into accounts */
         usdc = new TestERC20("USDC", "USDC");
-        usdcAsset = new DumbAsset(IERC20(usdc), account);
+        usdcAsset = new DumbAsset(IERC20(usdc), account, false);
 
         coolToken = new TestERC20("Cool", "COOL");
-        coolAsset = new DumbAsset(IERC20(coolToken), account);
+        coolAsset = new DumbAsset(IERC20(coolToken), account, false);
 
         dumbManager = new DumbManager(address(account));
 
