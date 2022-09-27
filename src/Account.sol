@@ -287,7 +287,7 @@ contract Account is IAccount, ERC721 {
    *         Must still pass both _assetHook()
    * @param adjustment assymetric adjustment of amount for (asset, subId)
    */
-  function adjustBalanceByManager(
+  function adjustBalance(
     AssetAdjustment memory adjustment
   ) onlyManager(adjustment.acc) external returns (int postAdjustmentBalance) {    
 
@@ -301,7 +301,7 @@ contract Account is IAccount, ERC721 {
    * @param adjustment assymetric adjustment of amount for (asset, subId)
    * @param managerData data passed to manager of account
    */
-  function adjustBalanceByAsset(
+  function adjustBalance(
     AssetAdjustment memory adjustment,
     bytes memory managerData
   ) onlyAsset(adjustment.asset) external returns (int postAdjustmentBalance) {    

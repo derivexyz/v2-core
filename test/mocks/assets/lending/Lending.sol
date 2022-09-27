@@ -109,7 +109,7 @@ contract Lending is IAsset, Owned {
 
   function updateBalance(uint accountId) external returns (int balance) {
     /* This will eventually call asset.handleAdjustment() and accrue interest */
-    balance = account.adjustBalanceByAsset(
+    balance = account.adjustBalance(
       IAccount.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
@@ -122,7 +122,7 @@ contract Lending is IAsset, Owned {
   }
 
   function deposit(uint recipientAccount, uint amount) external {
-    account.adjustBalanceByAsset(
+    account.adjustBalance(
       IAccount.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
@@ -136,7 +136,7 @@ contract Lending is IAsset, Owned {
   }
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
-    account.adjustBalanceByAsset(
+    account.adjustBalance(
       IAccount.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
@@ -234,7 +234,7 @@ contract Lending is IAsset, Owned {
     // TODO: this will need some onlyManager modifier
 
     // this will accrue the latest interest
-    account.adjustBalanceByAsset(
+    account.adjustBalance(
       IAccount.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 

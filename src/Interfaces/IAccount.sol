@@ -116,11 +116,13 @@ interface IAccount {
     AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external;
 
-  function adjustBalanceByAsset(
+  /// @dev adjust balance by assets
+  function adjustBalance(
     AssetAdjustment memory adjustment, bytes memory managerData
   ) external returns (int postBalance);
 
-  function adjustBalanceByManager(
+  /// @dev adjust balance by managers
+  function adjustBalance(
     AssetAdjustment memory adjustment
   ) external returns (int postBalance);
 
