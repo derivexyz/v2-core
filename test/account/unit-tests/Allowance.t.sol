@@ -57,8 +57,8 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
 
     // test end state
-    uint256 usdcAllowanceLeft = account.positiveAssetAllowance(bobAcc, usdcAsset, alice);
-    uint256 tokenAllowanceLeft = account.negativeAssetAllowance(bobAcc, coolAsset, alice);
+    uint256 usdcAllowanceLeft = account.positiveAssetAllowance(bobAcc, bob, usdcAsset, alice);
+    uint256 tokenAllowanceLeft = account.negativeAssetAllowance(bobAcc, bob, coolAsset, alice);
     assertEq(usdcAllowanceLeft, 0);
     assertEq(tokenAllowanceLeft, 0);
   }
@@ -91,8 +91,8 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
 
     // test end state
-    uint256 usdcAllowanceLeft = account.positiveSubIdAllowance(bobAcc, usdcAsset, 0, alice);
-    uint256 tokenAllowanceLeft = account.negativeSubIdAllowance(bobAcc, coolAsset, subId, alice);
+    uint256 usdcAllowanceLeft = account.positiveSubIdAllowance(bobAcc, bob, usdcAsset, 0, alice);
+    uint256 tokenAllowanceLeft = account.negativeSubIdAllowance(bobAcc, bob, coolAsset, subId, alice);
     assertEq(usdcAllowanceLeft, 0);
     assertEq(tokenAllowanceLeft, 0);
   }
@@ -138,10 +138,10 @@ contract Unit_Allowances is Test, AccountTestBase {
     vm.stopPrank();
 
     // all allowance are spent now
-    assertEq(account.positiveSubIdAllowance(bobAcc, usdcAsset, 0, alice), 0);
-    assertEq(account.negativeSubIdAllowance(bobAcc, coolAsset, subId, alice), 0);
-    assertEq(account.positiveAssetAllowance(bobAcc, usdcAsset, alice), 0);
-    assertEq(account.negativeAssetAllowance(bobAcc, coolAsset, alice), 0);
+    assertEq(account.positiveSubIdAllowance(bobAcc, bob, usdcAsset, 0, alice), 0);
+    assertEq(account.negativeSubIdAllowance(bobAcc, bob, coolAsset, subId, alice), 0);
+    assertEq(account.positiveAssetAllowance(bobAcc, bob, usdcAsset, alice), 0);
+    assertEq(account.negativeAssetAllowance(bobAcc, bob, coolAsset, alice), 0);
   }
 
   function testCannotTransferWithPartialNegativeAllowance() public {    
