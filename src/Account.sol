@@ -28,17 +28,20 @@ contract Account is IAccount, ERC721 {
 
   uint nextId = 0;
 
-  /// @dev account Id to manager 
+  /// @dev accountId to manager 
   mapping(uint => IManager) public manager;
 
-  /// @dev account Id => asset => subId => BalanceAndOrder struct
+  /// @dev accountId => asset => subId => BalanceAndOrder struct
   mapping(uint => mapping(IAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
 
-  /// @dev account Id to non-zero assets array
+  /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
 
+  /// @dev accountId => owner => asset => subId => delegate => allowance
   mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public positiveSubIdAllowance;
   mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public negativeSubIdAllowance;
+
+  /// @dev accountId => owner => asset => delegate => allowance
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public positiveAssetAllowance;
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public negativeAssetAllowance;
   
