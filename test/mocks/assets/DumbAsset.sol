@@ -30,7 +30,6 @@ contract DumbAsset is IAsset {
     token.transferFrom(msg.sender, address(this), amount);
   }
 
-  // Note: balances can go negative for quote but not base
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.adjustBalance(
       IAccount.AssetAdjustment({
