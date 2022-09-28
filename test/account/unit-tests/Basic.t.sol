@@ -118,6 +118,10 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     account.burnAccount(emptyAcc);
   }
 
+  /** ========================================================== 
+   * tests for call flow rom Manager => Account.adjustBalance() |
+   * ========================================================== **/
+
   function testCanAdjustBalanceFromManager() public {
     uint newAccount = account.createAccount(address(this), dumbManager);
     int amount = 1000e18;
@@ -152,4 +156,46 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     }));
   }
 
+  /** ========================================================= 
+   * tests for call flow rom Asset => Account.adjustBalance()  |
+   * ========================================================= **/
+
+  function testCanAdjustBalanceFromAsset() public {
+    uint newAccount = account.createAccount(address(this), dumbManager);
+    int amount = 1000e18;
+
+    // assume calls from usdc
+    vm.prank(address(usdcAsset));
+    account.adjustBalance(IAccount.AssetAdjustment({
+        acc: newAccount, 
+        asset: usdcAsset, 
+        subId: 0,
+        amount: amount,
+        assetData: bytes32(0)
+    }), "");
+
+    assertEq(account.getBalance(newAccount, usdcAsset, 0), amount);
+  }
+
+  function testCannotAdjustBalanceForAnotherAsset() public {
+    uint newAccount = account.createAccount(address(this), dumbManager);
+    int amount = 1000e18;
+
+    // assume calls from coolAsset
+    vm.prank(address(coolAsset));
+
+    vm.expectRevert(abi.encodeWithSelector(
+      IAccount.OnlyAsset.selector, 
+      address(account), 
+      address(coolAsset), 
+      address(usdcAsset)
+    ));
+    account.adjustBalance(IAccount.AssetAdjustment({
+        acc: newAccount, 
+        asset: usdcAsset, 
+        subId: 0,
+        amount: amount,
+        assetData: bytes32(0)
+    }), "");
+  }
 }
