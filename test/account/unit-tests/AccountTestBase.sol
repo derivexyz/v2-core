@@ -115,4 +115,24 @@ contract AccountTestBase is Test {
 
         account.submitTransfers(transferBatch, "");
     }
+
+    function transferToken(
+        uint256 fromAcc,
+        uint256 toAcc,
+        IAsset asset,
+        uint256 subId,
+        int256 tokenAmounts
+    ) internal {
+        IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](1);
+        transferBatch[0] = IAccount.AssetTransfer({
+            fromAcc: fromAcc,
+            toAcc: toAcc,
+            asset: asset,
+            subId: subId,
+            amount: int256(tokenAmounts),
+            assetData: bytes32(0)
+        });
+
+        account.submitTransfers(transferBatch, "");
+    }
 }

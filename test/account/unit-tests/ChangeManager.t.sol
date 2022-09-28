@@ -7,6 +7,7 @@ import "forge-std/console2.sol";
 import "../../../src/interfaces/IAccount.sol";
 
 import {DumbManager} from "../../mocks/managers/DumbManager.sol";
+import {DumbAsset} from "../../mocks/assets/DumbAsset.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 
@@ -20,6 +21,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     setUpAccounts();
 
     newManager = new DumbManager(address(account));
+    vm.label(address(newManager), "NewManager");
   }
 
   function testCanMigrateIfOldManagerAgree() public {    
@@ -42,6 +44,17 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     vm.clearMockedCalls();
   }
 
+  function testCannotMigrateIfAssetDisagree() public { 
+    dumbManager.setRevertHandleManager(true);
+    // alice has usdc in her wallet
+    usdcAsset.setRevertHandleManagerChange(true);
+    
+    vm.prank(alice);
+    vm.expectRevert();
+    account.changeManager(aliceAcc, newManager, "");
+    vm.stopPrank();
+  }
+
   function testCannotChangeToSameManager() public {
     vm.prank(alice);
     vm.expectRevert(abi.encodeWithSelector(IAccount.CannotChangeToSameManager.selector, 
@@ -54,7 +67,28 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
   }
 
   function testMigrationShouldNotMakeDuplicatedCallToAssets() public { 
-    
+    DumbAsset mockOptionAsset = new DumbAsset(coolToken, account, true); // allow negative balance
+    vm.label(address(mockOptionAsset), "DumbOption");
+
+    // create new account and grant access to this contract to adjust balance
+    uint newAccount1 = account.createAccount(address(this), dumbManager);
+    uint newAccount2 = account.createAccount(alice, dumbManager);
+    vm.startPrank(alice);
+    account.setApprovalForAll(address(this), true);
+    vm.stopPrank();
+
+    // adjust balance so new account has multiple balances with mockOptionAsset
+    (uint subId1, uint subId2) = (1, 2);
+    (int amount1, int amount2) = (1e18, 2e18);
+    transferToken(newAccount1, newAccount2, mockOptionAsset, subId1, amount1);
+    transferToken(newAccount1, newAccount2, mockOptionAsset, subId2, amount2);
+
+    // start recording calls to optionAsset
+    mockOptionAsset.setRecordManagerChangeCalls(true);
+    vm.startPrank(alice);
+    account.changeManager(newAccount2, newManager, "");
+    assertEq(mockOptionAsset.handleManagerCalled(), 1);
+    vm.stopPrank();
   }
 
 }
