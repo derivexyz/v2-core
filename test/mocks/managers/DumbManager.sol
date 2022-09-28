@@ -14,11 +14,11 @@ contract DumbManager is IManager {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint accountId, address, bytes memory) public override {
+  function handleAdjustment(uint /*accountId*/, address, bytes memory) public view override {
     if(revertHandleAdjustment) revert();
   }
 
-  function handleManagerChange(uint, IManager) external { 
+  function handleManagerChange(uint, IManager) external view { 
     if(revertHandleManager) revert();
   }
 
