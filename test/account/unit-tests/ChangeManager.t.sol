@@ -26,7 +26,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     vm.prank(alice);
     // expect call to old manager
     vm.expectCall(address(dumbManager), abi.encodeCall(dumbManager.handleManagerChange, (aliceAcc, newManager)));
-    account.changeManager(aliceAcc, IManager(newManager), "");
+    account.changeManager(aliceAcc, newManager, "");
     vm.stopPrank();
     
     // manager is updated
@@ -37,9 +37,20 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     dumbManager.setRevertHandleManager(true);
     vm.prank(alice);
     vm.expectRevert();
-    account.changeManager(aliceAcc, IManager(newManager), "");
+    account.changeManager(aliceAcc, newManager, "");
     vm.stopPrank();
     vm.clearMockedCalls();
+  }
+
+  function testCannotChangeToSameManager() public {
+    vm.prank(alice);
+    vm.expectRevert(abi.encodeWithSelector(IAccount.CannotChangeToSameManager.selector, 
+        address(account), 
+        alice,
+        aliceAcc
+      ));
+    account.changeManager(aliceAcc, dumbManager, "");
+    vm.stopPrank();
   }
 
   function testMigrationShouldNotMakeDuplicatedCallToAssets() public { 
