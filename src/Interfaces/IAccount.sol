@@ -82,8 +82,6 @@ interface IAccount {
     address owner, address spender, IManager _manager
   ) external returns (uint newId);
 
-  function burnAccount(uint accountId) external;
-
   function changeManager(
     uint accountId, IManager newManager, bytes memory newManagerData
   ) external;

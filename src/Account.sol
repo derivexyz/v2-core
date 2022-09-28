@@ -86,20 +86,6 @@ contract Account is IAccount, ERC721 {
     emit AccountCreated(owner, newId, address(_manager));
   }
 
-  /** 
-   * @notice Burns multiple accounts using ERC721._burn(). 
-   *         Account must not hold any assets.
-   *         This account can never be reused.
-   * @param accountId accountId to burn
-   */
-  function burnAccount(uint accountId) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
-    uint heldAssetLen = heldAssets[accountId].length;
-    if (heldAssetLen > 0) {
-      revert CannotBurnAccountWithHeldAssets(address(this), msg.sender, accountId, heldAssetLen);
-    }
-    _burn(accountId);
-    emit AccountBurned(ownerOf(accountId), accountId, address(manager[accountId]));
-  }
 
   /** 
    * @notice Assigns new manager to account. No balances are adjusted.
