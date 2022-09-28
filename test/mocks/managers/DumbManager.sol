@@ -7,13 +7,26 @@ contract DumbManager is IManager {
   
   IAccount account;
 
+  bool revertHandleManager;
+  bool revertHandleAdjustment;
+
   constructor(address account_) {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint accountId, address, bytes memory) public override {}
+  function handleAdjustment(uint accountId, address, bytes memory) public override {
+    if(revertHandleAdjustment) revert();
+  }
 
+  function handleManagerChange(uint, IManager) external { 
+    if(revertHandleManager) revert();
+  }
 
-  function handleManagerChange(uint, IManager) external {}
+  function setRevertHandleManager(bool _revert) external {
+    revertHandleManager = _revert;
+  }
 
+  function setRevertHandleAdjustment(bool _revert) external {
+    revertHandleAdjustment = _revert;
+  }
 }
