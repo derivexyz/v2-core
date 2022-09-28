@@ -7,7 +7,7 @@ import "../../../src/interfaces/IAccount.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 
-contract Unit_Allowances is Test, AccountTestBase {
+contract UNIT_Allowances is Test, AccountTestBase {
   
   function setUp() public {
     setUpAccounts();
