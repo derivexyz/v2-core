@@ -157,6 +157,9 @@ interface IAccount {
   function getAccountBalances(uint accountId) 
     external view returns (AssetBalance[] memory assetBalances);
 
+  function getManager(uint accountId) 
+    external view returns (IManager);
+
   ////////////
   // Events //
   ////////////
