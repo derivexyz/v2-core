@@ -48,7 +48,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     dumbManager.setRevertHandleManager(true);
     // alice has usdc in her wallet
     usdcAsset.setRevertHandleManagerChange(true);
-    
+
     vm.prank(alice);
     vm.expectRevert();
     account.changeManager(aliceAcc, newManager, "");
@@ -70,25 +70,35 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     DumbAsset mockOptionAsset = new DumbAsset(coolToken, account, true); // allow negative balance
     vm.label(address(mockOptionAsset), "DumbOption");
 
-    // create new account and grant access to this contract to adjust balance
+    // create another account just to transfer assets
     uint newAccount1 = account.createAccount(address(this), dumbManager);
-    uint newAccount2 = account.createAccount(alice, dumbManager);
+
+    // create new account and grant access to this contract to adjust balance
+    uint accountToTest = account.createAccount(alice, dumbManager);
     vm.startPrank(alice);
     account.setApprovalForAll(address(this), true);
     vm.stopPrank();
 
-    // adjust balance so new account has multiple balances with mockOptionAsset
+    // adjust asset balances so new account has multiple balances
+    // adjust usdc token balance
+    mintAndDeposit(alice, accountToTest, usdc, usdcAsset, 0, 1e18);   
+
+    // adjust option token balances
     (uint subId1, uint subId2) = (1, 2);
-    (int amount1, int amount2) = (1e18, 2e18);
-    transferToken(newAccount1, newAccount2, mockOptionAsset, subId1, amount1);
-    transferToken(newAccount1, newAccount2, mockOptionAsset, subId2, amount2);
+    (int amount1, int amount2) = (1e18, -2e18);
+    transferToken(newAccount1, accountToTest, mockOptionAsset, subId1, amount1);
+    transferToken(newAccount1, accountToTest, mockOptionAsset, subId2, amount2);
 
     // start recording calls to optionAsset
     mockOptionAsset.setRecordManagerChangeCalls(true);
+    usdcAsset.setRecordManagerChangeCalls(true);
+    
     vm.startPrank(alice);
-    account.changeManager(newAccount2, newManager, "");
-    assertEq(mockOptionAsset.handleManagerCalled(), 1);
+    account.changeManager(accountToTest, newManager, "");
     vm.stopPrank();
+
+    assertEq(mockOptionAsset.handleManagerCalled(), 1);
+    assertEq(usdcAsset.handleManagerCalled(), 1);
   }
 
 }
