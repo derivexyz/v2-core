@@ -14,6 +14,12 @@ contract DumbAsset is IAsset {
   IAccount account;
   bool immutable allowNegative;
 
+  bool revertHandleManagerChange;
+
+  // mocked state to test # of calls
+  bool recordMangerChangeCalls;
+  uint public handleManagerCalled;
+
   constructor(IERC20 token_, IAccount account_, bool allowNegative_){
     token = token_;
     account = account_;
@@ -56,5 +62,16 @@ contract DumbAsset is IAsset {
     return result;
   }
 
-  function handleManagerChange(uint, IManager) external pure override {}
+  function handleManagerChange(uint, IManager) external override {
+    if (revertHandleManagerChange) revert();
+    if(recordMangerChangeCalls) handleManagerCalled += 1;
+  }
+
+  function setRevertHandleManagerChange(bool _revert) external {
+    revertHandleManagerChange = _revert;
+  }
+
+  function setRecordManagerChangeCalls(bool _record) external {
+    recordMangerChangeCalls = _record;
+  }
 }
