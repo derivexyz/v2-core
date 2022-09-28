@@ -117,4 +117,39 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     // can be burn from this address
     account.burnAccount(emptyAcc);
   }
+
+  function testCanAdjustBalanceFromManager() public {
+    uint newAccount = account.createAccount(address(this), dumbManager);
+    int amount = 1000e18;
+
+    vm.prank(address(dumbManager));
+    account.adjustBalance(IAccount.AssetAdjustment({
+        acc: newAccount, 
+        asset: usdcAsset, 
+        subId: 0,
+        amount: amount,
+        assetData: bytes32(0)
+    }));
+
+    assertEq(account.getBalance(newAccount, usdcAsset, 0), amount);
+  }
+
+  function testAssetCanRevertAdjustmentByBadManager() public {
+    uint newAccount = account.createAccount(address(this), dumbManager);
+    int amount = 1000e18;
+
+    // assume usdc now block adjustment from dumbManager
+    usdcAsset.setRevertAdjustmentFromManager(address(dumbManager), true);
+
+    vm.prank(address(dumbManager));
+    vm.expectRevert();
+    account.adjustBalance(IAccount.AssetAdjustment({
+        acc: newAccount, 
+        asset: usdcAsset, 
+        subId: 0,
+        amount: amount,
+        assetData: bytes32(0)
+    }));
+  }
+
 }

@@ -20,6 +20,9 @@ contract DumbAsset is IAsset {
   bool recordMangerChangeCalls;
   uint public handleManagerCalled;
 
+  // mocked state to test reverting calls from bad manager
+  mapping(address => bool) revertFromManager;
+
   constructor(IERC20 token_, IAccount account_, bool allowNegative_){
     token = token_;
     account = account_;
@@ -55,8 +58,9 @@ contract DumbAsset is IAsset {
   }
 
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager /*riskModel*/, address
+    IAccount.AssetAdjustment memory adjustment, int preBal, IManager _manager, address
   ) external view override returns (int finalBalance) {
+    if (revertFromManager[address(_manager)]) revert();
     int result = preBal + adjustment.amount;
     if (result < 0 && !allowNegative) revert("negative balance");
     return result;
@@ -65,6 +69,10 @@ contract DumbAsset is IAsset {
   function handleManagerChange(uint, IManager) external override {
     if (revertHandleManagerChange) revert();
     if(recordMangerChangeCalls) handleManagerCalled += 1;
+  }
+
+  function setRevertAdjustmentFromManager(address _manager, bool _revert) external {
+    revertFromManager[_manager] = _revert;
   }
 
   function setRevertHandleManagerChange(bool _revert) external {
