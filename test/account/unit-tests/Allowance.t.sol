@@ -14,7 +14,24 @@ contract UNIT_Allowances is Test, AccountTestBase {
     setUpAccounts();
   }
 
-  function testCannotTransferWithoutAllowance() public {    
+  function testCannotTransferWithoutPositiveAllowance() public {
+    int256 amount = 1e18;
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+        address(account), 
+        alice,
+        bobAcc,
+        amount,
+        0,
+        0
+      )
+    );
+    transferToken(aliceAcc, bobAcc, usdcAsset, 0, amount);
+    vm.stopPrank();
+  }
+
+  function testCannotTradeWithoutAllowance() public {    
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
@@ -62,7 +79,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     assertEq(tokenAllowanceLeft, 0);
   }
 
-  function testTransferWithEnoughSubIdAllowance() public {
+  function testTradeWithEnoughSubIdAllowance() public {
     uint tradeAmount = 1e18;
 
     vm.startPrank(bob);
@@ -95,7 +112,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     assertEq(tokenAllowanceLeft, 0);
   }
 
-  function testTransferWithEnoughTotalAllowance() public {
+  function testTradeWithEnoughTotalAllowance() public {
     uint tradeAmount = 1e18;
 
     vm.startPrank(bob);
@@ -141,7 +158,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     assertEq(account.negativeAssetAllowance(bobAcc, bob, coolAsset, alice), 0);
   }
 
-  function testCannotTransferWithPartialNegativeAllowance() public {    
+  function testCannotTradeWithPartialNegativeAllowance() public {    
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token, agree to receive USDC
@@ -192,7 +209,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
-  function testCannotTransferWithInsufficientPositiveAllowance() public {    
+  function testCannotTradeWithInsufficientPositiveAllowance() public {    
     // trade will revert if receiver doesn't specify allowance to increase its position
     uint tradeAmount = 1e18;
 
@@ -254,7 +271,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     vm.stopPrank();
   }
 
-  function testCannotTransferBy3rdPartyWithoutAllowance() public {    
+  function testCannotTradeBy3rdPartyWithoutAllowance() public {    
     address orderbook = address(0xb00c);
 
     // bob give orderbook allowance over both
