@@ -11,7 +11,7 @@ import {DumbAsset} from "../../mocks/assets/DumbAsset.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 
-contract UNIT_Transfer is Test, AccountTestBase {
+contract UNIT_AccountBasic is Test, AccountTestBase {
 
   function setUp() public {
     setUpAccounts();
