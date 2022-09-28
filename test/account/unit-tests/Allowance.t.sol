@@ -336,7 +336,7 @@ contract Unit_Allowances is Test, AccountTestBase {
     uint bobNewAcc = account.createAccount(bob, dumbManager);
     mintAndDeposit(
       bob,
-      bobAcc,
+      bobNewAcc,
       coolToken,
       coolAsset,
       tokenSubId,
@@ -344,7 +344,7 @@ contract Unit_Allowances is Test, AccountTestBase {
     );    
 
     vm.startPrank(alice);
-    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);
+    tradeTokens(aliceAcc, bobNewAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);
     vm.stopPrank();
   }
 
