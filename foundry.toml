@@ -11,4 +11,3 @@ func_attrs_with_params_multiline = false
 quote_style = 'double'
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
-gas_reports = ['Account']
