@@ -29,6 +29,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     transferToken(aliceAcc, aliceAcc, usdcAsset, 0, 1e18);
   }
 
+  // @note: do we want to allow this
   function testCanTransferToAnyoneWith0Amount() public {
     vm.prank(alice);
     transferToken(aliceAcc, bobAcc, usdcAsset, 0, 0);
@@ -81,5 +82,39 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(address(bobBalances[1].asset), address(usdcAsset));
     assertEq(bobBalances[1].subId, 0);
     assertEq(bobBalances[1].balance, usdcAmount);
+  }
+
+  function testCannotBurnNonEmptyAccount() public {
+    vm.prank(alice);
+    vm.expectRevert(abi.encodeWithSelector(
+      IAccount.CannotBurnAccountWithHeldAssets.selector,
+      address(account),
+      alice,
+      aliceAcc,
+      1
+    ));
+    account.burnAccount(aliceAcc);
+  }
+
+  function testBurnEmptyAccount() public {
+    vm.startPrank(alice);
+    uint emptyAcc = account.createAccount(alice, dumbManager);
+    account.burnAccount(emptyAcc);
+    vm.stopPrank();
+
+    // can no longer access this NFT
+    vm.expectRevert(bytes("ERC721: invalid token ID"));
+    account.ownerOf(emptyAcc);
+  }
+
+  // @note: will this cause some trouble or open up concerns?
+  function testCanBurnFromApprovedParties() public {
+    vm.startPrank(alice);
+    uint emptyAcc = account.createAccount(alice, dumbManager);
+    account.approve(address(this), emptyAcc);
+    vm.stopPrank();
+
+    // can be burn from this address
+    account.burnAccount(emptyAcc);
   }
 }

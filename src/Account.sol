@@ -84,7 +84,6 @@ contract Account is Allowances, ERC721, IAccount {
     emit AccountCreated(owner, newId, address(_manager));
   }
 
-
   /** 
    * @notice Assigns new manager to account. No balances are adjusted.
    *         msg.sender must be ERC721 approved or owner
