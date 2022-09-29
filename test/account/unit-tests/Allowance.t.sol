@@ -18,7 +18,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     int256 amount = 1e18;
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector, 
         address(account), 
         alice,
         bobAcc,
