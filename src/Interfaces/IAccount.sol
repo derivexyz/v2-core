@@ -104,12 +104,12 @@ interface IAccount is IAllowances {
   ) external;
 
   /// @dev adjust balance by assets
-  function adjustBalance(
+  function assetAdjustment(
     AssetAdjustment memory adjustment, bytes memory managerData
   ) external returns (int postBalance);
 
   /// @dev adjust balance by managers
-  function adjustBalance(
+  function managerAdjustment(
     AssetAdjustment memory adjustment
   ) external returns (int postBalance);
 

@@ -21,7 +21,7 @@ contract BaseWrapper is IAsset, Owned {
   }
 
   function deposit(uint recipientAccount, uint amount) external {
-    account.adjustBalance(
+    account.assetAdjustment(
       IAccount.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
@@ -35,7 +35,7 @@ contract BaseWrapper is IAsset, Owned {
   }
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
-    int postBalance = account.adjustBalance(
+    int postBalance = account.assetAdjustment(
       IAccount.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
