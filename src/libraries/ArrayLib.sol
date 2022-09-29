@@ -5,18 +5,48 @@ import "forge-std/console2.sol";
 /**
  * @title ArrayLib
  * @author Lyra
- * @notice util functions to find entity in an array
+ * @notice util functions for array operations
  */
 
 library ArrayLib {
+
+  /**
+   * @dev Add unique element to existing "array" if and increase max index
+   *      array memory will be updated in place
+   * @param array array of number
+   * @param newElement number to check
+   * @param maxIndex previously recorded max index with non-zero value
+   * @return newIndex new max index
+   */
+  function addUniqueToArray(uint[] memory array, uint newElement, uint maxIndex) internal pure returns (uint newIndex) {
+    if (!findInArray(array, newElement, maxIndex)) {
+      array[maxIndex++] = newElement;
+    }
+    return maxIndex;
+  }
+
+  /**
+   * @dev Add unique element to existing "array" if and increase max index
+   *      array memory will be updated in place
+   * @param array array of address
+   * @param newElement address to check
+   * @param maxIndex previously recorded max index with non-zero value
+   * @return newIndex new max index
+   */
+  function addUniqueToArray(address[] memory array, address newElement, uint maxIndex) internal pure returns (uint newIndex) {
+    if (!findInArray(array, newElement, maxIndex)) {
+      array[maxIndex++] = newElement;
+    }
+    return maxIndex;
+  }
+
   /**
    * @dev return if a number exists in an array of numbers
    * @param array array of number
    * @param toFind  numbers to find
    * @return found true if address exists
    */
-  function findInArray(uint[] memory array, uint toFind) internal pure returns (bool found) {
-    uint arrayLen = array.length;
+  function findInArray(uint[] memory array, uint toFind, uint arrayLen) internal pure returns (bool found) {
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == 0) {
         break;
@@ -33,8 +63,7 @@ library ArrayLib {
    * @param toFind  address to find
    * @return found true if address exists
    */
-  function findInArray(address[] memory array, address toFind) internal pure returns (bool found) {
-    uint arrayLen = array.length;
+  function findInArray(address[] memory array, address toFind, uint arrayLen) internal pure returns (bool found) {
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == address(0)) {
         break;

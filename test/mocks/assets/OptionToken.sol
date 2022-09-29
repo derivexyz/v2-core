@@ -8,6 +8,7 @@ import "forge-std/console2.sol";
 
 import "src/Account.sol";
 import "src/interfaces/IAsset.sol";
+import "src/libraries/IntLib.sol";
 
 import "../assets/QuoteWrapper.sol";
 import "../feeds/SettlementPricer.sol";
@@ -15,6 +16,7 @@ import "../feeds/PriceFeeds.sol";
 
 // Adapter condenses all deposited positions into a single position per subId
 contract OptionToken is IAsset, Owned {
+  using IntLib for int;
   using SignedDecimalMath for int;
   using BlackScholesV2 for BlackScholesV2.BlackScholesInputs;
   using DecimalMath for uint;
@@ -201,7 +203,7 @@ contract OptionToken is IAsset, Owned {
   function _getPostBalWithRatio(int preBal, int amount, uint subId) internal view returns (int postBal) {
     bool crossesZero;
     if (preBal < 0) {
-      crossesZero = _abs(preBal) < _abs(amount) && amount > 0
+      crossesZero = preBal.abs() < amount.abs() && amount > 0
         ? true 
         : false;
 
@@ -212,7 +214,7 @@ contract OptionToken is IAsset, Owned {
       }
     } else {
       crossesZero = 
-        _abs(preBal) < _abs(_applyInverseRatio(amount, subId)) && amount < 0
+        preBal.abs() < (_applyInverseRatio(amount, subId)).abs() && amount < 0
         ? true 
         : false;
 
@@ -247,9 +249,5 @@ contract OptionToken is IAsset, Owned {
       totalLongs[subId] += uint(postBal);
     }
 
-  }
-
-  function _abs(int x) internal pure returns (uint absAmount) {
- return (x >= 0) ? uint(x) : uint(-x);
   }
 }

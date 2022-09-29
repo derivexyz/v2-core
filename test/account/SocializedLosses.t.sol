@@ -13,6 +13,9 @@ contract SocializedLosses is Test, LyraHelper {
 
 
   function setUp() public {
+    vm.label(alice, "alice");
+    vm.label(bob, "bob");
+    
     deployPRMSystem();
     setPrices(1e18, 1500e18);
 
