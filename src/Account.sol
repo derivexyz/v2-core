@@ -232,8 +232,12 @@ contract Account is Allowances, ERC721, IAccount {
     });
 
     // if it's not ERC721 approved: spend allowances
-    if (!_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) _spendAllowance(fromAccAdjustment, msg.sender, ownerOf(fromAccAdjustment.acc));
-    if (!_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) _spendAllowance(toAccAdjustment, msg.sender, ownerOf(toAccAdjustment.acc));
+    if (!_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) {
+      _spendAllowance(fromAccAdjustment, ownerOf(fromAccAdjustment.acc), msg.sender);
+    }
+    if (!_isApprovedOrOwner(msg.sender, toAccAdjustment.acc)) {
+      _spendAllowance(toAccAdjustment, ownerOf(toAccAdjustment.acc), msg.sender);
+    }
 
     // balance is adjusted based on asset hook
     _adjustBalance(fromAccAdjustment);
@@ -489,14 +493,7 @@ contract Account is Allowances, ERC721, IAccount {
   function _isApprovedOrOwner(
     address spender, uint accountId
   ) internal view override returns (bool) {
-    address owner = ownerOf(accountId);
-
-    // return early if msg.sender is owner
-    if (
-      spender == owner ||
-      isApprovedForAll(owner, spender) ||
-      getApproved(accountId) == spender
-    ) return true;
+    if (super._isApprovedOrOwner(spender, accountId)) return true;
 
     // check if caller is manager
     return address(manager[accountId]) == msg.sender;

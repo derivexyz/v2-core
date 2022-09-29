@@ -84,7 +84,7 @@ contract Allowances is IAllowances {
    * @param delegate address of msg.sender initiating change
    */
   function _spendAllowance( // TODO: rename delegate to caller?
-    IAccount.AssetAdjustment memory adjustment, address delegate, address owner
+    IAccount.AssetAdjustment memory adjustment, address owner, address delegate
   ) internal {
 
     /* Early return if amount == 0 */
