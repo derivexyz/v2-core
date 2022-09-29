@@ -35,6 +35,7 @@ contract DumbAsset is IAsset {
         amount: int(amount),
         assetData: bytes32(0)
       }),
+      false,
       ""
     );
     token.transferFrom(msg.sender, address(this), amount);
@@ -49,6 +50,7 @@ contract DumbAsset is IAsset {
         amount: -int(amount),
         assetData: bytes32(0)
       }),
+      false,
       ""
     );
     token.transfer(recipientAccount, amount);
