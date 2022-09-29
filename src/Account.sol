@@ -112,6 +112,57 @@ contract Account is AdvancedAllowance, ERC721, IAccount {
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
 
+  /** 
+   * @notice Sets bidirectional allowances for all subIds of an asset. 
+   *         During a balance adjustment, if msg.sender not ERC721 approved or owner, 
+   *         asset allowance + subId allowance must be >= amount 
+   * @param accountId ID of account
+   * @param delegate address to assign allowance to
+   * @param allowances positive and negative amounts for each asset
+   */
+  function setAssetAllowances(
+    uint accountId,
+    address delegate,
+    AssetAllowance[] memory allowances
+  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
+    address owner = ownerOf(accountId);
+    _setAssetAllowances(accountId, owner, delegate, allowances);
+  }
+
+  /** 
+   * @notice Sets bidirectional allowances for a specific subId. 
+   *         During a balance adjustment, the subId allowance is decremented first 
+   * @param accountId ID of account
+   * @param delegate address to assign allowance to
+   * @param allowances positive and negative amounts for each (asset, subId)
+   */
+  function setSubIdAllowances(
+    uint accountId, 
+    address delegate,
+    SubIdAllowance[] memory allowances
+  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
+    address owner = ownerOf(accountId);
+    _setSubIdAllowances(accountId, owner, delegate, allowances);
+  }
+
+  /// @dev giving managers exclusive rights to transfer account ownerships
+  /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
+  function _isApprovedOrOwner(
+    address spender, uint tokenId
+  ) internal view override returns (bool) {
+    address owner = ERC721.ownerOf(tokenId);
+    
+    // return early if msg.sender is owner
+    if (
+      spender == owner || 
+      isApprovedForAll(owner, spender) || 
+      getApproved(tokenId) == spender
+    ) return true;
+
+    // check if caller is manager
+    return address(manager[tokenId]) == msg.sender;
+  }
+
   /////////////////////////
   // Balance Adjustments //
   /////////////////////////
@@ -272,39 +323,6 @@ contract Account is AdvancedAllowance, ERC721, IAccount {
       preBalance, 
       postBalance
     );
-  }
-
-  /** 
-   * @notice Sets bidirectional allowances for all subIds of an asset. 
-   *         During a balance adjustment, if msg.sender not ERC721 approved or owner, 
-   *         asset allowance + subId allowance must be >= amount 
-   * @param accountId ID of account
-   * @param delegate address to assign allowance to
-   * @param allowances positive and negative amounts for each asset
-   */
-  function setAssetAllowances(
-    uint accountId,
-    address delegate,
-    AssetAllowance[] memory allowances
-  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
-    address owner = ownerOf(accountId);
-    _setAssetAllowances(accountId, owner, delegate, allowances);
-  }
-
-  /** 
-   * @notice Sets bidirectional allowances for a specific subId. 
-   *         During a balance adjustment, the subId allowance is decremented first 
-   * @param accountId ID of account
-   * @param delegate address to assign allowance to
-   * @param allowances positive and negative amounts for each (asset, subId)
-   */
-  function setSubIdAllowances(
-    uint accountId, 
-    address delegate,
-    SubIdAllowance[] memory allowances
-  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
-    address owner = ownerOf(accountId);
-    _setSubIdAllowances(accountId, owner, delegate, allowances);
   }
 
   ////////////////////////////
@@ -472,24 +490,6 @@ contract Account is AdvancedAllowance, ERC721, IAccount {
   modifier onlyAsset (IAsset asset) {
     if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset)); 
       _;
-  }
-
-  /// @dev giving managers exclusive rights to transfer account ownerships
-  /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
-  function _isApprovedOrOwner(
-    address spender, uint tokenId
-  ) internal view override returns (bool) {
-    address owner = ERC721.ownerOf(tokenId);
-    
-    // return early if msg.sender is owner
-    if (
-      spender == owner || 
-      isApprovedForAll(owner, spender) || 
-      getApproved(tokenId) == spender
-    ) return true;
-
-    // check if caller is manager
-    return address(manager[tokenId]) == msg.sender;
   }
 
   modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
