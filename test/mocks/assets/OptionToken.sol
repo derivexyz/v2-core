@@ -7,6 +7,7 @@ import "src/libraries/BlackScholesV2.sol";
 import "forge-std/console2.sol";
 
 import "src/Account.sol";
+import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/IAsset.sol";
 import "src/libraries/IntLib.sol";
 
@@ -65,7 +66,7 @@ contract OptionToken is IAsset, Owned {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address caller
+    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address caller
     ) external override returns (int finalBalance, bool needAllowance)
   {
     needAllowance = adjustment.amount < 0;
@@ -188,7 +189,7 @@ contract OptionToken is IAsset, Owned {
     // only shorts can be socialized
     // open interest modified during handleAdjustment
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: insolventAcc,
         asset: IAsset(address(this)),
         subId: subId,

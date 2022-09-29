@@ -5,22 +5,6 @@ import "./IAsset.sol";
 // For full documentation refer to src/Allowances.sol";
 interface IAllowances {
 
-  /////////////
-  // Structs //
-  /////////////
-  struct AssetAllowance {
-    IAsset asset;
-    uint positive;
-    uint negative;
-  }
-
-  struct SubIdAllowance {
-    IAsset asset;
-    uint subId;
-    uint positive;
-    uint negative;
-  }
-
   ///////////
   // Views //
   ///////////

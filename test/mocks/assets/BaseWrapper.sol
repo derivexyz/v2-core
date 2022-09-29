@@ -4,16 +4,17 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "synthetix/Owned.sol";
 
 import "src/interfaces/IAsset.sol";
-import "src/Account.sol";
+import "src/interfaces/IAccount.sol";
+import "src/interfaces/AccountStructs.sol";
 import "../feeds/PriceFeeds.sol";
 
 // TODO: safecast to int
 contract BaseWrapper is IAsset, Owned {
   IERC20 token;
-  Account account;
+  IAccount account;
   PriceFeeds priceFeeds;
 
-  constructor(IERC20 token_, Account account_, PriceFeeds feeds_, uint feedId) Owned() {
+  constructor(IERC20 token_, IAccount account_, PriceFeeds feeds_, uint feedId) Owned() {
     token = token_;
     account = account_;
     priceFeeds = feeds_;
@@ -22,7 +23,7 @@ contract BaseWrapper is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -37,7 +38,7 @@ contract BaseWrapper is IAsset, Owned {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     int postBalance = account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0, 
@@ -52,7 +53,7 @@ contract BaseWrapper is IAsset, Owned {
   }
 
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager, address
+    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager, address
   ) external pure override returns (int finalBalance, bool needAllowance) {
     require(adjustment.subId == 0 && preBal + adjustment.amount >= 0);
     return (preBal + adjustment.amount, adjustment.amount < 0);

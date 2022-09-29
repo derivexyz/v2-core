@@ -7,8 +7,8 @@ import "synthetix/DecimalMath.sol";
 import "synthetix/SignedDecimalMath.sol";
 import "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
-import "src/Account.sol";
-
+import "src/interfaces/IAccount.sol";
+import "src/interfaces/AccountStructs.sol";
 
 contract Lending is IAsset, Owned {
   using SignedDecimalMath for int;
@@ -18,7 +18,7 @@ contract Lending is IAsset, Owned {
 
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
-  Account account;
+  IAccount account;
   InterestRateModel interestRateModel;
 
   uint public feeFactor; // fee taken by asset from interest
@@ -35,7 +35,7 @@ contract Lending is IAsset, Owned {
 
   constructor(
     IERC20 token_, 
-    Account account_, 
+    IAccount account_, 
     InterestRateModel _interestRateModel    
   ) Owned() {
     token = token_;
@@ -52,7 +52,7 @@ contract Lending is IAsset, Owned {
   ////////////////////
 
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
+    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
   ) external override returns (int finalBal, bool needAdjustment) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
 
@@ -112,7 +112,7 @@ contract Lending is IAsset, Owned {
   function updateBalance(uint accountId) external returns (int balance) {
     /* This will eventually call asset.handleAdjustment() and accrue interest */
     balance = account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0,
@@ -126,7 +126,7 @@ contract Lending is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -141,7 +141,7 @@ contract Lending is IAsset, Owned {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0, 
@@ -240,7 +240,7 @@ contract Lending is IAsset, Owned {
 
     // this will accrue the latest interest
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0, 
