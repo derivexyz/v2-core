@@ -6,6 +6,8 @@ import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./interfaces/IAccount.sol";
+import "./libraries/ArrayLib.sol";
+
 import "forge-std/console2.sol";
 
 /**
@@ -105,10 +107,10 @@ contract Account is IAccount, ERC721 {
 
     /* get unique assets to only call to asset once */
     HeldAsset[] memory accountAssets = heldAssets[accountId];
-    (IAsset[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(accountAssets);
+    (address[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(accountAssets);
 
     for (uint i; i < uniqueLength; ++i) {
-      uniqueAssets[i].handleManagerChange(accountId, newManager);
+      IAsset(uniqueAssets[i]).handleManagerChange(accountId, newManager);
     }
 
     manager[accountId] = newManager;
@@ -220,11 +222,11 @@ contract Account is IAccount, ERC721 {
       _transferAsset(assetTransfers[i]);
 
       uint fromAcc = assetTransfers[i].fromAcc;
-      if (!_findInArray(seenAccounts, fromAcc)) {
+      if (!ArrayLib.findInArray(seenAccounts, fromAcc)) {
         seenAccounts[nextSeenId++] = fromAcc;
       }
       uint toAcc = assetTransfers[i].toAcc;
-      if (!_findInArray(seenAccounts, toAcc)) {
+      if (!ArrayLib.findInArray(seenAccounts, toAcc)) {
         seenAccounts[nextSeenId++] = toAcc;
       }
     }
@@ -497,46 +499,19 @@ contract Account is IAccount, ERC721 {
   }
 
   /**
-   * @dev get unique assets from heldAssets. heldAssets can hold multiple entries with same asset but different subId
+   * @dev get unique assets from heldAssets. 
+   *      heldAssets can hold multiple entries with same asset but different subId
    * @return uniqueAssets list of address
    * @return length max index of returned address that is non-zero
    */
   function _getUniqueAssets(
     HeldAsset[] memory assets
-  ) internal pure returns (IAsset[] memory uniqueAssets, uint length) {
-    uniqueAssets = new IAsset[](assets.length);
+  ) internal pure returns (address[] memory uniqueAssets, uint length) {
+    uniqueAssets = new address[](assets.length);
 
     for (uint i; i < assets.length; ++i) {
-      if (!_findInArray(uniqueAssets, assets[i].asset)) {
-        uniqueAssets[length++] = assets[i].asset;
-      }
-    }
-  }
-
-  function _findInArray(
-    uint[] memory array, uint toFind
-  ) internal pure returns (bool found) {
-    uint arrayLen = array.length;
-    for (uint i; i < arrayLen; ++i) {
-      if (array[i] == 0) {
-        break;
-      }
-      if (array[i] == toFind) {
-        return true;
-      }
-    }
-  }
-
-  function _findInArray(
-    IAsset[] memory array, IAsset toFind
-  ) internal pure returns (bool found) {
-    uint arrayLen = array.length;
-    for (uint i; i < arrayLen; ++i) {
-      if (array[i] == IAsset(address(0))) {
-        break;
-      }
-      if (array[i] == toFind) {
-        return true;
+      if (!ArrayLib.findInArray(uniqueAssets, address(assets[i].asset))) {
+        uniqueAssets[length++] = address(assets[i].asset);
       }
     }
   }
