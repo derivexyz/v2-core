@@ -6,8 +6,9 @@ import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./interfaces/AccountStructs.sol";
-import "./libraries/ArrayLib.sol";
 import "./Allowances.sol";
+import "./libraries/ArrayLib.sol";
+
 /**
  * @title Account
  * @author Lyra
