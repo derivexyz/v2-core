@@ -455,19 +455,6 @@ contract Account is Allowances, ERC721, IAccount {
   // Access //
   ////////////
 
-  function _checkIsApprovedOrOwner(address sender, uint accountId) internal view {
-    if (!_isApprovedOrOwner(sender, accountId)) {
-      revert NotOwnerOrERC721Approved(
-        address(this),
-        sender,
-        accountId,
-        ownerOf(accountId),
-        manager[accountId],
-        getApproved(accountId)
-      );
-    }
-  }
-
   /// @dev giving managers exclusive rights to transfer account ownerships
   /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
   function _isApprovedOrOwner(
@@ -484,7 +471,16 @@ contract Account is Allowances, ERC721, IAccount {
   ///////////////
 
   modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
-    _checkIsApprovedOrOwner(sender, accountId);
+    if (!_isApprovedOrOwner(sender, accountId)) {
+      revert NotOwnerOrERC721Approved(
+        address(this),
+        sender,
+        accountId,
+        ownerOf(accountId),
+        manager[accountId],
+        getApproved(accountId)
+      );
+    }
     _;
   }
 
