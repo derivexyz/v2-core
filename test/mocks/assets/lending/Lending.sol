@@ -8,7 +8,7 @@ import "synthetix/SignedDecimalMath.sol";
 import "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
 import "src/Account.sol";
-
+import "src/interfaces/AccountStructs.sol";
 
 contract Lending is IAsset, Owned {
   using SignedDecimalMath for int;
@@ -52,7 +52,7 @@ contract Lending is IAsset, Owned {
   ////////////////////
 
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
+    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
   ) external override returns (int finalBal) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
 
@@ -110,7 +110,7 @@ contract Lending is IAsset, Owned {
   function updateBalance(uint accountId) external returns (int balance) {
     /* This will eventually call asset.handleAdjustment() and accrue interest */
     balance = account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0,
@@ -123,7 +123,7 @@ contract Lending is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -137,7 +137,7 @@ contract Lending is IAsset, Owned {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0, 
@@ -235,7 +235,7 @@ contract Lending is IAsset, Owned {
 
     // this will accrue the latest interest
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0, 

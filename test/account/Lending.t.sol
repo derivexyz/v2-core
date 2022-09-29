@@ -61,7 +61,7 @@ contract SocializedLosses is Test, LyraHelper {
 
     // charlie then transfers 10mln DAI to alice: borrowing Dai from system
     vm.startPrank(orderbook);
-    IAccount.AssetTransfer memory daiLoan = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory daiLoan = AccountStructs.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: aliceAcc,
       asset: IAsset(daiLending),

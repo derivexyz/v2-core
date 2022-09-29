@@ -3,63 +3,10 @@ pragma solidity ^0.8.13;
 import "./IAllowances.sol";
 import "./IAsset.sol";
 import "./IManager.sol";
+import "./AccountStructs.sol";
 
 // For full documentation refer to src/Account.sol";
 interface IAccount is IAllowances {
-
-  /////////////////////
-  // Storage Structs //
-  /////////////////////
-  
-  struct BalanceAndOrder {
-    // balance of (asset, subId)
-    int240 balance;
-    // index in heldAssets() or getAccountBalances() 
-    uint16 order; 
-  }
-
-  struct HeldAsset {
-    IAsset asset;
-    uint96 subId;
-  }
-
-  /////////////////////////
-  // Memory-only Structs //
-  /////////////////////////
-
-  struct AssetBalance {
-    IAsset asset;
-    // adjustments will revert if > uint96
-    uint subId;
-    // base layer only stores up to int240
-    int balance;
-  }
-
-  struct AssetTransfer {
-    // credited by amount
-    uint fromAcc;
-    // debited by amount
-    uint toAcc;
-    IAsset asset;
-    // adjustments will revert if >uint96
-    uint subId;
-    // reverts if transfer amount > uint240
-    int amount;
-    // data passed into asset.handleAdjustment()
-    bytes32 assetData;
-  }
-
-  struct AssetAdjustment {
-    uint acc;
-    IAsset asset;
-    // reverts for subIds > uint96
-    uint subId;
-    // reverts if transfer amount > uint240
-    int amount;
-    // data passed into asset.handleAdjustment()
-    bytes32 assetData;
-  }  
-
 
   ///////////////////
   // Account Admin //
@@ -82,13 +29,13 @@ interface IAccount is IAllowances {
   function setAssetAllowances(
     uint accountId, 
     address delegate,
-    AssetAllowance[] memory allowances
+    AccountStructs.AssetAllowance[] memory allowances
   ) external;
 
   function setSubIdAllowances(
     uint accountId, 
     address delegate,
-    SubIdAllowance[] memory allowances
+    AccountStructs.SubIdAllowance[] memory allowances
   ) external;
 
   /////////////////////////
@@ -96,21 +43,21 @@ interface IAccount is IAllowances {
   /////////////////////////
 
   function submitTransfer(
-    AssetTransfer memory assetTransfer, bytes memory managerData
+    AccountStructs.AssetTransfer memory assetTransfer, bytes memory managerData
   ) external;
 
   function submitTransfers(
-    AssetTransfer[] memory assetTransfers, bytes memory managerData
+    AccountStructs.AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external;
 
   /// @dev adjust balance by assets
   function assetAdjustment(
-    AssetAdjustment memory adjustment, bytes memory managerData
+    AccountStructs.AssetAdjustment memory adjustment, bytes memory managerData
   ) external returns (int postBalance);
 
   /// @dev adjust balance by managers
   function managerAdjustment(
-    AssetAdjustment memory adjustment
+    AccountStructs.AssetAdjustment memory adjustment
   ) external returns (int postBalance);
 
   //////////
@@ -128,7 +75,7 @@ interface IAccount is IAllowances {
   ) external view returns (int balance);
 
   function getAccountBalances(uint accountId) 
-    external view returns (AssetBalance[] memory assetBalances);
+    external view returns (AccountStructs.AssetBalance[] memory assetBalances);
 
 
   ////////////
@@ -173,7 +120,7 @@ interface IAccount is IAllowances {
   event BalanceAdjusted(
     uint indexed accountId,
     address indexed manager,
-    HeldAsset indexed assetAndSubId, 
+    AccountStructs.HeldAsset indexed assetAndSubId, 
     int amount,
     int preBalance, 
     int postBalance

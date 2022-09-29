@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "src/Account.sol";
 import "src/interfaces/IManager.sol";
+import "src/interfaces/AccountStructs.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -87,7 +88,7 @@ abstract contract LyraHelper is Test {
   }
 
   function tradeCallOption(uint longAcc, uint shortAcc, uint amount, uint premium, uint optionSubId) public {
-    IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
       asset: IAsset(optionAdapter),
@@ -96,7 +97,7 @@ abstract contract LyraHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
       asset: IAsset(usdcAdapter),
@@ -105,7 +106,7 @@ abstract contract LyraHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](2);
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
@@ -163,13 +164,13 @@ abstract contract LyraHelper is Test {
 
   function setupMaxAssetAllowancesForAll(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: type(uint).max,
       negative: type(uint).max
@@ -181,8 +182,8 @@ abstract contract LyraHelper is Test {
 
   function setupMaxSingleAssetAllowance(address ownerAdd, uint ownerAcc, address delegate, IAsset asset) internal {
     vm.startPrank(ownerAdd);
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: IAsset(asset),
       positive: type(uint).max,
       negative: type(uint).max

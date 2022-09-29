@@ -1,17 +1,16 @@
 pragma solidity ^0.8.13;
 
-import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "./libraries/IntLib.sol";
 import "./interfaces/IAsset.sol";
-import "./interfaces/IManager.sol";
-import "./interfaces/IAccount.sol";
+import "./interfaces/AccountStructs.sol";
 
 /**
  * @title Allowacne
  * @author Lyra
  * @notice Allow more granular alloance setting, supposed to be used by Account
  */
-contract Allowances is IAllowances {
+contract Allowances {
+  
   using IntLib for int;
   // Variables
 
@@ -39,7 +38,7 @@ contract Allowances is IAllowances {
     uint accountId,
     address owner,
     address delegate,
-    AssetAllowance[] memory allowances
+    AccountStructs.AssetAllowance[] memory allowances
   ) internal {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
@@ -59,7 +58,7 @@ contract Allowances is IAllowances {
     uint accountId,
     address owner,
     address delegate,
-    SubIdAllowance[] memory allowances
+    AccountStructs.SubIdAllowance[] memory allowances
   ) internal {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
@@ -80,7 +79,7 @@ contract Allowances is IAllowances {
    * @param delegate address of msg.sender initiating change
    */
   function _spendAllowance( // TODO: rename delegate to caller?
-    IAccount.AssetAdjustment memory adjustment, address owner, address delegate
+    AccountStructs.AssetAdjustment memory adjustment, address owner, address delegate
   ) internal {
 
     /* Early return if amount == 0 */
@@ -141,4 +140,17 @@ contract Allowances is IAllowances {
         assetAllowance);
     }
   }
+
+  ////////////
+  // Errors //
+  ////////////
+
+  error NotEnoughSubIdOrAssetAllowances(
+    address thower,
+    address caller,
+    uint accountId,
+    int amount,
+    uint subIdAllowance,
+    uint assetAllowance
+  );
 }

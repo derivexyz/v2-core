@@ -5,7 +5,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
-import "./interfaces/IAccount.sol";
+import "./interfaces/AccountStructs.sol";
 import "./libraries/ArrayLib.sol";
 import "./Allowances.sol";
 /**
@@ -18,7 +18,7 @@ import "./Allowances.sol";
  *         3. account creation / manager assignment
  */
 
-contract Account is Allowances, ERC721, IAccount {
+contract Account is Allowances, ERC721, AccountStructs {
   using SafeCast for int;
   using SafeCast for uint;
 
@@ -126,7 +126,7 @@ contract Account is Allowances, ERC721, IAccount {
   function setAssetAllowances(
     uint accountId,
     address delegate,
-    Allowances.AssetAllowance[] memory allowances
+    AssetAllowance[] memory allowances
   ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
     _setAssetAllowances(accountId, ownerOf(accountId), delegate, allowances);
   }
@@ -141,7 +141,7 @@ contract Account is Allowances, ERC721, IAccount {
   function setSubIdAllowances(
     uint accountId,
     address delegate,
-    Allowances.SubIdAllowance[] memory allowances
+    SubIdAllowance[] memory allowances
   ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
     address owner = ownerOf(accountId);
     _setSubIdAllowances(accountId, owner, delegate, allowances);
@@ -485,4 +485,65 @@ contract Account is Allowances, ERC721, IAccount {
       _;
   }
 
+  ////////////
+  // Events //
+  ////////////
+
+  /**
+   * @dev Emitted account created or split
+   */
+  event AccountCreated(
+    address indexed owner, 
+    uint indexed accountId, 
+    address indexed manager
+  );
+
+  /**
+   * @dev Emitted account burned
+   */
+  event AccountBurned(
+    address indexed owner, 
+    uint indexed accountId, 
+    address indexed manager
+  );
+
+  /**
+   * @dev Emitted when account manager changed
+   */
+  event AccountManagerChanged(
+    uint indexed accountId, 
+    address indexed oldManager, 
+    address indexed newManager
+  );
+
+  /**
+   * @dev Emitted during any balance change event. This includes:
+   *      1. single transfer
+   *      2. batch transfer
+   *      3. transferAll / merge / split
+   *      4. manager or asset initiated adjustments
+   *      PreBalance + amount not necessarily = postBalance
+   */
+  event BalanceAdjusted(
+    uint indexed accountId,
+    address indexed manager,
+    HeldAsset indexed assetAndSubId, 
+    int amount,
+    int preBalance, 
+    int postBalance
+  );
+
+  ////////////
+  // Errors //
+  ////////////
+
+  error OnlyManager(address thrower, address caller, address manager);
+
+  error OnlyAsset(address thrower, address caller, address asset);
+  
+  error NotOwnerOrERC721Approved(
+    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved);
+  error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
+  error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
+  error CannotChangeToSameManager(address thrower, address caller, uint accountId);
 }
