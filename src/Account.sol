@@ -44,7 +44,7 @@ contract Account is Allowances, ERC721, IAccount {
   /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
   
-  constructor(string memory name_, string memory symbol_) Allowances() ERC721(name_, symbol_) {}
+  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ///////////////////
   // Account Admin //
@@ -231,8 +231,9 @@ contract Account is Allowances, ERC721, IAccount {
       assetData: assetTransfer.assetData
     });
 
-    _spendAllowance(fromAccAdjustment, msg.sender, ownerOf(fromAccAdjustment.acc), _isApprovedOrOwner(msg.sender, fromAccAdjustment.acc));
-    _spendAllowance(toAccAdjustment, msg.sender, ownerOf(toAccAdjustment.acc), _isApprovedOrOwner(msg.sender, fromAccAdjustment.acc));
+    // if it's not ERC721 approved: spend allowances
+    if (!_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) _spendAllowance(fromAccAdjustment, msg.sender, ownerOf(fromAccAdjustment.acc));
+    if (!_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) _spendAllowance(toAccAdjustment, msg.sender, ownerOf(toAccAdjustment.acc));
 
     // balance is adjusted based on asset hook
     _adjustBalance(fromAccAdjustment);

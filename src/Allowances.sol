@@ -15,8 +15,7 @@ import "./interfaces/IAccount.sol";
  *         3. account creation / manager assignment
  */
 
-abstract contract Allowances is IAllowances {
-  /////
+contract Allowances is IAllowances {
   // Variables
 
   /// @dev accountId => owner => asset => subId => delegate => allowance
@@ -26,8 +25,6 @@ abstract contract Allowances is IAllowances {
   /// @dev accountId => owner => asset => delegate => allowance
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public positiveAssetAllowance;
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public negativeAssetAllowance;
-
-  constructor() {}
 
   /////////////
   // Setting //
@@ -81,20 +78,14 @@ abstract contract Allowances is IAllowances {
 
   /** 
    * @notice Checks allowances during transfers / merges / splits
-   *         Not checked during adjustBalance()
-   *         1. If delegate ERC721 approved or owner, blanket allowance given
-   *         2. Otherwise, sum of subId and asset bidirectional allowances used
    *         The subId allowance is decremented before the asset-wide allowance
    * @dev finalBalance adjustments tweaked by the asset not considered in allowances 
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param delegate address of msg.sender initiating change
    */
   function _spendAllowance( // TODO: rename delegate to caller?
-    IAccount.AssetAdjustment memory adjustment, address delegate, address owner, bool isApprovedOrOwner
+    IAccount.AssetAdjustment memory adjustment, address delegate, address owner
   ) internal {
-
-    /* ERC721 approved, manager or owner get blanket allowance */
-    if (isApprovedOrOwner) { return; }
 
     /* Early return if amount == 0 */
     if (adjustment.amount == 0) { return; }
@@ -157,3 +148,7 @@ abstract contract Allowances is IAllowances {
 
 
 }
+
+
+// 0x1b871e33000000000000000000000000f2e246bb76df876cef8b38ae84130f4f55de395b0000000000000000000000002b5ad5c4795c026514f8317c7a215e218dccd6cf00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000056bc75e2d6310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+// 0x1b871e33000000000000000000000000f2e246bb76df876cef8b38ae84130f4f55de395b0000000000000000000000002b5ad5c4795c026514f8317c7a215e218dccd6cf00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
