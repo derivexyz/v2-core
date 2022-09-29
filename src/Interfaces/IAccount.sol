@@ -5,7 +5,7 @@ import "./IAsset.sol";
 import "./IManager.sol";
 
 // For full documentation refer to src/Account.sol";
-interface IAccount {
+interface IAccount is IAllowances {
 
   /////////////////////
   // Storage Structs //
@@ -67,7 +67,7 @@ interface IAccount {
 
   function createAccount(address owner, IManager _manager) external returns (uint newId);
 
-  function createAccount(
+  function createAccountWithApproval(
     address owner, address spender, IManager _manager
   ) external returns (uint newId);
 
@@ -82,13 +82,13 @@ interface IAccount {
   function setAssetAllowances(
     uint accountId, 
     address delegate,
-    IAllowances.AssetAllowance[] memory allowances
+    AssetAllowance[] memory allowances
   ) external;
 
   function setSubIdAllowances(
     uint accountId, 
     address delegate,
-    IAllowances.SubIdAllowance[] memory allowances
+    SubIdAllowance[] memory allowances
   ) external;
 
   /////////////////////////

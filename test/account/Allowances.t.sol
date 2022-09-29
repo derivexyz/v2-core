@@ -321,7 +321,7 @@ contract TestAllowances is Test, LyraHelper {
     // new user account with spender allowance
     vm.startPrank(alice);
     address user = vm.addr(100);
-    uint userAcc = account.createAccount(user, bob, IManager(rm));
+    uint userAcc = account.createAccountWithApproval(user, bob, IManager(rm));
     vm.stopPrank();
 
     // successful trade without allowances

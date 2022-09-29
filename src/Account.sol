@@ -69,7 +69,7 @@ contract Account is Allowances, ERC721, IAccount {
    * @param _manager IManager of new account
    * @return newId ID of new account
    */
-  function createAccount( // TODO: rename to createAccountWithApproval?
+  function createAccountWithApproval(
     address owner, address spender, IManager _manager
   ) external returns (uint newId) {
     newId = _createAccount(owner, _manager);
@@ -126,7 +126,6 @@ contract Account is Allowances, ERC721, IAccount {
   ////////////////
 
   /**
-   * THIS GOES TO Account.sol
    * @notice Sets bidirectional allowances for all subIds of an asset.
    *         During a balance adjustment, if msg.sender not ERC721 approved or owner,
    *         asset allowance + subId allowance must be >= amount
