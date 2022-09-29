@@ -7,7 +7,7 @@ import "synthetix/DecimalMath.sol";
 import "synthetix/SignedDecimalMath.sol";
 import "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
-import "src/Account.sol";
+import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
 
 contract Lending is IAsset, Owned {
@@ -18,7 +18,7 @@ contract Lending is IAsset, Owned {
 
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
-  Account account;
+  IAccount account;
   InterestRateModel interestRateModel;
 
   uint public feeFactor; // fee taken by asset from interest
@@ -35,7 +35,7 @@ contract Lending is IAsset, Owned {
 
   constructor(
     IERC20 token_, 
-    Account account_, 
+    IAccount account_, 
     InterestRateModel _interestRateModel    
   ) Owned() {
     token = token_;

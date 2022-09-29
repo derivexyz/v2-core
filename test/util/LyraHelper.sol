@@ -60,14 +60,14 @@ abstract contract LyraHelper is Test {
     dai = new TestERC20("dai", "DAI");
     // starts at 5%, increases to 10% at 50% util, then grows by 2% for every 10% util increase
     interestRateModel = new ContinuousJumpRateModel(5e16, 1e17, 2e17, 5e17);
-    daiLending = new Lending(IERC20(dai), account, interestRateModel);
+    daiLending = new Lending(IERC20(dai), IAccount(address(account)), interestRateModel);
 
     /* Options */
     settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
     optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
-    rm = new PortfolioRiskManager(account, PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
+    rm = new PortfolioRiskManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);

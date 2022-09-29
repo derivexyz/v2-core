@@ -1,12 +1,13 @@
 pragma solidity ^0.8.13;
 
+import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 import "./IAllowances.sol";
 import "./IAsset.sol";
 import "./IManager.sol";
 import "./AccountStructs.sol";
 
 // For full documentation refer to src/Account.sol";
-interface IAccount is IAllowances {
+interface IAccount is IAllowances, IERC721 {
 
   ///////////////////
   // Account Admin //
