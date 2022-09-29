@@ -360,7 +360,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     // new user account with spender allowance
     vm.startPrank(alice);
     address user = vm.addr(100);
-    uint userAcc = account.createAccount(user, bob, dumbManager);
+    uint userAcc = account.createAccountWithApproval(user, bob, dumbManager);
     vm.stopPrank();
     mintAndDeposit(
         user,
