@@ -53,7 +53,7 @@ contract Lending is IAsset, Owned {
 
   function handleAdjustment(
     IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
-  ) external override returns (int finalBal) {
+  ) external override returns (int finalBal, bool needAdjustment) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
 
     /* Makes a continuous compounding interest calculation.
@@ -61,8 +61,10 @@ contract Lending is IAsset, Owned {
     accrueInterest();
 
     if (preBal == 0 && adjustment.amount == 0) {
-      return 0; 
+      return (0, false); 
     }
+
+    needAdjustment = adjustment.amount < 0;
 
     int freshBal = _getBalanceFresh(adjustment.acc, preBal);
     finalBal = freshBal + adjustment.amount;

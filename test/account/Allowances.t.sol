@@ -27,14 +27,14 @@ contract TestAllowances is Test, LyraHelper {
   function testCannotTransferWithoutAllowance() public {    
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
-    // expect revert
+    // expect revert when alice try to sub bob's usdc
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         alice,
         bobAcc,
-        1000000000000000000,
+        -100e18,
         0,
         0
       )
@@ -47,31 +47,31 @@ contract TestAllowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    // assetAllowances[0] = IAllowances.AssetAllowance({
+    //   asset: IAsset(optionAdapter),
+    //   positive: 5e17,
+    //   negative: 0
+    // });
     assetAllowances[0] = IAllowances.AssetAllowance({
-      asset: IAsset(optionAdapter),
-      positive: 5e17,
-      negative: 0
-    });
-    assetAllowances[1] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: 0,
       negative: 50e18
     });
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](2);
+    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](1);
+    // subIdAllowances[0] = IAllowances.SubIdAllowance({
+    //   asset: IAsset(optionAdapter),
+    //   subId: 0,
+    //   positive: 4e17,
+    //   negative: 0
+    // });
     subIdAllowances[0] = IAllowances.SubIdAllowance({
-      asset: IAsset(optionAdapter),
-      subId: 0,
-      positive: 4e17,
-      negative: 0
-    });
-    subIdAllowances[1] = IAllowances.SubIdAllowance({
       asset: IAsset(usdcAdapter),
       subId: 0,
       positive: 0,
-      negative: 50e18
+      negative: 40e18
     });
     account.setSubIdAllowances(bobAcc, alice, subIdAllowances);
     vm.stopPrank();
@@ -83,23 +83,23 @@ contract TestAllowances is Test, LyraHelper {
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         alice,
         bobAcc,
-        1000000000000000000,
-        400000000000000000,
-        500000000000000000
+        -100e18,
+        40e18,
+        50e18
       )
     );
     tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
     vm.stopPrank();
   }
 
-  function testNotEnoughAllowance() public {    
+  function testCanTradeWithoutAllowanceToIncreaseIfAssetAllows() public {    
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
     IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
     assetAllowances[0] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
-      positive: type(uint).max,
+      positive: 0,
       negative: type(uint).max
     });
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
@@ -107,16 +107,6 @@ contract TestAllowances is Test, LyraHelper {
 
     // expect revert
     vm.startPrank(alice);
-    vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
-        alice,
-        bobAcc,
-        1000000000000000000,
-        0,
-        0
-      )
-    );
     tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
     vm.stopPrank();
   }
@@ -125,27 +115,16 @@ contract TestAllowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
     assetAllowances[0] = IAllowances.AssetAllowance({
-      asset: IAsset(optionAdapter),
-      positive: 5e17,
-      negative: 0
-    });
-    assetAllowances[1] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: 0,
       negative: 50e18
     });
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](2);
+    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](1);
     subIdAllowances[0] = IAllowances.SubIdAllowance({
-      asset: IAsset(optionAdapter),
-      subId: 0,
-      positive: 8e17,
-      negative: 0
-    });
-    subIdAllowances[1] = IAllowances.SubIdAllowance({
       asset: IAsset(usdcAdapter),
       subId: 0,
       positive: 0,
@@ -161,14 +140,11 @@ contract TestAllowances is Test, LyraHelper {
     vm.stopPrank();
 
     // ensure subid allowance decremented first
-    assertEq(account.positiveSubIdAllowance(bobAcc, bob, optionAdapter, 0, alice), 0);
     assertEq(account.negativeSubIdAllowance(bobAcc, bob, optionAdapter, 0, alice), 0);
-    assertEq(account.positiveAssetAllowance(bobAcc, bob, optionAdapter, alice), 3e17);
     assertEq(account.negativeAssetAllowance(bobAcc, bob, optionAdapter, alice), 0);
 
-    assertEq(account.positiveSubIdAllowance(bobAcc, bob, usdcAdapter, 0, alice), 0);
+    
     assertEq(account.negativeSubIdAllowance(bobAcc, bob, usdcAdapter, 0, alice), 0);
-    assertEq(account.positiveAssetAllowance(bobAcc, bob, usdcAdapter, alice), 0);
     assertEq(account.negativeAssetAllowance(bobAcc, bob, usdcAdapter, alice), 5e18);
   }
 
@@ -203,61 +179,6 @@ contract TestAllowances is Test, LyraHelper {
     vm.stopPrank();
   }
 
-  function testCannotTransferWithoutAllowanceForAll() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-    address orderbook = charlie;
-
-    // give orderbook allowance over both
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
-      asset: IAsset(optionAdapter),
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-    assetAllowances[1] = IAllowances.AssetAllowance({
-      asset: IAsset(usdcAdapter),
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-
-    vm.startPrank(bob);
-    account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
-    vm.stopPrank();
-
-    // giving wrong subId allowance for option asset
-    vm.startPrank(alice);
-    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](2);
-    subIdAllowances[0] = IAllowances.SubIdAllowance({
-      asset: IAsset(optionAdapter),
-      subId: 1, // wrong subId 
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-    subIdAllowances[1] = IAllowances.SubIdAllowance({
-      asset: IAsset(usdcAdapter),
-      subId: 0,
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-    account.setSubIdAllowances(aliceAcc, orderbook, subIdAllowances);
-    vm.stopPrank();
-
-    // expect revert
-    vm.startPrank(orderbook);
-    vm.expectRevert(
-      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
-        orderbook,
-        aliceAcc,
-        50000000000000000000,
-        0,
-        0
-      )
-    );
-    tradeOptionWithUSDC(bobAcc, aliceAcc, 50e18, 1000e18, subId);
-    vm.stopPrank();
-  }
-
   function testERC721Approval() public {    
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
@@ -278,7 +199,7 @@ contract TestAllowances is Test, LyraHelper {
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
         bobNewAcc,
-        1000000000000000000,
+        -100e18,
         0,
         0
       )

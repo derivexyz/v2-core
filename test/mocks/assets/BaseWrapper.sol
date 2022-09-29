@@ -53,9 +53,9 @@ contract BaseWrapper is IAsset, Owned {
 
   function handleAdjustment(
     IAccount.AssetAdjustment memory adjustment, int preBal, IManager, address
-  ) external pure override returns (int finalBalance) {
+  ) external pure override returns (int finalBalance, bool needAllowance) {
     require(adjustment.subId == 0 && preBal + adjustment.amount >= 0);
-    return preBal + adjustment.amount;
+    return (preBal + adjustment.amount, adjustment.amount < 0);
   }
 
     function handleManagerChange(uint, IManager) external pure override {}
