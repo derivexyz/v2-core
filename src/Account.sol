@@ -220,14 +220,14 @@ contract Account is Allowances, ERC721, IAccount {
     });
 
     // balance is adjusted based on asset hook
-    (, bool fromNeedAdjustment) =  _adjustBalance(fromAccAdjustment, true);
-    (, bool toNeedAdjustment) = _adjustBalance(toAccAdjustment, true);
+    (, bool fromAdjustmentNeedAllowance) =  _adjustBalance(fromAccAdjustment, true);
+    (, bool toAdjustmentNeedAllowance) = _adjustBalance(toAccAdjustment, true);
 
     // if it's not ERC721 approved: spend allowances
-    if (fromNeedAdjustment && !_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) {
+    if (fromAdjustmentNeedAllowance && !_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) {
       _spendAllowance(fromAccAdjustment, ownerOf(fromAccAdjustment.acc), msg.sender);
     }
-    if (toNeedAdjustment && !_isApprovedOrOwner(msg.sender, toAccAdjustment.acc)) {
+    if (toAdjustmentNeedAllowance && !_isApprovedOrOwner(msg.sender, toAccAdjustment.acc)) {
       _spendAllowance(toAccAdjustment, ownerOf(toAccAdjustment.acc), msg.sender);
     }
   }
