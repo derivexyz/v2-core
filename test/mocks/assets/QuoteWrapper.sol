@@ -36,6 +36,7 @@ contract QuoteWrapper is IAsset, Owned {
         amount: int(amount),
         assetData: bytes32(0)
       }),
+      false,
       ""
     );
     token.transferFrom(msg.sender, address(this), amount);
@@ -51,6 +52,7 @@ contract QuoteWrapper is IAsset, Owned {
         amount: -int(amount),
         assetData: bytes32(0)
       }),
+      false,
       ""
     );
     token.transfer(recipientAccount, amount);

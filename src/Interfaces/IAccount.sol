@@ -52,7 +52,7 @@ interface IAccount is IAllowances {
 
   /// @dev adjust balance by assets
   function assetAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment, bytes memory managerData
+    AssetAdjustment memory adjustment, bool triggerAssetHook, bytes memory managerData
   ) external returns (int postBalance);
 
   /// @dev adjust balance by managers

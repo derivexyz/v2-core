@@ -30,6 +30,7 @@ contract BaseWrapper is IAsset, Owned {
         amount: int(amount),
         assetData: bytes32(0)
       }),
+      false, // dont need to re-trigger handleAdjustment hook
       ""
     );
     token.transferFrom(msg.sender, address(this), amount);
@@ -44,6 +45,7 @@ contract BaseWrapper is IAsset, Owned {
         amount: -int(amount),
         assetData: bytes32(0)
       }),
+      false,
       ""
     );
     require(postBalance >= 0);

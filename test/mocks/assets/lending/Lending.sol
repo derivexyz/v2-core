@@ -117,6 +117,7 @@ contract Lending is IAsset, Owned {
         amount: 0,
         assetData: bytes32(0)
       }),
+      true, // adjust balance with handleAdjustment so we apply interest
       ""
     );
   }
@@ -130,6 +131,7 @@ contract Lending is IAsset, Owned {
         amount: int(amount),
         assetData: bytes32(0)
       }),
+      true, // adjust balance with handleAdjustment so we apply interest
       ""
     );
     token.transferFrom(msg.sender, address(this), amount);
@@ -144,6 +146,7 @@ contract Lending is IAsset, Owned {
         amount: -int(amount),
         assetData: bytes32(0)
       }),
+      true, // adjust balance with handleAdjustment so we apply interest
       ""
     );
     token.transfer(recipientAccount, amount);
@@ -242,6 +245,7 @@ contract Lending is IAsset, Owned {
         amount: int(borrowAmountToSocialize),
         assetData: bytes32(0)
       }),
+      true, // adjust balance with handleAdjustment so we apply interest
       ""
     );
 
