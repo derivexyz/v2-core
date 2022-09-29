@@ -150,14 +150,7 @@ contract Account is AdvancedAllowance, ERC721, IAccount {
   function _isApprovedOrOwner(
     address spender, uint tokenId
   ) internal view override returns (bool) {
-    address owner = ERC721.ownerOf(tokenId);
-    
-    // return early if msg.sender is owner
-    if (
-      spender == owner || 
-      isApprovedForAll(owner, spender) || 
-      getApproved(tokenId) == spender
-    ) return true;
+    if (super._isApprovedOrOwner(spender, tokenId)) return true;
 
     // check if caller is manager
     return address(manager[tokenId]) == msg.sender;
