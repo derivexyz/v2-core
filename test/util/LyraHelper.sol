@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "src/Account.sol";
 import "src/interfaces/IManager.sol";
+import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
 
 import "forge-std/Test.sol";
@@ -53,7 +54,7 @@ abstract contract LyraHelper is Test {
     usdc = new TestERC20("usdc", "USDC");
     usdcAdapter = new QuoteWrapper(IERC20(usdc), account, priceFeeds, 0);
     weth = new TestERC20("wrapped eth", "wETH");
-    wethAdapter = new BaseWrapper(IERC20(weth), account, priceFeeds, 1);
+    wethAdapter = new BaseWrapper(IERC20(weth), IAccount(address(account)), priceFeeds, 1);
 
     /* Lending */
     dai = new TestERC20("dai", "DAI");
