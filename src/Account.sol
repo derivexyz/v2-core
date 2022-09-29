@@ -228,8 +228,8 @@ contract Account is Allowances, ERC721, IAccount {
     }
 
     // balance is adjusted based on asset hook
-    _adjustBalance(fromAccAdjustment);
-    _adjustBalance(toAccAdjustment);
+    _adjustBalance(fromAccAdjustment, true);
+    _adjustBalance(toAccAdjustment, true);
   }
 
   /** 
@@ -242,22 +242,24 @@ contract Account is Allowances, ERC721, IAccount {
   ) onlyManager(adjustment.acc) external returns (int postAdjustmentBalance) {    
 
     // balance is adjusted based on asset hook
-    postAdjustmentBalance = _adjustBalance(adjustment);
+    postAdjustmentBalance = _adjustBalance(adjustment, true);
   }
 
   /** 
    * @notice Asymmetric balance adjustment reserved for assets
    *         Must still pass both _managerHook()
    * @param adjustment asymmetric adjustment of amount for (asset, subId)
+   * @param triggerAssetHook true if the adjustment need to be routed to Asset's custom hook
    * @param managerData data passed to manager of account
    */
   function assetAdjustment(
     AssetAdjustment memory adjustment,
+    bool triggerAssetHook,
     bytes memory managerData
   ) onlyAsset(adjustment.asset) external returns (int postAdjustmentBalance) {    
 
     // balance adjustment is routed through asset again 
-    postAdjustmentBalance = _adjustBalance(adjustment);
+    postAdjustmentBalance = _adjustBalance(adjustment, triggerAssetHook);
     _managerHook(adjustment.acc, msg.sender, managerData);
   }
 
@@ -265,16 +267,20 @@ contract Account is Allowances, ERC721, IAccount {
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
    */
-  function _adjustBalance(AssetAdjustment memory adjustment) internal returns (int256 postBalance) {
+  function _adjustBalance(AssetAdjustment memory adjustment, bool triggerHook) internal returns (int256 postBalance) {
     BalanceAndOrder storage userBalanceAndOrder = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
     int preBalance = int(userBalanceAndOrder.balance);
 
     // allow asset to modify final balance in special cases
-    postBalance = _assetHook(
+    if (triggerHook) {
+      postBalance = _assetHook(
       adjustment, 
       preBalance, 
       msg.sender
     );
+    } else {
+      postBalance = preBalance + adjustment.amount;
+    }
 
     /* for gas efficiency, order unchanged when asset removed */
     userBalanceAndOrder.balance = postBalance.toInt240();

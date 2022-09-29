@@ -194,6 +194,7 @@ contract OptionToken is IAsset, Owned {
         amount: int(burnAmount),
         assetData: bytes32(0)
       }),
+      true,
       ""
     );
 
