@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "src/Account.sol";
 import "src/interfaces/IManager.sol";
+import "src/interfaces/IAdvancedAllowance.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -163,13 +164,13 @@ abstract contract LyraHelper is Test {
 
   function setupMaxAssetAllowancesForAll(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-    assetAllowances[0] = IAccount.AssetAllowance({
+    IAdvancedAllowance.AssetAllowance[] memory assetAllowances = new IAdvancedAllowance.AssetAllowance[](2);
+    assetAllowances[0] = IAdvancedAllowance.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAccount.AssetAllowance({
+    assetAllowances[1] = IAdvancedAllowance.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: type(uint).max,
       negative: type(uint).max
@@ -181,8 +182,8 @@ abstract contract LyraHelper is Test {
 
   function setupMaxSingleAssetAllowance(address ownerAdd, uint ownerAcc, address delegate, IAsset asset) internal {
     vm.startPrank(ownerAdd);
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-    assetAllowances[0] = IAccount.AssetAllowance({
+    IAdvancedAllowance.AssetAllowance[] memory assetAllowances = new IAdvancedAllowance.AssetAllowance[](2);
+    assetAllowances[0] = IAdvancedAllowance.AssetAllowance({
       asset: IAsset(asset),
       positive: type(uint).max,
       negative: type(uint).max

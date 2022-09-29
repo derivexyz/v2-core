@@ -2,6 +2,7 @@ pragma solidity ^0.8.13;
 
 import "./IAsset.sol";
 import "./IManager.sol";
+import "./IAdvancedAllowance.sol";
 
 // For full documentation refer to src/Account.sol";
 interface IAccount {
@@ -59,19 +60,6 @@ interface IAccount {
     bytes32 assetData;
   }  
 
-  struct AssetAllowance {
-    IAsset asset;
-    uint positive;
-    uint negative;
-  } 
-
-  struct SubIdAllowance {
-    IAsset asset;
-    uint subId;
-    uint positive;
-    uint negative;
-  } 
-
   ///////////////////
   // Account Admin //
   ///////////////////
@@ -93,13 +81,13 @@ interface IAccount {
   function setAssetAllowances(
     uint accountId, 
     address delegate,
-    AssetAllowance[] memory allowances
+    IAdvancedAllowance.AssetAllowance[] memory allowances
   ) external;
 
   function setSubIdAllowances(
     uint accountId, 
     address delegate,
-    SubIdAllowance[] memory allowances
+    IAdvancedAllowance.SubIdAllowance[] memory allowances
   ) external;
 
   /////////////////////////
@@ -134,31 +122,12 @@ interface IAccount {
     uint accountId, IAsset asset, uint subId
   ) external view returns (int240 balance, uint16 order);
 
-  function positiveSubIdAllowance(
-    uint accountId, address owner, IAsset asset, uint subId, address spender
-  ) external view returns (uint);
-  
-  function negativeSubIdAllowance(
-    uint accountId, address owner, IAsset asset, uint subId, address spender
-  ) external view returns (uint);
-
-  function positiveAssetAllowance(
-    uint accountId, address owner, IAsset asset, address spender
-  ) external view returns (uint);
-
-  function negativeAssetAllowance(
-    uint accountId, address owner, IAsset asset, address spender
-  ) external view returns (uint);
-
   function getBalance(
     uint accountId, IAsset asset, uint subId
   ) external view returns (int balance);
 
   function getAccountBalances(uint accountId) 
     external view returns (AssetBalance[] memory assetBalances);
-
-  function getManager(uint accountId) 
-    external view returns (IManager);
 
   ////////////
   // Events //
@@ -218,14 +187,6 @@ interface IAccount {
   
   error NotOwnerOrERC721Approved(
     address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved);
-  error NotEnoughSubIdOrAssetAllowances(
-    address thower,
-    address caller,
-    uint accountId,
-    int amount, 
-    uint subIdAllowance, 
-    uint assetAllowance
-  );
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
   error CannotChangeToSameManager(address thrower, address caller, uint accountId);
