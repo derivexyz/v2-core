@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "synthetix/DecimalMath.sol";
 import "synthetix/SignedDecimalMath.sol";
-import "util/FixedPointMathLib.sol";
+import "src/libraries/FixedPointMathLib.sol";
 
 import "./InterestRateModel.sol";
 import "forge-std/console2.sol";

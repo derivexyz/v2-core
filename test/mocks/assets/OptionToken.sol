@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "synthetix/DecimalMath.sol";
 import "synthetix/Owned.sol";
-import "util/BlackScholesV2.sol";
+import "src/libraries/BlackScholesV2.sol";
 import "forge-std/console2.sol";
 
 import "src/Account.sol";
