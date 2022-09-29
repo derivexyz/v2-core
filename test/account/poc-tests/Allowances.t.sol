@@ -26,11 +26,18 @@ contract POC_Allowances is Test, LyraHelper {
 
   function testCannotTransferWithoutAllowance() public {    
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+<<<<<<< HEAD
 
     // expect revert when alice try to sub bob's usdc
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
+=======
+    // expect revert
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
+>>>>>>> 809f024 (fix: tests)
         address(account), 
         alice,
         bobAcc,
@@ -90,9 +97,8 @@ contract POC_Allowances is Test, LyraHelper {
     uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSu
-        bIdOrAssetAllowances.selector,address(account), 
-        address(account), 
+      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
+        address(account),
         address(alice),
         bobNewAcc,
         -100e18,
