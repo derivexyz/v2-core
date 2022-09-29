@@ -15,8 +15,7 @@ library ArrayLib {
    * @param toFind  numbers to find
    * @return found true if address exists
    */
-  function findInArray(uint[] memory array, uint toFind) internal pure returns (bool found) {
-    uint arrayLen = array.length;
+  function findInArray(uint[] memory array, uint toFind, uint arrayLen) internal pure returns (bool found) {
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == 0) {
         break;
@@ -33,8 +32,7 @@ library ArrayLib {
    * @param toFind  address to find
    * @return found true if address exists
    */
-  function findInArray(address[] memory array, address toFind) internal pure returns (bool found) {
-    uint arrayLen = array.length;
+  function findInArray(address[] memory array, address toFind, uint arrayLen) internal pure returns (bool found) {
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == address(0)) {
         break;

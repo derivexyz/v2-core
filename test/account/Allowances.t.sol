@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../util/LyraHelper.sol";
 
-contract Allowances is Test, LyraHelper {
+contract TestAllowances is Test, LyraHelper {
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;
@@ -30,7 +30,7 @@ contract Allowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         alice,
         bobAcc,
@@ -47,27 +47,27 @@ contract Allowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-    assetAllowances[0] = IAccount.AssetAllowance({
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
+    assetAllowances[0] = IAllowances.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: 5e17,
       negative: 0
     });
-    assetAllowances[1] = IAccount.AssetAllowance({
+    assetAllowances[1] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: 0,
       negative: 50e18
     });
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
-    subIdAllowances[0] = IAccount.SubIdAllowance({
+    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](2);
+    subIdAllowances[0] = IAllowances.SubIdAllowance({
       asset: IAsset(optionAdapter),
       subId: 0,
       positive: 4e17,
       negative: 0
     });
-    subIdAllowances[1] = IAccount.SubIdAllowance({
+    subIdAllowances[1] = IAllowances.SubIdAllowance({
       asset: IAsset(usdcAdapter),
       subId: 0,
       positive: 0,
@@ -79,7 +79,7 @@ contract Allowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         alice,
         bobAcc,
@@ -96,8 +96,8 @@ contract Allowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](1);
-    assetAllowances[0] = IAccount.AssetAllowance({
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    assetAllowances[0] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: type(uint).max,
       negative: type(uint).max
@@ -108,7 +108,7 @@ contract Allowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         alice,
         bobAcc,
@@ -125,27 +125,27 @@ contract Allowances is Test, LyraHelper {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     vm.startPrank(bob);
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-    assetAllowances[0] = IAccount.AssetAllowance({
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
+    assetAllowances[0] = IAllowances.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: 5e17,
       negative: 0
     });
-    assetAllowances[1] = IAccount.AssetAllowance({
+    assetAllowances[1] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: 0,
       negative: 50e18
     });
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
-    subIdAllowances[0] = IAccount.SubIdAllowance({
+    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](2);
+    subIdAllowances[0] = IAllowances.SubIdAllowance({
       asset: IAsset(optionAdapter),
       subId: 0,
       positive: 8e17,
       negative: 0
     });
-    subIdAllowances[1] = IAccount.SubIdAllowance({
+    subIdAllowances[1] = IAllowances.SubIdAllowance({
       asset: IAsset(usdcAdapter),
       subId: 0,
       positive: 0,
@@ -177,13 +177,13 @@ contract Allowances is Test, LyraHelper {
     address orderbook = charlie;
 
     // give orderbook allowance over both
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-    assetAllowances[0] = IAccount.AssetAllowance({
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
+    assetAllowances[0] = IAllowances.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAccount.AssetAllowance({
+    assetAllowances[1] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: type(uint).max,
       negative: type(uint).max
@@ -208,13 +208,13 @@ contract Allowances is Test, LyraHelper {
     address orderbook = charlie;
 
     // give orderbook allowance over both
-    IAccount.AssetAllowance[] memory assetAllowances = new IAccount.AssetAllowance[](2);
-    assetAllowances[0] = IAccount.AssetAllowance({
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
+    assetAllowances[0] = IAllowances.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAccount.AssetAllowance({
+    assetAllowances[1] = IAllowances.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: type(uint).max,
       negative: type(uint).max
@@ -226,14 +226,14 @@ contract Allowances is Test, LyraHelper {
 
     // giving wrong subId allowance for option asset
     vm.startPrank(alice);
-    IAccount.SubIdAllowance[] memory subIdAllowances = new IAccount.SubIdAllowance[](2);
-    subIdAllowances[0] = IAccount.SubIdAllowance({
+    IAllowances.SubIdAllowance[] memory subIdAllowances = new IAllowances.SubIdAllowance[](2);
+    subIdAllowances[0] = IAllowances.SubIdAllowance({
       asset: IAsset(optionAdapter),
       subId: 1, // wrong subId 
       positive: type(uint).max,
       negative: type(uint).max
     });
-    subIdAllowances[1] = IAccount.SubIdAllowance({
+    subIdAllowances[1] = IAllowances.SubIdAllowance({
       asset: IAsset(usdcAdapter),
       subId: 0,
       positive: type(uint).max,
@@ -245,7 +245,7 @@ contract Allowances is Test, LyraHelper {
     // expect revert
     vm.startPrank(orderbook);
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         orderbook,
         aliceAcc,
@@ -274,7 +274,7 @@ contract Allowances is Test, LyraHelper {
     uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.NotEnoughSubIdOrAssetAllowances.selector, 
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         address(0xF2E246BB76DF876Cef8b38ae84130F4F55De395b), 
         address(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF),
         bobNewAcc,

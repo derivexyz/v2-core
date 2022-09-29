@@ -15,7 +15,10 @@ import "./interfaces/IAccount.sol";
  *         3. account creation / manager assignment
  */
 
-abstract contract AbstractAllowance is IAccount, ERC721 {
+abstract contract Allowances is IAllowances {
+  /////
+  // Variables
+
   /// @dev accountId => owner => asset => subId => delegate => allowance
   mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public positiveSubIdAllowance;
   mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public negativeSubIdAllowance;
@@ -24,30 +27,26 @@ abstract contract AbstractAllowance is IAccount, ERC721 {
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public positiveAssetAllowance;
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public negativeAssetAllowance;
 
-  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
+  constructor() {}
 
+  /////////////
+  // Setting //
+  /////////////
 
-  ////////////
-  // Public //
-  ////////////
-
-  /// @dev for use in setting manager ERC721 preapproval
-  function getManager(uint accountId) virtual override public view returns (IManager);
-
-  /** 
-   * @notice Sets bidirectional allowances for all subIds of an asset. 
+  /**
+   * @notice Sets bidirectional allowances for all subIds of an asset.
    *         During a balance adjustment, if msg.sender not ERC721 approved or owner, 
    *         asset allowance + subId allowance must be >= amount 
    * @param accountId ID of account
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(
-    uint accountId, 
+  function _setAssetAllowances(
+    uint accountId,
+    address owner,
     address delegate,
     AssetAllowance[] memory allowances
-  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
-    address owner = ownerOf(accountId);
+  ) internal {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
       positiveAssetAllowance[accountId][owner][allowances[i].asset][delegate] = allowances[i].positive;
@@ -62,12 +61,12 @@ abstract contract AbstractAllowance is IAccount, ERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each (asset, subId)
    */
-  function setSubIdAllowances(
-    uint accountId, 
+  function _setSubIdAllowances(
+    uint accountId,
+    address owner,
     address delegate,
     SubIdAllowance[] memory allowances
-  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
-    address owner = ownerOf(accountId);
+  ) internal {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
       positiveSubIdAllowance[accountId][owner][allowances[i].asset][allowances[i].subId][delegate] = allowances[i].positive;
@@ -75,8 +74,9 @@ abstract contract AbstractAllowance is IAccount, ERC721 {
     }
   }
 
+
   //////////////
-  // Internal //
+  // Spending //
   //////////////
 
   /** 
@@ -89,17 +89,17 @@ abstract contract AbstractAllowance is IAccount, ERC721 {
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param delegate address of msg.sender initiating change
    */
-  function _spendAllowance(
-    AssetAdjustment memory adjustment, address delegate
+  function _spendAllowance( // TODO: rename delegate to caller?
+    IAccount.AssetAdjustment memory adjustment, address delegate, address owner, bool isApprovedOrOwner
   ) internal {
+
     /* ERC721 approved, manager or owner get blanket allowance */
-    if (_isApprovedOrOwner(delegate, adjustment.acc)) { return; }
+    if (isApprovedOrOwner) { return; }
 
     /* Early return if amount == 0 */
     if (adjustment.amount == 0) { return; }
 
     /* determine if positive vs negative allowance is needed */
-    address owner = ownerOf(adjustment.acc);
     if (adjustment.amount > 0) {
       _spendAbsAllowance(
         adjustment.acc,
@@ -147,25 +147,6 @@ abstract contract AbstractAllowance is IAccount, ERC721 {
     }
   }
 
-
-  /// @dev giving managers exclusive rights to transfer account ownerships
-  /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
-  function _isApprovedOrOwner(
-    address spender, uint tokenId
-  ) internal view override returns (bool) {
-    address owner = ERC721.ownerOf(tokenId);
-    
-    // return early if msg.sender is owner
-    if (
-      spender == owner || 
-      isApprovedForAll(owner, spender) || 
-      getApproved(tokenId) == spender
-    ) return true;
-
-    // check if caller is manager
-    return address(getManager(tokenId)) == msg.sender;
-  }
-
   //////////
   // Util //
   //////////
@@ -174,22 +155,5 @@ abstract contract AbstractAllowance is IAccount, ERC721 {
     return amount >= 0 ? uint(amount) : uint(-amount);
   }
 
-  ///////////////
-  // Modifiers //
-  ///////////////
-
-  modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
-    if (!_isApprovedOrOwner(sender, accountId)) {
-      revert NotOwnerOrERC721Approved(
-        address(this), 
-        sender, 
-        accountId, 
-        ownerOf(accountId), 
-        getManager(accountId), 
-        getApproved(accountId)
-      );
-    }
-    _;
-  }
 
 }
