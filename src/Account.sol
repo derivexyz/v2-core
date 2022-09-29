@@ -249,6 +249,7 @@ contract Account is Allowances, ERC721, IAccount {
    * @notice Asymmetric balance adjustment reserved for assets
    *         Must still pass both _managerHook()
    * @param adjustment asymmetric adjustment of amount for (asset, subId)
+   * @param triggerHook true if the adjustment need to be routed to Asset's custom hook
    * @param managerData data passed to manager of account
    */
   function assetAdjustment(

@@ -105,7 +105,7 @@ interface IAccount is IAllowances {
 
   /// @dev adjust balance by assets
   function assetAdjustment(
-    AssetAdjustment memory adjustment, bool triggerSelf, bytes memory managerData
+    AssetAdjustment memory adjustment, bool triggerHook, bytes memory managerData
   ) external returns (int postBalance);
 
   /// @dev adjust balance by managers
