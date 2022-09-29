@@ -26,7 +26,7 @@ contract DumbAsset is IAsset {
     allowNegative = allowNegative_;
   }
 
-  function deposit(uint recipientAccount, uint amount) external {
+  function deposit(uint recipientAccount, uint256 subId, uint amount) external {
     account.assetAdjustment(
       IAccount.AssetAdjustment({
         acc: recipientAccount,
