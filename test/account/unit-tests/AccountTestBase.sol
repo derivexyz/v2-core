@@ -123,8 +123,7 @@ contract AccountTestBase is Test {
         uint256 subId,
         int256 tokenAmounts
     ) internal {
-        AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](1);
-        transferBatch[0] = AccountStructs.AssetTransfer({
+        AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
             fromAcc: fromAcc,
             toAcc: toAcc,
             asset: asset,
@@ -133,6 +132,6 @@ contract AccountTestBase is Test {
             assetData: bytes32(0)
         });
 
-        account.submitTransfers(transferBatch, "");
+        account.submitTransfer(transfer, "");
     }
 }
