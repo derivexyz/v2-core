@@ -20,7 +20,7 @@ library ArrayLib {
    */
   function addUniqueToArray(uint[] memory array, uint newElement, uint maxIndex) internal pure returns (uint newIndex) {
     if (!findInArray(array, newElement, maxIndex)) {
-      array[maxIndex + 1] = newElement;
+      array[maxIndex++] = newElement;
     }
     return maxIndex;
   }
@@ -35,7 +35,7 @@ library ArrayLib {
    */
   function addUniqueToArray(address[] memory array, address newElement, uint maxIndex) internal pure returns (uint newIndex) {
     if (!findInArray(array, newElement, maxIndex)) {
-      array[maxIndex + 1] = newElement;
+      array[maxIndex++] = newElement;
     }
     return maxIndex;
   }

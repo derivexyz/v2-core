@@ -196,7 +196,6 @@ contract Account is Allowances, ERC721, IAccount {
       nextSeenId = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
       nextSeenId = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
     }
-
     for (uint i; i < nextSeenId; i++) {
       _managerHook(seenAccounts[i], msg.sender, managerData);
     }
