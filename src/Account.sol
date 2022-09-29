@@ -9,6 +9,9 @@ import "./interfaces/IAccount.sol";
 import "./libraries/ArrayLib.sol";
 
 import "./Allowances.sol";
+import "./interfaces/IAccount.sol";
+import "./libraries/ArrayLib.sol";
+
 import "forge-std/console2.sol";
 import "../test/account/Allowances.t.sol";
 
@@ -104,8 +107,7 @@ contract Account is Allowances, ERC721, IAccount {
     oldManager.handleManagerChange(accountId, newManager);
 
     /* get unique assets to only call to asset once */
-    HeldAsset[] memory accountAssets = heldAssets[accountId];
-    (address[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(accountAssets);
+    (address[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(heldAssets[accountId]);
 
     for (uint i; i < uniqueLength; ++i) {
       IAsset(uniqueAssets[i]).handleManagerChange(accountId, newManager);
@@ -191,7 +193,6 @@ contract Account is Allowances, ERC721, IAccount {
 
     for (uint i; i < transfersLen; ++i) {
       _transferAsset(assetTransfers[i]);
-
       (seenAccounts, nextSeenId) = _addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
       (seenAccounts, nextSeenId) = _addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
     }
@@ -393,10 +394,7 @@ contract Account is Allowances, ERC721, IAccount {
     uniqueAssets = new address[](assets.length);
 
     for (uint i; i < assets.length; ++i) {
-      if (!ArrayLib.findInArray(uniqueAssets, address(assets[i].asset), length)) {
-        uniqueAssets[length++] = address(assets[i].asset);
-        (uniqueAssets, length) = _addUniqueToArray(uniqueAssets, address(assets[i].asset), length);
-      }
+      (uniqueAssets, length) = _addUniqueToArray(uniqueAssets, address(assets[i].asset), length);
     }
   }
 
