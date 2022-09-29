@@ -12,7 +12,7 @@ library ArrayLib {
 
   /**
    * @dev Add unique element to existing "array" if and increase max index
-   *      array memory will be updated in memory directly
+   *      array memory will be updated in place
    * @param array array of number
    * @param newElement number to check
    * @param maxIndex previously recorded max index with non-zero value
@@ -27,7 +27,7 @@ library ArrayLib {
 
   /**
    * @dev Add unique element to existing "array" if and increase max index
-   *      array memory will be updated in memory directly
+   *      array memory will be updated in place
    * @param array array of address
    * @param newElement address to check
    * @param maxIndex previously recorded max index with non-zero value
