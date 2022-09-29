@@ -6,15 +6,10 @@ import "./interfaces/IManager.sol";
 import "./interfaces/IAccount.sol";
 
 /**
- * @title Account
+ * @title Allowacne
  * @author Lyra
- * @notice Base layer that manages:
- *         1. balances for each (account, asset, subId)
- *         2. routing of manager, asset, allowance hooks / checks 
- *            during any balance adjustment event
- *         3. account creation / manager assignment
+ * @notice Allow more granular alloance setting, supposed to be used by Account
  */
-
 contract Allowances is IAllowances {
   // Variables
 
@@ -77,9 +72,8 @@ contract Allowances is IAllowances {
   //////////////
 
   /** 
-   * @notice Checks allowances during transfers / merges / splits
-   *         The subId allowance is decremented before the asset-wide allowance
-   * @dev finalBalance adjustments tweaked by the asset not considered in allowances 
+   * @notice Consume delegate's allowance to update balance
+   * @dev revert if delegate has insufficient allowance
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param delegate address of msg.sender initiating change
    */
@@ -145,6 +139,4 @@ contract Allowances is IAllowances {
   function _abs(int amount) internal pure returns (uint absAmount) {
     return amount >= 0 ? uint(amount) : uint(-amount);
   }
-
-
 }

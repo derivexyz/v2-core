@@ -193,8 +193,8 @@ contract Account is Allowances, ERC721, IAccount {
 
     for (uint i; i < transfersLen; ++i) {
       _transferAsset(assetTransfers[i]);
-      (seenAccounts, nextSeenId) = _addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
-      (seenAccounts, nextSeenId) = _addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
+      nextSeenId = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
+      nextSeenId = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
     }
 
     for (uint i; i < nextSeenId; i++) {
@@ -399,26 +399,8 @@ contract Account is Allowances, ERC721, IAccount {
     uniqueAssets = new address[](assets.length);
 
     for (uint i; i < assets.length; ++i) {
-      (uniqueAssets, length) = _addUniqueToArray(uniqueAssets, address(assets[i].asset), length);
+      length = ArrayLib.addUniqueToArray(uniqueAssets, address(assets[i].asset), length);
     }
-  }
-
-  //////////////////////
-  // Array management //
-  //////////////////////
-
-  function _addUniqueToArray(uint[] memory array, uint newElement, uint maxIndex) internal pure returns (uint[] memory result, uint newIndex) {
-    if (!ArrayLib.findInArray(array, newElement, maxIndex)) {
-      array[maxIndex + 1] = newElement;
-    }
-    return (array, maxIndex);
-  }
-
-  function _addUniqueToArray(address[] memory array, address newElement, uint maxIndex) internal pure returns (address[] memory result, uint newIndex) {
-    if (!ArrayLib.findInArray(array, newElement, maxIndex)) {
-      array[maxIndex + 1] = newElement;
-    }
-    return (array, maxIndex);
   }
 
   //////////
