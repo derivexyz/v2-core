@@ -96,10 +96,6 @@ contract Account is Allowances, ERC721, IAccount {
   function changeManager(
     uint accountId, IManager newManager, bytes memory newManagerData
   ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {    
-    _changeManager(accountId, newManager, newManagerData);
-  }
-
-  function _changeManager(uint accountId, IManager newManager, bytes memory newManagerData) internal {
     IManager oldManager = manager[accountId];
     if (oldManager == newManager) {
       revert CannotChangeToSameManager(address(this), msg.sender, accountId);
@@ -120,6 +116,7 @@ contract Account is Allowances, ERC721, IAccount {
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
+
 
   ////////////////
   // Allowances //
