@@ -7,12 +7,7 @@ import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./interfaces/IAccount.sol";
 import "./libraries/ArrayLib.sol";
-
 import "./Allowances.sol";
-import "./interfaces/IAccount.sol";
-import "./libraries/ArrayLib.sol";
-import "../test/account/Allowances.t.sol";
-
 /**
  * @title Account
  * @author Lyra
