@@ -9,6 +9,7 @@ import "./interfaces/IAdvancedAllowance.sol";
  * @title AdvancedAllowance
  * @author Lyra
  * @notice More advanced allowance setting to authorize delegates to update account balances 
+ * @dev    All functions are internal, setters are supposed to be used from Account
  */
 contract AdvancedAllowance is IAdvancedAllowance {
   /// @dev accountId => owner => asset => subId => delegate => allowance
@@ -18,10 +19,6 @@ contract AdvancedAllowance is IAdvancedAllowance {
   /// @dev accountId => owner => asset => delegate => allowance
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public positiveAssetAllowance;
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public negativeAssetAllowance;
-
-  ////////////
-  // Public //
-  ////////////
 
   /** 
    * @notice Sets bidirectional allowances for all subIds of an asset. 
@@ -62,17 +59,9 @@ contract AdvancedAllowance is IAdvancedAllowance {
     }
   }
 
-  //////////////
-  // Internal //
-  //////////////
-
   /** 
-   * @notice Checks allowances during transfers / merges / splits
-   *         Not checked during adjustBalance()
-   *         1. If delegate ERC721 approved or owner, blanket allowance given
-   *         2. Otherwise, sum of subId and asset bidirectional allowances used
+   * @notice Checks if delegate has enough allowance from owner to adjust account balance
    *         The subId allowance is decremented before the asset-wide allowance
-   * @dev finalBalance adjustments tweaked by the asset not considered in allowances 
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param delegate address of msg.sender initiating change
    */

@@ -210,7 +210,8 @@ contract Account is AdvancedAllowance, ERC721, IAccount {
 
   /** 
    * @notice Transfer an amount from one account to another for a specific (asset, subId)
-   * @dev    update the allowance and balanceAndOrder storage
+   * @dev    update the allowance if msg.sender is not ERC721-approved
+   *         update balanceAndOrder storage
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    */
   function _transferAsset(
