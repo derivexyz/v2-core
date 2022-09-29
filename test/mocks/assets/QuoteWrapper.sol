@@ -4,6 +4,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "synthetix/Owned.sol";
 import "src/interfaces/IAsset.sol";
 import "src/Account.sol";
+import "src/interfaces/AccountStructs.sol";
 import "../feeds/PriceFeeds.sol";
 
 // TODO: interest rates, not really needed for account system PoC
@@ -28,7 +29,7 @@ contract QuoteWrapper is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -44,7 +45,7 @@ contract QuoteWrapper is IAsset, Owned {
   // Note: balances can go negative for quote but not base
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0, 
@@ -58,7 +59,7 @@ contract QuoteWrapper is IAsset, Owned {
   }
 
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
+    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
   ) external view override returns (int finalBalance) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
     return preBal + adjustment.amount;

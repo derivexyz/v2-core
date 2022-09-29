@@ -1,6 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "./IManager.sol";
+import "./AccountStructs.sol";
 
 interface IAsset {
 
@@ -11,7 +12,7 @@ interface IAsset {
    * @return finalBalance the final balance to be recorded in the account
    */
   function handleAdjustment(
-    IAccount.AssetAdjustment memory adjustment, 
+    AccountStructs.AssetAdjustment memory adjustment, 
     int preBalance, 
     IManager manager, 
     address caller
