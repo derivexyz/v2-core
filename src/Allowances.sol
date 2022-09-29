@@ -104,6 +104,14 @@ contract Allowances is IAllowances {
     }
   }
 
+  /**
+   * @dev reduce abs(amount) allowance and revert if allowance is not enough
+   * @param accountId account id
+   * @param allowancesForSubId storage pointer with maps account to subId allowance
+   * @param allowancesForSubId storage pointer with maps account to asset allowance
+   * @param delegate address to spend the allowance
+   * @param amount amount in raw transfer
+   */
   function _spendAbsAllowance(
     uint accountId,
     mapping(address => uint) storage allowancesForSubId,
