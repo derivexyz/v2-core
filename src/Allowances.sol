@@ -1,6 +1,9 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+
+import "./libraries/IntLib.sol";
+
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./interfaces/IAccount.sol";
@@ -11,6 +14,7 @@ import "./interfaces/IAccount.sol";
  * @notice Allow more granular alloance setting, supposed to be used by Account
  */
 contract Allowances is IAllowances {
+  using IntLib for int;
   // Variables
 
   /// @dev accountId => owner => asset => subId => delegate => allowance
@@ -122,7 +126,7 @@ contract Allowances is IAllowances {
     uint subIdAllowance = allowancesForSubId[delegate];
     uint assetAllowance = allowancesForAsset[delegate];
 
-    uint256 absAmount = _abs(amount);
+    uint256 absAmount = amount.abs();
     /* subId allowances are decremented before asset allowances */
     if (absAmount <= subIdAllowance) {
       allowancesForSubId[delegate] = subIdAllowance - absAmount;
@@ -138,13 +142,5 @@ contract Allowances is IAllowances {
         subIdAllowance, 
         assetAllowance);
     }
-  }
-
-  //////////
-  // Util //
-  //////////
-
-  function _abs(int amount) internal pure returns (uint absAmount) {
-    return amount >= 0 ? uint(amount) : uint(-amount);
   }
 }

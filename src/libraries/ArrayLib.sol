@@ -5,7 +5,7 @@ import "forge-std/console2.sol";
 /**
  * @title ArrayLib
  * @author Lyra
- * @notice util functions to find entity in an array
+ * @notice util functions for array operations
  */
 
 library ArrayLib {
