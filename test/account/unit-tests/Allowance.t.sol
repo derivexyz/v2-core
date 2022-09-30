@@ -36,13 +36,13 @@ contract UNIT_Allowances is Test, AccountTestBase {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token, agree to receive USDC
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: coolAsset,
       positive: 0,
       negative: tradeAmount
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: usdcAsset,
       positive: tradeAmount,
       negative: 0
@@ -67,14 +67,14 @@ contract UNIT_Allowances is Test, AccountTestBase {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token, agree to receive USDC
-    IAllowances.SubIdAllowance[] memory tokenSubIdAllowances = new IAllowances.SubIdAllowance[](2);
-    tokenSubIdAllowances[0] = IAllowances.SubIdAllowance({
+    AccountStructs.SubIdAllowance[] memory tokenSubIdAllowances = new AccountStructs.SubIdAllowance[](2);
+    tokenSubIdAllowances[0] = AccountStructs.SubIdAllowance({
       asset: coolAsset,
       subId: tokenSubId,
       positive: 0,
       negative: tradeAmount
     });
-    tokenSubIdAllowances[1] = IAllowances.SubIdAllowance({
+    tokenSubIdAllowances[1] = AccountStructs.SubIdAllowance({
       asset: usdcAsset,
       subId: 0,
       positive: tradeAmount,
@@ -100,27 +100,27 @@ contract UNIT_Allowances is Test, AccountTestBase {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token, agree to receive USDC
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: coolAsset,
       positive: 0,
       negative: tradeAmount / 2
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: usdcAsset,
       positive: tradeAmount / 2,
       negative: 0
     });
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    IAllowances.SubIdAllowance[] memory tokenSubIdAllowances = new IAllowances.SubIdAllowance[](2);
-    tokenSubIdAllowances[0] = IAllowances.SubIdAllowance({
+    AccountStructs.SubIdAllowance[] memory tokenSubIdAllowances = new AccountStructs.SubIdAllowance[](2);
+    tokenSubIdAllowances[0] = AccountStructs.SubIdAllowance({
       asset: coolAsset,
       subId: tokenSubId,
       positive: 0,
       negative: tradeAmount / 2
     });
-    tokenSubIdAllowances[1] = IAllowances.SubIdAllowance({
+    tokenSubIdAllowances[1] = AccountStructs.SubIdAllowance({
       asset: usdcAsset,
       subId: 0,
       positive: tradeAmount / 2,
@@ -145,27 +145,27 @@ contract UNIT_Allowances is Test, AccountTestBase {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token, agree to receive USDC
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: coolAsset,
       positive: 0,
       negative: 5e17
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: usdcAsset,
       positive: 1e18,
       negative: 0
     });
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    IAllowances.SubIdAllowance[] memory tokenSubIdAllowances = new IAllowances.SubIdAllowance[](2);
-    tokenSubIdAllowances[0] = IAllowances.SubIdAllowance({
+    AccountStructs.SubIdAllowance[] memory tokenSubIdAllowances = new AccountStructs.SubIdAllowance[](2);
+    tokenSubIdAllowances[0] = AccountStructs.SubIdAllowance({
       asset: coolAsset,
       subId: tokenSubId,
       positive: 0,
       negative: 4e17
     });
-    tokenSubIdAllowances[1] = IAllowances.SubIdAllowance({
+    tokenSubIdAllowances[1] = AccountStructs.SubIdAllowance({
       asset: usdcAsset,
       subId: 0,
       positive: 1e18,
@@ -198,8 +198,8 @@ contract UNIT_Allowances is Test, AccountTestBase {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: coolAsset,
       positive: 0,
       negative: tradeAmount
@@ -229,13 +229,13 @@ contract UNIT_Allowances is Test, AccountTestBase {
     address orderbook = address(0xb00c);
 
     // give orderbook allowance over both
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: coolAsset,
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: usdcAsset,
       positive: type(uint).max,
       negative: type(uint).max
@@ -258,13 +258,13 @@ contract UNIT_Allowances is Test, AccountTestBase {
     address orderbook = address(0xb00c);
 
     // bob give orderbook allowance over both
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: coolAsset,
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: usdcAsset,
       positive: type(uint).max,
       negative: type(uint).max
@@ -276,14 +276,14 @@ contract UNIT_Allowances is Test, AccountTestBase {
 
     // alice gives wrong tokenSubId allowance for tokenAsset asset
     vm.startPrank(alice);
-    IAllowances.SubIdAllowance[] memory tokenSubIdAllowances = new IAllowances.SubIdAllowance[](2);
-    tokenSubIdAllowances[0] = IAllowances.SubIdAllowance({
+    AccountStructs.SubIdAllowance[] memory tokenSubIdAllowances = new AccountStructs.SubIdAllowance[](2);
+    tokenSubIdAllowances[0] = AccountStructs.SubIdAllowance({
       asset: coolAsset,
       subId: tokenSubId + 1, // wrong tokenSubId 
       positive: type(uint).max,
       negative: type(uint).max
     });
-    tokenSubIdAllowances[1] = IAllowances.SubIdAllowance({
+    tokenSubIdAllowances[1] = AccountStructs.SubIdAllowance({
       asset: usdcAsset,
       subId: 0,
       positive: type(uint).max,

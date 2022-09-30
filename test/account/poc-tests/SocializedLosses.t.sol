@@ -93,7 +93,7 @@ contract POC_SocializedLosses is Test, LyraHelper {
   }
 
   function openCallOption(uint fromAcc, uint toAcc, int amount, uint subId) public {
-    IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(optionAdapter),
@@ -102,7 +102,7 @@ contract POC_SocializedLosses is Test, LyraHelper {
       amount: amount,
       assetData: bytes32(0)
     });
-    IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](1);
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](1);
     transferBatch[0] = optionTransfer;
     account.submitTransfers(transferBatch, "");
   }

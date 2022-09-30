@@ -8,7 +8,8 @@ import "synthetix/DecimalMath.sol";
 import "forge-std/console2.sol";
 
 import "src/interfaces/IAsset.sol";
-import "src/Account.sol";
+import "src/interfaces/IAccount.sol";
+import "src/interfaces/AccountStructs.sol";
 
 import "./../assets/QuoteWrapper.sol";
 import "./../assets/BaseWrapper.sol";
@@ -26,7 +27,7 @@ contract PortfolioRiskManager is Owned, IManager {
     uint ivShock;
   }
 
-  Account account;
+  IAccount account;
 
   ////
   // Allowed assets
@@ -47,7 +48,7 @@ contract PortfolioRiskManager is Owned, IManager {
   mapping(uint => bool) liquidationFlagged;
 
   constructor(
-    Account account_,
+    IAccount account_,
     PriceFeeds priceFeed_,
     QuoteWrapper quoteAsset_,
     uint quoteFeedId_,
@@ -81,7 +82,7 @@ contract PortfolioRiskManager is Owned, IManager {
   // Liquidations
 
   function flagLiquidation(uint accountId) external {
-    IAccount.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
+    AccountStructs.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
     if (!liquidationFlagged[accountId] && _isAccountLiquidatable(accountId, assetBals)) {
       liquidationFlagged[accountId] = true;
     } else {
@@ -102,7 +103,7 @@ contract PortfolioRiskManager is Owned, IManager {
 
     // TODO: check owner of accountForCollat
     account.managerAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountForCollateral, 
         asset: quoteAsset, 
         subId: 0, 
@@ -113,7 +114,7 @@ contract PortfolioRiskManager is Owned, IManager {
     assessRisk(accountForCollateral, account.getAccountBalances(accountForCollateral));
 
     account.managerAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountForCollateral, 
         asset: quoteAsset, 
         subId: 0, 
@@ -123,7 +124,7 @@ contract PortfolioRiskManager is Owned, IManager {
     );
     account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
 
-    IAccount.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
+    AccountStructs.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
     for (uint i; i < assetBals.length; i++) {
       if (assetBals[i].asset == IAsset(optionToken)) {
         optionToken.decrementLiquidations(assetBals[i].subId);
@@ -135,7 +136,7 @@ contract PortfolioRiskManager is Owned, IManager {
   ////
   // Settlement
 
-  function settleAssets(uint accountId, IAccount.HeldAsset[] memory assetsToSettle) external {
+  function settleAssets(uint accountId, AccountStructs.HeldAsset[] memory assetsToSettle) external {
     // iterate through all held assets and trigger settlement
     uint assetLen = assetsToSettle.length;
     for (uint i; i < assetLen; i++) {
@@ -146,7 +147,7 @@ contract PortfolioRiskManager is Owned, IManager {
       if (settled) {
         // NOTE: RM A at risk of RM B not properly implementing settling
         account.managerAdjustment(
-          IAccount.AssetAdjustment({
+          AccountStructs.AssetAdjustment({
             acc: accountId,
             asset: assetsToSettle[i].asset,
             subId: assetsToSettle[i].subId,
@@ -155,7 +156,7 @@ contract PortfolioRiskManager is Owned, IManager {
           })
         );
 
-        account.managerAdjustment(IAccount.AssetAdjustment({
+        account.managerAdjustment(AccountStructs.AssetAdjustment({
           acc: accountId, 
           asset: quoteAsset, 
           subId: 0, 
@@ -174,7 +175,7 @@ contract PortfolioRiskManager is Owned, IManager {
     assessRisk(accountId, account.getAccountBalances(accountId));
   }
 
-  function assessRisk(uint accountId, IAccount.AssetBalance[] memory assets) public {
+  function assessRisk(uint accountId, AccountStructs.AssetBalance[] memory assets) public {
     if (liquidationFlagged[accountId]) {
       revert("Account flagged for liquidation");
     }
@@ -183,7 +184,7 @@ contract PortfolioRiskManager is Owned, IManager {
     }
   }
 
-  function _isAccountLiquidatable(uint accountId, IAccount.AssetBalance[] memory assets) internal returns (bool) {
+  function _isAccountLiquidatable(uint accountId, AccountStructs.AssetBalance[] memory assets) internal returns (bool) {
     // Get fresh lending balance once in the beginning
     int freshLendingBalance = lending.getBalance(accountId);
 
@@ -199,7 +200,7 @@ contract PortfolioRiskManager is Owned, IManager {
       int scenarioValue = 0;
       uint shockedSpot = baseSpotPrice.multiplyDecimal(scenarios[j].spotShock);
       for (uint k; k < assetLen; k++) {
-        IAccount.AssetBalance memory assetBalance = assets[k];
+        AccountStructs.AssetBalance memory assetBalance = assets[k];
 
         if (assetBalance.asset == IAsset(optionToken)) {
           // swap out to remov BS price:

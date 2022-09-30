@@ -35,10 +35,10 @@ contract AccountTestBase is Test {
 
         /* mock tokens that can be deposited into accounts */
         usdc = new TestERC20("USDC", "USDC");
-        usdcAsset = new DumbAsset(IERC20(usdc), account, false);
+        usdcAsset = new DumbAsset(IERC20(usdc), IAccount(address(account)), false);
 
         coolToken = new TestERC20("Cool", "COOL");
-        coolAsset = new DumbAsset(IERC20(coolToken), account, false);
+        coolAsset = new DumbAsset(IERC20(coolToken), IAccount(address(account)), false);
 
         dumbManager = new DumbManager(address(account));
 
@@ -90,7 +90,7 @@ contract AccountTestBase is Test {
         uint256 tokenASubId,
         uint256 tokenBSubId
     ) internal {
-        IAccount.AssetTransfer memory tokenATransfer = IAccount.AssetTransfer({
+        AccountStructs.AssetTransfer memory tokenATransfer = AccountStructs.AssetTransfer({
             fromAcc: fromAcc,
             toAcc: toAcc,
             asset: IAsset(assetA),
@@ -99,7 +99,7 @@ contract AccountTestBase is Test {
             assetData: bytes32(0)
         });
 
-        IAccount.AssetTransfer memory tokenBTranser = IAccount.AssetTransfer({
+        AccountStructs.AssetTransfer memory tokenBTranser = AccountStructs.AssetTransfer({
             fromAcc: toAcc,
             toAcc: fromAcc,
             asset: IAsset(assetB),
@@ -108,8 +108,8 @@ contract AccountTestBase is Test {
             assetData: bytes32(0)
         });
 
-        IAccount.AssetTransfer[]
-            memory transferBatch = new IAccount.AssetTransfer[](2);
+        AccountStructs.AssetTransfer[]
+            memory transferBatch = new AccountStructs.AssetTransfer[](2);
         transferBatch[0] = tokenATransfer;
         transferBatch[1] = tokenBTranser;
 
@@ -123,8 +123,8 @@ contract AccountTestBase is Test {
         uint256 subId,
         int256 tokenAmounts
     ) internal {
-        IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](1);
-        transferBatch[0] = IAccount.AssetTransfer({
+        AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](1);
+        transferBatch[0] = AccountStructs.AssetTransfer({
             fromAcc: fromAcc,
             toAcc: toAcc,
             asset: asset,

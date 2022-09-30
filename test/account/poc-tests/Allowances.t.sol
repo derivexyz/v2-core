@@ -47,13 +47,13 @@ contract POC_Allowances is Test, LyraHelper {
     address orderbook = charlie;
 
     // give orderbook allowance over both
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: type(uint).max,
       negative: type(uint).max
@@ -133,7 +133,7 @@ contract POC_Allowances is Test, LyraHelper {
   function tradeOptionWithUSDC(
     uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId
   ) internal {
-    IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(optionAdapter),
@@ -142,7 +142,7 @@ contract POC_Allowances is Test, LyraHelper {
       assetData: bytes32(0)
     });
 
-    IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: IAsset(usdcAdapter),
@@ -151,7 +151,7 @@ contract POC_Allowances is Test, LyraHelper {
       assetData: bytes32(0)
     });
 
-    IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](2);
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 

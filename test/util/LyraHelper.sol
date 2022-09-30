@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 import "src/Account.sol";
 import "src/interfaces/IManager.sol";
+import "src/interfaces/IAccount.sol";
+import "src/interfaces/AccountStructs.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -52,20 +54,20 @@ abstract contract LyraHelper is Test {
     usdc = new TestERC20("usdc", "USDC");
     usdcAdapter = new QuoteWrapper(IERC20(usdc), account, priceFeeds, 0);
     weth = new TestERC20("wrapped eth", "wETH");
-    wethAdapter = new BaseWrapper(IERC20(weth), account, priceFeeds, 1);
+    wethAdapter = new BaseWrapper(IERC20(weth), IAccount(address(account)), priceFeeds, 1);
 
     /* Lending */
     dai = new TestERC20("dai", "DAI");
     // starts at 5%, increases to 10% at 50% util, then grows by 2% for every 10% util increase
     interestRateModel = new ContinuousJumpRateModel(5e16, 1e17, 2e17, 5e17);
-    daiLending = new Lending(IERC20(dai), account, interestRateModel);
+    daiLending = new Lending(IERC20(dai), IAccount(address(account)), interestRateModel);
 
     /* Options */
     settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
     optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
-    rm = new PortfolioRiskManager(account, PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
+    rm = new PortfolioRiskManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);
@@ -87,7 +89,7 @@ abstract contract LyraHelper is Test {
   }
 
   function tradeCallOption(uint longAcc, uint shortAcc, uint amount, uint premium, uint optionSubId) public {
-    IAccount.AssetTransfer memory optionTransfer = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
       asset: IAsset(optionAdapter),
@@ -96,7 +98,7 @@ abstract contract LyraHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccount.AssetTransfer memory premiumTransfer = IAccount.AssetTransfer({
+    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
       asset: IAsset(usdcAdapter),
@@ -105,7 +107,7 @@ abstract contract LyraHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccount.AssetTransfer[] memory transferBatch = new IAccount.AssetTransfer[](2);
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
@@ -163,13 +165,13 @@ abstract contract LyraHelper is Test {
 
   function setupMaxAssetAllowancesForAll(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: IAsset(optionAdapter),
       positive: type(uint).max,
       negative: type(uint).max
     });
-    assetAllowances[1] = IAllowances.AssetAllowance({
+    assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: IAsset(usdcAdapter),
       positive: type(uint).max,
       negative: type(uint).max
@@ -181,8 +183,8 @@ abstract contract LyraHelper is Test {
 
   function setupMaxSingleAssetAllowance(address ownerAdd, uint ownerAcc, address delegate, IAsset asset) internal {
     vm.startPrank(ownerAdd);
-    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
-    assetAllowances[0] = IAllowances.AssetAllowance({
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: IAsset(asset),
       positive: type(uint).max,
       negative: type(uint).max
