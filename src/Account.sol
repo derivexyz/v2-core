@@ -220,17 +220,17 @@ contract Account is Allowances, ERC721, AccountStructs {
       assetData: assetTransfer.assetData
     });
 
+    // balance is adjusted based on asset hook
+    (, bool fromAdjustmentNeedAllowance) =  _adjustBalance(fromAccAdjustment, true);
+    (, bool toAdjustmentNeedAllowance) = _adjustBalance(toAccAdjustment, true);
+
     // if it's not ERC721 approved: spend allowances
-    if (!_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) {
+    if (fromAdjustmentNeedAllowance && !_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) {
       _spendAllowance(fromAccAdjustment, ownerOf(fromAccAdjustment.acc), msg.sender);
     }
-    if (!_isApprovedOrOwner(msg.sender, toAccAdjustment.acc)) {
+    if (toAdjustmentNeedAllowance && !_isApprovedOrOwner(msg.sender, toAccAdjustment.acc)) {
       _spendAllowance(toAccAdjustment, ownerOf(toAccAdjustment.acc), msg.sender);
     }
-
-    // balance is adjusted based on asset hook
-    _adjustBalance(fromAccAdjustment, true);
-    _adjustBalance(toAccAdjustment, true);
   }
 
   /** 
@@ -243,7 +243,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   ) onlyManager(adjustment.acc) external returns (int postAdjustmentBalance) {    
 
     // balance is adjusted based on asset hook
-    postAdjustmentBalance = _adjustBalance(adjustment, true);
+    (postAdjustmentBalance, ) = _adjustBalance(adjustment, true);
   }
 
   /** 
@@ -259,8 +259,8 @@ contract Account is Allowances, ERC721, AccountStructs {
     bytes memory managerData
   ) onlyAsset(adjustment.asset) external returns (int postAdjustmentBalance) {    
 
-    // balance adjustment is routed through asset again 
-    postAdjustmentBalance = _adjustBalance(adjustment, triggerAssetHook);
+    // balance adjustment is routed through asset if triggerAssetHook == true
+    (postAdjustmentBalance, ) = _adjustBalance(adjustment, triggerAssetHook);
     _managerHook(adjustment.acc, msg.sender, managerData);
   }
 
@@ -268,19 +268,22 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
    */
-  function _adjustBalance(AssetAdjustment memory adjustment, bool triggerHook) internal returns (int256 postBalance) {
+  function _adjustBalance(AssetAdjustment memory adjustment, bool triggerHook) internal returns (int256 postBalance, bool needAllowance) {
     BalanceAndOrder storage userBalanceAndOrder = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
     int preBalance = int(userBalanceAndOrder.balance);
 
     // allow asset to modify final balance in special cases
     if (triggerHook) {
-      postBalance = _assetHook(
+      (postBalance, needAllowance) = _assetHook(
       adjustment, 
       preBalance, 
       msg.sender
     );
     } else {
       postBalance = preBalance + adjustment.amount;
+      
+      // needAllowance id default to: only need allowance if substracting from account
+      needAllowance = adjustment.amount < 0;
     }
 
     /* for gas efficiency, order unchanged when asset removed */
@@ -337,7 +340,7 @@ contract Account is Allowances, ERC721, AccountStructs {
     AssetAdjustment memory adjustment,
     int preBalance, 
     address caller
-  ) internal returns (int finalBalance) {
+  ) internal returns (int finalBalance, bool needAllowance) {
     return adjustment.asset.handleAdjustment(
       adjustment, preBalance, manager[adjustment.acc], caller
     );
