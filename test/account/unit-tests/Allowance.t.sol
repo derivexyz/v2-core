@@ -29,12 +29,12 @@ contract UNIT_Allowances is Test, AccountTestBase {
         address(account), 
         alice,
         bobAcc,
-        -10e18,
+        -1e18,
         0,
         0
       )
     );
-    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 1e18, 0, 0);
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 1e18, 0, tokenSubId);
     vm.stopPrank();
   }
 
