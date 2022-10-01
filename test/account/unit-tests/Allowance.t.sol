@@ -174,35 +174,38 @@ contract UNIT_Allowances is Test, AccountTestBase {
   function testCannotTradeWithInsufficientPositiveAllowance() public {    
     // // todo: trade will revert if receiver doesn't specify allowance to increase its position; 
     // // only if asset need positive allowance to receive
-    // uint tradeAmount = 1e18;
+    uint tradeAmount = 1e18;
 
-    // vm.startPrank(bob);
-    // // bob allow alice to move its cool token
-    // AccountStructs.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
-    // assetAllowances[0] = IAllowances.AssetAllowance({
-    //   asset: coolAsset,
-    //   positive: 0,
-    //   negative: tradeAmount
-    // });
-    // account.setAssetAllowances(bobAcc, alice, assetAllowances);
-    // vm.stopPrank();
+    // set that we need positive allowance to receive USDC
+    usdcAsset.setNeedPositiveAllowance(true);
 
-    // // expect revert
-    // vm.startPrank(alice);
-    // vm.expectRevert(
-    //   abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, 
-    //     address(account), 
-    //     alice,
-    //     bobAcc,
-    //     tradeAmount, // cannot increase amount!
-    //     0, // tokenSubId allowance
-    //     0  // asset allowance
-    //   )
-    // );
+    vm.startPrank(bob);
+    // bob allow alice to move its cool token
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
+      asset: coolAsset,
+      positive: 0,
+      negative: tradeAmount
+    });
+    account.setAssetAllowances(bobAcc, alice, assetAllowances);
+    vm.stopPrank();
 
-    // // alice trade USDC in echange of Bob's coolToken
-    // tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);
-    // vm.stopPrank();
+    // expect revert
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, 
+        address(account), 
+        alice,
+        bobAcc,
+        tradeAmount, // cannot increase amount!
+        0, // tokenSubId allowance
+        0  // asset allowance
+      )
+    );
+
+    // alice trade USDC in echange of Bob's coolToken
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);
+    vm.stopPrank();
   }
 
   function test3rdPartyAllowance() public {    

@@ -7,12 +7,15 @@ import "src/interfaces/IAccount.sol";
 /**
  * @title DumbAsset is the easiest Asset wrapper that wraps ERC20 into account system.
  * @dev   deployer can set DumbAsset to not allow balance go negative. 
- *        if set to "allowNegative = false", token must be deposited before using
+ *        if set to "allowNegativeBalance = false", token must be deposited before using
  */
 contract DumbAsset is IAsset {
   IERC20 token;
   IAccount account;
-  bool immutable allowNegative;
+  bool immutable allowNegativeBalance;
+  
+  // default to don't need positive allowance
+  bool needPositiveAllowance = false;
 
   bool revertHandleManagerChange;
 
@@ -23,10 +26,10 @@ contract DumbAsset is IAsset {
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
 
-  constructor(IERC20 token_, IAccount account_, bool allowNegative_){
+  constructor(IERC20 token_, IAccount account_, bool allowNegativeBalance_){
     token = token_;
     account = account_;
-    allowNegative = allowNegative_;
+    allowNegativeBalance = allowNegativeBalance_;
   }
 
   function deposit(uint recipientAccount, uint256 subId, uint amount) external {
@@ -64,13 +67,17 @@ contract DumbAsset is IAsset {
   ) external view override returns (int finalBalance, bool needAllowance) {
     if (revertFromManager[address(_manager)]) revert();
     int result = preBal + adjustment.amount;
-    if (result < 0 && !allowNegative) revert("negative balance");
-    return (result, adjustment.amount < 0);
+    if (result < 0 && !allowNegativeBalance) revert("negative balance");
+    return (result, adjustment.amount < 0 || needPositiveAllowance);
   }
 
   function handleManagerChange(uint, IManager) external override {
     if (revertHandleManagerChange) revert();
     if(recordMangerChangeCalls) handleManagerCalled += 1;
+  }
+
+  function setNeedPositiveAllowance(bool _needPositiveAllowance) external {
+    needPositiveAllowance = _needPositiveAllowance;
   }
 
   function setRevertAdjustmentFromManager(address _manager, bool _revert) external {
