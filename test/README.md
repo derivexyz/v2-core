@@ -6,7 +6,7 @@ You can find each big **modules** that compose Lyra-V2 in separate folders: This
 
 There are 3 shared folder includes:
 
-- `gas/`: scripts to stimulate gas cost for modules
+- `gas/`: scripts to simulate gas cost for modules
 - `util/`: shared script that can be used by all modules (some shared setup scripts)
 - `mocks/`: simple mock contracts that mock returns for unit tests, or more complicated pseudo-contract for POC tests
 
