@@ -31,7 +31,7 @@ contract DumbAsset is IAsset {
 
   function deposit(uint recipientAccount, uint256 subId, uint amount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: subId,
@@ -46,7 +46,7 @@ contract DumbAsset is IAsset {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
-      IAccount.AssetAdjustment({
+      AccountStructs.AssetAdjustment({
         acc: accountId, 
         asset: IAsset(address(this)), 
         subId: 0, 
@@ -60,16 +60,12 @@ contract DumbAsset is IAsset {
   }
 
   function handleAdjustment(
-<<<<<<< HEAD
-    IAccount.AssetAdjustment memory adjustment, int preBal, IManager /*riskModel*/, address
-=======
     AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager _manager, address
->>>>>>> 5b24028 (unit-test: full coverage)
-  ) external view override returns (int finalBalance) {
+  ) external view override returns (int finalBalance, bool needAllowance) {
     if (revertFromManager[address(_manager)]) revert();
     int result = preBal + adjustment.amount;
     if (result < 0 && !allowNegative) revert("negative balance");
-    return result;
+    return (result, adjustment.amount < 0);
   }
 
   function handleManagerChange(uint, IManager) external override {

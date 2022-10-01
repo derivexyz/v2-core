@@ -67,7 +67,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
   }
 
   function testMigrationShouldNotMakeDuplicatedCallToAssets() public { 
-    DumbAsset mockOptionAsset = new DumbAsset(coolToken, account, true); // allow negative balance
+    DumbAsset mockOptionAsset = new DumbAsset(coolToken, IAccount(address(account)), true); // allow negative balance
     vm.label(address(mockOptionAsset), "DumbOption");
 
     // create another account just to transfer assets
