@@ -32,6 +32,11 @@ There should also be a `mocks` folder which contain own mocks written for this m
   - give ideas around gas cost
   - show how certain design should be improved
 
+- documentation
+  - unit tests: aim to achieve full coverage, no additional documentation needed
+  - poc tests: must have a `README.md` in the `poc-tests` folder that outline all the tests as checklist.
+  - gas test: must have a `README.md` in the `gas-tests` folder which outline all the benchmark scenarios and fill in the gas cost at the end.
+
 - A reviewer should ask the code owner to write more **unit tests** when
   - it's unclear how a certain piece of code works
   - you don't feel comfortable starting building on top of this module.
