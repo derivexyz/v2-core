@@ -3,12 +3,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "../util/LyraHelper.sol";
+import "../poc-tests/AccountPOCHelper.sol";
 
 // TODO: forge treats storage slots as WARM for all tests within a contract
 //       may need to use hardhat or cast
 
-contract Transfers is Test, LyraHelper {
+contract Transfers is Test, AccountPOCHelper {
   address liquidator = vm.addr(5);
   uint aliceAcc;
   uint bobAcc;

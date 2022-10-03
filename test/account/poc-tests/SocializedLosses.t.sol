@@ -3,9 +3,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "../../util/LyraHelper.sol";
+import "./AccountPOCHelper.sol";
 
-contract POC_SocializedLosses is Test, LyraHelper {
+contract POC_SocializedLosses is Test, AccountPOCHelper {
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;

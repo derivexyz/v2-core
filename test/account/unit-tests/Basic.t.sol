@@ -6,8 +6,8 @@ import "forge-std/console2.sol";
 
 import "../../../src/interfaces/IAccount.sol";
 
-import {DumbManager} from "../../mocks/managers/DumbManager.sol";
-import {DumbAsset} from "../../mocks/assets/DumbAsset.sol";
+import {MockManager} from "../../shared/mocks/MockManager.sol";
+import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 

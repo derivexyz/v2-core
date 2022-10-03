@@ -1,7 +1,6 @@
 pragma solidity ^0.8.13;
 
 import "../feeds/PriceFeeds.sol";
-import "forge-std/console2.sol";
 
 // Used by assets to agree on exact price per expiry
 contract SettlementPricer {

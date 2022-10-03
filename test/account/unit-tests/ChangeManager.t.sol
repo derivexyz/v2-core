@@ -6,8 +6,8 @@ import "forge-std/console2.sol";
 
 import "../../../src/interfaces/IAccount.sol";
 
-import {DumbManager} from "../../mocks/managers/DumbManager.sol";
-import {DumbAsset} from "../../mocks/assets/DumbAsset.sol";
+import {MockManager} from "../../shared/mocks/MockManager.sol";
+import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 
@@ -15,12 +15,12 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
   
   error MockError();
 
-  DumbManager newManager;
+  MockManager newManager;
 
   function setUp() public {
     setUpAccounts();
 
-    newManager = new DumbManager(address(account));
+    newManager = new MockManager(address(account));
     vm.label(address(newManager), "NewManager");
   }
 
@@ -67,7 +67,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
   }
 
   function testMigrationShouldNotMakeDuplicatedCallToAssets() public { 
-    DumbAsset mockOptionAsset = new DumbAsset(coolToken, IAccount(address(account)), true); // allow negative balance
+    MockAsset mockOptionAsset = new MockAsset(coolToken, IAccount(address(account)), true); // allow negative balance
     vm.label(address(mockOptionAsset), "DumbOption");
 
     // create another account just to transfer assets

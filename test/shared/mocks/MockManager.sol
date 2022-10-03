@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 
-contract DumbManager is IManager {
+contract MockManager is IManager {
   
   IAccount account;
 

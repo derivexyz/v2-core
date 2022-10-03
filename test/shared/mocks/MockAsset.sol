@@ -5,11 +5,11 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 
 /**
- * @title DumbAsset is the easiest Asset wrapper that wraps ERC20 into account system.
- * @dev   deployer can set DumbAsset to not allow balance go negative. 
+ * @title MockAsset is the easiest Asset wrapper that wraps ERC20 into account system.
+ * @dev   deployer can set MockAsset to not allow balance go negative. 
  *        if set to "allowNegativeBalance = false", token must be deposited before using
  */
-contract DumbAsset is IAsset {
+contract MockAsset is IAsset {
   IERC20 token;
   IAccount account;
   bool immutable allowNegativeBalance;

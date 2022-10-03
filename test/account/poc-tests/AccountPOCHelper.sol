@@ -16,13 +16,13 @@ import "../mocks/assets/lending/Lending.sol";
 import "../mocks/assets/lending/ContinuousJumpRateModel.sol";
 import "../mocks/assets/lending/InterestRateModel.sol";
 import "../mocks/managers/PortfolioRiskManager.sol";
-import "../mocks/TestERC20.sol";
+import "../../shared/mocks/MockERC20.sol";
 
-abstract contract LyraHelper is Test {
+abstract contract AccountPOCHelper is Test {
   Account account;
-  TestERC20 weth;
-  TestERC20 usdc;
-  TestERC20 dai;
+  MockERC20 weth;
+  MockERC20 usdc;
+  MockERC20 dai;
   BaseWrapper wethAdapter;
   QuoteWrapper usdcAdapter;
   Lending daiLending;
@@ -51,13 +51,13 @@ abstract contract LyraHelper is Test {
     priceFeeds = new TestPriceFeeds();
 
     /* Wrappers */
-    usdc = new TestERC20("usdc", "USDC");
+    usdc = new MockERC20("usdc", "USDC");
     usdcAdapter = new QuoteWrapper(IERC20(usdc), account, priceFeeds, 0);
-    weth = new TestERC20("wrapped eth", "wETH");
+    weth = new MockERC20("wrapped eth", "wETH");
     wethAdapter = new BaseWrapper(IERC20(weth), IAccount(address(account)), priceFeeds, 1);
 
     /* Lending */
-    dai = new TestERC20("dai", "DAI");
+    dai = new MockERC20("dai", "DAI");
     // starts at 5%, increases to 10% at 50% util, then grows by 2% for every 10% util increase
     interestRateModel = new ContinuousJumpRateModel(5e16, 1e17, 2e17, 5e17);
     daiLending = new Lending(IERC20(dai), IAccount(address(account)), interestRateModel);

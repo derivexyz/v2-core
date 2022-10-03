@@ -3,9 +3,9 @@ pragma solidity ^0.8.13;
 
 import "../../../src/Account.sol";
 
-import "../../mocks/TestERC20.sol";
-import "../../mocks/assets/DumbAsset.sol";
-import "../../mocks/managers/DumbManager.sol";
+import "../../shared/mocks/MockERC20.sol";
+import "../../shared/mocks/MockAsset.sol";
+import "../../shared/mocks/MockManager.sol";
 import "forge-std/Test.sol";
 
 contract AccountTestBase is Test {
@@ -15,13 +15,13 @@ contract AccountTestBase is Test {
     uint256 aliceAcc;
     uint256 bobAcc;
 
-    DumbManager dumbManager;
+    MockManager dumbManager;
 
-    TestERC20 usdc;
-    TestERC20 coolToken;
+    MockERC20 usdc;
+    MockERC20 coolToken;
 
-    DumbAsset usdcAsset;
-    DumbAsset coolAsset;
+    MockAsset usdcAsset;
+    MockAsset coolAsset;
 
     Account account;
 
@@ -34,13 +34,13 @@ contract AccountTestBase is Test {
         account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
 
         /* mock tokens that can be deposited into accounts */
-        usdc = new TestERC20("USDC", "USDC");
-        usdcAsset = new DumbAsset(IERC20(usdc), IAccount(address(account)), false);
+        usdc = new MockERC20("USDC", "USDC");
+        usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
 
-        coolToken = new TestERC20("Cool", "COOL");
-        coolAsset = new DumbAsset(IERC20(coolToken), IAccount(address(account)), false);
+        coolToken = new MockERC20("Cool", "COOL");
+        coolAsset = new MockAsset(IERC20(coolToken), IAccount(address(account)), false);
 
-        dumbManager = new DumbManager(address(account));
+        dumbManager = new MockManager(address(account));
 
         aliceAcc = account.createAccount(alice, dumbManager);
         bobAcc = account.createAccount(bob, dumbManager);
@@ -67,8 +67,8 @@ contract AccountTestBase is Test {
     function mintAndDeposit(
         address user,
         uint256 accountId,
-        TestERC20 token,
-        DumbAsset assetWrapper,
+        MockERC20 token,
+        MockAsset assetWrapper,
         uint256 subId,
         uint256 amount
     ) public {
