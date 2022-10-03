@@ -2,20 +2,24 @@
 
 ## Folder structure
 
-You can find each big **modules** that compose Lyra-V2 in separate folders: This should follow the same structure as in `src/`
+You can find each big **modules** that compose Lyra-V2 in separate folders: list of modules:
 
-There are 3 shared folder includes:
+- `account`
 
-- `gas/`: scripts to simulate gas cost for modules
-- `util/`: shared script that can be used by all modules (some shared setup scripts)
-- `mocks/`: simple mock contracts that mock returns for unit tests, or more complicated pseudo-contract for POC tests
+The `shared` folder contains common contracts that are used across testing for different modules. Currently includes:
+
+- `mocks` folder: shared mocks that should be used in unit test: `MockERC20`, `MockManager` and `MockAsset`
+- `utils`: shared helper functions like encode, decode, building structs... etc
 
 ## Types of Tests
 
-In each module folder, we have at least 2 folders: `unit-tests` and `poc-tests`
+In each module folder, we have at least 3 folders: `unit-tests`, `poc-tests` and `gas-tests` which contain the actual test files:
 
 - `unit-tests`: where we mock everything and aim to ensure **every line of logic** works as expected. All test contracts should be prefixed with `UNIT_`
 - `poc-tests`: where we explore things a bit to see if a certain design makes sense, the goal is to rapidly test ideas and architecture. All test contracts should be prefixed with `POC_`
+- `gas-tests`: contain test cases primary aimed to test gas usage, this help us while doing benchmark. All test contracts should be prefixed with `GAS_`
+
+There should also be a `mocks` folder which contain own mocks written for this module, mainly for POC tests.
 
 ## Guidelines:
 

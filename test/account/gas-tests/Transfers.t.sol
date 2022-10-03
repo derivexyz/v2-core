@@ -8,7 +8,7 @@ import "../poc-tests/AccountPOCHelper.sol";
 // TODO: forge treats storage slots as WARM for all tests within a contract
 //       may need to use hardhat or cast
 
-contract Transfers is Test, AccountPOCHelper {
+contract GAS_Transfers is Test, AccountPOCHelper {
   address liquidator = vm.addr(5);
   uint aliceAcc;
   uint bobAcc;
