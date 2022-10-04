@@ -24,17 +24,17 @@ contract POC_Allowances is Test, AccountPOCHelper {
     bobAcc = createAccountAndDepositUSDC(bob, 10000000e18);
   }
 
-  function testCannotTransferWithoutAllowance() public {    
+  function testCannotTradeWithoutAllowance() public {    
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
-    // expect revert when alice try to sub bob's usdc
-    vm.startPrank(alice);
+    // expect revert when bob trying to decrease alice's option balance
+    vm.startPrank(bob);
     vm.expectRevert(
       abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
         address(account), 
-        alice,
-        bobAcc,
-        -100e18,
+        bob,
+        aliceAcc,
+        -1e18,
         0,
         0
       )
@@ -51,12 +51,12 @@ contract POC_Allowances is Test, AccountPOCHelper {
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
     assetAllowances[0] = AccountStructs.AssetAllowance({
       asset: IAsset(optionAdapter),
-      positive: type(uint).max,
+      positive: 0,
       negative: type(uint).max
     });
     assetAllowances[1] = AccountStructs.AssetAllowance({
       asset: IAsset(usdcAdapter),
-      positive: type(uint).max,
+      positive: 0,
       negative: type(uint).max
     });
 
@@ -71,54 +71,6 @@ contract POC_Allowances is Test, AccountPOCHelper {
     // expect revert
     vm.startPrank(orderbook);
     tradeOptionWithUSDC(bobAcc, aliceAcc, 50e18, 1000e18, subId);
-    vm.stopPrank();
-  }
-
-  function testERC721Approval() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    vm.startPrank(bob);
-    account.approve(alice, bobAcc);
-    vm.stopPrank();
-
-    // successful trade
-    vm.startPrank(alice);
-    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-
-    // revert with new account
-    uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
-    vm.startPrank(alice);
-    vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
-        address(account),
-        address(alice),
-        bobNewAcc,
-        -100e18,
-        0,
-        0
-      )
-    );
-    tradeOptionWithUSDC(aliceAcc, bobNewAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-  }
-
-  function testERC721ApprovalForAll() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    vm.startPrank(bob);
-    account.setApprovalForAll(alice, true);
-    vm.stopPrank();
-
-    // successful trade
-    vm.startPrank(alice);
-    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
-    vm.stopPrank();
-
-    // successful trade even with new account from same user
-    uint bobNewAcc = createAccountAndDepositUSDC(bob, 10000000e18);
-    vm.startPrank(alice);
-    tradeOptionWithUSDC(aliceAcc, bobNewAcc, 1e18, 100e18, subId);
     vm.stopPrank();
   }
 
