@@ -91,7 +91,7 @@ contract POC_Lending is Test, AccountPOCHelper {
     assertApproxEqAbs(daiLending.getBalance(bobAcc), 10_350_569e18, 1e18);
     assertApproxEqAbs(daiLending.getBalance(charlieAcc), -11_051_709e18, 1e18);
     
-    // account balance should stay the same without 
+    // account balance should stay the same without update triggers
     assertEq(account.getBalance(aliceAcc, daiLending, 0), 20_000_000e18);
     assertEq(account.getBalance(bobAcc, daiLending, 0), 10_000_000e18);
     assertEq(account.getBalance(charlieAcc, daiLending, 0), -10_000_000e18);
