@@ -66,16 +66,13 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     vm.stopPrank();
 
     // trade post loss
-    vm.startPrank(charlie);
-    charlieAcc = account.createAccount(charlie, IManager(rm));
-    vm.stopPrank();
-    vm.startPrank(david);
-    davidAcc = account.createAccount(david, IManager(rm));
-    vm.stopPrank();
+    charlieAcc = createAccountAndDepositUSDC(charlie, 1000e18);
+    davidAcc = createAccountAndDepositUSDC(david, 1000e18);
 
     // open 1x new option
     setupMaxAssetAllowancesForAll(david, davidAcc, charlie);
     setupMaxAssetAllowancesForAll(alice, aliceAcc, charlie);
+
     vm.startPrank(charlie);
     openCallOption(charlieAcc, davidAcc, 1e18, 0);
     vm.stopPrank();

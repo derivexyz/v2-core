@@ -25,8 +25,8 @@ POC asset contract to handle lending & accrue interest on adjustmentHook.
 
 using POC manager `PortfolioRiskPOCManager` to test that the manager can do the following
 
-- [ ]  manager can update balance during
-  - [ ]  Liquidations
+- [x]  manager can update balance during
+  - [x]  Liquidations
   - [x]  Settlement
 - [x]  block unsupported manager upgrades
 
@@ -34,7 +34,6 @@ using POC manager `PortfolioRiskPOCManager` to test that the manager can do the 
 
 using the same POC manager `PortfolioRiskPOCManager.sol` to test that we can implement socialize loss at the option token level.
 
-- [x]  socialized losses
-  - [x]  Option asset ratio post socialized loss
-  - [x]  Asset augment finalBalance during transfer (positive → negative?)
-  - [x]  Asset ratio stays the same with trade post socialized loss
+- [x]  Option asset ratio post socialized loss
+- [x]  Asset augment finalBalance during transfer (positive → negative?)
+- [x]  Asset ratio stays the same with trade post socialized loss

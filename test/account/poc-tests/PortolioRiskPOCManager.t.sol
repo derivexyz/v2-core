@@ -29,8 +29,8 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
 
     setScenarios(scenarios);
 
-    aliceAcc = createAccountAndDepositUSDC(alice, 10_000_000e18);
-    bobAcc = createAccountAndDepositUSDC(bob, 10_000_000e18);
+    aliceAcc = createAccountAndDepositUSDC(alice, 1000e18);
+    bobAcc = createAccountAndDepositUSDC(bob, 10_000e18);
 
     // allow trades
     setupMaxAssetAllowancesForAll(bob, bobAcc, orderbook);
@@ -48,7 +48,22 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
   }
 
   function testManagerCanLiquidateAccount() public {
-    
+    setPrices(1e18, 2500e18);
+    rm.flagLiquidation(aliceAcc);
+
+    int aliceUSDCBefore = account.getBalance(aliceAcc, usdcAdapter, 0);
+    int bobUSDCBefore = account.getBalance(bobAcc, usdcAdapter, 0);
+
+    vm.startPrank(bob);
+    int extraCollat = 500e18;
+    rm.liquidateAccount(aliceAcc, bobAcc, extraCollat); // add some usdc and get the account
+    vm.stopPrank();
+
+    // account is now bob's
+    assertEq(account.ownerOf(aliceAcc), bob);
+
+    assertEq(account.getBalance(aliceAcc, usdcAdapter, 0), aliceUSDCBefore + extraCollat);
+    assertEq(account.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore - extraCollat);    
   }
 
   function testManagerCanBatchSettleAccounts() public {

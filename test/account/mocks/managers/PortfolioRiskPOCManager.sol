@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -103,9 +104,11 @@ contract PortfolioRiskPOCManager is Owned, IManager {
   }
 
   // Note: this should be an auction
-  function liquidateAccount(uint accountId, int price, uint accountForCollateral, int extraCollateral) external {
+  function liquidateAccount(uint accountId, uint accountForCollateral, int extraCollateral) external {
     // TODO: SM and socialised losses, this require blocks that
-    require(price >= 0 && liquidationFlagged[accountId] && extraCollateral >= 0);
+    require(liquidationFlagged[accountId] && extraCollateral >= 0);
+
+    require(msg.sender == account.ownerOf(accountForCollateral), "not auth");
 
     // TODO: check owner of accountForCollat
     account.managerAdjustment(
@@ -121,14 +124,13 @@ contract PortfolioRiskPOCManager is Owned, IManager {
 
     account.managerAdjustment(
       AccountStructs.AssetAdjustment({
-        acc: accountForCollateral, 
+        acc: accountId, 
         asset: quoteAsset, 
         subId: 0, 
         amount: extraCollateral,
         assetData: bytes32(0)
       })
     );
-    account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
 
     AccountStructs.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
     for (uint i; i < assetBals.length; i++) {
@@ -136,7 +138,12 @@ contract PortfolioRiskPOCManager is Owned, IManager {
         optionToken.decrementLiquidations(assetBals[i].subId);
       }
     }
-    assessRisk(accountId, assetBals);
+    // reset flag
+    liquidationFlagged[accountId] = false;
+    assessRisk(accountId, account.getAccountBalances(accountId));
+
+    // transfer account to liquidator
+    account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
   }
 
   ////
@@ -210,16 +217,12 @@ contract PortfolioRiskPOCManager is Owned, IManager {
         AccountStructs.AssetBalance memory assetBalance = assets[k];
 
         if (assetBalance.asset == IAsset(optionToken)) {
-          // swap out to remov BS price:
-          scenarioValue += 0;
-
-          // call external valuation contract assigned to subId
-          // scenarioValue +=
-          //   optionToken.getValue(assetBalance.subId, assetBalance.balance, shockedSpot, scenarios[j].ivShock);
+          scenarioValue += optionToken.getValue(assetBalance.subId, assetBalance.balance, shockedSpot, scenarios[j].ivShock);
         } else if (assetBalance.asset == IAsset(baseAsset)) {
           scenarioValue += int(shockedSpot).multiplyDecimal(assetBalance.balance);
         } else if (assetBalance.asset == IAsset(quoteAsset)) {
           scenarioValue += assetBalance.balance;
+          // console2.log("added value", uint(assetBalance.balance));
         } else if (assetBalance.asset == IAsset(lending)) { // placeholder for lending asset
           scenarioValue += freshLendingBalance;
         } else {
@@ -228,6 +231,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
       }
 
       if (scenarioValue < 0) {
+        console2.log("not safe", accountId, uint(-scenarioValue));
         return true;
       }
     }
