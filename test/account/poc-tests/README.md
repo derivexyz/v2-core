@@ -27,8 +27,8 @@ POC asset contract to handle lending & accrue interest on adjustmentHook.
 using POC manager `PortfolioRiskPOCManager` to test that the manager can do the following
 
 - [ ]  manager can update balance during
-  - []  Liquidations
-  - []  Settlement
+  - [ ]  Liquidations
+  - [ ]  Settlement
 - [ ]  block unsupported manager upgrades
 
 ### `SocializedLosses.sol` 

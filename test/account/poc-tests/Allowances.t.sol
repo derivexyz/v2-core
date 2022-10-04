@@ -120,32 +120,4 @@ contract POC_Allowances is Test, AccountPOCHelper {
     tradeOptionWithUSDC(bobAcc, aliceAcc, 50e18, 1000e18, subId);
     vm.stopPrank();
   }
-
-  function tradeOptionWithUSDC(
-    uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId
-  ) internal {
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
-      fromAcc: fromAcc,
-      toAcc: toAcc,
-      asset: IAsset(optionAdapter),
-      subId: optionSubId,
-      amount: int(optionAmount),
-      assetData: bytes32(0)
-    });
-
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
-      fromAcc: toAcc,
-      toAcc: fromAcc,
-      asset: IAsset(usdcAdapter),
-      subId: 0,
-      amount: int(usdcAmount),
-      assetData: bytes32(0)
-    });
-
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
-    transferBatch[0] = optionTransfer;
-    transferBatch[1] = premiumTransfer;
-
-    account.submitTransfers(transferBatch, "");
-  }
 }

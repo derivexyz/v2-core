@@ -11,6 +11,12 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
   uint charlieAcc;
   uint davidAcc;
 
+  // fake option property
+  uint strike;
+  uint expiry;
+  uint subId;
+  address orderbook = address(0xb00c);
+
   function setUp() public {
     vm.label(alice, "alice");
     vm.label(bob, "bob");
@@ -25,14 +31,48 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
 
     aliceAcc = createAccountAndDepositUSDC(alice, 10_000_000e18);
     bobAcc = createAccountAndDepositUSDC(bob, 10_000_000e18);
+
+    // allow trades
+    setupMaxAssetAllowancesForAll(bob, bobAcc, orderbook);
+    setupMaxAssetAllowancesForAll(alice, aliceAcc, orderbook);
+
+    // stimulate trade
+    expiry = block.timestamp + 604800;
+    strike = 1500e18;
+    subId = optionAdapter.addListing(strike, expiry, true);
+    vm.startPrank(orderbook);
+    
+    // alice short call, bob long call
+    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
+    vm.stopPrank();
   }
 
   function testManagerCanLiquidateAccount() public {
-    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
+    
   }
 
   function testManagerCanBatchSettleAccounts() public {
-    setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
+    // set settlement price: option expires itm
+    int cashValue = 100e18;
+    setPrices(1e18, strike + uint(cashValue)); 
+    vm.warp(expiry + 1);
+    setSettlementPrice(expiry);
+
+    int aliceUSDCBefore = account.getBalance(aliceAcc, usdcAdapter, 0);
+    int bobUSDCBefore = account.getBalance(bobAcc, usdcAdapter, 0);
+
+    // test settlment
+    AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
+    assets[0] = AccountStructs.HeldAsset({
+      asset: IAsset(address(optionAdapter)),
+      subId: uint96(subId)
+    });
+    rm.settleAssets(aliceAcc, assets);
+    rm.settleAssets(bobAcc, assets);
+
+    // check settlement balance
+    assertEq(account.getBalance(aliceAcc, usdcAdapter, 0), aliceUSDCBefore - cashValue);
+    assertEq(account.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore + cashValue);    
   }
 
   function testManagerCanBlockMigrationFromBadManagers() public {

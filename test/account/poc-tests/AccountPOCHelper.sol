@@ -82,6 +82,13 @@ abstract contract AccountPOCHelper is Test {
     vm.stopPrank();
   }
 
+  function setSettlementPrice(uint expiry) public {
+    vm.startPrank(owner);
+    settlementPricer.setSettlementPrice(wethFeedId, expiry);
+    settlementPricer.setSettlementPrice(usdcFeedId, expiry);
+    vm.stopPrank();
+  }
+
   function setScenarios(PortfolioRiskPOCManager.Scenario[] memory scenarios) public {
     vm.startPrank(owner);
     rm.setScenarios(scenarios);
@@ -192,5 +199,33 @@ abstract contract AccountPOCHelper is Test {
 
     account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
+  }
+
+  function tradeOptionWithUSDC(
+    uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId
+  ) internal {
+    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+      fromAcc: fromAcc,
+      toAcc: toAcc,
+      asset: IAsset(optionAdapter),
+      subId: optionSubId,
+      amount: int(optionAmount),
+      assetData: bytes32(0)
+    });
+
+    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+      fromAcc: toAcc,
+      toAcc: fromAcc,
+      asset: IAsset(usdcAdapter),
+      subId: 0,
+      amount: int(usdcAmount),
+      assetData: bytes32(0)
+    });
+
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    transferBatch[0] = optionTransfer;
+    transferBatch[1] = premiumTransfer;
+
+    account.submitTransfers(transferBatch, "");
   }
 }

@@ -135,7 +135,7 @@ contract OptionToken is IAsset, Owned {
     Listing memory listing = subIdToListing[uint96(subId)];
     SettlementPricer.SettlementDetails memory settlementDetails = settlementPricer.maybeGetSettlementDetails(feedId, listing.expiry);
 
-    if (listing.expiry < block.timestamp || settlementDetails.price == 0) {
+    if (listing.expiry > block.timestamp || settlementDetails.price == 0) {
       return (0, false);
     }
     balance = _ratiodBalance(balance, subId);
@@ -148,10 +148,10 @@ contract OptionToken is IAsset, Owned {
 
     if (listing.isCall && PnL > 0) {
       // CALL ITM
-      return PnL * balance;
+      return PnL * balance / 1e18;
     } else if (!listing.isCall && PnL < 0) {
       // PUT ITM
-      return -PnL * balance;
+      return -PnL * balance / 1e18;
     } else {
       // OTM
       return 0;
@@ -162,7 +162,7 @@ contract OptionToken is IAsset, Owned {
   // Views
 
   function _ratiodBalance(int balance, uint subId) internal view returns (int ratiodBalance) {
-    if (ratios[nextId] < 1e17) {
+    if (ratios[subId] < 1e17) {
       // create some hardcoded limit to where asset freezes at certain levels of socialized losses
       revert("Socialized lossess too high");
     }
