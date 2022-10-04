@@ -61,7 +61,7 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     int aliceUSDCBefore = account.getBalance(aliceAcc, usdcAdapter, 0);
     int bobUSDCBefore = account.getBalance(bobAcc, usdcAdapter, 0);
 
-    // test settlment
+    // settlment
     AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
     assets[0] = AccountStructs.HeldAsset({
       asset: IAsset(address(optionAdapter)),
@@ -75,12 +75,10 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     assertEq(account.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore + cashValue);    
   }
 
-  function testManagerCanBlockMigrationFromBadManagers() public {
-
-  }
-
   function testManagerCanBlockMigrationToBadManagers() public {
-
+    address manager = address(0xbeef);
+    vm.expectRevert("wrong manager");
+    vm.prank(alice);
+    account.changeManager(aliceAcc, IManager(manager), "");
   }
-
 }

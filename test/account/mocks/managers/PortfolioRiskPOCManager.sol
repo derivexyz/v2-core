@@ -47,6 +47,8 @@ contract PortfolioRiskPOCManager is Owned, IManager {
   Scenario[] scenarios;
   mapping(uint => bool) liquidationFlagged;
 
+  address nextManager;
+
   constructor(
     IAccount account_,
     PriceFeeds priceFeed_,
@@ -76,6 +78,10 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     for (uint i; i < scenarioLen; i++) {
       scenarios.push(scenarios_[i]);
     }
+  }
+
+  function setNextManager(address _manager) external onlyOwner {
+    nextManager = _manager;
   }
 
   ////
@@ -228,6 +234,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     return false;
   }
 
-  function handleManagerChange(uint, IManager) external {}
-
+  function handleManagerChange(uint, IManager _manager) external {
+    require(address(_manager) != nextManager && nextManager != address(0), "wrong manager");
+  }
 }

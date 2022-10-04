@@ -20,7 +20,6 @@ POC asset contract to handle lending & accrue interest on adjustmentHook.
 - [x]  Deposits / Withdrawals assets
 - [x]  accrue interest when adjusting balance
 - [x]  accrue interest with 0 amount triggers
-- [ ]  apply socialized losses
 
 ### `PortolioRiskPOCManager.t.sol`
 
@@ -28,8 +27,8 @@ using POC manager `PortfolioRiskPOCManager` to test that the manager can do the 
 
 - [ ]  manager can update balance during
   - [ ]  Liquidations
-  - [ ]  Settlement
-- [ ]  block unsupported manager upgrades
+  - [x]  Settlement
+- [x]  block unsupported manager upgrades
 
 ### `SocializedLosses.sol` 
 
