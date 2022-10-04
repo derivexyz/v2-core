@@ -1,4 +1,9 @@
-## Accounts.sol POC tests scaffold
+# Accounts.sol POC tests
+
+## Folder layout
+
+- All POC tests inherit `AccountPOCHelper` to setup the environment
+- Asset contracts used: `OptionToken`, `QuoteWrapper`, `BaseWrapper`
 
 ### `Allowances.sol`
 
@@ -18,15 +23,19 @@ POC asset contract to handle lending & accrue interest on adjustmentHook.
 - [ ]  apply socialized losses
 
 ### `PortolioRiskPOCManager.t.sol`
-- [ ]  manager can update balance
-    - [ ]  Forceful Liquidations
-    - [ ]  Settlement
-- [ ]  block unsupported manager
+
+using POC manager `PortfolioRiskPOCManager` to test that the manager can do the following
+
+- [ ]  manager can update balance during
+  - []  Liquidations
+  - []  Settlement
+- [ ]  block unsupported manager upgrades
 
 ### `SocializedLosses.sol` 
-using the same POC manager `PortolioRiskPOCManager.sol`
+
+using the same POC manager `PortfolioRiskPOCManager.sol` to test that we can implement socialize loss at the option token level.
 
 - [x]  socialized losses
-    - [x]  Option asset ratio post socialized loss
-    - [x]  Asset augment finalBalance during transfer (positive → negative?)
-    - [x]  Asset ratio stays the same with trade post socialized loss
+  - [x]  Option asset ratio post socialized loss
+  - [x]  Asset augment finalBalance during transfer (positive → negative?)
+  - [x]  Asset ratio stays the same with trade post socialized loss
