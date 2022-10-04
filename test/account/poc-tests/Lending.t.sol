@@ -8,7 +8,6 @@ import "./AccountPOCHelper.sol";
 contract POC_Lending is Test, AccountPOCHelper {
   uint public constant SECONDS_PER_YEAR = 31536000;
 
-
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;

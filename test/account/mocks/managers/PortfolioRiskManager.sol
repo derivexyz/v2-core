@@ -156,13 +156,14 @@ contract PortfolioRiskManager is Owned, IManager {
           })
         );
 
-        account.managerAdjustment(AccountStructs.AssetAdjustment({
-          acc: accountId, 
-          asset: quoteAsset, 
-          subId: 0, 
-          amount: PnL,
-          assetData: bytes32(0)
-        })
+        account.managerAdjustment(
+          AccountStructs.AssetAdjustment({
+            acc: accountId, 
+            asset: quoteAsset, 
+            subId: 0, 
+            amount: PnL,
+            assetData: bytes32(0)
+          })
         );
       }
     }

@@ -17,7 +17,9 @@ POC asset contract to handle lending & accrue interest on adjustmentHook.
 - [x]  accrue interest with 0 amount triggers
 - [ ]  apply socialized losses
 
-### Manager
+### `ProtfolioRiskManager.sol` 
+
+POC manager contract that 
 
 - [ ]  manager can update balance
     - [ ]  Forceful Liquidations
