@@ -17,14 +17,15 @@ POC asset contract to handle lending & accrue interest on adjustmentHook.
 - [x]  accrue interest with 0 amount triggers
 - [ ]  apply socialized losses
 
-### `ProtfolioRiskManager.sol` 
-
-POC manager contract that 
-
+### `PortolioRiskPOCManager.t.sol`
 - [ ]  manager can update balance
     - [ ]  Forceful Liquidations
     - [ ]  Settlement
 - [ ]  block unsupported manager
+
+### `SocializedLosses.sol` 
+using the same POC manager `PortolioRiskPOCManager.sol`
+
 - [x]  socialized losses
     - [x]  Option asset ratio post socialized loss
     - [x]  Asset augment finalBalance during transfer (positive → negative?)

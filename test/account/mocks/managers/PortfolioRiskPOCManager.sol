@@ -17,7 +17,7 @@ import "./../assets/OptionToken.sol";
 import "./../assets/ISettleable.sol";
 import "./../assets/lending/Lending.sol";
 
-contract PortfolioRiskManager is Owned, IManager {
+contract PortfolioRiskPOCManager is Owned, IManager {
   using DecimalMath for uint;
   using SafeCast for uint;
   using SignedDecimalMath for int;
