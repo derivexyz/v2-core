@@ -24,10 +24,57 @@ contract POC_Allowances is Test, AccountPOCHelper {
     bobAcc = createAccountAndDepositUSDC(bob, 10000000e18);
   }
 
-  function testCannotTradeWithoutAllowance() public {    
+  function testCanTradeWithAssetAllowance() public {    
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
-    // expect revert when bob trying to decrease alice's option balance
+    vm.startPrank(alice);
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
+      asset: IAsset(optionAdapter),
+      positive: 0,
+      negative: type(uint).max
+    });
+    account.setAssetAllowances(aliceAcc, bob, assetAllowances);
+    vm.stopPrank();
+
+    vm.startPrank(bob);
+    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
+    vm.stopPrank();
+  }
+
+  function testCanTradeWithSubIdAllowance() public {    
+    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+
+    vm.startPrank(alice);
+    AccountStructs.SubIdAllowance[] memory allowances = new AccountStructs.SubIdAllowance[](1);
+    allowances[0] = AccountStructs.SubIdAllowance({
+      asset: IAsset(optionAdapter),
+      subId: subId,
+      positive: 0,
+      negative: type(uint).max
+    });
+    account.setSubIdAllowances(aliceAcc, bob, allowances);
+    vm.stopPrank();
+
+    vm.startPrank(bob);
+    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
+    vm.stopPrank();
+  }
+
+  function testCannotTradeWithWrongSubIdAllowance() public {    
+    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
+
+    vm.startPrank(alice);
+    AccountStructs.SubIdAllowance[] memory allowances = new AccountStructs.SubIdAllowance[](1);
+    allowances[0] = AccountStructs.SubIdAllowance({
+      asset: IAsset(optionAdapter),
+      subId: subId + 1,
+      positive: 0,
+      negative: type(uint).max
+    });
+    account.setSubIdAllowances(aliceAcc, bob, allowances);
+    vm.stopPrank();
+
     vm.startPrank(bob);
     vm.expectRevert(
       abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
@@ -71,15 +118,6 @@ contract POC_Allowances is Test, AccountPOCHelper {
     // expect revert
     vm.startPrank(orderbook);
     tradeOptionWithUSDC(bobAcc, aliceAcc, 50e18, 1000e18, subId);
-    vm.stopPrank();
-  }
-
-  function testManagerInitiatedTransfer() public {    
-    uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
-
-    // successful trade without allowances
-    vm.startPrank(address(rm));
-    tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
     vm.stopPrank();
   }
 
