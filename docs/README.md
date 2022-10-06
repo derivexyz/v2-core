@@ -67,16 +67,16 @@ We can see from the diagram that `Assets` and `Managers` can both access the acc
 
 ### Shared Risk
 
-Managers and assets each have privillge that if use malicously could affect other's solvency: 
+Managers and assets each have privilege that if use malicously could affect other's solvency: 
 
 * a bad manager can singel handed increase its own balance on stable asset and cash out
 * a bad asset can single handed increase its balance and trick the manager into believing it has enough collateral.
 
-This mean that a sets of accounts and assets will form a "trusted group" inside which everyone shares the same risk; If any of the contract is compromised or hacked, the whole "ecosystem" goes insolvent together.
+This mean that a sets of accounts and assets will form a "trusted group" inside which everyone shares the same risk; If any of the contract is compromised or hacked, the whole "ecosystem" goes insolvent together.As a result, a manager should revert all transfers that adds a "unknown asset" into an account; and an asset should revert all transfers from or to a account controlled by "unknown manager".
 
 #### Hooks
 
-As a result, the manager should revert all transfer that include a "unknown asset" into an account; and an asset should revert all transfer request from a account controlled by "unknown manager". To check these requirements, whenever a trade happens, the account pass the transfer information to the **Asset** contract through **asset hook** to make sure the final balance of an account is valid and the account is controlled by a good manager, and at the end of all **transfers**, it triggers the **manager hook** to let the manager determine the final state of an account.
+To check these requirements, whenever a trade happens, the account pass the transfer information to the **Asset** contract through **asset hook** to make sure the final balance of an account is valid and the account is controlled by a good manager, and at the end of all **transfers**, it triggers the **manager hook** to let the manager determine the final state of an account.
 
 It's worth mentioning that because the **account contract** is totally permissionless, anyone can spin up their own "ecosystem" with risk totally separated from other eco systems.
 
