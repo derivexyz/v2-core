@@ -34,9 +34,7 @@ The two main missions of `Account` is to:
   
 ### Role of **Managers**
 
-A manager should be used to govern a set of accouts, and has the of previllege that can affect **all accounts** it controlls.
-
-Two main jobs for an manager is to validate accounts, and keep them healthy.
+A manager should be used to govern a set of accouts, and has the of previllege that can affect **all accounts** it controlls. Three main jobs for an manager are: to validate accounts, keep them healthy, and handle settlement.
 
 #### 1. Account state validation
 
@@ -48,17 +46,17 @@ It is also the manager's obligation to determine "dangerous accounts" that might
 
 #### 3. Settlement
 
-(to be added)
+If an account has assets with expiry, the manager should also handle the settlment after expiry. For example, if an account long 1 2000-ETH-CALL-DEC01-2022 and it expired in the money, the manager has the right to increase the account's usdc balance, and burn the option balance at expiry.
 
 ### Role of **Assets**
 
-The job of an **Asset** contract is to determine the result of a transfer, and maybe manage cash in and cash out to "account".
+The job of an **Asset** contract is to determine the result of a transfer, and maybe manage deposit and withdraw.
 
 Some example:
 
-* a `WETHWrapper` **asset** can take a user's weth and update the balance of the user's in `Account`. Someone can also reduce its balance in `Account` and cash out the real token. It can also denied transfer that would make any balance negative.
+* a `WETHWrapper` **asset** can take a user's weth and update the balance of the user's in `Account`. Someone can also reduce its balance in `Account` and withdraw the real token. It can also denies transfer that would make any balance negative.
 
-* an `OptionTOken` **asset** doesn't really let you deposit or withdraw, and it allows balance to go positive and negative. It only block transfers after expiry and help determine the value of a token at settlement.
+* an `OptionTOken` **asset** doesn't really let you deposit or withdraw, and it allows balance to go positive and negative. It only blocks transfers after expiry and help determine the value of a token at settlement.
 
 ### Privileges
 
@@ -77,13 +75,14 @@ Managers and assets each have privillge that if use malicously could affect othe
 * a bad manager can singel handed increase its own balance on stable asset and cash out
 * a bad asset can single handed increase its balance and trick the manager into believing it has enough collateral.
 
-This mean that a sets of accounts and assets will form a "trusted group" that shares the risk among all components. If any of the contract is compromised or hacked, the whole "circle" goes involvent together.
+This mean that a sets of accounts and assets will form a "trusted group" that shares the risk among all components. If any of the contract is compromised or hacked, the whole "ecosystem" goes involvent together.
 
 As a result, the manager should revert all transfer that include a "unknown asset" into an account; and an asset should revert all transfer request from a account controlled by "unknown manager"
 
-![account-permission](./imgs/account/account-permissions.png)
 
-While the account contract is totally permissionless, anyone can spin up their own "ecosystem" with risk totally separated from the rest of the world.
+While the account contract is totally permissionless, anyone can spin up their own "ecosystem" with risk totally separated from other eco systems. 
+
+![account-permission](./imgs/account/account-permissions.png)
 
 ### Hooks
 
