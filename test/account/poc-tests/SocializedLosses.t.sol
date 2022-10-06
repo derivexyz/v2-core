@@ -19,8 +19,8 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     deployPRMSystem();
     setPrices(1e18, 1500e18);
 
-    PortfolioRiskManager.Scenario[] memory scenarios = new PortfolioRiskManager.Scenario[](1);
-    scenarios[0] = PortfolioRiskManager.Scenario({spotShock: uint(85e16), ivShock: 10e18});
+    PortfolioRiskPOCManager.Scenario[] memory scenarios = new PortfolioRiskPOCManager.Scenario[](1);
+    scenarios[0] = PortfolioRiskPOCManager.Scenario({spotShock: uint(85e16), ivShock: 10e18});
 
     setScenarios(scenarios);
 
@@ -66,16 +66,13 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     vm.stopPrank();
 
     // trade post loss
-    vm.startPrank(charlie);
-    charlieAcc = account.createAccount(charlie, IManager(rm));
-    vm.stopPrank();
-    vm.startPrank(david);
-    davidAcc = account.createAccount(david, IManager(rm));
-    vm.stopPrank();
+    charlieAcc = createAccountAndDepositUSDC(charlie, 1000e18);
+    davidAcc = createAccountAndDepositUSDC(david, 1000e18);
 
     // open 1x new option
     setupMaxAssetAllowancesForAll(david, davidAcc, charlie);
     setupMaxAssetAllowancesForAll(alice, aliceAcc, charlie);
+
     vm.startPrank(charlie);
     openCallOption(charlieAcc, davidAcc, 1e18, 0);
     vm.stopPrank();

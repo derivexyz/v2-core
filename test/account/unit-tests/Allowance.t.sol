@@ -249,6 +249,30 @@ contract UNIT_Allowances is Test, AccountTestBase {
     vm.startPrank(alice);
     tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);
     vm.stopPrank();
+
+    // revert with new account
+    uint bobNewAcc = account.createAccount(bob, dumbManager);
+    mintAndDeposit(
+      bob,
+      bobNewAcc,
+      coolToken,
+      coolAsset,
+      tokenSubId,
+      tradeAmount
+    );
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector,
+        address(account),
+        address(alice),
+        bobNewAcc,
+        -int(tradeAmount),
+        0,
+        0
+      )
+    );
+    tradeTokens(aliceAcc, bobNewAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);
+    vm.stopPrank();
   }
 
   function testERC721ApprovalForAll() public {    

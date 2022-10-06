@@ -15,7 +15,7 @@ import "../mocks/assets/QuoteWrapper.sol";
 import "../mocks/assets/lending/Lending.sol";
 import "../mocks/assets/lending/ContinuousJumpRateModel.sol";
 import "../mocks/assets/lending/InterestRateModel.sol";
-import "../mocks/managers/PortfolioRiskManager.sol";
+import "../mocks/managers/PortfolioRiskPOCManager.sol";
 import "../../shared/mocks/MockERC20.sol";
 
 abstract contract AccountPOCHelper is Test {
@@ -30,7 +30,7 @@ abstract contract AccountPOCHelper is Test {
   TestPriceFeeds priceFeeds;
   SettlementPricer settlementPricer;
   InterestRateModel interestRateModel;
-  PortfolioRiskManager rm;
+  PortfolioRiskPOCManager rm;
 
   uint usdcFeedId = 0;
   uint wethFeedId = 1;
@@ -67,7 +67,7 @@ abstract contract AccountPOCHelper is Test {
     optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
-    rm = new PortfolioRiskManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
+    rm = new PortfolioRiskPOCManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);
@@ -82,7 +82,14 @@ abstract contract AccountPOCHelper is Test {
     vm.stopPrank();
   }
 
-  function setScenarios(PortfolioRiskManager.Scenario[] memory scenarios) public {
+  function setSettlementPrice(uint expiry) public {
+    vm.startPrank(owner);
+    settlementPricer.setSettlementPrice(wethFeedId, expiry);
+    settlementPricer.setSettlementPrice(usdcFeedId, expiry);
+    vm.stopPrank();
+  }
+
+  function setScenarios(PortfolioRiskPOCManager.Scenario[] memory scenarios) public {
     vm.startPrank(owner);
     rm.setScenarios(scenarios);
     vm.stopPrank();
@@ -118,12 +125,12 @@ abstract contract AccountPOCHelper is Test {
     vm.startPrank(owner);
     uint[5] memory shocks = [uint(50e16), uint(75e16), uint(1e18), uint(125e16), uint(150e16)];
 
-    PortfolioRiskManager.Scenario[] memory scenarios = new PortfolioRiskManager.Scenario[](5);
+    PortfolioRiskPOCManager.Scenario[] memory scenarios = new PortfolioRiskPOCManager.Scenario[](5);
     for (uint i; i < shocks.length; i++) {
-      scenarios[i] = PortfolioRiskManager.Scenario({spotShock: shocks[i], ivShock: 100e18});
+      scenarios[i] = PortfolioRiskPOCManager.Scenario({spotShock: shocks[i], ivShock: 100e18});
     }
 
-    PortfolioRiskManager(rm).setScenarios(scenarios);
+    PortfolioRiskPOCManager(rm).setScenarios(scenarios);
     vm.stopPrank();
   }
 
@@ -192,5 +199,33 @@ abstract contract AccountPOCHelper is Test {
 
     account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
+  }
+
+  function tradeOptionWithUSDC(
+    uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId
+  ) internal {
+    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+      fromAcc: fromAcc,
+      toAcc: toAcc,
+      asset: IAsset(optionAdapter),
+      subId: optionSubId,
+      amount: int(optionAmount),
+      assetData: bytes32(0)
+    });
+
+    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+      fromAcc: toAcc,
+      toAcc: fromAcc,
+      asset: IAsset(usdcAdapter),
+      subId: 0,
+      amount: int(usdcAmount),
+      assetData: bytes32(0)
+    });
+
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    transferBatch[0] = optionTransfer;
+    transferBatch[1] = premiumTransfer;
+
+    account.submitTransfers(transferBatch, "");
   }
 }

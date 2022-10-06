@@ -17,8 +17,8 @@ contract GAS_Transfers is Test, AccountPOCHelper {
     deployPRMSystem();
     setPrices(1e18, 1500e18);
 
-    PortfolioRiskManager.Scenario[] memory scenarios = new PortfolioRiskManager.Scenario[](1);
-    scenarios[0] = PortfolioRiskManager.Scenario({spotShock: uint(85e16), ivShock: 10e18});
+    PortfolioRiskPOCManager.Scenario[] memory scenarios = new PortfolioRiskPOCManager.Scenario[](1);
+    scenarios[0] = PortfolioRiskPOCManager.Scenario({spotShock: uint(85e16), ivShock: 10e18});
 
     setScenarios(scenarios);
 
