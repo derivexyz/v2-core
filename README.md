@@ -22,3 +22,7 @@ Running POC tests
 ```shell
 forge test --match-contract="POC_" -vvv
 ```
+
+## Documentation
+
+Go to [docs](./docs) to understand the high level of the design, transaction flow and how different **Lyra v2 components** works together.
