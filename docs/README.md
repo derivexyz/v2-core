@@ -15,7 +15,9 @@
 
 ## The Base layer
 
-There are three big parts that compose of the **base layer**: `Account`, `Managers` and `Assets`
+There are three big parts that compose of the **base layer**: `Account`, `Managers` and `Assets`.
+
+![base-layer](./imgs/account/base-layer-basic.png)
 
 ### Account
 
