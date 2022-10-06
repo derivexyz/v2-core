@@ -2,14 +2,13 @@
 
 ## Agenda
 
-* [Base Layer](#the-base-layer)
+* [Base Layer Overview](#the-base-layer)
   * [Account](#account)  
-  * [Managers](#role-of-managers)
-  * [Assets](#role-of-assets)
-  * [Privileges](#privileges)
-  * [Transfer Hooks](#hooks)
-
-* AMMs
+  * [Managers](#managers)
+  * [Assets](#assets)
+  * [Shared Risk and Hooks](#shared-risk)
+* [What is Lyra V2](#lyra-v2)
+* [AMMs](#amms)
   * Future AMM
   * VGVV
 
@@ -17,40 +16,38 @@
 
 There are three big parts that compose of the **base layer**: `Account`, `Managers` and `Assets`.
 
-![base-layer](./imgs/account/base-layer-basic.png)
+![base-layer](./imgs/overall/base-layer-basic.png)
 
 ### Account
 
-An `Account` is a fully-permissionless contract that allows anyone to create an account entity (represent as ERC721). That stored a lists of `{Asset, balance}`.
+An `Account` is a fully-permissionless contract that allows anyone to create an account entity (represent as ERC721), which stores a lists of `{Asset, balance}` for a user.
 
 What we want to achieve with `Account` is the flexibility to enable different **Managers** to create rules about account validation, and allow direct transfer of any values (positive or negative) among accounts. The balances of assets can be either positive or negative.
 
-For example: if Alice wants to long 1 call and Bob wants to short 1 call, they no longer need to "deposit and create an option token", they just submit a transfer and change the each account's balance from [0, 0] to [1, -1].
+For example: if Alice wants to long 1 call and Bob wants to short 1 call, they no longer need to "deposit and create an option token in another contract", they just submit a transfer and change the each account's balance from [0, 0] to [1, -1].
 
-The two main missions of `Account` is to:
+The two main missions of `Account` are:
 
 * validate if `msg.sender` is authorized to change (increase or decrease) one account's balance.
-* inform all relevent parties about the trade. this can be separated into:
-  * invoke the **manager** to validate the final state of the account
-  * invoke the **asset** to validate the transfer and determine the ending balance.
+* inform all relevant parties about the trade. This includes:
+  * manager hook: invoke the **manager** to validate the final state of the account
+  * asset hook: invoke the **asset** to validate the transfer and determine the ending balance.
+
+P.S. Go to [Accounts](./account) for some more detailed documentation about the approval system and the hooks.
   
-### Role of **Managers**
+### Managers
 
-A manager should be used to govern a set of accouts, and has the of previllege that can affect **all accounts** it controlls. Three main jobs for an manager are: to validate accounts, keep them healthy, and handle settlement.
+A manager should be used to govern a set of accouts, and has certain previlleges. Three main jobs for an manager are: 
 
-#### 1. Account state validation
+* **Account state validation**: After a transaction is executed on an account, the manager will take a look at the final state of an account and decide if this account is valid. For example, a transaction that leaves an account holding only -1000 USDC should be denied. But if the account has another 10 ETH in it, it's probably okay.
+* **Debt Management**: It is also the manager's obligation to determine "dangerous accounts" that might leave the system in debt and take care of liquidations.
+* **Settlement**:  If an account has assets with expiry, the manager should also handle the settlment after expiry. For example, if an account long 1 2000-ETH-CALL-DEC01-2022 and it expired in the money, the manager has the right to increase the account's usdc balance, and burn the option balance at expiry.
 
-After a transaction is executed on an account, the manager will take a look at the final state and decide if this account is valid. For example, a transaction that leaves an account holding only -1000 USDC should be denied. But if the account has another 10 ETH in it, it's probably okay. 
+#### Manager Privileges 
 
-#### 2. Debt Management
+To allow handling settlement and liquidation, the manager has the privileges to update **any asset balance** of an account under its control.
 
-It is also the manager's obligation to determine "dangerous accounts" that might leave the system in debt and take care of liquidations.
-
-#### 3. Settlement
-
-If an account has assets with expiry, the manager should also handle the settlment after expiry. For example, if an account long 1 2000-ETH-CALL-DEC01-2022 and it expired in the money, the manager has the right to increase the account's usdc balance, and burn the option balance at expiry.
-
-### Role of **Assets**
+### Assets
 
 The job of an **Asset** contract is to determine the result of a transfer, and maybe manage deposit and withdraw.
 
@@ -60,40 +57,48 @@ Some example:
 
 * an `OptionTOken` **asset** doesn't really let you deposit or withdraw, and it allows balance to go positive and negative. It only blocks transfers after expiry and help determine the value of a token at settlement.
 
-### Privileges
+#### Asset Privileges
 
-The `Manager` and `Asset` contracts both have some privileges when it comes to updating `Accounts`.
+The asset has the privileges to update its own "asset balance" of any account. This is to support deposit and withdraw of assets.
 
-![adjustment-flow](./imgs/account/adjustment-flow.png)
+![adjustment-flow](./imgs/overall/adjustment-flow.png)
 
-To allow handling settlement and liquidation, the manager has the privileges to update **any asset balance** of any account under its control.
+We can see from the diagram that `Assets` and `Managers` can both access the account direclty with `assetAdjustment` and `mangerAdjustment`. Every other external parties (including AMM, orderbook) will need to get approvals from the account owner to act on their behalf.
 
-On the other hand, the asset has the privileges to update its own "asset balance" of any account. This is to support adding assets like weth or USDC into the system.
-
-#### Shared Risk 
+### Shared Risk
 
 Managers and assets each have privillge that if use malicously could affect other's solvency: 
 
 * a bad manager can singel handed increase its own balance on stable asset and cash out
 * a bad asset can single handed increase its balance and trick the manager into believing it has enough collateral.
 
-This mean that a sets of accounts and assets will form a "trusted group" that shares the risk among all components. If any of the contract is compromised or hacked, the whole "ecosystem" goes involvent together.
+This mean that a sets of accounts and assets will form a "trusted group" inside which everyone shares the same risk; If any of the contract is compromised or hacked, the whole "ecosystem" goes insolvent together.
 
-As a result, the manager should revert all transfer that include a "unknown asset" into an account; and an asset should revert all transfer request from a account controlled by "unknown manager"
+#### Hooks
 
+As a result, the manager should revert all transfer that include a "unknown asset" into an account; and an asset should revert all transfer request from a account controlled by "unknown manager". To check these requirements, whenever a trade happens, the account pass the transfer information to the **Asset** contract through **asset hook** to make sure the final balance of an account is valid and the account is controlled by a good manager, and at the end of all **transfers**, it triggers the **manager hook** to let the manager determine the final state of an account.
 
-While the account contract is totally permissionless, anyone can spin up their own "ecosystem" with risk totally separated from other eco systems. 
+It's worth mentioning that because the **account contract** is totally permissionless, anyone can spin up their own "ecosystem" with risk totally separated from other eco systems.
 
-![account-permission](./imgs/account/account-permissions.png)
-
-### Hooks
-
-To achieve the "checks" mentioned above, whenever a trade happens, the account pass the transfer information to the **Asset** contract through **asset hook** to make sure the final balance of an account is valid and the account is controlled by a good manager, and at the end of all **transfers**, it triggers the **manager hook** to let the manager determine the final state of an account.
+![account-permission](./imgs/overall/account-permissions.png)
 
 ## Lyra V2
 
-The Lyra v2 refers to 1 manager and 3 assets we will be built, along with 2 AMMs outside of the base layer.
+The ultimate goal of Lyra v2 is to build a super capital efficient margin system, which can be used for traders and a new option AMM. At the base layser, this will be composed of 1 manager and 3 assets. You can find the more detailed documentation about each modules from the links below: 
 
-![](./imgs/account/v2-scope.png)
+* (Manager) [Portfolio Margning Risk Manager](./) 
+* (Asset) [Lending (Borrowable USD)](./)
+* (Asset) [Option Token](./)
+* (Asset) [Future Token](./)
 
-## AMM
+![scope](./imgs/overall/v2-scope.png)
+
+
+There will also be 2 other AMMs being built:
+
+* [Future AMM](./)
+* [Option AMM](./)
+
+## AMMs
+
+(to be added)
