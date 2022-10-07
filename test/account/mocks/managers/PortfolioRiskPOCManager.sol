@@ -207,14 +207,13 @@ contract PortfolioRiskPOCManager is Owned, IManager {
               })
             );
 
-            // 2. update negative balance in lending contract
-            int amountOwned = -(quoteBalance + pnl);
+            // 2. add negative balance in lending contract
             account.managerAdjustment(
               AccountStructs.AssetAdjustment({
                 acc: accountId, 
                 asset: lending,
                 subId: 0, 
-                amount: -amountOwned,
+                amount: quoteBalance + pnl,
                 assetData: bytes32(0)
               })
             );
