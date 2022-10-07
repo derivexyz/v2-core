@@ -57,7 +57,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     uint strike = 1500e18;
     uint subId = optionAdapter.addListing(strike, expiry , true);
 
-    // Charlie deposited into lending account (his retirement account :(
+    // Charlie deposited into lending account (his retirement account!)
     uint depositAmount = 10000e18;
     uint retirementAcc = createAccountAndDepositDaiLending(charlie, depositAmount);
 
@@ -86,7 +86,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     // daiLending balance should reflect the insolvent amount
     assertEq(account.getBalance(bobNewAcc, daiLending, 0), -int(expectedInsolventAmount));
 
-    // socialise loss on everyone else's lending balacne!
+    // socialise loss on everyone else's lending balance!
     daiLending.socializeLoss(bobNewAcc, expectedInsolventAmount);
 
     // trigger charlie's retirement account to update balance
@@ -103,7 +103,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     // charlie now has less money on his account
     int charlieNewBalance = account.getBalance(retirementAcc, daiLending, 0);
 
-    // charlie is the only one with asset deposited, so all lost is on him :(
+    // charlie is the only one with asset deposited, so all loss is on him :(
     assertEq(uint(charlieNewBalance), depositAmount - expectedInsolventAmount);
   }
 
