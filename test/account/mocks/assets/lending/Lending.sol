@@ -10,6 +10,7 @@ import "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
 import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
+import "forge-std/console2.sol";
 
 contract Lending is IAsset, Owned {
   using SignedDecimalMath for int;
@@ -211,6 +212,8 @@ contract Lending is IAsset, Owned {
     totalSupply = interestAccumulated.multiplyDecimal(DecimalMath.UNIT - feeFactor) + supplyPrior;
     accruedFees += interestAccumulated.multiplyDecimal(feeFactor);
 
+    if (borrowPrior == 0) return;
+
     borrowIndex = totalBorrow.divideDecimal(borrowPrior).multiplyDecimal(borrowIndex);
     supplyIndex = totalSupply.divideDecimal(supplyPrior).multiplyDecimal(supplyIndex);
 
@@ -239,7 +242,12 @@ contract Lending is IAsset, Owned {
   function socializeLoss(uint accountId, uint borrowAmountToSocialize) public {
     // TODO: this will need some onlyManager modifier
 
-    // this will accrue the latest interest
+    uint supplyPrior = totalSupply;        
+    uint newSupplyIndex = (supplyPrior - borrowAmountToSocialize) * supplyIndex / supplyPrior;
+
+    supplyIndex = newSupplyIndex;
+
+    // update the account's balance
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId, 
@@ -248,15 +256,9 @@ contract Lending is IAsset, Owned {
         amount: int(borrowAmountToSocialize),
         assetData: bytes32(0)
       }),
-      true, // adjust balance with handleAdjustment so we apply interest
+      false, // don't trigger the asset hook and accrue interest on this account
       ""
     );
-
-    uint supplyPrior = totalSupply;
-    uint newSupplyIndex = (supplyPrior - borrowAmountToSocialize)
-      .divideDecimal(supplyPrior).multiplyDecimal(supplyIndex);
-
-    supplyIndex = newSupplyIndex;
   }
 
   function setManagerAllowed(IManager riskModel, bool allowed) external onlyOwner {

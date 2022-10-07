@@ -155,7 +155,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     for (uint i; i < assetLen; i++) {
       int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
 
-      (int PnL, bool settled) = ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
+      (int pnl, bool settled) = ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
 
       if (settled) {
         // NOTE: RM A at risk of RM B not properly implementing settling
@@ -169,15 +169,59 @@ contract PortfolioRiskPOCManager is Owned, IManager {
           })
         );
 
-        account.managerAdjustment(
-          AccountStructs.AssetAdjustment({
-            acc: accountId, 
-            asset: quoteAsset, 
-            subId: 0, 
-            amount: PnL,
-            assetData: bytes32(0)
-          })
-        );
+        if (pnl > 0) {
+          // pnl is positive, just transfer
+          account.managerAdjustment(
+              AccountStructs.AssetAdjustment({
+                acc: accountId, 
+                asset: quoteAsset, 
+                subId: 0, 
+                amount: pnl,
+                assetData: bytes32(0)
+              })
+            );
+        } else {
+          // pnl is negative
+          // we assume quote asset can not go negative
+         // will need to check if settlement is gonna set account balance to negative
+          int256 quoteBalance = account.getBalance(accountId, quoteAsset, 0);
+          if (quoteBalance + pnl > 0) {
+            account.managerAdjustment(
+              AccountStructs.AssetAdjustment({
+                acc: accountId, 
+                asset: quoteAsset, 
+                subId: 0, 
+                amount: pnl,
+                assetData: bytes32(0)
+              })
+            );
+          } else {
+            // 1. adjust quote to 0
+            account.managerAdjustment(
+              AccountStructs.AssetAdjustment({
+                acc: accountId, 
+                asset: quoteAsset, 
+                subId: 0, 
+                amount: -quoteBalance,
+                assetData: bytes32(0)
+              })
+            );
+
+            // 2. update negative balance in lending contract
+            int amountOwned = -(quoteBalance + pnl);
+            account.managerAdjustment(
+              AccountStructs.AssetAdjustment({
+                acc: accountId, 
+                asset: lending,
+                subId: 0, 
+                amount: -amountOwned,
+                assetData: bytes32(0)
+              })
+            );
+          }
+        }
+        
+        
       }
     }
   }
@@ -231,7 +275,6 @@ contract PortfolioRiskPOCManager is Owned, IManager {
       }
 
       if (scenarioValue < 0) {
-        console2.log("not safe", accountId, uint(-scenarioValue));
         return true;
       }
     }
