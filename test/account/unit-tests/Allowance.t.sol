@@ -3,9 +3,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
+import "../../shared/mocks/MockERC20.sol";
+import "../../shared/mocks/MockAsset.sol";
 import "../../../src/interfaces/IAccount.sol";
 import "../../../src/interfaces/AccountStructs.sol";
 import "../../../src/Allowances.sol";
+import "../../../src/Account.sol";
 import {AccountTestBase} from "./AccountTestBase.sol";
 
 contract UNIT_Allowances is Test, AccountTestBase {
@@ -18,6 +21,39 @@ contract UNIT_Allowances is Test, AccountTestBase {
     int256 amount = 1e18;
     vm.startPrank(alice);
     transferToken(aliceAcc, bobAcc, usdcAsset, 0, amount);
+    vm.stopPrank();
+  }
+
+  function testCannotSetAllowanceFromNonOwner() public {
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
+    vm.expectRevert(
+      abi.encodeWithSelector(Account.NotOwnerOrERC721Approved.selector, 
+        address(account), 
+        alice,
+        bobAcc,
+        bob,
+        address(dumbManager),
+        address(0)
+      )
+    );
+    vm.prank(alice);
+    account.setAssetAllowances(bobAcc, alice, assetAllowances);
+  }
+
+  function testCannotTransferNegativeAllowanceWithoutAllowance() public {
+    int256 amount = 1e18;
+    vm.expectRevert(
+      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, 
+        address(account), 
+        alice,
+        bobAcc,
+        -1e18,
+        0,
+        0
+      )
+    );
+    vm.startPrank(alice);
+    transferToken(aliceAcc, bobAcc, coolAsset, tokenSubId, -amount);
     vm.stopPrank();
   }
 
@@ -222,6 +258,49 @@ contract UNIT_Allowances is Test, AccountTestBase {
     vm.startPrank(orderbook);
     tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 1e18, 0, tokenSubId);
     vm.stopPrank();
+  }
+
+  function testCanTransferNegativeAmountOnSpecificAsset() public {
+    // Imagine an "asset" that has value when balance is negative
+    MockERC20 debtToken = new MockERC20("negative USD", "nUSD");
+    MockAsset debtAsset = new MockAsset(IERC20(debtToken), IAccount(address(account)), true);
+    debtAsset.setNeedNegativeAllowance(false); // don't need allowance to decrease balance
+    debtAsset.setNeedPositiveAllowance(true); // need allowance to increase balance
+
+    // can transfer negative amount
+    int256 amount = 1e18;
+    
+    vm.startPrank(alice);
+    transferToken(aliceAcc, bobAcc, debtAsset, 0, -amount);
+    
+
+    // cannot transfer positive amount
+    vm.expectRevert(
+      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, 
+        address(account), 
+        alice,
+        bobAcc,
+        1e18,
+        0,
+        0
+      )
+    );
+    transferToken(aliceAcc, bobAcc, debtAsset, 0, amount);
+    vm.stopPrank();
+
+    // can transfer positive amount after setting positive allowance
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
+    assetAllowances[0] = AccountStructs.AssetAllowance({
+      asset: debtAsset,
+      positive: uint(amount),
+      negative: 0
+    });
+    vm.prank(bob);
+    account.setAssetAllowances(bobAcc, alice, assetAllowances);
+
+    // transfer should pass
+    vm.prank(alice);
+    transferToken(aliceAcc, bobAcc, debtAsset, 0, amount);
   }
 
   function testERC721TranserShouldNotTransferAllowance() public {

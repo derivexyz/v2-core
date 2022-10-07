@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../../src/interfaces/IAccount.sol";
+import "../../../src/Account.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";
@@ -19,7 +19,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
 
   function testCannotTransferToSelf() public {
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.CannotTransferAssetToOneself.selector, 
+      abi.encodeWithSelector(Account.CannotTransferAssetToOneself.selector, 
         address(account), 
         alice,
         aliceAcc
@@ -151,7 +151,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     vm.prank(address(coolAsset));
 
     vm.expectRevert(abi.encodeWithSelector(
-      IAccount.OnlyAsset.selector, 
+      Account.OnlyAsset.selector, 
       address(account), 
       address(coolAsset), 
       address(usdcAsset)
