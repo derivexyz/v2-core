@@ -61,23 +61,18 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     uint depositAmount = 10000e18;
     uint retirementAcc = createAccountAndDepositDaiLending(charlie, depositAmount);
 
-    // create a new account with 800 usdc deposit
+    // Bob created a new account with 800 usdc deposit to trade with Alice
     uint bobUSDCAmount = 800e18;
     uint bobNewAcc = createAccountAndDepositUSDC(bob, bobUSDCAmount);
     setupMaxAssetAllowancesForAll(bob, bobNewAcc, alice);   
-
-    // open call w/o premium payment
     vm.prank(alice);
-    openCallOption(bobNewAcc, aliceAcc, int(1e18), subId);
+    openCallOption(bobNewAcc, aliceAcc, int(1e18), subId); // open call w/o premium payment
 
-    // simulate settlement: bob become insolvent
+    // simulate settlement: Bob become insolvent
+    vm.warp(expiry + 1);
     uint settlementPrice = 3000e18;
     setPrices(1e18, 3000e18);
-    uint expectedInsolventAmount = settlementPrice - strike - bobUSDCAmount;
-    vm.warp(expiry + 1);
-
     setSettlementPrice(expiry);
-
     AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
     assets[0] = AccountStructs.HeldAsset({
       asset: IAsset(address(optionAdapter)),
@@ -85,6 +80,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     });
     rm.settleAssets(bobNewAcc, assets);
 
+    uint expectedInsolventAmount = settlementPrice - strike - bobUSDCAmount;
     assertEq(account.getBalance(bobNewAcc, usdcAdapter, 0), 0);
 
     // daiLending balance should reflect the insolvent amount
