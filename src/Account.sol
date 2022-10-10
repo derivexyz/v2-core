@@ -60,8 +60,7 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /** 
    * @notice Creates account and gives spender full allowance
-   * @dev   @note: this is possible to be used to create an account for another user
-   *               and simultaniously give allowance to himself.
+   * @dev   @note: can be used to create and account for another user and simultaneously give allowance to oneself
    * @param owner new account owner
    * @param spender give address ERC721 approval
    * @param _manager IManager of new account
