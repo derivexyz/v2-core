@@ -16,7 +16,6 @@ import "../../shared/mocks/MockERC20.sol";
 contract AccountGasScript is Script {
 
   uint ownAcc;
-  
   Account account;
   MockERC20 weth;
   MockERC20 usdc;
@@ -37,13 +36,15 @@ contract AccountGasScript is Script {
 
     uint counts = 500;
 
-    setupAccounts(counts);
+    setupAccounts(500);
 
     // bulk transfer gas cost
-    _gasBulkTransferUSDC(counts);
+    _gasBulkTransferUSDC(100);
+    _gasBulkTransferUSDC(500);
 
-    // buck trade
-    _gasBulkTradeUSDCWithOption(counts);
+    // buck trade single account with multiple accounts
+    _gasBulkTradeUSDCWithDiffOption(100);
+    _gasBulkTradeUSDCWithDiffOption(500);
 
     vm.stopBroadcast();
   }
@@ -72,10 +73,13 @@ contract AccountGasScript is Script {
     account.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
-    console.log("gas:BulkTransferUSDC(500)", initGas - endGas);
+    console.log("gas:BulkTransferUSDC(", counts, ")", initGas - endGas);
   }
 
-  function _gasBulkTradeUSDCWithOption(uint counts) public {
+  function _gasBulkTradeUSDCWithDiffOption(uint counts) public {
+    // Gas test for a singel account to trade with 500 different accounts on different asset
+    // which will ends up having counts+1 assets in the heldAsset array.
+
     // setup: not counting gas
     uint amount = 50e18;
     uint usdcAmount = 300e18;
@@ -83,7 +87,7 @@ contract AccountGasScript is Script {
 
     for(uint i = 0; i < counts; ) {
 
-      uint subId = optionAdapter.addListing(1000e18, block.timestamp + 604800, true);
+      uint subId = optionAdapter.addListing(1000e18, block.timestamp + 604800 + i, true);
 
       transferBatch[2*i] = AccountStructs.AssetTransfer({ // short option and give it to another person
         fromAcc: ownAcc,
@@ -111,7 +115,7 @@ contract AccountGasScript is Script {
     account.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
-    console.log("gas:BulkTradeUSDCWithOption(500)", initGas - endGas);
+   console.log("gas:BulkTradeUSDCWithDiffOption(", counts, ")", initGas - endGas);
   }
 
   /// @dev deploy mock system
