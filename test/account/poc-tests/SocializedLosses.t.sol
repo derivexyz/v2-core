@@ -81,10 +81,12 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     rm.settleAssets(bobNewAcc, assets);
 
     uint expectedInsolventAmount = settlementPrice - strike - bobUSDCAmount;
-    assertEq(account.getBalance(bobNewAcc, usdcAdapter, 0), 0);
 
-    // daiLending balance should reflect the insolvent amount
-    assertEq(account.getBalance(bobNewAcc, daiLending, 0), -int(expectedInsolventAmount));
+    // usdc balance stays the same
+    assertEq(account.getBalance(bobNewAcc, usdcAdapter, 0), int(bobUSDCAmount));
+
+    // daiLending balance should reflect the negative pnl
+    assertEq(account.getBalance(bobNewAcc, daiLending, 0), -int(settlementPrice - strike));
 
     // socialise loss on everyone else's lending balance!
     daiLending.socializeLoss(bobNewAcc, expectedInsolventAmount);

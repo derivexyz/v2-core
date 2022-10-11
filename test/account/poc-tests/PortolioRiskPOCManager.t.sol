@@ -85,9 +85,9 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     rm.settleAssets(aliceAcc, assets);
     rm.settleAssets(bobAcc, assets);
 
-    // check settlement balance
-    assertEq(account.getBalance(aliceAcc, usdcAdapter, 0), aliceUSDCBefore - cashValue);
-    assertEq(account.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore + cashValue);    
+    // check settlement values are reflected in daiLending balance
+    assertEq(account.getBalance(aliceAcc, daiLending, 0), - cashValue);
+    assertEq(account.getBalance(bobAcc, daiLending, 0), cashValue);    
   }
 
   function testManagerCanBlockMigrationToBadManagers() public {

@@ -169,57 +169,16 @@ contract PortfolioRiskPOCManager is Owned, IManager {
           })
         );
 
-        if (pnl > 0) {
-          // pnl is positive, just transfer
-          account.managerAdjustment(
-              AccountStructs.AssetAdjustment({
-                acc: accountId, 
-                asset: quoteAsset, 
-                subId: 0, 
-                amount: pnl,
-                assetData: bytes32(0)
-              })
-            );
-        } else {
-          // pnl is negative
-          // we assume quote asset can not go negative
-         // will need to check if settlement is gonna set account balance to negative
-          int256 quoteBalance = account.getBalance(accountId, quoteAsset, 0);
-          if (quoteBalance + pnl > 0) {
-            account.managerAdjustment(
-              AccountStructs.AssetAdjustment({
-                acc: accountId, 
-                asset: quoteAsset, 
-                subId: 0, 
-                amount: pnl,
-                assetData: bytes32(0)
-              })
-            );
-          } else {
-            // 1. adjust quote to 0
-            account.managerAdjustment(
-              AccountStructs.AssetAdjustment({
-                acc: accountId, 
-                asset: quoteAsset, 
-                subId: 0, 
-                amount: -quoteBalance,
-                assetData: bytes32(0)
-              })
-            );
-
-            // 2. add negative balance in lending contract
-            account.managerAdjustment(
-              AccountStructs.AssetAdjustment({
-                acc: accountId, 
-                asset: lending,
-                subId: 0, 
-                amount: quoteBalance + pnl,
-                assetData: bytes32(0)
-              })
-            );
-          }
-        }
-        
+        // this could leave daiLending balance to negative value
+        account.managerAdjustment(
+          AccountStructs.AssetAdjustment({
+            acc: accountId, 
+            asset: lending, 
+            subId: 0, 
+            amount: pnl,
+            assetData: bytes32(0)
+          })
+        );
         
       }
     }
