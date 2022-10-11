@@ -1,4 +1,16 @@
-## Accounts gas benchmarks (possibly use hardhat or cast)
+# Accounts gas benchmarks
+
+## Rough Estimation with forge test (this will underestaimte gas)
+
+```shell
+forge test --gas-report --match-contract="GAS_"
+```
+
+## More accurate estimation
+
+```shell
+forge script AccountGasScript
+```
 
 - [ ]  Gas Testing
     - [ ]  Large

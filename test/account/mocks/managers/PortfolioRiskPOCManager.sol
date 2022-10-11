@@ -32,11 +32,9 @@ contract PortfolioRiskPOCManager is Owned, IManager {
 
   ////
   // Allowed assets
-  QuoteWrapper quoteAsset;
-  uint quoteFeedId;
-  BaseWrapper baseAsset;
-  uint baseFeedId;
-  OptionToken optionToken;
+  QuoteWrapper immutable quoteAsset;
+  BaseWrapper immutable baseAsset;
+  OptionToken immutable optionToken;
   Lending lending;
 
   ////
@@ -54,18 +52,14 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     IAccount account_,
     PriceFeeds priceFeed_,
     QuoteWrapper quoteAsset_,
-    uint quoteFeedId_,
     BaseWrapper baseAsset_,
-    uint baseFeedId_,
     OptionToken optionToken_,
     Lending lending_
   ) Owned() {
     account = account_;
     priceFeeds = priceFeed_;
     quoteAsset = quoteAsset_;
-    quoteFeedId = quoteFeedId_;
     baseAsset = baseAsset_;
-    baseFeedId = baseFeedId_;
     optionToken = optionToken_;
     lending = lending_;
   }
@@ -231,7 +225,6 @@ contract PortfolioRiskPOCManager is Owned, IManager {
       }
 
       if (scenarioValue < 0) {
-        console2.log("not safe", accountId, uint(-scenarioValue));
         return true;
       }
     }
