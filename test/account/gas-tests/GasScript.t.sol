@@ -52,6 +52,10 @@ contract AccountGasScript is Script {
     _gasBulkTradeUSDCWithDiffOption(100);
     _gasBulkTradeUSDCWithDiffOption(500);
 
+    // test spliting a 600x account
+    _gasBulkSplitPosition(10);
+    _gasBulkSplitPosition(100);
+
     // test settlement: the EOA already have 600 assets
     _setExpiryPrice();
 
@@ -180,6 +184,35 @@ contract AccountGasScript is Script {
     uint endGas = gasleft();
 
    console.log("gas:BulkTradeUSDCWithDiffOption(", counts, "):", initGas - endGas);
+  }
+
+  function _gasBulkSplitPosition(uint counts) public {
+    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
+
+    if (counts > balances.length + 1) revert("don't have this many asset to settle");
+
+    // select bunch of assets to settle
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](counts);
+
+    for(uint i = 0; i < counts; ) {
+      transferBatch[i] = AccountStructs.AssetTransfer({
+        fromAcc: ownAcc,
+        toAcc: i+2, // account 1 is the EOA. start from 2
+        asset: IAsset(optionAdapter),
+        subId: uint96(balances[i+1].subId),
+        amount: (balances[i+1].balance) / 2, // send half to another account
+        assetData: bytes32(0)
+      });
+      unchecked {
+        i++;
+      }
+    }
+
+    uint initGas = gasleft();
+    account.submitTransfers(transferBatch, "");
+    uint endGas = gasleft();
+
+    console.log("gas:BulkSplitPosition(", counts, "):", initGas - endGas);
   }
 
   function _gasSettleAccountWithMultiplePositions(uint counts) public {
