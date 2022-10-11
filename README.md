@@ -1,6 +1,11 @@
-# Lyra v2-core
+<div align="center">
+  <h1 align="center"> Lyra V2 Core</h1>
 
-Lyra V2 core contracts
+<p align='center'>
+    <img src='./docs/imgs/overall/logo.png' alt='lyra' width="300" />
+    <h5 align="center"> Cool slogan goes here </h6>
+</p> 
+</div>
 
 ## Installation and Build
 
