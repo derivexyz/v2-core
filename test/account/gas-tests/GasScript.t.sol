@@ -34,19 +34,43 @@ contract AccountGasScript is Script {
 
     deployMockSystem();
 
-    uint counts = 500;
-
     setupAccounts(500);
+
+    // gas tests
+
+    _gasSingleTransferUSDC();
 
     // bulk transfer gas cost
     _gasBulkTransferUSDC(100);
     _gasBulkTransferUSDC(500);
+
+    _gasSingleTradeUSDCWithOption();
 
     // buck trade single account with multiple accounts
     _gasBulkTradeUSDCWithDiffOption(100);
     _gasBulkTradeUSDCWithDiffOption(500);
 
     vm.stopBroadcast();
+  }
+
+  function _gasSingleTransferUSDC() public {
+    // setup: not counting gas
+    uint amount = 50e18;
+    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+        fromAcc: ownAcc,
+        toAcc: 2,
+        asset: IAsset(usdcAdapter),
+        subId: 0,
+        amount: int(amount),
+        assetData: bytes32(0)
+      });
+
+    // estimate tx cost
+    uint initGas = gasleft();
+    account.submitTransfer(transfer, "");
+    uint endGas = gasleft();
+
+    console.log("gas:SingleTransferUSDC:", initGas - endGas);
   }
 
   function _gasBulkTransferUSDC(uint counts) public {
@@ -73,7 +97,39 @@ contract AccountGasScript is Script {
     account.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
-    console.log("gas:BulkTransferUSDC(", counts, ")", initGas - endGas);
+    console.log("gas:BulkTransferUSDC(", counts, "):", initGas - endGas);
+  }
+
+  function _gasSingleTradeUSDCWithOption() public {
+    uint amount = 50e18;
+    uint usdcAmount = 300e18;
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+
+    uint subId = optionAdapter.addListing(1000e18, block.timestamp + 604800, true);
+
+    transferBatch[0] = AccountStructs.AssetTransfer({ // short option and give it to another person
+      fromAcc: ownAcc,
+      toAcc: 2,
+      asset: IAsset(optionAdapter),
+      subId: subId,
+      amount: int(amount),
+      assetData: bytes32(0)
+    });
+    transferBatch[1] = AccountStructs.AssetTransfer({ // premium
+      fromAcc: 2,
+      toAcc: ownAcc,
+      asset: IAsset(usdcAdapter),
+      subId: 0,
+      amount: int(usdcAmount),
+      assetData: bytes32(0)
+    });
+
+    // estimate tx cost
+    uint initGas = gasleft();
+    account.submitTransfers(transferBatch, "");
+    uint endGas = gasleft();
+
+   console.log("gas:SingleTradeUSDCWithOption:", initGas - endGas);
   }
 
   function _gasBulkTradeUSDCWithDiffOption(uint counts) public {
@@ -115,7 +171,7 @@ contract AccountGasScript is Script {
     account.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
-   console.log("gas:BulkTradeUSDCWithDiffOption(", counts, ")", initGas - endGas);
+   console.log("gas:BulkTradeUSDCWithDiffOption(", counts, "):", initGas - endGas);
   }
 
   /// @dev deploy mock system
