@@ -43,6 +43,7 @@ contract AccountGasScript is Script {
     _gasBulkTransferUSDC(counts);
 
     // buck trade
+    _gasBulkTradeUSDCWithOption(counts);
 
     vm.stopBroadcast();
   }
@@ -72,6 +73,45 @@ contract AccountGasScript is Script {
     uint endGas = gasleft();
 
     console.log("gas:BulkTransferUSDC(500)", initGas - endGas);
+  }
+
+  function _gasBulkTradeUSDCWithOption(uint counts) public {
+    // setup: not counting gas
+    uint amount = 50e18;
+    uint usdcAmount = 300e18;
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](counts*2);
+
+    for(uint i = 0; i < counts; ) {
+
+      uint subId = optionAdapter.addListing(1000e18, block.timestamp + 604800, true);
+
+      transferBatch[2*i] = AccountStructs.AssetTransfer({ // short option and give it to another person
+        fromAcc: ownAcc,
+        toAcc: i+2, // account 1 is the EOA. start from 2
+        asset: IAsset(optionAdapter),
+        subId: subId,
+        amount: int(amount),
+        assetData: bytes32(0)
+      });
+      transferBatch[2*i+1] = AccountStructs.AssetTransfer({ // premium
+        fromAcc: i+2,
+        toAcc: ownAcc,
+        asset: IAsset(usdcAdapter),
+        subId: 0,
+        amount: int(usdcAmount),
+        assetData: bytes32(0)
+      });
+      unchecked {
+        i++;
+      }
+    }
+
+    // estimate tx cost
+    uint initGas = gasleft();
+    account.submitTransfers(transferBatch, "");
+    uint endGas = gasleft();
+
+    console.log("gas:BulkTradeUSDCWithOption(500)", initGas - endGas);
   }
 
   /// @dev deploy mock system
@@ -117,13 +157,16 @@ contract AccountGasScript is Script {
 
     // create 1 account for EOA
     ownAcc = account.createAccount(msg.sender, IManager(address(rm)));
-    usdc.mint(msg.sender, 100_000_000e18);
+    usdc.mint(msg.sender, 1000_000_000e18);
     usdc.approve(address(usdcAdapter), type(uint).max);
     usdcAdapter.deposit(ownAcc, 100_000_000e18);
     // create bunch of accounts and send to everyone
     for (uint160 i = 1; i <= amount; i++) {
       address owner = address(i);
-      account.createAccountWithApproval(owner, msg.sender, IManager(address(rm)));
+      uint acc = account.createAccountWithApproval(owner, msg.sender, IManager(address(rm)));
+
+      // deposit usdc for each account
+      usdcAdapter.deposit(acc, 1_000e18);
     }
 
   }
