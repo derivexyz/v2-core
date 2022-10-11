@@ -29,6 +29,8 @@ contract AccountGasScript is Script {
   InterestRateModel interestRateModel;
   PortfolioRiskPOCManager rm;
 
+  uint expiry;
+
   function run() external {
     vm.startBroadcast();
 
@@ -49,6 +51,12 @@ contract AccountGasScript is Script {
     // buck trade single account with multiple accounts
     _gasBulkTradeUSDCWithDiffOption(100);
     _gasBulkTradeUSDCWithDiffOption(500);
+
+    // test settlement: the EOA already have 600 assets
+    _setExpiryPrice();
+
+    _gasSettleAccountWithMultiplePositions(100);
+    _gasSettleAccountWithMultiplePositions(500);
 
     vm.stopBroadcast();
   }
@@ -105,7 +113,7 @@ contract AccountGasScript is Script {
     uint usdcAmount = 300e18;
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
 
-    uint subId = optionAdapter.addListing(1000e18, block.timestamp + 604800, true);
+    uint subId = optionAdapter.addListing(1000e18, expiry, true);
 
     transferBatch[0] = AccountStructs.AssetTransfer({ // short option and give it to another person
       fromAcc: ownAcc,
@@ -143,7 +151,7 @@ contract AccountGasScript is Script {
 
     for(uint i = 0; i < counts; ) {
 
-      uint subId = optionAdapter.addListing(1000e18, block.timestamp + 604800 + i, true);
+      uint subId = optionAdapter.addListing(1000e18 + (i * 10e18), expiry, true);
 
       transferBatch[2*i] = AccountStructs.AssetTransfer({ // short option and give it to another person
         fromAcc: ownAcc,
@@ -172,6 +180,29 @@ contract AccountGasScript is Script {
     uint endGas = gasleft();
 
    console.log("gas:BulkTradeUSDCWithDiffOption(", counts, "):", initGas - endGas);
+  }
+
+  function _gasSettleAccountWithMultiplePositions(uint counts) public {
+    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
+
+    if (counts > balances.length + 1) revert("don't have this many asset to settle");
+
+    // select bunch of assets to settle
+    AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](counts);
+    for (uint i; i < counts; i ++) {
+      assets[i] = AccountStructs.HeldAsset({
+        asset: IAsset(address(optionAdapter)),
+        subId: uint96(balances[i+1].subId)
+      });
+    }
+    uint initGas = gasleft();
+    rm.settleAssets(ownAcc, assets);
+    uint endGas = gasleft();
+
+    console.log("gas:SettleAccountWithMultiplePositions(", counts, "):", initGas - endGas);
+
+    // AccountStructs.AssetBalance[] memory balancesAfter = account.getAccountBalances(ownAcc);
+    // console.log("\t - asset left:", balancesAfter.length);
   }
 
   /// @dev deploy mock system
@@ -229,5 +260,13 @@ contract AccountGasScript is Script {
       usdcAdapter.deposit(acc, 1_000e18);
     }
 
+    expiry = block.timestamp + 1 days;
+
+  }
+
+  function _setExpiryPrice() public {
+    vm.warp(expiry + 5);
+    settlementPricer.setSettlementPrice(0, expiry); // set usdc price
+    settlementPricer.setSettlementPrice(1, expiry); // set weth price
   }
 }
