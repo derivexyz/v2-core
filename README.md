@@ -2,6 +2,8 @@
   <h1 align="center"> Lyra V2 Core</h1>
 
 <p align='center'>
+    <br>
+    <br>
     <img src='./docs/imgs/overall/logo.png' alt='lyra' width="300" />
     <h5 align="center"> Cool slogan goes here </h6>
 </p> 
