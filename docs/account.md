@@ -1,55 +1,51 @@
 # Account
 
-Account contract is a permissionless ERC721 contract that can be used by any protocol to handle their "account management" logic.
+The Account contract is a permissionless ERC721 contract that can be used by any protocol to (1) handle accounting of asset balances (2) access control (3) enforce proper `Asset` and `Manager` interactions whenever balance adjustments are made.
 
-There are two at least 2 interfaces you need to implement to comply with `Account.sol`. `IAsset` and `IManager`.
+There are two at least interfaces you need to implement to comply with `Account.sol`: `IAsset` and `IManager`.
 
 ## Accounting
 
-Each account can hold multiple `Assets` with a balance. The base layer stored each `{asset, subId}` as 1 `HeldAsset` structure. The variable `subId` is a identifier that can be used to separate different type of asset under a single **Token** contract. For example, `OptionToken` might use this field to separate options with different strike price, expiry ...etc.
+Each account can hold a balance per `Assets` / `subId` pair, where `subId` is an identifier that is used to distinguish different asset sub-types that are codified by the same asset contract (e.g. $1500 Jan 1st ETH Call vs $1600 Jan 1st ETH Call). 
 
-We use an array to record all non-zero `HeldAsset` for an account. The actual balances are stored as `BalanceAndOrder` in a mapping, and we use the `.order` field which stores the index of an asset in the `heldAsset` array to easily remove assets from the `heldAsset` array when the balance is 0.
+The base layer also tracks `{ asset, subId }`'s with non-zero balances in a `heldAssets` array per account. The actual balances are stored as `BalanceAndOrder` structs in a mapping, and we use the `.order` field to store the index of the `{ asset / subId }` in the `heldAssets` array to gas efficiently remove assets from the `heldAsset` array when the balance returns to 0.
 
 ## Access Control
 
-The most important role for `Account` is to implement the access control, and abstract all the remaining logic to each **Asset** or **Manager** contract.
-
-Based on each asset, they might require approvals differently based on it's **increasing** or **decreasing** balance. Each `Asset` communicates this to `Account` in the asset hook: when an asset is transferred, each asset determines if this balance change needs "allowance" (For example increasing USD balance would not need allowance). If so, `Account` will check the `msg.sender` is properly authorized by the ERC721 owner.
+Each asset can set unique approval requirements depending on whether the balance is **increasing** or **decreasing**. When an asset is transferred, each asset determines if this balance change needs an "allowance". For example, an **increasing** USD balance would not require allowance while a **decreasing** balance would. As a counter, if the asset is a perpetual, both **decreasing** and **increasing** adjustments would require an allowance as a positive perp balance could have a funding rate.
 
 You can think of the access control as a 2 layer approve system:
 
 ### First Layer: **ERC721 approval**:
 
-Same as any ERC721 based contract, the approved address is authorized to do anything on the users' behalf. We also grant the **account manager** the ERC721 owner approval that cannot be revoked.
+Same as any ERC721 based contract, the owner or ERC821 approved address is authorized to do anything on the user's behalf. We also grant irrevocable approval by default to the **manager** of the account.
 
 ### Second Layer: Custom approval
 
-If `msg.sender` is not the owner of ERC721 approved, it will need **custom approval** to spend an account's money. You can specify the spender to only increase or decrease the balance on a certain asset (or subId).
+If `msg.sender` is not the owner or ERC721 approved, they will need **custom approval** to spend the account's balance. You can specify the spender to only increase or decrease the balance on a certain asset (or subId).
 
-The logics of custom approval are defined in `Allowance.sol`.
+The logic for custom approvals is defined in `Allowance.sol`.
 
 ## Trasnsfer Hooks
 
-There are three different flows that could update an account's balance:
+There are three different flows that could update an account's balance. Each flow has a unique structure for how the `Asset` and `Manager` must be engaged in order for the flow to succeed.
 
 ![Base layer](./imgs/overall/base-layer-basic.png)
 
-### 1. Normal transactions
+### 1. Symmetric transactions
 
-Transactions initiated by users or third party contracts need to pass the information to **Asset** through `IAsset.handleAdjustment` to get the final balance and access requirements, and pass to **Manager** through `IManager.handleAdjustment` to determine if the final state of the account is valid.
+Transfers that subtract amount `x` from one account and add amount `x` to another account can be initiated by anyone using `Account.submitTransfers`. During the transfer, `Account.sol` passes information (the caller, old balance, transfer amount, etc) to the **Asset** through `IAsset.handleAdjustment`. In return, the asset returns the final balance and access requirements. This is called the `asset hook`.
 
-These transactions should be initiated through `submitTransfer` or `submitTransfers` functions.
+`Account.sol` also passess relevant information (the caller, accountId) to the **Manager** through `IManager.handleAdjustment` to determine if the final state of the account is valid. This is called the `manager hook`
 
-### 2. Transactions initiated by managers
+### 2. Adjustments initiated by managers
 
-Transactions initiated by the manager don't have to go through manager hook again at the end, but will still go through `IAsset.handleAdjustment`.
-
-These transactions should be initiated through `managerAdjustment`.
+Adjustments initiated by the manager bypass the `manager hook`, but still go through `IAsset.handleAdjustment`. These transactions are initiated through `Account.managerAdjustment`. As an example, managers could use this functionality to transfer cash between accounts upon option settlement. 
 
 *note: managers can also update the balance through `submitTransfers`, but it will trigger itself with `IManager.handleAdjustment` at the end.
 
-### 3. Transactions initiated by assets
+### 3. Adjustments initiated by assets
 
-Transactions initiated by assets can choose whether it needs to go through its own asset hook during balance update (base on implementation, sometimes `handleAdjustment` can be handy to update interest rate ...etc, so routing everything through the hook might not be a bad idea), but all transfers must still go through `IManager.handleAdjustment` at then end.
+An asset can choose choose to go through its own `asset hook` during a self triggered adjustment via `Account.assetAdjustment` (eg `handleAdjustment` can be handy to update interest rate accruals, so routing everything through the hook might not be a bad idea), but all transfers must still go through `IManager.handleAdjustment` at the end of the transaction.
 
-These transactions should be initiated through `assetAdjustment`.
+One key feature that this enables is deposits and withdrawals of ETH or USD to form wrapped representations of these assets in the account layer.  
