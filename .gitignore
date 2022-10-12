@@ -3,3 +3,4 @@ out
 cache
 lcov.info
 node_modules
+yarn-error.log
