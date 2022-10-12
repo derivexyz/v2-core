@@ -1,0 +1,137 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+import "../../../src/Account.sol";
+
+import "../../shared/mocks/MockERC20.sol";
+import "../../shared/mocks/MockAsset.sol";
+import "../../shared/mocks/MockManager.sol";
+import "forge-std/Test.sol";
+
+contract AccountTestBase is Test {
+    address alice;
+    address bob;
+
+    uint256 aliceAcc;
+    uint256 bobAcc;
+
+    MockManager dumbManager;
+
+    MockERC20 usdc;
+    MockERC20 coolToken;
+
+    MockAsset usdcAsset;
+    MockAsset coolAsset;
+
+    Account account;
+
+    uint tokenSubId = 1000;
+
+    function setUpAccounts() public {
+        alice = address(0xaa);
+        bob = address(0xbb);
+
+        account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+
+        /* mock tokens that can be deposited into accounts */
+        usdc = new MockERC20("USDC", "USDC");
+        usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+
+        coolToken = new MockERC20("Cool", "COOL");
+        coolAsset = new MockAsset(IERC20(coolToken), IAccount(address(account)), false);
+
+        dumbManager = new MockManager(address(account));
+
+        aliceAcc = account.createAccount(alice, dumbManager);
+        bobAcc = account.createAccount(bob, dumbManager);
+
+        // give Alice usdc, and give Bob coolToken
+        mintAndDeposit(
+            alice,
+            aliceAcc,
+            usdc,
+            usdcAsset,
+            0,
+            10000000e18
+        );
+        mintAndDeposit(
+            bob,
+            bobAcc,
+            coolToken,
+            coolAsset,
+            tokenSubId,
+            10000000e18
+        );
+    }
+
+    function mintAndDeposit(
+        address user,
+        uint256 accountId,
+        MockERC20 token,
+        MockAsset assetWrapper,
+        uint256 subId,
+        uint256 amount
+    ) public {
+        token.mint(user, amount);
+
+        vm.startPrank(user);
+        token.approve(address(assetWrapper), type(uint256).max);
+        assetWrapper.deposit(accountId, subId, amount);
+        vm.stopPrank();
+    }
+
+    function tradeTokens(
+        uint256 fromAcc,
+        uint256 toAcc,
+        address assetA,
+        address assetB,
+        uint256 tokenAAmounts,
+        uint256 tokenBAmounts,
+        uint256 tokenASubId,
+        uint256 tokenBSubId
+    ) internal {
+        AccountStructs.AssetTransfer memory tokenATransfer = AccountStructs.AssetTransfer({
+            fromAcc: fromAcc,
+            toAcc: toAcc,
+            asset: IAsset(assetA),
+            subId: tokenASubId,
+            amount: int256(tokenAAmounts),
+            assetData: bytes32(0)
+        });
+
+        AccountStructs.AssetTransfer memory tokenBTranser = AccountStructs.AssetTransfer({
+            fromAcc: toAcc,
+            toAcc: fromAcc,
+            asset: IAsset(assetB),
+            subId: tokenBSubId,
+            amount: int256(tokenBAmounts),
+            assetData: bytes32(0)
+        });
+
+        AccountStructs.AssetTransfer[]
+            memory transferBatch = new AccountStructs.AssetTransfer[](2);
+        transferBatch[0] = tokenATransfer;
+        transferBatch[1] = tokenBTranser;
+
+        account.submitTransfers(transferBatch, "");
+    }
+
+    function transferToken(
+        uint256 fromAcc,
+        uint256 toAcc,
+        IAsset asset,
+        uint256 subId,
+        int256 tokenAmounts
+    ) internal {
+        AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+            fromAcc: fromAcc,
+            toAcc: toAcc,
+            asset: asset,
+            subId: subId,
+            amount: int256(tokenAmounts),
+            assetData: bytes32(0)
+        });
+
+        account.submitTransfer(transfer, "");
+    }
+}
