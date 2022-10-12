@@ -1,6 +1,5 @@
 .idea
 out
 cache
-.gas-snapshot
 lcov.info
 node_modules
