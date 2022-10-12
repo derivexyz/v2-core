@@ -15,10 +15,10 @@ contract Allowances {
   // Variables
 
   /// @dev accountId => owner => asset => subId => delegate => allowance
-  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint)))))
-    public positiveSubIdAllowance;
-  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint)))))
-    public negativeSubIdAllowance;
+  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public
+    positiveSubIdAllowance;
+  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public
+    negativeSubIdAllowance;
 
   /// @dev accountId => owner => asset => delegate => allowance
   mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public positiveAssetAllowance;
@@ -64,10 +64,10 @@ contract Allowances {
   ) internal {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
-      positiveSubIdAllowance[accountId][owner][allowances[i].asset][allowances[i].subId][delegate] = allowances[i]
-        .positive;
-      negativeSubIdAllowance[accountId][owner][allowances[i].asset][allowances[i].subId][delegate] = allowances[i]
-        .negative;
+      positiveSubIdAllowance[accountId][owner][allowances[i].asset][allowances[i].subId][delegate] =
+        allowances[i].positive;
+      negativeSubIdAllowance[accountId][owner][allowances[i].asset][allowances[i].subId][delegate] =
+        allowances[i].negative;
     }
   }
 
@@ -140,12 +140,7 @@ contract Allowances {
       allowancesForAsset[delegate] = assetAllowance - (absAmount - subIdAllowance);
     } else {
       revert NotEnoughSubIdOrAssetAllowances(
-        address(this),
-        msg.sender,
-        accountId,
-        amount,
-        subIdAllowance,
-        assetAllowance
+        address(this), msg.sender, accountId, amount, subIdAllowance, assetAllowance
       );
     }
   }
@@ -155,11 +150,6 @@ contract Allowances {
   ////////////
 
   error NotEnoughSubIdOrAssetAllowances(
-    address thower,
-    address caller,
-    uint accountId,
-    int amount,
-    uint subIdAllowance,
-    uint assetAllowance
+    address thower, address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
   );
 }

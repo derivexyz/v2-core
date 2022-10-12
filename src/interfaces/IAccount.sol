@@ -29,11 +29,7 @@ interface IAccount is IAllowances, IERC721 {
    * @param _manager IManager of new account
    * @return newId ID of new account
    */
-  function createAccountWithApproval(
-    address owner,
-    address spender,
-    IManager _manager
-  ) external returns (uint newId);
+  function createAccountWithApproval(address owner, address spender, IManager _manager) external returns (uint newId);
 
   /**
    * @notice Assigns new manager to account. No balances are adjusted.
@@ -42,11 +38,7 @@ interface IAccount is IAllowances, IERC721 {
    * @param newManager new IManager
    * @param newManagerData data to be passed to manager._managerHook
    */
-  function changeManager(
-    uint accountId,
-    IManager newManager,
-    bytes memory newManagerData
-  ) external;
+  function changeManager(uint accountId, IManager newManager, bytes memory newManagerData) external;
 
   ///////////////
   // Approvals //
@@ -60,11 +52,8 @@ interface IAccount is IAllowances, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(
-    uint accountId,
-    address delegate,
-    AccountStructs.AssetAllowance[] memory allowances
-  ) external;
+  function setAssetAllowances(uint accountId, address delegate, AccountStructs.AssetAllowance[] memory allowances)
+    external;
 
   /**
    * @notice Sets bidirectional allowances for a specific subId.
@@ -73,11 +62,8 @@ interface IAccount is IAllowances, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each (asset, subId)
    */
-  function setSubIdAllowances(
-    uint accountId,
-    address delegate,
-    AccountStructs.SubIdAllowance[] memory allowances
-  ) external;
+  function setSubIdAllowances(uint accountId, address delegate, AccountStructs.SubIdAllowance[] memory allowances)
+    external;
 
   /////////////////////////
   // Balance Adjustments //
@@ -125,17 +111,12 @@ interface IAccount is IAllowances, IERC721 {
 
   function manager(uint accountId) external view returns (IManager);
 
-  function balanceAndOrder(
-    uint accountId,
-    IAsset asset,
-    uint subId
-  ) external view returns (int240 balance, uint16 order);
+  function balanceAndOrder(uint accountId, IAsset asset, uint subId)
+    external
+    view
+    returns (int240 balance, uint16 order);
 
-  function getBalance(
-    uint accountId,
-    IAsset asset,
-    uint subId
-  ) external view returns (int balance);
+  function getBalance(uint accountId, IAsset asset, uint subId) external view returns (int balance);
 
   function getAccountBalances(uint accountId)
     external
@@ -187,12 +168,7 @@ interface IAccount is IAllowances, IERC721 {
   error OnlyAsset(address thrower, address caller, address asset);
 
   error NotOwnerOrERC721Approved(
-    address thrower,
-    address spender,
-    uint accountId,
-    address accountOwner,
-    IManager manager,
-    address approved
+    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved
   );
 
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);

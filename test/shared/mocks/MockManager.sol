@@ -5,7 +5,6 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 
 contract MockManager is IManager {
-  
   IAccount account;
 
   bool revertHandleManager;
@@ -15,12 +14,12 @@ contract MockManager is IManager {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint /*accountId*/, address, bytes memory) public view override {
-    if(revertHandleAdjustment) revert();
+  function handleAdjustment(uint, /*accountId*/ address, bytes memory) public view override {
+    if (revertHandleAdjustment) revert();
   }
 
-  function handleManagerChange(uint, IManager) external view { 
-    if(revertHandleManager) revert();
+  function handleManagerChange(uint, IManager) external view {
+    if (revertHandleManager) revert();
   }
 
   function setRevertHandleManager(bool _revert) external {

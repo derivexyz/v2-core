@@ -131,12 +131,12 @@ library FixedPointMathLib {
       // x is now in the range (-42, 136) * 1e18. Convert to (-42, 136) * 2**96
       // for more intermediate precision and a binary basis. This base conversion
       // is a multiplication by 1e18 / 2**96 = 5**18 / 2**78.
-      x = (x << 78) / 5**18;
+      x = (x << 78) / 5 ** 18;
 
       // Reduce range of x to (-½ ln 2, ½ ln 2) * 2**96 by factoring out powers of two
       // such that exp(x) = exp(x') * 2**k, where k is an integer.
       // Solving this gives k = round(x / log(2)) and x' = x - k * log(2).
-      int k = ((x << 96) / 54916777467707473351141471128 + 2**95) >> 96;
+      int k = ((x << 96) / 54916777467707473351141471128 + 2 ** 95) >> 96;
       x = x - k * 54916777467707473351141471128;
       // k is in the range [-61, 195].
 
@@ -273,11 +273,12 @@ library FixedPointMathLib {
         // z cant overflow with z < 37 * 1e18 range we're in
         // e cant overflow since its at most 1.0 (at z=0)
 
-        z = (z << 46) / 5**18;
-        e = (e << 46) / 5**18;
+        z = (z << 46) / 5 ** 18;
+        e = (e << 46) / 5 ** 18;
 
-        if (z < 130438178253327725388) // 7071067811865470000 in decimal (7.07)
-        {
+        if (
+          z < 130438178253327725388 // 7071067811865470000 in decimal (7.07)
+        ) {
           // Hart's algorithm for x \in (-7.07, 7.07)
           uint n;
           uint d;
@@ -326,7 +327,7 @@ library FixedPointMathLib {
         }
       }
 
-      c = (c * (5**18)) >> 46;
+      c = (c * (5 ** 18)) >> 46;
       c = (x <= 0) ? c : uint(1e18 - int(c));
       return c;
     }

@@ -1,9 +1,0 @@
-{
-  "extends": "solhint:recommended",
-  "rules": {
-    "compiler-version": ["error", ">=0.8.0"],
-    "avoid-low-level-calls": "off",
-    "not-rely-on-time": "off",
-    "max-line-length": ["error", 120]
-  }
-}

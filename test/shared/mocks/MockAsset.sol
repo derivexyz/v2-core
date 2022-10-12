@@ -6,14 +6,14 @@ import "src/interfaces/IAccount.sol";
 
 /**
  * @title MockAsset is the easiest Asset wrapper that wraps ERC20 into account system.
- * @dev   deployer can set MockAsset to not allow balance go negative. 
+ * @dev   deployer can set MockAsset to not allow balance go negative.
  *        if set to "allowNegativeBalance = false", token must be deposited before using
  */
 contract MockAsset is IAsset {
   IERC20 token;
   IAccount account;
   bool immutable allowNegativeBalance;
-  
+
   // default: don't need positive allowance to increase someone's balance
   bool needPositiveAllowance = false;
 
@@ -29,13 +29,13 @@ contract MockAsset is IAsset {
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
 
-  constructor(IERC20 token_, IAccount account_, bool allowNegativeBalance_){
+  constructor(IERC20 token_, IAccount account_, bool allowNegativeBalance_) {
     token = token_;
     account = account_;
     allowNegativeBalance = allowNegativeBalance_;
   }
 
-  function deposit(uint recipientAccount, uint256 subId, uint amount) external {
+  function deposit(uint recipientAccount, uint subId, uint amount) external {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
@@ -53,9 +53,9 @@ contract MockAsset is IAsset {
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
-        acc: accountId, 
-        asset: IAsset(address(this)), 
-        subId: 0, 
+        acc: accountId,
+        asset: IAsset(address(this)),
+        subId: 0,
         amount: -int(amount),
         assetData: bytes32(0)
       }),
@@ -65,9 +65,12 @@ contract MockAsset is IAsset {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager _manager, address
-  ) external view override returns (int finalBalance, bool needAllowance) {
+  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager _manager, address)
+    external
+    view
+    override
+    returns (int finalBalance, bool needAllowance)
+  {
     if (revertFromManager[address(_manager)]) revert();
     int result = preBal + adjustment.amount;
     if (result < 0 && !allowNegativeBalance) revert("negative balance");
@@ -77,7 +80,7 @@ contract MockAsset is IAsset {
 
   function handleManagerChange(uint, IManager) external override {
     if (revertHandleManagerChange) revert();
-    if(recordMangerChangeCalls) handleManagerCalled += 1;
+    if (recordMangerChangeCalls) handleManagerCalled += 1;
   }
 
   function setNeedPositiveAllowance(bool _needPositiveAllowance) external {
@@ -99,5 +102,4 @@ contract MockAsset is IAsset {
   function setRecordManagerChangeCalls(bool _record) external {
     recordMangerChangeCalls = _record;
   }
-
 }

@@ -6,11 +6,7 @@ interface IManager {
    * @notice triggered at the end of a tx when any balance of the account is updated
    * @dev a manager should properly check the final stateo of an account
    */
-  function handleAdjustment(
-    uint accountId,
-    address caller,
-    bytes memory data
-  ) external;
+  function handleAdjustment(uint accountId, address caller, bytes memory data) external;
 
   /**
    * @notice triggered when a user want to change to a new manager

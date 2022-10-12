@@ -113,9 +113,9 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     // TODO: check owner of accountForCollat
     account.managerAdjustment(
       AccountStructs.AssetAdjustment({
-        acc: accountForCollateral, 
-        asset: quoteAsset, 
-        subId: 0, 
+        acc: accountForCollateral,
+        asset: quoteAsset,
+        subId: 0,
         amount: -extraCollateral,
         assetData: bytes32(0)
       })
@@ -124,9 +124,9 @@ contract PortfolioRiskPOCManager is Owned, IManager {
 
     account.managerAdjustment(
       AccountStructs.AssetAdjustment({
-        acc: accountId, 
-        asset: quoteAsset, 
-        subId: 0, 
+        acc: accountId,
+        asset: quoteAsset,
+        subId: 0,
         amount: extraCollateral,
         assetData: bytes32(0)
       })
@@ -155,7 +155,8 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     for (uint i; i < assetLen; i++) {
       int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
 
-      (int pnl, bool settled) = ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
+      (int pnl, bool settled) =
+        ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
 
       if (settled) {
         // NOTE: RM A at risk of RM B not properly implementing settling
@@ -171,15 +172,8 @@ contract PortfolioRiskPOCManager is Owned, IManager {
 
         // this could leave daiLending balance to negative value
         account.managerAdjustment(
-          AccountStructs.AssetAdjustment({
-            acc: accountId, 
-            asset: lending, 
-            subId: 0, 
-            amount: pnl,
-            assetData: bytes32(0)
-          })
+          AccountStructs.AssetAdjustment({acc: accountId, asset: lending, subId: 0, amount: pnl, assetData: bytes32(0)})
         );
-        
       }
     }
   }
@@ -219,13 +213,15 @@ contract PortfolioRiskPOCManager is Owned, IManager {
         AccountStructs.AssetBalance memory assetBalance = assets[k];
 
         if (assetBalance.asset == IAsset(optionToken)) {
-          scenarioValue += optionToken.getValue(assetBalance.subId, assetBalance.balance, shockedSpot, scenarios[j].ivShock);
+          scenarioValue +=
+            optionToken.getValue(assetBalance.subId, assetBalance.balance, shockedSpot, scenarios[j].ivShock);
         } else if (assetBalance.asset == IAsset(baseAsset)) {
           scenarioValue += int(shockedSpot).multiplyDecimal(assetBalance.balance);
         } else if (assetBalance.asset == IAsset(quoteAsset)) {
           scenarioValue += assetBalance.balance;
           // console2.log("added value", uint(assetBalance.balance));
-        } else if (assetBalance.asset == IAsset(lending)) { // placeholder for lending asset
+        } else if (assetBalance.asset == IAsset(lending)) {
+          // placeholder for lending asset
           scenarioValue += freshLendingBalance;
         } else {
           revert("Risk model does not support given asset");

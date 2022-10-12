@@ -11,11 +11,10 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
   uint charlieAcc;
   uint davidAcc;
 
-
   function setUp() public {
     vm.label(alice, "alice");
     vm.label(bob, "bob");
-    
+
     deployPRMSystem();
     setPrices(1e18, 1500e18);
 
@@ -46,8 +45,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
 
     // new ratio should be 0.9
     uint storedRatio = optionAdapter.ratios(subId);
-    uint effectiveRatio = 
-      DecimalMath.UNIT * optionAdapter.totalShorts(subId) / optionAdapter.totalLongs(subId);
+    uint effectiveRatio = DecimalMath.UNIT * optionAdapter.totalShorts(subId) / optionAdapter.totalLongs(subId);
     assertEq(storedRatio, 9e17);
     assertEq(effectiveRatio, 9e17);
   }
@@ -55,7 +53,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
   function testSocializedLossOnLending() public {
     uint expiry = block.timestamp + 604800;
     uint strike = 1500e18;
-    uint subId = optionAdapter.addListing(strike, expiry , true);
+    uint subId = optionAdapter.addListing(strike, expiry, true);
 
     // Charlie deposited into lending account (his retirement account!)
     uint depositAmount = 10000e18;
@@ -64,7 +62,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     // Bob created a new account with 800 usdc deposit to trade with Alice
     uint bobUSDCAmount = 800e18;
     uint bobNewAcc = createAccountAndDepositUSDC(bob, bobUSDCAmount);
-    setupMaxAssetAllowancesForAll(bob, bobNewAcc, alice);   
+    setupMaxAssetAllowancesForAll(bob, bobNewAcc, alice);
     vm.prank(alice);
     openCallOption(bobNewAcc, aliceAcc, int(1e18), subId); // open call w/o premium payment
 
@@ -74,10 +72,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     setPrices(1e18, 3000e18);
     setSettlementPrice(expiry);
     AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
-    assets[0] = AccountStructs.HeldAsset({
-      asset: IAsset(address(optionAdapter)),
-      subId: uint96(subId)
-    });
+    assets[0] = AccountStructs.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
     rm.settleAssets(bobNewAcc, assets);
 
     uint expectedInsolventAmount = settlementPrice - strike - bobUSDCAmount;
@@ -160,5 +155,4 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     transferBatch[0] = optionTransfer;
     account.submitTransfers(transferBatch, "");
   }
-
 }
