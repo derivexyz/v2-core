@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../../src/interfaces/IAccount.sol";
+import "../../../src/Account.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";
@@ -19,7 +19,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
 
   function testCannotTransferToSelf() public {
     vm.expectRevert(
-      abi.encodeWithSelector(IAccount.CannotTransferAssetToOneself.selector, 
+      abi.encodeWithSelector(Account.CannotTransferAssetToOneself.selector, 
         address(account), 
         alice,
         aliceAcc
@@ -151,7 +151,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     vm.prank(address(coolAsset));
 
     vm.expectRevert(abi.encodeWithSelector(
-      IAccount.OnlyAsset.selector, 
+      Account.OnlyAsset.selector, 
       address(account), 
       address(coolAsset), 
       address(usdcAsset)
@@ -163,5 +163,34 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
         amount: amount,
         assetData: bytes32(0)
     }), true, "");
+  }
+
+  /** ============================== *
+   * tests for updating heldAssets   |
+   * =============================== *
+   **/
+
+  function testAssetHeldArrayUpdateCorrectly() public {
+    vm.prank(bob);
+    account.approve(address(this), bobAcc);
+    vm.prank(alice);
+    account.approve(address(this), aliceAcc);
+
+    
+    int aliceUsdcBefore = account.getBalance(aliceAcc, usdcAsset, 0);
+    int bobCoolBefore = account.getBalance(bobAcc, coolAsset, tokenSubId);
+
+    (IAsset aliceAsset0Befire, ) = account.heldAssets(aliceAcc, 0);
+    (IAsset bobAsset0Before, ) = account.heldAssets(bobAcc, 0);
+    assertEq(address(aliceAsset0Befire), address(usdcAsset));
+    assertEq(address(bobAsset0Before), address(coolAsset));
+
+    tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), uint(aliceUsdcBefore), uint(bobCoolBefore), 0, tokenSubId);
+
+    // held asset now updated
+    (IAsset aliceAsset0After, ) = account.heldAssets(aliceAcc, 0);
+    (IAsset bobAsset0After, ) = account.heldAssets(bobAcc, 0);
+    assertEq(address(aliceAsset0After), address(coolAsset));
+    assertEq(address(bobAsset0After), address(usdcAsset));
   }
 }

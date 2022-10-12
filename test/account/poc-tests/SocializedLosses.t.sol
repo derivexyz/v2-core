@@ -52,6 +52,63 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     assertEq(effectiveRatio, 9e17);
   }
 
+  function testSocializedLossOnLending() public {
+    uint expiry = block.timestamp + 604800;
+    uint strike = 1500e18;
+    uint subId = optionAdapter.addListing(strike, expiry , true);
+
+    // Charlie deposited into lending account (his retirement account!)
+    uint depositAmount = 10000e18;
+    uint retirementAcc = createAccountAndDepositDaiLending(charlie, depositAmount);
+
+    // Bob created a new account with 800 usdc deposit to trade with Alice
+    uint bobUSDCAmount = 800e18;
+    uint bobNewAcc = createAccountAndDepositUSDC(bob, bobUSDCAmount);
+    setupMaxAssetAllowancesForAll(bob, bobNewAcc, alice);   
+    vm.prank(alice);
+    openCallOption(bobNewAcc, aliceAcc, int(1e18), subId); // open call w/o premium payment
+
+    // simulate settlement: Bob become insolvent
+    vm.warp(expiry + 1);
+    uint settlementPrice = 3000e18;
+    setPrices(1e18, 3000e18);
+    setSettlementPrice(expiry);
+    AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
+    assets[0] = AccountStructs.HeldAsset({
+      asset: IAsset(address(optionAdapter)),
+      subId: uint96(subId)
+    });
+    rm.settleAssets(bobNewAcc, assets);
+
+    uint expectedInsolventAmount = settlementPrice - strike - bobUSDCAmount;
+
+    // usdc balance stays the same
+    assertEq(account.getBalance(bobNewAcc, usdcAdapter, 0), int(bobUSDCAmount));
+
+    // daiLending balance should reflect the negative pnl
+    assertEq(account.getBalance(bobNewAcc, daiLending, 0), -int(settlementPrice - strike));
+
+    // socialise loss on everyone else's lending balance!
+    daiLending.socializeLoss(bobNewAcc, expectedInsolventAmount);
+
+    // trigger charlie's retirement account to update balance
+    AccountStructs.AssetTransfer memory triggerTx = AccountStructs.AssetTransfer({
+      fromAcc: retirementAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(daiLending),
+      subId: 0,
+      amount: 0,
+      assetData: bytes32(0)
+    });
+    account.submitTransfer(triggerTx, "");
+
+    // charlie now has less money on his account
+    int charlieNewBalance = account.getBalance(retirementAcc, daiLending, 0);
+
+    // charlie is the only one with asset deposited, so all loss is on him :(
+    assertEq(uint(charlieNewBalance), depositAmount - expectedInsolventAmount);
+  }
+
   function testTradePostSocializedLoss() public {
     setupMaxAssetAllowancesForAll(bob, bobAcc, alice);
 

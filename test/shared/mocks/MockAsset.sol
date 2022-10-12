@@ -14,8 +14,11 @@ contract MockAsset is IAsset {
   IAccount account;
   bool immutable allowNegativeBalance;
   
-  // default to don't need positive allowance
+  // default: don't need positive allowance to increase someone's balance
   bool needPositiveAllowance = false;
+
+  // default: need negative allowacen to subtract someone's balance
+  bool needNegativeAllowance = true;
 
   bool revertHandleManagerChange;
 
@@ -68,7 +71,8 @@ contract MockAsset is IAsset {
     if (revertFromManager[address(_manager)]) revert();
     int result = preBal + adjustment.amount;
     if (result < 0 && !allowNegativeBalance) revert("negative balance");
-    return (result, adjustment.amount < 0 || needPositiveAllowance);
+    needAllowance = adjustment.amount > 0 ? needPositiveAllowance : needNegativeAllowance;
+    return (result, needAllowance);
   }
 
   function handleManagerChange(uint, IManager) external override {
@@ -78,6 +82,10 @@ contract MockAsset is IAsset {
 
   function setNeedPositiveAllowance(bool _needPositiveAllowance) external {
     needPositiveAllowance = _needPositiveAllowance;
+  }
+
+  function setNeedNegativeAllowance(bool _needNegativeAllowance) external {
+    needNegativeAllowance = _needNegativeAllowance;
   }
 
   function setRevertAdjustmentFromManager(address _manager, bool _revert) external {

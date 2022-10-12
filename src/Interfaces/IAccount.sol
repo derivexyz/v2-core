@@ -14,12 +14,33 @@ interface IAccount is IAllowances, IERC721 {
   // Account Admin //
   ///////////////////
 
+  /** 
+   * @notice Creates account with new accountId
+   * @param owner new account owner
+   * @param _manager IManager of new account
+   * @return newId ID of new account
+   */
   function createAccount(address owner, IManager _manager) external returns (uint newId);
 
+  /** 
+   * @notice Creates account and gives spender full allowance
+   * @dev   @note: can be used to create and account for another user and simultaneously give allowance to oneself
+   * @param owner new account owner
+   * @param spender give address ERC721 approval
+   * @param _manager IManager of new account
+   * @return newId ID of new account
+   */
   function createAccountWithApproval(
     address owner, address spender, IManager _manager
   ) external returns (uint newId);
 
+  /** 
+   * @notice Assigns new manager to account. No balances are adjusted.
+   *         msg.sender must be ERC721 approved or owner
+   * @param accountId ID of account
+   * @param newManager new IManager
+   * @param newManagerData data to be passed to manager._managerHook 
+   */  
   function changeManager(
     uint accountId, IManager newManager, bytes memory newManagerData
   ) external;
@@ -28,12 +49,27 @@ interface IAccount is IAllowances, IERC721 {
   // Approvals //
   ///////////////
 
+  /**
+   * @notice Sets bidirectional allowances for all subIds of an asset.
+   *         During a balance adjustment, if msg.sender not ERC721 approved or owner,
+   *         asset allowance + subId allowance must be >= amount
+   * @param accountId ID of account
+   * @param delegate address to assign allowance to
+   * @param allowances positive and negative amounts for each asset
+   */
   function setAssetAllowances(
     uint accountId, 
     address delegate,
     AccountStructs.AssetAllowance[] memory allowances
   ) external;
 
+  /**
+   * @notice Sets bidirectional allowances for a specific subId.
+   *         During a balance adjustment, the subId allowance is decremented first
+   * @param accountId ID of account
+   * @param delegate address to assign allowance to
+   * @param allowances positive and negative amounts for each (asset, subId)
+   */
   function setSubIdAllowances(
     uint accountId, 
     address delegate,
@@ -44,20 +80,42 @@ interface IAccount is IAllowances, IERC721 {
   // Balance Adjustments //
   /////////////////////////
 
+  /** 
+   * @notice Transfer an amount from one account to another for a specific (asset, subId)
+   * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData data passed to managers of both accounts 
+   */
   function submitTransfer(
     AccountStructs.AssetTransfer memory assetTransfer, bytes memory managerData
   ) external;
 
+  /** 
+   * @notice Batch several transfers
+   *         Gas efficient when modifying the same account several times,
+   *         as _managerHook() is only performed once per account
+   * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData data passed to every manager involved in trade 
+   */
   function submitTransfers(
     AccountStructs.AssetTransfer[] memory assetTransfers, bytes memory managerData
   ) external;
 
-  /// @dev adjust balance by assets
+  /** 
+   * @notice Asymmetric balance adjustment reserved for assets
+   *         Must still pass both _managerHook()
+   * @param adjustment asymmetric adjustment of amount for (asset, subId)
+   * @param triggerAssetHook true if the adjustment need to be routed to Asset's custom hook
+   * @param managerData data passed to manager of account
+   */
   function assetAdjustment(
     AccountStructs.AssetAdjustment memory adjustment, bool triggerAssetHook, bytes memory managerData
   ) external returns (int postBalance);
 
-  /// @dev adjust balance by managers
+  /** 
+   * @notice Assymetric balance adjustment reserved for managers
+   *         Must still pass both _assetHook()
+   * @param adjustment assymetric adjustment of amount for (asset, subId)
+   */
   function managerAdjustment(
     AccountStructs.AssetAdjustment memory adjustment
   ) external returns (int postBalance);
@@ -78,7 +136,6 @@ interface IAccount is IAllowances, IERC721 {
 
   function getAccountBalances(uint accountId) 
     external view returns (AccountStructs.AssetBalance[] memory assetBalances);
-
 
   ////////////
   // Events //
@@ -135,11 +192,15 @@ interface IAccount is IAllowances, IERC721 {
   error OnlyManager(address thrower, address caller, address manager);
 
   error OnlyAsset(address thrower, address caller, address asset);
-  
+
   error NotOwnerOrERC721Approved(
     address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved);
-  
+
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
+  
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
+  
   error CannotChangeToSameManager(address thrower, address caller, uint accountId);
 }
+
+  

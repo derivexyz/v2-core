@@ -28,7 +28,8 @@ contract Account is Allowances, ERC721, AccountStructs {
   // Variables //
   ///////////////
 
-  uint nextId = 0;
+  /// @dev account id (ERC721 id) for the next account being created
+  uint public nextId = 0;
 
   /// @dev accountId to manager 
   mapping(uint => IManager) public manager;
@@ -59,6 +60,7 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /** 
    * @notice Creates account and gives spender full allowance
+   * @dev   @note: can be used to create and account for another user and simultaneously give allowance to oneself
    * @param owner new account owner
    * @param spender give address ERC721 approval
    * @param _manager IManager of new account
@@ -71,6 +73,12 @@ contract Account is Allowances, ERC721, AccountStructs {
     _approve(spender, newId);
   }
 
+  /**
+   * @dev create an account for a user, assign manager and emit event
+   * @param owner new account owner
+   * @param _manager IManager of new account
+   * @return newId ID of new account
+   */
   function _createAccount(
     address owner, IManager _manager
   ) internal returns (uint newId) {
@@ -428,14 +436,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   */
   function getAccountBalances(uint accountId) 
     external view returns (AssetBalance[] memory assetBalances) {
-    return _getAccountBalances(accountId);
-  }
-
-  function _getAccountBalances(uint accountId)
-    internal
-    view
-    returns (AssetBalance[] memory assetBalances)
-  {
+    
     uint allAssetBalancesLen = heldAssets[accountId].length;
     assetBalances = new AssetBalance[](allAssetBalancesLen);
     for (uint i; i < allAssetBalancesLen; i++) {
@@ -451,6 +452,7 @@ contract Account is Allowances, ERC721, AccountStructs {
     }
     return assetBalances;
   }
+
 
   ////////////
   // Access //
@@ -553,8 +555,12 @@ contract Account is Allowances, ERC721, AccountStructs {
   error OnlyAsset(address thrower, address caller, address asset);
   
   error NotOwnerOrERC721Approved(
-    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved);
+    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved
+  );
+
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
+  
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
+  
   error CannotChangeToSameManager(address thrower, address caller, uint accountId);
 }

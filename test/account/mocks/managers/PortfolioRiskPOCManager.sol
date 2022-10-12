@@ -155,7 +155,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     for (uint i; i < assetLen; i++) {
       int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
 
-      (int PnL, bool settled) = ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
+      (int pnl, bool settled) = ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
 
       if (settled) {
         // NOTE: RM A at risk of RM B not properly implementing settling
@@ -169,15 +169,17 @@ contract PortfolioRiskPOCManager is Owned, IManager {
           })
         );
 
+        // this could leave daiLending balance to negative value
         account.managerAdjustment(
           AccountStructs.AssetAdjustment({
             acc: accountId, 
-            asset: quoteAsset, 
+            asset: lending, 
             subId: 0, 
-            amount: PnL,
+            amount: pnl,
             assetData: bytes32(0)
           })
         );
+        
       }
     }
   }
@@ -231,7 +233,6 @@ contract PortfolioRiskPOCManager is Owned, IManager {
       }
 
       if (scenarioValue < 0) {
-        console2.log("not safe", accountId, uint(-scenarioValue));
         return true;
       }
     }
