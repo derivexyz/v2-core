@@ -1,0 +1,4 @@
+ds-test/=lib/ds-test/src/
+synthetix/=lib/synthetix/
+forge-std/=lib/forge-std/src/
+openzeppelin/=lib/openzeppelin-contracts/contracts/
