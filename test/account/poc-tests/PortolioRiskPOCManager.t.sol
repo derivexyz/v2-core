@@ -73,9 +73,6 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     vm.warp(expiry + 1);
     setSettlementPrice(expiry);
 
-    int aliceUSDCBefore = account.getBalance(aliceAcc, usdcAdapter, 0);
-    int bobUSDCBefore = account.getBalance(bobAcc, usdcAdapter, 0);
-
     // settlment
     AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
     assets[0] = AccountStructs.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
