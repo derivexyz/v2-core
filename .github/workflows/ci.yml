@@ -22,7 +22,7 @@ jobs:
       - name: Check snapshot
         run: forge snapshot --check
 
-      - name: Check snapshot
+      - name: Check format
         run: forge fmt --check
       
       - name: Run tests
