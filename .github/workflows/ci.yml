@@ -32,7 +32,7 @@ jobs:
           version: nightly
       
       - name: Check snapshot
-        run: forge snaphost --check
+        run: forge snapshot --check
       
       - name: Run tests
         run: forge test --gas-report
