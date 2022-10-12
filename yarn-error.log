@@ -1,0 +1,59 @@
+Arguments: 
+  /Users/antonasso/.nvm/versions/node/v16.10.0/bin/node /usr/local/Cellar/yarn/1.22.10/libexec/bin/yarn.js add --dev husky lint-staged prettier prettier-plugin-solidit solhint
+
+PATH: 
+  /Users/antonasso/opt/anaconda3/bin:/Users/antonasso/opt/anaconda3/condabin:/Users/antonasso/.nvm/versions/node/v16.10.0/bin:/usr/local/opt/llvm/bin:/usr/local/Cellar/macvim/8.1-155/MacVim.app/Contents/bin:/Users/antonasso/.gvm/bin:/Users/antonasso/.nix-profile/bin:/Users/antonasso/.cargo/bin:/usr/local/bin:/usr/local/opt/qt/bin:/Library/Frameworks/Python.framework/Versions/3.8/bin:/usr/local/opt/ruby/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/Users/antonasso/Library/Python/3.7/bin:/Users/antonasso/.local/bin:/Users/antonasso/go/bin:/usr/local/go/bin:/Users/antonasso/.foundry/bin
+
+Yarn version: 
+  1.22.10
+
+Node version: 
+  16.10.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/prettier-plugin-solidit: Not found
+      at Request.params.callback [as _callback] (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:66988:18)
+      at Request.self.callback (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:140749:22)
+      at Request.emit (node:events:390:28)
+      at Request.<anonymous> (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:141721:10)
+      at Request.emit (node:events:390:28)
+      at IncomingMessage.<anonymous> (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:141643:12)
+      at Object.onceWrapper (node:events:509:28)
+      at IncomingMessage.emit (node:events:402:35)
+      at endReadableNT (node:internal/streams/readable:1343:12)
+      at processTicksAndRejections (node:internal/process/task_queues:83:21)
+
+npm manifest: 
+  {
+    "name": "lyra-v2-core",
+    "version": "1.0.0",
+    "description": "<div align=\"center\">   <h1 align=\"center\"> Lyra V2 Core</h1>",
+    "main": "index.js",
+    "directories": {
+      "doc": "docs",
+      "lib": "lib",
+      "test": "test"
+    },
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/lyra-finance/v2-core.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+      "url": "https://github.com/lyra-finance/v2-core/issues"
+    },
+    "homepage": "https://github.com/lyra-finance/v2-core#readme"
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

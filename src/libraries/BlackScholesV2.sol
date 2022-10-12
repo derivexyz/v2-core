@@ -101,16 +101,7 @@ library BlackScholesV2 {
       d2
     );
     uint dollarGamma = _dollarGamma(sqrtTau, bsInput.spotDecimal, bsInput.volatilityDecimal, d1);
-    return
-      PricesDeltaGamma(
-        callPrice,
-        putPrice,
-        callDelta,
-        putDelta,
-        dollarGamma,
-        k,
-        sqrtTau
-      );
+    return PricesDeltaGamma(callPrice, putPrice, callDelta, putDelta, dollarGamma, k, sqrtTau);
   }
 
   //////////////////////
@@ -131,7 +122,16 @@ library BlackScholesV2 {
     uint spot,
     uint strikePrice,
     int rate
-  ) internal pure returns (int d1, int d2, int k, uint sqrtTau) {
+  )
+    internal
+    pure
+    returns (
+      int d1,
+      int d2,
+      int k,
+      uint sqrtTau
+    )
+  {
     // Set minimum values for tAnnualised and volatility to not break computation in extreme scenarios
     // These values will result in option prices reflecting only the difference in stock/strikePrice, which is expected.
     // This should be caught before calling this function, however the function shouldn't break if the values are 0.
@@ -140,9 +140,7 @@ library BlackScholesV2 {
     sqrtTau = FixedPointMathLib.sqrt(tAnnualised);
     k = FixedPointMathLib.ln(int(strikePrice.divideDecimal(spot)));
     int vtSqrt = int(volatility.multiplyDecimal(sqrtTau));
-    int v2t = (int(volatility.multiplyDecimal(volatility) >> 1) + rate).multiplyDecimal(
-      int(tAnnualised)
-    );
+    int v2t = (int(volatility.multiplyDecimal(volatility) >> 1) + rate).multiplyDecimal(int(tAnnualised));
     // TODO this down there is a 1000 gas saving - may consider to do some high-lvel
     // checks at the base BS call and compute all internal functions in unchecked mode
     // unchecked {
@@ -200,7 +198,16 @@ library BlackScholesV2 {
     int rate,
     int d1,
     int d2
-  ) internal pure returns (uint call, uint put, int callDelta, int putDelta) {
+  )
+    internal
+    pure
+    returns (
+      uint call,
+      uint put,
+      int callDelta,
+      int putDelta
+    )
+  {
     uint strikePricePV = strikePrice.multiplyDecimal(
       FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised))))
     );

@@ -10,7 +10,6 @@ import "forge-std/console2.sol";
  */
 
 library ArrayLib {
-
   /**
    * @dev Add unique element to existing "array" if and increase max index
    *      array memory will be updated in place
@@ -19,7 +18,11 @@ library ArrayLib {
    * @param maxIndex previously recorded max index with non-zero value
    * @return newIndex new max index
    */
-  function addUniqueToArray(uint[] memory array, uint newElement, uint maxIndex) internal pure returns (uint newIndex) {
+  function addUniqueToArray(
+    uint[] memory array,
+    uint newElement,
+    uint maxIndex
+  ) internal pure returns (uint newIndex) {
     if (!findInArray(array, newElement, maxIndex)) {
       array[maxIndex++] = newElement;
     }
@@ -34,7 +37,11 @@ library ArrayLib {
    * @param maxIndex previously recorded max index with non-zero value
    * @return newIndex new max index
    */
-  function addUniqueToArray(address[] memory array, address newElement, uint maxIndex) internal pure returns (uint newIndex) {
+  function addUniqueToArray(
+    address[] memory array,
+    address newElement,
+    uint maxIndex
+  ) internal pure returns (uint newIndex) {
     if (!findInArray(array, newElement, maxIndex)) {
       array[maxIndex++] = newElement;
     }
@@ -47,7 +54,11 @@ library ArrayLib {
    * @param toFind  numbers to find
    * @return found true if address exists
    */
-  function findInArray(uint[] memory array, uint toFind, uint arrayLen) internal pure returns (bool found) {
+  function findInArray(
+    uint[] memory array,
+    uint toFind,
+    uint arrayLen
+  ) internal pure returns (bool found) {
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == 0) {
         break;
@@ -64,7 +75,11 @@ library ArrayLib {
    * @param toFind  address to find
    * @return found true if address exists
    */
-  function findInArray(address[] memory array, address toFind, uint arrayLen) internal pure returns (bool found) {
+  function findInArray(
+    address[] memory array,
+    address toFind,
+    uint arrayLen
+  ) internal pure returns (bool found) {
     for (uint i; i < arrayLen; ++i) {
       if (array[i] == address(0)) {
         break;
