@@ -5,25 +5,12 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
 
+import "../../../shared/mocks/MockManager.sol";
+
 // Dumb manager for test bench mark
-contract DumbManager is IManager {
-  
-  IAccount account;
+contract DumbManager is MockManager {
+  constructor(address account_) MockManager(account_) {}
 
-  bool revertHandleManager;
-  bool revertHandleAdjustment;
-
-  constructor(address account_) {
-    account = IAccount(account_);
-  }
-
-  function handleAdjustment(uint /*accountId*/, address, bytes memory) public view override {
-    if(revertHandleAdjustment) revert();
-  }
-
-  function handleManagerChange(uint, IManager) external view { 
-    if(revertHandleManager) revert();
-  }
 
   /// @dev used to estimate gas cost by setting balances to 0
   function clearBalances(uint accountId, AccountStructs.HeldAsset[] memory assetsToSettle) external {
@@ -42,11 +29,4 @@ contract DumbManager is IManager {
     }
   }
 
-  function setRevertHandleManager(bool _revert) external {
-    revertHandleManager = _revert;
-  }
-
-  function setRevertHandleAdjustment(bool _revert) external {
-    revertHandleAdjustment = _revert;
-  }
 }
