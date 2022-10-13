@@ -12,18 +12,20 @@ forge test --gas-report --match-contract="GAS_"
 forge script AccountGasScript
 ```
 
-- [x] Transfer
-  - [x] Single asset transfer: 37,974 gas
-  - [x] Single asset from one account to 100 accounts: 3,978,321 gas
-  - [x] Single asset from one account to 500 accounts: 45,413,424 gas
-- [x] Trades
-  - [x] Single account USDC <-> 1 account with option: 248,176 gas
-  - [x] Single account USDC <-> 100 different accounts with different option: 25,613,723 gas
-  - [x] Single account USDC <-> 500 different accounts with different option: 18,4024,761
-- [x] Split
-  - [x] 600x position account to split 10x short positions to another account: 13,595,450
-  - [x] 600x position account to split 100x short positions to another account: 28,608,887 gas  
-- [x] Settlement
-  - [x] 600x position account to transfer 100x positions out to 0: 2,700,829 gas.
-  - [x] 500x position account to transfer 500x positions out to 0: 13,342,178 gas.
-
+- [x] Transfer balance
+  - [x] Single USDC transfer: 21,436 gas
+  - [x] execute 10 independent transfers: 269,603 gas
+  - [x] execute 20 independent transfers: 623,110 gas
+  - [x] execute 100 independent transfers: 7,217,277 gas
+- [x] Exchange balances between 2 accounts.
+  - [x] trade 10 assets: 1,070,324 gas
+  - [x] trade 20 assets: 1,230,436 gas
+  - [x] trade 100 assets: 8,869,621 gas
+- [x] Split: split x positions into x different accounts (update x balances on account 1, and update x other accounts)
+  - [x] split 10 positions: 617,994 gas
+  - [x] split 20 positions: 890,035 gas
+  - [x] split 50 positions: 2,643,314 gas
+- [x] Clear Balance
+  - [x] clear 10 balances from an account: 132,788 gas
+  - [x] clear 20 balances from an account: 264,178 gas
+  - [x] clear 50 balances from an account: 636,810 gas
