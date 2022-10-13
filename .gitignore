@@ -1,6 +1,9 @@
 .idea
 out
 cache
-.gas-snapshot
 lcov.info
 broadcast
+lcov.info
+node_modules
+yarn-error.log
+.husky

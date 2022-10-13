@@ -5,7 +5,6 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 
 contract MockManager is IManager {
-  
   IAccount account;
 
   bool revertHandleManager;

@@ -40,9 +40,9 @@ contract BaseWrapper is IAsset, Owned {
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     int postBalance = account.assetAdjustment(
       AccountStructs.AssetAdjustment({
-        acc: accountId, 
-        asset: IAsset(address(this)), 
-        subId: 0, 
+        acc: accountId,
+        asset: IAsset(address(this)),
+        subId: 0,
         amount: -int(amount),
         assetData: bytes32(0)
       }),
@@ -53,13 +53,15 @@ contract BaseWrapper is IAsset, Owned {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager, address
-  ) external pure override returns (int finalBalance, bool needAllowance) {
+  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager, address)
+    external
+    pure
+    override
+    returns (int finalBalance, bool needAllowance)
+  {
     require(adjustment.subId == 0 && preBal + adjustment.amount >= 0);
     return (preBal + adjustment.amount, adjustment.amount < 0);
   }
 
-    function handleManagerChange(uint, IManager) external pure override {}
-
+  function handleManagerChange(uint, IManager) external pure override {}
 }

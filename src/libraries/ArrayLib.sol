@@ -10,7 +10,6 @@ import "forge-std/console2.sol";
  */
 
 library ArrayLib {
-
   /**
    * @dev Add unique element to existing "array" if and increase max index
    *      array memory will be updated in place
@@ -34,7 +33,11 @@ library ArrayLib {
    * @param maxIndex previously recorded max index with non-zero value
    * @return newIndex new max index
    */
-  function addUniqueToArray(address[] memory array, address newElement, uint maxIndex) internal pure returns (uint newIndex) {
+  function addUniqueToArray(address[] memory array, address newElement, uint maxIndex)
+    internal
+    pure
+    returns (uint newIndex)
+  {
     if (!findInArray(array, newElement, maxIndex)) {
       array[maxIndex++] = newElement;
     }

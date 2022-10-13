@@ -5,16 +5,15 @@ import "./IAsset.sol";
 
 // For full documentation refer to src/Account.sol";
 interface AccountStructs {
-
   /////////////////////
   // Storage Structs //
   /////////////////////
-  
+
   struct BalanceAndOrder {
     // balance of (asset, subId)
     int240 balance;
-    // index in heldAssets() or getAccountBalances() 
-    uint16 order; 
+    // index in heldAssets() or getAccountBalances()
+    uint16 order;
   }
 
   struct HeldAsset {
@@ -57,7 +56,7 @@ interface AccountStructs {
     int amount;
     // data passed into asset.handleAdjustment()
     bytes32 assetData;
-  }  
+  }
 
   ////////////////
   // Allowances //

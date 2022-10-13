@@ -47,9 +47,9 @@ contract QuoteWrapper is IAsset, Owned {
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
-        acc: accountId, 
-        asset: IAsset(address(this)), 
-        subId: 0, 
+        acc: accountId,
+        asset: IAsset(address(this)),
+        subId: 0,
         amount: -int(amount),
         assetData: bytes32(0)
       }),
@@ -59,9 +59,12 @@ contract QuoteWrapper is IAsset, Owned {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address
-  ) external view override returns (int finalBalance, bool needAllowance) {
+  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address)
+    external
+    view
+    override
+    returns (int finalBalance, bool needAllowance)
+  {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
     return (preBal + adjustment.amount, adjustment.amount < 0);
   }
