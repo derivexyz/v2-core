@@ -1,6 +1,6 @@
 # Accounts gas benchmarks
 
-## Rough Estimation with forge test (this will underestaimte gas)
+## Rough Estimation with forge test (this will underestimate gas)
 
 ```shell
 forge test --gas-report --match-contract="GAS_"
@@ -17,7 +17,7 @@ forge script AccountGasScript
   - [x] Single asset from one account to 100 accounts: 3,978,321 gas
   - [x] Single asset from one account to 500 accounts: 45,413,424 gas
 - [x] Trades
-  - [x] Singel account USDC <-> 1 account with option: 248,176 gas
+  - [x] Single account USDC <-> 1 account with option: 248,176 gas
   - [x] Single account USDC <-> 100 different accounts with different option: 25,613,723 gas
   - [x] Single account USDC <-> 500 different accounts with different option: 18,4024,761
 - [x] Split
