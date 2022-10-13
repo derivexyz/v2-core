@@ -26,7 +26,7 @@ contract DumbManager is IManager {
   }
 
   /// @dev used to estimate gas cost by setting balances to 0
-  function clearBalance(uint accountId, AccountStructs.HeldAsset[] memory assetsToSettle) external {
+  function clearBalances(uint accountId, AccountStructs.HeldAsset[] memory assetsToSettle) external {
     uint assetLen = assetsToSettle.length;
     for (uint i; i < assetLen; i++) {
       int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);

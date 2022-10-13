@@ -50,12 +50,15 @@ contract AccountGasScript is Script {
     _gasTradeMultipleOptions(100);
     
 
-    // test spliting a 600x account
+    // test spliting multiple balances to another accounts
     _gasBulkSplitPosition(10);
     _gasBulkSplitPosition(20);
+    _gasBulkSplitPosition(50);
 
-    // _gasSettleAccountWithMultiplePositions(100);
-    // _gasSettleAccountWithMultiplePositions(500);
+    // estimate gas cost on bulk settlement (setting balance to 0)
+    _gasClearAccountBalances(10);
+    _gasClearAccountBalances(20);
+    _gasClearAccountBalances(50);
 
     vm.stopBroadcast();
   }
@@ -205,28 +208,28 @@ contract AccountGasScript is Script {
     console.log("gas:BulkSplitPosition(", counts, "):", initGas - endGas);
   }
 
-  // function _gasSettleAccountWithMultiplePositions(uint counts) public {
-  //   AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
+  function _gasClearAccountBalances(uint counts) public {
+    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
 
-  //   if (counts > balances.length + 1) revert("don't have this many asset to settle");
+    if (counts > balances.length + 1) revert("don't have this many asset to settle");
 
-  //   // select bunch of assets to settle
-  //   AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](counts);
-  //   for (uint i; i < counts; i ++) {
-  //     assets[i] = AccountStructs.HeldAsset({
-  //       asset: IAsset(address(optionAdapter)),
-  //       subId: uint96(balances[i+1].subId)
-  //     });
-  //   }
-  //   uint initGas = gasleft();
-  //   rm.settleAssets(ownAcc, assets);
-  //   uint endGas = gasleft();
+    // select bunch of assets to settle
+    AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](counts);
+    for (uint i; i < counts; i ++) {
+      assets[i] = AccountStructs.HeldAsset({
+        asset: IAsset(address(optionAdapter)),
+        subId: uint96(balances[i+1].subId)
+      });
+    }
+    uint initGas = gasleft();
+    manager.clearBalances(ownAcc, assets);
+    uint endGas = gasleft();
 
-  //   console.log("gas:SettleAccountWithMultiplePositions(", counts, "):", initGas - endGas);
+    console.log("gas:ClearAccountBalances(", counts, "):", initGas - endGas);
 
-  //   // AccountStructs.AssetBalance[] memory balancesAfter = account.getAccountBalances(ownAcc);
-  //   // console.log("\t - asset left:", balancesAfter.length);
-  // }
+    // AccountStructs.AssetBalance[] memory balancesAfter = account.getAccountBalances(ownAcc);
+    // console.log("\t - asset left:", balancesAfter.length);
+  }
 
   /// @dev deploy mock system
   function deployMockSystem() public {
