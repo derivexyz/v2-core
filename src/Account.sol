@@ -9,6 +9,7 @@ import "./interfaces/IManager.sol";
 import "./interfaces/AccountStructs.sol";
 import "./Allowances.sol";
 import "./libraries/ArrayLib.sol";
+import "./libraries/AssetDeltaLib.sol";
 
 /**
  * @title Account
@@ -23,6 +24,7 @@ import "./libraries/ArrayLib.sol";
 contract Account is Allowances, ERC721, AccountStructs {
   using SafeCast for int;
   using SafeCast for uint;
+  using AssetDeltaLib for AccountAssetDeltas;
 
   ///////////////
   // Variables //
@@ -109,7 +111,8 @@ contract Account is Allowances, ERC721, AccountStructs {
     manager[accountId] = newManager;
 
     // trigger the manager hook on the new manager. Same as post-transfer checks
-    _managerHook(accountId, msg.sender, newManagerData);
+    AccountAssetDeltas memory emptyDeltas = AccountAssetDeltas({deltas: new AssetDelta[](0)});
+    _managerHook(accountId, msg.sender, emptyDeltas, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
@@ -159,8 +162,12 @@ contract Account is Allowances, ERC721, AccountStructs {
    */
   function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external {
     _transferAsset(assetTransfer);
-    _managerHook(assetTransfer.fromAcc, msg.sender, managerData);
-    _managerHook(assetTransfer.toAcc, msg.sender, managerData);
+    _managerHook(
+      assetTransfer.fromAcc, msg.sender, AssetDeltaLib.getDeltasFromTransfer(assetTransfer, true), managerData
+    );
+    _managerHook(
+      assetTransfer.toAcc, msg.sender, AssetDeltaLib.getDeltasFromTransfer(assetTransfer, false), managerData
+    );
   }
 
   /**
@@ -175,15 +182,39 @@ contract Account is Allowances, ERC721, AccountStructs {
 
     /* Keep track of seen accounts to assess risk once per account */
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
+
+    AccountAssetDeltas[] memory assetDeltas = new AccountAssetDeltas[](transfersLen * 2);
+
     uint nextSeenId = 0;
 
     for (uint i; i < transfersLen; ++i) {
+      // if from or to account is not seens before, add to seenAccounts in memory
+      (uint fromIndex, uint toIndex) = (0, 0);
+      (nextSeenId, fromIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
+      (nextSeenId, toIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
+
+      // update assetDeltas[from] directly.
+      assetDeltas[fromIndex].addToAssetDeltaArray(
+        AssetDelta({
+          asset: assetTransfers[i].asset,
+          subId: uint96(assetTransfers[i].subId),
+          delta: -assetTransfers[i].amount
+        })
+      );
+
+      // update assetDeltas[to] directly.
+      assetDeltas[toIndex].addToAssetDeltaArray(
+        AssetDelta({
+          asset: assetTransfers[i].asset,
+          subId: uint96(assetTransfers[i].subId),
+          delta: assetTransfers[i].amount
+        })
+      );
+
       _transferAsset(assetTransfers[i]);
-      nextSeenId = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
-      nextSeenId = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
     }
     for (uint i; i < nextSeenId; i++) {
-      _managerHook(seenAccounts[i], msg.sender, managerData);
+      _managerHook(seenAccounts[i], msg.sender, assetDeltas[i], managerData);
     }
   }
 
@@ -254,7 +285,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     // balance adjustment is routed through asset if triggerAssetHook == true
     (postAdjustmentBalance,) = _adjustBalance(adjustment, triggerAssetHook);
-    _managerHook(adjustment.acc, msg.sender, managerData);
+    _managerHook(adjustment.acc, msg.sender, AssetDeltaLib.getDeltasFromAdjustment(adjustment, false), managerData);
   }
 
   /**
@@ -309,8 +340,10 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @param caller address of msg.sender initiating balance adjustment
    * @param managerData open ended data passed to manager
    */
-  function _managerHook(uint accountId, address caller, bytes memory managerData) internal {
-    manager[accountId].handleAdjustment(accountId, caller, managerData);
+  function _managerHook(uint accountId, address caller, AccountAssetDeltas memory deltas, bytes memory managerData)
+    internal
+  {
+    manager[accountId].handleAdjustment(accountId, caller, deltas.deltas, managerData);
   }
 
   /**

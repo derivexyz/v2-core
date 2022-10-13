@@ -181,7 +181,10 @@ contract PortfolioRiskPOCManager is Owned, IManager {
   ////
   // Views
 
-  function handleAdjustment(uint accountId, address, bytes memory) public override {
+  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory deltas, bytes memory)
+    public
+    override
+  {
     assessRisk(accountId, account.getAccountBalances(accountId));
   }
 

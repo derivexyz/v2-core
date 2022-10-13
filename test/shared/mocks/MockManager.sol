@@ -14,7 +14,11 @@ contract MockManager is IManager {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint, /*accountId*/ address, bytes memory) public view override {
+  function handleAdjustment(uint, /*accountId*/ address, AccountStructs.AssetDelta[] memory deltas, bytes memory)
+    public
+    view
+    override
+  {
     if (revertHandleAdjustment) revert();
   }
 
