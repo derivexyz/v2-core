@@ -35,5 +35,4 @@ contract DumbManager is MockManager {
     // read the value, so we calculate the SLOADs
     IAccount(account).getAccountBalances(accountId);
   }
-
 }

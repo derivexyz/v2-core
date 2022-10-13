@@ -65,9 +65,12 @@ contract MockAsset is IAsset {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager _manager, address
-  ) public view virtual returns (int finalBalance, bool needAllowance) {
+  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager _manager, address)
+    public
+    view
+    virtual
+    returns (int finalBalance, bool needAllowance)
+  {
     if (revertFromManager[address(_manager)]) revert();
     int result = preBal + adjustment.amount;
     if (result < 0 && !allowNegativeBalance) revert("negative balance");

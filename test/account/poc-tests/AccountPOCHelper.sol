@@ -67,7 +67,8 @@ abstract contract AccountPOCHelper is Test {
     optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
-    rm = new PortfolioRiskPOCManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, wethAdapter, optionAdapter, daiLending);
+    rm =
+    new PortfolioRiskPOCManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, wethAdapter, optionAdapter, daiLending);
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);

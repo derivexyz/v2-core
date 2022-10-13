@@ -46,9 +46,8 @@ contract AccountGasScript is Script {
 
     // trade multiple "option token" between 2 accounts
     _gasTradeMultipleOptions(10); // 2 parties exchange 10 positions
-    _gasTradeMultipleOptions(20); 
+    _gasTradeMultipleOptions(20);
     _gasTradeMultipleOptions(100);
-    
 
     // test spliting multiple balances to another accounts
     _gasBulkSplitPosition(10);
@@ -215,11 +214,9 @@ contract AccountGasScript is Script {
 
     // select bunch of assets to settle
     AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](counts);
-    for (uint i; i < counts; i ++) {
-      assets[i] = AccountStructs.HeldAsset({
-        asset: IAsset(address(optionAdapter)),
-        subId: uint96(balances[i+1].subId)
-      });
+    for (uint i; i < counts; i++) {
+      assets[i] =
+        AccountStructs.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(balances[i + 1].subId)});
     }
     uint initGas = gasleft();
     manager.clearBalances(ownAcc, assets);
