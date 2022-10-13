@@ -8,9 +8,9 @@ import "src/interfaces/AccountStructs.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 // Dumb manager for test bench mark
+// Dumb manager read all balances from account during handleAdjustment. (to estimate the SLOAD cost we need)
 contract DumbManager is MockManager {
   constructor(address account_) MockManager(account_) {}
-
 
   /// @dev used to estimate gas cost by setting balances to 0
   function clearBalances(uint accountId, AccountStructs.HeldAsset[] memory assetsToSettle) external {
@@ -27,6 +27,13 @@ contract DumbManager is MockManager {
         })
       );
     }
+  }
+
+  function handleAdjustment(uint accountId, address sender, bytes memory data) public view override {
+    super.handleAdjustment(accountId, sender, data);
+
+    // read the value, so we calculate the SLOADs
+    IAccount(account).getAccountBalances(accountId);
   }
 
 }
