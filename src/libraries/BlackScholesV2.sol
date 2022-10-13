@@ -27,8 +27,8 @@ library BlackScholesV2 {
   }
 
   /**
-   TODO can optimize this by supplying a precomputed sqrtTau into BS 
-   (since oftentimes many of same-expiry options are computed sequesntially)
+   * TODO can optimize this by supplying a precomputed sqrtTau into BS
+   *  (since oftentimes many of same-expiry options are computed sequesntially)
    * @param timeToExpirySec Number of seconds to the expiry of the option
    * @param volatilityDecimal Implied volatility over the period til expiry as a percentage
    * @param spotDecimal The current price of the base asset
@@ -63,21 +63,11 @@ library BlackScholesV2 {
    */
   function prices(BlackScholesInputs memory bsInput) public pure returns (uint callPrice, uint putPrice) {
     uint tAnnualised = _annualise(bsInput.timeToExpirySec);
-    (int d1, int d2, , ) = _d1d2kSqrtTau(
-      tAnnualised,
-      bsInput.volatilityDecimal,
-      bsInput.spotDecimal,
-      bsInput.strikePriceDecimal,
-      bsInput.rateDecimal
+    (int d1, int d2,,) = _d1d2kSqrtTau(
+      tAnnualised, bsInput.volatilityDecimal, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal
     );
-    (callPrice, putPrice) = _optionPrices(
-      tAnnualised,
-      bsInput.spotDecimal,
-      bsInput.strikePriceDecimal,
-      bsInput.rateDecimal,
-      d1,
-      d2
-    );
+    (callPrice, putPrice) =
+      _optionPrices(tAnnualised, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal, d1, d2);
   }
 
   /**
@@ -86,31 +76,13 @@ library BlackScholesV2 {
   function pricesDeltaGamma(BlackScholesInputs memory bsInput) public pure returns (PricesDeltaGamma memory) {
     uint tAnnualised = _annualise(bsInput.timeToExpirySec);
     (int d1, int d2, int k, uint sqrtTau) = _d1d2kSqrtTau(
-      tAnnualised,
-      bsInput.volatilityDecimal,
-      bsInput.spotDecimal,
-      bsInput.strikePriceDecimal,
-      bsInput.rateDecimal
+      tAnnualised, bsInput.volatilityDecimal, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal
     );
     (uint callPrice, uint putPrice, int callDelta, int putDelta) = _optionPricesDollarDelta(
-      tAnnualised,
-      bsInput.spotDecimal,
-      bsInput.strikePriceDecimal,
-      bsInput.rateDecimal,
-      d1,
-      d2
+      tAnnualised, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal, d1, d2
     );
     uint dollarGamma = _dollarGamma(sqrtTau, bsInput.spotDecimal, bsInput.volatilityDecimal, d1);
-    return
-      PricesDeltaGamma(
-        callPrice,
-        putPrice,
-        callDelta,
-        putDelta,
-        dollarGamma,
-        k,
-        sqrtTau
-      );
+    return PricesDeltaGamma(callPrice, putPrice, callDelta, putDelta, dollarGamma, k, sqrtTau);
   }
 
   //////////////////////
@@ -125,13 +97,11 @@ library BlackScholesV2 {
    * @param strikePrice The strikePrice price of the option
    * @param rate The percentage risk free rate + carry cost
    */
-  function _d1d2kSqrtTau(
-    uint tAnnualised,
-    uint volatility,
-    uint spot,
-    uint strikePrice,
-    int rate
-  ) internal pure returns (int d1, int d2, int k, uint sqrtTau) {
+  function _d1d2kSqrtTau(uint tAnnualised, uint volatility, uint spot, uint strikePrice, int rate)
+    internal
+    pure
+    returns (int d1, int d2, int k, uint sqrtTau)
+  {
     // Set minimum values for tAnnualised and volatility to not break computation in extreme scenarios
     // These values will result in option prices reflecting only the difference in stock/strikePrice, which is expected.
     // This should be caught before calling this function, however the function shouldn't break if the values are 0.
@@ -140,9 +110,7 @@ library BlackScholesV2 {
     sqrtTau = FixedPointMathLib.sqrt(tAnnualised);
     k = FixedPointMathLib.ln(int(strikePrice.divideDecimal(spot)));
     int vtSqrt = int(volatility.multiplyDecimal(sqrtTau));
-    int v2t = (int(volatility.multiplyDecimal(volatility) >> 1) + rate).multiplyDecimal(
-      int(tAnnualised)
-    );
+    int v2t = (int(volatility.multiplyDecimal(volatility) >> 1) + rate).multiplyDecimal(int(tAnnualised));
     // TODO this down there is a 1000 gas saving - may consider to do some high-lvel
     // checks at the base BS call and compute all internal functions in unchecked mode
     // unchecked {
@@ -162,17 +130,13 @@ library BlackScholesV2 {
    * @param d1 Internal coefficient of Black-Scholes
    * @param d2 Internal coefficient of Black-Scholes
    */
-  function _optionPrices(
-    uint tAnnualised,
-    uint spot,
-    uint strikePrice,
-    int rate,
-    int d1,
-    int d2
-  ) internal pure returns (uint call, uint put) {
-    uint strikePricePV = strikePrice.multiplyDecimal(
-      FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised))))
-    );
+  function _optionPrices(uint tAnnualised, uint spot, uint strikePrice, int rate, int d1, int d2)
+    internal
+    pure
+    returns (uint call, uint put)
+  {
+    uint strikePricePV =
+      strikePrice.multiplyDecimal(FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised)))));
     uint spotNd1 = spot.multiplyDecimal(FixedPointMathLib.stdNormalCDF(d1));
     uint strikePriceNd2 = strikePricePV.multiplyDecimal(FixedPointMathLib.stdNormalCDF(d2));
 
@@ -193,17 +157,13 @@ library BlackScholesV2 {
    * @param d1 Internal coefficient of Black-Scholes
    * @param d2 Internal coefficient of Black-Scholes
    */
-  function _optionPricesDollarDelta(
-    uint tAnnualised,
-    uint spot,
-    uint strikePrice,
-    int rate,
-    int d1,
-    int d2
-  ) internal pure returns (uint call, uint put, int callDelta, int putDelta) {
-    uint strikePricePV = strikePrice.multiplyDecimal(
-      FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised))))
-    );
+  function _optionPricesDollarDelta(uint tAnnualised, uint spot, uint strikePrice, int rate, int d1, int d2)
+    internal
+    pure
+    returns (uint call, uint put, int callDelta, int putDelta)
+  {
+    uint strikePricePV =
+      strikePrice.multiplyDecimal(FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised)))));
     uint Nd1 = FixedPointMathLib.stdNormalCDF(d1);
     uint spotNd1 = spot.multiplyDecimal(Nd1);
     uint strikePriceNd2 = strikePricePV.multiplyDecimal(FixedPointMathLib.stdNormalCDF(d2));
@@ -231,12 +191,7 @@ library BlackScholesV2 {
     putDelta = callDelta - int(UNIT);
   }
 
-  function _dollarGamma(
-    uint sqrtTau,
-    uint spot,
-    uint iv,
-    int d1
-  ) internal pure returns (uint) {
+  function _dollarGamma(uint sqrtTau, uint spot, uint iv, int d1) internal pure returns (uint) {
     return FixedPointMathLib.stdNormal(d1).divideDecimal(sqrtTau.multiplyDecimal(iv)).multiplyDecimal(spot);
   }
 

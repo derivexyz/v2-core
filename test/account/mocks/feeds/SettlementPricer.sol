@@ -23,10 +23,8 @@ contract SettlementPricer {
   function setSettlementPrice(uint feedId, uint expiry) external {
     require(settlementDetails[feedId][expiry].price == 0, "settlement price already set");
     require(block.timestamp >= expiry, "expiry not reached");
-    settlementDetails[feedId][expiry] = SettlementDetails({
-      price: priceFeeds.getSpotForFeed(feedId),
-      timeSet: block.timestamp
-    });
+    settlementDetails[feedId][expiry] =
+      SettlementDetails({price: priceFeeds.getSpotForFeed(feedId), timeSet: block.timestamp});
   }
 
   function maybeGetSettlementDetails(uint feedId, uint expiry) external view returns (SettlementDetails memory) {

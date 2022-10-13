@@ -20,7 +20,7 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
   function setUp() public {
     vm.label(alice, "alice");
     vm.label(bob, "bob");
-    
+
     deployPRMSystem();
     setPrices(1e18, 1500e18);
 
@@ -41,7 +41,7 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     strike = 1500e18;
     subId = optionAdapter.addListing(strike, expiry, true);
     vm.startPrank(orderbook);
-    
+
     // alice short call, bob long call
     tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
     vm.stopPrank();
@@ -63,31 +63,25 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     assertEq(account.ownerOf(aliceAcc), bob);
 
     assertEq(account.getBalance(aliceAcc, usdcAdapter, 0), aliceUSDCBefore + extraCollat);
-    assertEq(account.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore - extraCollat);    
+    assertEq(account.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore - extraCollat);
   }
 
   function testManagerCanBatchSettleAccounts() public {
     // set settlement price: option expires itm
     int cashValue = 100e18;
-    setPrices(1e18, strike + uint(cashValue)); 
+    setPrices(1e18, strike + uint(cashValue));
     vm.warp(expiry + 1);
     setSettlementPrice(expiry);
 
-    int aliceUSDCBefore = account.getBalance(aliceAcc, usdcAdapter, 0);
-    int bobUSDCBefore = account.getBalance(bobAcc, usdcAdapter, 0);
-
     // settlment
     AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
-    assets[0] = AccountStructs.HeldAsset({
-      asset: IAsset(address(optionAdapter)),
-      subId: uint96(subId)
-    });
+    assets[0] = AccountStructs.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
     rm.settleAssets(aliceAcc, assets);
     rm.settleAssets(bobAcc, assets);
 
     // check settlement values are reflected in daiLending balance
-    assertEq(account.getBalance(aliceAcc, daiLending, 0), - cashValue);
-    assertEq(account.getBalance(bobAcc, daiLending, 0), cashValue);    
+    assertEq(account.getBalance(aliceAcc, daiLending, 0), -cashValue);
+    assertEq(account.getBalance(bobAcc, daiLending, 0), cashValue);
   }
 
   function testManagerCanBlockMigrationToBadManagers() public {

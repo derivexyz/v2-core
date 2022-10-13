@@ -36,7 +36,7 @@ contract OptionToken is IAsset, Owned {
   uint feedId;
   uint96 nextId = 0;
   mapping(IManager => bool) riskModelAllowList;
-  
+
   mapping(uint => uint) public totalLongs;
   mapping(uint => uint) public totalShorts;
   // need to write down ratio as totalOIs change atomically during transfers
@@ -44,9 +44,8 @@ contract OptionToken is IAsset, Owned {
   mapping(uint => uint) public liquidationCount;
 
   mapping(uint96 => Listing) public subIdToListing;
-  constructor(
-    Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_
-  ) Owned() {
+
+  constructor(Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Owned() {
     account = account_;
     priceFeeds = feeds_;
     settlementPricer = settlementPricer_;
@@ -67,9 +66,11 @@ contract OptionToken is IAsset, Owned {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address caller
-    ) external override returns (int finalBalance, bool needAllowance)
-  {
+    AccountStructs.AssetAdjustment memory adjustment,
+    int preBal,
+    IManager riskModel,
+    address caller
+  ) external override returns (int finalBalance, bool needAllowance) {
     needAllowance = adjustment.amount < 0;
     Listing memory listing = subIdToListing[uint96(adjustment.subId)]; // TODO: can overflow
     int postBal = _getPostBalWithRatio(preBal, adjustment.amount, adjustment.subId);
@@ -111,17 +112,18 @@ contract OptionToken is IAsset, Owned {
     balance = _ratiodBalance(balance, subId);
 
     if (block.timestamp > listing.expiry) {
-      SettlementPricer.SettlementDetails memory settlementDetails = settlementPricer.maybeGetSettlementDetails(feedId, listing.expiry);
+      SettlementPricer.SettlementDetails memory settlementDetails =
+        settlementPricer.maybeGetSettlementDetails(feedId, listing.expiry);
 
       return _getSettlementValue(listing, balance, settlementDetails.price != 0 ? settlementDetails.price : spotPrice);
     }
 
     (uint callPrice, uint putPrice) = BlackScholesV2.BlackScholesInputs({
-    timeToExpirySec: listing.expiry,
-    volatilityDecimal: iv,
-    spotDecimal: spotPrice,
-    strikePriceDecimal: listing.strikePrice,
-    rateDecimal: 5e16
+      timeToExpirySec: listing.expiry,
+      volatilityDecimal: iv,
+      spotDecimal: spotPrice,
+      strikePriceDecimal: listing.strikePrice,
+      rateDecimal: 5e16
     }).prices();
 
     value = (listing.isCall) ? balance.multiplyDecimal(int(callPrice)) : balance.multiplyDecimal(int(putPrice));
@@ -133,7 +135,8 @@ contract OptionToken is IAsset, Owned {
 
   function calculateSettlement(uint subId, int balance) external view returns (int PnL, bool settled) {
     Listing memory listing = subIdToListing[uint96(subId)];
-    SettlementPricer.SettlementDetails memory settlementDetails = settlementPricer.maybeGetSettlementDetails(feedId, listing.expiry);
+    SettlementPricer.SettlementDetails memory settlementDetails =
+      settlementPricer.maybeGetSettlementDetails(feedId, listing.expiry);
 
     if (listing.expiry > block.timestamp || settlementDetails.price == 0) {
       return (0, false);
@@ -173,20 +176,16 @@ contract OptionToken is IAsset, Owned {
   function handleManagerChange(uint, IManager) external pure override {}
 
   function addListing(uint strike, uint expiry, bool isCall) external returns (uint subId) {
-    Listing memory newListing = Listing({
-      strikePrice: strike,
-      expiry: expiry,
-      isCall: isCall
-    });
+    Listing memory newListing = Listing({strikePrice: strike, expiry: expiry, isCall: isCall});
     subIdToListing[nextId] = newListing;
     ratios[nextId] = 1e18;
     ++nextId;
-    return uint256(nextId) - 1;
+    return uint(nextId) - 1;
   }
 
   function socializeLoss(uint insolventAcc, uint subId, uint burnAmount) external {
     require(riskModelAllowList[IManager(msg.sender)], "only RM socializes losses");
-    
+
     // only shorts can be socialized
     // open interest modified during handleAdjustment
     account.assetAdjustment(
@@ -207,9 +206,7 @@ contract OptionToken is IAsset, Owned {
   function _getPostBalWithRatio(int preBal, int amount, uint subId) internal view returns (int postBal) {
     bool crossesZero;
     if (preBal < 0) {
-      crossesZero = preBal.abs() < amount.abs() && amount > 0
-        ? true 
-        : false;
+      crossesZero = preBal.abs() < amount.abs() && amount > 0 ? true : false;
 
       if (crossesZero) {
         return _applyInverseRatio((amount + preBal), subId);
@@ -217,15 +214,12 @@ contract OptionToken is IAsset, Owned {
         return preBal + amount;
       }
     } else {
-      crossesZero = 
-        preBal.abs() < (_applyInverseRatio(amount, subId)).abs() && amount < 0
-        ? true 
-        : false;
+      crossesZero = preBal.abs() < (_applyInverseRatio(amount, subId)).abs() && amount < 0 ? true : false;
 
       if (crossesZero) {
         return amount + _applyRatio(preBal, subId);
       } else {
-        return preBal + _applyInverseRatio(amount , subId);
+        return preBal + _applyInverseRatio(amount, subId);
       }
     }
   }
@@ -240,7 +234,6 @@ contract OptionToken is IAsset, Owned {
   }
 
   function _updateOI(int preBal, int postBal, uint subId) internal {
-
     if (preBal < 0) {
       totalShorts[subId] -= uint(-preBal);
     } else {
@@ -252,6 +245,5 @@ contract OptionToken is IAsset, Owned {
     } else {
       totalLongs[subId] += uint(postBal);
     }
-
   }
 }

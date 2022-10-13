@@ -50,7 +50,7 @@ contract POC_Lending is Test, AccountPOCHelper {
 
   function testInterestAccrual() public {
     // Alice and Bob both have 20mln DAI lending each
-    // We have Charlie deposit 20mln USDC 
+    // We have Charlie deposit 20mln USDC
     charlieAcc = createAccountAndDepositUSDC(charlie, 20000000e18);
 
     // set allowances
@@ -90,7 +90,7 @@ contract POC_Lending is Test, AccountPOCHelper {
     assertApproxEqAbs(daiLending.getBalance(aliceAcc), 20_701_139e18, 1e18);
     assertApproxEqAbs(daiLending.getBalance(bobAcc), 10_350_569e18, 1e18);
     assertApproxEqAbs(daiLending.getBalance(charlieAcc), -11_051_709e18, 1e18);
-    
+
     // account balance should stay the same without update triggers
     assertEq(account.getBalance(aliceAcc, daiLending, 0), 20_000_000e18);
     assertEq(account.getBalance(bobAcc, daiLending, 0), 10_000_000e18);
@@ -127,5 +127,4 @@ contract POC_Lending is Test, AccountPOCHelper {
     assertApproxEqAbs(account.getBalance(bobAcc, daiLending, 0), 10_350_569e18, 1e18);
     assertApproxEqAbs(account.getBalance(charlieAcc, daiLending, 0), -11_051_709e18, 1e18);
   }
-
 }

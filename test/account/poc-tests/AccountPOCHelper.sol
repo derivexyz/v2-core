@@ -67,7 +67,8 @@ abstract contract AccountPOCHelper is Test {
     optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
-    rm = new PortfolioRiskPOCManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
+    rm =
+    new PortfolioRiskPOCManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, 0, wethAdapter, 1, optionAdapter, daiLending);
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);
@@ -140,7 +141,7 @@ abstract contract AccountPOCHelper is Test {
     vm.stopPrank();
 
     if (balance > 0) {
-       vm.startPrank(owner);
+      vm.startPrank(owner);
       usdc.mint(user, balance);
       vm.stopPrank();
 
@@ -158,7 +159,7 @@ abstract contract AccountPOCHelper is Test {
     vm.stopPrank();
 
     if (balance > 0) {
-       vm.startPrank(owner);
+      vm.startPrank(owner);
       dai.mint(user, balance);
       vm.stopPrank();
 
@@ -173,16 +174,10 @@ abstract contract AccountPOCHelper is Test {
   function setupMaxAssetAllowancesForAll(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
-    assetAllowances[0] = AccountStructs.AssetAllowance({
-      asset: IAsset(optionAdapter),
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
-    assetAllowances[1] = AccountStructs.AssetAllowance({
-      asset: IAsset(usdcAdapter),
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
+    assetAllowances[0] =
+      AccountStructs.AssetAllowance({asset: IAsset(optionAdapter), positive: type(uint).max, negative: type(uint).max});
+    assetAllowances[1] =
+      AccountStructs.AssetAllowance({asset: IAsset(usdcAdapter), positive: type(uint).max, negative: type(uint).max});
 
     account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
@@ -191,19 +186,14 @@ abstract contract AccountPOCHelper is Test {
   function setupMaxSingleAssetAllowance(address ownerAdd, uint ownerAcc, address delegate, IAsset asset) internal {
     vm.startPrank(ownerAdd);
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
-    assetAllowances[0] = AccountStructs.AssetAllowance({
-      asset: IAsset(asset),
-      positive: type(uint).max,
-      negative: type(uint).max
-    });
+    assetAllowances[0] =
+      AccountStructs.AssetAllowance({asset: IAsset(asset), positive: type(uint).max, negative: type(uint).max});
 
     account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
   }
 
-  function tradeOptionWithUSDC(
-    uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId
-  ) internal {
+  function tradeOptionWithUSDC(uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId) internal {
     AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,

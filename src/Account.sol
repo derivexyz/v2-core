@@ -15,7 +15,7 @@ import "./libraries/ArrayLib.sol";
  * @author Lyra
  * @notice Base layer that manages:
  *         1. balances for each (account, asset, subId)
- *         2. routing of manager, asset, allowance hooks / checks 
+ *         2. routing of manager, asset, allowance hooks / checks
  *            during any balance adjustment event
  *         3. account creation / manager assignment
  */
@@ -31,7 +31,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   /// @dev account id (ERC721 id) for the next account being created
   uint public nextId = 0;
 
-  /// @dev accountId to manager 
+  /// @dev accountId to manager
   mapping(uint => IManager) public manager;
 
   /// @dev accountId => asset => subId => BalanceAndOrder struct
@@ -39,26 +39,24 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
-  
+
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ///////////////////
   // Account Admin //
   ///////////////////
 
-  /** 
+  /**
    * @notice Creates account with new accountId
    * @param owner new account owner
    * @param _manager IManager of new account
    * @return newId ID of new account
    */
-  function createAccount(
-    address owner, IManager _manager
-  ) external returns (uint newId) {
+  function createAccount(address owner, IManager _manager) external returns (uint newId) {
     return _createAccount(owner, _manager);
   }
 
-  /** 
+  /**
    * @notice Creates account and gives spender full allowance
    * @dev   @note: can be used to create and account for another user and simultaneously give allowance to oneself
    * @param owner new account owner
@@ -66,9 +64,7 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @param _manager IManager of new account
    * @return newId ID of new account
    */
-  function createAccountWithApproval(
-    address owner, address spender, IManager _manager
-  ) external returns (uint newId) {
+  function createAccountWithApproval(address owner, address spender, IManager _manager) external returns (uint newId) {
     newId = _createAccount(owner, _manager);
     _approve(spender, newId);
   }
@@ -79,26 +75,24 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @param _manager IManager of new account
    * @return newId ID of new account
    */
-  function _createAccount(
-    address owner, IManager _manager
-  ) internal returns (uint newId) {
+  function _createAccount(address owner, IManager _manager) internal returns (uint newId) {
     newId = ++nextId;
     manager[newId] = _manager;
     _mint(owner, newId);
     emit AccountCreated(owner, newId, address(_manager));
   }
 
-
-  /** 
+  /**
    * @notice Assigns new manager to account. No balances are adjusted.
    *         msg.sender must be ERC721 approved or owner
    * @param accountId ID of account
    * @param newManager new IManager
-   * @param newManagerData data to be passed to manager._managerHook 
+   * @param newManagerData data to be passed to manager._managerHook
    */
-  function changeManager(
-    uint accountId, IManager newManager, bytes memory newManagerData
-  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {    
+  function changeManager(uint accountId, IManager newManager, bytes memory newManagerData)
+    external
+    onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
+  {
     IManager oldManager = manager[accountId];
     if (oldManager == newManager) {
       revert CannotChangeToSameManager(address(this), msg.sender, accountId);
@@ -120,7 +114,6 @@ contract Account is Allowances, ERC721, AccountStructs {
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
 
-
   ////////////////
   // Allowances //
   ////////////////
@@ -133,11 +126,10 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(
-    uint accountId,
-    address delegate,
-    AssetAllowance[] memory allowances
-  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
+  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances)
+    external
+    onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
+  {
     _setAssetAllowances(accountId, ownerOf(accountId), delegate, allowances);
   }
 
@@ -148,11 +140,10 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each (asset, subId)
    */
-  function setSubIdAllowances(
-    uint accountId,
-    address delegate,
-    SubIdAllowance[] memory allowances
-  ) external onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId) {
+  function setSubIdAllowances(uint accountId, address delegate, SubIdAllowance[] memory allowances)
+    external
+    onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
+  {
     address owner = ownerOf(accountId);
     _setSubIdAllowances(accountId, owner, delegate, allowances);
   }
@@ -161,29 +152,25 @@ contract Account is Allowances, ERC721, AccountStructs {
   // Balance Adjustments //
   /////////////////////////
 
-  /** 
+  /**
    * @notice Transfer an amount from one account to another for a specific (asset, subId)
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
-   * @param managerData data passed to managers of both accounts 
+   * @param managerData data passed to managers of both accounts
    */
-  function submitTransfer(
-    AssetTransfer memory assetTransfer, bytes memory managerData
-  ) external {
+  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external {
     _transferAsset(assetTransfer);
     _managerHook(assetTransfer.fromAcc, msg.sender, managerData);
     _managerHook(assetTransfer.toAcc, msg.sender, managerData);
   }
 
-  /** 
+  /**
    * @notice Batch several transfers
    *         Gas efficient when modifying the same account several times,
    *         as _managerHook() is only performed once per account
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
-   * @param managerData data passed to every manager involved in trade 
+   * @param managerData data passed to every manager involved in trade
    */
-  function submitTransfers(
-    AssetTransfer[] memory assetTransfers, bytes memory managerData
-  ) external {
+  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external {
     uint transfersLen = assetTransfers.length;
 
     /* Keep track of seen accounts to assess risk once per account */
@@ -200,15 +187,12 @@ contract Account is Allowances, ERC721, AccountStructs {
     }
   }
 
-  /** 
+  /**
    * @notice Transfer an amount from one account to another for a specific (asset, subId)
    * @dev    update the allowance and balanceAndOrder storage
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    */
-  function _transferAsset(
-    AssetTransfer memory assetTransfer
-  ) internal {
-
+  function _transferAsset(AssetTransfer memory assetTransfer) internal {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
       revert CannotTransferAssetToOneself(address(this), msg.sender, assetTransfer.toAcc);
     }
@@ -230,7 +214,7 @@ contract Account is Allowances, ERC721, AccountStructs {
     });
 
     // balance is adjusted based on asset hook
-    (, bool fromAdjustmentNeedAllowance) =  _adjustBalance(fromAccAdjustment, true);
+    (, bool fromAdjustmentNeedAllowance) = _adjustBalance(fromAccAdjustment, true);
     (, bool toAdjustmentNeedAllowance) = _adjustBalance(toAccAdjustment, true);
 
     // if it's not ERC721 approved: spend allowances
@@ -242,34 +226,34 @@ contract Account is Allowances, ERC721, AccountStructs {
     }
   }
 
-  /** 
+  /**
    * @notice Assymetric balance adjustment reserved for managers
    *         Must still pass both _assetHook()
    * @param adjustment assymetric adjustment of amount for (asset, subId)
    */
-  function managerAdjustment(
-    AssetAdjustment memory adjustment
-  ) onlyManager(adjustment.acc) external returns (int postAdjustmentBalance) {    
-
+  function managerAdjustment(AssetAdjustment memory adjustment)
+    external
+    onlyManager(adjustment.acc)
+    returns (int postAdjustmentBalance)
+  {
     // balance is adjusted based on asset hook
-    (postAdjustmentBalance, ) = _adjustBalance(adjustment, true);
+    (postAdjustmentBalance,) = _adjustBalance(adjustment, true);
   }
 
-  /** 
+  /**
    * @notice Asymmetric balance adjustment reserved for assets
    *         Must still pass both _managerHook()
    * @param adjustment asymmetric adjustment of amount for (asset, subId)
    * @param triggerAssetHook true if the adjustment need to be routed to Asset's custom hook
    * @param managerData data passed to manager of account
    */
-  function assetAdjustment(
-    AssetAdjustment memory adjustment,
-    bool triggerAssetHook,
-    bytes memory managerData
-  ) onlyAsset(adjustment.asset) external returns (int postAdjustmentBalance) {    
-
+  function assetAdjustment(AssetAdjustment memory adjustment, bool triggerAssetHook, bytes memory managerData)
+    external
+    onlyAsset(adjustment.asset)
+    returns (int postAdjustmentBalance)
+  {
     // balance adjustment is routed through asset if triggerAssetHook == true
-    (postAdjustmentBalance, ) = _adjustBalance(adjustment, triggerAssetHook);
+    (postAdjustmentBalance,) = _adjustBalance(adjustment, triggerAssetHook);
     _managerHook(adjustment.acc, msg.sender, managerData);
   }
 
@@ -277,20 +261,19 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
    */
-  function _adjustBalance(AssetAdjustment memory adjustment, bool triggerHook) internal returns (int256 postBalance, bool needAllowance) {
+  function _adjustBalance(AssetAdjustment memory adjustment, bool triggerHook)
+    internal
+    returns (int postBalance, bool needAllowance)
+  {
     BalanceAndOrder storage userBalanceAndOrder = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
     int preBalance = int(userBalanceAndOrder.balance);
 
     // allow asset to modify final balance in special cases
     if (triggerHook) {
-      (postBalance, needAllowance) = _assetHook(
-      adjustment, 
-      preBalance, 
-      msg.sender
-    );
+      (postBalance, needAllowance) = _assetHook(adjustment, preBalance, msg.sender);
     } else {
       postBalance = preBalance + adjustment.amount;
-      
+
       // needAllowance id default to: only need allowance if substracting from account
       needAllowance = adjustment.amount < 0;
     }
@@ -301,108 +284,98 @@ contract Account is Allowances, ERC721, AccountStructs {
       _removeHeldAsset(adjustment.acc, userBalanceAndOrder.order);
     } else if (preBalance == 0 && postBalance != 0) {
       userBalanceAndOrder.order = _addHeldAsset(adjustment.acc, adjustment.asset, adjustment.subId);
-    } 
+    }
 
     emit BalanceAdjusted(
-      adjustment.acc, 
-      address(manager[adjustment.acc]), 
-      HeldAsset({ asset: adjustment.asset, subId: SafeCast.toUint96(adjustment.subId) }),
+      adjustment.acc,
+      address(manager[adjustment.acc]),
+      HeldAsset({asset: adjustment.asset, subId: SafeCast.toUint96(adjustment.subId)}),
       adjustment.amount,
-      preBalance, 
+      preBalance,
       postBalance
-    );
+      );
   }
 
   ////////////////////////////
   // Checks and Permissions //
   ////////////////////////////
 
-  /** 
+  /**
    * @notice Hook that calls the manager once per account during:
    *         1. Transfers / Merges / Splits
    *         2. Assymetric balance adjustments
-   *         
+   *
    * @param accountId ID of account being checked
    * @param caller address of msg.sender initiating balance adjustment
    * @param managerData open ended data passed to manager
    */
-  function _managerHook(
-    uint accountId, 
-    address caller,
-    bytes memory managerData
-  ) internal {
+  function _managerHook(uint accountId, address caller, bytes memory managerData) internal {
     manager[accountId].handleAdjustment(accountId, caller, managerData);
   }
 
-  /** 
+  /**
    * @notice Hook that calls the asset during:
    *         1. Transfers / Merges / Splits
    *         2. Assymetric balance adjustments
    * @dev as hook is called for every asset transfer (unlike _managerHook())
-   *      care must be given to reduce gas usage 
+   *      care must be given to reduce gas usage
    * @param adjustment all details related to balance adjustment
    * @param preBalance balance before adjustment
    * @param caller address of msg.sender initiating balance adjustment
    * @return finalBalance the amount should be written as final balance
    */
-  function _assetHook(
-    AssetAdjustment memory adjustment,
-    int preBalance, 
-    address caller
-  ) internal returns (int finalBalance, bool needAllowance) {
-    return adjustment.asset.handleAdjustment(
-      adjustment, preBalance, manager[adjustment.acc], caller
-    );
+  function _assetHook(AssetAdjustment memory adjustment, int preBalance, address caller)
+    internal
+    returns (int finalBalance, bool needAllowance)
+  {
+    return adjustment.asset.handleAdjustment(adjustment, preBalance, manager[adjustment.acc], caller);
   }
 
   //////////
   // Util //
   //////////
 
-  /** 
+  /**
    * @notice Called when the account does not already hold the (asset, subId)
    * @dev Useful for managers to check the risk of the whole account
    */
-  function _addHeldAsset(
-    uint accountId, IAsset asset, uint subId
-  ) internal returns (uint16 newOrder) {
+  function _addHeldAsset(uint accountId, IAsset asset, uint subId) internal returns (uint16 newOrder) {
     heldAssets[accountId].push(HeldAsset({asset: asset, subId: subId.toUint96()}));
     newOrder = (heldAssets[accountId].length - 1).toUint16();
   }
-  
-  /** 
+
+  /**
    * @notice Called when the balance of a (asset, subId) returns to zero
    * @dev order used to gas efficiently remove assets from large accounts
    *      1. removes ~200k gas overhead for a 100 position portfolio
    *      2. for expiration with strikes, reduces gas overheada by ~150k
    */
-  function _removeHeldAsset(
-    uint accountId, 
-    uint16 order
-  ) internal {
+  function _removeHeldAsset(uint accountId, uint16 order) internal {
     /* swap order value if middle asset removed */
     uint heldAssetLen = heldAssets[accountId].length;
 
-    if (order != heldAssetLen.toUint16() - 1) { 
+    if (order != heldAssetLen.toUint16() - 1) {
       HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1]; // 2k gas
       heldAssets[accountId][order] = assetToMove; // 5k gas
 
-      // update the "order" field of the moved asset for an account 
-      balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)].order = order; // 5k gas 
+      // update the "order" field of the moved asset for an account
+      balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)].order = order; // 5k gas
     }
 
     heldAssets[accountId].pop(); // 200 gas
   }
 
   /**
-   * @dev get unique assets from heldAssets. 
+   * @dev get unique assets from heldAssets.
    *      heldAssets can hold multiple entries with same asset but different subId
    * @return uniqueAssets list of address
    * @return length max index of returned address that is non-zero
    */
-  function _getUniqueAssets(
-    HeldAsset[] memory assets
-  ) internal pure returns (address[] memory uniqueAssets, uint length) {
+  function _getUniqueAssets(HeldAsset[] memory assets)
+    internal
+    pure
+    returns (address[] memory uniqueAssets, uint length)
+  {
     uniqueAssets = new address[](assets.length);
 
     for (uint i; i < assets.length; ++i) {
@@ -414,45 +387,34 @@ contract Account is Allowances, ERC721, AccountStructs {
   // View //
   //////////
 
-  /** 
+  /**
    * @notice Gets an account's balance for an (asset, subId)
    * @param accountId ID of account
    * @param asset IAsset of balance
    * @param subId subId of balance
    */
-  function getBalance(
-    uint accountId, 
-    IAsset asset, 
-    uint subId
-  ) external view returns (int balance){
+  function getBalance(uint accountId, IAsset asset, uint subId) external view returns (int balance) {
     BalanceAndOrder memory userBalanceAndOrder = balanceAndOrder[accountId][asset][subId];
     return int(userBalanceAndOrder.balance);
   }
 
-  /** 
+  /**
    * @notice Gets a list of all asset balances of an account
    * @dev can use balanceAndOrder() to get the index of a specific balance
    * @param accountId ID of account
-  */
-  function getAccountBalances(uint accountId) 
-    external view returns (AssetBalance[] memory assetBalances) {
-    
+   */
+  function getAccountBalances(uint accountId) external view returns (AssetBalance[] memory assetBalances) {
     uint allAssetBalancesLen = heldAssets[accountId].length;
     assetBalances = new AssetBalance[](allAssetBalancesLen);
     for (uint i; i < allAssetBalancesLen; i++) {
       HeldAsset memory heldAsset = heldAssets[accountId][i];
-      BalanceAndOrder memory userBalanceAndOrder = 
-            balanceAndOrder[accountId][heldAsset.asset][uint(heldAsset.subId)];
+      BalanceAndOrder memory userBalanceAndOrder = balanceAndOrder[accountId][heldAsset.asset][uint(heldAsset.subId)];
 
-      assetBalances[i] = AssetBalance({
-        asset: heldAsset.asset,
-        subId: uint(heldAsset.subId),
-        balance: int(userBalanceAndOrder.balance)
-      });
+      assetBalances[i] =
+        AssetBalance({asset: heldAsset.asset, subId: uint(heldAsset.subId), balance: int(userBalanceAndOrder.balance)});
     }
     return assetBalances;
   }
-
 
   ////////////
   // Access //
@@ -460,9 +422,7 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /// @dev giving managers exclusive rights to transfer account ownerships
   /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
-  function _isApprovedOrOwner(
-    address spender, uint accountId
-  ) internal view override returns (bool) {
+  function _isApprovedOrOwner(address spender, uint accountId) internal view override returns (bool) {
     if (super._isApprovedOrOwner(spender, accountId)) return true;
 
     // check if caller is manager
@@ -476,26 +436,21 @@ contract Account is Allowances, ERC721, AccountStructs {
   modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
     if (!_isApprovedOrOwner(sender, accountId)) {
       revert NotOwnerOrERC721Approved(
-        address(this),
-        sender,
-        accountId,
-        ownerOf(accountId),
-        manager[accountId],
-        getApproved(accountId)
+        address(this), sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
       );
     }
     _;
   }
 
-  modifier onlyManager(uint256 accountId) {
+  modifier onlyManager(uint accountId) {
     address accountManager = address(manager[accountId]);
-    if (msg.sender != accountManager) revert OnlyManager(address(this), msg.sender, accountManager); 
-      _;
+    if (msg.sender != accountManager) revert OnlyManager(address(this), msg.sender, accountManager);
+    _;
   }
 
-  modifier onlyAsset (IAsset asset) {
-    if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset)); 
-      _;
+  modifier onlyAsset(IAsset asset) {
+    if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset));
+    _;
   }
 
   ////////////
@@ -505,29 +460,17 @@ contract Account is Allowances, ERC721, AccountStructs {
   /**
    * @dev Emitted account created or split
    */
-  event AccountCreated(
-    address indexed owner, 
-    uint indexed accountId, 
-    address indexed manager
-  );
+  event AccountCreated(address indexed owner, uint indexed accountId, address indexed manager);
 
   /**
    * @dev Emitted account burned
    */
-  event AccountBurned(
-    address indexed owner, 
-    uint indexed accountId, 
-    address indexed manager
-  );
+  event AccountBurned(address indexed owner, uint indexed accountId, address indexed manager);
 
   /**
    * @dev Emitted when account manager changed
    */
-  event AccountManagerChanged(
-    uint indexed accountId, 
-    address indexed oldManager, 
-    address indexed newManager
-  );
+  event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
 
   /**
    * @dev Emitted during any balance change event. This includes:
@@ -540,9 +483,9 @@ contract Account is Allowances, ERC721, AccountStructs {
   event BalanceAdjusted(
     uint indexed accountId,
     address indexed manager,
-    HeldAsset indexed assetAndSubId, 
+    HeldAsset indexed assetAndSubId,
     int amount,
-    int preBalance, 
+    int preBalance,
     int postBalance
   );
 
@@ -553,14 +496,14 @@ contract Account is Allowances, ERC721, AccountStructs {
   error OnlyManager(address thrower, address caller, address manager);
 
   error OnlyAsset(address thrower, address caller, address asset);
-  
+
   error NotOwnerOrERC721Approved(
     address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved
   );
 
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
-  
+
   error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
-  
+
   error CannotChangeToSameManager(address thrower, address caller, uint accountId);
 }
