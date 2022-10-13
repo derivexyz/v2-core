@@ -44,16 +44,15 @@ contract AccountGasScript is Script {
 
     _gasSingleTradeUSDCWithOption();
 
-    // buck trade single account with multiple accounts
-    _gasBulkTradeUSDCWithDiffOption(10);
-    _gasBulkTradeUSDCWithDiffOption(20);
+    // trade multiple "option token" between 2 accounts
+    _gasTradeMultipleOptions(10); // 2 parties exchange 10 positions
+    _gasTradeMultipleOptions(20); 
+    _gasTradeMultipleOptions(100);
+    
 
     // test spliting a 600x account
     _gasBulkSplitPosition(10);
     _gasBulkSplitPosition(20);
-
-    // test settlement: the EOA already have 600 assets
-    // _setExpiryPrice();
 
     // _gasSettleAccountWithMultiplePositions(100);
     // _gasSettleAccountWithMultiplePositions(500);
@@ -141,34 +140,25 @@ contract AccountGasScript is Script {
     console.log("gas:SingleTradeUSDCWithOption:", initGas - endGas);
   }
 
-  function _gasBulkTradeUSDCWithDiffOption(uint counts) public {
-    // Gas test for a singel account to trade with 500 different accounts on different asset
-    // which will ends up having counts+1 assets in the heldAsset array.
+  function _gasTradeMultipleOptions(uint counts) public {
+    // Gas test for 2 accounts to exchange multiple asset balances
 
     // setup: not counting gas
     uint amount = 50e18;
-    uint usdcAmount = 300e18;
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](
-      counts * 2
-    );
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](counts);
+
+    uint fromAcc = 1;
+    uint toAcc = 2;
 
     for (uint i = 0; i < counts;) {
-      uint subId = 1000e18 + (i * 10e18);
+      uint subId = i + 100;
 
-      transferBatch[2 * i] = AccountStructs.AssetTransfer({ // short option and give it to another person
-        fromAcc: ownAcc,
-        toAcc: i + 2, // account 1 is the EOA. start from 2
+      transferBatch[i] = AccountStructs.AssetTransfer({ // short option and give it to another person
+        fromAcc: fromAcc,
+        toAcc: toAcc, // account 1 is the EOA. start from 2
         asset: IAsset(optionAdapter),
         subId: subId,
         amount: int(amount),
-        assetData: bytes32(0)
-      });
-      transferBatch[2 * i + 1] = AccountStructs.AssetTransfer({ // premium
-        fromAcc: i + 2,
-        toAcc: ownAcc,
-        asset: IAsset(usdcAdapter),
-        subId: 0,
-        amount: int(usdcAmount),
         assetData: bytes32(0)
       });
       unchecked {
@@ -181,7 +171,7 @@ contract AccountGasScript is Script {
     account.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
-    console.log("gas:BulkTradeUSDCWithDiffOption(", counts, "):", initGas - endGas);
+    console.log("gas:TradeMultipleOptions(", counts, "):", initGas - endGas);
   }
 
   function _gasBulkSplitPosition(uint counts) public {
