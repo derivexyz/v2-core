@@ -14,17 +14,17 @@ library AssetDeltaLib {
   /// @dev if this is an asset never seen before, add to the accountDelta.deltas array
   ///      if this is an asset seen before, update the accountDelta.deltas entry
   function addToAssetDeltaArray(
-    AccountStructs.AssetDeltaArrayCache memory accountDelta,
+    AccountStructs.AssetDeltaArrayCache memory cache,
     AccountStructs.AssetDelta memory delta
   ) internal pure {
-    for (uint i; i < accountDelta.deltas.length;) {
-      if (accountDelta.deltas[i].asset == delta.asset && accountDelta.deltas[i].subId == delta.subId) {
-        accountDelta.deltas[i].delta += delta.delta;
+    for (uint i; i < cache.deltas.length;) {
+      if (cache.deltas[i].asset == delta.asset && cache.deltas[i].subId == delta.subId) {
+        cache.deltas[i].delta += delta.delta;
         break;
-      } else if (accountDelta.deltas[i].asset == IAsset(address(0)) && accountDelta.deltas[i].subId == 0) {
+      } else if (cache.deltas[i].asset == IAsset(address(0)) && cache.deltas[i].subId == 0) {
         // find the first empty element, write information
-        accountDelta.deltas[i] = delta;
-        accountDelta.used += 1;
+        cache.deltas[i] = delta;
+        cache.used += 1;
         break;
       }
 

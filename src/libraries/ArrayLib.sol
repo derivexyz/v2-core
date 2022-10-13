@@ -17,18 +17,18 @@ library ArrayLib {
    * @param array array of number
    * @param newElement number to check
    * @param maxIndex previously recorded max index with non-zero value
-   * @return newMaxIndex new max index
+   * @return newMaxLen new max length
    * @return index index of the added element
    */
   function addUniqueToArray(uint[] memory array, uint newElement, uint maxIndex)
     internal
     pure
-    returns (uint newMaxIndex, uint index)
+    returns (uint newMaxLen, uint index)
   {
     int foundIndex = findInArray(array, newElement, maxIndex);
     if (foundIndex == -1) {
-      array[newMaxIndex++] = newElement;
-      return (newMaxIndex, newMaxIndex);
+      array[maxIndex++] = newElement;
+      return (maxIndex, maxIndex - 1);
     }
     return (maxIndex, uint(foundIndex));
   }
@@ -39,12 +39,12 @@ library ArrayLib {
    * @param array array of address
    * @param newElement address to check
    * @param maxIndex previously recorded max index with non-zero value
-   * @return newMaxIndex new max index
+   * @return newMaxLen new max length
    */
   function addUniqueToArray(address[] memory array, address newElement, uint maxIndex)
     internal
     pure
-    returns (uint newMaxIndex)
+    returns (uint newMaxLen)
   {
     if (findInArray(array, newElement, maxIndex) == -1) {
       array[maxIndex++] = newElement;

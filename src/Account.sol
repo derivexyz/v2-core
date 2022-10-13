@@ -185,6 +185,7 @@ contract Account is Allowances, ERC721, AccountStructs {
     /* Keep track of seen accounts to assess risk once per account */
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
 
+    // seen index => delta[]
     AssetDeltaArrayCache[] memory assetDeltas = new AssetDeltaArrayCache[](transfersLen * 2);
 
     uint nextSeenId = 0;
@@ -194,6 +195,8 @@ contract Account is Allowances, ERC721, AccountStructs {
       (uint fromIndex, uint toIndex) = (0, 0);
       (nextSeenId, fromIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
       (nextSeenId, toIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
+
+      console2.log("from, to", fromIndex, toIndex);
 
       // update assetDeltas[from] directly.
       assetDeltas[fromIndex].addToAssetDeltaArray(
@@ -217,6 +220,7 @@ contract Account is Allowances, ERC721, AccountStructs {
     }
     for (uint i; i < nextSeenId; i++) {
       AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
+      console2.log("id", seenAccounts[i], nonEmptyDeltas.length);
       _managerHook(seenAccounts[i], msg.sender, nonEmptyDeltas, managerData);
     }
   }
