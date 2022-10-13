@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
+import "forge-std/console2.sol";
 
 contract MockManager is IManager {
   IAccount account;
@@ -19,6 +20,9 @@ contract MockManager is IManager {
     view
     override
   {
+    // for (uint i; i<deltas.length; i++) {
+    //   console2.log("i", i, uint(deltas[i].delta));
+    // }
     if (revertHandleAdjustment) revert();
   }
 

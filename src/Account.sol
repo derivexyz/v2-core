@@ -24,7 +24,7 @@ import "./libraries/AssetDeltaLib.sol";
 contract Account is Allowances, ERC721, AccountStructs {
   using SafeCast for int;
   using SafeCast for uint;
-  using AssetDeltaLib for AccountAssetDeltas;
+  using AssetDeltaLib for AssetDeltaArrayCache;
 
   ///////////////
   // Variables //
@@ -111,8 +111,8 @@ contract Account is Allowances, ERC721, AccountStructs {
     manager[accountId] = newManager;
 
     // trigger the manager hook on the new manager. Same as post-transfer checks
-    AccountAssetDeltas memory emptyDeltas = AccountAssetDeltas({deltas: new AssetDelta[](0)});
-    _managerHook(accountId, msg.sender, emptyDeltas, newManagerData);
+    AssetDelta[] memory deltas = new AssetDelta[](0);
+    _managerHook(accountId, msg.sender, deltas, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
@@ -180,10 +180,12 @@ contract Account is Allowances, ERC721, AccountStructs {
   function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external {
     uint transfersLen = assetTransfers.length;
 
+    if (transfersLen > 100) revert();
+
     /* Keep track of seen accounts to assess risk once per account */
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
 
-    AccountAssetDeltas[] memory assetDeltas = new AccountAssetDeltas[](transfersLen * 2);
+    AssetDeltaArrayCache[] memory assetDeltas = new AssetDeltaArrayCache[](transfersLen * 2);
 
     uint nextSeenId = 0;
 
@@ -214,7 +216,8 @@ contract Account is Allowances, ERC721, AccountStructs {
       _transferAsset(assetTransfers[i]);
     }
     for (uint i; i < nextSeenId; i++) {
-      _managerHook(seenAccounts[i], msg.sender, assetDeltas[i], managerData);
+      AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
+      _managerHook(seenAccounts[i], msg.sender, nonEmptyDeltas, managerData);
     }
   }
 
@@ -285,7 +288,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     // balance adjustment is routed through asset if triggerAssetHook == true
     (postAdjustmentBalance,) = _adjustBalance(adjustment, triggerAssetHook);
-    _managerHook(adjustment.acc, msg.sender, AssetDeltaLib.getDeltasFromAdjustment(adjustment, false), managerData);
+    _managerHook(adjustment.acc, msg.sender, AssetDeltaLib.getDeltasFromAdjustment(adjustment), managerData);
   }
 
   /**
@@ -340,10 +343,8 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @param caller address of msg.sender initiating balance adjustment
    * @param managerData open ended data passed to manager
    */
-  function _managerHook(uint accountId, address caller, AccountAssetDeltas memory deltas, bytes memory managerData)
-    internal
-  {
-    manager[accountId].handleAdjustment(accountId, caller, deltas.deltas, managerData);
+  function _managerHook(uint accountId, address caller, AssetDelta[] memory deltas, bytes memory managerData) internal {
+    manager[accountId].handleAdjustment(accountId, caller, deltas, managerData);
   }
 
   /**

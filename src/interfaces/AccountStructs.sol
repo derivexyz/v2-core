@@ -28,8 +28,9 @@ interface AccountStructs {
   }
 
   // the struct is used to easily manage 2 dimensional array
-  struct AccountAssetDeltas {
-    AssetDelta[] deltas;
+  struct AssetDeltaArrayCache {
+    uint used;
+    AssetDelta[100] deltas;
   }
 
   /////////////////////////
