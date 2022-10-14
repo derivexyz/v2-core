@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/interfaces/AccountStructs.sol";
-import "forge-std/console2.sol";
+import "src/interfaces/IAsset.sol";
 
 /**
  * @title ArrayLib
@@ -50,28 +49,13 @@ library AssetDeltaLib {
     return deltas;
   }
 
-  function getDeltasFromAdjustment(AccountStructs.AssetAdjustment memory adjustment)
+  function getDeltasFromSingleAdjustment(IAsset asset, uint subId, int delta)
     internal
     pure
     returns (AccountStructs.AssetDelta[] memory)
   {
     AccountStructs.AssetDelta[] memory deltas = new AccountStructs.AssetDelta[](1);
-    deltas[0] =
-      AccountStructs.AssetDelta({asset: adjustment.asset, subId: uint96(adjustment.subId), delta: adjustment.amount});
-    return deltas;
-  }
-
-  function getDeltasFromTransfer(AccountStructs.AssetTransfer memory transfer, bool negative)
-    internal
-    pure
-    returns (AccountStructs.AssetDelta[] memory)
-  {
-    AccountStructs.AssetDelta[] memory deltas = new AccountStructs.AssetDelta[](1);
-    deltas[0] = AccountStructs.AssetDelta({
-      asset: transfer.asset,
-      subId: uint96(transfer.subId),
-      delta: negative ? -transfer.amount : transfer.amount
-    });
+    deltas[0] = AccountStructs.AssetDelta({asset: asset, subId: uint96(subId), delta: delta});
     return deltas;
   }
 }

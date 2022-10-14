@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "./IManager.sol";
-import "./AccountStructs.sol";
 
 interface IAsset {
   /**

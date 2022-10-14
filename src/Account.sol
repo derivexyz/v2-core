@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
-import "./interfaces/AccountStructs.sol";
+// import "./interfaces/AccountStructs.sol";
 import "./Allowances.sol";
 import "./libraries/ArrayLib.sol";
 import "./libraries/AssetDeltaLib.sol";
@@ -161,12 +161,16 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @param managerData data passed to managers of both accounts
    */
   function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external {
-    _transferAsset(assetTransfer);
+    (int fromDelta, int toDelta) = _transferAsset(assetTransfer);
     _managerHook(
-      assetTransfer.fromAcc, msg.sender, AssetDeltaLib.getDeltasFromTransfer(assetTransfer, true), managerData
+      assetTransfer.fromAcc, msg.sender, 
+      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, fromDelta), 
+      managerData
     );
     _managerHook(
-      assetTransfer.toAcc, msg.sender, AssetDeltaLib.getDeltasFromTransfer(assetTransfer, false), managerData
+      assetTransfer.toAcc, msg.sender, 
+      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, toDelta), 
+      managerData
     );
   }
 
@@ -196,12 +200,14 @@ contract Account is Allowances, ERC721, AccountStructs {
       (nextSeenId, fromIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
       (nextSeenId, toIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
 
+      (int fromDelta, int toDelta) = _transferAsset(assetTransfers[i]);
+
       // update assetDeltas[from] directly.
       assetDeltas[fromIndex].addToAssetDeltaArray(
         AssetDelta({
           asset: assetTransfers[i].asset,
           subId: uint96(assetTransfers[i].subId),
-          delta: -assetTransfers[i].amount
+          delta: fromDelta
         })
       );
 
@@ -210,11 +216,11 @@ contract Account is Allowances, ERC721, AccountStructs {
         AssetDelta({
           asset: assetTransfers[i].asset,
           subId: uint96(assetTransfers[i].subId),
-          delta: assetTransfers[i].amount
+          delta: toDelta
         })
       );
 
-      _transferAsset(assetTransfers[i]);
+      
     }
     for (uint i; i < nextSeenId; i++) {
       AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
@@ -227,7 +233,7 @@ contract Account is Allowances, ERC721, AccountStructs {
    * @dev    update the allowance and balanceAndOrder storage
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    */
-  function _transferAsset(AssetTransfer memory assetTransfer) internal {
+  function _transferAsset(AssetTransfer memory assetTransfer) internal returns (int fromDelta, int toDelta) {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
       revert CannotTransferAssetToOneself(address(this), msg.sender, assetTransfer.toAcc);
     }
@@ -249,8 +255,8 @@ contract Account is Allowances, ERC721, AccountStructs {
     });
 
     // balance is adjusted based on asset hook
-    (, bool fromAdjustmentNeedAllowance) = _adjustBalance(fromAccAdjustment, true);
-    (, bool toAdjustmentNeedAllowance) = _adjustBalance(toAccAdjustment, true);
+    (, int fromDelta_, bool fromAdjustmentNeedAllowance) = _adjustBalance(fromAccAdjustment, true);
+    (, int toDelta_, bool toAdjustmentNeedAllowance) = _adjustBalance(toAccAdjustment, true);
 
     // if it's not ERC721 approved: spend allowances
     if (fromAdjustmentNeedAllowance && !_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) {
@@ -259,6 +265,8 @@ contract Account is Allowances, ERC721, AccountStructs {
     if (toAdjustmentNeedAllowance && !_isApprovedOrOwner(msg.sender, toAccAdjustment.acc)) {
       _spendAllowance(toAccAdjustment, ownerOf(toAccAdjustment.acc), msg.sender);
     }
+
+    return (fromDelta_, toDelta_);
   }
 
   /**
@@ -272,7 +280,7 @@ contract Account is Allowances, ERC721, AccountStructs {
     returns (int postAdjustmentBalance)
   {
     // balance is adjusted based on asset hook
-    (postAdjustmentBalance,) = _adjustBalance(adjustment, true);
+    (postAdjustmentBalance,,) = _adjustBalance(adjustment, true);
   }
 
   /**
@@ -288,17 +296,26 @@ contract Account is Allowances, ERC721, AccountStructs {
     returns (int postAdjustmentBalance)
   {
     // balance adjustment is routed through asset if triggerAssetHook == true
-    (postAdjustmentBalance,) = _adjustBalance(adjustment, triggerAssetHook);
-    _managerHook(adjustment.acc, msg.sender, AssetDeltaLib.getDeltasFromAdjustment(adjustment), managerData);
+    int delta;
+    (postAdjustmentBalance, delta, ) = _adjustBalance(adjustment, triggerAssetHook);
+    _managerHook(
+      adjustment.acc,
+      msg.sender,
+      AssetDeltaLib.getDeltasFromSingleAdjustment(adjustment.asset, adjustment.subId, delta),
+      managerData
+    );
   }
 
   /**
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
+   * @return postBalance the final balance after adjustment
+   * @return delta exact amount updated during the adjustment
+   * @return needAllowance whether this adjustment needs allowance
    */
   function _adjustBalance(AssetAdjustment memory adjustment, bool triggerHook)
     internal
-    returns (int postBalance, bool needAllowance)
+    returns (int postBalance, int delta, bool needAllowance)
   {
     BalanceAndOrder storage userBalanceAndOrder = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
     int preBalance = int(userBalanceAndOrder.balance);
@@ -306,9 +323,10 @@ contract Account is Allowances, ERC721, AccountStructs {
     // allow asset to modify final balance in special cases
     if (triggerHook) {
       (postBalance, needAllowance) = _assetHook(adjustment, preBalance, msg.sender);
+      delta = postBalance - preBalance;
     } else {
       postBalance = preBalance + adjustment.amount;
-
+      delta = adjustment.amount;
       // needAllowance id default to: only need allowance if substracting from account
       needAllowance = adjustment.amount < 0;
     }
