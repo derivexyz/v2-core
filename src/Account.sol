@@ -163,13 +163,15 @@ contract Account is Allowances, ERC721, AccountStructs {
   function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external {
     (int fromDelta, int toDelta) = _transferAsset(assetTransfer);
     _managerHook(
-      assetTransfer.fromAcc, msg.sender, 
-      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, fromDelta), 
+      assetTransfer.fromAcc,
+      msg.sender,
+      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, fromDelta),
       managerData
     );
     _managerHook(
-      assetTransfer.toAcc, msg.sender, 
-      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, toDelta), 
+      assetTransfer.toAcc,
+      msg.sender,
+      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, toDelta),
       managerData
     );
   }
@@ -204,23 +206,13 @@ contract Account is Allowances, ERC721, AccountStructs {
 
       // update assetDeltas[from] directly.
       assetDeltas[fromIndex].addToAssetDeltaArray(
-        AssetDelta({
-          asset: assetTransfers[i].asset,
-          subId: uint96(assetTransfers[i].subId),
-          delta: fromDelta
-        })
+        AssetDelta({asset: assetTransfers[i].asset, subId: uint96(assetTransfers[i].subId), delta: fromDelta})
       );
 
       // update assetDeltas[to] directly.
       assetDeltas[toIndex].addToAssetDeltaArray(
-        AssetDelta({
-          asset: assetTransfers[i].asset,
-          subId: uint96(assetTransfers[i].subId),
-          delta: toDelta
-        })
+        AssetDelta({asset: assetTransfers[i].asset, subId: uint96(assetTransfers[i].subId), delta: toDelta})
       );
-
-      
     }
     for (uint i; i < nextSeenId; i++) {
       AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
@@ -297,7 +289,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     // balance adjustment is routed through asset if triggerAssetHook == true
     int delta;
-    (postAdjustmentBalance, delta, ) = _adjustBalance(adjustment, triggerAssetHook);
+    (postAdjustmentBalance, delta,) = _adjustBalance(adjustment, triggerAssetHook);
     _managerHook(
       adjustment.acc,
       msg.sender,
