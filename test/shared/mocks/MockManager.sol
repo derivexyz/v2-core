@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 import "forge-std/console2.sol";
+import "forge-std/console.sol";
 
 contract MockManager is IManager {
   IAccount account;
@@ -11,18 +12,29 @@ contract MockManager is IManager {
   bool revertHandleManager;
   bool revertHandleAdjustment;
 
+  bool logAdjustmentTriggers;
+
+  mapping(uint => uint) accTriggeredDeltaLength;
+
+  // acc => asset => subId => time
+  mapping(uint => mapping(address => mapping(uint96 => uint))) accAssetTriggered;
+
   constructor(address account_) {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint, /*accountId*/ address, AccountStructs.AssetDelta[] memory, bytes memory)
+  function handleAdjustment(uint acc, /*accountId*/ address, AccountStructs.AssetDelta[] memory deltas, bytes memory)
     public
-    view
     override
   {
-    // for (uint i; i<deltas.length; i++) {
-    //   console2.log("i", i, uint(deltas[i].delta));
-    // }
+    // testing mode: record all incoming "deltas"
+    if (logAdjustmentTriggers) {
+      accTriggeredDeltaLength[acc] = deltas.length;
+      for (uint i; i < deltas.length; i++) {
+        accAssetTriggered[acc][address(deltas[i].asset)][deltas[i].subId]++;
+      }
+    }
+
     if (revertHandleAdjustment) revert();
   }
 
@@ -36,5 +48,9 @@ contract MockManager is IManager {
 
   function setRevertHandleAdjustment(bool _revert) external {
     revertHandleAdjustment = _revert;
+  }
+
+  function setLogAdjustmentTriggers(bool _log) external {
+    logAdjustmentTriggers = _log;
   }
 }

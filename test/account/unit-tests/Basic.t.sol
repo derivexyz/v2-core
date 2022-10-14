@@ -82,6 +82,63 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
   }
 
   /**
+   * =================================================
+   * test  hook data pass to Manager.handleAdjustment |
+   * =================================================
+   */
+
+  function testAdjustmentHookTriggeredCorrectly() public {
+    // set allowance from bob and alice to allow trades
+    vm.prank(bob);
+    account.approve(address(this), bobAcc);
+    vm.prank(alice);
+    account.approve(address(this), aliceAcc);
+
+    int usdcAmount = 1e18;
+    int coolAmount = 2e18;
+
+    int aliceUsdcBefore = account.getBalance(aliceAcc, usdcAsset, 0);
+    int bobUsdcBefore = account.getBalance(bobAcc, usdcAsset, 0);
+
+    int aliceCoolBefore = account.getBalance(aliceAcc, coolAsset, tokenSubId);
+    int bobCoolBefore = account.getBalance(bobAcc, coolAsset, tokenSubId);
+
+    AccountStructs.AssetBalance[] memory aliceBalances = account.getAccountBalances(aliceAcc);
+    AccountStructs.AssetBalance[] memory bobBalances = account.getAccountBalances(bobAcc);
+    assertEq(aliceBalances.length, 1);
+    assertEq(bobBalances.length, 1);
+
+    tradeTokens(
+      aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), uint(usdcAmount), uint(coolAmount), 0, tokenSubId
+    );
+
+    int aliceUsdcAfter = account.getBalance(aliceAcc, usdcAsset, 0);
+    int bobUsdcAfter = account.getBalance(bobAcc, usdcAsset, 0);
+
+    int aliceCoolAfter = account.getBalance(aliceAcc, coolAsset, tokenSubId);
+    int bobCoolAfter = account.getBalance(bobAcc, coolAsset, tokenSubId);
+
+    assertEq((aliceUsdcBefore - aliceUsdcAfter), usdcAmount);
+    assertEq((bobUsdcAfter - bobUsdcBefore), usdcAmount);
+    assertEq((aliceCoolAfter - aliceCoolBefore), coolAmount);
+    assertEq((bobCoolBefore - bobCoolAfter), coolAmount);
+
+    // requesting AssetBalance should also return new data
+    aliceBalances = account.getAccountBalances(aliceAcc);
+    bobBalances = account.getAccountBalances(bobAcc);
+    assertEq(aliceBalances.length, 2);
+    assertEq(bobBalances.length, 2);
+
+    assertEq(address(aliceBalances[1].asset), address(coolAsset));
+    assertEq(aliceBalances[1].subId, tokenSubId);
+    assertEq(aliceBalances[1].balance, coolAmount);
+
+    assertEq(address(bobBalances[1].asset), address(usdcAsset));
+    assertEq(bobBalances[1].subId, 0);
+    assertEq(bobBalances[1].balance, usdcAmount);
+  }
+
+  /**
    * ==========================================================
    * tests for call flow rom Manager => Account.adjustBalance() |
    * ========================================================== *
