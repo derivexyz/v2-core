@@ -14,24 +14,24 @@ contract MockManager is IManager {
 
   bool logAdjustmentTriggers;
 
-  mapping(uint => uint) accTriggeredDeltaLength;
+  mapping(uint => uint) public accTriggeredDeltaLength;
 
   // acc => asset => subId => time
-  mapping(uint => mapping(address => mapping(uint96 => uint))) accAssetTriggered;
+  mapping(uint => mapping(address => mapping(uint96 => uint))) public accAssetTriggered;
+
+  mapping(uint => mapping(address => mapping(uint96 => int))) public accAssetAdjuetmentDelta;
 
   constructor(address account_) {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint acc, /*accountId*/ address, AccountStructs.AssetDelta[] memory deltas, bytes memory)
-    public
-    override
-  {
+  function handleAdjustment(uint acc, address, AccountStructs.AssetDelta[] memory deltas, bytes memory) public override {
     // testing mode: record all incoming "deltas"
     if (logAdjustmentTriggers) {
       accTriggeredDeltaLength[acc] = deltas.length;
       for (uint i; i < deltas.length; i++) {
         accAssetTriggered[acc][address(deltas[i].asset)][deltas[i].subId]++;
+        accAssetAdjuetmentDelta[acc][address(deltas[i].asset)][deltas[i].subId] += deltas[i].delta;
       }
     }
 

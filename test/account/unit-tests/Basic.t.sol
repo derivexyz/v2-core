@@ -88,54 +88,98 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
    */
 
   function testAdjustmentHookTriggeredCorrectly() public {
+    uint thisAcc = account.createAccount(address(this), dumbManager);
+    mintAndDeposit(address(this), thisAcc, usdc, usdcAsset, 0, 10000000e18);
+    mintAndDeposit(address(this), thisAcc, coolToken, coolAsset, tokenSubId, 10000000e18);
+
     // set allowance from bob and alice to allow trades
     vm.prank(bob);
     account.approve(address(this), bobAcc);
     vm.prank(alice);
     account.approve(address(this), aliceAcc);
 
-    int usdcAmount = 1e18;
-    int coolAmount = 2e18;
+    // start recording triggers
+    dumbManager.setLogAdjustmentTriggers(true);
 
-    int aliceUsdcBefore = account.getBalance(aliceAcc, usdcAsset, 0);
-    int bobUsdcBefore = account.getBalance(bobAcc, usdcAsset, 0);
+    int amount = 1e18;
 
-    int aliceCoolBefore = account.getBalance(aliceAcc, coolAsset, tokenSubId);
-    int bobCoolBefore = account.getBalance(bobAcc, coolAsset, tokenSubId);
+    // trades:
+    // USDC alice => bob
+    // USDC this => bob
+    // COOL bob => this
+    // COOL this => alice
+    // COOL aclie => bob
 
-    AccountStructs.AssetBalance[] memory aliceBalances = account.getAccountBalances(aliceAcc);
-    AccountStructs.AssetBalance[] memory bobBalances = account.getAccountBalances(bobAcc);
-    assertEq(aliceBalances.length, 1);
-    assertEq(bobBalances.length, 1);
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](5);
 
-    tradeTokens(
-      aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), uint(usdcAmount), uint(coolAmount), 0, tokenSubId
-    );
+    transferBatch[0] = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(usdcAsset),
+      subId: 0,
+      amount: amount,
+      assetData: bytes32(0)
+    });
 
-    int aliceUsdcAfter = account.getBalance(aliceAcc, usdcAsset, 0);
-    int bobUsdcAfter = account.getBalance(bobAcc, usdcAsset, 0);
+    transferBatch[1] = AccountStructs.AssetTransfer({
+      fromAcc: thisAcc,
+      toAcc: bobAcc,
+      asset: IAsset(usdcAsset),
+      subId: 0,
+      amount: amount,
+      assetData: bytes32(0)
+    });
 
-    int aliceCoolAfter = account.getBalance(aliceAcc, coolAsset, tokenSubId);
-    int bobCoolAfter = account.getBalance(bobAcc, coolAsset, tokenSubId);
+    transferBatch[2] = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: thisAcc,
+      asset: IAsset(coolAsset),
+      subId: tokenSubId,
+      amount: amount,
+      assetData: bytes32(0)
+    });
 
-    assertEq((aliceUsdcBefore - aliceUsdcAfter), usdcAmount);
-    assertEq((bobUsdcAfter - bobUsdcBefore), usdcAmount);
-    assertEq((aliceCoolAfter - aliceCoolBefore), coolAmount);
-    assertEq((bobCoolBefore - bobCoolAfter), coolAmount);
+    transferBatch[3] = AccountStructs.AssetTransfer({
+      fromAcc: thisAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(coolAsset),
+      subId: tokenSubId,
+      amount: amount,
+      assetData: bytes32(0)
+    });
 
-    // requesting AssetBalance should also return new data
-    aliceBalances = account.getAccountBalances(aliceAcc);
-    bobBalances = account.getAccountBalances(bobAcc);
-    assertEq(aliceBalances.length, 2);
-    assertEq(bobBalances.length, 2);
+    transferBatch[4] = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(coolAsset),
+      subId: tokenSubId,
+      amount: amount,
+      assetData: bytes32(0)
+    });
 
-    assertEq(address(aliceBalances[1].asset), address(coolAsset));
-    assertEq(aliceBalances[1].subId, tokenSubId);
-    assertEq(aliceBalances[1].balance, coolAmount);
+    account.submitTransfers(transferBatch, "");
 
-    assertEq(address(bobBalances[1].asset), address(usdcAsset));
-    assertEq(bobBalances[1].subId, 0);
-    assertEq(bobBalances[1].balance, usdcAmount);
+    assertEq(dumbManager.accTriggeredDeltaLength(aliceAcc), 2);
+    assertEq(dumbManager.accTriggeredDeltaLength(bobAcc), 2);
+    assertEq(dumbManager.accTriggeredDeltaLength(thisAcc), 2);
+
+    // each account-asset only got triggered once
+    assertEq(dumbManager.accAssetTriggered(aliceAcc, address(usdcAsset), 0), 1);
+    assertEq(dumbManager.accAssetTriggered(aliceAcc, address(coolAsset), uint96(tokenSubId)), 1);
+    assertEq(dumbManager.accAssetTriggered(bobAcc, address(usdcAsset), 0), 1);
+    assertEq(dumbManager.accAssetTriggered(bobAcc, address(coolAsset), uint96(tokenSubId)), 1);
+    assertEq(dumbManager.accAssetTriggered(thisAcc, address(usdcAsset), 0), 1);
+    assertEq(dumbManager.accAssetTriggered(thisAcc, address(coolAsset), uint96(tokenSubId)), 1);
+
+    // USDC delta passed into manager were corret
+    assertEq(dumbManager.accAssetAdjuetmentDelta(aliceAcc, address(usdcAsset), 0), -amount);
+    assertEq(dumbManager.accAssetAdjuetmentDelta(thisAcc, address(usdcAsset), 0), -amount);
+    assertEq(dumbManager.accAssetAdjuetmentDelta(bobAcc, address(usdcAsset), 0), 2 * amount);
+
+    // COOL delta passed into manager were corret
+    assertEq(dumbManager.accAssetAdjuetmentDelta(aliceAcc, address(coolAsset), uint96(tokenSubId)), 0);
+    assertEq(dumbManager.accAssetAdjuetmentDelta(thisAcc, address(coolAsset), uint96(tokenSubId)), 0);
+    assertEq(dumbManager.accAssetAdjuetmentDelta(bobAcc, address(coolAsset), uint96(tokenSubId)), 0);
   }
 
   /**
