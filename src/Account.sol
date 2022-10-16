@@ -186,7 +186,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external {
     uint transfersLen = assetTransfers.length;
 
-    if (transfersLen > 100) revert();
+    if (transfersLen > 100) revert TooManyTransfers();
 
     /* Keep track of seen accounts to assess risk once per account */
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
@@ -541,6 +541,8 @@ contract Account is Allowances, ERC721, AccountStructs {
   error OnlyManager(address thrower, address caller, address manager);
 
   error OnlyAsset(address thrower, address caller, address asset);
+
+  error TooManyTransfers();
 
   error NotOwnerOrERC721Approved(
     address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved

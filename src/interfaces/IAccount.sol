@@ -167,6 +167,8 @@ interface IAccount is IAllowances, IERC721 {
 
   error OnlyAsset(address thrower, address caller, address asset);
 
+  error TooManyTransfers();
+
   error NotOwnerOrERC721Approved(
     address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved
   );

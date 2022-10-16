@@ -24,7 +24,6 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     transferToken(aliceAcc, aliceAcc, usdcAsset, 0, 1e18);
   }
 
-  // @note: do we want to allow this
   function testCanTransferToAnyoneWith0Amount() public {
     vm.prank(alice);
     transferToken(aliceAcc, bobAcc, usdcAsset, 0, 0);
@@ -79,6 +78,13 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(address(bobBalances[1].asset), address(usdcAsset));
     assertEq(bobBalances[1].subId, 0);
     assertEq(bobBalances[1].balance, usdcAmount);
+  }
+
+  function testCannotSubmitMoreThan100Trades() public {
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](101);
+
+    vm.expectRevert(Account.TooManyTransfers.selector);
+    account.submitTransfers(transferBatch, "");
   }
 
   /**
