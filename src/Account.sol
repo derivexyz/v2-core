@@ -16,11 +16,9 @@ import "./libraries/AssetDeltaLib.sol";
  * @author Lyra
  * @notice Base layer that manages:
  *         1. balances for each (account, asset, subId)
- *         2. routing of manager, asset, allowance hooks / checks
- *            during any balance adjustment event
+ *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-
 contract Account is Allowances, ERC721, AccountStructs {
   using SafeCast for int;
   using SafeCast for uint;
@@ -44,9 +42,9 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
-  ///////////////////
-  // Account Admin //
-  ///////////////////
+  ////////////////////////
+  // Account Management //
+  ////////////////////////
 
   /**
    * @notice Creates account with new accountId
@@ -347,8 +345,8 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /**
    * @notice Hook that calls the manager once per account during:
-   *         1. Transfers / Merges / Splits
-   *         2. Assymetric balance adjustments
+   *         1. Transfers
+   *         2. Assymetric balance adjustments from Assets
    *
    * @param accountId ID of account being checked
    * @param caller address of msg.sender initiating balance adjustment
@@ -360,14 +358,15 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /**
    * @notice Hook that calls the asset during:
-   *         1. Transfers / Merges / Splits
-   *         2. Assymetric balance adjustments
+   *         1. Transfers 
+   *         2. Assymetric balance adjustments from Managers or Asset
    * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage
    * @param adjustment all details related to balance adjustment
    * @param preBalance balance before adjustment
    * @param caller address of msg.sender initiating balance adjustment
    * @return finalBalance the amount should be written as final balance
+   * @return needAllowance true if this adjustment needs to consume adjustment
    */
   function _assetHook(AssetAdjustment memory adjustment, int preBalance, address caller)
     internal
@@ -383,6 +382,10 @@ contract Account is Allowances, ERC721, AccountStructs {
   /**
    * @notice Called when the account does not already hold the (asset, subId)
    * @dev Useful for managers to check the risk of the whole account
+   * @param accountId account id
+   * @param asset asset contract
+   * @param subId subId of asset
+   * @return newOrder order that can be used to access this entry in heldAsset array
    */
   function _addHeldAsset(uint accountId, IAsset asset, uint subId) internal returns (uint16 newOrder) {
     heldAssets[accountId].push(HeldAsset({asset: asset, subId: subId.toUint96()}));
@@ -399,12 +402,13 @@ contract Account is Allowances, ERC721, AccountStructs {
     /* swap order value if middle asset removed */
     uint heldAssetLen = heldAssets[accountId].length;
 
-    if (order != heldAssetLen.toUint16() - 1) {
-      HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1]; // 2k gas
-      heldAssets[accountId][order] = assetToMove; // 5k gas
+    // if the entry is not the last one: move the last asset to index #order
+    if (order != heldAssetLen - 1) {
+      HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1];
+      heldAssets[accountId][order] = assetToMove;
 
       // update the "order" field of the moved asset for an account
-      balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)].order = order; // 5k gas
+      balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)].order = order;
     }
 
     heldAssets[accountId].pop(); // 200 gas
