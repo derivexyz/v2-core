@@ -16,21 +16,23 @@ library ArrayLib {
    *      array memory will be updated in place
    * @param array array of number
    * @param newElement number to check
-   * @param maxIndex previously recorded max index with non-zero value
-   * @return newMaxLen new max length
+   * @param arrayLen previously recorded array length with non-zero value
+   * @return newArrayLen new length of array
    * @return index index of the added element
    */
-  function addUniqueToArray(uint[] memory array, uint newElement, uint maxIndex)
+  function addUniqueToArray(uint[] memory array, uint newElement, uint arrayLen)
     internal
     pure
-    returns (uint newMaxLen, uint index)
+    returns (uint newArrayLen, uint index)
   {
-    int foundIndex = findInArray(array, newElement, maxIndex);
+    int foundIndex = findInArray(array, newElement, arrayLen);
     if (foundIndex == -1) {
-      array[maxIndex++] = newElement;
-      return (maxIndex, maxIndex - 1);
+      array[arrayLen] = newElement;
+      unchecked {
+        return (arrayLen + 1, arrayLen);
+      }
     }
-    return (maxIndex, uint(foundIndex));
+    return (arrayLen, uint(foundIndex));
   }
 
   /**
@@ -38,18 +40,20 @@ library ArrayLib {
    *      array memory will be updated in place
    * @param array array of address
    * @param newElement address to check
-   * @param maxIndex previously recorded max index with non-zero value
-   * @return newMaxLen new max length
+   * @param arrayLen previously recorded array length with non-zero value
+   * @return newArrayLen new length of array
    */
-  function addUniqueToArray(address[] memory array, address newElement, uint maxIndex)
+  function addUniqueToArray(address[] memory array, address newElement, uint arrayLen)
     internal
     pure
-    returns (uint newMaxLen)
+    returns (uint newArrayLen)
   {
-    if (findInArray(array, newElement, maxIndex) == -1) {
-      array[maxIndex++] = newElement;
+    if (findInArray(array, newElement, arrayLen) == -1) {
+      unchecked {
+        array[arrayLen++] = newElement;
+      }
     }
-    return maxIndex;
+    return arrayLen;
   }
 
   /**
@@ -59,15 +63,17 @@ library ArrayLib {
    * @return index index of the found element. -1 if not found
    */
   function findInArray(uint[] memory array, uint toFind, uint arrayLen) internal pure returns (int index) {
-    for (uint i; i < arrayLen; ++i) {
-      if (array[i] == 0) {
-        return -1;
+    unchecked {
+      for (uint i; i < arrayLen; ++i) {
+        if (array[i] == 0) {
+          return -1;
+        }
+        if (array[i] == toFind) {
+          return int(i);
+        }
       }
-      if (array[i] == toFind) {
-        return int(i);
-      }
+      return -1;
     }
-    return -1;
   }
 
   /**
@@ -77,14 +83,16 @@ library ArrayLib {
    * @return index index of the found element. -1 if not found
    */
   function findInArray(address[] memory array, address toFind, uint arrayLen) internal pure returns (int index) {
-    for (uint i; i < arrayLen; ++i) {
-      if (array[i] == address(0)) {
-        return -1;
+    unchecked {
+      for (uint i; i < arrayLen; ++i) {
+        if (array[i] == address(0)) {
+          return -1;
+        }
+        if (array[i] == toFind) {
+          return int(i);
+        }
       }
-      if (array[i] == toFind) {
-        return int(i);
-      }
+      return -1;
     }
-    return -1;
   }
 }
