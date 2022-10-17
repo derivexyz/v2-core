@@ -57,9 +57,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
 
   function testCannotChangeToSameManager() public {
     vm.prank(alice);
-    vm.expectRevert(
-      abi.encodeWithSelector(Account.CannotChangeToSameManager.selector, address(account), alice, aliceAcc)
-    );
+    vm.expectRevert(abi.encodeWithSelector(Account.CannotChangeToSameManager.selector, alice, aliceAcc));
     account.changeManager(aliceAcc, dumbManager, "");
     vm.stopPrank();
   }

@@ -139,9 +139,7 @@ contract Allowances {
       allowancesForSubId[delegate] = 0;
       allowancesForAsset[delegate] = assetAllowance - (absAmount - subIdAllowance);
     } else {
-      revert NotEnoughSubIdOrAssetAllowances(
-        address(this), msg.sender, accountId, amount, subIdAllowance, assetAllowance
-      );
+      revert NotEnoughSubIdOrAssetAllowances(msg.sender, accountId, amount, subIdAllowance, assetAllowance);
     }
   }
 
@@ -150,6 +148,6 @@ contract Allowances {
   ////////////
 
   error NotEnoughSubIdOrAssetAllowances(
-    address thower, address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
+    address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
   );
 }

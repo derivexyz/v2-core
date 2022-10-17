@@ -66,21 +66,19 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
     if (!_isApprovedOrOwner(sender, accountId)) {
-      revert NotOwnerOrERC721Approved(
-        address(this), sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
-      );
+      revert NotOwnerOrERC721Approved(sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId));
     }
     _;
   }
 
   modifier onlyManager(uint accountId) {
     address accountManager = address(manager[accountId]);
-    if (msg.sender != accountManager) revert OnlyManager(address(this), msg.sender, accountManager);
+    if (msg.sender != accountManager) revert OnlyManager();
     _;
   }
 
   modifier onlyAsset(IAsset asset) {
-    if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset));
+    if (msg.sender != address(asset)) revert OnlyAsset();
     _;
   }
 
@@ -143,7 +141,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     IManager oldManager = manager[accountId];
     if (oldManager == newManager) {
-      revert CannotChangeToSameManager(address(this), msg.sender, accountId);
+      revert CannotChangeToSameManager(msg.sender, accountId);
     }
     oldManager.handleManagerChange(accountId, newManager);
 
@@ -273,7 +271,7 @@ contract Account is Allowances, ERC721, AccountStructs {
    */
   function _transferAsset(AssetTransfer memory assetTransfer) internal returns (int fromDelta, int toDelta) {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
-      revert CannotTransferAssetToOneself(address(this), msg.sender, assetTransfer.toAcc);
+      revert CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
     }
 
     AssetAdjustment memory fromAccAdjustment = AssetAdjustment({
@@ -533,19 +531,15 @@ contract Account is Allowances, ERC721, AccountStructs {
   // Errors //
   ////////////
 
-  error OnlyManager(address thrower, address caller, address manager);
+  error OnlyManager();
 
-  error OnlyAsset(address thrower, address caller, address asset);
+  error OnlyAsset();
 
   error TooManyTransfers();
 
-  error NotOwnerOrERC721Approved(
-    address thrower, address spender, uint accountId, address owner, IManager manager, address approved
-  );
+  error NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 
-  error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
+  error CannotTransferAssetToOneself(address caller, uint accountId);
 
-  error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
-
-  error CannotChangeToSameManager(address thrower, address caller, uint accountId);
+  error CannotChangeToSameManager(address caller, uint accountId);
 }
