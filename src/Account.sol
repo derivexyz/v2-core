@@ -40,6 +40,56 @@ contract Account is Allowances, ERC721, AccountStructs {
   /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
 
+  ////////////
+  // Events //
+  ////////////
+  
+  /// @dev Emitted account created or split
+  event AccountCreated(address indexed owner, uint indexed accountId, address indexed manager);
+
+  
+  /// @dev Emitted when account manager is updated
+  event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
+
+  
+  /// @dev Emitted during any balance change event.
+  event BalanceAdjusted(
+    uint indexed accountId,
+    address indexed manager,
+    HeldAsset indexed assetAndSubId,
+    int delta,
+    int preBalance,
+    int postBalance
+  );
+
+  ///////////////
+  // Modifiers //
+  ///////////////
+
+  modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
+    if (!_isApprovedOrOwner(sender, accountId)) {
+      revert NotOwnerOrERC721Approved(
+        address(this), sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
+      );
+    }
+    _;
+  }
+
+  modifier onlyManager(uint accountId) {
+    address accountManager = address(manager[accountId]);
+    if (msg.sender != accountManager) revert OnlyManager(address(this), msg.sender, accountManager);
+    _;
+  }
+
+  modifier onlyAsset(IAsset asset) {
+    if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset));
+    _;
+  }
+
+  ////////////////////////
+  //    Constructor     //
+  ////////////////////////
+
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
   ////////////////////////
@@ -332,11 +382,11 @@ contract Account is Allowances, ERC721, AccountStructs {
     emit BalanceAdjusted(
       adjustment.acc,
       address(manager[adjustment.acc]),
-      HeldAsset({asset: adjustment.asset, subId: SafeCast.toUint96(adjustment.subId)}),
-      adjustment.amount,
+      HeldAsset({asset: adjustment.asset, subId: uint96(adjustment.subId)}),
+      delta,
       preBalance,
       postBalance
-      );
+    );
   }
 
   ////////////////////////////
@@ -469,74 +519,17 @@ contract Account is Allowances, ERC721, AccountStructs {
   // Access //
   ////////////
 
-  /// @dev giving managers exclusive rights to transfer account ownerships
-  /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
+  /**
+   * @dev giving managers exclusive rights to transfer account ownerships
+   * @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
+   *
+   */
   function _isApprovedOrOwner(address spender, uint accountId) internal view override returns (bool) {
     if (super._isApprovedOrOwner(spender, accountId)) return true;
 
     // check if caller is manager
     return address(manager[accountId]) == msg.sender;
   }
-
-  ///////////////
-  // Modifiers //
-  ///////////////
-
-  modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
-    if (!_isApprovedOrOwner(sender, accountId)) {
-      revert NotOwnerOrERC721Approved(
-        address(this), sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
-      );
-    }
-    _;
-  }
-
-  modifier onlyManager(uint accountId) {
-    address accountManager = address(manager[accountId]);
-    if (msg.sender != accountManager) revert OnlyManager(address(this), msg.sender, accountManager);
-    _;
-  }
-
-  modifier onlyAsset(IAsset asset) {
-    if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset));
-    _;
-  }
-
-  ////////////
-  // Events //
-  ////////////
-
-  /**
-   * @dev Emitted account created or split
-   */
-  event AccountCreated(address indexed owner, uint indexed accountId, address indexed manager);
-
-  /**
-   * @dev Emitted account burned
-   */
-  event AccountBurned(address indexed owner, uint indexed accountId, address indexed manager);
-
-  /**
-   * @dev Emitted when account manager changed
-   */
-  event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
-
-  /**
-   * @dev Emitted during any balance change event. This includes:
-   *      1. single transfer
-   *      2. batch transfer
-   *      3. transferAll / merge / split
-   *      4. manager or asset initiated adjustments
-   *      PreBalance + amount not necessarily = postBalance
-   */
-  event BalanceAdjusted(
-    uint indexed accountId,
-    address indexed manager,
-    HeldAsset indexed assetAndSubId,
-    int amount,
-    int preBalance,
-    int postBalance
-  );
 
   ////////////
   // Errors //
@@ -549,7 +542,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   error TooManyTransfers();
 
   error NotOwnerOrERC721Approved(
-    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved
+    address thrower, address spender, uint accountId, address owner, IManager manager, address approved
   );
 
   error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
