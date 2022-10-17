@@ -28,7 +28,9 @@ library ArrayLib {
     int foundIndex = findInArray(array, newElement, arrayLen);
     if (foundIndex == -1) {
       array[arrayLen] = newElement;
-      return (arrayLen + 1, arrayLen);
+      unchecked {
+        return (arrayLen + 1, arrayLen);
+      }
     }
     return (arrayLen, uint(foundIndex));
   }
