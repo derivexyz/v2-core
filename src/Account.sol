@@ -43,15 +43,13 @@ contract Account is Allowances, ERC721, AccountStructs {
   ////////////
   // Events //
   ////////////
-  
+
   /// @dev Emitted account created or split
   event AccountCreated(address indexed owner, uint indexed accountId, address indexed manager);
 
-  
   /// @dev Emitted when account manager is updated
   event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
 
-  
   /// @dev Emitted during any balance change event.
   event BalanceAdjusted(
     uint indexed accountId,
@@ -386,7 +384,7 @@ contract Account is Allowances, ERC721, AccountStructs {
       delta,
       preBalance,
       postBalance
-    );
+      );
   }
 
   ////////////////////////////
