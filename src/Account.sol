@@ -358,7 +358,7 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /**
    * @notice Hook that calls the asset during:
-   *         1. Transfers 
+   *         1. Transfers
    *         2. Assymetric balance adjustments from Managers or Asset
    * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage
