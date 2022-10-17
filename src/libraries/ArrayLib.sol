@@ -17,7 +17,7 @@ library ArrayLib {
    * @param array array of number
    * @param newElement number to check
    * @param arrayLen previously recorded array length with non-zero value
-   * @return newArrayLen new max length
+   * @return newArrayLen new length of array
    * @return index index of the added element
    */
   function addUniqueToArray(uint[] memory array, uint newElement, uint arrayLen)
