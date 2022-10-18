@@ -230,8 +230,6 @@ contract Account is Allowances, ERC721, AccountStructs {
   function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external {
     uint transfersLen = assetTransfers.length;
 
-    if (transfersLen > 100) revert AC_TooManyTransfers();
-
     /* Keep track of seen accounts to assess risk once per account */
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
 
