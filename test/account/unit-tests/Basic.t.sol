@@ -178,14 +178,14 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(dumbManager.accAssetTriggered(thisAcc, address(coolAsset), uint96(tokenSubId)), 1);
 
     // USDC delta passed into manager were corret
-    assertEq(dumbManager.accAssetAdjuetmentDelta(aliceAcc, address(usdcAsset), 0), -amount);
-    assertEq(dumbManager.accAssetAdjuetmentDelta(thisAcc, address(usdcAsset), 0), -amount);
-    assertEq(dumbManager.accAssetAdjuetmentDelta(bobAcc, address(usdcAsset), 0), 2 * amount);
+    assertEq(dumbManager.accAssetAdjustmentDelta(aliceAcc, address(usdcAsset), 0), -amount);
+    assertEq(dumbManager.accAssetAdjustmentDelta(thisAcc, address(usdcAsset), 0), -amount);
+    assertEq(dumbManager.accAssetAdjustmentDelta(bobAcc, address(usdcAsset), 0), 2 * amount);
 
     // COOL delta passed into manager were corret
-    assertEq(dumbManager.accAssetAdjuetmentDelta(aliceAcc, address(coolAsset), uint96(tokenSubId)), 0);
-    assertEq(dumbManager.accAssetAdjuetmentDelta(thisAcc, address(coolAsset), uint96(tokenSubId)), 0);
-    assertEq(dumbManager.accAssetAdjuetmentDelta(bobAcc, address(coolAsset), uint96(tokenSubId)), 0);
+    assertEq(dumbManager.accAssetAdjustmentDelta(aliceAcc, address(coolAsset), uint96(tokenSubId)), 0);
+    assertEq(dumbManager.accAssetAdjustmentDelta(thisAcc, address(coolAsset), uint96(tokenSubId)), 0);
+    assertEq(dumbManager.accAssetAdjustmentDelta(bobAcc, address(coolAsset), uint96(tokenSubId)), 0);
   }
 
   /**
