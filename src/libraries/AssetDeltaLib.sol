@@ -9,7 +9,6 @@ import "src/interfaces/IAsset.sol";
  * @notice util functions for AssetDeltaLib operations
  */
 library AssetDeltaLib {
-
   /// @dev too many deltas
   error DL_DeltasTooLong();
 
