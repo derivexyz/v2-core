@@ -64,7 +64,9 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
     if (!_isApprovedOrOwner(sender, accountId)) {
-      revert AC_NotOwnerOrERC721Approved(sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId));
+      revert AC_NotOwnerOrERC721Approved(
+        sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
+      );
     }
     _;
   }
