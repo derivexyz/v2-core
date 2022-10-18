@@ -17,7 +17,9 @@ In each module folder, we have at least 3 folders: `unit-tests`, `poc-tests` and
 
 - `unit-tests`: where we mock everything and aim to ensure **every line of logic** works as expected. All test contracts should be prefixed with `UNIT_`
 - `poc-tests`: where we explore things a bit to see if a certain design makes sense, the goal is to rapidly test ideas and architecture. All test contracts should be prefixed with `POC_`
-- `gas-tests`: contain test cases primary aimed to test gas usage, this help us while doing benchmark. All test contracts should be prefixed with `GAS_`
+- `gas-tests`: contain test cases primary aimed to test gas usage, this help us while doing benchmark. This can further be broken down to two types of tests:
+  - **forge tests**: Tests that will be run and compared in `.gas-snapshot`. All test contracts should be prefixed with `GAS_`. These tests are expected to "underestimate" the gas cost when it comes to storage-related operations. Better be used to estimate gas costs around calculations.
+  - **forge script estimation**: Follow the template in [account/gas-test/GasScript](./account/gas-tests/GasScript.t.sol) to use script feature to estimate real world gas costs. These will be less flexible compared to forge tests, but gives more accurate results.
 
 There should also be a `mocks` folder which contain own mocks written for this module, mainly for POC tests.
 

@@ -14,11 +14,11 @@ contract MockManager is IManager {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint, /*accountId*/ address, bytes memory) public view override {
+  function handleAdjustment(uint, /*accountId*/ address, bytes memory) public view virtual {
     if (revertHandleAdjustment) revert();
   }
 
-  function handleManagerChange(uint, IManager) external view {
+  function handleManagerChange(uint, IManager) public view virtual {
     if (revertHandleManager) revert();
   }
 

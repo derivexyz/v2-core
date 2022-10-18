@@ -66,9 +66,9 @@ contract MockAsset is IAsset {
   }
 
   function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager _manager, address)
-    external
+    public
     view
-    override
+    virtual
     returns (int finalBalance, bool needAllowance)
   {
     if (revertFromManager[address(_manager)]) revert();
@@ -78,7 +78,7 @@ contract MockAsset is IAsset {
     return (result, needAllowance);
   }
 
-  function handleManagerChange(uint, IManager) external override {
+  function handleManagerChange(uint, IManager) public virtual {
     if (revertHandleManagerChange) revert();
     if (recordMangerChangeCalls) handleManagerCalled += 1;
   }
