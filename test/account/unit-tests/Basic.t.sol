@@ -17,7 +17,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
   }
 
   function testCannotTransferToSelf() public {
-    vm.expectRevert(abi.encodeWithSelector(Account.CannotTransferAssetToOneself.selector, alice, aliceAcc));
+    vm.expectRevert(abi.encodeWithSelector(Account.AC_CannotTransferAssetToOneself.selector, alice, aliceAcc));
     vm.prank(alice);
     transferToken(aliceAcc, aliceAcc, usdcAsset, 0, 1e18);
   }
@@ -81,7 +81,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
   function testCannotSubmitMoreThan100Trades() public {
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](101);
 
-    vm.expectRevert(Account.TooManyTransfers.selector);
+    vm.expectRevert(Account.AC_TooManyTransfers.selector);
     account.submitTransfers(transferBatch, "");
   }
 
@@ -264,7 +264,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     // assume calls from coolAsset
     vm.prank(address(coolAsset));
 
-    vm.expectRevert(Account.OnlyAsset.selector);
+    vm.expectRevert(Account.AC_OnlyAsset.selector);
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: newAccount,

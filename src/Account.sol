@@ -64,19 +64,19 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
     if (!_isApprovedOrOwner(sender, accountId)) {
-      revert NotOwnerOrERC721Approved(sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId));
+      revert AC_NotOwnerOrERC721Approved(sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId));
     }
     _;
   }
 
   modifier onlyManager(uint accountId) {
     address accountManager = address(manager[accountId]);
-    if (msg.sender != accountManager) revert OnlyManager();
+    if (msg.sender != accountManager) revert AC_OnlyManager();
     _;
   }
 
   modifier onlyAsset(IAsset asset) {
-    if (msg.sender != address(asset)) revert OnlyAsset();
+    if (msg.sender != address(asset)) revert AC_OnlyAsset();
     _;
   }
 
@@ -139,7 +139,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     IManager oldManager = manager[accountId];
     if (oldManager == newManager) {
-      revert CannotChangeToSameManager(msg.sender, accountId);
+      revert AC_CannotChangeToSameManager(msg.sender, accountId);
     }
     oldManager.handleManagerChange(accountId, newManager);
 
@@ -228,7 +228,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external {
     uint transfersLen = assetTransfers.length;
 
-    if (transfersLen > 100) revert TooManyTransfers();
+    if (transfersLen > 100) revert AC_TooManyTransfers();
 
     /* Keep track of seen accounts to assess risk once per account */
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
@@ -269,7 +269,7 @@ contract Account is Allowances, ERC721, AccountStructs {
    */
   function _transferAsset(AssetTransfer memory assetTransfer) internal returns (int fromDelta, int toDelta) {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
-      revert CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
+      revert AC_CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
     }
 
     AssetAdjustment memory fromAccAdjustment = AssetAdjustment({
@@ -529,15 +529,15 @@ contract Account is Allowances, ERC721, AccountStructs {
   // Errors //
   ////////////
 
-  error OnlyManager();
+  error AC_OnlyManager();
 
-  error OnlyAsset();
+  error AC_OnlyAsset();
 
-  error TooManyTransfers();
+  error AC_TooManyTransfers();
 
-  error NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
+  error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 
-  error CannotTransferAssetToOneself(address caller, uint accountId);
+  error AC_CannotTransferAssetToOneself(address caller, uint accountId);
 
-  error CannotChangeToSameManager(address caller, uint accountId);
+  error AC_CannotChangeToSameManager(address caller, uint accountId);
 }
