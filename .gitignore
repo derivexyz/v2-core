@@ -2,6 +2,8 @@
 out
 cache
 lcov.info
+broadcast
+lcov.info
 node_modules
 yarn-error.log
 .husky
