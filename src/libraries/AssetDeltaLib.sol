@@ -12,24 +12,29 @@ library AssetDeltaLib {
   /// @dev apply delta to the accountDelta structure.
   /// @dev if this is an asset never seen before, add to the accountDelta.deltas array
   ///      if this is an asset seen before, update the accountDelta.deltas entry
+  /// @dev will revert if the delta array is already full (100 entries);
   function addToAssetDeltaArray(
     AccountStructs.AssetDeltaArrayCache memory cache,
     AccountStructs.AssetDelta memory delta
   ) internal pure {
-    unchecked {
-      // both i++ and used cannot overflow
-      for (uint i; i < cache.deltas.length; i++) {
-        if (cache.deltas[i].asset == delta.asset && cache.deltas[i].subId == delta.subId) {
-          cache.deltas[i].delta += delta.delta;
-          break;
-        } else if (cache.deltas[i].asset == IAsset(address(0)) && cache.deltas[i].subId == 0) {
-          // find the first empty element, write information
-          cache.deltas[i] = delta;
+    for (uint i; i < cache.deltas.length;) {
+      if (cache.deltas[i].asset == delta.asset && cache.deltas[i].subId == delta.subId) {
+        cache.deltas[i].delta += delta.delta;
+        return;
+      } else if (cache.deltas[i].asset == IAsset(address(0)) && cache.deltas[i].subId == 0) {
+        // find the first empty element, write information
+        cache.deltas[i] = delta;
+        unchecked {
           cache.used += 1;
-          break;
         }
+        return;
+      }
+
+      unchecked {
+        i++;
       }
     }
+    revert("deltas full");
   }
 
   function getDeltasFromArrayCache(AccountStructs.AssetDeltaArrayCache memory cache)

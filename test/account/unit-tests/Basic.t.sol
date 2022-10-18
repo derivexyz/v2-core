@@ -80,10 +80,26 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(bobBalances[1].balance, usdcAmount);
   }
 
-  function testCannotSubmitMoreThan100Trades() public {
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](101);
+  function testCannotSubmitTradesWithMoreThan100Deltas() public {
+    vm.prank(alice);
+    account.approve(address(this), aliceAcc);
 
-    vm.expectRevert(Account.TooManyTransfers.selector);
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](101);
+    int amount = 1e18;
+    for (uint i; i < 101; i++) {
+      mintAndDeposit(alice, aliceAcc, usdc, usdcAsset, i, uint(amount));
+
+      transferBatch[i] = AccountStructs.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: IAsset(usdcAsset),
+        subId: i, // make 101 unique deltas
+        amount: amount,
+        assetData: bytes32(0)
+      });
+    }
+
+    vm.expectRevert(bytes("deltas full"));
     account.submitTransfers(transferBatch, "");
   }
 
