@@ -25,7 +25,7 @@ contract MockManager is IManager {
     account = IAccount(account_);
   }
 
-  function handleAdjustment(uint acc, address, AccountStructs.AssetDelta[] memory deltas, bytes memory) public override {
+  function handleAdjustment(uint acc, address, AccountStructs.AssetDelta[] memory deltas, bytes memory) public virtual {
     // testing mode: record all incoming "deltas"
     if (logAdjustmentTriggers) {
       accTriggeredDeltaLength[acc] = deltas.length;
@@ -38,7 +38,7 @@ contract MockManager is IManager {
     if (revertHandleAdjustment) revert();
   }
 
-  function handleManagerChange(uint, IManager) external view {
+  function handleManagerChange(uint, IManager) public view virtual {
     if (revertHandleManager) revert();
   }
 

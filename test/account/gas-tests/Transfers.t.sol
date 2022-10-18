@@ -5,11 +5,10 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../poc-tests/AccountPOCHelper.sol";
 
-// TODO: forge treats storage slots as WARM for all tests within a contract
-//       may need to use hardhat or cast
-
+/**
+ * @dev these tests are expected to underestimate SLOAD and SSTORE cost
+ */
 contract GAS_Transfers is Test, AccountPOCHelper {
-  address liquidator = vm.addr(5);
   uint aliceAcc;
   uint bobAcc;
 
