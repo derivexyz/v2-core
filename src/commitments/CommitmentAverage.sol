@@ -10,7 +10,6 @@ import "forge-std/console2.sol";
  * * ------------- * ------------- * ------------- *
  */
 contract CommitmentAverage {
-
   error No_Pending_Commitment();
 
   struct AvgCommitment {
@@ -44,11 +43,9 @@ contract CommitmentAverage {
     AvgCommitment memory collecting = state[COLLECTING];
     uint16 newWeight = weight + collecting.weight;
 
-    state[COLLECTING].bidVol =
-      ((bidVol * weight) + (collecting.bidVol * collecting.weight)) / (newWeight);
-    
-    state[COLLECTING].askVol =
-      ((askVol * weight) + (collecting.askVol * collecting.weight)) / (newWeight);
+    state[COLLECTING].bidVol = ((bidVol * weight) + (collecting.bidVol * collecting.weight)) / (newWeight);
+
+    state[COLLECTING].askVol = ((askVol * weight) + (collecting.askVol * collecting.weight)) / (newWeight);
 
     state[COLLECTING].weight = newWeight;
     state[COLLECTING].timestamp = uint64(block.timestamp);
@@ -68,11 +65,9 @@ contract CommitmentAverage {
     uint16 newWeight = avgCollecting.weight - weight;
 
     // update avg
-    state[PENDING].bidVol =
-      ((avgCollecting.bidVol * avgCollecting.weight) - (nodeCommit.bidVol * weight)) / (newWeight);
-    
-    state[PENDING].askVol =
-      ((avgCollecting.askVol * avgCollecting.weight) - (nodeCommit.askVol * weight)) / (newWeight);
+    state[PENDING].bidVol = ((avgCollecting.bidVol * avgCollecting.weight) - (nodeCommit.bidVol * weight)) / (newWeight);
+
+    state[PENDING].askVol = ((avgCollecting.askVol * avgCollecting.weight) - (nodeCommit.askVol * weight)) / (newWeight);
 
     state[PENDING].weight = newWeight;
 
@@ -81,7 +76,6 @@ contract CommitmentAverage {
     } else {
       commitments[PENDING][node].weight = nodeCommit.weight - weight;
     }
-    
   }
 
   function _checkRotateBlocks() internal {

@@ -5,7 +5,7 @@ import "forge-std/console2.sol";
 
 /**
  * 3 Blocks to aggregate vol submited
- * 
+ *
  */
 contract CommitmentBest {
   struct Commitment {
