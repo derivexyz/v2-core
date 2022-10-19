@@ -25,7 +25,7 @@ contract CommitmentBestGas is Script {
     commitment.commit(100, 2, 1);
     gasAfter = gasleft();
     console.log("gas commit#2", gasBefore - gasAfter);
-    
+
     _commitMultiple(100);
     vm.warp(block.timestamp + 10 minutes);
 
@@ -42,7 +42,6 @@ contract CommitmentBestGas is Script {
       commitment.commit(104, uint16(i), 1);
     }
   }
-
 
   function deployMockSystem() public {
     commitment = new CommitmentBest();
