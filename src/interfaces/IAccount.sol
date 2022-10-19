@@ -163,19 +163,17 @@ interface IAccount is IAllowances, IERC721 {
   // Errors //
   ////////////
 
-  error OnlyManager(address thrower, address caller, address manager);
+  error AC_OnlyManager();
 
-  error OnlyAsset(address thrower, address caller, address asset);
+  error AC_OnlyAsset();
 
-  error TooManyTransfers();
+  error AC_TooManyTransfers();
 
-  error NotOwnerOrERC721Approved(
-    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved
+  error AC_NotOwnerOrERC721Approved(
+    address spender, uint accountId, address accountOwner, IManager manager, address approved
   );
 
-  error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
+  error AC_CannotTransferAssetToOneself(address caller, uint accountId);
 
-  error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
-
-  error CannotChangeToSameManager(address thrower, address caller, uint accountId);
+  error AC_CannotChangeToSameManager(address caller, uint accountId);
 }

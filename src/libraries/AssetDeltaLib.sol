@@ -9,6 +9,9 @@ import "src/interfaces/IAsset.sol";
  * @notice util functions for AssetDeltaLib operations
  */
 library AssetDeltaLib {
+  /// @dev too many deltas
+  error DL_DeltasTooLong();
+
   /**
    * @notice apply delta to the AssetDeltaArrayCache.deltas array.
    * @dev if this is an asset never seen before, add to the accountDelta.deltas array
@@ -37,7 +40,7 @@ library AssetDeltaLib {
         i++;
       }
     }
-    revert("deltas full");
+    revert DL_DeltasTooLong();
   }
 
   function getDeltasFromArrayCache(AccountStructs.AssetDeltaArrayCache memory cache)

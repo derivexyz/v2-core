@@ -12,11 +12,16 @@ import "./libraries/IntLib.sol";
  */
 contract Allowances {
   using IntLib for int;
-  // Variables
 
-  /// @dev accountId => owner => asset => subId => delegate => allowance
+  ///////////////
+  // Variables //
+  ///////////////
+
+  /// @dev accountId => owner => asset => subId => delegate => allowance to add
   mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public
     positiveSubIdAllowance;
+
+  /// @dev accountId => owner => asset => subId => delegate => allowance to reduce
   mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public
     negativeSubIdAllowance;
 
@@ -79,14 +84,9 @@ contract Allowances {
    * @notice Consume delegate's allowance to update balance
    * @dev revert if delegate has insufficient allowance
    * @param adjustment amount of balance adjustment for an (asset, subId)
-   * @param delegate address of msg.sender initiating change
+   * @param caller address of msg.sender initiating change
    */
-  function _spendAllowance(
-    // TODO: rename delegate to caller?
-    AccountStructs.AssetAdjustment memory adjustment,
-    address owner,
-    address delegate
-  ) internal {
+  function _spendAllowance(AccountStructs.AssetAdjustment memory adjustment, address owner, address caller) internal {
     /* Early return if amount == 0 */
     if (adjustment.amount == 0) {
       return;
@@ -98,7 +98,7 @@ contract Allowances {
         adjustment.acc,
         positiveSubIdAllowance[adjustment.acc][owner][adjustment.asset][adjustment.subId],
         positiveAssetAllowance[adjustment.acc][owner][adjustment.asset],
-        delegate,
+        caller,
         adjustment.amount
       );
     } else {
@@ -107,7 +107,7 @@ contract Allowances {
         adjustment.acc,
         negativeSubIdAllowance[adjustment.acc][owner][adjustment.asset][adjustment.subId],
         negativeAssetAllowance[adjustment.acc][owner][adjustment.asset],
-        delegate,
+        caller,
         adjustment.amount
       );
     }
@@ -118,30 +118,28 @@ contract Allowances {
    * @param accountId account id
    * @param allowancesForSubId storage pointer with maps account to subId allowance
    * @param allowancesForSubId storage pointer with maps account to asset allowance
-   * @param delegate address to spend the allowance
+   * @param spender address to spend the allowance
    * @param amount amount in raw transfer
    */
   function _spendAbsAllowance(
     uint accountId,
     mapping(address => uint) storage allowancesForSubId,
     mapping(address => uint) storage allowancesForAsset,
-    address delegate,
+    address spender,
     int amount
   ) internal {
-    uint subIdAllowance = allowancesForSubId[delegate];
-    uint assetAllowance = allowancesForAsset[delegate];
+    uint subIdAllowance = allowancesForSubId[spender];
+    uint assetAllowance = allowancesForAsset[spender];
 
     uint absAmount = amount.abs();
     /* subId allowances are decremented before asset allowances */
     if (absAmount <= subIdAllowance) {
-      allowancesForSubId[delegate] = subIdAllowance - absAmount;
+      allowancesForSubId[spender] = subIdAllowance - absAmount;
     } else if (absAmount <= subIdAllowance + assetAllowance) {
-      allowancesForSubId[delegate] = 0;
-      allowancesForAsset[delegate] = assetAllowance - (absAmount - subIdAllowance);
+      allowancesForSubId[spender] = 0;
+      allowancesForAsset[spender] = assetAllowance - (absAmount - subIdAllowance);
     } else {
-      revert NotEnoughSubIdOrAssetAllowances(
-        address(this), msg.sender, accountId, amount, subIdAllowance, assetAllowance
-      );
+      revert NotEnoughSubIdOrAssetAllowances(msg.sender, accountId, amount, subIdAllowance, assetAllowance);
     }
   }
 
@@ -150,6 +148,6 @@ contract Allowances {
   ////////////
 
   error NotEnoughSubIdOrAssetAllowances(
-    address thower, address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
+    address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
   );
 }

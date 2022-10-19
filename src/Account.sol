@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
@@ -15,11 +14,9 @@ import "./libraries/AssetDeltaLib.sol";
  * @author Lyra
  * @notice Base layer that manages:
  *         1. balances for each (account, asset, subId)
- *         2. routing of manager, asset, allowance hooks / checks
- *            during any balance adjustment event
+ *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-
 contract Account is Allowances, ERC721, AccountStructs {
   using SafeCast for int;
   using SafeCast for uint;
@@ -41,11 +38,59 @@ contract Account is Allowances, ERC721, AccountStructs {
   /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
 
+  ////////////
+  // Events //
+  ////////////
+
+  /// @dev Emitted account created or split
+  event AccountCreated(address indexed owner, uint indexed accountId, address indexed manager);
+
+  /// @dev Emitted when account manager is updated
+  event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
+
+  /// @dev Emitted during any balance change event.
+  event BalanceAdjusted(
+    uint indexed accountId,
+    address indexed manager,
+    HeldAsset indexed assetAndSubId,
+    int delta,
+    int preBalance,
+    int postBalance
+  );
+
+  ///////////////
+  // Modifiers //
+  ///////////////
+
+  modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
+    if (!_isApprovedOrOwner(sender, accountId)) {
+      revert AC_NotOwnerOrERC721Approved(
+        sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
+      );
+    }
+    _;
+  }
+
+  modifier onlyManager(uint accountId) {
+    address accountManager = address(manager[accountId]);
+    if (msg.sender != accountManager) revert AC_OnlyManager();
+    _;
+  }
+
+  modifier onlyAsset(IAsset asset) {
+    if (msg.sender != address(asset)) revert AC_OnlyAsset();
+    _;
+  }
+
+  ////////////////////////
+  //    Constructor     //
+  ////////////////////////
+
   constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
-  ///////////////////
-  // Account Admin //
-  ///////////////////
+  ////////////////////////
+  // Account Management //
+  ////////////////////////
 
   /**
    * @notice Creates account with new accountId
@@ -96,7 +141,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     IManager oldManager = manager[accountId];
     if (oldManager == newManager) {
-      revert CannotChangeToSameManager(address(this), msg.sender, accountId);
+      revert AC_CannotChangeToSameManager(msg.sender, accountId);
     }
     oldManager.handleManagerChange(accountId, newManager);
 
@@ -224,7 +269,7 @@ contract Account is Allowances, ERC721, AccountStructs {
    */
   function _transferAsset(AssetTransfer memory assetTransfer) internal returns (int fromDelta, int toDelta) {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
-      revert CannotTransferAssetToOneself(address(this), msg.sender, assetTransfer.toAcc);
+      revert AC_CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
     }
 
     AssetAdjustment memory fromAccAdjustment = AssetAdjustment({
@@ -331,8 +376,8 @@ contract Account is Allowances, ERC721, AccountStructs {
     emit BalanceAdjusted(
       adjustment.acc,
       address(manager[adjustment.acc]),
-      HeldAsset({asset: adjustment.asset, subId: SafeCast.toUint96(adjustment.subId)}),
-      adjustment.amount,
+      HeldAsset({asset: adjustment.asset, subId: uint96(adjustment.subId)}),
+      delta,
       preBalance,
       postBalance
       );
@@ -344,8 +389,8 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /**
    * @notice Hook that calls the manager once per account during:
-   *         1. Transfers / Merges / Splits
-   *         2. Assymetric balance adjustments
+   *         1. Transfers
+   *         2. Assymetric balance adjustments from Assets
    *
    * @param accountId ID of account being checked
    * @param caller address of msg.sender initiating balance adjustment
@@ -357,14 +402,15 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /**
    * @notice Hook that calls the asset during:
-   *         1. Transfers / Merges / Splits
-   *         2. Assymetric balance adjustments
+   *         1. Transfers
+   *         2. Assymetric balance adjustments from Managers or Asset
    * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage
    * @param adjustment all details related to balance adjustment
    * @param preBalance balance before adjustment
    * @param caller address of msg.sender initiating balance adjustment
    * @return finalBalance the amount should be written as final balance
+   * @return needAllowance true if this adjustment needs to consume adjustment
    */
   function _assetHook(AssetAdjustment memory adjustment, int preBalance, address caller)
     internal
@@ -380,6 +426,10 @@ contract Account is Allowances, ERC721, AccountStructs {
   /**
    * @notice Called when the account does not already hold the (asset, subId)
    * @dev Useful for managers to check the risk of the whole account
+   * @param accountId account id
+   * @param asset asset contract
+   * @param subId subId of asset
+   * @return newOrder order that can be used to access this entry in heldAsset array
    */
   function _addHeldAsset(uint accountId, IAsset asset, uint subId) internal returns (uint16 newOrder) {
     heldAssets[accountId].push(HeldAsset({asset: asset, subId: subId.toUint96()}));
@@ -396,12 +446,13 @@ contract Account is Allowances, ERC721, AccountStructs {
     /* swap order value if middle asset removed */
     uint heldAssetLen = heldAssets[accountId].length;
 
-    if (order != heldAssetLen.toUint16() - 1) {
-      HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1]; // 2k gas
-      heldAssets[accountId][order] = assetToMove; // 5k gas
+    // if the entry is not the last one: move the last asset to index #order
+    if (order != heldAssetLen - 1) {
+      HeldAsset memory assetToMove = heldAssets[accountId][heldAssetLen - 1];
+      heldAssets[accountId][order] = assetToMove;
 
       // update the "order" field of the moved asset for an account
-      balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)].order = order; // 5k gas
+      balanceAndOrder[accountId][assetToMove.asset][uint(assetToMove.subId)].order = order;
     }
 
     heldAssets[accountId].pop(); // 200 gas
@@ -462,8 +513,11 @@ contract Account is Allowances, ERC721, AccountStructs {
   // Access //
   ////////////
 
-  /// @dev giving managers exclusive rights to transfer account ownerships
-  /// @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
+  /**
+   * @dev giving managers exclusive rights to transfer account ownerships
+   * @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
+   *
+   */
   function _isApprovedOrOwner(address spender, uint accountId) internal view override returns (bool) {
     if (super._isApprovedOrOwner(spender, accountId)) return true;
 
@@ -471,83 +525,19 @@ contract Account is Allowances, ERC721, AccountStructs {
     return address(manager[accountId]) == msg.sender;
   }
 
-  ///////////////
-  // Modifiers //
-  ///////////////
-
-  modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
-    if (!_isApprovedOrOwner(sender, accountId)) {
-      revert NotOwnerOrERC721Approved(
-        address(this), sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
-      );
-    }
-    _;
-  }
-
-  modifier onlyManager(uint accountId) {
-    address accountManager = address(manager[accountId]);
-    if (msg.sender != accountManager) revert OnlyManager(address(this), msg.sender, accountManager);
-    _;
-  }
-
-  modifier onlyAsset(IAsset asset) {
-    if (msg.sender != address(asset)) revert OnlyAsset(address(this), msg.sender, address(asset));
-    _;
-  }
-
-  ////////////
-  // Events //
-  ////////////
-
-  /**
-   * @dev Emitted account created or split
-   */
-  event AccountCreated(address indexed owner, uint indexed accountId, address indexed manager);
-
-  /**
-   * @dev Emitted account burned
-   */
-  event AccountBurned(address indexed owner, uint indexed accountId, address indexed manager);
-
-  /**
-   * @dev Emitted when account manager changed
-   */
-  event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
-
-  /**
-   * @dev Emitted during any balance change event. This includes:
-   *      1. single transfer
-   *      2. batch transfer
-   *      3. transferAll / merge / split
-   *      4. manager or asset initiated adjustments
-   *      PreBalance + amount not necessarily = postBalance
-   */
-  event BalanceAdjusted(
-    uint indexed accountId,
-    address indexed manager,
-    HeldAsset indexed assetAndSubId,
-    int amount,
-    int preBalance,
-    int postBalance
-  );
-
   ////////////
   // Errors //
   ////////////
 
-  error OnlyManager(address thrower, address caller, address manager);
+  error AC_OnlyManager();
 
-  error OnlyAsset(address thrower, address caller, address asset);
+  error AC_OnlyAsset();
 
-  error TooManyTransfers();
+  error AC_TooManyTransfers();
 
-  error NotOwnerOrERC721Approved(
-    address thrower, address spender, uint accountId, address accountOwner, IManager manager, address approved
-  );
+  error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 
-  error CannotBurnAccountWithHeldAssets(address thrower, address caller, uint accountId, uint numOfAssets);
+  error AC_CannotTransferAssetToOneself(address caller, uint accountId);
 
-  error CannotTransferAssetToOneself(address thrower, address caller, uint accountId);
-
-  error CannotChangeToSameManager(address thrower, address caller, uint accountId);
+  error AC_CannotChangeToSameManager(address caller, uint accountId);
 }

@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import "../../../src/Account.sol";
+import "../../../src/libraries/AssetDeltaLib.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";
@@ -17,9 +18,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
   }
 
   function testCannotTransferToSelf() public {
-    vm.expectRevert(
-      abi.encodeWithSelector(Account.CannotTransferAssetToOneself.selector, address(account), alice, aliceAcc)
-    );
+    vm.expectRevert(abi.encodeWithSelector(Account.AC_CannotTransferAssetToOneself.selector, alice, aliceAcc));
     vm.prank(alice);
     transferToken(aliceAcc, aliceAcc, usdcAsset, 0, 1e18);
   }
@@ -99,7 +98,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
       });
     }
 
-    vm.expectRevert(bytes("deltas full"));
+    vm.expectRevert(AssetDeltaLib.DL_DeltasTooLong.selector);
     account.submitTransfers(transferBatch, "");
   }
 
@@ -282,9 +281,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     // assume calls from coolAsset
     vm.prank(address(coolAsset));
 
-    vm.expectRevert(
-      abi.encodeWithSelector(Account.OnlyAsset.selector, address(account), address(coolAsset), address(usdcAsset))
-    );
+    vm.expectRevert(Account.AC_OnlyAsset.selector);
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: newAccount,
