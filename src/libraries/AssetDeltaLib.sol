@@ -12,10 +12,13 @@ library AssetDeltaLib {
   /// @dev too many deltas
   error DL_DeltasTooLong();
 
-  /// @dev apply delta to the accountDelta structure.
-  /// @dev if this is an asset never seen before, add to the accountDelta.deltas array
-  ///      if this is an asset seen before, update the accountDelta.deltas entry
-  /// @dev will revert if the delta array is already full (100 entries);
+  /**
+   * @notice apply delta to the AssetDeltaArrayCache.deltas array.
+   * @dev if this is an asset never seen before, add to the accountDelta.deltas array
+   *      if this is an asset seen before, update the accountDelta.deltas entry
+   * @dev will revert if the delta array is already full (100 entries);
+   *
+   */
   function addToAssetDeltaArray(
     AccountStructs.AssetDeltaArrayCache memory cache,
     AccountStructs.AssetDelta memory delta
