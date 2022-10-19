@@ -8,6 +8,7 @@ import "src/commitments/CommitmentBest.sol";
 
 contract UNIT_CommitBest is Test {
   CommitmentBest commitment;
+  uint16 constant commitmentWeight = 1;
 
   constructor() {
     commitment = new CommitmentBest();
@@ -16,60 +17,38 @@ contract UNIT_CommitBest is Test {
   }
 
   function testCanCommit() public {
-    commitment.commit(100, 1, 1);
+    commitment.commit(100, 1, commitmentWeight);
 
-    commitment.commit(100, 2, 1);
+    commitment.commit(100, 2, commitmentWeight);
 
-    commitment.commit(102, 3, 1);
+    commitment.commit(102, 3, commitmentWeight);
 
-    commitment.commit(105, 4, 1);
+    commitment.commit(105, 4, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
 
-    commitment.commit(102, 4, 1);
+    commitment.proccesQueue();
 
-    // (uint16 bidVol, uint16 askVol, uint16 totalCommitment,) = commitment.state(commitment.COLLECTING());
-    // assertEq(bidVol, 95);
-    // assertEq(askVol, 105);
-    // assertEq(totalCommitment, 1);
-
-    // // this will rotate again -> become only one in COLLECTING
-
-    // // firt one committing to pending
-    // commitment.commit(110, 1, 1);
-    // // commit another
-    // commitment.commit(116, 2, 1);
-    // (uint16 bidVol2, uint16 askVol2,,) = commitment.state(commitment.COLLECTING());
-
-    // assertEq(bidVol2, 113 - 5);
-    // assertEq(askVol2, 113 + 5);
+    assertEq(commitment.currentBestBid(), 100);
+    assertEq(commitment.currentBestAsk(), 105);
   }
 
-  // function testCanExecuteCommit() public {
-  //   commitment.commit(100, 1, 1);
-  //   // this will rotate again -> become only one in COLLECTING
+  function testCanExecuteCommit() public {
+    commitment.commit(100, 1, commitmentWeight);
+    commitment.commit(104, 2, commitmentWeight);
+    commitment.commit(102, 3, commitmentWeight);
+    commitment.commit(105, 4, commitmentWeight);
 
-  //   // firt one committing to pending
-  //   commitment.commit(110, 1, 1);
-  //   commitment.commit(110, 2, 1);
-  //   commitment.commit(116, 3, 1);
+    // execute first
+    commitment.executeCommit(1, commitmentWeight);
+    // execute second
+    commitment.executeCommit(2, commitmentWeight);
 
-  //   vm.warp(block.timestamp + 10 minutes);
-  //   commitment.executeCommit(3, 1);
-  //   (uint16 bidVol, uint16 askVol, uint16 totalCommitment,) = commitment.state(commitment.PENDING());
+    vm.warp(block.timestamp + 10 minutes);
 
-  //   // commitment.executeCommit(1, 1);
-  //   assertEq(bidVol, 105);
-  //   assertEq(askVol, 115);
-  //   assertEq(totalCommitment, 2);
+    commitment.proccesQueue();
 
-  //   // trigger another round
-  //   vm.warp(block.timestamp + 10 minutes);
-  //   commitment.commit(110, 1, 1);
-
-  //   (uint16 bidVolFinal, uint16 askVolFinal,,) = commitment.state(commitment.FINALIZED());
-  //   assertEq(bidVolFinal, 105);
-  //   assertEq(askVolFinal, 115);
-  //   //
-  // }
+    assertEq(commitment.currentBestBid(), 100);
+    assertEq(commitment.currentBestAsk(), 107);
+  }
 }

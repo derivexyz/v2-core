@@ -76,6 +76,8 @@ contract CommitmentAverage {
     } else {
       commitments[PENDING][node].weight = nodeCommit.weight - weight;
     }
+
+    // trade;
   }
 
   function _checkRotateBlocks() internal {

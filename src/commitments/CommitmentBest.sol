@@ -8,12 +8,15 @@ import "forge-std/console2.sol";
  *
  */
 contract CommitmentBest {
+  error NotExecutable();
+
   struct Commitment {
     uint16 bidVol;
     uint16 askVol;
     uint16 nodeId;
     uint16 commitments;
     uint64 timestamp;
+    bool isExecuted;
   }
 
   Commitment[256] public queue;
@@ -21,10 +24,10 @@ contract CommitmentBest {
   uint8 lastUnprocessedIndex;
   uint8 lastIndex;
 
-  uint16 currentBestBid;
-  uint16 currentBestAsk;
-  uint64 currentBestBidTimestamp;
-  uint64 currentBestAskTimestamp;
+  uint16 public currentBestBid;
+  uint16 public currentBestAsk;
+  uint64 public currentBestBidTimestamp;
+  uint64 public currentBestAskTimestamp;
 
   // mapping(uint8 => mapping(uint16 => Commitment)) commitments;
 
@@ -39,9 +42,30 @@ contract CommitmentBest {
 
     (, uint8 newIndex) = _processQueue();
 
-    queue[newIndex] = Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp));
+    queue[newIndex] = Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp), false);
 
     lastIndex = newIndex;
+  }
+
+  /// @dev commit to the 'collecting' block
+  function executeCommit(uint16 index, uint16 weight) external {
+    _processQueue();
+
+    // can only execute pending commitment.
+    Commitment memory commitment = queue[index];
+    if (block.timestamp - commitment.timestamp > 5 minutes) revert NotExecutable();
+
+    if (weight == commitment.commitments) {
+      queue[index].isExecuted = true;
+    } else {
+      queue[index].commitments = commitment.commitments - weight;
+    }
+
+    // trade;
+  }
+
+  function proccesQueue() external {
+    _processQueue();
   }
 
   function _processQueue() internal returns (uint8 lastProcessed, uint8 newIndex) {
@@ -62,8 +86,10 @@ contract CommitmentBest {
       // let i overflow to 0
       for (; cachedLastUnproccessed <= cacheCurrentIndex; cachedLastUnproccessed++) {
         Commitment memory cache = queue[cachedLastUnproccessed];
-        
+
         if (block.timestamp - cache.timestamp < 5 minutes) break;
+
+        if (cache.isExecuted) continue;
 
         if (cache.bidVol > cacheBestBid) {
           updateBid = true;
