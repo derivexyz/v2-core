@@ -55,26 +55,27 @@ contract CommitmentBest {
   function commit(uint16 node, uint16 vol, uint16 weight) external {
     // todo: cannot double commit;
     // todo: check sender node id
-    _checkRollover();
+    (, uint8 cacheCOLLECTING) = _checkRollover();
 
-    uint8 newIndex = length[COLLECTING];
+    uint8 newIndex = length[cacheCOLLECTING];
 
-    queue[COLLECTING][newIndex] = Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp), false);
+    queue[cacheCOLLECTING][newIndex] =
+      Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp), false);
 
-    length[COLLECTING] = newIndex + 1;
+    length[cacheCOLLECTING] = newIndex + 1;
   }
 
   /// @dev commit to the 'collecting' block
   function executeCommit(uint16 index, uint16 weight) external {
-    _checkRollover();
+    (uint8 cachePENDING,) = _checkRollover();
 
-    uint16 newWeight = queue[PENDING][index].commitments - weight;
+    uint16 newWeight = queue[cachePENDING][index].commitments - weight;
 
     if (newWeight == 0) {
-      queue[PENDING][index].isExecuted = true;
-      queue[PENDING][index].commitments = 0;
+      queue[cachePENDING][index].isExecuted = true;
+      queue[cachePENDING][index].commitments = 0;
     } else {
-      queue[PENDING][index].commitments = newWeight;
+      queue[cachePENDING][index].commitments = newWeight;
     }
 
     // trade;
@@ -84,22 +85,24 @@ contract CommitmentBest {
     _checkRollover();
   }
 
-  function _checkRollover() internal {
+  function _checkRollover() internal returns (uint8 newPENDING, uint8 newCOLLECTING) {
     // Commitment[256] storage pendingQueue = queue[PENDING];
 
     // first iteration: pending length is empty
-    if (length[PENDING] == 0 && length[COLLECTING] != 0) {
-      Commitment memory oldest = queue[COLLECTING][0];
+    (uint8 cachePENDING, uint8 cacheCOLLECTING) = (PENDING, COLLECTING);
+
+    if (length[cachePENDING] == 0 && length[cacheCOLLECTING] != 0) {
+      Commitment memory oldest = queue[cacheCOLLECTING][0];
       if (block.timestamp - oldest.timestamp > 5 minutes) {
-        _rollOverCollecting();
+        (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
       }
-      return;
+      return (cachePENDING, cacheCOLLECTING);
     }
 
-    if (length[PENDING] > 0) {
-      if (block.timestamp - pendingStartTimestamp < 5 minutes) return;
+    if (length[cachePENDING] > 0) {
+      if (block.timestamp - pendingStartTimestamp < 5 minutes) return (cachePENDING, cacheCOLLECTING);
 
-      (FinalizedQuote memory bestBid, FinalizedQuote memory bestAsk) = _getBestFromPending();
+      (FinalizedQuote memory bestBid, FinalizedQuote memory bestAsk) = _getBestFromPending(cachePENDING);
 
       if (bestBid.commitments != 0) {
         bestFinalizedBid = bestBid;
@@ -107,28 +110,39 @@ contract CommitmentBest {
       if (bestAsk.commitments != 0) {
         bestFinalizedAsk = bestAsk;
       }
-      _rollOverCollecting();
+      (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
     }
+
+    return (cachePENDING, cacheCOLLECTING);
   }
 
-  function _rollOverCollecting() internal {
-    (COLLECTING, PENDING) = (PENDING, COLLECTING);
+  function _rollOverCollecting(uint8 cachePENDING, uint8 cacheCOLLECTING)
+    internal
+    returns (uint8 newPENDING, uint8 newCOLLECTING)
+  {
+    (COLLECTING, PENDING) = (cachePENDING, cacheCOLLECTING);
 
     pendingStartTimestamp = uint64(block.timestamp);
 
     // dont override the array with 0. just reset length
-    delete length[COLLECTING];
+    delete length[cachePENDING]; // delete the length for "new collecting"
+
+    return (cacheCOLLECTING, cachePENDING);
   }
 
-  function _getBestFromPending() internal view returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk) {
+  function _getBestFromPending(uint8 _indexPENDING)
+    internal
+    view
+    returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk)
+  {
     // get all commits more than 5 minutes
-    Commitment[256] memory pendingQueue = queue[PENDING];
+    Commitment[256] memory pendingQueue = queue[_indexPENDING];
 
     (uint16 cacheBestBid, uint16 cacheBestAsk, uint8 bestBidId, uint8 bestAskId) = (0, 0, 0, 0);
 
     unchecked {
       // let i overflow to 0
-      for (uint8 i; i < length[PENDING]; i++) {
+      for (uint8 i; i < length[_indexPENDING]; i++) {
         Commitment memory cache = pendingQueue[i];
 
         if (cache.isExecuted) continue;
