@@ -72,6 +72,7 @@ contract CommitmentBest {
 
     if (newWeight == 0) {
       queue[PENDING][index].isExecuted = true;
+      queue[PENDING][index].commitments = 0;
     } else {
       queue[PENDING][index].commitments = newWeight;
     }
@@ -111,18 +112,16 @@ contract CommitmentBest {
   }
 
   function _rollOverCollecting() internal {
-    console2.log("rollover!");
     (COLLECTING, PENDING) = (PENDING, COLLECTING);
 
     pendingStartTimestamp = uint64(block.timestamp);
 
+    // dont override the array with 0. just reset length
     delete length[COLLECTING];
-    delete queue[COLLECTING];
   }
 
   function _getBestFromPending() internal view returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk) {
     // get all commits more than 5 minutes
-
     Commitment[256] memory pendingQueue = queue[PENDING];
 
     (uint16 cacheBestBid, uint16 cacheBestAsk, uint8 bestBidId, uint8 bestAskId) = (0, 0, 0, 0);

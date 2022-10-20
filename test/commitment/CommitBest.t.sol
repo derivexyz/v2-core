@@ -50,4 +50,31 @@ contract UNIT_CommitBest is Test {
     (uint16 bestVol, uint16 nodeId, uint16 commitments, uint64 bidTimestamp) = commitment.bestFinalizedBid();
     assertEq(bestVol, 97);
   }
+
+  function testShouldRolloverBlankIfPendingIsEmpty() public {
+    commitment.commit(100, 1, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(104, 2, commitmentWeight); // collecting: 2, pending: 0
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover(); // collecting: 0, pending: 2
+
+    assertEq(commitment.pendingLength(), 2);
+
+    commitment.executeCommit(0, commitmentWeight);
+    commitment.executeCommit(1, commitmentWeight);
+
+    commitment.commit(100, 1, commitmentWeight); // collecting: 1, pending: 0
+
+    vm.warp(block.timestamp + 10 minutes);
+
+    commitment.checkRollover();
+
+    (uint16 bestVol, uint16 nodeId, uint16 commitments, uint64 bidTimestamp) = commitment.bestFinalizedBid();
+    assertEq(bestVol, 0);
+    assertEq(nodeId, 0);
+    assertEq(commitments, 0);
+    assertEq(bidTimestamp, 0);
+
+    assertEq(commitment.pendingLength(), 1);
+  }
 }
