@@ -30,9 +30,7 @@ contract CommitmentBestGas is Script {
     _commitMultiple(100);
     vm.warp(block.timestamp + 10 minutes);
 
-    
     commitment.checkRollover(); // pending: 102
-    
 
     vm.warp(block.timestamp + 10 minutes);
     gasBefore = gasleft();
