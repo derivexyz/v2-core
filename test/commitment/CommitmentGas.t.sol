@@ -30,17 +30,23 @@ contract CommitmentBestGas is Script {
     _commitMultiple(100);
     vm.warp(block.timestamp + 10 minutes);
 
+    
+    commitment.checkRollover(); // pending: 102
+    
+
+    vm.warp(block.timestamp + 10 minutes);
     gasBefore = gasleft();
-    commitment.checkRollover();
+    commitment.checkRollover(); // pending: 102
     gasAfter = gasleft();
+
     console.log("gas rollover 100 in queue", gasBefore - gasAfter);
 
     vm.stopBroadcast();
   }
 
   function _commitMultiple(uint count) internal {
-    for (uint i; i < count; i++) {
-      commitment.commit(104, uint16(i), 1);
+    for (uint16 i; i < count; i++) {
+      commitment.commit(10 + i, uint16(i), 1);
     }
   }
 
