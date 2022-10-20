@@ -17,10 +17,10 @@ contract UNIT_CommitBest is Test {
   }
 
   function testCanCommit() public {
-    commitment.commit(100, 1, commitmentWeight);
-    commitment.commit(100, 2, commitmentWeight);
-    commitment.commit(102, 3, commitmentWeight);
-    commitment.commit(105, 4, commitmentWeight);
+    commitment.commit(1, 100, commitmentWeight);
+    commitment.commit(2, 100, commitmentWeight);
+    commitment.commit(3, 102, commitmentWeight);
+    commitment.commit(4, 105, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
 
@@ -31,9 +31,9 @@ contract UNIT_CommitBest is Test {
   }
 
   function testCanExecuteCommit() public {
-    commitment.commit(100, 1, commitmentWeight); // collecting: 1, pending: 0
-    commitment.commit(104, 2, commitmentWeight); // collecting: 2, pending: 0
-    commitment.commit(102, 3, commitmentWeight); // collecting: 3, pending: 0
+    commitment.commit(1, 100, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(2, 104, commitmentWeight); // collecting: 2, pending: 0
+    commitment.commit(3, 102, commitmentWeight); // collecting: 3, pending: 0
     assertEq(commitment.collectingLength(), 3);
 
     vm.warp(block.timestamp + 10 minutes);
@@ -52,8 +52,8 @@ contract UNIT_CommitBest is Test {
   }
 
   function testShouldRolloverBlankIfPendingIsEmpty() public {
-    commitment.commit(100, 1, commitmentWeight); // collecting: 1, pending: 0
-    commitment.commit(104, 2, commitmentWeight); // collecting: 2, pending: 0
+    commitment.commit(1, 100, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(2, 104, commitmentWeight); // collecting: 2, pending: 0
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover(); // collecting: 0, pending: 2
@@ -63,7 +63,7 @@ contract UNIT_CommitBest is Test {
     commitment.executeCommit(0, commitmentWeight);
     commitment.executeCommit(1, commitmentWeight);
 
-    commitment.commit(100, 1, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(1, 100, commitmentWeight); // collecting: 1, pending: 0
 
     vm.warp(block.timestamp + 10 minutes);
 

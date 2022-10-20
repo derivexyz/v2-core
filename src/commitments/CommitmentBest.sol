@@ -52,7 +52,7 @@ contract CommitmentBest {
   }
 
   /// @dev commit to the 'collecting' block
-  function commit(uint16 vol, uint16 node, uint16 weight) external {
+  function commit(uint16 node, uint16 vol, uint16 weight) external {
     // todo: cannot double commit;
     // todo: check sender node id
     _checkRollover();
