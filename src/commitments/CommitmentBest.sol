@@ -88,9 +88,10 @@ contract CommitmentBest {
   function _checkRollover() internal returns (uint8 newPENDING, uint8 newCOLLECTING) {
     // Commitment[256] storage pendingQueue = queue[PENDING];
 
-    // first iteration: pending length is empty
     (uint8 cachePENDING, uint8 cacheCOLLECTING) = (PENDING, COLLECTING);
 
+    // nothing pending and there are something in the collecting phase: 
+    // make sure oldest one is older than 5 minutes, if so, move collecting => pending
     if (length[cachePENDING] == 0 && length[cacheCOLLECTING] != 0) {
       Commitment memory oldest = queue[cacheCOLLECTING][0];
       if (block.timestamp - oldest.timestamp > 5 minutes) {
@@ -99,6 +100,8 @@ contract CommitmentBest {
       return (cachePENDING, cacheCOLLECTING);
     }
 
+    // nothing pending and there are something in the collecting phase: 
+    // make sure oldest one is older than 5 minutes, if so, move collecting => pending
     if (length[cachePENDING] > 0) {
       if (block.timestamp - pendingStartTimestamp < 5 minutes) return (cachePENDING, cacheCOLLECTING);
 
@@ -135,13 +138,11 @@ contract CommitmentBest {
     view
     returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk)
   {
-    // get all commits more than 5 minutes
     Commitment[256] memory pendingQueue = queue[_indexPENDING];
 
     (uint16 cacheBestBid, uint16 cacheBestAsk, uint8 bestBidId, uint8 bestAskId) = (0, 0, 0, 0);
 
     unchecked {
-      // let i overflow to 0
       for (uint8 i; i < length[_indexPENDING]; i++) {
         Commitment memory cache = pendingQueue[i];
 
