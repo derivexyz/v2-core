@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "src/interfaces/AccountStructs.sol";
+
 interface IManager {
   /**
    * @notice triggered at the end of a tx when any balance of the account is updated
    * @dev a manager should properly check the final stateo of an account
    */
-  function handleAdjustment(uint accountId, address caller, bytes memory data) external;
+  function handleAdjustment(
+    uint accountId,
+    address caller,
+    AccountStructs.AssetDelta[] memory deltas,
+    bytes memory data
+  ) external;
 
   /**
    * @notice triggered when a user want to change to a new manager

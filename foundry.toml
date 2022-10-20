@@ -2,8 +2,8 @@
 src = 'src'
 out = 'out'
 
-optimizer=true
-optimizer_runs=1000
+optimizer = true
+optimizer_runs = 10_000
 
 [fmt]
 line_length = 120

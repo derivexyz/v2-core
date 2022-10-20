@@ -70,9 +70,7 @@ contract POC_Allowances is Test, AccountPOCHelper {
 
     vm.startPrank(bob);
     vm.expectRevert(
-      abi.encodeWithSelector(
-        Allowances.NotEnoughSubIdOrAssetAllowances.selector, address(account), bob, aliceAcc, -1e18, 0, 0
-      )
+      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, bob, aliceAcc, -1e18, 0, 0)
     );
     tradeOptionWithUSDC(aliceAcc, bobAcc, 1e18, 100e18, subId);
     vm.stopPrank();

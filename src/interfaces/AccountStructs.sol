@@ -21,6 +21,18 @@ interface AccountStructs {
     uint96 subId;
   }
 
+  struct AssetDelta {
+    IAsset asset;
+    uint96 subId;
+    int delta;
+  }
+
+  // the struct is used to easily manage 2 dimensional array
+  struct AssetDeltaArrayCache {
+    uint used;
+    AssetDelta[100] deltas;
+  }
+
   /////////////////////////
   // Memory-only Structs //
   /////////////////////////

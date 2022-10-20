@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import "../../../src/Account.sol";
+import "../../../src/libraries/AssetDeltaLib.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";
@@ -17,14 +18,11 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
   }
 
   function testCannotTransferToSelf() public {
-    vm.expectRevert(
-      abi.encodeWithSelector(Account.CannotTransferAssetToOneself.selector, address(account), alice, aliceAcc)
-    );
+    vm.expectRevert(abi.encodeWithSelector(Account.AC_CannotTransferAssetToOneself.selector, alice, aliceAcc));
     vm.prank(alice);
     transferToken(aliceAcc, aliceAcc, usdcAsset, 0, 1e18);
   }
 
-  // @note: do we want to allow this
   function testCanTransferToAnyoneWith0Amount() public {
     vm.prank(alice);
     transferToken(aliceAcc, bobAcc, usdcAsset, 0, 0);
@@ -79,6 +77,130 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(address(bobBalances[1].asset), address(usdcAsset));
     assertEq(bobBalances[1].subId, 0);
     assertEq(bobBalances[1].balance, usdcAmount);
+  }
+
+  function testCannotSubmitTradesWithMoreThan100Deltas() public {
+    vm.prank(alice);
+    account.approve(address(this), aliceAcc);
+
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](101);
+    int amount = 1e18;
+    for (uint i; i < 101; i++) {
+      mintAndDeposit(alice, aliceAcc, usdc, usdcAsset, i, uint(amount));
+
+      transferBatch[i] = AccountStructs.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: IAsset(usdcAsset),
+        subId: i, // make 101 unique deltas
+        amount: amount,
+        assetData: bytes32(0)
+      });
+    }
+
+    vm.expectRevert(AssetDeltaLib.DL_DeltasTooLong.selector);
+    account.submitTransfers(transferBatch, "");
+  }
+
+  /**
+   * =================================================
+   * test  hook data pass to Manager.handleAdjustment |
+   * =================================================
+   */
+
+  function testAdjustmentHookTriggeredCorrectly() public {
+    uint thisAcc = account.createAccount(address(this), dumbManager);
+    mintAndDeposit(address(this), thisAcc, usdc, usdcAsset, 0, 10000000e18);
+    mintAndDeposit(address(this), thisAcc, coolToken, coolAsset, tokenSubId, 10000000e18);
+
+    // set allowance from bob and alice to allow trades
+    vm.prank(bob);
+    account.approve(address(this), bobAcc);
+    vm.prank(alice);
+    account.approve(address(this), aliceAcc);
+
+    // start recording triggers
+    dumbManager.setLogAdjustmentTriggers(true);
+
+    int amount = 1e18;
+
+    // trades:
+    // USDC alice => bob
+    // USDC this => bob
+    // COOL bob => this
+    // COOL this => alice
+    // COOL aclie => bob
+
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](5);
+
+    transferBatch[0] = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(usdcAsset),
+      subId: 0,
+      amount: amount,
+      assetData: bytes32(0)
+    });
+
+    transferBatch[1] = AccountStructs.AssetTransfer({
+      fromAcc: thisAcc,
+      toAcc: bobAcc,
+      asset: IAsset(usdcAsset),
+      subId: 0,
+      amount: amount,
+      assetData: bytes32(0)
+    });
+
+    transferBatch[2] = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: thisAcc,
+      asset: IAsset(coolAsset),
+      subId: tokenSubId,
+      amount: amount,
+      assetData: bytes32(0)
+    });
+
+    transferBatch[3] = AccountStructs.AssetTransfer({
+      fromAcc: thisAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(coolAsset),
+      subId: tokenSubId,
+      amount: amount,
+      assetData: bytes32(0)
+    });
+
+    transferBatch[4] = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(coolAsset),
+      subId: tokenSubId,
+      amount: amount,
+      assetData: bytes32(0)
+    });
+
+    account.submitTransfers(transferBatch, "");
+
+    assertEq(dumbManager.accTriggeredDeltaLength(aliceAcc), 2);
+    assertEq(dumbManager.accTriggeredDeltaLength(bobAcc), 2);
+    assertEq(dumbManager.accTriggeredDeltaLength(thisAcc), 2);
+
+    // each account-asset only got triggered once
+    assertEq(dumbManager.accAssetTriggered(aliceAcc, address(usdcAsset), 0), 1);
+    assertEq(dumbManager.accAssetTriggered(aliceAcc, address(coolAsset), uint96(tokenSubId)), 1);
+    assertEq(dumbManager.accAssetTriggered(bobAcc, address(usdcAsset), 0), 1);
+    assertEq(dumbManager.accAssetTriggered(bobAcc, address(coolAsset), uint96(tokenSubId)), 1);
+    assertEq(dumbManager.accAssetTriggered(thisAcc, address(usdcAsset), 0), 1);
+    assertEq(dumbManager.accAssetTriggered(thisAcc, address(coolAsset), uint96(tokenSubId)), 1);
+
+    // USDC delta passed into manager were corret
+    assertEq(dumbManager.accAssetAdjustmentDelta(aliceAcc, address(usdcAsset), 0), -amount);
+    assertEq(dumbManager.accAssetAdjustmentDelta(thisAcc, address(usdcAsset), 0), -amount);
+    assertEq(dumbManager.accAssetAdjustmentDelta(bobAcc, address(usdcAsset), 0), 2 * amount);
+
+    // COOL delta passed into manager were corret
+    assertEq(dumbManager.accAssetAdjustmentDelta(aliceAcc, address(coolAsset), uint96(tokenSubId)), 0);
+    assertEq(dumbManager.accAssetAdjustmentDelta(thisAcc, address(coolAsset), uint96(tokenSubId)), 0);
+    assertEq(dumbManager.accAssetAdjustmentDelta(bobAcc, address(coolAsset), uint96(tokenSubId)), 0);
   }
 
   /**
@@ -159,9 +281,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     // assume calls from coolAsset
     vm.prank(address(coolAsset));
 
-    vm.expectRevert(
-      abi.encodeWithSelector(Account.OnlyAsset.selector, address(account), address(coolAsset), address(usdcAsset))
-    );
+    vm.expectRevert(Account.AC_OnlyAsset.selector);
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: newAccount,

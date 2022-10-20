@@ -34,6 +34,6 @@ interface IAllowances {
   ////////////
 
   error NotEnoughSubIdOrAssetAllowances(
-    address thower, address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
+    address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
   );
 }
