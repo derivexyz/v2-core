@@ -30,10 +30,10 @@ contract CommitmentBestGas is Script {
     _commitMultiple(100);
     vm.warp(block.timestamp + 10 minutes);
 
-    // gasBefore = gasleft();
-    // commitment.proccesQueue();
-    // gasAfter = gasleft();
-    // console.log("gas commit after process 100 in queue", gasBefore - gasAfter);
+    gasBefore = gasleft();
+    commitment.checkRollover();
+    gasAfter = gasleft();
+    console.log("gas rollover 100 in queue", gasBefore - gasAfter);
 
     vm.stopBroadcast();
   }

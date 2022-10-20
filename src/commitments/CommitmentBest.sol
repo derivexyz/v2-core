@@ -71,7 +71,6 @@ contract CommitmentBest {
     uint16 newWeight = queue[PENDING][index].commitments - weight;
 
     if (newWeight == 0) {
-      console2.log("execute");
       queue[PENDING][index].isExecuted = true;
     } else {
       queue[PENDING][index].commitments = newWeight;
