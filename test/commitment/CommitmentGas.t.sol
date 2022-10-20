@@ -30,10 +30,10 @@ contract CommitmentBestGas is Script {
     _commitMultiple(100);
     vm.warp(block.timestamp + 10 minutes);
 
-    gasBefore = gasleft();
-    commitment.proccesQueue();
-    gasAfter = gasleft();
-    console.log("gas commit after process 100 in queue", gasBefore - gasAfter);
+    // gasBefore = gasleft();
+    // commitment.proccesQueue();
+    // gasAfter = gasleft();
+    // console.log("gas commit after process 100 in queue", gasBefore - gasAfter);
 
     vm.stopBroadcast();
   }
@@ -48,7 +48,6 @@ contract CommitmentBestGas is Script {
     commitment = new CommitmentBest();
   }
 }
-
 
 contract CommitmentAvgGas is Script {
   uint ownAcc;
@@ -83,16 +82,16 @@ contract CommitmentAvgGas is Script {
     commitment.executeCommit(1, 1);
     gasAfter = gasleft();
     console.log("execute#1", gasBefore - gasAfter);
-    
+
     gasBefore = gasleft();
     commitment.executeCommit(2, 1);
     gasAfter = gasleft();
     console.log("execute#2", gasBefore - gasAfter);
 
-    // gasBefore = gasleft();
-    // commitment.executeCommit(3, 1);
-    // gasAfter = gasleft();
-    // console.log("execute#3", gasBefore - gasAfter);
+    gasBefore = gasleft();
+    commitment.executeCommit(3, 1);
+    gasAfter = gasleft();
+    console.log("execute#3", gasBefore - gasAfter);
 
     vm.stopBroadcast();
   }

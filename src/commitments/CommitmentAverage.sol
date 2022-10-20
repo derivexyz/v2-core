@@ -64,12 +64,15 @@ contract CommitmentAverage {
     AvgCommitment memory avgCollecting = state[PENDING];
     uint16 newWeight = avgCollecting.weight - weight;
 
-    // update avg
-    state[PENDING].bidVol = ((avgCollecting.bidVol * avgCollecting.weight) - (nodeCommit.bidVol * weight)) / (newWeight);
-
-    state[PENDING].askVol = ((avgCollecting.askVol * avgCollecting.weight) - (nodeCommit.askVol * weight)) / (newWeight);
-
-    state[PENDING].weight = newWeight;
+    if (newWeight == 0) {
+      delete state[PENDING];
+    } else {
+      state[PENDING].bidVol =
+        ((avgCollecting.bidVol * avgCollecting.weight) - (nodeCommit.bidVol * weight)) / (newWeight);
+      state[PENDING].askVol =
+        ((avgCollecting.askVol * avgCollecting.weight) - (nodeCommit.askVol * weight)) / (newWeight);
+      state[PENDING].weight = newWeight;
+    }
 
     if (weight == nodeCommit.weight) {
       delete commitments[PENDING][node];

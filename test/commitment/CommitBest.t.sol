@@ -18,37 +18,36 @@ contract UNIT_CommitBest is Test {
 
   function testCanCommit() public {
     commitment.commit(100, 1, commitmentWeight);
-
     commitment.commit(100, 2, commitmentWeight);
-
     commitment.commit(102, 3, commitmentWeight);
-
     commitment.commit(105, 4, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
 
-    commitment.proccesQueue();
+    commitment.checkRollover();
 
-    assertEq(commitment.currentBestBid(), 100);
-    assertEq(commitment.currentBestAsk(), 105);
+    assertEq(commitment.pendingLength(), 4);
+    assertEq(commitment.collectingLength(), 0);
   }
 
   function testCanExecuteCommit() public {
-    commitment.commit(100, 1, commitmentWeight);
-    commitment.commit(104, 2, commitmentWeight);
-    commitment.commit(102, 3, commitmentWeight);
-    commitment.commit(105, 4, commitmentWeight);
-
-    // execute first
-    commitment.executeCommit(1, commitmentWeight);
-    // execute second
-    commitment.executeCommit(2, commitmentWeight);
+    commitment.commit(100, 1, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(104, 2, commitmentWeight); // collecting: 2, pending: 0
+    commitment.commit(102, 3, commitmentWeight); // collecting: 3, pending: 0
+    assertEq(commitment.collectingLength(), 3);
 
     vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
 
-    commitment.proccesQueue();
+    assertEq(commitment.pendingLength(), 3);
 
-    assertEq(commitment.currentBestBid(), 100);
-    assertEq(commitment.currentBestAsk(), 107);
+    commitment.executeCommit(0, commitmentWeight);
+    commitment.executeCommit(1, commitmentWeight);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    (uint16 bestVol, uint16 nodeId, uint16 commitments, uint64 bidTimestamp) = commitment.bestFinalizedBid();
+    assertEq(bestVol, 97);
   }
 }

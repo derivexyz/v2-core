@@ -19,104 +19,147 @@ contract CommitmentBest {
     bool isExecuted;
   }
 
-  Commitment[256] public queue;
+  struct FinalizedQuote {
+    uint16 bestVol;
+    uint16 nodeId;
+    uint16 commitments;
+    uint64 bidTimestamp;
+  }
 
-  uint8 lastUnprocessedIndex;
-  uint8 lastIndex;
+  // only 0 ~ 1 is used
+  Commitment[256][2] public queue;
 
-  uint16 public currentBestBid;
-  uint16 public currentBestAsk;
-  uint64 public currentBestBidTimestamp;
-  uint64 public currentBestAskTimestamp;
+  FinalizedQuote public bestFinalizedBid;
+  FinalizedQuote public bestFinalizedAsk;
 
-  // mapping(uint8 => mapping(uint16 => Commitment)) commitments;
+  uint8 public COLLECTING = 0;
+  uint8 public PENDING = 1;
+
+  uint8[3] public length;
+
+  uint64 pendingStartTimestamp;
 
   uint16 constant RANGE = 5;
 
   constructor() {}
 
+  function pendingLength() external view returns (uint) {
+    return length[PENDING];
+  }
+
+  function collectingLength() external view returns (uint) {
+    return length[COLLECTING];
+  }
+
   /// @dev commit to the 'collecting' block
   function commit(uint16 vol, uint16 node, uint16 weight) external {
     // todo: cannot double commit;
     // todo: check sender node id
+    _checkRollover();
 
-    (, uint8 newIndex) = _processQueue();
+    uint8 newIndex = length[COLLECTING];
 
-    queue[newIndex] = Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp), false);
+    queue[COLLECTING][newIndex] = Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp), false);
 
-    lastIndex = newIndex;
+    length[COLLECTING] = newIndex + 1;
   }
 
   /// @dev commit to the 'collecting' block
   function executeCommit(uint16 index, uint16 weight) external {
-    _processQueue();
+    _checkRollover();
 
-    // can only execute pending commitment.
-    Commitment memory commitment = queue[index];
-    if (block.timestamp - commitment.timestamp > 5 minutes) revert NotExecutable();
+    uint16 newWeight = queue[PENDING][index].commitments - weight;
 
-    if (weight == commitment.commitments) {
-      queue[index].isExecuted = true;
+    if (newWeight == 0) {
+      console2.log("execute");
+      queue[PENDING][index].isExecuted = true;
     } else {
-      queue[index].commitments = commitment.commitments - weight;
+      queue[PENDING][index].commitments = newWeight;
     }
 
     // trade;
   }
 
-  function proccesQueue() external {
-    _processQueue();
+  function checkRollover() external {
+    _checkRollover();
   }
 
-  function _processQueue() internal returns (uint8 lastProcessed, uint8 newIndex) {
-    // get all commits more than 5 minutes
-    (uint8 cachedLastUnproccessed, uint8 cacheCurrentIndex) = (lastUnprocessedIndex, lastIndex);
-    newIndex = cacheCurrentIndex + 1;
-    if (newIndex == type(uint8).max) newIndex = 0;
+  function _checkRollover() internal {
+    // Commitment[256] storage pendingQueue = queue[PENDING];
 
-    if (cachedLastUnproccessed == cacheCurrentIndex) {
-      return (cachedLastUnproccessed, newIndex);
+    // first iteration: pending length is empty
+    if (length[PENDING] == 0 && length[COLLECTING] != 0) {
+      Commitment memory oldest = queue[COLLECTING][0];
+      if (block.timestamp - oldest.timestamp > 5 minutes) {
+        _rollOverCollecting();
+      }
+      return;
     }
 
-    (uint16 cacheBestBid, uint16 cacheBestAsk, uint64 cacheBestBidTime, uint64 cacheBestAskTime) =
-      (currentBestBid, currentBestAsk, currentBestBidTimestamp, currentBestAskTimestamp);
+    if (length[PENDING] > 0) {
+      if (block.timestamp - pendingStartTimestamp < 5 minutes) return;
 
-    (bool updateBid, bool updateAsk) = (false, false);
+      (FinalizedQuote memory bestBid, FinalizedQuote memory bestAsk) = _getBestFromPending();
+
+      if (bestBid.commitments != 0) {
+        bestFinalizedBid = bestBid;
+      }
+      if (bestAsk.commitments != 0) {
+        bestFinalizedAsk = bestAsk;
+      }
+      _rollOverCollecting();
+    }
+  }
+
+  function _rollOverCollecting() internal {
+    console2.log("rollover!");
+    (COLLECTING, PENDING) = (PENDING, COLLECTING);
+
+    pendingStartTimestamp = uint64(block.timestamp);
+
+    delete length[COLLECTING];
+    delete queue[COLLECTING];
+  }
+
+  function _getBestFromPending() internal view returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk) {
+    // get all commits more than 5 minutes
+
+    Commitment[256] memory pendingQueue = queue[PENDING];
+
+    (uint16 cacheBestBid, uint16 cacheBestAsk, uint8 bestBidId, uint8 bestAskId) = (0, 0, 0, 0);
+
     unchecked {
       // let i overflow to 0
-      for (; cachedLastUnproccessed <= cacheCurrentIndex; cachedLastUnproccessed++) {
-        Commitment memory cache = queue[cachedLastUnproccessed];
-
-        if (block.timestamp - cache.timestamp < 5 minutes) break;
+      for (uint8 i; i < length[PENDING]; i++) {
+        Commitment memory cache = pendingQueue[i];
 
         if (cache.isExecuted) continue;
 
         if (cache.bidVol > cacheBestBid) {
-          updateBid = true;
           cacheBestBid = cache.bidVol;
-          cacheBestBidTime = cache.timestamp;
+          bestBidId = i;
         }
 
         if (cacheBestAsk == 0 || cache.askVol < cacheBestAsk) {
-          updateAsk = true;
           cacheBestAsk = cache.askVol;
-          cacheBestAskTime = cache.timestamp;
+          bestAskId = i;
         }
       }
     }
 
-    if (updateBid) {
-      currentBestBid = cacheBestBid;
-      currentBestBidTimestamp = cacheBestBidTime;
-    }
-
-    if (updateAsk) {
-      currentBestAsk = cacheBestAsk;
-      currentBestAskTimestamp = cacheBestAskTime;
-    }
-
-    lastUnprocessedIndex = cachedLastUnproccessed;
-
-    return (cachedLastUnproccessed, newIndex);
+    return (
+      FinalizedQuote(
+        pendingQueue[bestBidId].bidVol,
+        pendingQueue[bestBidId].nodeId,
+        pendingQueue[bestBidId].commitments,
+        pendingQueue[bestBidId].timestamp
+        ),
+      FinalizedQuote(
+        pendingQueue[bestAskId].askVol,
+        pendingQueue[bestAskId].nodeId,
+        pendingQueue[bestAskId].commitments,
+        pendingQueue[bestAskId].timestamp
+        )
+    );
   }
 }
