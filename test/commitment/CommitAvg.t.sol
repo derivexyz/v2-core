@@ -42,9 +42,7 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     // setupMaxAssetAllowancesForAll(alice, aliceAcc, orderbook);
 
     // stimulate trade
-    expiry = block.timestamp + 604800;
-    strike = 1500e18;
-    subId = optionAdapter.addListing(strike, expiry, true);
+    addListings();
     // vm.startPrank(orderbook);
 
     // // alice short call, bob long call
@@ -74,6 +72,52 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     assertEq(totalWeight, 0);
     assertEq(nodeId, 1);
     vm.stopPrank();
+  }
+
+  function testCanBeFirstCommit() public {
+    vm.startPrank(alice);
+    commitment.deposit(10_000e18); // deposit $10k DAI
+
+    // commit to 10 listings
+    uint16[] memory vols = new uint16[](10);
+    vols[0] = 125;
+    vols[1] = 120;
+    vols[2] = 115;
+    vols[3] = 110;
+    vols[4] = 105;
+    vols[5] = 110;
+    vols[6] = 115;
+    vols[7] = 120;
+    vols[8] = 125;
+    vols[9] = 130;
+    uint8[] memory subIds = new uint8[](10);
+    for (uint8 i = 0; i < 10; i++) {
+      subIds[i] = i;
+    }
+    uint128[] memory weights = new uint128[](10);
+    for (uint i = 0; i < 10; i++) {
+      weights[i] = 1;
+    }
+    commitment.commit(vols, subIds, weights);
+    vm.stopPrank();
+
+    
+    for (uint i = 0; i < 10; i++) {
+      // validate new commitment
+      (uint16 bidVol, uint16 askVol, uint128 weight, uint64 timestamp) = commitment.commitments(commitment.COLLECTING(), 1, 0);
+      assertEq(bidVol, vols[i] + commitment.RANGE());
+      assertEq(askVol, vols[i] - commitment.RANGE());
+      assertEq(weight, weights[i]);
+      assertEq(timestamp, block.timestamp);
+
+      // validate new state
+      (uint16 avgBid, uint16 avgAsk, uint128 totWeight) = commitment.state(commitment.COLLECTING(), i);
+      uint128 epochTimestamp = commitment.timestamps(commitment.COLLECTING());
+      assertEq(avgBid, vols[i] + commitment.RANGE());
+      assertEq(avgAsk, vols[i] - commitment.RANGE());
+      assertEq(totWeight, weights[i]);
+      assertEq(epochTimestamp, block.timestamp);
+    }
   }
 
 
@@ -124,4 +168,20 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
   //   assertEq(askVolFinal, 115);
   //   //
   // }
+
+  function addListings() public {
+    uint72[11] memory strikes = [
+      500e18, 1000e18, 1300e18, 1400e18, 1450e18, 1500e18, 1550e18, 1600e18, 1700e18, 2000e18, 2500e18
+    ];
+
+    uint32[7] memory expiries = [
+      1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks
+    ];
+    for (uint s = 0; s < strikes.length; s++) {
+      for (uint e = 0; e < expiries.length; e++) {
+        optionAdapter.addListing(strikes[s], expiries[e], true);
+      }
+    }
+  }
+
 }

@@ -51,8 +51,8 @@ contract CommitmentAverage {
   uint256 nextNodeId = 1;
 
   // todo: need to make dynamic range
-  uint16 constant RANGE = 5;
-  uint16 constant DEPOSIT_PER_SUBID = 500;
+  uint16 constant public RANGE = 5;
+  uint16 constant public DEPOSIT_PER_SUBID = 500;
 
 
   // account variables
