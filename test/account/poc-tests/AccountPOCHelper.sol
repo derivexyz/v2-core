@@ -153,6 +153,12 @@ abstract contract AccountPOCHelper is Test {
     return accountId;
   }
 
+  function mintDai(address user, uint amount) public {
+    vm.startPrank(owner);
+    dai.mint(user, amount);
+    vm.stopPrank();
+  }
+
   function createAccountAndDepositDaiLending(address user, uint balance) public returns (uint accountId) {
     vm.startPrank(user);
     accountId = account.createAccount(user, IManager(rm));
