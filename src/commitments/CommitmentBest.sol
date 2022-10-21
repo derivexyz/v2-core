@@ -27,7 +27,7 @@ contract CommitmentBest {
   }
 
   // only 0 ~ 1 is used
-  Commitment[256][2] public queue;
+  mapping(uint96 => Commitment[256][2]) public queue;
 
   FinalizedQuote public bestFinalizedBid;
   FinalizedQuote public bestFinalizedAsk;
@@ -59,7 +59,7 @@ contract CommitmentBest {
 
     uint8 newIndex = length[cacheCOLLECTING];
 
-    queue[cacheCOLLECTING][newIndex] =
+    queue[0][cacheCOLLECTING][newIndex] =
       Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp), false);
 
     length[cacheCOLLECTING] = newIndex + 1;
@@ -69,13 +69,13 @@ contract CommitmentBest {
   function executeCommit(uint16 index, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    uint16 newWeight = queue[cachePENDING][index].commitments - weight;
+    uint16 newWeight = queue[0][cachePENDING][index].commitments - weight;
 
     if (newWeight == 0) {
-      queue[cachePENDING][index].isExecuted = true;
-      queue[cachePENDING][index].commitments = 0;
+      queue[0][cachePENDING][index].isExecuted = true;
+      queue[0][cachePENDING][index].commitments = 0;
     } else {
-      queue[cachePENDING][index].commitments = newWeight;
+      queue[0][cachePENDING][index].commitments = newWeight;
     }
 
     // trade;
@@ -90,17 +90,17 @@ contract CommitmentBest {
 
     (uint8 cachePENDING, uint8 cacheCOLLECTING) = (PENDING, COLLECTING);
 
-    // nothing pending and there are something in the collecting phase: 
+    // nothing pending and there are something in the collecting phase:
     // make sure oldest one is older than 5 minutes, if so, move collecting => pending
     if (length[cachePENDING] == 0 && length[cacheCOLLECTING] != 0) {
-      Commitment memory oldest = queue[cacheCOLLECTING][0];
+      Commitment memory oldest = queue[0][cacheCOLLECTING][0];
       if (block.timestamp - oldest.timestamp > 5 minutes) {
         (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
       }
       return (cachePENDING, cacheCOLLECTING);
     }
 
-    // nothing pending and there are something in the collecting phase: 
+    // nothing pending and there are something in the collecting phase:
     // make sure oldest one is older than 5 minutes, if so, move collecting => pending
     if (length[cachePENDING] > 0) {
       if (block.timestamp - pendingStartTimestamp < 5 minutes) return (cachePENDING, cacheCOLLECTING);
@@ -138,7 +138,7 @@ contract CommitmentBest {
     view
     returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk)
   {
-    Commitment[256] memory pendingQueue = queue[_indexPENDING];
+    Commitment[256] memory pendingQueue = queue[0][_indexPENDING];
 
     (uint16 cacheBestBid, uint16 cacheBestAsk, uint8 bestBidId, uint8 bestAskId) = (0, 0, 0, 0);
 

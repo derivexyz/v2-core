@@ -17,7 +17,7 @@ contract UNIT_CommitAvg is Test {
   }
 
   function testCanCommit() public {
-    commitment.commit(1, 100, commitmentWeight);
+    commitment.commit(100, 1, commitmentWeight);
 
     (uint16 bidVol, uint16 askVol, uint16 totalCommitment,) = commitment.state(commitment.COLLECTING());
     assertEq(bidVol, 95);
@@ -27,9 +27,9 @@ contract UNIT_CommitAvg is Test {
     // this will rotate again -> become only one in COLLECTING
 
     // firt one committing to pending
-    commitment.commit(1, 110, commitmentWeight);
+    commitment.commit(110, 1, commitmentWeight);
     // commit another
-    commitment.commit(2, 116, commitmentWeight);
+    commitment.commit(116, 2, commitmentWeight);
     (uint16 bidVol2, uint16 askVol2,,) = commitment.state(commitment.COLLECTING());
 
     assertEq(bidVol2, 113 - 5);
@@ -37,13 +37,13 @@ contract UNIT_CommitAvg is Test {
   }
 
   function testCanExecuteCommit() public {
-    commitment.commit(1, 100, commitmentWeight);
+    commitment.commit(100, 1, commitmentWeight);
     // this will rotate again -> become only one in COLLECTING
 
     // firt one committing to pending
-    commitment.commit(1, 110, commitmentWeight);
-    commitment.commit(2, 110, commitmentWeight);
-    commitment.commit(3, 116, commitmentWeight);
+    commitment.commit(110, 1, commitmentWeight);
+    commitment.commit(110, 2, commitmentWeight);
+    commitment.commit(116, 3, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.executeCommit(3, commitmentWeight);
@@ -56,7 +56,7 @@ contract UNIT_CommitAvg is Test {
 
     // trigger another round
     vm.warp(block.timestamp + 10 minutes);
-    commitment.commit(1, 110, commitmentWeight);
+    commitment.commit(110, 1, commitmentWeight);
 
     (uint16 bidVolFinal, uint16 askVolFinal,,) = commitment.state(commitment.FINALIZED());
     assertEq(bidVolFinal, 105);

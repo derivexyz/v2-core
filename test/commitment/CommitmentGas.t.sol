@@ -66,17 +66,17 @@ contract CommitmentAvgGas is Script {
 
     // gas tests
     uint gasBefore = gasleft();
-    commitment.commit(1, 100, 1);
+    commitment.commit(100, 1, 1);
     uint gasAfter = gasleft();
     console.log("gas commit#1", gasBefore - gasAfter);
 
     gasBefore = gasleft();
-    commitment.commit(2, 102, 1);
+    commitment.commit(102, 2, 1);
     gasAfter = gasleft();
     console.log("gas commit#2", gasBefore - gasAfter);
 
     gasBefore = gasleft();
-    commitment.commit(3, 104, 1);
+    commitment.commit(104, 3, 1);
     gasAfter = gasleft();
     console.log("gas commit#3", gasBefore - gasAfter);
 
