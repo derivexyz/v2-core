@@ -166,15 +166,19 @@ contract CommitmentAverage {
   }
 
   function _checkRotateBlocks() internal {
-    uint64 epochTimestamp = timestamps[PENDING];
+    uint64 pendingTimestamp = timestamps[PENDING];
     // has been exeucting for 5 mins, push to finalized
-    if (epochTimestamp + 5 minutes < block.timestamp && epochTimestamp != 0) {
+    if (pendingTimestamp + 5 minutes < block.timestamp && pendingTimestamp != 0) {
       // set finalized epoch timestamp back to 0
       timestamps[PENDING] = 0;
 
       (FINALIZED, PENDING, COLLECTING) = (PENDING, COLLECTING, FINALIZED);
-    } else if (epochTimestamp == 0) { // if first value
-      timestamps[PENDING] = SafeCast.toUint64(block.timestamp);
+    } 
+
+    uint64 collectingTimestamp = timestamps[COLLECTING];
+    // if first value, record first timestamp
+    if (collectingTimestamp + 5 minutes < block.timestamp || collectingTimestamp == 0) {
+      timestamps[COLLECTING] = SafeCast.toUint64(block.timestamp);
     }
   }
 }

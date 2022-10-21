@@ -12,14 +12,16 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
   uint bobAcc;
   uint charlieAcc;
 
-  // fake option property
-  uint strike;
-  uint expiry;
-  uint subId;
-
-// commitment 
+  // commitment 
   CommitmentAverage commitment;
   uint16 constant commitmentWeight = 1;
+
+  uint16[] aliceVols;
+  uint8[] aliceSubIds;
+  uint128[] aliceWeights;
+  uint16[] bobVols;
+  uint8[] bobSubIds;
+  uint128[] bobWeights;
 
   function setUp() public {
     vm.label(alice, "alice");
@@ -74,49 +76,118 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     vm.stopPrank();
   }
 
-  function testCanBeFirstCommit() public {
+  function testCanCommit() public {
     vm.startPrank(alice);
+    dai.approve(address(commitment), type(uint).max);
+    commitment.deposit(10_000e18); // deposit $10k DAI
+
+    // Alice commits 10 listings
+    setAliceComittments();
+    commitment.commit(aliceVols, aliceSubIds, aliceWeights);
+    uint64 aliceTime = uint64(block.timestamp);
+    vm.stopPrank();
+    vm.warp(block.timestamp + 2 minutes);
+    
+    // Bob commits 5 listings
+    vm.startPrank(bob);
+    dai.approve(address(commitment), type(uint).max);
     commitment.deposit(10_000e18); // deposit $10k DAI
 
     // commit to 10 listings
-    uint16[] memory vols = new uint16[](10);
-    vols[0] = 125;
-    vols[1] = 120;
-    vols[2] = 115;
-    vols[3] = 110;
-    vols[4] = 105;
-    vols[5] = 110;
-    vols[6] = 115;
-    vols[7] = 120;
-    vols[8] = 125;
-    vols[9] = 130;
-    uint8[] memory subIds = new uint8[](10);
-    for (uint8 i = 0; i < 10; i++) {
-      subIds[i] = i;
-    }
-    uint128[] memory weights = new uint128[](10);
-    for (uint i = 0; i < 10; i++) {
-      weights[i] = 1;
-    }
-    commitment.commit(vols, subIds, weights);
+    setBobComittments();
+    commitment.commit(bobVols, bobSubIds, bobWeights);
+    uint64 bobTime = uint64(block.timestamp);
     vm.stopPrank();
 
-    
-    for (uint i = 0; i < 10; i++) {
-      // validate new commitment
-      (uint16 bidVol, uint16 askVol, uint128 weight, uint64 timestamp) = commitment.commitments(commitment.COLLECTING(), 1, 0);
-      assertEq(bidVol, vols[i] + commitment.RANGE());
-      assertEq(askVol, vols[i] - commitment.RANGE());
-      assertEq(weight, weights[i]);
-      assertEq(timestamp, block.timestamp);
+    // verify commitments
+    for (uint subId = 0; subId < 10; subId++) {
+      for (uint nodeId = 1; nodeId <= 2; nodeId++) {
+        if (subId > 4 && nodeId == 2) {
+          break; // skip bob since he didn't have commitments here
+        } 
+        verifyNodeCommitment(subId, nodeId, aliceTime, bobTime);
+      }
+    }
 
-      // validate new state
-      (uint16 avgBid, uint16 avgAsk, uint128 totWeight) = commitment.state(commitment.COLLECTING(), i);
+    // validate state
+    uint16 bidVol;
+    uint16 askVol;
+    uint128 commitWeight;
+    uint16 avgVol;
+    for (uint i = 0; i < 10; i++) {
+      (bidVol, askVol, commitWeight) = commitment.state(commitment.COLLECTING(), i);
       uint128 epochTimestamp = commitment.timestamps(commitment.COLLECTING());
-      assertEq(avgBid, vols[i] + commitment.RANGE());
-      assertEq(avgAsk, vols[i] - commitment.RANGE());
-      assertEq(totWeight, weights[i]);
-      assertEq(epochTimestamp, block.timestamp);
+      if (i < 5) {
+        avgVol = (aliceVols[i] + bobVols[i] * 2) / 3;
+        assertEq(bidVol, avgVol - commitment.RANGE());
+        assertEq(askVol, avgVol + commitment.RANGE());
+        assertEq(commitWeight, 3);
+      } else {
+        avgVol = aliceVols[i];
+        assertEq(bidVol, avgVol - commitment.RANGE());
+        assertEq(askVol, avgVol + commitment.RANGE());
+        assertEq(commitWeight, 1);
+      }
+      assertEq(epochTimestamp, aliceTime);
+    }
+  }
+
+  function verifyNodeCommitment(uint subId, uint nodeId, uint64 aliceTime, uint64 bobTime) public {
+    // verify commitments
+    uint16 bidVol;
+    uint16 askVol;
+    uint128 commitWeight;
+    uint64 commitTimestamp;
+    (bidVol, askVol, commitWeight, commitTimestamp) = commitment.commitments(commitment.COLLECTING(), nodeId, subId);
+    if (nodeId == 1) {
+      assertEq(bidVol, aliceVols[subId] - commitment.RANGE());
+      assertEq(askVol, aliceVols[subId] + commitment.RANGE());
+      assertEq(commitWeight, aliceWeights[subId]);
+      assertEq(commitTimestamp, aliceTime);
+    } else {
+      assertEq(bidVol, bobVols[subId] - commitment.RANGE());
+      assertEq(askVol, bobVols[subId] + commitment.RANGE());
+      assertEq(commitWeight, bobWeights[subId]);
+      assertEq(commitTimestamp, bobTime);
+    }
+  }
+
+  function setAliceComittments() public {
+    aliceVols = new uint16[](10);
+    aliceVols[0] = 125;
+    aliceVols[1] = 120;
+    aliceVols[2] = 115;
+    aliceVols[3] = 110;
+    aliceVols[4] = 105;
+    aliceVols[5] = 110;
+    aliceVols[6] = 115;
+    aliceVols[7] = 120;
+    aliceVols[8] = 125;
+    aliceVols[9] = 130;
+    aliceSubIds = new uint8[](10);
+    for (uint8 i = 0; i < 10; i++) {
+      aliceSubIds[i] = i;
+    }
+    aliceWeights = new uint128[](10);
+    for (uint i = 0; i < 10; i++) {
+      aliceWeights[i] = 1;
+    }
+  }
+
+  function setBobComittments() public {
+    bobVols = new uint16[](5);
+    bobVols[0] = 50;
+    bobVols[1] = 50;
+    bobVols[2] = 50;
+    bobVols[3] = 50;
+    bobVols[4] = 50;
+    bobSubIds = new uint8[](5);
+    for (uint8 i = 0; i < 5; i++) {
+      bobSubIds[i] = i;
+    }
+    bobWeights = new uint128[](5);
+    for (uint i = 0; i < 5; i++) {
+      bobWeights[i] = 2;
     }
   }
 
