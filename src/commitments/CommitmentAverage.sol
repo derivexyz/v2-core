@@ -46,8 +46,8 @@ contract CommitmentAverage {
   uint64[3] public timestamps; // EPOCH TYPE -> timestamp
 
   // nodeData
-  mapping(uint8 => mapping(uint256 => NodeCommitment[256])) commitments; // epoch -> node -> commitments[], how do these work with rotating epochs
-  mapping(address => Node) nodes;
+  mapping(uint8 => mapping(uint256 => NodeCommitment[256])) public commitments; // epoch -> node -> commitments[], how do these work with rotating epochs
+  mapping(address => Node) public nodes;
   uint256 nextNodeId = 1;
 
   // todo: need to make dynamic range
@@ -74,7 +74,7 @@ contract CommitmentAverage {
     lendingAsset.deposit(accountId, amount);
     Node memory depositNode = nodes[msg.sender];
     if (depositNode.nodeId == 0) {
-      depositNode.nodeId = ++nextNodeId;
+      nodes[msg.sender].nodeId = nextNodeId++;
     }
 
     nodes[msg.sender].deposits += amount;

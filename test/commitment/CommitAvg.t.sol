@@ -60,6 +60,19 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     vm.startPrank(alice);
     dai.approve(address(commitment), type(uint).max);
     commitment.deposit(50_000e18); // deposit $50k DAI
+
+    // first deposit
+    (uint256 deposits, uint256 totalWeight, uint256 nodeId) = commitment.nodes(alice);
+    assertEq(deposits, 50_000e18);
+    assertEq(totalWeight, 0);
+    assertEq(nodeId, 1);
+
+    // second deposit
+    commitment.deposit(10_000e18); // deposit $10k DAI
+    (deposits, totalWeight, nodeId) = commitment.nodes(alice);
+    assertEq(deposits, 60_000e18);
+    assertEq(totalWeight, 0);
+    assertEq(nodeId, 1);
     vm.stopPrank();
   }
 
