@@ -87,21 +87,31 @@ contract CommitmentBest {
 
   /// @dev commit to the 'collecting' block
   function commit(uint96 subId, uint16 vol, uint16 weight) external {
-    // todo: cannot double commit;
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
     uint64 node = nodes[msg.sender].nodeId;
 
-    uint8 newIndex = length[cacheCOLLECTING];
+    _addCommitToQueue(cacheCOLLECTING, node, subId, vol, weight);
 
-    subIds[cacheCOLLECTING].addUniqueToArray(subId);
-    weights[cacheCOLLECTING][subId] += weight;
+    length[cacheCOLLECTING] += 1;
 
-    queues[cacheCOLLECTING][subId].push(
-      Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false, subId)
-    );
+    // todo: update collectingStartTimestamp in check rollover if it comes with commits
+    if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
+  }
 
-    length[cacheCOLLECTING] = newIndex + 1;
+  function commitMultiple(uint96[] calldata _subIds, uint16[] calldata _vols, uint16[] calldata _weights) external {
+    (, uint8 cacheCOLLECTING) = _checkRollover();
+
+    uint valueLength = _subIds.length;
+    if (_vols.length != valueLength || _weights.length != valueLength) revert("bad inputs");
+
+    uint64 node = nodes[msg.sender].nodeId;
+
+    for (uint i = 0; i < valueLength; i++) {
+      _addCommitToQueue(cacheCOLLECTING, node, _subIds[i], _vols[i], _weights[i]);
+    }
+
+    length[cacheCOLLECTING] += uint8(valueLength);
 
     // todo: update collectingStartTimestamp in check rollover if it comes with commits
     if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
@@ -132,6 +142,16 @@ contract CommitmentBest {
     }
 
     // trade;
+  }
+
+  function _addCommitToQueue(uint8 cacheCOLLECTING, uint64 node, uint96 subId, uint16 vol, uint16 weight) internal {
+    subIds[cacheCOLLECTING].addUniqueToArray(subId);
+    weights[cacheCOLLECTING][subId] += weight;
+
+    // todo: cannot double commit?
+    queues[cacheCOLLECTING][subId].push(
+      Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false, subId)
+    );
   }
 
   function checkRollover() external {
