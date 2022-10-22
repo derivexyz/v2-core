@@ -77,23 +77,22 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
   }
 
   function testCanCommit() public {
+    // Alice deposit and commit 10 listings
     vm.startPrank(alice);
     dai.approve(address(commitment), type(uint).max);
     commitment.deposit(10_000e18); // deposit $10k DAI
 
-    // Alice commits 10 listings
     setAliceComittments();
     commitment.commit(aliceVols, aliceSubIds, aliceWeights);
     uint64 aliceTime = uint64(block.timestamp);
     vm.stopPrank();
     vm.warp(block.timestamp + 2 minutes);
     
-    // Bob commits 5 listings
+    // Bob deposit and commit 10 listings
     vm.startPrank(bob);
     dai.approve(address(commitment), type(uint).max);
     commitment.deposit(10_000e18); // deposit $10k DAI
 
-    // commit to 10 listings
     setBobComittments();
     commitment.commit(bobVols, bobSubIds, bobWeights);
     uint64 bobTime = uint64(block.timestamp);
@@ -131,6 +130,84 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
       assertEq(epochTimestamp, aliceTime);
     }
   }
+
+  function testCanStartNewEpoch() public {
+    // Alice deposit and commit 10 listings
+    vm.startPrank(alice);
+    dai.approve(address(commitment), type(uint).max);
+    commitment.deposit(10_000e18); // deposit $10k DAI
+
+    setAliceComittments();
+    commitment.commit(aliceVols, aliceSubIds, aliceWeights);
+    vm.stopPrank();
+    vm.warp(block.timestamp + 2 minutes);
+    
+    // Bob deposit and commit 10 listings
+    vm.startPrank(bob);
+    dai.approve(address(commitment), type(uint).max);
+    commitment.deposit(10_000e18); // deposit $10k DAI
+
+    setBobComittments();
+    commitment.commit(bobVols, bobSubIds, bobWeights);
+    vm.stopPrank();
+
+    // new epoch time elapsed
+    vm.warp(block.timestamp + 6 minutes);
+
+    // Bob clears old commits and commits adjusted values to new epoch
+    vm.startPrank(bob);
+    for (uint8 i = 0; i < 5; i++) { bobSubIds[i] = i; }
+    commitment.clearCommits(bobSubIds);
+    (, uint256 totalWeight, ) = commitment.nodes(bob);
+    assertEq(totalWeight, 10); // remains unchanged
+
+    setBobComittments();
+    bobVols = new uint16[](5);
+    bobVols[0] = 75;
+    bobVols[1] = 75;
+    bobVols[2] = 75;
+    bobVols[3] = 75;
+    bobVols[4] = 75;
+    commitment.commit(bobVols, bobSubIds, bobWeights);
+    uint64 bobNewTime = uint64(block.timestamp);
+    vm.stopPrank();
+
+    // validate new state
+    uint16 bidVol;
+    uint16 askVol;
+    uint128 commitWeight;
+    for (uint i = 0; i < 5; i++) {
+      (bidVol, askVol, commitWeight) = commitment.state(commitment.COLLECTING(), i);
+      uint128 epochTimestamp = commitment.timestamps(commitment.COLLECTING());
+
+      assertEq(bidVol, bobVols[i] - commitment.RANGE());
+      assertEq(askVol, bobVols[i] + commitment.RANGE());
+      assertEq(commitWeight, 2);
+      assertEq(epochTimestamp, bobNewTime);
+    }
+    (, totalWeight, ) = commitment.nodes(bob);
+    assertEq(totalWeight, 20); // commits from last epoch and this one
+
+    // successfuly clear commits
+    vm.warp(block.timestamp + 12 minutes);
+    vm.startPrank(bob);
+    commitment.clearCommits(bobSubIds);
+    (, totalWeight, ) = commitment.nodes(bob);
+    assertEq(totalWeight, 10); // remains unchanged
+    vm.stopPrank();
+  }
+
+  // function testCanFinalizeEpoch() {
+
+  // }
+
+  // function testCanExecutePendingCommit() {
+
+  // }
+
+  // function testCannotExecuteFinalizedOrCollectingCommit() {
+
+  // }
 
   function verifyNodeCommitment(uint subId, uint nodeId, uint64 aliceTime, uint64 bobTime) public {
     // verify commitments
@@ -190,27 +267,6 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
       bobWeights[i] = 2;
     }
   }
-
-
-  // function testCanCommit() public {
-  //   commitment.commit(100, 1, commitmentWeight);
-
-  //   (uint16 bidVol, uint16 askVol, uint16 totalCommitment,) = commitment.state(commitment.COLLECTING());
-  //   assertEq(bidVol, 95);
-  //   assertEq(askVol, 105);
-  //   assertEq(totalCommitment, commitmentWeight);
-
-  //   // this will rotate again -> become only one in COLLECTING
-
-  //   // firt one committing to pending
-  //   commitment.commit(110, 1, commitmentWeight);
-  //   // commit another
-  //   commitment.commit(116, 2, commitmentWeight);
-  //   (uint16 bidVol2, uint16 askVol2,,) = commitment.state(commitment.COLLECTING());
-
-  //   assertEq(bidVol2, 113 - 5);
-  //   assertEq(askVol2, 113 + 5);
-  // }
 
   // function testCanExecuteCommit() public {
   //   commitment.commit(100, 1, commitmentWeight);

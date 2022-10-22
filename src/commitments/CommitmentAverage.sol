@@ -10,11 +10,12 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 /**
  * 3 Blocks to aggregate vol submited
- * * ------------- * ------------- * ------------- *
- * |   Finalized   |    Pending    |   Collecting  |
- * * ------------- * ------------- * ------------- *
+ * * -------------- * ------------- * ------------- *
+ * |   Collecting   |    Pending    |   Finalized   |
+ * * -------------- * ------------- * ------------- *
  */
 contract CommitmentAverage {
+  // todo: need to clear deposit amount once epoch is finalized
   using SafeCast for uint;
 
   error No_Pending_Commitment();
@@ -38,9 +39,10 @@ contract CommitmentAverage {
     uint256 nodeId;
   }
 
-  uint8 public FINALIZED = 2;
-  uint8 public PENDING = 1;
   uint8 public COLLECTING = 0;
+  uint8 public PENDING = 1;
+  uint8 public FINALIZED = 2;
+
 
   mapping(uint8 => State[256]) public state; // EPOCH TYPE -> 256 epoch states 
   uint64[3] public timestamps; // EPOCH TYPE -> timestamp
@@ -69,6 +71,7 @@ contract CommitmentAverage {
 
   /// @dev allow node to deposit once and reuse deposit everytime
   function deposit(uint256 amount) external {
+    // todo: add remove weight
     token.transferFrom(msg.sender, address(this), amount);
 
     lendingAsset.deposit(accountId, amount);
@@ -165,20 +168,29 @@ contract CommitmentAverage {
     // (2) check that cash is the only asset
   }
 
+  /**  
+    * @dev clear the committed weights once epoch is finalized 
+    *      to allow reuse towards new commitments
+    */
+  function clearCommits(uint8[] memory subIds) external {
+    _checkRotateBlocks();
+    uint256 nodeId = nodes[msg.sender].nodeId;
+    
+    uint128 weightToRemove;
+    for (uint subId = 0; subId < subIds.length; subId++) {
+      weightToRemove += commitments[FINALIZED][nodeId][subId].weight;
+    }
+
+    nodes[msg.sender].totalWeight -= weightToRemove;
+  }
+
   function _checkRotateBlocks() internal {
-    uint64 pendingTimestamp = timestamps[PENDING];
-    // has been exeucting for 5 mins, push to finalized
-    if (pendingTimestamp + 5 minutes < block.timestamp && pendingTimestamp != 0) {
-      // set finalized epoch timestamp back to 0
-      timestamps[PENDING] = 0;
-
-      (FINALIZED, PENDING, COLLECTING) = (PENDING, COLLECTING, FINALIZED);
-    } 
-
     uint64 collectingTimestamp = timestamps[COLLECTING];
-    // if first value, record first timestamp
-    if (collectingTimestamp + 5 minutes < block.timestamp || collectingTimestamp == 0) {
+
+    if (collectingTimestamp == 0 ) { // handle first deposit
       timestamps[COLLECTING] = SafeCast.toUint64(block.timestamp);
+    } else if (collectingTimestamp + 5 minutes < block.timestamp) {
+      (COLLECTING, PENDING, FINALIZED) = (FINALIZED, COLLECTING, PENDING);
     }
   }
 }
