@@ -6,6 +6,7 @@ import "./DynamicArrayLib.sol";
 /**
  *
  */
+
 contract CommitmentBest {
   using DynamicArrayLib for uint[];
 
@@ -20,6 +21,7 @@ contract CommitmentBest {
     uint64 nodeId;
     uint64 timestamp;
     bool isExecuted;
+    uint96 subId;
   }
 
   struct FinalizedQuote {
@@ -86,9 +88,12 @@ contract CommitmentBest {
 
     uint8 newIndex = length[cacheCOLLECTING];
 
-    subIds[cacheCOLLECTING].addUniqueToArray(subId, newIndex);
+    subIds[cacheCOLLECTING].addUniqueToArray(subId);
+    weights[cacheCOLLECTING][subId] += weight;
 
-    queue[cacheCOLLECTING].push(Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false));
+    queue[cacheCOLLECTING].push(
+      Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false, subId)
+    );
 
     length[cacheCOLLECTING] = newIndex + 1;
   }
@@ -97,7 +102,17 @@ contract CommitmentBest {
   function executeCommit(uint16 index, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    uint16 newWeight = queue[cachePENDING][index].weight - weight;
+    Commitment memory target = queue[cachePENDING][index];
+
+    uint16 newWeight = target.weight - weight;
+
+    uint16 newTotalSubIdWeight = weights[cachePENDING][target.subId] - weight;
+    if (newTotalSubIdWeight != 0) {
+      weights[cachePENDING][target.subId] = newTotalSubIdWeight;
+    } else {
+      weights[cachePENDING][target.subId] = 0;
+      subIds[cachePENDING].removeFromArray(target.subId);
+    }
 
     if (newWeight == 0) {
       queue[cachePENDING][index].isExecuted = true;

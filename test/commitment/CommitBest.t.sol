@@ -24,7 +24,7 @@ contract UNIT_CommitBest is Test {
     vm.warp(block.timestamp + 1 days);
   }
 
-  function testCanCommit() SingleSubId public {
+  function testCanCommit() public SingleSubId {
     commitment.commit(subId, 100, commitmentWeight);
     commitment.commit(subId, 100, commitmentWeight);
     commitment.commit(subId, 102, commitmentWeight);
@@ -38,7 +38,7 @@ contract UNIT_CommitBest is Test {
     assertEq(commitment.collectingLength(), 0);
   }
 
-  function testCanExecuteCommit() SingleSubId public {
+  function testCanExecuteCommit() public SingleSubId {
     commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
     commitment.commit(subId, 104, commitmentWeight); // collecting: 2, pending: 0
     commitment.commit(subId, 102, commitmentWeight); // collecting: 3, pending: 0
@@ -59,7 +59,7 @@ contract UNIT_CommitBest is Test {
     assertEq(bestVol, 97);
   }
 
-  function testShouldRolloverBlankIfPendingIsEmpty() SingleSubId public {
+  function testShouldRolloverBlankIfPendingIsEmpty() public SingleSubId {
     commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
     commitment.commit(subId, 104, commitmentWeight); // collecting: 2, pending: 0
 
