@@ -34,7 +34,17 @@ contract CommitmentBest {
   }
 
   // only 0 ~ 1 is used
-  mapping(uint96 => Commitment[256][2]) public queue;
+  mapping(uint8 => Commitment[]) public queue;
+
+  /// @dev weight[queueIndex][]
+  mapping(uint8 => mapping(uint96 => uint16)) public weights;
+
+  /// @dev subIds
+  mapping(uint8 => uint96[]) public subIds;
+
+
+  // subId => [] lengths of queue;
+  uint8[2] public length;
 
   mapping(address => Node) public nodes;
 
@@ -45,8 +55,6 @@ contract CommitmentBest {
 
   uint8 public COLLECTING = 0;
   uint8 public PENDING = 1;
-
-  uint8[3] public length;
 
   uint64 pendingStartTimestamp;
 
@@ -62,25 +70,23 @@ contract CommitmentBest {
     return length[COLLECTING];
   }
 
-  function register() external returns (uint64) {
+  function register() external returns (uint64 id) {
     if (nodes[msg.sender].nodeId != 0) revert Registered();
 
-    uint64 id = ++nextId;
+    id = ++nextId;
     nodes[msg.sender] = Node(0, id);
   }
 
   /// @dev commit to the 'collecting' block
   function commit(uint16 vol, uint16 weight) external {
     // todo: cannot double commit;
-    // todo: check sender node id
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
     uint64 node = nodes[msg.sender].nodeId;
 
     uint8 newIndex = length[cacheCOLLECTING];
 
-    queue[0][cacheCOLLECTING][newIndex] =
-      Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false);
+    queue[cacheCOLLECTING].push(Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false));
 
     length[cacheCOLLECTING] = newIndex + 1;
   }
@@ -102,13 +108,13 @@ contract CommitmentBest {
   function executeCommit(uint16 index, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    uint16 newWeight = queue[0][cachePENDING][index].weight - weight;
+    uint16 newWeight = queue[cachePENDING][index].weight - weight;
 
     if (newWeight == 0) {
-      queue[0][cachePENDING][index].isExecuted = true;
-      queue[0][cachePENDING][index].weight = 0;
+      queue[cachePENDING][index].isExecuted = true;
+      queue[cachePENDING][index].weight = 0;
     } else {
-      queue[0][cachePENDING][index].weight = newWeight;
+      queue[cachePENDING][index].weight = newWeight;
     }
 
     // trade;
@@ -126,7 +132,7 @@ contract CommitmentBest {
     // nothing pending and there are something in the collecting phase:
     // make sure oldest one is older than 5 minutes, if so, move collecting => pending
     if (length[cachePENDING] == 0 && length[cacheCOLLECTING] != 0) {
-      Commitment memory oldest = queue[0][cacheCOLLECTING][0];
+      Commitment memory oldest = queue[cacheCOLLECTING][0];
       if (block.timestamp - oldest.timestamp > 5 minutes) {
         (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
       }
@@ -171,7 +177,7 @@ contract CommitmentBest {
     view
     returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk)
   {
-    Commitment[256] memory pendingQueue = queue[0][_indexPENDING];
+    Commitment[] memory pendingQueue = queue[_indexPENDING];
 
     (uint16 cacheBestBid, uint16 cacheBestAsk, uint8 bestBidId, uint8 bestAskId) = (0, 0, 0, 0);
 

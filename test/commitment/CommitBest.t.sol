@@ -13,6 +13,8 @@ contract UNIT_CommitBest is Test {
   constructor() {
     commitment = new CommitmentBest();
 
+    commitment.register();
+
     vm.warp(block.timestamp + 1 days);
   }
 
@@ -47,7 +49,7 @@ contract UNIT_CommitBest is Test {
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
-    (uint16 bestVol, uint16 commitments, uint64 nodeId, uint64 bidTimestamp) = commitment.bestFinalizedBid();
+    (uint16 bestVol, , , ) = commitment.bestFinalizedBid();
     assertEq(bestVol, 97);
   }
 
