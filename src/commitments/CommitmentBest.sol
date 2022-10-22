@@ -3,12 +3,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/console2.sol";
 import "./DynamicArrayLib.sol";
-/**
- *
- */
 
 contract CommitmentBest {
-  using DynamicArrayLib for uint[];
+  using DynamicArrayLib for uint96[];
 
   error NotExecutable();
 
@@ -37,13 +34,13 @@ contract CommitmentBest {
   }
 
   // only 0 ~ 1 is used
-  mapping(uint8 => Commitment[]) public queue;
+  mapping(uint8 => mapping(uint96 => Commitment[])) public queues;
 
   /// @dev weight[queueIndex][]
   mapping(uint8 => mapping(uint96 => uint16)) public weights;
 
   /// @dev subIds
-  mapping(uint8 => uint[]) public subIds;
+  mapping(uint8 => uint96[]) public subIds;
 
   // subId => [] lengths of queue;
   uint8[2] public length;
@@ -52,13 +49,14 @@ contract CommitmentBest {
 
   uint64 nextId = 1;
 
-  FinalizedQuote public bestFinalizedBid;
-  FinalizedQuote public bestFinalizedAsk;
+  mapping(uint96 => FinalizedQuote) public bestFinalizedBids;
+  mapping(uint96 => FinalizedQuote) public bestFinalizedAsks;
 
   uint8 public COLLECTING = 0;
   uint8 public PENDING = 1;
 
   uint64 pendingStartTimestamp;
+  uint64 collectingStartTimestamp;
 
   uint16 constant RANGE = 5;
 
@@ -70,6 +68,14 @@ contract CommitmentBest {
 
   function collectingLength() external view returns (uint) {
     return length[COLLECTING];
+  }
+
+  function pendingWeight(uint96 subId) external view returns (uint) {
+    return weights[PENDING][subId];
+  }
+
+  function collectingWeight(uint96 subId) external view returns (uint) {
+    return weights[COLLECTING][subId];
   }
 
   function register() external returns (uint64 id) {
@@ -91,34 +97,38 @@ contract CommitmentBest {
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
     weights[cacheCOLLECTING][subId] += weight;
 
-    queue[cacheCOLLECTING].push(
+    queues[cacheCOLLECTING][subId].push(
       Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false, subId)
     );
 
     length[cacheCOLLECTING] = newIndex + 1;
+
+    // todo: update collectingStartTimestamp in check rollover if it comes with commits
+    if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
   }
 
   /// @dev commit to the 'collecting' block
-  function executeCommit(uint16 index, uint16 weight) external {
+  function executeCommit(uint96 subId, uint16 index, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    Commitment memory target = queue[cachePENDING][index];
+    Commitment memory target = queues[cachePENDING][subId][index];
 
+    // update weight for the commit;
     uint16 newWeight = target.weight - weight;
+    if (newWeight == 0) {
+      queues[cachePENDING][subId][index].isExecuted = true;
+      queues[cachePENDING][subId][index].weight = 0;
+    } else {
+      queues[cachePENDING][subId][index].weight = newWeight;
+    }
 
+    // update total weight for an subId
     uint16 newTotalSubIdWeight = weights[cachePENDING][target.subId] - weight;
     if (newTotalSubIdWeight != 0) {
       weights[cachePENDING][target.subId] = newTotalSubIdWeight;
     } else {
       weights[cachePENDING][target.subId] = 0;
       subIds[cachePENDING].removeFromArray(target.subId);
-    }
-
-    if (newWeight == 0) {
-      queue[cachePENDING][index].isExecuted = true;
-      queue[cachePENDING][index].weight = 0;
-    } else {
-      queue[cachePENDING][index].weight = newWeight;
     }
 
     // trade;
@@ -135,12 +145,10 @@ contract CommitmentBest {
 
     // nothing pending and there are something in the collecting phase:
     // make sure oldest one is older than 5 minutes, if so, move collecting => pending
-    if (length[cachePENDING] == 0 && length[cacheCOLLECTING] != 0) {
-      Commitment memory oldest = queue[cacheCOLLECTING][0];
-      if (block.timestamp - oldest.timestamp > 5 minutes) {
+    if (pendingStartTimestamp == 0) {
+      if (collectingStartTimestamp != 0 && block.timestamp - collectingStartTimestamp > 5 minutes) {
         (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
       }
-      return (cachePENDING, cacheCOLLECTING);
     }
 
     // nothing pending and there are something in the collecting phase:
@@ -148,14 +156,7 @@ contract CommitmentBest {
     if (length[cachePENDING] > 0) {
       if (block.timestamp - pendingStartTimestamp < 5 minutes) return (cachePENDING, cacheCOLLECTING);
 
-      (FinalizedQuote memory bestBid, FinalizedQuote memory bestAsk) = _getBestFromPending(cachePENDING);
-
-      if (bestBid.weight != 0) {
-        bestFinalizedBid = bestBid;
-      }
-      if (bestAsk.weight != 0) {
-        bestFinalizedAsk = bestAsk;
-      }
+      _updateFromPendingForEachSubId(cachePENDING);
       (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
     }
 
@@ -176,46 +177,51 @@ contract CommitmentBest {
     return (cacheCOLLECTING, cachePENDING);
   }
 
-  function _getBestFromPending(uint8 _indexPENDING)
-    internal
-    view
-    returns (FinalizedQuote memory _bestBid, FinalizedQuote memory _bestAsk)
-  {
-    Commitment[] memory pendingQueue = queue[_indexPENDING];
+  function _updateFromPendingForEachSubId(uint8 _indexPENDING) internal {
+    uint96[] memory subIds_ = subIds[_indexPENDING];
 
-    (uint16 cacheBestBid, uint16 cacheBestAsk, uint8 bestBidId, uint8 bestAskId) = (0, 0, 0, 0);
+    for (uint i; i < subIds_.length; i++) {
+      uint96 subId = subIds_[i];
+      Commitment[] memory pendingQueue = queues[_indexPENDING][subId];
 
-    unchecked {
-      for (uint8 i; i < length[_indexPENDING]; i++) {
-        Commitment memory cache = pendingQueue[i];
+      uint16 cacheBestBid;
+      uint8 bestBidId;
+      uint16 cacheBestAsk;
+      uint8 bestAskId;
+
+      for (uint8 j; j < pendingQueue.length; j++) {
+        Commitment memory cache = pendingQueue[j];
 
         if (cache.isExecuted) continue;
 
         if (cache.bidVol > cacheBestBid) {
           cacheBestBid = cache.bidVol;
-          bestBidId = i;
+          bestBidId = j;
         }
 
         if (cacheBestAsk == 0 || cache.askVol < cacheBestAsk) {
           cacheBestAsk = cache.askVol;
-          bestAskId = i;
+          bestAskId = j;
         }
       }
-    }
 
-    return (
-      FinalizedQuote(
-        pendingQueue[bestBidId].bidVol,
-        pendingQueue[bestBidId].weight,
-        pendingQueue[bestBidId].nodeId,
-        pendingQueue[bestBidId].timestamp
-        ),
-      FinalizedQuote(
-        pendingQueue[bestAskId].askVol,
-        pendingQueue[bestAskId].weight,
-        pendingQueue[bestAskId].nodeId,
-        pendingQueue[bestAskId].timestamp
-        )
-    );
+      // update subId best
+      if (pendingQueue[bestBidId].weight != 0) {
+        bestFinalizedBids[subId] = FinalizedQuote(
+          cacheBestBid,
+          pendingQueue[bestBidId].weight,
+          pendingQueue[bestBidId].nodeId,
+          pendingQueue[bestBidId].timestamp
+        );
+      }
+      if (pendingQueue[bestAskId].weight != 0) {
+        bestFinalizedAsks[subId] = FinalizedQuote(
+          cacheBestAsk,
+          pendingQueue[bestAskId].weight,
+          pendingQueue[bestAskId].nodeId,
+          pendingQueue[bestAskId].timestamp
+        );
+      }
+    }
   }
 }

@@ -12,10 +12,6 @@ contract UNIT_CommitBest is Test {
 
   uint96 subId = 1;
 
-  modifier SingleSubId() {
-    _;
-  }
-
   constructor() {
     commitment = new CommitmentBest();
 
@@ -24,7 +20,7 @@ contract UNIT_CommitBest is Test {
     vm.warp(block.timestamp + 1 days);
   }
 
-  function testCanCommit() public SingleSubId {
+  function testCanCommit() public {
     commitment.commit(subId, 100, commitmentWeight);
     commitment.commit(subId, 100, commitmentWeight);
     commitment.commit(subId, 102, commitmentWeight);
@@ -38,28 +34,29 @@ contract UNIT_CommitBest is Test {
     assertEq(commitment.collectingLength(), 0);
   }
 
-  function testCanExecuteCommit() public SingleSubId {
+  function testCanExecuteCommit() public {
     commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
     commitment.commit(subId, 104, commitmentWeight); // collecting: 2, pending: 0
     commitment.commit(subId, 102, commitmentWeight); // collecting: 3, pending: 0
     assertEq(commitment.collectingLength(), 3);
+    assertEq(commitment.collectingWeight(subId), commitmentWeight * 3);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
     assertEq(commitment.pendingLength(), 3);
 
-    commitment.executeCommit(0, commitmentWeight);
-    commitment.executeCommit(1, commitmentWeight);
+    commitment.executeCommit(subId, 0, commitmentWeight);
+    commitment.executeCommit(subId, 1, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
-    (uint16 bestVol,,,) = commitment.bestFinalizedBid();
+    (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
     assertEq(bestVol, 97);
   }
 
-  function testShouldRolloverBlankIfPendingIsEmpty() public SingleSubId {
+  function testShouldRolloverBlankIfPendingIsEmpty() public {
     commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
     commitment.commit(subId, 104, commitmentWeight); // collecting: 2, pending: 0
 
@@ -67,9 +64,10 @@ contract UNIT_CommitBest is Test {
     commitment.checkRollover(); // collecting: 0, pending: 2
 
     assertEq(commitment.pendingLength(), 2);
+    assertEq(commitment.pendingWeight(subId), commitmentWeight * 2);
 
-    commitment.executeCommit(0, commitmentWeight);
-    commitment.executeCommit(1, commitmentWeight);
+    commitment.executeCommit(subId, 0, commitmentWeight);
+    commitment.executeCommit(subId, 1, commitmentWeight);
 
     commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
 
@@ -77,7 +75,7 @@ contract UNIT_CommitBest is Test {
 
     commitment.checkRollover();
 
-    (uint16 bestVol, uint16 commitments, uint64 nodeId, uint64 bidTimestamp) = commitment.bestFinalizedBid();
+    (uint16 bestVol, uint16 commitments, uint64 nodeId, uint64 bidTimestamp) = commitment.bestFinalizedBids(subId);
     assertEq(bestVol, 0);
     assertEq(nodeId, 0);
     assertEq(commitments, 0);
