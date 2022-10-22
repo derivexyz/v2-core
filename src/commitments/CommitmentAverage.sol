@@ -7,7 +7,6 @@ import "test/account/mocks/assets/lending/Lending.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-
 /**
  * 3 Blocks to aggregate vol submited
  * * -------------- * ------------- * ------------- *
@@ -34,28 +33,26 @@ contract CommitmentAverage {
   }
 
   struct Node {
-    uint256 deposits;
-    uint256 totalWeight;
-    uint256 nodeId;
+    uint deposits;
+    uint totalWeight;
+    uint nodeId;
   }
 
   uint8 public COLLECTING = 0;
   uint8 public PENDING = 1;
   uint8 public FINALIZED = 2;
 
-
-  mapping(uint8 => State[256]) public state; // EPOCH TYPE -> 256 epoch states 
+  mapping(uint8 => State[256]) public state; // EPOCH TYPE -> 256 epoch states
   uint64[3] public timestamps; // EPOCH TYPE -> timestamp
 
   // nodeData
-  mapping(uint8 => mapping(uint256 => NodeCommitment[256])) public commitments; // epoch -> node -> commitments[], how do these work with rotating epochs
+  mapping(uint8 => mapping(uint => NodeCommitment[256])) public commitments; // epoch -> node -> commitments[], how do these work with rotating epochs
   mapping(address => Node) public nodes;
-  uint256 nextNodeId = 1;
+  uint nextNodeId = 1;
 
   // todo: need to make dynamic range
-  uint16 constant public RANGE = 5;
-  uint16 constant public DEPOSIT_PER_SUBID = 500;
-
+  uint16 public constant RANGE = 5;
+  uint16 public constant DEPOSIT_PER_SUBID = 500;
 
   // account variables
   Lending lendingAsset;
@@ -70,7 +67,7 @@ contract CommitmentAverage {
   }
 
   /// @dev allow node to deposit once and reuse deposit everytime
-  function deposit(uint256 amount) external {
+  function deposit(uint amount) external {
     // todo: add remove weight
     token.transferFrom(msg.sender, address(this), amount);
 
@@ -84,11 +81,7 @@ contract CommitmentAverage {
   }
 
   /// @dev commit to the 'collecting' block
-  function commit(
-    uint16[] memory vols, 
-    uint8[] memory subIds, 
-    uint128[] memory weights
-  ) external {
+  function commit(uint16[] memory vols, uint8[] memory subIds, uint128[] memory weights) external {
     Node memory commitNode = nodes[msg.sender];
 
     _checkRotateBlocks();
@@ -99,17 +92,17 @@ contract CommitmentAverage {
       NodeCommitment memory subIdCommitment = commitments[COLLECTING][commitNode.nodeId][subIds[i]];
 
       // if commitment in current epoch was made, ignore new commitments
-      if (subIdCommitment.weight > 0 && subIdCommitment.timestamp + 5 minutes > block.timestamp) { break; }
+      if (subIdCommitment.weight > 0 && subIdCommitment.timestamp + 5 minutes > block.timestamp) break;
 
       // prevent further commits if not enough deposits made by node
-      if (commitNode.deposits < (commitNode.totalWeight + weights[subIds[i]]) * DEPOSIT_PER_SUBID) { 
-        break; 
+      if (commitNode.deposits < (commitNode.totalWeight + weights[subIds[i]]) * DEPOSIT_PER_SUBID) {
+        break;
       } else {
         nodes[msg.sender].totalWeight += weights[subIds[i]];
       }
 
       State memory collecting = state[COLLECTING][subIds[i]]; // get current average
-      
+
       uint128 newWeight = weights[subIds[i]] + collecting.weight;
 
       // todo: cheaper to just store in one go?
@@ -117,10 +110,10 @@ contract CommitmentAverage {
       state[COLLECTING][subIds[i]] = State({
         bidVol: SafeCast.toUint16(
           ((bidVol * weights[subIds[i]]) + (uint128(collecting.bidVol) * collecting.weight)) / (newWeight)
-        ),
+          ),
         askVol: SafeCast.toUint16(
           ((askVol * weights[subIds[i]]) + (uint128(collecting.askVol) * collecting.weight)) / (newWeight)
-        ),
+          ),
         weight: newWeight
       });
 
@@ -146,12 +139,12 @@ contract CommitmentAverage {
       state[PENDING][subId] = State(0, 0, 0); // clear average no commitments remain
     } else {
       state[COLLECTING][subId] = State({
-        bidVol: SafeCast.toUint16((
-          (uint128(avgCollecting.bidVol) * avgCollecting.weight) - (uint128(nodeCommit.bidVol) * amount)
-        ) / (newWeight)),
-        askVol: SafeCast.toUint16((
-          (uint128(avgCollecting.askVol) * avgCollecting.weight) - (uint128(nodeCommit.askVol) * amount)
-        ) / (newWeight)),
+        bidVol: SafeCast.toUint16(
+          ((uint128(avgCollecting.bidVol) * avgCollecting.weight) - (uint128(nodeCommit.bidVol) * amount)) / (newWeight)
+          ),
+        askVol: SafeCast.toUint16(
+          ((uint128(avgCollecting.askVol) * avgCollecting.weight) - (uint128(nodeCommit.askVol) * amount)) / (newWeight)
+          ),
         weight: newWeight
       });
     }
@@ -168,14 +161,14 @@ contract CommitmentAverage {
     // (2) check that cash is the only asset
   }
 
-  /**  
-    * @dev clear the committed weights once epoch is finalized 
-    *      to allow reuse towards new commitments
-    */
+  /**
+   * @dev clear the committed weights once epoch is finalized
+   *      to allow reuse towards new commitments
+   */
   function clearCommits(uint8[] memory subIds) external {
     _checkRotateBlocks();
-    uint256 nodeId = nodes[msg.sender].nodeId;
-    
+    uint nodeId = nodes[msg.sender].nodeId;
+
     uint128 weightToRemove;
     for (uint subId = 0; subId < subIds.length; subId++) {
       weightToRemove += commitments[FINALIZED][nodeId][subId].weight;
@@ -187,7 +180,8 @@ contract CommitmentAverage {
   function _checkRotateBlocks() internal {
     uint64 collectingTimestamp = timestamps[COLLECTING];
 
-    if (collectingTimestamp == 0 ) { // handle first deposit
+    if (collectingTimestamp == 0) {
+      // handle first deposit
       timestamps[COLLECTING] = SafeCast.toUint64(block.timestamp);
     } else if (collectingTimestamp + 5 minutes < block.timestamp) {
       (COLLECTING, PENDING, FINALIZED) = (FINALIZED, COLLECTING, PENDING);

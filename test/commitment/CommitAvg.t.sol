@@ -12,7 +12,7 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
   uint bobAcc;
   uint charlieAcc;
 
-  // commitment 
+  // commitment
   CommitmentAverage commitment;
   uint16 constant commitmentWeight = 1;
 
@@ -62,7 +62,7 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     commitment.deposit(50_000e18); // deposit $50k DAI
 
     // first deposit
-    (uint256 deposits, uint256 totalWeight, uint256 nodeId) = commitment.nodes(alice);
+    (uint deposits, uint totalWeight, uint nodeId) = commitment.nodes(alice);
     assertEq(deposits, 50_000e18);
     assertEq(totalWeight, 0);
     assertEq(nodeId, 1);
@@ -87,7 +87,7 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     uint64 aliceTime = uint64(block.timestamp);
     vm.stopPrank();
     vm.warp(block.timestamp + 2 minutes);
-    
+
     // Bob deposit and commit 10 listings
     vm.startPrank(bob);
     dai.approve(address(commitment), type(uint).max);
@@ -103,7 +103,7 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
       for (uint nodeId = 1; nodeId <= 2; nodeId++) {
         if (subId > 4 && nodeId == 2) {
           break; // skip bob since he didn't have commitments here
-        } 
+        }
         verifyNodeCommitment(subId, nodeId, aliceTime, bobTime);
       }
     }
@@ -141,7 +141,7 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     commitment.commit(aliceVols, aliceSubIds, aliceWeights);
     vm.stopPrank();
     vm.warp(block.timestamp + 2 minutes);
-    
+
     // Bob deposit and commit 10 listings
     vm.startPrank(bob);
     dai.approve(address(commitment), type(uint).max);
@@ -156,9 +156,11 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
 
     // Bob clears old commits and commits adjusted values to new epoch
     vm.startPrank(bob);
-    for (uint8 i = 0; i < 5; i++) { bobSubIds[i] = i; }
+    for (uint8 i = 0; i < 5; i++) {
+      bobSubIds[i] = i;
+    }
     commitment.clearCommits(bobSubIds);
-    (, uint256 totalWeight, ) = commitment.nodes(bob);
+    (, uint totalWeight,) = commitment.nodes(bob);
     assertEq(totalWeight, 10); // remains unchanged
 
     setBobComittments();
@@ -185,14 +187,14 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
       assertEq(commitWeight, 2);
       assertEq(epochTimestamp, bobNewTime);
     }
-    (, totalWeight, ) = commitment.nodes(bob);
+    (, totalWeight,) = commitment.nodes(bob);
     assertEq(totalWeight, 20); // commits from last epoch and this one
 
     // successfuly clear commits
     vm.warp(block.timestamp + 12 minutes);
     vm.startPrank(bob);
     commitment.clearCommits(bobSubIds);
-    (, totalWeight, ) = commitment.nodes(bob);
+    (, totalWeight,) = commitment.nodes(bob);
     assertEq(totalWeight, 10); // remains unchanged
     vm.stopPrank();
   }
@@ -297,18 +299,14 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
   // }
 
   function addListings() public {
-    uint72[11] memory strikes = [
-      500e18, 1000e18, 1300e18, 1400e18, 1450e18, 1500e18, 1550e18, 1600e18, 1700e18, 2000e18, 2500e18
-    ];
+    uint72[11] memory strikes =
+      [500e18, 1000e18, 1300e18, 1400e18, 1450e18, 1500e18, 1550e18, 1600e18, 1700e18, 2000e18, 2500e18];
 
-    uint32[7] memory expiries = [
-      1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks
-    ];
+    uint32[7] memory expiries = [1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks];
     for (uint s = 0; s < strikes.length; s++) {
       for (uint e = 0; e < expiries.length; e++) {
         optionAdapter.addListing(strikes[s], expiries[e], true);
       }
     }
   }
-
 }

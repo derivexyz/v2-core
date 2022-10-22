@@ -10,24 +10,35 @@ import "forge-std/console2.sol";
 contract CommitmentBest {
   error NotExecutable();
 
+  error Registered();
+
   struct Commitment {
     uint16 bidVol;
     uint16 askVol;
-    uint16 nodeId;
-    uint16 commitments;
+    uint16 weight;
+    uint64 nodeId;
     uint64 timestamp;
     bool isExecuted;
   }
 
   struct FinalizedQuote {
     uint16 bestVol;
-    uint16 nodeId;
-    uint16 commitments;
+    uint16 weight;
+    uint64 nodeId;
     uint64 bidTimestamp;
+  }
+
+  struct Node {
+    uint16 totalWeight;
+    uint64 nodeId;
   }
 
   // only 0 ~ 1 is used
   mapping(uint96 => Commitment[256][2]) public queue;
+
+  mapping(address => Node) public nodes;
+
+  uint64 nextId = 1;
 
   FinalizedQuote public bestFinalizedBid;
   FinalizedQuote public bestFinalizedAsk;
@@ -51,31 +62,53 @@ contract CommitmentBest {
     return length[COLLECTING];
   }
 
+  function register() external returns (uint64) {
+    if (nodes[msg.sender].nodeId != 0) revert Registered();
+
+    uint64 id = ++nextId;
+    nodes[msg.sender] = Node(0, id);
+  }
+
   /// @dev commit to the 'collecting' block
-  function commit(uint16 node, uint16 vol, uint16 weight) external {
+  function commit(uint16 vol, uint16 weight) external {
     // todo: cannot double commit;
     // todo: check sender node id
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
+    uint64 node = nodes[msg.sender].nodeId;
+
     uint8 newIndex = length[cacheCOLLECTING];
 
     queue[0][cacheCOLLECTING][newIndex] =
-      Commitment(vol - RANGE, vol + RANGE, node, weight, uint64(block.timestamp), false);
+      Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false);
 
     length[cacheCOLLECTING] = newIndex + 1;
   }
+
+  // function commitMultiple(uint16[] calldata subIds, uint16[] calldata vol, uint16[] calldata weight) external {
+  //   // todo: cannot double commit;
+  //   // todo: check sender node id
+  //   (, uint8 cacheCOLLECTING) = _checkRollover();
+
+  //   uint8 newIndex = length[cacheCOLLECTING];
+
+  //   queue[0][cacheCOLLECTING][newIndex] =
+  //     Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false);
+
+  //   length[cacheCOLLECTING] = newIndex + 1;
+  // }
 
   /// @dev commit to the 'collecting' block
   function executeCommit(uint16 index, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    uint16 newWeight = queue[0][cachePENDING][index].commitments - weight;
+    uint16 newWeight = queue[0][cachePENDING][index].weight - weight;
 
     if (newWeight == 0) {
       queue[0][cachePENDING][index].isExecuted = true;
-      queue[0][cachePENDING][index].commitments = 0;
+      queue[0][cachePENDING][index].weight = 0;
     } else {
-      queue[0][cachePENDING][index].commitments = newWeight;
+      queue[0][cachePENDING][index].weight = newWeight;
     }
 
     // trade;
@@ -107,10 +140,10 @@ contract CommitmentBest {
 
       (FinalizedQuote memory bestBid, FinalizedQuote memory bestAsk) = _getBestFromPending(cachePENDING);
 
-      if (bestBid.commitments != 0) {
+      if (bestBid.weight != 0) {
         bestFinalizedBid = bestBid;
       }
-      if (bestAsk.commitments != 0) {
+      if (bestAsk.weight != 0) {
         bestFinalizedAsk = bestAsk;
       }
       (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
@@ -163,14 +196,14 @@ contract CommitmentBest {
     return (
       FinalizedQuote(
         pendingQueue[bestBidId].bidVol,
+        pendingQueue[bestBidId].weight,
         pendingQueue[bestBidId].nodeId,
-        pendingQueue[bestBidId].commitments,
         pendingQueue[bestBidId].timestamp
         ),
       FinalizedQuote(
         pendingQueue[bestAskId].askVol,
+        pendingQueue[bestAskId].weight,
         pendingQueue[bestAskId].nodeId,
-        pendingQueue[bestAskId].commitments,
         pendingQueue[bestAskId].timestamp
         )
     );
