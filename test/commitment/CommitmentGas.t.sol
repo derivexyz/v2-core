@@ -11,6 +11,8 @@ contract CommitmentBestGas is Script {
 
   uint expiry;
 
+  uint96 subId = 2;
+
   function run() external {
     vm.startBroadcast();
 
@@ -18,12 +20,12 @@ contract CommitmentBestGas is Script {
 
     // gas tests
     uint gasBefore = gasleft();
-    commitment.commit(100, 1);
+    commitment.commit(subId, 100, 1);
     uint gasAfter = gasleft();
     console.log("gas commit#1", gasBefore - gasAfter);
 
     gasBefore = gasleft();
-    commitment.commit(100, 1);
+    commitment.commit(subId, 100, 1);
     gasAfter = gasleft();
     console.log("gas commit#2", gasBefore - gasAfter);
 
@@ -44,7 +46,7 @@ contract CommitmentBestGas is Script {
 
   function _commitMultiple(uint count) internal {
     for (uint16 i; i < count; i++) {
-      commitment.commit(10 + i, 1);
+      commitment.commit(subId, 10 + i, 1);
     }
   }
 

@@ -2,12 +2,13 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/console2.sol";
-
+import "./DynamicArrayLib.sol";
 /**
- * 3 Blocks to aggregate vol submited
  *
  */
 contract CommitmentBest {
+  using DynamicArrayLib for uint[];
+
   error NotExecutable();
 
   error Registered();
@@ -40,8 +41,7 @@ contract CommitmentBest {
   mapping(uint8 => mapping(uint96 => uint16)) public weights;
 
   /// @dev subIds
-  mapping(uint8 => uint96[]) public subIds;
-
+  mapping(uint8 => uint[]) public subIds;
 
   // subId => [] lengths of queue;
   uint8[2] public length;
@@ -78,7 +78,7 @@ contract CommitmentBest {
   }
 
   /// @dev commit to the 'collecting' block
-  function commit(uint16 vol, uint16 weight) external {
+  function commit(uint96 subId, uint16 vol, uint16 weight) external {
     // todo: cannot double commit;
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
@@ -86,23 +86,12 @@ contract CommitmentBest {
 
     uint8 newIndex = length[cacheCOLLECTING];
 
+    subIds[cacheCOLLECTING].addUniqueToArray(subId, newIndex);
+
     queue[cacheCOLLECTING].push(Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false));
 
     length[cacheCOLLECTING] = newIndex + 1;
   }
-
-  // function commitMultiple(uint16[] calldata subIds, uint16[] calldata vol, uint16[] calldata weight) external {
-  //   // todo: cannot double commit;
-  //   // todo: check sender node id
-  //   (, uint8 cacheCOLLECTING) = _checkRollover();
-
-  //   uint8 newIndex = length[cacheCOLLECTING];
-
-  //   queue[0][cacheCOLLECTING][newIndex] =
-  //     Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false);
-
-  //   length[cacheCOLLECTING] = newIndex + 1;
-  // }
 
   /// @dev commit to the 'collecting' block
   function executeCommit(uint16 index, uint16 weight) external {
