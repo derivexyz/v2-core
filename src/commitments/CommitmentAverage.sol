@@ -95,30 +95,29 @@ contract CommitmentAverage {
       if (subIdCommitment.weight > 0 && subIdCommitment.timestamp + 5 minutes > block.timestamp) break;
 
       // prevent further commits if not enough deposits made by node
-      if (commitNode.deposits < (commitNode.totalWeight + weights[subIds[i]]) * DEPOSIT_PER_SUBID) {
+      if (commitNode.deposits < (commitNode.totalWeight + weights[i]) * DEPOSIT_PER_SUBID) {
         break;
       } else {
-        nodes[msg.sender].totalWeight += weights[subIds[i]];
+        nodes[msg.sender].totalWeight += weights[i];
       }
 
       State memory collecting = state[COLLECTING][subIds[i]]; // get current average
 
-      uint128 newWeight = weights[subIds[i]] + collecting.weight;
-
+      uint128 newWeight = weights[i] + collecting.weight;
       // todo: cheaper to just store in one go?
       (bidVol, askVol) = (uint128(vols[i] - RANGE), uint128(vols[i] + RANGE));
       state[COLLECTING][subIds[i]] = State({
         bidVol: SafeCast.toUint16(
-          ((bidVol * weights[subIds[i]]) + (uint128(collecting.bidVol) * collecting.weight)) / (newWeight)
+          ((bidVol * weights[i]) + (uint128(collecting.bidVol) * collecting.weight)) / (newWeight)
           ),
         askVol: SafeCast.toUint16(
-          ((askVol * weights[subIds[i]]) + (uint128(collecting.askVol) * collecting.weight)) / (newWeight)
+          ((askVol * weights[i]) + (uint128(collecting.askVol) * collecting.weight)) / (newWeight)
           ),
         weight: newWeight
       });
 
       commitments[COLLECTING][commitNode.nodeId][subIds[i]] = NodeCommitment(
-        SafeCast.toUint16(bidVol), SafeCast.toUint16(askVol), weights[subIds[i]], uint64(block.timestamp)
+        SafeCast.toUint16(bidVol), SafeCast.toUint16(askVol), weights[i], uint64(block.timestamp)
       );
     }
   }

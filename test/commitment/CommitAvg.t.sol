@@ -206,9 +206,43 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
 
   }
 
-  // function testCanExecutePendingCommit() {
+  function testCanExecutePendingCommit() public {
+    // Make deposits into first epoch
+    vm.startPrank(alice);
+    dai.approve(address(commitment), type(uint).max);
+    commitment.deposit(10_000e18); // deposit $10k DAI
 
-  // }
+    setAliceComittments();
+    commitment.commit(aliceVols, aliceSubIds, aliceWeights);
+    vm.stopPrank();
+    vm.warp(block.timestamp + 2 minutes);
+
+    vm.startPrank(bob);
+    dai.approve(address(commitment), type(uint).max);
+    commitment.deposit(10_000e18); // deposit $10k DAI
+
+    setBobComittments();
+    commitment.commit(bobVols, bobSubIds, bobWeights);
+    vm.stopPrank();
+
+    assertEq(commitment.COLLECTING(), 0);
+    // start new epoch and rotate epoch count
+    vm.warp(block.timestamp + 6 minutes);
+    vm.startPrank(bob);
+    bobVols = new uint16[](1);
+    bobVols[0] = 10;
+    bobSubIds = new uint8[](1);
+    bobSubIds[0] = 50;
+    bobWeights = new uint8[](1);
+    bobWeights[0] = 1;
+    commitment.commit(bobVols, bobSubIds, bobWeights);
+    // uint64 bobNewTime = uint64(block.timestamp);
+    vm.stopPrank();
+
+    // confirm epoch rotated
+    assertEq(commitment.PENDING(), 0);
+
+  }
 
   // function testCannotExecuteFinalizedOrCollectingCommit() {
 
