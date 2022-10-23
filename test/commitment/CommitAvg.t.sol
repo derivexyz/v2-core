@@ -131,7 +131,11 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     }
   }
 
-  function testCanStartNewEpoch() public {
+  function testCanRotateEpochs() public {
+    uint16 bidVol;
+    uint16 askVol;
+    uint128 commitWeight;
+
     // Alice deposit and commit 10 listings
     vm.startPrank(alice);
     dai.approve(address(commitment), type(uint).max);
@@ -175,9 +179,6 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     vm.stopPrank();
 
     // validate new state
-    uint16 bidVol;
-    uint16 askVol;
-    uint128 commitWeight;
     for (uint i = 0; i < 5; i++) {
       (bidVol, askVol, commitWeight) = commitment.state(commitment.COLLECTING(), i);
       uint128 epochTimestamp = commitment.timestamps(commitment.COLLECTING());
@@ -190,18 +191,20 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     (, totalWeight,) = commitment.nodes(bob);
     assertEq(totalWeight, 20); // commits from last epoch and this one
 
-    // successfuly clear commits
+    // successfuly clear commits and finalizes epoch
     vm.warp(block.timestamp + 12 minutes);
     vm.startPrank(bob);
     commitment.clearCommits(bobSubIds);
     (, totalWeight,) = commitment.nodes(bob);
     assertEq(totalWeight, 10); // remains unchanged
     vm.stopPrank();
+    // check subId 4 -> expected to be same as 1st test
+    (bidVol, askVol, commitWeight) = commitment.state(commitment.FINALIZED(), 4);
+    assertEq(bidVol, 63); // check is same as first commits
+    assertEq(askVol, 73); // check is same as first commits
+    assertEq(commitWeight, 3); // check is same as first commits
+
   }
-
-  // function testCanFinalizeEpoch() {
-
-  // }
 
   // function testCanExecutePendingCommit() {
 
