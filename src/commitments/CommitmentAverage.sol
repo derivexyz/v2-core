@@ -48,6 +48,7 @@ contract CommitmentAverage {
   // nodeData
   mapping(uint8 => mapping(uint => NodeCommitment[256])) public commitments; // epoch -> node -> commitments[], how do these work with rotating epochs
   mapping(address => Node) public nodes;
+  mapping(uint => address) public nodeIdToAddress; // todo: redundant
   uint nextNodeId = 1;
 
   // todo: need to make dynamic range
@@ -74,7 +75,9 @@ contract CommitmentAverage {
     lendingAsset.deposit(accountId, amount);
     Node memory depositNode = nodes[msg.sender];
     if (depositNode.nodeId == 0) {
-      nodes[msg.sender].nodeId = nextNodeId++;
+      nodes[msg.sender].nodeId = nextNodeId;
+      nodeIdToAddress[nextNodeId] = msg.sender;
+      nextNodeId++;
     }
 
     nodes[msg.sender].deposits += amount;
@@ -123,11 +126,11 @@ contract CommitmentAverage {
   }
 
   /// @dev commit to the 'collecting' block
-  function executeCommit(uint16 node, uint128 amount, uint8 subId) external {
+  function executeCommit(uint256 nodeId, uint128 amount, uint8 subId) external {
     // todo: deal with actual risk manager costs...
     _checkRotateBlocks();
 
-    NodeCommitment memory nodeCommit = commitments[PENDING][node][subId];
+    NodeCommitment memory nodeCommit = commitments[PENDING][nodeId][subId];
 
     if (nodeCommit.timestamp == 0 || nodeCommit.timestamp + 5 minutes > block.timestamp) revert No_Pending_Commitment();
 
@@ -137,7 +140,7 @@ contract CommitmentAverage {
     if (newWeight == 0) {
       state[PENDING][subId] = State(0, 0, 0); // clear average no commitments remain
     } else {
-      state[COLLECTING][subId] = State({
+      state[PENDING][subId] = State({
         bidVol: SafeCast.toUint16(
           ((uint128(avgCollecting.bidVol) * avgCollecting.weight) - (uint128(nodeCommit.bidVol) * amount)) / (newWeight)
           ),
@@ -148,11 +151,15 @@ contract CommitmentAverage {
       });
     }
 
+    /* update node commitment records */
     if (amount == nodeCommit.weight) {
-      commitments[PENDING][node][subId] = NodeCommitment(0, 0, 0, 0);
+      commitments[PENDING][nodeId][subId] = NodeCommitment(0, 0, 0, 0);
     } else {
-      commitments[PENDING][node][subId].weight -= amount;
+      commitments[PENDING][nodeId][subId].weight -= amount;
     }
+
+    /* update node total weight */
+    nodes[nodeIdToAddress[nodeId]].totalWeight -= amount;
 
     // trade;
     // todo: double check that deposit is actually in account

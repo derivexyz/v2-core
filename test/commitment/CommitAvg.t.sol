@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
+import "forge-std/console.sol";
+
 
 import "src/commitments/CommitmentAverage.sol";
 import "../account/poc-tests/AccountPOCHelper.sol";
@@ -242,6 +244,22 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     // confirm epoch rotated
     assertEq(commitment.PENDING(), 0);
 
+    // trade against pending Bob commit
+    (, uint weight, uint bobId) = commitment.nodes(bob);
+    (,, uint commitWeight, ) = commitment.commitments(commitment.PENDING(), bobId, 1); 
+    (,, uint128 oldStateWeight) = commitment.state(commitment.PENDING(), 1); 
+    commitment.executeCommit(bobId, 1, 1);
+    (, uint newWeight, ) = commitment.nodes(bob);
+    (,, uint newCommitWeight, ) = commitment.commitments(commitment.PENDING(), bobId, 1);
+    (uint16 newBidVol, uint16 newAskVol, uint128 newStateWeight) = commitment.state(commitment.PENDING(), 1);
+
+    assertEq(newWeight + 1, weight);
+    assertEq(newCommitWeight + 1, commitWeight);
+    assertEq(newWeight + 1, weight);
+    assertEq(newCommitWeight + 1, commitWeight);
+    assertEq(newBidVol, 79); // vol 68 -> 79
+    assertEq(newAskVol, 89); // vol 78 -> 89
+    assertEq(newStateWeight + 1, oldStateWeight);
   }
 
   // function testCannotExecuteFinalizedOrCollectingCommit() {
