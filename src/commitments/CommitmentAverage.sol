@@ -30,6 +30,7 @@ contract CommitmentAverage {
     uint16 bidVol;
     uint16 askVol;
     uint128 weight;
+    // uint96 points; // point system used to reward tightest ranges
   }
 
   struct Node {
@@ -52,9 +53,9 @@ contract CommitmentAverage {
   uint nextNodeId = 1;
 
   // todo: need to make dynamic range
-  uint16 public constant RANGE = 5;
+  // uint16 public constant RANGE = 5;
   uint16 public constant DEPOSIT_PER_SUBID = 500;
-
+  
   // account variables
   Lending lendingAsset;
   uint accountId;
@@ -84,13 +85,16 @@ contract CommitmentAverage {
   }
 
   /// @dev commit to the 'collecting' block
-  function commit(uint16[] memory vols, uint8[] memory subIds, uint128[] memory weights) external {
+  function commit(
+    uint16[] memory bidVols, 
+    uint16[] memory askVols, 
+    uint8[] memory subIds, 
+    uint128[] memory weights
+  ) external {
     Node memory commitNode = nodes[msg.sender];
 
     _checkRotateBlocks();
 
-    uint128 bidVol;
-    uint128 askVol;
     for (uint i = 0; i < subIds.length; i++) {
       NodeCommitment memory subIdCommitment = commitments[COLLECTING][commitNode.nodeId][subIds[i]];
 
@@ -98,29 +102,28 @@ contract CommitmentAverage {
       if (subIdCommitment.weight > 0 && subIdCommitment.timestamp + 5 minutes > block.timestamp) break;
 
       // prevent further commits if not enough deposits made by node
-      if (commitNode.deposits < (commitNode.totalWeight + weights[i]) * DEPOSIT_PER_SUBID) {
-        break;
-      } else {
-        nodes[msg.sender].totalWeight += weights[i];
-      }
+      if (commitNode.deposits < (commitNode.totalWeight + weights[i]) * DEPOSIT_PER_SUBID) break;
+
+      // ignore invalid spread
+      if (bidVols[i] > askVols[i]) break; 
+
+      nodes[msg.sender].totalWeight += weights[i];
 
       State memory collecting = state[COLLECTING][subIds[i]]; // get current average
 
-      uint128 newWeight = weights[i] + collecting.weight;
-      // todo: cheaper to just store in one go?
-      (bidVol, askVol) = (uint128(vols[i] - RANGE), uint128(vols[i] + RANGE));
+
       state[COLLECTING][subIds[i]] = State({
-        bidVol: SafeCast.toUint16(
-          ((bidVol * weights[i]) + (uint128(collecting.bidVol) * collecting.weight)) / (newWeight)
-          ),
-        askVol: SafeCast.toUint16(
-          ((askVol * weights[i]) + (uint128(collecting.askVol) * collecting.weight)) / (newWeight)
-          ),
-        weight: newWeight
+        bidVol: _addToAverage(
+          SafeCast.toUint128(bidVols[i]), weights[i], uint128(collecting.bidVol), collecting.weight
+        ),
+        askVol: _addToAverage(
+          SafeCast.toUint128(askVols[i]), weights[i], uint128(collecting.askVol), collecting.weight
+        ),
+        weight: weights[i] + collecting.weight
       });
 
       commitments[COLLECTING][commitNode.nodeId][subIds[i]] =
-        NodeCommitment(SafeCast.toUint16(bidVol), SafeCast.toUint16(askVol), weights[i], uint64(block.timestamp));
+        NodeCommitment(bidVols[i], askVols[i], weights[i], uint64(block.timestamp));
     }
   }
 
@@ -134,19 +137,18 @@ contract CommitmentAverage {
     if (nodeCommit.timestamp == 0 || nodeCommit.timestamp + 5 minutes > block.timestamp) revert No_Pending_Commitment();
 
     State memory avgCollecting = state[PENDING][subId];
-    uint128 newWeight = avgCollecting.weight - amount;
 
-    if (newWeight == 0) {
+    if (avgCollecting.weight - amount == 0) {
       state[PENDING][subId] = State(0, 0, 0); // clear average no commitments remain
     } else {
       state[PENDING][subId] = State({
-        bidVol: SafeCast.toUint16(
-          ((uint128(avgCollecting.bidVol) * avgCollecting.weight) - (uint128(nodeCommit.bidVol) * amount)) / (newWeight)
-          ),
-        askVol: SafeCast.toUint16(
-          ((uint128(avgCollecting.askVol) * avgCollecting.weight) - (uint128(nodeCommit.askVol) * amount)) / (newWeight)
-          ),
-        weight: newWeight
+        bidVol: _removeFromAverage(
+          uint128(nodeCommit.bidVol), amount, uint128(avgCollecting.bidVol), avgCollecting.weight
+        ),
+        askVol: _removeFromAverage(
+          uint128(nodeCommit.askVol), amount, uint128(avgCollecting.askVol), avgCollecting.weight
+        ),
+        weight: avgCollecting.weight - amount
       });
     }
 
@@ -168,7 +170,7 @@ contract CommitmentAverage {
 
   /**
    * @dev clear the committed weights once epoch is finalized
-   *      to allow reuse towards new commitments
+   *      to allow deposit reuse towards new commitments
    */
   function clearCommits(uint8[] memory subIds) external {
     _checkRotateBlocks();
@@ -192,4 +194,43 @@ contract CommitmentAverage {
       (COLLECTING, PENDING, FINALIZED) = (FINALIZED, COLLECTING, PENDING);
     }
   }
+
+  function _addToAverage(
+    uint128 valToAdd, uint128 amountToAdd, uint128 oldAverage, uint128 totalWeight
+  ) internal pure returns (uint16) {
+    uint128 newWeight = totalWeight + amountToAdd;
+    return SafeCast.toUint16(
+      ((valToAdd * amountToAdd) 
+        + (oldAverage * totalWeight)
+      ) / (newWeight)
+    );
+  }
+
+  // bidVol: SafeCast.toUint16(
+  //   ((SafeCast.toUint128(bidVols[i]) * weights[i]) + (uint128(collecting.bidVol) * collecting.weight)) / (newWeight)
+  //   ),
+  // askVol: SafeCast.toUint16(
+  //   ((SafeCast.toUint128(askVols[i]) * weights[i]) + (uint128(collecting.askVol) * collecting.weight)) / (newWeight)
+  //   ),
+  // weight: newWeight
+
+  function _removeFromAverage(
+    uint128 valToRemove, uint128 amountToRemove, uint128 oldAverage, uint128 totalWeight
+  ) internal pure returns (uint16) {
+    uint128 newWeight = totalWeight - amountToRemove;
+    return SafeCast.toUint16(
+      ((oldAverage * totalWeight) 
+        - (valToRemove * amountToRemove)
+      ) / (newWeight)
+    );
+  }
+  // bidVol: SafeCast.toUint16(
+  //   ((uint128(avgCollecting.bidVol) * avgCollecting.weight) - (uint128(nodeCommit.bidVol) * amount)) / (newWeight)
+  //   ),
+  // askVol: SafeCast.toUint16(
+  //   ((uint128(avgCollecting.askVol) * avgCollecting.weight) - (uint128(nodeCommit.askVol) * amount)) / (newWeight)
+  //   ),
+  // weight: newWeight
+
+
 }
