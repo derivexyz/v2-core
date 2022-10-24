@@ -4,7 +4,13 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
+import "../shared/mocks/MockERC20.sol";
+import "../shared/mocks/MockAsset.sol";
+import "../shared/mocks/MockManager.sol";
+import "../account/mocks/managers/DumbManager.sol";
+
 import "src/commitments/CommitmentBest.sol";
+import "src/Account.sol";
 
 contract UNIT_CommitBest is Test {
   CommitmentBest commitment;
@@ -12,8 +18,22 @@ contract UNIT_CommitBest is Test {
 
   uint96 subId = 1;
 
-  constructor() {
-    commitment = new CommitmentBest();
+  MockManager dumbManager;
+
+  MockERC20 usdc;
+  MockAsset usdcAsset;
+
+  Account account;
+
+  function setUp() public {
+    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    dumbManager = new DumbManager(address(account));
+
+    /* mock tokens that can be deposited into accounts */
+    usdc = new MockERC20("USDC", "USDC");
+    usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+
+    commitment = new CommitmentBest(address(account), address(usdc), address(usdcAsset), address(dumbManager));
 
     commitment.register();
 

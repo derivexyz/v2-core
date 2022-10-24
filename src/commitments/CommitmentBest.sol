@@ -3,6 +3,10 @@ pragma solidity ^0.8.13;
 
 import "forge-std/console2.sol";
 import "./DynamicArrayLib.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "src/interfaces/IAccount.sol";
+import "../interfaces/IAsset.sol";
+import "../../test/shared/mocks/MockAsset.sol";
 
 contract CommitmentBest {
   using DynamicArrayLib for uint96[];
@@ -32,6 +36,7 @@ contract CommitmentBest {
   struct Node {
     uint16 totalWeight;
     uint64 nodeId;
+    uint accountId;
   }
 
   // only 0 ~ 1 is used
@@ -59,7 +64,18 @@ contract CommitmentBest {
   uint64 pendingStartTimestamp;
   uint64 collectingStartTimestamp;
 
-  constructor() {}
+  address immutable quote;
+  address immutable quoteAsset;
+  address immutable account;
+  address immutable manager;
+
+  constructor(address _account, address _quote, address _quoteAsset, address _manager) {
+    account = _account;
+    quoteAsset = _quoteAsset;
+    quote = _quote;
+    manager = _manager;
+    IERC20(_quote).approve(quoteAsset, type(uint).max);
+  }
 
   function pendingLength() external view returns (uint) {
     return length[PENDING];
@@ -77,12 +93,18 @@ contract CommitmentBest {
     return weights[COLLECTING][subId];
   }
 
-  function register() external returns (uint64 id) {
+  function register() external returns (uint64 nodeId) {
     if (nodes[msg.sender].nodeId != 0) revert Registered();
 
-    id = ++nextId;
-    nodes[msg.sender] = Node(0, id);
+    nodeId = ++nextId;
+
+    // create accountId and
+    uint accountId = IAccount(account).createAccount(address(this), IManager(manager));
+
+    nodes[msg.sender] = Node(0, nodeId, accountId);
   }
+
+  function deposit() external {}
 
   /// @dev commit to the 'collecting' block
   function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint16 weight) external {

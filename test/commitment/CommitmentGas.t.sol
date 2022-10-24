@@ -4,14 +4,25 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import "src/commitments/CommitmentBest.sol";
 import "src/commitments/CommitmentAverage.sol";
+import "src/Account.sol";
+
+import "../account/mocks/managers/DumbManager.sol";
+import "../shared/mocks/MockERC20.sol";
+import "../shared/mocks/MockAsset.sol";
+import "../shared/mocks/MockManager.sol";
 
 contract CommitmentBestGas is Script {
   uint ownAcc;
   CommitmentBest commitment;
 
   uint expiry;
-
   uint96 subId = 2;
+
+  MockManager dumbManager;
+  MockERC20 usdc;
+  MockAsset usdcAsset;
+
+  Account account;
 
   function run() external {
     vm.startBroadcast();
@@ -51,7 +62,15 @@ contract CommitmentBestGas is Script {
   }
 
   function deployMockSystem() public {
-    commitment = new CommitmentBest();
+    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+
+    /* mock tokens that can be deposited into accounts */
+    usdc = new MockERC20("USDC", "USDC");
+    usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+
+    dumbManager = new MockManager(address(account));
+
+    commitment = new CommitmentBest(address(account), address(usdc), address(usdcAsset), address(dumbManager));
   }
 }
 
