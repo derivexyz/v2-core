@@ -14,6 +14,7 @@ contract CommitmentBest {
   struct Commitment {
     uint16 bidVol;
     uint16 askVol;
+    uint16 range;
     uint16 weight;
     uint64 nodeId;
     uint64 timestamp;
@@ -160,7 +161,9 @@ contract CommitmentBest {
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
     weights[cacheCOLLECTING][subId] += weight;
 
-    queues[cacheCOLLECTING][subId].push(Commitment(bidVol, askVol, weight, node, uint64(block.timestamp), false, subId));
+    queues[cacheCOLLECTING][subId].push(
+      Commitment(bidVol, askVol, askVol - bidVol, weight, node, uint64(block.timestamp), false, subId)
+    );
   }
 
   function checkRollover() external {
