@@ -20,12 +20,12 @@ contract CommitmentBestGas is Script {
 
     // gas tests
     uint gasBefore = gasleft();
-    commitment.commit(subId, 100, 1);
+    commitment.commit(subId, 95, 105, 1);
     uint gasAfter = gasleft();
     console.log("gas commit#1", gasBefore - gasAfter);
 
     gasBefore = gasleft();
-    commitment.commit(subId, 100, 1);
+    commitment.commit(subId, 95, 105, 1);
     gasAfter = gasleft();
     console.log("gas commit#2", gasBefore - gasAfter);
 
@@ -46,7 +46,7 @@ contract CommitmentBestGas is Script {
 
   function _commitMultiple(uint count) internal {
     for (uint16 i; i < count; i++) {
-      commitment.commit(subId, 10 + i, 1);
+      commitment.commit(subId, 90 + i, 100 + i, 1);
     }
   }
 

@@ -58,8 +58,6 @@ contract CommitmentBest {
   uint64 pendingStartTimestamp;
   uint64 collectingStartTimestamp;
 
-  uint16 constant RANGE = 5;
-
   constructor() {}
 
   function pendingLength() external view returns (uint) {
@@ -86,12 +84,12 @@ contract CommitmentBest {
   }
 
   /// @dev commit to the 'collecting' block
-  function commit(uint96 subId, uint16 vol, uint16 weight) external {
+  function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint16 weight) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
     uint64 node = nodes[msg.sender].nodeId;
 
-    _addCommitToQueue(cacheCOLLECTING, node, subId, vol, weight);
+    _addCommitToQueue(cacheCOLLECTING, node, subId, bidVol, askVol, weight);
 
     length[cacheCOLLECTING] += 1;
 
@@ -99,16 +97,23 @@ contract CommitmentBest {
     if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
   }
 
-  function commitMultiple(uint96[] calldata _subIds, uint16[] calldata _vols, uint16[] calldata _weights) external {
+  function commitMultiple(
+    uint96[] calldata _subIds,
+    uint16[] calldata _bidVols,
+    uint16[] calldata _askVols,
+    uint16[] calldata _weights
+  ) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
     uint valueLength = _subIds.length;
-    if (_vols.length != valueLength || _weights.length != valueLength) revert("bad inputs");
+    if (_bidVols.length != valueLength || _askVols.length != valueLength || _weights.length != valueLength) {
+      revert("bad inputs");
+    }
 
     uint64 node = nodes[msg.sender].nodeId;
 
     for (uint i = 0; i < valueLength; i++) {
-      _addCommitToQueue(cacheCOLLECTING, node, _subIds[i], _vols[i], _weights[i]);
+      _addCommitToQueue(cacheCOLLECTING, node, _subIds[i], _bidVols[i], _askVols[i], _weights[i]);
     }
 
     length[cacheCOLLECTING] += uint8(valueLength);
@@ -144,14 +149,18 @@ contract CommitmentBest {
     // trade;
   }
 
-  function _addCommitToQueue(uint8 cacheCOLLECTING, uint64 node, uint96 subId, uint16 vol, uint16 weight) internal {
+  function _addCommitToQueue(
+    uint8 cacheCOLLECTING,
+    uint64 node,
+    uint96 subId,
+    uint16 bidVol,
+    uint16 askVol,
+    uint16 weight
+  ) internal {
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
     weights[cacheCOLLECTING][subId] += weight;
 
-    // todo: cannot double commit?
-    queues[cacheCOLLECTING][subId].push(
-      Commitment(vol - RANGE, vol + RANGE, weight, node, uint64(block.timestamp), false, subId)
-    );
+    queues[cacheCOLLECTING][subId].push(Commitment(bidVol, askVol, weight, node, uint64(block.timestamp), false, subId));
   }
 
   function checkRollover() external {

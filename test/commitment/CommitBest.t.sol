@@ -21,10 +21,10 @@ contract UNIT_CommitBest is Test {
   }
 
   function testCanCommit() public {
-    commitment.commit(subId, 100, commitmentWeight);
-    commitment.commit(subId, 100, commitmentWeight);
-    commitment.commit(subId, 102, commitmentWeight);
-    commitment.commit(subId, 105, commitmentWeight);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+    commitment.commit(subId, 97, 107, commitmentWeight);
+    commitment.commit(subId, 100, 110, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
 
@@ -35,9 +35,9 @@ contract UNIT_CommitBest is Test {
   }
 
   function testCanExecuteCommit() public {
-    commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
-    commitment.commit(subId, 104, commitmentWeight); // collecting: 2, pending: 0
-    commitment.commit(subId, 102, commitmentWeight); // collecting: 3, pending: 0
+    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
+    commitment.commit(subId, 97, 107, commitmentWeight); // collecting: 3, pending: 0
     assertEq(commitment.collectingLength(), 3);
     assertEq(commitment.collectingWeight(subId), commitmentWeight * 3);
 
@@ -67,20 +67,30 @@ contract UNIT_CommitBest is Test {
     subIds[4] = subId2;
     subIds[5] = subId2;
 
-    uint16[] memory vols = new uint16[](6);
-    vols[0] = 100;
-    vols[1] = 101;
-    vols[2] = 102;
-    vols[3] = 103;
-    vols[4] = 104;
-    vols[5] = 105;
+    uint16[] memory bids = new uint16[](6);
+    bids[0] = 90;
+    bids[1] = 91;
+    bids[2] = 92;
+
+    bids[3] = 93;
+    bids[4] = 94;
+    bids[5] = 95;
+
+    uint16[] memory asks = new uint16[](6);
+    asks[0] = 95;
+    asks[1] = 96;
+    asks[2] = 97;
+
+    asks[3] = 98;
+    asks[4] = 99;
+    asks[5] = 100;
 
     uint16[] memory weights = new uint16[](6);
     for (uint i; i < 6; i++) {
       weights[i] = commitmentWeight;
     }
 
-    commitment.commitMultiple(subIds, vols, weights);
+    commitment.commitMultiple(subIds, bids, asks, weights);
     assertEq(commitment.collectingLength(), 6);
 
     vm.warp(block.timestamp + 10 minutes);
@@ -88,25 +98,25 @@ contract UNIT_CommitBest is Test {
 
     assertEq(commitment.pendingLength(), 6);
 
-    // remove 1st for subId
-    commitment.executeCommit(subId, 0, commitmentWeight);
+    // remove third for subId
+    commitment.executeCommit(subId, 2, commitmentWeight);
 
-    // remove 1st for subId2
-    commitment.executeCommit(subId2, 0, commitmentWeight);
+    // remove third for subId2
+    commitment.executeCommit(subId2, 2, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
     (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
-    assertEq(bestVol, 97);
+    assertEq(bestVol, 91);
 
     (uint16 bestVol2,,,) = commitment.bestFinalizedBids(subId2);
-    assertEq(bestVol2, 100);
+    assertEq(bestVol2, 94);
   }
 
   function testShouldRolloverBlankIfPendingIsEmpty() public {
-    commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
-    commitment.commit(subId, 104, commitmentWeight); // collecting: 2, pending: 0
+    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover(); // collecting: 0, pending: 2
@@ -117,7 +127,7 @@ contract UNIT_CommitBest is Test {
     commitment.executeCommit(subId, 0, commitmentWeight);
     commitment.executeCommit(subId, 1, commitmentWeight);
 
-    commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
 
     vm.warp(block.timestamp + 10 minutes);
 
