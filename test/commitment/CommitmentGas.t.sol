@@ -16,7 +16,7 @@ contract CommitmentBestGas is Script {
   CommitmentBest commitment;
 
   uint expiry;
-  uint96 subId = 2;
+  uint96 subId = 1;
 
   MockManager dumbManager;
   MockERC20 usdc;
@@ -30,17 +30,28 @@ contract CommitmentBestGas is Script {
     deployMockSystem();
 
     // gas tests
+
     uint gasBefore = gasleft();
-    commitment.commit(subId, 95, 105, 1);
+    commitment.register();
     uint gasAfter = gasleft();
+    console.log("gas register", gasBefore - gasAfter);
+
+    gasBefore = gasleft();
+    commitment.deposit(10000_000000);
+    gasAfter = gasleft();
+    console.log("gas deposit", gasBefore - gasAfter);
+
+    gasBefore = gasleft();
+    commitment.commit(subId, 95, 105, 1);
+    gasAfter = gasleft();
     console.log("gas commit#1", gasBefore - gasAfter);
 
     gasBefore = gasleft();
-    commitment.commit(subId, 95, 105, 1);
+    commitment.commit(subId, 96, 106, 1);
     gasAfter = gasleft();
     console.log("gas commit#2", gasBefore - gasAfter);
 
-    _commitMultiple(100);
+    _commitMultiple(500);
     vm.warp(block.timestamp + 10 minutes);
 
     commitment.checkRollover(); // pending: 102
@@ -50,15 +61,38 @@ contract CommitmentBestGas is Script {
     commitment.checkRollover(); // pending: 102
     gasAfter = gasleft();
 
-    console.log("gas rollover 100 in queue", gasBefore - gasAfter);
+    console.log("gas rollover 5 subIds x 100 each in queue", gasBefore - gasAfter);
+
+    (uint bestBid_1,,,) = commitment.bestFinalizedBids(0);
+    (uint bestBid_2,,,) = commitment.bestFinalizedBids(1);
+    (uint bestBid_3,,,) = commitment.bestFinalizedBids(2);
+    (uint bestBid_4,,,) = commitment.bestFinalizedBids(3);
+    (uint bestBid_5,,,) = commitment.bestFinalizedBids(4);
+    console2.log("bestBid_subId1", bestBid_1);
+    console2.log("bestBid_subId2", bestBid_2);
+    console2.log("bestBid_subId3", bestBid_3);
+    console2.log("bestBid_subId4", bestBid_4);
+    console2.log("bestBid_subId5", bestBid_5);
 
     vm.stopBroadcast();
   }
 
   function _commitMultiple(uint count) internal {
+    uint96[] memory subIds = new uint96[](count);
+
+    uint16[] memory bids = new uint16[](count);
+
+    uint16[] memory asks = new uint16[](count);
+
+    uint64[] memory weights = new uint64[](count);
     for (uint16 i; i < count; i++) {
-      commitment.commit(subId, 90 + i, 100 + i, 1);
+      subIds[i] = uint96(i % 5);
+      bids[i] = 50 + i;
+      asks[i] = 60 + i;
+      weights[i] = 5_000000;
     }
+
+    commitment.commitMultiple(subIds, bids, asks, weights);
   }
 
   function deployMockSystem() public {
@@ -68,9 +102,13 @@ contract CommitmentBestGas is Script {
     usdc = new MockERC20("USDC", "USDC");
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
 
+    usdc.mint(msg.sender, 10000_000000);
+
     dumbManager = new MockManager(address(account));
 
     commitment = new CommitmentBest(address(account), address(usdc), address(usdcAsset), address(dumbManager));
+
+    usdc.approve(address(commitment), type(uint).max);
   }
 }
 

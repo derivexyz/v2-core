@@ -11,10 +11,11 @@ import "forge-std/console2.sol";
  */
 
 library DynamicArrayLib {
-  function addUniqueToArray(uint96[] storage array, uint96 newElement) internal {
+  function addUniqueToArray(uint96[] storage array, uint96 newElement) internal returns (bool isNew) {
     int foundIndex = findInArray(array, newElement);
     if (foundIndex == -1) {
       array.push(newElement); // use push here instead of direct assignment
+      isNew = true;
     }
   }
 
@@ -28,10 +29,7 @@ library DynamicArrayLib {
 
   function findInArray(uint96[] storage array, uint96 toFind) internal view returns (int index) {
     unchecked {
-      for (uint i; i < array.length; ++i) {
-        if (array[i] == 0) {
-          return -1;
-        }
+      for (uint i; i < array.length; i++) {
         if (array[i] == toFind) {
           return int(i);
         }
