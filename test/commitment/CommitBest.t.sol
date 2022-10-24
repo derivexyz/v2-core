@@ -158,11 +158,11 @@ contract UNIT_CommitBest is Test {
 
     commitment.checkRollover();
 
-    (uint16 bestVol, uint64 commitments, uint64 nodeId, uint64 bidTimestamp) = commitment.bestFinalizedBids(subId);
+    (uint16 bestVol, uint64 commitments, uint64 nodeId, uint64 timestamp) = commitment.bestFinalizedBids(subId);
     assertEq(bestVol, 0);
     assertEq(nodeId, 0);
     assertEq(commitments, 0);
-    assertEq(bidTimestamp, 0);
+    assertEq(timestamp, 0);
 
     assertEq(commitment.pendingLength(), 1);
   }

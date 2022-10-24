@@ -31,7 +31,7 @@ contract CommitmentBest {
     uint16 bestVol;
     uint64 weight;
     uint64 nodeId;
-    uint64 bidTimestamp;
+    uint64 timestamp;
   }
 
   struct Node {
@@ -209,22 +209,25 @@ contract CommitmentBest {
 
     (uint8 cachePENDING, uint8 cacheCOLLECTING) = (PENDING, COLLECTING);
 
-    // nothing pending and there are something in the collecting phase:
-    // make sure oldest one is older than 5 minutes, if so, move collecting => pending
-    if (pendingStartTimestamp == 0) {
+    /// if no pending: check we need to put collecting to pending
+    if (pendingStartTimestamp == 0 || length[cachePENDING] == 0) {
       if (collectingStartTimestamp != 0 && block.timestamp - collectingStartTimestamp > 5 minutes) {
+        // console2.log("roll over! change pending vs collecting");
         (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
+        return (cachePENDING, cacheCOLLECTING);
       }
     }
 
     // nothing pending and there are something in the collecting phase:
     // make sure oldest one is older than 5 minutes, if so, move collecting => pending
     if (length[cachePENDING] > 0) {
+      // console2.log("check if need to update finalized");
       if (block.timestamp - pendingStartTimestamp < 5 minutes) return (cachePENDING, cacheCOLLECTING);
 
       _updateFromPendingForEachSubId(cachePENDING);
+      // console2.log("roll over! already update pending => finalized");
       (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
-    }
+    } 
 
     return (cachePENDING, cacheCOLLECTING);
   }
@@ -281,6 +284,7 @@ contract CommitmentBest {
         );
       }
       if (pendingQueue[bestAskId].weight != 0) {
+        // console2.log("find ask for subId <3", subId, cacheBestAsk);
         bestFinalizedAsks[subId] = FinalizedQuote(
           cacheBestAsk,
           pendingQueue[bestAskId].weight,

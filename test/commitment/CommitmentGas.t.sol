@@ -51,29 +51,44 @@ contract CommitmentBestGas is Script {
     gasAfter = gasleft();
     console.log("gas commit#2", gasBefore - gasAfter);
 
-    _commitMultiple(500, 5);
+    console2.log("----------------------------------");
+
     _commitMultiple(500, 5);
     vm.warp(block.timestamp + 10 minutes);
 
     commitment.checkRollover(); // pending: 102
 
-    vm.warp(block.timestamp + 10 minutes);
+    vm.warp(block.timestamp + 20 minutes);
     gasBefore = gasleft();
     commitment.checkRollover(); // pending: 102
     gasAfter = gasleft();
 
     console.log("gas rollover 5 subIds x 200 each in queue", gasBefore - gasAfter);
 
-    (uint bestBid_1,,,) = commitment.bestFinalizedBids(0);
-    (uint bestBid_2,,,) = commitment.bestFinalizedBids(1);
-    (uint bestBid_3,,,) = commitment.bestFinalizedBids(2);
-    (uint bestBid_4,,,) = commitment.bestFinalizedBids(3);
-    (uint bestBid_5,,,) = commitment.bestFinalizedBids(4);
-    console2.log("bestBid_subId1", bestBid_1);
-    console2.log("bestBid_subId2", bestBid_2);
-    console2.log("bestBid_subId3", bestBid_3);
-    console2.log("bestBid_subId4", bestBid_4);
-    console2.log("bestBid_subId5", bestBid_5);
+    console2.log("----------------------------------");
+
+    (uint bestBid_1,,,uint96 _timestamp) = commitment.bestFinalizedBids(0);
+    (uint bestBid_2,,,uint96 _timestamp2) = commitment.bestFinalizedBids(1);
+
+
+    // add to 200 subId
+    _commitMultiple(200, 200);  
+
+    // roll to pending
+    vm.warp(block.timestamp + 30 minutes);
+    commitment.checkRollover();
+
+    // roll to finalized
+
+    vm.warp(block.timestamp + 40 minutes);
+    gasBefore = gasleft();
+    commitment.checkRollover();
+    gasAfter = gasleft();
+
+    console.log("gas rollover 200 subIds x 1 each in queue", gasBefore - gasAfter);
+
+    (,,,uint64 timestamp) = commitment.bestFinalizedBids(0);
+    (,,,uint64 timestamp2) = commitment.bestFinalizedBids(1);
 
     vm.stopBroadcast();
   }
@@ -96,7 +111,7 @@ contract CommitmentBestGas is Script {
     uint gasBefore = gasleft();
     commitment.commitMultiple(subIds, bids, asks, weights);
     uint gasAfter = gasleft();
-    console.log("gas commitMultiple (5 x 100)", gasBefore - gasAfter);
+    console.log("gas commitMultiple (#subId, #each, gas):", subIdCount, (total / subIdCount), gasBefore - gasAfter);
   }
 
   function deployMockSystem() public {
