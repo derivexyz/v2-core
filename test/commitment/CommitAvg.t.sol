@@ -262,8 +262,8 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     assertEq(newCommitWeight + 1, commitWeight);
     assertEq(newWeight + 1, weight);
     assertEq(newCommitWeight + 1, commitWeight);
-    assertEq(newBidVol, 79); // vol 68 -> 79
-    assertEq(newAskVol, 89); // vol 78 -> 89
+    assertEq(newBidVol, 77);
+    assertEq(newAskVol, 91);
     assertEq(newStateWeight + 1, oldStateWeight);
   }
 
