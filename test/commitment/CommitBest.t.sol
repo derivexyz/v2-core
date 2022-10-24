@@ -56,6 +56,54 @@ contract UNIT_CommitBest is Test {
     assertEq(bestVol, 97);
   }
 
+  function testCanExecuteCommitMultiple() public {
+    uint96 subId2 = 2;
+
+    uint96[] memory subIds = new uint96[](6);
+    subIds[0] = subId;
+    subIds[1] = subId;
+    subIds[2] = subId;
+    subIds[3] = subId2;
+    subIds[4] = subId2;
+    subIds[5] = subId2;
+
+    uint16[] memory vols = new uint16[](6);
+    vols[0] = 100;
+    vols[1] = 101;
+    vols[2] = 102;
+    vols[3] = 103;
+    vols[4] = 104;
+    vols[5] = 105;
+
+    uint16[] memory weights = new uint16[](6);
+    for(uint i; i < 6; i++) {
+      weights[i] = commitmentWeight;
+    }
+
+    commitment.commitMultiple(subIds, vols, weights);
+    assertEq(commitment.collectingLength(), 6);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    assertEq(commitment.pendingLength(), 6);
+
+    // remove 1st for subId
+    commitment.executeCommit(subId, 0, commitmentWeight);
+    
+    // remove 1st for subId2
+    commitment.executeCommit(subId2, 0, commitmentWeight);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
+    assertEq(bestVol, 97);
+
+    (uint16 bestVol2,,,) = commitment.bestFinalizedBids(subId2);
+    assertEq(bestVol2, 100);
+  }
+
   function testShouldRolloverBlankIfPendingIsEmpty() public {
     commitment.commit(subId, 100, commitmentWeight); // collecting: 1, pending: 0
     commitment.commit(subId, 104, commitmentWeight); // collecting: 2, pending: 0
