@@ -51,7 +51,7 @@ contract CommitmentBest {
   mapping(uint8 => uint96[]) public subIds;
 
   // subId => [] lengths of queue;
-  uint8[2] public length;
+  uint32[2] public length;
 
   mapping(address => Node) public nodes;
 

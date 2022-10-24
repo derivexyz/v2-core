@@ -37,7 +37,7 @@ contract CommitmentBestGas is Script {
     console.log("gas register", gasBefore - gasAfter);
 
     gasBefore = gasleft();
-    commitment.deposit(10000_000000);
+    commitment.deposit(100000e6);
     gasAfter = gasleft();
     console.log("gas deposit", gasBefore - gasAfter);
 
@@ -51,7 +51,8 @@ contract CommitmentBestGas is Script {
     gasAfter = gasleft();
     console.log("gas commit#2", gasBefore - gasAfter);
 
-    _commitMultiple(500);
+    _commitMultiple(500, 5);
+    _commitMultiple(500, 5);
     vm.warp(block.timestamp + 10 minutes);
 
     commitment.checkRollover(); // pending: 102
@@ -61,7 +62,7 @@ contract CommitmentBestGas is Script {
     commitment.checkRollover(); // pending: 102
     gasAfter = gasleft();
 
-    console.log("gas rollover 5 subIds x 100 each in queue", gasBefore - gasAfter);
+    console.log("gas rollover 5 subIds x 200 each in queue", gasBefore - gasAfter);
 
     (uint bestBid_1,,,) = commitment.bestFinalizedBids(0);
     (uint bestBid_2,,,) = commitment.bestFinalizedBids(1);
@@ -77,25 +78,25 @@ contract CommitmentBestGas is Script {
     vm.stopBroadcast();
   }
 
-  function _commitMultiple(uint count) internal {
-    uint96[] memory subIds = new uint96[](count);
+  function _commitMultiple(uint total, uint subIdCount) internal {
+    uint96[] memory subIds = new uint96[](total);
 
-    uint16[] memory bids = new uint16[](count);
+    uint16[] memory bids = new uint16[](total);
 
-    uint16[] memory asks = new uint16[](count);
+    uint16[] memory asks = new uint16[](total);
 
-    uint64[] memory weights = new uint64[](count);
-    for (uint16 i; i < count; i++) {
-      subIds[i] = uint96(i % 5);
-      bids[i] = 50 + i;
-      asks[i] = 60 + i;
-      weights[i] = 5_000000;
+    uint64[] memory weights = new uint64[](total);
+    for (uint16 i; i < total; i++) {
+      subIds[i] = uint96(i % subIdCount);
+      bids[i] = 50 + (i % 30);
+      asks[i] = 60 + (i % 30);
+      weights[i] = 5e6;
     }
 
     uint gasBefore = gasleft();
     commitment.commitMultiple(subIds, bids, asks, weights);
     uint gasAfter = gasleft();
-    console.log("gas commitMultiple (500x)", gasBefore - gasAfter);
+    console.log("gas commitMultiple (5 x 100)", gasBefore - gasAfter);
   }
 
   function deployMockSystem() public {
@@ -105,7 +106,7 @@ contract CommitmentBestGas is Script {
     usdc = new MockERC20("USDC", "USDC");
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
 
-    usdc.mint(msg.sender, 10000_000000);
+    usdc.mint(msg.sender, 100000e6);
 
     dumbManager = new MockManager(address(account));
 
