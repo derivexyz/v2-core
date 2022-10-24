@@ -14,12 +14,13 @@ contract CommitmentBest {
   error NotExecutable();
 
   error Registered();
+  error NotRegistered();
 
   struct Commitment {
     uint16 bidVol;
     uint16 askVol;
     uint16 range;
-    uint16 weight;
+    uint64 weight;
     uint64 nodeId;
     uint64 timestamp;
     bool isExecuted;
@@ -28,14 +29,15 @@ contract CommitmentBest {
 
   struct FinalizedQuote {
     uint16 bestVol;
-    uint16 weight;
+    uint64 weight;
     uint64 nodeId;
     uint64 bidTimestamp;
   }
 
   struct Node {
-    uint16 totalWeight;
     uint64 nodeId;
+    uint64 totalDeposit;
+    uint64 depositLeft;
     uint accountId;
   }
 
@@ -43,7 +45,7 @@ contract CommitmentBest {
   mapping(uint8 => mapping(uint96 => Commitment[])) public queues;
 
   /// @dev weight[queueIndex][]
-  mapping(uint8 => mapping(uint96 => uint16)) public weights;
+  mapping(uint8 => mapping(uint96 => uint64)) public weights;
 
   /// @dev subIds
   mapping(uint8 => uint96[]) public subIds;
@@ -101,18 +103,25 @@ contract CommitmentBest {
     // create accountId and
     uint accountId = IAccount(account).createAccount(address(this), IManager(manager));
 
-    nodes[msg.sender] = Node(0, nodeId, accountId);
+    nodes[msg.sender] = Node(nodeId, 0, 0, accountId);
   }
 
-  function deposit() external {}
+  function deposit(uint64 amount) external {
+    if (nodes[msg.sender].nodeId == 0) revert NotRegistered();
+    IERC20(quote).transferFrom(msg.sender, address(this), amount);
+    MockAsset(quoteAsset).deposit(nodes[msg.sender].accountId, 0, amount);
+
+    nodes[msg.sender].totalDeposit += amount;
+    nodes[msg.sender].depositLeft += amount;
+  }
 
   /// @dev commit to the 'collecting' block
-  function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint16 weight) external {
+  function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint64 weight) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
     uint64 node = nodes[msg.sender].nodeId;
 
-    _addCommitToQueue(cacheCOLLECTING, node, subId, bidVol, askVol, weight);
+    _addCommitToQueue(cacheCOLLECTING, msg.sender, node, subId, bidVol, askVol, weight);
 
     length[cacheCOLLECTING] += 1;
 
@@ -124,7 +133,7 @@ contract CommitmentBest {
     uint96[] calldata _subIds,
     uint16[] calldata _bidVols,
     uint16[] calldata _askVols,
-    uint16[] calldata _weights
+    uint64[] calldata _weights
   ) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
@@ -136,7 +145,7 @@ contract CommitmentBest {
     uint64 node = nodes[msg.sender].nodeId;
 
     for (uint i = 0; i < valueLength; i++) {
-      _addCommitToQueue(cacheCOLLECTING, node, _subIds[i], _bidVols[i], _askVols[i], _weights[i]);
+      _addCommitToQueue(cacheCOLLECTING, msg.sender, node, _subIds[i], _bidVols[i], _askVols[i], _weights[i]);
     }
 
     length[cacheCOLLECTING] += uint8(valueLength);
@@ -152,7 +161,7 @@ contract CommitmentBest {
     Commitment memory target = queues[cachePENDING][subId][index];
 
     // update weight for the commit;
-    uint16 newWeight = target.weight - weight;
+    uint64 newWeight = target.weight - weight;
     if (newWeight == 0) {
       queues[cachePENDING][subId][index].isExecuted = true;
       queues[cachePENDING][subId][index].weight = 0;
@@ -161,7 +170,7 @@ contract CommitmentBest {
     }
 
     // update total weight for an subId
-    uint16 newTotalSubIdWeight = weights[cachePENDING][target.subId] - weight;
+    uint64 newTotalSubIdWeight = weights[cachePENDING][target.subId] - weight;
     if (newTotalSubIdWeight != 0) {
       weights[cachePENDING][target.subId] = newTotalSubIdWeight;
     } else {
@@ -174,11 +183,12 @@ contract CommitmentBest {
 
   function _addCommitToQueue(
     uint8 cacheCOLLECTING,
+    address owner,
     uint64 node,
     uint96 subId,
     uint16 bidVol,
     uint16 askVol,
-    uint16 weight
+    uint64 weight
   ) internal {
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
     weights[cacheCOLLECTING][subId] += weight;
@@ -186,6 +196,8 @@ contract CommitmentBest {
     queues[cacheCOLLECTING][subId].push(
       Commitment(bidVol, askVol, askVol - bidVol, weight, node, uint64(block.timestamp), false, subId)
     );
+
+    nodes[owner].depositLeft -= weight;
   }
 
   function checkRollover() external {

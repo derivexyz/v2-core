@@ -35,9 +35,14 @@ contract UNIT_CommitBest is Test {
 
     commitment = new CommitmentBest(address(account), address(usdc), address(usdcAsset), address(dumbManager));
 
+    usdc.mint(address(this), 10000_000000);
+    usdc.approve(address(commitment), type(uint).max);
+
     commitment.register();
 
     vm.warp(block.timestamp + 1 days);
+
+    commitment.deposit(100_000000);
   }
 
   function testCanCommit() public {
@@ -105,7 +110,7 @@ contract UNIT_CommitBest is Test {
     asks[4] = 99;
     asks[5] = 100;
 
-    uint16[] memory weights = new uint16[](6);
+    uint64[] memory weights = new uint64[](6);
     for (uint i; i < 6; i++) {
       weights[i] = commitmentWeight;
     }
@@ -153,7 +158,7 @@ contract UNIT_CommitBest is Test {
 
     commitment.checkRollover();
 
-    (uint16 bestVol, uint16 commitments, uint64 nodeId, uint64 bidTimestamp) = commitment.bestFinalizedBids(subId);
+    (uint16 bestVol, uint64 commitments, uint64 nodeId, uint64 bidTimestamp) = commitment.bestFinalizedBids(subId);
     assertEq(bestVol, 0);
     assertEq(nodeId, 0);
     assertEq(commitments, 0);
