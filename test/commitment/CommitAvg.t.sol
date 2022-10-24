@@ -164,12 +164,12 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
 
     // Bob clears old commits and commits adjusted values to new epoch
     vm.startPrank(bob);
-    for (uint8 i = 0; i < 5; i++) {
+    for (uint8 i = 0; i < 3; i++) {
       bobSubIds[i] = i;
     }
     commitment.clearCommits(bobSubIds);
     (, uint totalWeight,) = commitment.nodes(bob);
-    assertEq(totalWeight, 10); // remains unchanged
+    assertEq(totalWeight, 6); // remains unchanged
 
     setBobComittments();
     bobBids = new uint16[](3);
@@ -185,7 +185,7 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
     vm.stopPrank();
 
     // validate new state
-    for (uint i = 0; i < 5; i++) {
+    for (uint i = 0; i < 3; i++) {
       (bidVol, askVol, commitWeight) = commitment.state(commitment.COLLECTING(), i);
       uint128 epochTimestamp = commitment.timestamps(commitment.COLLECTING());
 
@@ -195,19 +195,19 @@ contract UNIT_CommitAvg is Test, AccountPOCHelper {
       assertEq(epochTimestamp, bobNewTime);
     }
     (, totalWeight,) = commitment.nodes(bob);
-    assertEq(totalWeight, 20); // commits from last epoch and this one
+    assertEq(totalWeight, 12); // commits from last epoch and this one
 
     // successfuly clear commits and finalizes epoch
     vm.warp(block.timestamp + 12 minutes);
     vm.startPrank(bob);
     commitment.clearCommits(bobSubIds);
     (, totalWeight,) = commitment.nodes(bob);
-    assertEq(totalWeight, 10); // remains unchanged
+    assertEq(totalWeight, 6); // remains unchanged
     vm.stopPrank();
-    // check subId 4 -> expected to be same as 1st test
-    (bidVol, askVol, commitWeight) = commitment.state(commitment.FINALIZED(), 4);
+    // check subId 3 -> expected to be same as 1st test
+    (bidVol, askVol, commitWeight) = commitment.state(commitment.FINALIZED(), 2);
     assertEq(bidVol, 63); // check is same as first commits
-    assertEq(askVol, 73); // check is same as first commits
+    assertEq(askVol, 80); // check is same as first commits
     assertEq(commitWeight, 3); // check is same as first commits
   }
 
