@@ -119,14 +119,13 @@ contract CommitmentAverage {
         weight: newWeight
       });
 
-      commitments[COLLECTING][commitNode.nodeId][subIds[i]] = NodeCommitment(
-        SafeCast.toUint16(bidVol), SafeCast.toUint16(askVol), weights[i], uint64(block.timestamp)
-      );
+      commitments[COLLECTING][commitNode.nodeId][subIds[i]] =
+        NodeCommitment(SafeCast.toUint16(bidVol), SafeCast.toUint16(askVol), weights[i], uint64(block.timestamp));
     }
   }
 
   /// @dev commit to the 'collecting' block
-  function executeCommit(uint256 nodeId, uint128 amount, uint8 subId) external {
+  function executeCommit(uint nodeId, uint128 amount, uint8 subId) external {
     // todo: deal with actual risk manager costs...
     _checkRotateBlocks();
 

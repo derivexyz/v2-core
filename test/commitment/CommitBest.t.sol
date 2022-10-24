@@ -76,7 +76,7 @@ contract UNIT_CommitBest is Test {
     vols[5] = 105;
 
     uint16[] memory weights = new uint16[](6);
-    for(uint i; i < 6; i++) {
+    for (uint i; i < 6; i++) {
       weights[i] = commitmentWeight;
     }
 
@@ -90,7 +90,7 @@ contract UNIT_CommitBest is Test {
 
     // remove 1st for subId
     commitment.executeCommit(subId, 0, commitmentWeight);
-    
+
     // remove 1st for subId2
     commitment.executeCommit(subId2, 0, commitmentWeight);
 
