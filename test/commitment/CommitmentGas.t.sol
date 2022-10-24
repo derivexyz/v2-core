@@ -67,12 +67,11 @@ contract CommitmentBestGas is Script {
 
     console2.log("----------------------------------");
 
-    (uint bestBid_1,,,uint96 _timestamp) = commitment.bestFinalizedBids(0);
-    (uint bestBid_2,,,uint96 _timestamp2) = commitment.bestFinalizedBids(1);
-
+    (uint bestBid_1,,, uint96 _timestamp) = commitment.bestFinalizedBids(0);
+    (uint bestBid_2,,, uint96 _timestamp2) = commitment.bestFinalizedBids(1);
 
     // add to 200 subId
-    _commitMultiple(200, 200);  
+    _commitMultiple(200, 200);
 
     // roll to pending
     vm.warp(block.timestamp + 30 minutes);
@@ -87,8 +86,8 @@ contract CommitmentBestGas is Script {
 
     console.log("gas rollover 200 subIds x 1 each in queue", gasBefore - gasAfter);
 
-    (,,,uint64 timestamp) = commitment.bestFinalizedBids(0);
-    (,,,uint64 timestamp2) = commitment.bestFinalizedBids(1);
+    (,,, uint64 timestamp) = commitment.bestFinalizedBids(0);
+    (,,, uint64 timestamp2) = commitment.bestFinalizedBids(1);
 
     vm.stopBroadcast();
   }

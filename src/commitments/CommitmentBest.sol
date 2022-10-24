@@ -227,7 +227,7 @@ contract CommitmentBest {
       _updateFromPendingForEachSubId(cachePENDING);
       // console2.log("roll over! already update pending => finalized");
       (cachePENDING, cacheCOLLECTING) = _rollOverCollecting(cachePENDING, cacheCOLLECTING);
-    } 
+    }
 
     return (cachePENDING, cacheCOLLECTING);
   }
