@@ -96,7 +96,6 @@ contract CommitmentBestGas is Script {
     commitment.commitMultiple(subIds, bids, asks, weights);
     uint gasAfter = gasleft();
     console.log("gas commitMultiple (500x)", gasBefore - gasAfter);
-    
   }
 
   function deployMockSystem() public {
