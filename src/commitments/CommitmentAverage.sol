@@ -176,6 +176,9 @@ contract CommitmentAverage {
     nodes[msg.sender].totalWeight -= weightToRemove;
   }
 
+  function checkRotateBlocks() external {
+    _checkRotateBlocks();
+  }
   function _checkRotateBlocks() internal {
     uint64 collectingTimestamp = timestamps[COLLECTING];
 
@@ -184,6 +187,11 @@ contract CommitmentAverage {
       timestamps[COLLECTING] = SafeCast.toUint64(block.timestamp);
     } else if (collectingTimestamp + 5 minutes < block.timestamp) {
       (COLLECTING, PENDING, FINALIZED) = (FINALIZED, COLLECTING, PENDING);
+      
+      // clear collecting entries
+      for (uint i; i < 256; i++) {
+        delete state[COLLECTING];
+      }
     }
   }
 

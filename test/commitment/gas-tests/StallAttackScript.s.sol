@@ -28,6 +28,12 @@ contract StallAttackScript is SimulationHelper {
   address node = vm.addr(2);
   address attacker = vm.addr(3);
 
+  /* 60 min vol feed: 5 min increments */
+  uint16[12] AMMVolFeed = [
+    100, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250
+  ];
+  uint16 AMMSpread = 5;
+
   /**
    * @dev Simulation
    *  - 1x active node
@@ -54,14 +60,32 @@ contract StallAttackScript is SimulationHelper {
     /* deposit to node */
     _depositToNode(node, 100_000e18);
 
-    /* make commitment */
-    vm.startBroadcast(node);
-    (uint16[] memory bids, 
-    uint16[] memory asks, 
-    uint8[] memory subIds, 
-    uint128[] memory weights) = _generateFlatCommitments(100, 5, 3, 1);
-    commitment.commit(bids, asks, subIds, weights);
-    vm.stopBroadcast();
+    /* begin sim */
+    uint16 currBid;
+    uint16 currAsk;
+    uint128 currWeight;
+    for (uint i; i < AMMVolFeed.length; i++) {
+
+      /* place standard commitments */ 
+      vm.startBroadcast(node);
+      (uint16[] memory bids, 
+      uint16[] memory asks, 
+      uint8[] memory subIds, 
+      uint128[] memory weights) = _generateFlatCommitments(AMMVolFeed[i], AMMSpread, 3, 1);
+      commitment.commit(bids, asks, subIds, weights);
+      vm.stopBroadcast();
+
+      /* warp 5 min and rotate */
+      vm.warp(block.timestamp + 5 minutes + 1 seconds);
+      commitment.checkRotateBlocks();
+      /* print state */
+      console.log("Epoch %s", i + 1);
+      (currBid,
+      currAsk,
+      currWeight) = commitment.state(commitment.PENDING(), 3);
+      console.log("$1500, 4 week commitment weight %s", currWeight);
+      console.log("------------------");
+    }
   }
 
   /**
