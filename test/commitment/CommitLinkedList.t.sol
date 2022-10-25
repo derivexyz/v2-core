@@ -67,72 +67,88 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(commitment.collectingLength(), 4);
     assertEq(commitment.collectingWeight(subId), commitmentWeight * 4);
 
-    (uint16 lowestBid, uint16 highestBid) = commitment.collectingBidListInfo(subId);
+    (uint16 lowestBid, uint16 highestBid, uint16 bidLength) = commitment.collectingBidListInfo(subId);
     assertEq(lowestBid, 91);
     assertEq(highestBid, 97);
+    assertEq(bidLength, 4);
 
-    (uint16 lowestAsk, uint16 highestAsk) = commitment.collectingAskListInfo(subId);
+    (uint16 lowestAsk, uint16 highestAsk, uint16 askLength) = commitment.collectingAskListInfo(subId);
     assertEq(lowestAsk, 100);
     assertEq(highestAsk, 107);
+    assertEq(askLength, 4);
   }
 
-  // function testCanExecuteCommitMultiple() public {
-  //   uint96 subId2 = 2;
+  function testCanExecuteCommitMultiple() public {
+    uint96 subId2 = 2;
 
-  //   uint96[] memory subIds = new uint96[](6);
-  //   subIds[0] = subId;
-  //   subIds[1] = subId;
-  //   subIds[2] = subId;
-  //   subIds[3] = subId2;
-  //   subIds[4] = subId2;
-  //   subIds[5] = subId2;
+    uint96[] memory subIds = new uint96[](6);
+    subIds[0] = subId;
+    subIds[1] = subId;
+    subIds[2] = subId;
+    subIds[3] = subId;
+    subIds[4] = subId;
+    subIds[5] = subId;
 
-  //   uint16[] memory bids = new uint16[](6);
-  //   bids[0] = 90;
-  //   bids[1] = 91;
-  //   bids[2] = 92;
+    uint16[] memory bids = new uint16[](6);
+    bids[0] = 90;
+    bids[1] = 91;
+    bids[2] = 95;
 
-  //   bids[3] = 93;
-  //   bids[4] = 94;
-  //   bids[5] = 95;
+    bids[3] = 93;
+    bids[4] = 94;
+    bids[5] = 92;
 
-  //   uint16[] memory asks = new uint16[](6);
-  //   asks[0] = 95;
-  //   asks[1] = 96;
-  //   asks[2] = 97;
+    uint16[] memory asks = new uint16[](6);
+    asks[0] = 95;
+    asks[1] = 96;
+    asks[2] = 97;
 
-  //   asks[3] = 98;
-  //   asks[4] = 99;
-  //   asks[5] = 100;
+    asks[3] = 100;
+    asks[4] = 99;
+    asks[5] = 98;
 
-  //   uint64[] memory weights = new uint64[](6);
-  //   for (uint i; i < 6; i++) {
-  //     weights[i] = commitmentWeight;
-  //   }
+    uint64[] memory weights = new uint64[](6);
+    for (uint i; i < 6; i++) {
+      weights[i] = commitmentWeight;
+    }
 
-  //   commitment.commitMultiple(subIds, bids, asks, weights);
-  //   assertEq(commitment.collectingLength(), 6);
+    commitment.commitMultiple(subIds, bids, asks, weights);
+    assertEq(commitment.collectingLength(), 6);
 
-  //   vm.warp(block.timestamp + 10 minutes);
-  //   commitment.checkRollover();
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
 
-  //   assertEq(commitment.pendingLength(), 6);
+    assertEq(commitment.pendingLength(), 6);
 
-  //   // remove third for subId
-  //   commitment.executeCommit(subId, true, 2, commitmentWeight);
+    (uint16 lowestBid, uint16 highestBid,) = commitment.pendingBidListInfo(subId);
+    assertEq(lowestBid, 90);
+    assertEq(highestBid, 95);
 
-  //   // remove third for subId2
-  //   commitment.executeCommit(subId2, true, 2, commitmentWeight);
+    // remove 90 vol
+    commitment.executeCommit(subId, true, 90, commitmentWeight);
+    commitment.executeCommit(subId, true, 95, commitmentWeight);
 
-  //   vm.warp(block.timestamp + 10 minutes);
-  //   commitment.checkRollover();
+    (lowestBid, highestBid,) = commitment.pendingBidListInfo(subId);
+    assertEq(lowestBid, 91);
+    assertEq(highestBid, 94);
 
-  //   (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
-  //   assertEq(bestVol, 91);
+    // // remove ask
+    commitment.executeCommit(subId, false, 95, commitmentWeight);
+    commitment.executeCommit(subId, false, 96, commitmentWeight);
 
-  //   (uint16 bestVol2,,,) = commitment.bestFinalizedBids(subId2);
-  //   assertEq(bestVol2, 94);
-  // }
+    (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
+    assertEq(lowestAsk, 97);
+    assertEq(highestAsk, 100);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    // (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
+    // assertEq(bestVol, 91);
+
+    // (uint16 bestVol2,,,) = commitment.bestFinalizedBids(subId2);
+    // assertEq(bestVol2, 94);
+  }
 
   // function testShouldRolloverBlankIfPendingIsEmpty() public {
   //   commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
