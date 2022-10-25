@@ -23,7 +23,7 @@ import "./SimulationHelper.sol";
 // run  with `forge script StallAttackScript --fork-url http://localhost:8545` against anvil
 // OptionToken deployment fails when running outside of localhost
 
-contract StallAttackScript is SimulationHelper {
+contract StallAttack is SimulationHelper {
   /* address setup */
   address node = vm.addr(2);
   address attacker = vm.addr(3);
@@ -50,7 +50,6 @@ contract StallAttackScript is SimulationHelper {
     _addListings();
     _setupParams(1500e18);
       
-    /* mint dai and deposit to attacker account */
     console2.log("SETTING UP ATTACKER ACCOUNT...");
     vm.startBroadcast(owner);
     uint attackerAccId = account.createAccount(attacker, IManager(address(manager)));
@@ -58,12 +57,15 @@ contract StallAttackScript is SimulationHelper {
     _depositToAccount(attacker, attackerAccId, 1_000_000e18);
 
     /* deposit to node */
+    console2.log("DEPOSITING TO NODE...");
     _depositToNode(node, 100_000e18);
 
     /* begin sim */
     uint16 currBid;
     uint16 currAsk;
     uint128 currWeight;
+    uint nodeDeposits;
+    uint nodeTotWeight;
     for (uint i; i < AMMVolFeed.length; i++) {
 
       /* place standard commitments */ 
@@ -73,17 +75,24 @@ contract StallAttackScript is SimulationHelper {
       uint8[] memory subIds, 
       uint128[] memory weights) = _generateFlatCommitments(AMMVolFeed[i], AMMSpread, 3, 1);
       commitment.commit(bids, asks, subIds, weights);
-      vm.stopBroadcast();
+
+      (, , uint128 commitWeight, ) = commitment.commitments(commitment.COLLECTING(), 1, 1);
+      console2.log("commit weight for subId 1: %s", commitWeight);
 
       /* warp 5 min and rotate */
       vm.warp(block.timestamp + 5 minutes + 1 seconds);
       commitment.checkRotateBlocks();
+      commitment.clearCommits(subIds);
+      vm.stopBroadcast();
+
       /* print state */
       console.log("Epoch %s", i + 1);
       (currBid,
       currAsk,
       currWeight) = commitment.state(commitment.PENDING(), 3);
+      (nodeDeposits, nodeTotWeight, ) = commitment.nodes(node);
       console.log("$1500, 4 week commitment weight %s", currWeight);
+      console.log("committed capital", nodeTotWeight);
       console.log("------------------");
     }
   }
@@ -110,7 +119,7 @@ contract StallAttackScript is SimulationHelper {
     for (uint8 i; i < 49; i++) {
       bids[i] = ammVol - ammSpread - spreadBuffer;
       asks[i] = ammVol + ammSpread + spreadBuffer;
-      subIds[i] = i + 1;
+      subIds[i] = i;
       weights[i] = weight;
     }
   }
@@ -130,5 +139,13 @@ contract StallAttackScript is SimulationHelper {
         optionAdapter.addListing(strikes[s], expiries[e], true);
       }
     }
+  }
+
+  function _printCommits() public {
+    (, , uint128 col, ) = commitment.commitments(commitment.COLLECTING(), 1, 1);
+    (, , uint128 pen, ) = commitment.commitments(commitment.PENDING(), 1, 1);
+    (, , uint128 fin, ) = commitment.commitments(commitment.FINALIZED(), 1, 1);
+    console2.log("post clear commits");
+     console2.log(col, pen, fin);
   }
 }

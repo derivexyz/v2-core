@@ -167,10 +167,11 @@ contract CommitmentAverage {
   function clearCommits(uint8[] memory subIds) external {
     _checkRotateBlocks();
     uint nodeId = nodes[msg.sender].nodeId;
+    require(nodeId != 0, "unregistered node");
 
     uint128 weightToRemove;
-    for (uint subId = 0; subId < subIds.length; subId++) {
-      weightToRemove += commitments[FINALIZED][nodeId][subId].weight;
+    for (uint i = 0; i < subIds.length; i++) {
+      weightToRemove += commitments[FINALIZED][nodeId][subIds[i]].weight;
     }
 
     nodes[msg.sender].totalWeight -= weightToRemove;
@@ -186,12 +187,12 @@ contract CommitmentAverage {
       // handle first deposit
       timestamps[COLLECTING] = SafeCast.toUint64(block.timestamp);
     } else if (collectingTimestamp + 5 minutes < block.timestamp) {
+      console2.log("rotated", COLLECTING);
       (COLLECTING, PENDING, FINALIZED) = (FINALIZED, COLLECTING, PENDING);
       
       // clear collecting entries
-      for (uint i; i < 256; i++) {
-        delete state[COLLECTING];
-      }
+      delete state[COLLECTING];
+      delete timestamps[COLLECTING];
     }
   }
 
