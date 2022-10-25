@@ -85,12 +85,14 @@ contract StallAttack is SimulationHelper {
       commitment.clearCommits(subIds);
       vm.stopBroadcast();
 
-      /* print state */
-      console.log("Epoch %s", i + 1);
+      /* get state */
       (currBid,
       currAsk,
       currWeight) = commitment.state(commitment.PENDING(), 3);
       (nodeDeposits, nodeTotWeight, ) = commitment.nodes(node);
+
+      /* print new state */
+      console.log("Epoch %s", i + 1);
       console.log("$1500, 4 week commitment weight %s", currWeight);
       console.log("committed capital", nodeTotWeight);
       console.log("------------------");
@@ -107,7 +109,7 @@ contract StallAttack is SimulationHelper {
    */
   function _generateFlatCommitments(
     uint16 ammVol, uint16 ammSpread, uint16 spreadBuffer, uint128 weight
-  ) public returns (
+  ) public pure returns (
     uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights
   ) {
     require(ammVol > (ammSpread + spreadBuffer), "spread + buffer > vol");
@@ -141,7 +143,7 @@ contract StallAttack is SimulationHelper {
     }
   }
 
-  function _printCommits() public {
+  function _printCommits() public view {
     (, , uint128 col, ) = commitment.commitments(commitment.COLLECTING(), 1, 1);
     (, , uint128 pen, ) = commitment.commitments(commitment.PENDING(), 1, 1);
     (, , uint128 fin, ) = commitment.commitments(commitment.FINALIZED(), 1, 1);
