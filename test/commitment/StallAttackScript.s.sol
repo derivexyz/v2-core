@@ -10,6 +10,7 @@ import "src/interfaces/AccountStructs.sol";
 import "forge-std/console2.sol";
 
 import "../account/mocks/assets/OptionToken.sol";
+import "../shared/mocks/MockAsset.sol";
 import "../account/mocks/assets/lending/Lending.sol";
 import "../account/mocks/assets/lending/ContinuousJumpRateModel.sol";
 import "../account/mocks/assets/lending/InterestRateModel.sol";
@@ -17,15 +18,21 @@ import "../account/mocks/managers/PortfolioRiskPOCManager.sol";
 import "../shared/mocks/MockERC20.sol";
 import "src/commitments/CommitmentAverage.sol";
 
+// run  with `forge script StallAttackScript --fork-url http://localhost:8545` against anvil
+// OptionToken deployment fails when running outside of localhost
+
 contract StallAttackScript is Script {
   Account account;
   MockERC20 dai;
   Lending lending;
+  // MockAsset optionAdapter;
   OptionToken optionAdapter;
   PortfolioRiskPOCManager manager;
   TestPriceFeeds priceFeeds;
   SettlementPricer settlementPricer;
   InterestRateModel interestRateModel;
+  uint usdcFeedId = 0;
+  uint wethFeedId = 1;
 
   /* Unneeded wrappers for POC Manager */
   MockERC20 weth;
@@ -46,24 +53,21 @@ contract StallAttackScript is Script {
    *  - 
    */
   function run() external {
+    console2.log("SETTING UP SIMULATION...");
     _deployAccountAndStables();
     _deployOptionAndManager();
-    _mintDai(node, 5e18);
-    _mintDai(owner, 5e18);
-    _mintDai(attacker, 5e18);
-    _mintDai(node, 5e18);
+    _deployCommitment();
+    _setupParams(1500e18);
+      
+    /* mint dai and deposit to attacker account */
+    console2.log("SETTING UP ATTACKER ACCOUNT...");
+    vm.startBroadcast(owner);
+    uint attackerAccId = account.createAccount(attacker, IManager(address(manager)));
+    vm.stopBroadcast();
+    _depositToAccount(attacker, attackerAccId, 1_000_000e18);
 
-    // _setupParams(1500e18);
-    
-    // /* mint dai and deposit to attacker account */
-    // vm.startBroadcast(owner);
-    // uint attackerAccId = account.createAccount(attacker, IManager(address(manager)));
-    // vm.stopBroadcast();
-
-    // _depositToAccount(attacker, attackerAccId, 1_000_000e18);
-
-    // /* deposit to node */
-    // _depositToNode(100_000e18);
+    /* deposit to node */
+    _depositToNode(100_000e18);
   }
 
   function _depositToNode(uint amount) public {
@@ -118,8 +122,14 @@ contract StallAttackScript is Script {
 
     /* Option Asset */
     settlementPricer = new SettlementPricer(priceFeeds);
-    // optionAdapter = new OptionToken(account, PriceFeeds(address(priceFeeds)), settlementPricer, 1);
-    // _addListings();
+
+    optionAdapter = new OptionToken(
+      IAccount(address(account)), 
+      PriceFeeds(address(priceFeeds)), 
+      settlementPricer, 
+      wethFeedId
+    );
+    _addListings();
 
     /* Risk Manager */
     manager = new PortfolioRiskPOCManager(
@@ -132,7 +142,11 @@ contract StallAttackScript is Script {
     );
     // optionAdapter.setManagerAllowed(IManager(manager), true);
     lending.setManagerAllowed(IManager(manager), true);
+    vm.stopBroadcast();
+  }
 
+  function _deployCommitment() public {
+    vm.startBroadcast(owner);
     // /* setup commitment contract */
     commitment = new CommitmentAverage(address(account), address(manager), address(lending), address(dai));
     vm.stopBroadcast();
@@ -141,8 +155,8 @@ contract StallAttackScript is Script {
   function _setupParams(uint wethPrice) internal {
     vm.startBroadcast(owner);
 
-    uint wethFeedId = 1;
     priceFeeds.setSpotForFeed(wethFeedId, wethPrice);
+    priceFeeds.setSpotForFeed(usdcFeedId, 1e18);
 
     PortfolioRiskPOCManager.Scenario[] memory scenarios = new PortfolioRiskPOCManager.Scenario[](1);
     scenarios[0] = PortfolioRiskPOCManager.Scenario({spotShock: uint(85e16), ivShock: 10e18});

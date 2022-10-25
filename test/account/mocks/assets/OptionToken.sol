@@ -5,14 +5,10 @@ import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "synthetix/DecimalMath.sol";
 import "synthetix/Owned.sol";
 import "src/libraries/BlackScholesV2.sol";
-import "forge-std/console2.sol";
-
-import "src/Account.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/IAsset.sol";
+import "src/interfaces/IAccount.sol";
 import "src/libraries/IntLib.sol";
-
-import "../assets/QuoteWrapper.sol";
 import "../feeds/SettlementPricer.sol";
 import "../feeds/PriceFeeds.sol";
 
@@ -29,7 +25,7 @@ contract OptionToken is IAsset, Owned {
     bool isCall;
   }
 
-  Account account;
+  IAccount account;
   PriceFeeds priceFeeds;
   SettlementPricer settlementPricer;
 
@@ -45,7 +41,7 @@ contract OptionToken is IAsset, Owned {
 
   mapping(uint96 => Listing) public subIdToListing;
 
-  constructor(Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Owned() {
+  constructor(IAccount account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Owned() {
     account = account_;
     priceFeeds = feeds_;
     settlementPricer = settlementPricer_;
