@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 
 import "./CommitmentLinkedList.sol";
 import "forge-std/console2.sol";
+
 // struct SortedList {
 //   mapping(uint16 => VolEntity) entities;
 //   uint16 length;
@@ -18,21 +19,23 @@ import "forge-std/console2.sol";
 //   address[] participants;
 // }
 
-// struct Participants {
+// struct Participant {
 //   uint64 nodeId;
 //   uint64 weight;
 // }
 
 library LinkedListLib {
+  error NotInVolArray();
+
   function addParticipantToLinkedList(
     CommitmentLinkedList.SortedList storage list,
     uint16 vol,
     uint64 weight,
     uint64 nodeId,
-    bool isBid
+    uint64 epoch
   ) internal {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
-    if (!volEntity.initialized) {
+    if (!volEntity.initialized || volEntity.epoch != epoch) {
       // find the position to insert the node
       // find the first one larger than "vol"
       uint16 prev;
@@ -82,10 +85,11 @@ library LinkedListLib {
       }
 
       // update prev and next
+      volEntity.epoch = epoch;
       volEntity.prev = prev;
       volEntity.next = next;
       volEntity.initialized = true;
-      volEntity.participants.push(CommitmentLinkedList.Participants(nodeId, weight));
+      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight));
 
       // update the prev and next node
       if (prev != 0) list.entities[prev].next = vol;
@@ -96,7 +100,66 @@ library LinkedListLib {
       // already have this vol node.
       // decide if increase weight or push to participant array.
       // right now, just push to the array.
-      volEntity.participants.push(CommitmentLinkedList.Participants(nodeId, weight));
+      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight));
     }
+
+    volEntity.totalWeight += weight;
+  }
+
+  function removeWeightFromVolList(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 weight)
+    internal
+    returns (CommitmentLinkedList.Participant[] memory /*participants*/ )
+  {
+    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
+    if (!volEntity.initialized) revert NotInVolArray();
+
+    uint64 newTotalWeight = volEntity.totalWeight - weight;
+
+    if (newTotalWeight == 0) {
+      (uint16 cachePrev, uint16 cacheNext) = (volEntity.prev, volEntity.next);
+      if (cachePrev != 0) {
+        list.entities[cachePrev].next = cacheNext;
+      } else {
+        list.head = cacheNext;
+      }
+      if (cacheNext != 0) {
+        list.entities[cacheNext].prev = cachePrev;
+      } else {
+        list.end = cachePrev;
+      }
+
+      // todo: return participants
+      // return all participants
+      // participants = volEntity.participants;
+      // for (uint i = 0; i< volEntity.participants.length; i++) {
+      //   volEntity.participants[i].weight = 0;
+      // }
+    } else {
+      // todo: return participants
+      // // run through participants, find up to weight
+      // uint64 sum;
+      // for (uint i = 0; i< volEntity.participants.length; i++) {
+      //   CommitmentLinkedList.Participant memory participant = volEntity.participants[i];
+      //   if (sum + participant.weight > weight) {
+      //     uint64 amount = weight - sum;
+
+      //     // update state
+      //     volEntity.participants[i].weight -= amount;
+      //     participants.push(CommitmentLinkedList.Participant(participant.nodeId, amount));
+      //     break;
+      //   } else {
+      //     participants.push(participant);
+      //     volEntity.participants[i].weight = 0;
+      //   }
+      // }
+    }
+
+    volEntity.totalWeight = newTotalWeight;
+  }
+
+  function clearList(CommitmentLinkedList.SortedList storage list) internal {
+    list.head = 0;
+    list.end = 0;
+    list.length = 0;
   }
 }

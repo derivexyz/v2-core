@@ -145,8 +145,7 @@ contract SimulationHelper is Script {
   }
 
   function _addListings() public {
-    uint72[7] memory strikes =
-      [1000e18, 1300e18, 1400e18, 1500e18, 1600e18, 1700e18, 2000e18];
+    uint72[7] memory strikes = [1000e18, 1300e18, 1400e18, 1500e18, 1600e18, 1700e18, 2000e18];
 
     uint32[7] memory expiries = [1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks];
     for (uint s = 0; s < strikes.length; s++) {

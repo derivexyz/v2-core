@@ -30,8 +30,6 @@ contract CommitmentLinkedList {
   struct FinalizedQuote {
     uint16 bestVol;
     uint64 weight;
-    uint64 nodeId;
-    uint64 timestamp;
   }
 
   struct Node {
@@ -55,11 +53,13 @@ contract CommitmentLinkedList {
     uint16 vol;
     uint16 prev;
     uint16 next;
+    uint64 totalWeight;
+    uint64 epoch;
     bool initialized;
-    Participants[] participants;
+    Participant[] participants;
   }
 
-  struct Participants {
+  struct Participant {
     uint64 nodeId;
     uint64 weight;
   }
@@ -87,6 +87,8 @@ contract CommitmentLinkedList {
 
   uint8 public COLLECTING = 0;
   uint8 public PENDING = 1;
+
+  uint64 public epoch;
 
   uint64 pendingStartTimestamp;
   uint64 collectingStartTimestamp;
@@ -120,24 +122,28 @@ contract CommitmentLinkedList {
     return weights[COLLECTING][subId];
   }
 
-  function pendingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+  function pendingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end, uint16 length_) {
     head = bidQueues[PENDING][subId].head;
     end = bidQueues[PENDING][subId].end;
+    length_ = bidQueues[PENDING][subId].length;
   }
 
-  function pendingAskListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+  function pendingAskListInfo(uint96 subId) external view returns (uint16 head, uint16 end, uint16 length_) {
     head = askQueues[PENDING][subId].head;
     end = askQueues[PENDING][subId].end;
+    length_ = bidQueues[PENDING][subId].length;
   }
 
-  function collectingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+  function collectingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end, uint16 length_) {
     head = bidQueues[COLLECTING][subId].head;
     end = bidQueues[COLLECTING][subId].end;
+    length_ = bidQueues[COLLECTING][subId].length;
   }
 
-  function collectingAskListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+  function collectingAskListInfo(uint96 subId) external view returns (uint16 head, uint16 end, uint16 length_) {
     head = askQueues[COLLECTING][subId].head;
     end = askQueues[COLLECTING][subId].end;
+    length_ = askQueues[COLLECTING][subId].length;
   }
 
   function register() external returns (uint64 nodeId) {
@@ -200,28 +206,18 @@ contract CommitmentLinkedList {
   }
 
   /// @dev commit to the 'collecting' block
-  function executeCommit(uint96 subId, bool isBid, uint16 index, uint16 weight) external {
+  function executeCommit(uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    // if (isBid) {
-    //   Commitment memory target = bidQueues[cachePENDING][subId][index];
-    //   uint64 newWeight = target.weight - weight;
-    //   if (newWeight == 0) {
-    //     bidQueues[cachePENDING][subId][index].isExecuted = true;
-    //     bidQueues[cachePENDING][subId][index].weight = 0;
-    //   } else {
-    //     bidQueues[cachePENDING][subId][index].weight = newWeight;
-    //   }
-    // } else {
-    //   Commitment memory target = askQueues[cachePENDING][subId][index];
-    //   uint64 newWeight = target.weight - weight;
-    //   if (newWeight == 0) {
-    //     askQueues[cachePENDING][subId][index].isExecuted = true;
-    //     askQueues[cachePENDING][subId][index].weight = 0;
-    //   } else {
-    //     askQueues[cachePENDING][subId][index].weight = newWeight;
-    //   }
-    // }
+    if (isBid) {
+      SortedList storage list = bidQueues[cachePENDING][subId];
+      // VolEntity storage target = list.entities[vol];
+      list.removeWeightFromVolList(vol, weight);
+    } else {
+      SortedList storage list = askQueues[cachePENDING][subId];
+      // VolEntity storage target = list.entities[vol];
+      list.removeWeightFromVolList(vol, weight);
+    }
 
     // update total weight for an subId
     uint64 newTotalSubIdWeight = weights[cachePENDING][subId] - weight;
@@ -248,8 +244,8 @@ contract CommitmentLinkedList {
     weights[cacheCOLLECTING][subId] += weight;
 
     // add to both bid and ask queue with the same collateral
-    bidQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(bidVol, weight, node, true);
-    askQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(askVol, weight, node, false);
+    bidQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(bidVol, weight, node, epoch);
+    askQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(askVol, weight, node, epoch);
 
     nodes[owner].depositLeft -= weight;
   }
@@ -297,6 +293,8 @@ contract CommitmentLinkedList {
     // dont override the array with 0. just reset length
     delete length[cachePENDING]; // delete the length for "new collecting"
 
+    epoch += 1;
+
     return (cacheCOLLECTING, cachePENDING);
   }
 
@@ -305,48 +303,17 @@ contract CommitmentLinkedList {
 
     for (uint i; i < subIds_.length; i++) {
       uint96 subId = subIds_[i];
-      // Commitment[] memory pendingBids = bidQueues[_indexPENDING][subId];
+      SortedList storage bidList = bidQueues[_indexPENDING][subId];
 
-      // // handle bids
-      // uint16 cacheBestBid;
-      // uint8 bestBidId;
-      // for (uint8 j; j < pendingBids.length; j++) {
-      //   Commitment memory cache = pendingBids[j];
+      SortedList storage askList = askQueues[_indexPENDING][subId];
 
-      //   if (cache.isExecuted) continue;
+      // return head of bid
+      bestFinalizedBids[subId] = FinalizedQuote(bidList.end, bidList.entities[bidList.end].totalWeight);
 
-      //   if (cache.vol > cacheBestBid) {
-      //     cacheBestBid = cache.vol;
-      //     bestBidId = j;
-      //   }
-      // }
-      // // update subId best bid
-      // if (pendingBids[bestBidId].weight != 0) {
-      //   bestFinalizedBids[subId] = FinalizedQuote(
-      //     cacheBestBid, pendingBids[bestBidId].weight, pendingBids[bestBidId].nodeId, pendingBids[bestBidId].timestamp
-      //   );
-      // }
+      bestFinalizedAsks[subId] = FinalizedQuote(askList.head, askList.entities[askList.head].totalWeight);
 
-      // handle asks
-      // uint16 cacheBestAsk;
-      // uint8 bestAskId;
-      // Commitment[] memory pendingAsks = askQueues[_indexPENDING][subId];
-      // for (uint8 j; j < pendingAsks.length; j++) {
-      //   Commitment memory cache = pendingAsks[j];
-
-      //   if (cache.isExecuted) continue;
-
-      //   if (cacheBestAsk == 0 || cache.vol < cacheBestAsk) {
-      //     cacheBestAsk = cache.vol;
-      //     bestAskId = j;
-      //   }
-      // }
-      // if (pendingAsks[bestAskId].weight != 0) {
-      //   // console2.log("find ask for subId <3", subId, cacheBestAsk);
-      //   bestFinalizedAsks[subId] = FinalizedQuote(
-      //     cacheBestAsk, pendingAsks[bestAskId].weight, pendingAsks[bestAskId].nodeId, pendingAsks[bestAskId].timestamp
-      //   );
-      // }
+      bidList.clearList();
+      askList.clearList();
     }
   }
 }
