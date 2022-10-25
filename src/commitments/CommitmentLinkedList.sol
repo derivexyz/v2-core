@@ -8,7 +8,7 @@ import "src/interfaces/IAccount.sol";
 import "../interfaces/IAsset.sol";
 import "../../test/shared/mocks/MockAsset.sol";
 
-contract CommitmentBest {
+contract CommitmentLinkedList {
   using DynamicArrayLib for uint96[];
 
   error NotExecutable();
