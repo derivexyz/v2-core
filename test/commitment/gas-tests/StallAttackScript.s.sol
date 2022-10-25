@@ -32,7 +32,7 @@ contract StallAttackScript is SimulationHelper {
    * @dev Simulation
    *  - 1x active node
    *  - 1x attacker node
-   *  - 7x strikes and 8x expiries
+   *  - 7x strikes and 7x expiries
    *  - 5min epochs
    *  - $500 deposit per subId
    */
@@ -41,6 +41,7 @@ contract StallAttackScript is SimulationHelper {
     _deployAccountAndStables();
     _deployOptionAndManager();
     _deployCommitment();
+    _addListings();
     _setupParams(1500e18);
       
     /* mint dai and deposit to attacker account */
@@ -52,5 +53,58 @@ contract StallAttackScript is SimulationHelper {
 
     /* deposit to node */
     _depositToNode(node, 100_000e18);
+
+    /* make commitment */
+    vm.startBroadcast(node);
+    (uint16[] memory bids, 
+    uint16[] memory asks, 
+    uint8[] memory subIds, 
+    uint128[] memory weights) = _generateFlatCommitments(100, 5, 3, 1);
+    commitment.commit(bids, asks, subIds, weights);
+    vm.stopBroadcast();
+  }
+
+  /**
+   * @dev Creates commitments based on single AMM feed with 0 skew across strikes/expiries for simplicity.
+   *      Assumes there are always 49x subIds to commit to.
+   * @param ammVol vol from AMM feed / quote
+   * @param ammSpread bid / ask spread from AMM feed / quote
+   * @param spreadBuffer static amount to add to each AMM spread
+   * @param weight weight behind each commitment
+   */
+  function _generateFlatCommitments(
+    uint16 ammVol, uint16 ammSpread, uint16 spreadBuffer, uint128 weight
+  ) public returns (
+    uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights
+  ) {
+    require(ammVol > (ammSpread + spreadBuffer), "spread + buffer > vol");
+
+    bids = new uint16[](49);
+    asks = new uint16[](49);
+    subIds = new uint8[](49);
+    weights = new uint128[](49);
+    for (uint8 i; i < 49; i++) {
+      bids[i] = ammVol - ammSpread - spreadBuffer;
+      asks[i] = ammVol + ammSpread + spreadBuffer;
+      subIds[i] = i + 1;
+      weights[i] = weight;
+    }
+  }
+
+  // function generateAttackResponse(
+  //   uint16 ammVol, uint16 ammSpread, uint8 subIdToDefend, uint16 spreadMultiple, uint16 weightMultiple
+  // ) public {
+
+  // }
+
+  function _addListings() public {
+    uint72[7] memory strikes = [1000e18, 1300e18, 1400e18, 1500e18, 1600e18, 1700e18, 2000e18];
+
+    uint32[7] memory expiries = [1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks];
+    for (uint s = 0; s < strikes.length; s++) {
+      for (uint e = 0; e < expiries.length; e++) {
+        optionAdapter.addListing(strikes[s], expiries[e], true);
+      }
+    }
   }
 }
