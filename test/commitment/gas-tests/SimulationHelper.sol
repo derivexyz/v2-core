@@ -9,19 +9,19 @@ import "src/interfaces/AccountStructs.sol";
 
 import "forge-std/console2.sol";
 
-import "../account/mocks/assets/OptionToken.sol";
-import "../shared/mocks/MockAsset.sol";
-import "../account/mocks/assets/lending/Lending.sol";
-import "../account/mocks/assets/lending/ContinuousJumpRateModel.sol";
-import "../account/mocks/assets/lending/InterestRateModel.sol";
-import "../account/mocks/managers/PortfolioRiskPOCManager.sol";
-import "../shared/mocks/MockERC20.sol";
+import "../../account/mocks/assets/OptionToken.sol";
+import "../../shared/mocks/MockAsset.sol";
+import "../../account/mocks/assets/lending/Lending.sol";
+import "../../account/mocks/assets/lending/ContinuousJumpRateModel.sol";
+import "../../account/mocks/assets/lending/InterestRateModel.sol";
+import "../../account/mocks/managers/PortfolioRiskPOCManager.sol";
+import "../../shared/mocks/MockERC20.sol";
 import "src/commitments/CommitmentAverage.sol";
 
 // run  with `forge script StallAttackScript --fork-url http://localhost:8545` against anvil
 // OptionToken deployment fails when running outside of localhost
 
-contract StallAttackScript is Script {
+contract SimulationHelper is Script {
   Account account;
   MockERC20 dai;
   Lending lending;
@@ -43,34 +43,12 @@ contract StallAttackScript is Script {
 
   /* address setup */
   address owner = vm.addr(1);
-  address node = vm.addr(2);
-  address attacker = vm.addr(3);
 
   /**
-   * @dev Assuming only 1 active node:
-   *  - 
-   *  - 
-   *  - 
+   * @dev Simulation Helper sets up all mock managers, assets, and commitment contracts
    */
-  function run() external {
-    console2.log("SETTING UP SIMULATION...");
-    _deployAccountAndStables();
-    _deployOptionAndManager();
-    _deployCommitment();
-    _setupParams(1500e18);
-      
-    /* mint dai and deposit to attacker account */
-    console2.log("SETTING UP ATTACKER ACCOUNT...");
-    vm.startBroadcast(owner);
-    uint attackerAccId = account.createAccount(attacker, IManager(address(manager)));
-    vm.stopBroadcast();
-    _depositToAccount(attacker, attackerAccId, 1_000_000e18);
 
-    /* deposit to node */
-    _depositToNode(100_000e18);
-  }
-
-  function _depositToNode(uint amount) public {
+  function _depositToNode(address node, uint amount) public {
     _mintDai(node, amount);
     // setup: not counting gas
     vm.startBroadcast(node);
