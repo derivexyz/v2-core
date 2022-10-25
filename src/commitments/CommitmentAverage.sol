@@ -30,8 +30,8 @@ contract CommitmentAverage {
     uint16 bidVol;
     uint16 askVol;
     uint128 weight;
-    // uint96 points; // point system used to reward tightest ranges
   }
+  // uint96 points; // point system used to reward tightest ranges
 
   struct Node {
     uint deposits;
@@ -55,7 +55,7 @@ contract CommitmentAverage {
   // todo: need to make dynamic range
   // uint16 public constant RANGE = 5;
   uint16 public constant DEPOSIT_PER_SUBID = 500;
-  
+
   // account variables
   Lending lendingAsset;
   uint accountId;
@@ -85,12 +85,9 @@ contract CommitmentAverage {
   }
 
   /// @dev commit to the 'collecting' block
-  function commit(
-    uint16[] memory bidVols, 
-    uint16[] memory askVols, 
-    uint8[] memory subIds, 
-    uint128[] memory weights
-  ) external {
+  function commit(uint16[] memory bidVols, uint16[] memory askVols, uint8[] memory subIds, uint128[] memory weights)
+    external
+  {
     Node memory commitNode = nodes[msg.sender];
 
     _checkRotateBlocks();
@@ -105,20 +102,15 @@ contract CommitmentAverage {
       if (commitNode.deposits < (commitNode.totalWeight + weights[i]) * DEPOSIT_PER_SUBID) break;
 
       // ignore invalid spread
-      if (bidVols[i] > askVols[i]) break; 
+      if (bidVols[i] > askVols[i]) break;
 
       nodes[msg.sender].totalWeight += weights[i];
 
       State memory collecting = state[COLLECTING][subIds[i]]; // get current average
 
-
       state[COLLECTING][subIds[i]] = State({
-        bidVol: _addToAverage(
-          SafeCast.toUint128(bidVols[i]), weights[i], uint128(collecting.bidVol), collecting.weight
-        ),
-        askVol: _addToAverage(
-          SafeCast.toUint128(askVols[i]), weights[i], uint128(collecting.askVol), collecting.weight
-        ),
+        bidVol: _addToAverage(SafeCast.toUint128(bidVols[i]), weights[i], uint128(collecting.bidVol), collecting.weight),
+        askVol: _addToAverage(SafeCast.toUint128(askVols[i]), weights[i], uint128(collecting.askVol), collecting.weight),
         weight: weights[i] + collecting.weight
       });
 
@@ -144,10 +136,10 @@ contract CommitmentAverage {
       state[PENDING][subId] = State({
         bidVol: _removeFromAverage(
           uint128(nodeCommit.bidVol), amount, uint128(avgCollecting.bidVol), avgCollecting.weight
-        ),
+          ),
         askVol: _removeFromAverage(
           uint128(nodeCommit.askVol), amount, uint128(avgCollecting.askVol), avgCollecting.weight
-        ),
+          ),
         weight: avgCollecting.weight - amount
       });
     }
@@ -195,15 +187,13 @@ contract CommitmentAverage {
     }
   }
 
-  function _addToAverage(
-    uint128 valToAdd, uint128 amountToAdd, uint128 oldAverage, uint128 totalWeight
-  ) internal pure returns (uint16) {
+  function _addToAverage(uint128 valToAdd, uint128 amountToAdd, uint128 oldAverage, uint128 totalWeight)
+    internal
+    pure
+    returns (uint16)
+  {
     uint128 newWeight = totalWeight + amountToAdd;
-    return SafeCast.toUint16(
-      ((valToAdd * amountToAdd) 
-        + (oldAverage * totalWeight)
-      ) / (newWeight)
-    );
+    return SafeCast.toUint16(((valToAdd * amountToAdd) + (oldAverage * totalWeight)) / (newWeight));
   }
 
   // bidVol: SafeCast.toUint16(
@@ -214,15 +204,13 @@ contract CommitmentAverage {
   //   ),
   // weight: newWeight
 
-  function _removeFromAverage(
-    uint128 valToRemove, uint128 amountToRemove, uint128 oldAverage, uint128 totalWeight
-  ) internal pure returns (uint16) {
+  function _removeFromAverage(uint128 valToRemove, uint128 amountToRemove, uint128 oldAverage, uint128 totalWeight)
+    internal
+    pure
+    returns (uint16)
+  {
     uint128 newWeight = totalWeight - amountToRemove;
-    return SafeCast.toUint16(
-      ((oldAverage * totalWeight) 
-        - (valToRemove * amountToRemove)
-      ) / (newWeight)
-    );
+    return SafeCast.toUint16(((oldAverage * totalWeight) - (valToRemove * amountToRemove)) / (newWeight));
   }
   // bidVol: SafeCast.toUint16(
   //   ((uint128(avgCollecting.bidVol) * avgCollecting.weight) - (uint128(nodeCommit.bidVol) * amount)) / (newWeight)
@@ -231,6 +219,4 @@ contract CommitmentAverage {
   //   ((uint128(avgCollecting.askVol) * avgCollecting.weight) - (uint128(nodeCommit.askVol) * amount)) / (newWeight)
   //   ),
   // weight: newWeight
-
-
 }
