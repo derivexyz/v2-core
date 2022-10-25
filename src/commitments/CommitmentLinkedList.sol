@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/console2.sol";
 import "./DynamicArrayLib.sol";
+import "./LinkedListLib.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "src/interfaces/IAccount.sol";
 import "../interfaces/IAsset.sol";
@@ -10,6 +11,7 @@ import "../../test/shared/mocks/MockAsset.sol";
 
 contract CommitmentLinkedList {
   using DynamicArrayLib for uint96[];
+  using LinkedListLib for SortedList;
 
   error NotExecutable();
 
@@ -39,10 +41,33 @@ contract CommitmentLinkedList {
     uint accountId;
   }
 
+  // sorted list sorting vol from low to high
+  // for bid: we go from end to find the highest
+  // for ask: we go from head to find the lowest
+  struct SortedList {
+    mapping(uint16 => VolEntity) entities;
+    uint16 length;
+    uint16 head;
+    uint16 end;
+  }
+
+  struct VolEntity {
+    uint16 vol;
+    uint16 prev;
+    uint16 next;
+    bool initialized;
+    Participants[] participants;
+  }
+
+  struct Participants {
+    uint64 nodeId;
+    uint64 weight;
+  }
+
   // only 0 ~ 1 is used
   // pending/collecting => subid => queue
-  mapping(uint8 => mapping(uint96 => Commitment[])) public bidQueues;
-  mapping(uint8 => mapping(uint96 => Commitment[])) public askQueues;
+  mapping(uint8 => mapping(uint96 => SortedList)) public bidQueues;
+  mapping(uint8 => mapping(uint96 => SortedList)) public askQueues;
 
   /// @dev pending/collecting => subid => totalWeights
   mapping(uint8 => mapping(uint96 => uint64)) public weights;
@@ -158,25 +183,25 @@ contract CommitmentLinkedList {
   function executeCommit(uint96 subId, bool isBid, uint16 index, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    if (isBid) {
-      Commitment memory target = bidQueues[cachePENDING][subId][index];
-      uint64 newWeight = target.weight - weight;
-      if (newWeight == 0) {
-        bidQueues[cachePENDING][subId][index].isExecuted = true;
-        bidQueues[cachePENDING][subId][index].weight = 0;
-      } else {
-        bidQueues[cachePENDING][subId][index].weight = newWeight;
-      }
-    } else {
-      Commitment memory target = askQueues[cachePENDING][subId][index];
-      uint64 newWeight = target.weight - weight;
-      if (newWeight == 0) {
-        askQueues[cachePENDING][subId][index].isExecuted = true;
-        askQueues[cachePENDING][subId][index].weight = 0;
-      } else {
-        askQueues[cachePENDING][subId][index].weight = newWeight;
-      }
-    }
+    // if (isBid) {
+    //   Commitment memory target = bidQueues[cachePENDING][subId][index];
+    //   uint64 newWeight = target.weight - weight;
+    //   if (newWeight == 0) {
+    //     bidQueues[cachePENDING][subId][index].isExecuted = true;
+    //     bidQueues[cachePENDING][subId][index].weight = 0;
+    //   } else {
+    //     bidQueues[cachePENDING][subId][index].weight = newWeight;
+    //   }
+    // } else {
+    //   Commitment memory target = askQueues[cachePENDING][subId][index];
+    //   uint64 newWeight = target.weight - weight;
+    //   if (newWeight == 0) {
+    //     askQueues[cachePENDING][subId][index].isExecuted = true;
+    //     askQueues[cachePENDING][subId][index].weight = 0;
+    //   } else {
+    //     askQueues[cachePENDING][subId][index].weight = newWeight;
+    //   }
+    // }
 
     // update total weight for an subId
     uint64 newTotalSubIdWeight = weights[cachePENDING][subId] - weight;
@@ -203,12 +228,8 @@ contract CommitmentLinkedList {
     weights[cacheCOLLECTING][subId] += weight;
 
     // add to both bid and ask queue with the same collateral
-    bidQueues[cacheCOLLECTING][subId].push(
-      Commitment(bidVol, askVol - bidVol, weight, node, uint64(block.timestamp), false)
-    );
-    askQueues[cacheCOLLECTING][subId].push(
-      Commitment(askVol, askVol - bidVol, weight, node, uint64(block.timestamp), false)
-    );
+    bidQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(bidVol, weight, node);
+    askQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(askVol, weight, node);
 
     nodes[owner].depositLeft -= weight;
   }
@@ -264,48 +285,48 @@ contract CommitmentLinkedList {
 
     for (uint i; i < subIds_.length; i++) {
       uint96 subId = subIds_[i];
-      Commitment[] memory pendingBids = bidQueues[_indexPENDING][subId];
+      // Commitment[] memory pendingBids = bidQueues[_indexPENDING][subId];
 
-      // handle bids
-      uint16 cacheBestBid;
-      uint8 bestBidId;
-      for (uint8 j; j < pendingBids.length; j++) {
-        Commitment memory cache = pendingBids[j];
+      // // handle bids
+      // uint16 cacheBestBid;
+      // uint8 bestBidId;
+      // for (uint8 j; j < pendingBids.length; j++) {
+      //   Commitment memory cache = pendingBids[j];
 
-        if (cache.isExecuted) continue;
+      //   if (cache.isExecuted) continue;
 
-        if (cache.vol > cacheBestBid) {
-          cacheBestBid = cache.vol;
-          bestBidId = j;
-        }
-      }
-      // update subId best bid
-      if (pendingBids[bestBidId].weight != 0) {
-        bestFinalizedBids[subId] = FinalizedQuote(
-          cacheBestBid, pendingBids[bestBidId].weight, pendingBids[bestBidId].nodeId, pendingBids[bestBidId].timestamp
-        );
-      }
+      //   if (cache.vol > cacheBestBid) {
+      //     cacheBestBid = cache.vol;
+      //     bestBidId = j;
+      //   }
+      // }
+      // // update subId best bid
+      // if (pendingBids[bestBidId].weight != 0) {
+      //   bestFinalizedBids[subId] = FinalizedQuote(
+      //     cacheBestBid, pendingBids[bestBidId].weight, pendingBids[bestBidId].nodeId, pendingBids[bestBidId].timestamp
+      //   );
+      // }
 
       // handle asks
-      uint16 cacheBestAsk;
-      uint8 bestAskId;
-      Commitment[] memory pendingAsks = askQueues[_indexPENDING][subId];
-      for (uint8 j; j < pendingAsks.length; j++) {
-        Commitment memory cache = pendingAsks[j];
+      // uint16 cacheBestAsk;
+      // uint8 bestAskId;
+      // Commitment[] memory pendingAsks = askQueues[_indexPENDING][subId];
+      // for (uint8 j; j < pendingAsks.length; j++) {
+      //   Commitment memory cache = pendingAsks[j];
 
-        if (cache.isExecuted) continue;
+      //   if (cache.isExecuted) continue;
 
-        if (cacheBestAsk == 0 || cache.vol < cacheBestAsk) {
-          cacheBestAsk = cache.vol;
-          bestAskId = j;
-        }
-      }
-      if (pendingAsks[bestAskId].weight != 0) {
-        // console2.log("find ask for subId <3", subId, cacheBestAsk);
-        bestFinalizedAsks[subId] = FinalizedQuote(
-          cacheBestAsk, pendingAsks[bestAskId].weight, pendingAsks[bestAskId].nodeId, pendingAsks[bestAskId].timestamp
-        );
-      }
+      //   if (cacheBestAsk == 0 || cache.vol < cacheBestAsk) {
+      //     cacheBestAsk = cache.vol;
+      //     bestAskId = j;
+      //   }
+      // }
+      // if (pendingAsks[bestAskId].weight != 0) {
+      //   // console2.log("find ask for subId <3", subId, cacheBestAsk);
+      //   bestFinalizedAsks[subId] = FinalizedQuote(
+      //     cacheBestAsk, pendingAsks[bestAskId].weight, pendingAsks[bestAskId].nodeId, pendingAsks[bestAskId].timestamp
+      //   );
+      // }
     }
   }
 }

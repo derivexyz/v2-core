@@ -66,104 +66,104 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(commitment.collectingLength(), 3);
     assertEq(commitment.collectingWeight(subId), commitmentWeight * 3);
 
-    vm.warp(block.timestamp + 10 minutes);
-    commitment.checkRollover();
+    // vm.warp(block.timestamp + 10 minutes);
+    // commitment.checkRollover();
 
-    assertEq(commitment.pendingLength(), 3);
+    // assertEq(commitment.pendingLength(), 3);
 
-    commitment.executeCommit(subId, true, 0, commitmentWeight);
-    commitment.executeCommit(subId, true, 1, commitmentWeight);
+    // commitment.executeCommit(subId, true, 0, commitmentWeight);
+    // commitment.executeCommit(subId, true, 1, commitmentWeight);
 
-    vm.warp(block.timestamp + 10 minutes);
-    commitment.checkRollover();
+    // vm.warp(block.timestamp + 10 minutes);
+    // commitment.checkRollover();
 
-    (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
-    assertEq(bestVol, 97);
+    // (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
+    // assertEq(bestVol, 97);
   }
 
-  function testCanExecuteCommitMultiple() public {
-    uint96 subId2 = 2;
+  // function testCanExecuteCommitMultiple() public {
+  //   uint96 subId2 = 2;
 
-    uint96[] memory subIds = new uint96[](6);
-    subIds[0] = subId;
-    subIds[1] = subId;
-    subIds[2] = subId;
-    subIds[3] = subId2;
-    subIds[4] = subId2;
-    subIds[5] = subId2;
+  //   uint96[] memory subIds = new uint96[](6);
+  //   subIds[0] = subId;
+  //   subIds[1] = subId;
+  //   subIds[2] = subId;
+  //   subIds[3] = subId2;
+  //   subIds[4] = subId2;
+  //   subIds[5] = subId2;
 
-    uint16[] memory bids = new uint16[](6);
-    bids[0] = 90;
-    bids[1] = 91;
-    bids[2] = 92;
+  //   uint16[] memory bids = new uint16[](6);
+  //   bids[0] = 90;
+  //   bids[1] = 91;
+  //   bids[2] = 92;
 
-    bids[3] = 93;
-    bids[4] = 94;
-    bids[5] = 95;
+  //   bids[3] = 93;
+  //   bids[4] = 94;
+  //   bids[5] = 95;
 
-    uint16[] memory asks = new uint16[](6);
-    asks[0] = 95;
-    asks[1] = 96;
-    asks[2] = 97;
+  //   uint16[] memory asks = new uint16[](6);
+  //   asks[0] = 95;
+  //   asks[1] = 96;
+  //   asks[2] = 97;
 
-    asks[3] = 98;
-    asks[4] = 99;
-    asks[5] = 100;
+  //   asks[3] = 98;
+  //   asks[4] = 99;
+  //   asks[5] = 100;
 
-    uint64[] memory weights = new uint64[](6);
-    for (uint i; i < 6; i++) {
-      weights[i] = commitmentWeight;
-    }
+  //   uint64[] memory weights = new uint64[](6);
+  //   for (uint i; i < 6; i++) {
+  //     weights[i] = commitmentWeight;
+  //   }
 
-    commitment.commitMultiple(subIds, bids, asks, weights);
-    assertEq(commitment.collectingLength(), 6);
+  //   commitment.commitMultiple(subIds, bids, asks, weights);
+  //   assertEq(commitment.collectingLength(), 6);
 
-    vm.warp(block.timestamp + 10 minutes);
-    commitment.checkRollover();
+  //   vm.warp(block.timestamp + 10 minutes);
+  //   commitment.checkRollover();
 
-    assertEq(commitment.pendingLength(), 6);
+  //   assertEq(commitment.pendingLength(), 6);
 
-    // remove third for subId
-    commitment.executeCommit(subId, true, 2, commitmentWeight);
+  //   // remove third for subId
+  //   commitment.executeCommit(subId, true, 2, commitmentWeight);
 
-    // remove third for subId2
-    commitment.executeCommit(subId2, true, 2, commitmentWeight);
+  //   // remove third for subId2
+  //   commitment.executeCommit(subId2, true, 2, commitmentWeight);
 
-    vm.warp(block.timestamp + 10 minutes);
-    commitment.checkRollover();
+  //   vm.warp(block.timestamp + 10 minutes);
+  //   commitment.checkRollover();
 
-    (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
-    assertEq(bestVol, 91);
+  //   (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
+  //   assertEq(bestVol, 91);
 
-    (uint16 bestVol2,,,) = commitment.bestFinalizedBids(subId2);
-    assertEq(bestVol2, 94);
-  }
+  //   (uint16 bestVol2,,,) = commitment.bestFinalizedBids(subId2);
+  //   assertEq(bestVol2, 94);
+  // }
 
-  function testShouldRolloverBlankIfPendingIsEmpty() public {
-    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
-    commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
+  // function testShouldRolloverBlankIfPendingIsEmpty() public {
+  //   commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
+  //   commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
 
-    vm.warp(block.timestamp + 10 minutes);
-    commitment.checkRollover(); // collecting: 0, pending: 2
+  //   vm.warp(block.timestamp + 10 minutes);
+  //   commitment.checkRollover(); // collecting: 0, pending: 2
 
-    assertEq(commitment.pendingLength(), 2);
-    assertEq(commitment.pendingWeight(subId), commitmentWeight * 2);
+  //   assertEq(commitment.pendingLength(), 2);
+  //   assertEq(commitment.pendingWeight(subId), commitmentWeight * 2);
 
-    commitment.executeCommit(subId, true, 0, commitmentWeight);
-    commitment.executeCommit(subId, true, 1, commitmentWeight);
+  //   commitment.executeCommit(subId, true, 0, commitmentWeight);
+  //   commitment.executeCommit(subId, true, 1, commitmentWeight);
 
-    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
+  //   commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
 
-    vm.warp(block.timestamp + 10 minutes);
+  //   vm.warp(block.timestamp + 10 minutes);
 
-    commitment.checkRollover();
+  //   commitment.checkRollover();
 
-    (uint16 bestVol, uint64 commitments, uint64 nodeId, uint64 timestamp) = commitment.bestFinalizedBids(subId);
-    assertEq(bestVol, 0);
-    assertEq(nodeId, 0);
-    assertEq(commitments, 0);
-    assertEq(timestamp, 0);
+  //   (uint16 bestVol, uint64 commitments, uint64 nodeId, uint64 timestamp) = commitment.bestFinalizedBids(subId);
+  //   assertEq(bestVol, 0);
+  //   assertEq(nodeId, 0);
+  //   assertEq(commitments, 0);
+  //   assertEq(timestamp, 0);
 
-    assertEq(commitment.pendingLength(), 1);
-  }
+  //   assertEq(commitment.pendingLength(), 1);
+  // }
 }
