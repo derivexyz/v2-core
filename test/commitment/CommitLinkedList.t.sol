@@ -79,8 +79,6 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testCanExecuteCommitMultiple() public {
-    uint96 subId2 = 2;
-
     uint96[] memory subIds = new uint96[](6);
     subIds[0] = subId;
     subIds[1] = subId;
@@ -143,11 +141,11 @@ contract UNIT_CommitLinkedList is Test {
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
-    // (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
-    // assertEq(bestVol, 91);
+    (uint16 bestVol,) = commitment.bestFinalizedBids(subId);
+    assertEq(bestVol, 94);
 
-    // (uint16 bestVol2,,,) = commitment.bestFinalizedBids(subId2);
-    // assertEq(bestVol2, 94);
+    (uint16 bestAsk,) = commitment.bestFinalizedAsks(subId);
+    assertEq(bestAsk, 97);
   }
 
   // function testShouldRolloverBlankIfPendingIsEmpty() public {
