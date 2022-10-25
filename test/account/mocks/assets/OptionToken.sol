@@ -46,12 +46,12 @@ contract OptionToken is IAsset, Owned {
   mapping(uint96 => Listing) public subIdToListing;
 
   constructor(Account account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Owned() {
-    // account = account_;
-    // priceFeeds = feeds_;
-    // settlementPricer = settlementPricer_;
-    // feedId = feedId_;
+    account = account_;
+    priceFeeds = feeds_;
+    settlementPricer = settlementPricer_;
+    feedId = feedId_;
 
-    // priceFeeds.assignFeedToAsset(IAsset(address(this)), feedId);
+    priceFeeds.assignFeedToAsset(IAsset(address(this)), feedId);
   }
 
   //////////
