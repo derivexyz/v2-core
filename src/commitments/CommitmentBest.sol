@@ -24,7 +24,6 @@ contract CommitmentBest {
     uint64 nodeId;
     uint64 timestamp;
     bool isExecuted;
-    uint96 subId;
   }
 
   struct FinalizedQuote {
@@ -170,12 +169,12 @@ contract CommitmentBest {
     }
 
     // update total weight for an subId
-    uint64 newTotalSubIdWeight = weights[cachePENDING][target.subId] - weight;
+    uint64 newTotalSubIdWeight = weights[cachePENDING][subId] - weight;
     if (newTotalSubIdWeight != 0) {
-      weights[cachePENDING][target.subId] = newTotalSubIdWeight;
+      weights[cachePENDING][subId] = newTotalSubIdWeight;
     } else {
-      weights[cachePENDING][target.subId] = 0;
-      subIds[cachePENDING].removeFromArray(target.subId);
+      weights[cachePENDING][subId] = 0;
+      subIds[cachePENDING].removeFromArray(subId);
     }
 
     // trade;
@@ -194,7 +193,7 @@ contract CommitmentBest {
     weights[cacheCOLLECTING][subId] += weight;
 
     queues[cacheCOLLECTING][subId].push(
-      Commitment(bidVol, askVol, askVol - bidVol, weight, node, uint64(block.timestamp), false, subId)
+      Commitment(bidVol, askVol, askVol - bidVol, weight, node, uint64(block.timestamp), false)
     );
 
     nodes[owner].depositLeft -= weight;
