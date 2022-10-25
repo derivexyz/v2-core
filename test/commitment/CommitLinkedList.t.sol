@@ -60,25 +60,20 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testCanExecuteCommit() public {
-    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
-    commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
-    commitment.commit(subId, 97, 107, commitmentWeight); // collecting: 3, pending: 0
-    assertEq(commitment.collectingLength(), 3);
-    assertEq(commitment.collectingWeight(subId), commitmentWeight * 3);
+    commitment.commit(subId, 96, 107, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(subId, 92, 103, commitmentWeight); // collecting: 2, pending: 0
+    commitment.commit(subId, 97, 106, commitmentWeight); // collecting: 3, pending: 0
+    commitment.commit(subId, 91, 100, commitmentWeight); // collecting: 3, pending: 0
+    assertEq(commitment.collectingLength(), 4);
+    assertEq(commitment.collectingWeight(subId), commitmentWeight * 4);
 
-    // vm.warp(block.timestamp + 10 minutes);
-    // commitment.checkRollover();
+    (uint16 lowestBid, uint16 highestBid) = commitment.collectingBidListInfo(subId);
+    assertEq(lowestBid, 91);
+    assertEq(highestBid, 97);
 
-    // assertEq(commitment.pendingLength(), 3);
-
-    // commitment.executeCommit(subId, true, 0, commitmentWeight);
-    // commitment.executeCommit(subId, true, 1, commitmentWeight);
-
-    // vm.warp(block.timestamp + 10 minutes);
-    // commitment.checkRollover();
-
-    // (uint16 bestVol,,,) = commitment.bestFinalizedBids(subId);
-    // assertEq(bestVol, 97);
+    (uint16 lowestAsk, uint16 highestAsk) = commitment.collectingAskListInfo(subId);
+    assertEq(lowestAsk, 100);
+    assertEq(highestAsk, 107);
   }
 
   // function testCanExecuteCommitMultiple() public {

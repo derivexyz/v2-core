@@ -3,7 +3,7 @@
 pragma solidity ^0.8.13;
 
 import "./CommitmentLinkedList.sol";
-
+import "forge-std/console2.sol";
 // struct SortedList {
 //   mapping(uint16 => VolEntity) entities;
 //   uint16 length;
@@ -28,7 +28,8 @@ library LinkedListLib {
     CommitmentLinkedList.SortedList storage list,
     uint16 vol,
     uint64 weight,
-    uint64 nodeId
+    uint64 nodeId,
+    bool isBid
   ) internal {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
     if (!volEntity.initialized) {
@@ -43,26 +44,30 @@ library LinkedListLib {
         list.end = vol;
       } else {
         bool isEnd = false;
-        uint16 pointer = list.head;
+        uint16 currentVol = list.head;
 
         while (true) {
-          CommitmentLinkedList.VolEntity memory current = list.entities[pointer];
-          if (current.vol > vol) {
+          if (currentVol > vol) {
             break;
           } else {
-            pointer = current.next;
+            CommitmentLinkedList.VolEntity memory current = list.entities[currentVol];
+            currentVol = current.next;
 
             // we reach the end!
-            if (pointer == 0) {
+            if (currentVol == 0) {
               isEnd = true;
               break;
             }
           }
         }
+        // if (isBid) console2.log("first bigger than me", currentVol);
 
-        if (pointer != 0) {
-          prev = list.entities[pointer].prev;
-          next = list.entities[pointer].next;
+        if (currentVol != 0) {
+          prev = list.entities[currentVol].prev;
+          next = currentVol;
+          if (prev == 0) {
+            list.head = vol;
+          }
         } else if (isEnd) {
           // vol is higher than everyone
           prev = list.end;
@@ -72,6 +77,8 @@ library LinkedListLib {
           next = list.head;
           list.head = vol;
         }
+        // if (isBid) console2.log("this round prev, next:", prev, next);
+        // if (isBid) console2.log("===");
       }
 
       // update prev and next

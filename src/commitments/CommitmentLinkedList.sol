@@ -120,6 +120,26 @@ contract CommitmentLinkedList {
     return weights[COLLECTING][subId];
   }
 
+  function pendingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+    head = bidQueues[PENDING][subId].head;
+    end = bidQueues[PENDING][subId].end;
+  }
+
+  function pendingAskListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+    head = askQueues[PENDING][subId].head;
+    end = askQueues[PENDING][subId].end;
+  }
+
+  function collectingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+    head = bidQueues[COLLECTING][subId].head;
+    end = bidQueues[COLLECTING][subId].end;
+  }
+
+  function collectingAskListInfo(uint96 subId) external view returns (uint16 head, uint16 end) {
+    head = askQueues[COLLECTING][subId].head;
+    end = askQueues[COLLECTING][subId].end;
+  }
+
   function register() external returns (uint64 nodeId) {
     if (nodes[msg.sender].nodeId != 0) revert Registered();
 
@@ -228,8 +248,8 @@ contract CommitmentLinkedList {
     weights[cacheCOLLECTING][subId] += weight;
 
     // add to both bid and ask queue with the same collateral
-    bidQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(bidVol, weight, node);
-    askQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(askVol, weight, node);
+    bidQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(bidVol, weight, node, true);
+    askQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(askVol, weight, node, false);
 
     nodes[owner].depositLeft -= weight;
   }
