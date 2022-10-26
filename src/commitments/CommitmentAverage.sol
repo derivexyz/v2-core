@@ -54,7 +54,7 @@ contract CommitmentAverage {
 
   // todo: need to make dynamic range
   // uint16 public constant RANGE = 5;
-  uint16 public constant DEPOSIT_PER_SUBID = 500;
+  uint256 public constant DEPOSIT_PER_SUBID = 500e18;
 
   // account variables
   Lending lendingAsset;
@@ -99,7 +99,7 @@ contract CommitmentAverage {
       if (subIdCommitment.weight > 0 && subIdCommitment.timestamp + 5 minutes > block.timestamp) break;
 
       // prevent further commits if not enough deposits made by node
-      if (commitNode.deposits < (commitNode.totalWeight + weights[i]) * DEPOSIT_PER_SUBID) break;
+      if (commitNode.deposits < (commitNode.totalWeight + weights[i]) * SafeCast.toUint128(DEPOSIT_PER_SUBID)) break;
 
       // ignore invalid spread
       if (bidVols[i] > askVols[i]) break;
@@ -188,7 +188,6 @@ contract CommitmentAverage {
       // handle first deposit
       timestamps[COLLECTING] = SafeCast.toUint64(block.timestamp);
     } else if (collectingTimestamp + 5 minutes < block.timestamp) {
-      console2.log("rotated", COLLECTING);
       (COLLECTING, PENDING, FINALIZED) = (FINALIZED, COLLECTING, PENDING);
 
       // clear collecting entries
