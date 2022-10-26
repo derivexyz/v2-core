@@ -8,6 +8,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "src/interfaces/IAccount.sol";
 import "../interfaces/IAsset.sol";
 import "../../test/shared/mocks/MockAsset.sol";
+import "src/interfaces/AccountStructs.sol";
 
 contract CommitmentLinkedList {
   using DynamicArrayLib for uint96[];
@@ -70,7 +71,7 @@ contract CommitmentLinkedList {
   mapping(uint8 => mapping(uint96 => SortedList)) public askQueues;
 
   /// @dev pending/collecting => subid => totalWeights
-  mapping(uint8 => mapping(uint96 => uint64)) public weights;
+  mapping(uint8 => mapping(uint96 => mapping(bool => uint64))) public weights;
 
   /// @dev pending/collecting => subid
   mapping(uint8 => uint96[]) public subIds;
@@ -79,6 +80,8 @@ contract CommitmentLinkedList {
   uint32[2] public length;
 
   mapping(address => Node) public nodes;
+
+  mapping(uint64 => address) public nodesOwner;
 
   uint64 nextId = 1;
 
@@ -95,12 +98,14 @@ contract CommitmentLinkedList {
 
   address immutable quote;
   address immutable quoteAsset;
+  address immutable optionToken;
   address immutable account;
   address immutable manager;
 
-  constructor(address _account, address _quote, address _quoteAsset, address _manager) {
+  constructor(address _account, address _quote, address _quoteAsset, address _optionToken, address _manager) {
     account = _account;
     quoteAsset = _quoteAsset;
+    optionToken = _optionToken;
     quote = _quote;
     manager = _manager;
     IERC20(_quote).approve(quoteAsset, type(uint).max);
@@ -114,12 +119,12 @@ contract CommitmentLinkedList {
     return length[COLLECTING];
   }
 
-  function pendingWeight(uint96 subId) external view returns (uint) {
-    return weights[PENDING][subId];
+  function pendingWeight(uint96 subId, bool isBid) external view returns (uint) {
+    return weights[PENDING][subId][isBid];
   }
 
-  function collectingWeight(uint96 subId) external view returns (uint) {
-    return weights[COLLECTING][subId];
+  function collectingWeight(uint96 subId, bool isBid) external view returns (uint) {
+    return weights[COLLECTING][subId][isBid];
   }
 
   function pendingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end, uint16 length_) {
@@ -155,6 +160,7 @@ contract CommitmentLinkedList {
     uint accountId = IAccount(account).createAccount(address(this), IManager(manager));
 
     nodes[msg.sender] = Node(nodeId, 0, 0, accountId);
+    nodesOwner[nodeId] = msg.sender;
   }
 
   function deposit(uint64 amount) external {
@@ -206,33 +212,83 @@ contract CommitmentLinkedList {
   }
 
   /// @dev commit to the 'collecting' block
-  function executeCommit(uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
+  function executeCommit(uint executorAccount, uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
+    // check account Id is from message.sender
+    require(IAccount(account).ownerOf(executorAccount) == msg.sender, "auth");
+
     (uint8 cachePENDING,) = _checkRollover();
 
     // update total weight for an subId
-    uint64 newTotalSubIdWeight = weights[cachePENDING][subId] - weight;
+    uint64 newTotalSubIdWeight = weights[cachePENDING][subId][isBid] - weight;
     if (newTotalSubIdWeight != 0) {
-      weights[cachePENDING][subId] = newTotalSubIdWeight;
+      weights[cachePENDING][subId][isBid] = newTotalSubIdWeight;
     } else {
-      weights[cachePENDING][subId] = 0;
+      weights[cachePENDING][subId][isBid] = 0;
       subIds[cachePENDING].removeFromArray(subId);
     }
 
+    uint premiumPerUnit = _getUnitPremium(vol, subId);
+
     if (isBid) {
+      // update storage
       SortedList storage list = bidQueues[cachePENDING][subId];
       Participant[] memory counterParties = list.removeWeightFromVolList(vol, weight);
       // trade with counter parties
-      console2.log("??");
+      AccountStructs.AssetTransfer[] memory transferBatch =
+        new AccountStructs.AssetTransfer[](counterParties.length * 2);
       for (uint i; i < counterParties.length; i++) {
-        console2.log("trade with bid order", counterParties[i].nodeId, counterParties[i].weight);
+        Node memory node = nodes[nodesOwner[counterParties[i].nodeId]];
+
+        // paid option from executor to node
+        transferBatch[i] = AccountStructs.AssetTransfer({
+          fromAcc: executorAccount,
+          toAcc: node.accountId,
+          asset: IAsset(optionToken),
+          subId: subId,
+          amount: int(uint(counterParties[i].weight)),
+          assetData: bytes32(0)
+        });
+        // paid premium from node to executor
+        transferBatch[i + 1] = AccountStructs.AssetTransfer({
+          fromAcc: node.accountId,
+          toAcc: executorAccount,
+          asset: IAsset(quoteAsset),
+          subId: 0,
+          amount: int(uint(premiumPerUnit * counterParties[i].weight)),
+          assetData: bytes32(0)
+        });
       }
+      IAccount(account).submitTransfers(transferBatch, "");
     } else {
+      // update storage
       SortedList storage list = askQueues[cachePENDING][subId];
       Participant[] memory counterParties = list.removeWeightFromVolList(vol, weight);
+
       // trade with counter parties
+      AccountStructs.AssetTransfer[] memory transferBatch =
+        new AccountStructs.AssetTransfer[](counterParties.length * 2);
       for (uint i; i < counterParties.length; i++) {
-        console2.log("trade with ask order", counterParties[i].nodeId, counterParties[i].weight);
+        Node memory node = nodes[nodesOwner[counterParties[i].nodeId]];
+        // paid option from node to executor
+        transferBatch[i] = AccountStructs.AssetTransfer({
+          fromAcc: node.accountId,
+          toAcc: executorAccount,
+          asset: IAsset(optionToken),
+          subId: subId,
+          amount: int(uint(counterParties[i].weight)),
+          assetData: bytes32(0)
+        });
+        // paid premium from executor to node
+        transferBatch[i + 1] = AccountStructs.AssetTransfer({
+          fromAcc: executorAccount,
+          toAcc: node.accountId,
+          asset: IAsset(quoteAsset),
+          subId: 0,
+          amount: int(uint(premiumPerUnit * counterParties[i].weight)),
+          assetData: bytes32(0)
+        });
       }
+      IAccount(account).submitTransfers(transferBatch, "");
     }
   }
 
@@ -246,13 +302,21 @@ contract CommitmentLinkedList {
     uint64 weight
   ) internal {
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
-    weights[cacheCOLLECTING][subId] += weight;
+
+    // both bid and ask?
+    weights[cacheCOLLECTING][subId][true] += weight;
+    weights[cacheCOLLECTING][subId][false] += weight;
 
     // add to both bid and ask queue with the same collateral
     bidQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(bidVol, weight, node, epoch);
     askQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(askVol, weight, node, epoch);
 
     nodes[owner].depositLeft -= weight;
+  }
+
+  // todo: plugin blacksholes
+  function _getUnitPremium(uint16, /*vol*/ uint96 /*subId*/ ) internal returns (uint) {
+    return 10_000000;
   }
 
   function checkRollover() external {

@@ -22,27 +22,41 @@ contract UNIT_CommitLinkedList is Test {
 
   MockERC20 usdc;
   MockAsset usdcAsset;
+  MockAsset optionAsset;
+
+  uint accId;
 
   Account account;
 
   function setUp() public {
     account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+
     dumbManager = new DumbManager(address(account));
+
+    accId = account.createAccount(address(this), IManager(address(dumbManager)));
 
     /* mock tokens that can be deposited into accounts */
     usdc = new MockERC20("USDC", "USDC");
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
 
-    commitment = new CommitmentLinkedList(address(account), address(usdc), address(usdcAsset), address(dumbManager));
+    optionAsset = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
+
+    commitment =
+    new CommitmentLinkedList(address(account), address(usdc), address(usdcAsset), address(optionAsset), address(dumbManager));
+
+    account.approve(address(commitment), accId);
 
     usdc.mint(address(this), 10000_000000);
     usdc.approve(address(commitment), type(uint).max);
+    usdc.approve(address(usdcAsset), type(uint).max);
 
     commitment.register();
 
     vm.warp(block.timestamp + 1 days);
 
-    commitment.deposit(100_000000);
+    commitment.deposit(1000_000000);
+
+    usdcAsset.deposit(accId, 0, 1000_000000);
   }
 
   function testCanCommit() public {
@@ -65,7 +79,7 @@ contract UNIT_CommitLinkedList is Test {
     commitment.commit(subId, 97, 106, commitmentWeight); // collecting: 3, pending: 0
     commitment.commit(subId, 91, 100, commitmentWeight); // collecting: 3, pending: 0
     assertEq(commitment.collectingLength(), 4);
-    assertEq(commitment.collectingWeight(subId), commitmentWeight * 4);
+    assertEq(commitment.collectingWeight(subId, true), commitmentWeight * 4);
 
     (uint16 lowestBid, uint16 highestBid, uint16 bidLength) = commitment.collectingBidListInfo(subId);
     assertEq(lowestBid, 91);
@@ -123,16 +137,16 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(highestBid, 95);
 
     // remove 90 vol
-    commitment.executeCommit(subId, true, 90, commitmentWeight);
-    commitment.executeCommit(subId, true, 95, commitmentWeight);
+    commitment.executeCommit(accId, subId, true, 90, commitmentWeight);
+    commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
 
     (lowestBid, highestBid,) = commitment.pendingBidListInfo(subId);
     assertEq(lowestBid, 91);
     assertEq(highestBid, 94);
 
     // // remove ask
-    commitment.executeCommit(subId, false, 95, commitmentWeight);
-    commitment.executeCommit(subId, false, 96, commitmentWeight);
+    commitment.executeCommit(accId, subId, false, 95, commitmentWeight);
+    commitment.executeCommit(accId, subId, false, 96, commitmentWeight);
 
     (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
     assertEq(lowestAsk, 97);
@@ -175,22 +189,61 @@ contract UNIT_CommitLinkedList is Test {
     commitment.checkRollover();
 
     // remove 1 unit
-    commitment.executeCommit(subId, true, 90, commitmentWeight);
+    commitment.executeCommit(accId, subId, true, 90, commitmentWeight);
     // remove another unit
-    commitment.executeCommit(subId, true, 90, commitmentWeight);
+    commitment.executeCommit(accId, subId, true, 90, commitmentWeight);
 
     (uint lowestBid, uint highestBid,) = commitment.pendingBidListInfo(subId);
     assertEq(lowestBid, 92);
     assertEq(highestBid, 94);
 
     // // remove ask
-    commitment.executeCommit(subId, false, 96, commitmentWeight);
-    commitment.executeCommit(subId, false, 98, commitmentWeight);
-    commitment.executeCommit(subId, false, 100, commitmentWeight * 2);
+    commitment.executeCommit(accId, subId, false, 96, commitmentWeight);
+    commitment.executeCommit(accId, subId, false, 98, commitmentWeight);
+    commitment.executeCommit(accId, subId, false, 100, commitmentWeight * 2);
 
     (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
     assertEq(lowestAsk, 96);
     assertEq(highestAsk, 98);
+  }
+
+  function testExecuteWillTrade() public {
+    uint96[] memory subIds = new uint96[](2);
+    subIds[0] = subId;
+    subIds[1] = subId;
+
+    uint16[] memory bids = new uint16[](2);
+    bids[0] = 90;
+    bids[1] = 92;
+
+    uint16[] memory asks = new uint16[](2);
+    asks[0] = 96;
+    asks[1] = 98;
+
+    uint64[] memory weights = new uint64[](2);
+    weights[0] = commitmentWeight;
+    weights[1] = commitmentWeight;
+
+    commitment.commitMultiple(subIds, bids, asks, weights);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    // execute against 90 bid
+    commitment.executeCommit(accId, subId, true, 90, commitmentWeight);
+    // executge against 92 bid
+    commitment.executeCommit(accId, subId, true, 92, commitmentWeight);
+
+    // check that executing against bids will update executor balance
+    assertEq(account.getBalance(accId, optionAsset, subId), -int(uint(2 * commitmentWeight)));
+
+    // // remove ask
+    // execute against 90 bid
+    commitment.executeCommit(accId, subId, false, 96, commitmentWeight);
+    commitment.executeCommit(accId, subId, false, 98, commitmentWeight);
+
+    // end balace is 0 because sell 2 + buy 2
+    assertEq(account.getBalance(accId, optionAsset, subId), 0);
   }
 
   // function testShouldRolloverBlankIfPendingIsEmpty() public {
@@ -203,8 +256,8 @@ contract UNIT_CommitLinkedList is Test {
   //   assertEq(commitment.pendingLength(), 2);
   //   assertEq(commitment.pendingWeight(subId), commitmentWeight * 2);
 
-  //   commitment.executeCommit(subId, true, 0, commitmentWeight);
-  //   commitment.executeCommit(subId, true, 1, commitmentWeight);
+  //   commitment.executeCommit(accId,subId, true, 0, commitmentWeight);
+  //   commitment.executeCommit(accId,subId, true, 1, commitmentWeight);
 
   //   commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
 
