@@ -98,9 +98,9 @@ contract CommitmentLinkedListGas is Script {
     console.log("gas commitMultiple: second to commit to 100 subIds:", gasAdd100SubIds);
 
     gasBefore = gasleft();
-    gasAdd100SubIds = _commitMultiple(100, 100, 8);
+    gasAdd100SubIds = _commitMultiple(100, 100, 0); // same submission as first one
     gasAfter = gasleft();
-    console.log("gas commitMultiple: third to commit to 100 subIds:", gasAdd100SubIds);
+    console.log("gas commitMultiple: third to commit to 100 subId, same vols:", gasAdd100SubIds);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();

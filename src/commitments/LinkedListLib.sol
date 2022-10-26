@@ -108,7 +108,7 @@ library LinkedListLib {
 
   function removeWeightFromVolList(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 weight)
     internal
-    returns (CommitmentLinkedList.Participant[] memory)
+    returns (CommitmentLinkedList.Participant[] memory, uint length)
   {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
     if (!volEntity.initialized) revert NotInVolArray();
@@ -136,6 +136,7 @@ library LinkedListLib {
 
       // return all participants
       participants = volEntity.participants;
+      length = participants.length;
 
       delete volEntity.participants;
     } else {
@@ -155,10 +156,11 @@ library LinkedListLib {
           participants[i] = participant;
           volEntity.participants[i].weight = 0;
         }
+        length += 1;
       }
     }
 
-    return participants;
+    return (participants, length);
   }
 
   function clearList(CommitmentLinkedList.SortedList storage list) internal {

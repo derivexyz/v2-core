@@ -214,11 +214,7 @@ contract CommitmentLinkedList {
   /// @dev commit to the 'collecting' block
   function executeCommit(uint executorAccount, uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
     // check account Id is from message.sender
-    require(
-      IAccount(account).ownerOf(executorAccount) == msg.sender
-        || IAccount(account).getApproved(executorAccount) == msg.sender,
-      "auth"
-    );
+    require(IAccount(account).ownerOf(executorAccount) == msg.sender, "auth");
 
     (uint8 cachePENDING,) = _checkRollover();
 
@@ -236,15 +232,16 @@ contract CommitmentLinkedList {
     if (isBid) {
       // update storage
       SortedList storage list = bidQueues[cachePENDING][subId];
-      Participant[] memory counterParties = list.removeWeightFromVolList(vol, weight);
+      (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
+
       // trade with counter parties
-      AccountStructs.AssetTransfer[] memory transferBatch =
-        new AccountStructs.AssetTransfer[](counterParties.length * 2);
-      for (uint i; i < counterParties.length; i++) {
+      AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](numCounterParties * 2);
+      for (uint i; i < numCounterParties; i++) {
+        if (counterParties[i].weight == 0) return;
         Node memory node = nodes[nodesOwner[counterParties[i].nodeId]];
 
         // paid option from executor to node
-        transferBatch[i] = AccountStructs.AssetTransfer({
+        transferBatch[2 * i] = AccountStructs.AssetTransfer({
           fromAcc: executorAccount,
           toAcc: node.accountId,
           asset: IAsset(optionToken),
@@ -253,7 +250,7 @@ contract CommitmentLinkedList {
           assetData: bytes32(0)
         });
         // paid premium from node to executor
-        transferBatch[i + 1] = AccountStructs.AssetTransfer({
+        transferBatch[2 * i + 1] = AccountStructs.AssetTransfer({
           fromAcc: node.accountId,
           toAcc: executorAccount,
           asset: IAsset(quoteAsset),
@@ -266,15 +263,15 @@ contract CommitmentLinkedList {
     } else {
       // update storage
       SortedList storage list = askQueues[cachePENDING][subId];
-      Participant[] memory counterParties = list.removeWeightFromVolList(vol, weight);
+      (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
 
       // trade with counter parties
-      AccountStructs.AssetTransfer[] memory transferBatch =
-        new AccountStructs.AssetTransfer[](counterParties.length * 2);
-      for (uint i; i < counterParties.length; i++) {
+      AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](numCounterParties * 2);
+      for (uint i; i < numCounterParties; i++) {
+        if (counterParties[i].weight == 0) return;
         Node memory node = nodes[nodesOwner[counterParties[i].nodeId]];
         // paid option from node to executor
-        transferBatch[i] = AccountStructs.AssetTransfer({
+        transferBatch[2 * i] = AccountStructs.AssetTransfer({
           fromAcc: node.accountId,
           toAcc: executorAccount,
           asset: IAsset(optionToken),
@@ -283,7 +280,7 @@ contract CommitmentLinkedList {
           assetData: bytes32(0)
         });
         // paid premium from executor to node
-        transferBatch[i + 1] = AccountStructs.AssetTransfer({
+        transferBatch[2 * i + 1] = AccountStructs.AssetTransfer({
           fromAcc: executorAccount,
           toAcc: node.accountId,
           asset: IAsset(quoteAsset),
