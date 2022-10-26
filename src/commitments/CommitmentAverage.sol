@@ -180,6 +180,7 @@ contract CommitmentAverage {
   function checkRotateBlocks() external {
     _checkRotateBlocks();
   }
+
   function _checkRotateBlocks() internal {
     uint64 collectingTimestamp = timestamps[COLLECTING];
 
@@ -189,7 +190,7 @@ contract CommitmentAverage {
     } else if (collectingTimestamp + 5 minutes < block.timestamp) {
       console2.log("rotated", COLLECTING);
       (COLLECTING, PENDING, FINALIZED) = (FINALIZED, COLLECTING, PENDING);
-      
+
       // clear collecting entries
       delete state[COLLECTING];
       delete timestamps[COLLECTING];

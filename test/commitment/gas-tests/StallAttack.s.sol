@@ -19,7 +19,6 @@ import "../../shared/mocks/MockERC20.sol";
 import "src/commitments/CommitmentAverage.sol";
 import "./SimulationHelper.sol";
 
-
 // run  with `forge script StallAttackScript --fork-url http://localhost:8545` against anvil
 // OptionToken deployment fails when running outside of localhost
 
@@ -29,9 +28,7 @@ contract StallAttack is SimulationHelper {
   address attacker = vm.addr(3);
 
   /* 60 min vol feed: 5 min increments */
-  uint16[12] AMMVolFeed = [
-    100, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250
-  ];
+  uint16[12] AMMVolFeed = [100, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250];
   uint16 AMMSpread = 5;
 
   /**
@@ -49,7 +46,7 @@ contract StallAttack is SimulationHelper {
     _deployCommitment();
     _addListings();
     _setupParams(1500e18);
-      
+
     console2.log("SETTING UP ATTACKER ACCOUNT...");
     vm.startBroadcast(owner);
     uint attackerAccId = account.createAccount(attacker, IManager(address(manager)));
@@ -67,16 +64,13 @@ contract StallAttack is SimulationHelper {
     uint nodeDeposits;
     uint nodeTotWeight;
     for (uint i; i < AMMVolFeed.length; i++) {
-
-      /* place standard commitments */ 
+      /* place standard commitments */
       vm.startBroadcast(node);
-      (uint16[] memory bids, 
-      uint16[] memory asks, 
-      uint8[] memory subIds, 
-      uint128[] memory weights) = _generateFlatCommitments(AMMVolFeed[i], AMMSpread, 3, 1);
+      (uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights) =
+        _generateFlatCommitments(AMMVolFeed[i], AMMSpread, 3, 1);
       commitment.commit(bids, asks, subIds, weights);
 
-      (, , uint128 commitWeight, ) = commitment.commitments(commitment.COLLECTING(), 1, 1);
+      (,, uint128 commitWeight,) = commitment.commitments(commitment.COLLECTING(), 1, 1);
       console2.log("commit weight for subId 1: %s", commitWeight);
 
       /* warp 5 min and rotate */
@@ -86,10 +80,8 @@ contract StallAttack is SimulationHelper {
       vm.stopBroadcast();
 
       /* get state */
-      (currBid,
-      currAsk,
-      currWeight) = commitment.state(commitment.PENDING(), 3);
-      (nodeDeposits, nodeTotWeight, ) = commitment.nodes(node);
+      (currBid, currAsk, currWeight) = commitment.state(commitment.PENDING(), 3);
+      (nodeDeposits, nodeTotWeight,) = commitment.nodes(node);
 
       /* print new state */
       console.log("Epoch %s", i + 1);
@@ -107,11 +99,11 @@ contract StallAttack is SimulationHelper {
    * @param spreadBuffer static amount to add to each AMM spread
    * @param weight weight behind each commitment
    */
-  function _generateFlatCommitments(
-    uint16 ammVol, uint16 ammSpread, uint16 spreadBuffer, uint128 weight
-  ) public pure returns (
-    uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights
-  ) {
+  function _generateFlatCommitments(uint16 ammVol, uint16 ammSpread, uint16 spreadBuffer, uint128 weight)
+    public
+    pure
+    returns (uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights)
+  {
     require(ammVol > (ammSpread + spreadBuffer), "spread + buffer > vol");
 
     bids = new uint16[](49);
@@ -144,10 +136,10 @@ contract StallAttack is SimulationHelper {
   }
 
   function _printCommits() public view {
-    (, , uint128 col, ) = commitment.commitments(commitment.COLLECTING(), 1, 1);
-    (, , uint128 pen, ) = commitment.commitments(commitment.PENDING(), 1, 1);
-    (, , uint128 fin, ) = commitment.commitments(commitment.FINALIZED(), 1, 1);
+    (,, uint128 col,) = commitment.commitments(commitment.COLLECTING(), 1, 1);
+    (,, uint128 pen,) = commitment.commitments(commitment.PENDING(), 1, 1);
+    (,, uint128 fin,) = commitment.commitments(commitment.FINALIZED(), 1, 1);
     console2.log("post clear commits");
-     console2.log(col, pen, fin);
+    console2.log(col, pen, fin);
   }
 }

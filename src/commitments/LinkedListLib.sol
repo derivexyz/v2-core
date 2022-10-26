@@ -108,14 +108,20 @@ library LinkedListLib {
 
   function removeWeightFromVolList(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 weight)
     internal
-    returns (CommitmentLinkedList.Participant[] memory /*participants*/ )
+    returns (CommitmentLinkedList.Participant[] memory)
   {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
     if (!volEntity.initialized) revert NotInVolArray();
 
     uint64 newTotalWeight = volEntity.totalWeight - weight;
 
+    volEntity.totalWeight = newTotalWeight;
+
+    CommitmentLinkedList.Participant[] memory participants =
+      new CommitmentLinkedList.Participant[](volEntity.participants.length);
+
     if (newTotalWeight == 0) {
+      // remove node from the linked list
       (uint16 cachePrev, uint16 cacheNext) = (volEntity.prev, volEntity.next);
       if (cachePrev != 0) {
         list.entities[cachePrev].next = cacheNext;
@@ -128,33 +134,31 @@ library LinkedListLib {
         list.end = cachePrev;
       }
 
-      // todo: return participants
       // return all participants
-      // participants = volEntity.participants;
-      // for (uint i = 0; i< volEntity.participants.length; i++) {
-      //   volEntity.participants[i].weight = 0;
-      // }
+      participants = volEntity.participants;
+
+      delete volEntity.participants;
     } else {
       // todo: return participants
-      // // run through participants, find up to weight
-      // uint64 sum;
-      // for (uint i = 0; i< volEntity.participants.length; i++) {
-      //   CommitmentLinkedList.Participant memory participant = volEntity.participants[i];
-      //   if (sum + participant.weight > weight) {
-      //     uint64 amount = weight - sum;
+      // run through participants, find up to weight
+      uint64 sum;
+      for (uint i = 0; i < volEntity.participants.length; i++) {
+        CommitmentLinkedList.Participant memory participant = volEntity.participants[i];
+        if (sum + participant.weight > weight) {
+          uint64 amount = weight - sum;
 
-      //     // update state
-      //     volEntity.participants[i].weight -= amount;
-      //     participants.push(CommitmentLinkedList.Participant(participant.nodeId, amount));
-      //     break;
-      //   } else {
-      //     participants.push(participant);
-      //     volEntity.participants[i].weight = 0;
-      //   }
-      // }
+          // update state
+          volEntity.participants[i].weight -= amount;
+          participants[i] = CommitmentLinkedList.Participant(participant.nodeId, amount);
+          break;
+        } else {
+          participants[i] = participant;
+          volEntity.participants[i].weight = 0;
+        }
+      }
     }
 
-    volEntity.totalWeight = newTotalWeight;
+    return participants;
   }
 
   function clearList(CommitmentLinkedList.SortedList storage list) internal {

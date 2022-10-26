@@ -209,16 +209,6 @@ contract CommitmentLinkedList {
   function executeCommit(uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
     (uint8 cachePENDING,) = _checkRollover();
 
-    if (isBid) {
-      SortedList storage list = bidQueues[cachePENDING][subId];
-      // VolEntity storage target = list.entities[vol];
-      list.removeWeightFromVolList(vol, weight);
-    } else {
-      SortedList storage list = askQueues[cachePENDING][subId];
-      // VolEntity storage target = list.entities[vol];
-      list.removeWeightFromVolList(vol, weight);
-    }
-
     // update total weight for an subId
     uint64 newTotalSubIdWeight = weights[cachePENDING][subId] - weight;
     if (newTotalSubIdWeight != 0) {
@@ -228,7 +218,22 @@ contract CommitmentLinkedList {
       subIds[cachePENDING].removeFromArray(subId);
     }
 
-    // trade;
+    if (isBid) {
+      SortedList storage list = bidQueues[cachePENDING][subId];
+      Participant[] memory counterParties = list.removeWeightFromVolList(vol, weight);
+      // trade with counter parties
+      console2.log("??");
+      for (uint i; i < counterParties.length; i++) {
+        console2.log("trade with bid order", counterParties[i].nodeId, counterParties[i].weight);
+      }
+    } else {
+      SortedList storage list = askQueues[cachePENDING][subId];
+      Participant[] memory counterParties = list.removeWeightFromVolList(vol, weight);
+      // trade with counter parties
+      for (uint i; i < counterParties.length; i++) {
+        console2.log("trade with ask order", counterParties[i].nodeId, counterParties[i].weight);
+      }
+    }
   }
 
   function _addCommitToQueue(

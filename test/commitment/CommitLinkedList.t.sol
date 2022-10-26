@@ -148,6 +148,51 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(bestAsk, 97);
   }
 
+  function testCanExecutePartialSize() public {
+    uint96[] memory subIds = new uint96[](3);
+    subIds[0] = subId;
+    subIds[1] = subId;
+    subIds[2] = subId;
+
+    uint16[] memory bids = new uint16[](3);
+    bids[0] = 90;
+    bids[1] = 92;
+    bids[2] = 94;
+
+    uint16[] memory asks = new uint16[](3);
+    asks[0] = 96;
+    asks[1] = 98;
+    asks[2] = 100;
+
+    uint64[] memory weights = new uint64[](3);
+    for (uint i; i < 3; i++) {
+      weights[i] = commitmentWeight * 2;
+    }
+
+    commitment.commitMultiple(subIds, bids, asks, weights);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    // remove 1 unit
+    commitment.executeCommit(subId, true, 90, commitmentWeight);
+    // remove another unit
+    commitment.executeCommit(subId, true, 90, commitmentWeight);
+
+    (uint lowestBid, uint highestBid,) = commitment.pendingBidListInfo(subId);
+    assertEq(lowestBid, 92);
+    assertEq(highestBid, 94);
+
+    // // remove ask
+    commitment.executeCommit(subId, false, 96, commitmentWeight);
+    commitment.executeCommit(subId, false, 98, commitmentWeight);
+    commitment.executeCommit(subId, false, 100, commitmentWeight * 2);
+
+    (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
+    assertEq(lowestAsk, 96);
+    assertEq(highestAsk, 98);
+  }
+
   // function testShouldRolloverBlankIfPendingIsEmpty() public {
   //   commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
   //   commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
