@@ -31,6 +31,14 @@ contract StallAttack is SimulationHelper {
   uint16[12] AMMVolFeed = [100, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250];
   uint16 AMMSpread = 5;
 
+  uint8 ACTIVE_SUBIDS = 49;
+
+  /* attack response params */
+  uint16 SPREAD_MUL = 2;
+  uint128 WEIGHT_MUL = 2;
+  uint256 DEPOSIT_CAP = 3_000_000e18; // $ 3mln DAI
+  uint128 previousCommitWeight = 1; // crude way for node to keep track of last time attack
+
   /**
    * @dev Simulation
    *  - 1x active node
@@ -58,16 +66,26 @@ contract StallAttack is SimulationHelper {
     _depositToNode(node, 100_000e18);
 
     /* begin sim */
-    uint16 currBid;
-    uint16 currAsk;
     uint128 currWeight;
     uint nodeDeposits;
     uint nodeTotWeight;
     for (uint i; i < AMMVolFeed.length; i++) {
       /* place standard commitments */
-      vm.startBroadcast(node);
       (uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights) =
         _generateFlatCommitments(AMMVolFeed[i], AMMSpread, 3, 1);
+
+      /* determine whether response is needed */
+      (uint16 newBid, uint16 newAsk, uint8 attackSubId, uint128 newWeight) = 
+        _generateAttackResponse(SPREAD_MUL, WEIGHT_MUL, DEPOSIT_CAP);
+
+      if (newWeight > 0 && i != 0) { // attack started
+        console2.log("attack spotted... %s", newWeight);
+        bids[attackSubId] = newBid;
+        asks[attackSubId] = newAsk;
+        weights[attackSubId] = newWeight;
+      } 
+
+      vm.startBroadcast(node);
       commitment.commit(bids, asks, subIds, weights);
 
       (,, uint128 commitWeight,) = commitment.commitments(commitment.COLLECTING(), 1, 1);
@@ -76,18 +94,26 @@ contract StallAttack is SimulationHelper {
       /* warp 5 min and rotate */
       vm.warp(block.timestamp + 5 minutes + 1 seconds);
       commitment.checkRotateBlocks();
-      commitment.clearCommits(subIds);
+      commitment.clearCommits(subIds); // allow node to reuse deposits for new commits
+      vm.stopBroadcast();
+
+      /* stall attack */
+      vm.startBroadcast(attacker);
+      commitment.executeCommit(1, (newWeight > 0 && i != 0) ? newWeight : 1, 1); // node, weight, subId
       vm.stopBroadcast();
 
       /* get state */
-      (currBid, currAsk, currWeight) = commitment.state(commitment.PENDING(), 3);
+      (,, currWeight) = commitment.state(commitment.PENDING(), 1);
       (nodeDeposits, nodeTotWeight,) = commitment.nodes(node);
 
       /* print new state */
       console.log("Epoch %s", i + 1);
-      console.log("$1500, 4 week commitment weight %s", currWeight);
-      console.log("committed capital", nodeTotWeight);
-      console.log("------------------");
+      console.log("$1000, 1 week pending weight %s", currWeight);
+      console.log("leftover capital", nodeTotWeight);
+      console.log("------------------ \n");
+
+      /* calculate arb loss */
+      // todo: actually do calcs
     }
   }
 
@@ -100,17 +126,15 @@ contract StallAttack is SimulationHelper {
    * @param weight weight behind each commitment
    */
   function _generateFlatCommitments(uint16 ammVol, uint16 ammSpread, uint16 spreadBuffer, uint128 weight)
-    public
-    pure
-    returns (uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights)
+    public view returns (uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights)
   {
     require(ammVol > (ammSpread + spreadBuffer), "spread + buffer > vol");
 
-    bids = new uint16[](49);
-    asks = new uint16[](49);
-    subIds = new uint8[](49);
-    weights = new uint128[](49);
-    for (uint8 i; i < 49; i++) {
+    bids = new uint16[](ACTIVE_SUBIDS);
+    asks = new uint16[](ACTIVE_SUBIDS);
+    subIds = new uint8[](ACTIVE_SUBIDS);
+    weights = new uint128[](ACTIVE_SUBIDS);
+    for (uint8 i; i < ACTIVE_SUBIDS; i++) {
       bids[i] = ammVol - ammSpread - spreadBuffer;
       asks[i] = ammVol + ammSpread + spreadBuffer;
       subIds[i] = i;
@@ -118,11 +142,40 @@ contract StallAttack is SimulationHelper {
     }
   }
 
-  // function generateAttackResponse(
-  //   uint16 ammVol, uint16 ammSpread, uint8 subIdToDefend, uint16 spreadMultiple, uint16 weightMultiple
-  // ) public {
+  /**
+   * @dev defender moves all excess capital to the attacked node
+   */
+  function _generateAttackResponse(
+    uint16 spreadMultiple, uint128 weightMultiple, uint256 depositCap
+  ) public returns (
+    uint16 newBid, uint16 newAsk, uint8 subId, uint128 weight) {
+    
+    /* see if any epoch is attacked */ 
+    bool isAttacked;
+    uint8 attackedSubId;
+    uint16 currBid;
+    uint16 currAsk;
+    uint128 currWeight;
+    for (uint8 i; i < ACTIVE_SUBIDS; i++) {
+      (currBid, currAsk, currWeight) = commitment.state(commitment.PENDING(), i);
+      if (currWeight == 0) {
+        isAttacked = true;
+        attackedSubId = i;
+        break;
+      }
+    }
 
-  // }
+    /* move deposit into node */
+    if (isAttacked) {
+      previousCommitWeight = weightMultiple * previousCommitWeight;
+      // todo: need to exit out when nodes have more than $3mln deposited
+      _depositToNode(node, previousCommitWeight * commitment.DEPOSIT_PER_SUBID());
+      uint16 oldSpread = (currAsk - currBid);
+      uint16 buffer = (oldSpread / 2) * (spreadMultiple - 1);
+      return (currBid - buffer, currAsk + buffer, attackedSubId, previousCommitWeight);
+    }
+    return (0, 0, 0, 0);
+  }
 
   function _addListings() public {
     uint72[7] memory strikes = [1000e18, 1300e18, 1400e18, 1500e18, 1600e18, 1700e18, 2000e18];
