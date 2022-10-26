@@ -214,7 +214,11 @@ contract CommitmentLinkedList {
   /// @dev commit to the 'collecting' block
   function executeCommit(uint executorAccount, uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
     // check account Id is from message.sender
-    require(IAccount(account).ownerOf(executorAccount) == msg.sender, "auth");
+    require(
+      IAccount(account).ownerOf(executorAccount) == msg.sender
+        || IAccount(account).getApproved(executorAccount) == msg.sender,
+      "auth"
+    );
 
     (uint8 cachePENDING,) = _checkRollover();
 

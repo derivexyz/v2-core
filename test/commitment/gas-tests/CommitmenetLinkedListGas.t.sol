@@ -88,7 +88,7 @@ contract CommitmentLinkedListGas is Script {
     console2.log("----------------------------------");
 
     gasBefore = gasleft();
-    uint gasAdd100SubIds = _commitMultiple(100, 100, 5);
+    uint gasAdd100SubIds = _commitMultiple(100, 100, 0);
     gasAfter = gasleft();
     console.log("gas commitMultiple: first one to commit to 100 subIds:", gasAdd100SubIds);
 
@@ -102,31 +102,14 @@ contract CommitmentLinkedListGas is Script {
     gasAfter = gasleft();
     console.log("gas commitMultiple: third to commit to 100 subIds:", gasAdd100SubIds);
 
-    // console2.log("----------------------------------");
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+    console2.log("----------------------------------");
 
-    // (uint bestBid_1,,, uint96 _timestamp) = commitment.bestFinalizedBids(0);
-    // (uint bestBid_2,,, uint96 _timestamp2) = commitment.bestFinalizedBids(1);
-
-    // // add to 200 subId
-    // _commitMultiple(200, 200);
-
-    // // roll to pending
-    // vm.warp(block.timestamp + 30 minutes);
-    // commitment.checkRollover();
-
-    // // roll to finalized
-
-    // vm.warp(block.timestamp + 40 minutes);
-    // gasBefore = gasleft();
-    // commitment.checkRollover();
-    // gasAfter = gasleft();
-
-    // console.log("gas rollover 200 subIds x 1 each in queue", gasBefore - gasAfter);
-
-    // (,,, uint64 timestamp) = commitment.bestFinalizedBids(0);
-    // (,,, uint64 timestamp2) = commitment.bestFinalizedBids(1);
-
-    // vm.stopBroadcast();
+    gasBefore = gasleft();
+    commitment.executeCommit(accId, 0, true, 50, commitmentWeight);
+    gasAfter = gasleft();
+    console.log("gas executeCommit:", gasBefore - gasAfter);
   }
 
   function _commitMultiple(uint total, uint subIdCount, uint16 offSet) internal returns (uint gasCost) {
@@ -169,7 +152,9 @@ contract CommitmentLinkedListGas is Script {
     usdc.approve(address(commitment), type(uint).max);
     usdc.approve(address(usdcAsset), type(uint).max);
 
-    accId = account.createAccount(address(this), dumbManager);
+    accId = account.createAccount(msg.sender, dumbManager);
+    // console2.log("accId", accId);
+    account.approve(address(commitment), accId);
     usdcAsset.deposit(accId, 0, 10000e6);
   }
 }
