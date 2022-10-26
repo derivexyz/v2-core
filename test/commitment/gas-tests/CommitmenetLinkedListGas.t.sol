@@ -57,7 +57,7 @@ contract CommitmentLinkedListGas is Script {
     gasBefore = gasleft();
     commitment.commit(subId, 92, 102, commitmentWeight); // collecting: 2, pending: 0
     gasAfter = gasleft();
-    console.log("gas commit: exisiting vols", gasBefore - gasAfter);
+    console.log("gas commit: existing vols", gasBefore - gasAfter);
 
     gasBefore = gasleft();
     commitment.commit(subId, 94, 105, commitmentWeight); // collecting: 2, pending: 0
@@ -77,7 +77,7 @@ contract CommitmentLinkedListGas is Script {
     gasBefore = gasleft();
     commitment.commit(0, 200, 220, commitmentWeight);
     gasAfter = gasleft();
-    console.log("gas commit: 101th in linked list", gasBefore - gasAfter);
+    console.log("gas commit: 101st in linked list", gasBefore - gasAfter);
 
     vm.warp(block.timestamp + 20 minutes);
     gasBefore = gasleft();
