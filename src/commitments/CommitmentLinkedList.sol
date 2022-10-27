@@ -225,7 +225,6 @@ contract CommitmentLinkedList {
       weights[cachePENDING][subId][isBid] = newTotalSubIdWeight;
     } else {
       weights[cachePENDING][subId][isBid] = 0;
-      subIds[cachePENDING].removeFromArray(subId);
     }
 
     uint premiumPerUnit = _getUnitPremium(vol, subId);
@@ -398,9 +397,13 @@ contract CommitmentLinkedList {
       SortedList storage askList = askQueues[_indexPENDING][subId];
 
       // return head of bid
-      bestFinalizedBids[subId] = FinalizedQuote(bidList.end, bidList.entities[bidList.end].totalWeight);
+      if (bidList.end != 0) {
+        bestFinalizedBids[subId] = FinalizedQuote(bidList.end, bidList.entities[bidList.end].totalWeight);
+      }
 
-      bestFinalizedAsks[subId] = FinalizedQuote(askList.head, askList.entities[askList.head].totalWeight);
+      if (askList.head != 0) {
+        bestFinalizedAsks[subId] = FinalizedQuote(askList.head, askList.entities[askList.head].totalWeight);
+      }
 
       bidList.clearList();
       askList.clearList();

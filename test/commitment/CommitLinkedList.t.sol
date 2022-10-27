@@ -267,31 +267,35 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(account.getBalance(accId, optionAsset, subId), 0);
   }
 
-  // function testShouldRolloverBlankIfPendingIsEmpty() public {
-  //   commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
-  //   commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
+  function testShouldRolloverBlankIfPendingIsEmpty() public {
+    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
 
-  //   vm.warp(block.timestamp + 10 minutes);
-  //   commitment.checkRollover(); // collecting: 0, pending: 2
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover(); // collecting: 0, pending: 2
 
-  //   assertEq(commitment.pendingLength(), 2);
-  //   assertEq(commitment.pendingWeight(subId), commitmentWeight * 2);
+    assertEq(commitment.pendingLength(), 2);
+    assertEq(commitment.pendingWeight(subId, true), commitmentWeight * 2);
+    assertEq(commitment.pendingWeight(subId, false), commitmentWeight * 2);
 
-  //   commitment.executeCommit(accId,subId, true, 0, commitmentWeight);
-  //   commitment.executeCommit(accId,subId, true, 1, commitmentWeight);
+    // execute all bids
+    commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
+    commitment.executeCommit(accId, subId, true, 96, commitmentWeight);
 
-  //   commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
+    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
 
-  //   vm.warp(block.timestamp + 10 minutes);
+    vm.warp(block.timestamp + 10 minutes);
 
-  //   commitment.checkRollover();
+    commitment.checkRollover();
 
-  //   (uint16 bestVol, uint64 commitments, uint64 nodeId, uint64 timestamp) = commitment.bestFinalizedBids(subId);
-  //   assertEq(bestVol, 0);
-  //   assertEq(nodeId, 0);
-  //   assertEq(commitments, 0);
-  //   assertEq(timestamp, 0);
+    (uint16 bestBid, uint64 bidWeights) = commitment.bestFinalizedBids(subId);
+    assertEq(bestBid, 0);
+    assertEq(bidWeights, 0);
 
-  //   assertEq(commitment.pendingLength(), 1);
-  // }
+    (uint16 bestAsk, uint64 askWeight) = commitment.bestFinalizedAsks(subId);
+    assertEq(bestAsk, 105);
+    assertEq(askWeight, commitmentWeight);
+
+    assertEq(commitment.pendingLength(), 1);
+  }
 }
