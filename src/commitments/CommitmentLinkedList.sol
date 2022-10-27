@@ -63,6 +63,7 @@ contract CommitmentLinkedList {
   struct Participant {
     uint64 nodeId;
     uint64 weight;
+    uint64 collateral;
   }
 
   // only 0 ~ 1 is used
@@ -308,16 +309,31 @@ contract CommitmentLinkedList {
     weights[cacheCOLLECTING][subId][true] += weight;
     weights[cacheCOLLECTING][subId][false] += weight;
 
-    // add to both bid and ask queue with the same collateral
-    bidQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(bidVol, weight, node, epoch);
-    askQueues[cacheCOLLECTING][subId].addParticipantToLinkedList(askVol, weight, node, epoch);
+    uint64 bidCollat = getBidLockUp(weight, subId);
+    uint64 askCollat = getAskLockUp(weight, subId);
 
-    nodes[owner].depositLeft -= weight;
+    // add to both bid and ask queue with the same collateral
+    // using COLLECTING instead of cache because of stack too deep
+    bidQueues[COLLECTING][subId].addParticipantToLinkedList(bidVol, weight, bidCollat, node, epoch);
+    askQueues[COLLECTING][subId].addParticipantToLinkedList(askVol, weight, askCollat, node, epoch);
+
+    // subtract from total deposit
+    nodes[owner].depositLeft -= (bidCollat + askCollat);
   }
 
-  // todo: plugin blacksholes
+  // todo: plugin blacksholes for actual trading price.
   function _getUnitPremium(uint16, /*vol*/ uint96 /*subId*/ ) internal returns (uint) {
     return 10_000000;
+  }
+
+  // todo: how much to locked up, given the weight on a bid
+  function getBidLockUp(uint64 weight, uint96 /*subId*/ ) public returns (uint64) {
+    return 25_000000;
+  }
+
+  // todo: how much to locked up, given the weight on a bid
+  function getAskLockUp(uint64 weight, uint96 /*subId*/ ) public returns (uint64) {
+    return 25_000000;
   }
 
   function checkRollover() external {

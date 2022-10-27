@@ -27,10 +27,13 @@ import "forge-std/console2.sol";
 library LinkedListLib {
   error NotInVolArray();
 
+  /// @param weight: standard size to commit
+  /// @param collateral amount USDC locked
   function addParticipantToLinkedList(
     CommitmentLinkedList.SortedList storage list,
     uint16 vol,
     uint64 weight,
+    uint64 collateral,
     uint64 nodeId,
     uint64 epoch
   ) internal {
@@ -89,7 +92,7 @@ library LinkedListLib {
       volEntity.prev = prev;
       volEntity.next = next;
       volEntity.initialized = true;
-      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight));
+      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight, collateral));
 
       // update the prev and next node
       if (prev != 0) list.entities[prev].next = vol;
@@ -100,7 +103,7 @@ library LinkedListLib {
       // already have this vol node.
       // decide if increase weight or push to participant array.
       // right now, just push to the array.
-      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight));
+      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight, collateral));
     }
 
     volEntity.totalWeight += weight;
@@ -146,15 +149,23 @@ library LinkedListLib {
       for (uint i = 0; i < volEntity.participants.length; i++) {
         CommitmentLinkedList.Participant memory participant = volEntity.participants[i];
         if (sum + participant.weight > weight) {
-          uint64 amount = weight - sum;
+          uint64 amountExecuted = weight - sum;
+
+          uint64 collatToUnlock = participant.collateral * amountExecuted / participant.weight;
+
+          // the payout is old collateral - newCollat
+          participants[i] = CommitmentLinkedList.Participant(participant.nodeId, amountExecuted, collatToUnlock);
 
           // update state
-          volEntity.participants[i].weight -= amount;
-          participants[i] = CommitmentLinkedList.Participant(participant.nodeId, amount);
+          volEntity.participants[i].weight -= amountExecuted;
+          volEntity.participants[i].collateral -= collatToUnlock;
+
           break;
         } else {
           participants[i] = participant;
+
           volEntity.participants[i].weight = 0;
+          volEntity.participants[i].collateral = 0;
         }
         length += 1;
       }
