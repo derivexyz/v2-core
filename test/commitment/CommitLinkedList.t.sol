@@ -13,6 +13,8 @@ import "src/commitments/CommitmentLinkedList.sol";
 import "src/Account.sol";
 
 contract UNIT_CommitLinkedList is Test {
+  address bob = address(0xbb);
+
   CommitmentLinkedList commitment;
   uint16 constant commitmentWeight = 1;
 
@@ -160,6 +162,25 @@ contract UNIT_CommitLinkedList is Test {
 
     (uint16 bestAsk,) = commitment.bestFinalizedAsks(subId);
     assertEq(bestAsk, 97);
+  }
+
+  function testCannotCommitMoreThanDepositRequirement() public {
+    uint64 bidCollat = commitment.getBidLockUp(commitmentWeight, subId);
+    uint64 askCollat = commitment.getAskLockUp(commitmentWeight, subId);
+    uint64 amount = bidCollat + askCollat;
+    usdc.mint(bob, amount);
+
+    vm.startPrank(bob);
+
+    usdc.approve(address(commitment), type(uint).max);
+
+    commitment.register();
+    commitment.deposit(amount - 1);
+
+    vm.expectRevert(stdError.arithmeticError);
+    commitment.commit(subId, 90, 100, commitmentWeight);
+
+    vm.stopPrank();
   }
 
   function testCanExecutePartialSize() public {
