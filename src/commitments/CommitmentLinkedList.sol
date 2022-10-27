@@ -239,7 +239,7 @@ contract CommitmentLinkedList {
       AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](numCounterParties * 2);
       for (uint i; i < numCounterParties; i++) {
         if (counterParties[i].weight == 0) return;
-        Node memory node = nodes[nodesOwner[counterParties[i].nodeId]];
+        Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
         // paid option from executor to node
         transferBatch[2 * i] = AccountStructs.AssetTransfer({
@@ -259,6 +259,8 @@ contract CommitmentLinkedList {
           amount: int(uint(premiumPerUnit * counterParties[i].weight)),
           assetData: bytes32(0)
         });
+
+        node.depositLeft += counterParties[i].collateral;
       }
       IAccount(account).submitTransfers(transferBatch, "");
     } else {
@@ -270,7 +272,7 @@ contract CommitmentLinkedList {
       AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](numCounterParties * 2);
       for (uint i; i < numCounterParties; i++) {
         if (counterParties[i].weight == 0) return;
-        Node memory node = nodes[nodesOwner[counterParties[i].nodeId]];
+        Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
         // paid option from node to executor
         transferBatch[2 * i] = AccountStructs.AssetTransfer({
           fromAcc: node.accountId,
@@ -289,6 +291,8 @@ contract CommitmentLinkedList {
           amount: int(uint(premiumPerUnit * counterParties[i].weight)),
           assetData: bytes32(0)
         });
+
+        node.depositLeft += counterParties[i].collateral;
       }
       IAccount(account).submitTransfers(transferBatch, "");
     }
