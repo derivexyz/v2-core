@@ -40,7 +40,7 @@ contract CommitmentLinkedListGas is Script {
     console.log("gas register", gasBefore - gasAfter);
 
     gasBefore = gasleft();
-    commitment.deposit(10000e6);
+    commitment.deposit(100000e6);
     gasAfter = gasleft();
     console.log("gas deposit", gasBefore - gasAfter);
 
@@ -142,7 +142,7 @@ contract CommitmentLinkedListGas is Script {
 
     optionAsset = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
 
-    usdc.mint(msg.sender, 100000e6);
+    usdc.mint(msg.sender, 200000e6);
 
     dumbManager = new MockManager(address(account));
 
@@ -155,6 +155,6 @@ contract CommitmentLinkedListGas is Script {
     accId = account.createAccount(msg.sender, dumbManager);
     // console2.log("accId", accId);
     account.approve(address(commitment), accId);
-    usdcAsset.deposit(accId, 0, 10000e6);
+    usdcAsset.deposit(accId, 0, 100000e6);
   }
 }
