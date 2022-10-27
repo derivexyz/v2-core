@@ -48,7 +48,7 @@ contract UNIT_CommitLinkedList is Test {
 
     account.approve(address(commitment), accId);
 
-    usdc.mint(address(this), 10000_000000);
+    usdc.mint(address(this), 10_000_000e18);
     usdc.approve(address(commitment), type(uint).max);
     usdc.approve(address(usdcAsset), type(uint).max);
 
@@ -56,9 +56,9 @@ contract UNIT_CommitLinkedList is Test {
 
     vm.warp(block.timestamp + 1 days);
 
-    commitment.deposit(1000_000000);
+    commitment.deposit(1_000_000e18);
 
-    usdcAsset.deposit(accId, 0, 1000_000000);
+    usdcAsset.deposit(accId, 0, 1_000_000e18);
   }
 
   function testCanCommit() public {
@@ -165,9 +165,9 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testCannotCommitMoreThanDepositRequirement() public {
-    uint64 bidCollat = commitment.getBidLockUp(commitmentWeight, subId);
-    uint64 askCollat = commitment.getAskLockUp(commitmentWeight, subId);
-    uint64 amount = bidCollat + askCollat;
+    uint128 bidCollat = commitment.getBidLockUp(commitmentWeight, subId, 80);
+    uint128 askCollat = commitment.getAskLockUp(commitmentWeight, subId, 100);
+    uint128 amount = bidCollat + askCollat;
     usdc.mint(bob, amount);
 
     vm.startPrank(bob);
@@ -175,10 +175,10 @@ contract UNIT_CommitLinkedList is Test {
     usdc.approve(address(commitment), type(uint).max);
 
     commitment.register();
-    commitment.deposit(amount - 1);
+    commitment.deposit(amount - 1e18);
 
     vm.expectRevert(stdError.arithmeticError);
-    commitment.commit(subId, 90, 100, commitmentWeight);
+    commitment.commit(subId, 80, 100, commitmentWeight);
 
     vm.stopPrank();
   }

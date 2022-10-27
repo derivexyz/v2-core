@@ -9,10 +9,13 @@ import "src/interfaces/IAccount.sol";
 import "../interfaces/IAsset.sol";
 import "../../test/shared/mocks/MockAsset.sol";
 import "src/interfaces/AccountStructs.sol";
+import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
 
 contract CommitmentLinkedList {
   using DynamicArrayLib for uint96[];
   using LinkedListLib for SortedList;
+  using SafeCast for uint128;  
 
   error NotExecutable();
 
@@ -35,8 +38,8 @@ contract CommitmentLinkedList {
 
   struct Node {
     uint64 nodeId;
-    uint64 totalDeposit;
-    uint64 depositLeft;
+    uint128 totalDeposit; // todo: can probably reduce to one word
+    uint128 depositLeft;
     uint accountId;
   }
 
@@ -63,7 +66,7 @@ contract CommitmentLinkedList {
   struct Participant {
     uint64 nodeId;
     uint64 weight;
-    uint64 collateral;
+    uint128 collateral;
   }
 
   // only 0 ~ 1 is used
@@ -91,6 +94,9 @@ contract CommitmentLinkedList {
 
   uint8 public COLLECTING = 0;
   uint8 public PENDING = 1;
+  uint256 public MAX_GAS_COST = 1e18; // $1
+  uint256 public TOLERANCE = 5e16; // 5%
+  uint256 public spotPrice = 1500e18; // todo: connect to spot oracle
 
   uint64 public epoch;
 
@@ -164,7 +170,7 @@ contract CommitmentLinkedList {
     nodesOwner[nodeId] = msg.sender;
   }
 
-  function deposit(uint64 amount) external {
+  function deposit(uint128 amount) external {
     if (nodes[msg.sender].nodeId == 0) revert NotRegistered();
     IERC20(quote).transferFrom(msg.sender, address(this), amount);
     MockAsset(quoteAsset).deposit(nodes[msg.sender].accountId, 0, amount);
@@ -312,8 +318,8 @@ contract CommitmentLinkedList {
     weights[cacheCOLLECTING][subId][true] += weight;
     weights[cacheCOLLECTING][subId][false] += weight;
 
-    uint64 bidCollat = getBidLockUp(weight, subId);
-    uint64 askCollat = getAskLockUp(weight, subId);
+    uint128 bidCollat = getBidLockUp(weight, subId, bidVol);
+    uint128 askCollat = getAskLockUp(weight, subId, askVol);
 
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
@@ -330,13 +336,18 @@ contract CommitmentLinkedList {
   }
 
   // todo: how much to locked up, given the weight on a bid
-  function getBidLockUp(uint64 weight, uint96 /*subId*/ ) public returns (uint64) {
-    return 25_000000;
+  function getBidLockUp(uint64 weight, uint96 /*subId*/, uint16 bid) public returns (uint128) {
+    return SafeCast.toUint128(_getContractsToLock(bid) * uint256(weight) * uint256(bid)); // todo: bids need to be in dollars
   }
 
   // todo: how much to locked up, given the weight on a bid
-  function getAskLockUp(uint64 weight, uint96 /*subId*/ ) public returns (uint64) {
-    return 25_000000;
+  function getAskLockUp(uint64 weight, uint96 /*subId*/, uint16 ask) public returns (uint128) {
+    uint256 contracts = _getContractsToLock(ask);
+    return SafeCast.toUint128(contracts * (uint256(weight) * spotPrice / 1e18 * 2e17) / 1e18);
+  }
+
+  function _getContractsToLock(uint16 bidOrAsk) internal returns (uint256) {
+    return (MAX_GAS_COST * 1e18) / (uint256(bidOrAsk) * TOLERANCE);
   }
 
   function checkRollover() external {

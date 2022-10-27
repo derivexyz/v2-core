@@ -32,8 +32,8 @@ library LinkedListLib {
   function addParticipantToLinkedList(
     CommitmentLinkedList.SortedList storage list,
     uint16 vol,
-    uint64 weight,
-    uint64 collateral,
+    uint64 weight, // todo: can probably pack all to single word
+    uint128 collateral,
     uint64 nodeId,
     uint64 epoch
   ) internal {
@@ -151,7 +151,7 @@ library LinkedListLib {
         if (sum + participant.weight > weight) {
           uint64 amountExecuted = weight - sum;
 
-          uint64 collatToUnlock = participant.collateral * amountExecuted / participant.weight;
+          uint128 collatToUnlock = participant.collateral * amountExecuted / participant.weight;
 
           // the payout is old collateral - newCollat
           participants[i] = CommitmentLinkedList.Participant(participant.nodeId, amountExecuted, collatToUnlock);
