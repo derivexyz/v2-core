@@ -36,7 +36,7 @@ contract StallAttack is SimulationHelper {
   /* attack response params */
   uint16 SPREAD_MUL = 2;
   uint128 WEIGHT_MUL = 2;
-  uint256 DEPOSIT_CAP = 3_000_000e18; // $ 3mln DAI
+  uint DEPOSIT_CAP = 3_000_000e18; // $ 3mln DAI
   uint128 previousCommitWeight = 1; // crude way for node to keep track of last time attack
 
   /**
@@ -75,15 +75,16 @@ contract StallAttack is SimulationHelper {
         _generateFlatCommitments(AMMVolFeed[i], AMMSpread, 3, 1);
 
       /* determine whether response is needed */
-      (uint16 newBid, uint16 newAsk, uint8 attackSubId, uint128 newWeight) = 
+      (uint16 newBid, uint16 newAsk, uint8 attackSubId, uint128 newWeight) =
         _generateAttackResponse(SPREAD_MUL, WEIGHT_MUL, DEPOSIT_CAP);
 
-      if (newWeight > 0 && i != 0) { // attack started
+      if (newWeight > 0 && i != 0) {
+        // attack started
         console2.log("attack spotted... %s", newWeight);
         bids[attackSubId] = newBid;
         asks[attackSubId] = newAsk;
         weights[attackSubId] = newWeight;
-      } 
+      }
 
       vm.startBroadcast(node);
       commitment.commit(bids, asks, subIds, weights);
@@ -126,7 +127,9 @@ contract StallAttack is SimulationHelper {
    * @param weight weight behind each commitment
    */
   function _generateFlatCommitments(uint16 ammVol, uint16 ammSpread, uint16 spreadBuffer, uint128 weight)
-    public view returns (uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights)
+    public
+    view
+    returns (uint16[] memory bids, uint16[] memory asks, uint8[] memory subIds, uint128[] memory weights)
   {
     require(ammVol > (ammSpread + spreadBuffer), "spread + buffer > vol");
 
@@ -145,12 +148,11 @@ contract StallAttack is SimulationHelper {
   /**
    * @dev defender moves all excess capital to the attacked node
    */
-  function _generateAttackResponse(
-    uint16 spreadMultiple, uint128 weightMultiple, uint256 depositCap
-  ) public returns (
-    uint16 newBid, uint16 newAsk, uint8 subId, uint128 weight) {
-    
-    /* see if any epoch is attacked */ 
+  function _generateAttackResponse(uint16 spreadMultiple, uint128 weightMultiple, uint depositCap)
+    public
+    returns (uint16 newBid, uint16 newAsk, uint8 subId, uint128 weight)
+  {
+    /* see if any epoch is attacked */
     bool isAttacked;
     uint8 attackedSubId;
     uint16 currBid;

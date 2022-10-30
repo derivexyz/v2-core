@@ -54,7 +54,7 @@ contract CommitmentAverage {
 
   // todo: need to make dynamic range
   // uint16 public constant RANGE = 5;
-  uint256 public constant DEPOSIT_PER_SUBID = 500e18;
+  uint public constant DEPOSIT_PER_SUBID = 500e18;
 
   // account variables
   Lending lendingAsset;

@@ -29,6 +29,7 @@ library LinkedListLib {
 
   /// @param weight: standard size to commit
   /// @param collateral amount USDC locked
+  /// @return index in the participant list
   function addParticipantToLinkedList(
     CommitmentLinkedList.SortedList storage list,
     uint16 vol,
@@ -36,7 +37,7 @@ library LinkedListLib {
     uint128 collateral,
     uint64 nodeId,
     uint64 epoch
-  ) internal {
+  ) internal returns (uint) {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
     if (!volEntity.initialized || volEntity.epoch != epoch) {
       // find the position to insert the node
@@ -107,6 +108,8 @@ library LinkedListLib {
     }
 
     volEntity.totalWeight += weight;
+
+    return (list.length);
   }
 
   function removeWeightFromVolList(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 weight)

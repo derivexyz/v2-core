@@ -11,11 +11,10 @@ import "../../test/shared/mocks/MockAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-
 contract CommitmentLinkedList {
   using DynamicArrayLib for uint96[];
   using LinkedListLib for SortedList;
-  using SafeCast for uint128;  
+  using SafeCast for uint128;
 
   error NotExecutable();
 
@@ -23,12 +22,12 @@ contract CommitmentLinkedList {
   error NotRegistered();
 
   struct Commitment {
-    uint16 vol;
-    uint16 range;
+    uint16 bidVol;
+    uint16 askVol;
+    uint32 bidParticipantIndex;
+    uint32 askParticipantIndex;
     uint64 weight;
-    uint64 nodeId;
     uint64 timestamp;
-    bool isExecuted;
   }
 
   struct FinalizedQuote {
@@ -80,6 +79,9 @@ contract CommitmentLinkedList {
   /// @dev pending/collecting => subid
   mapping(uint8 => uint96[]) public subIds;
 
+  /// @dev epoch => subId => nodeId => Commitment
+  mapping(uint64 => mapping(uint96 => mapping(uint64 => Commitment))) public commitments;
+
   // subId => [] total lengths of queue;
   uint32[2] public length;
 
@@ -94,9 +96,9 @@ contract CommitmentLinkedList {
 
   uint8 public COLLECTING = 0;
   uint8 public PENDING = 1;
-  uint256 public MAX_GAS_COST = 1e18; // $1
-  uint256 public TOLERANCE = 5e16; // 5%
-  uint256 public spotPrice = 1500e18; // todo: connect to spot oracle
+  uint public MAX_GAS_COST = 1e18; // $1
+  uint public TOLERANCE = 5e16; // 5%
+  uint public spotPrice = 1500e18; // todo: connect to spot oracle
 
   uint64 public epoch;
 
@@ -311,7 +313,13 @@ contract CommitmentLinkedList {
     uint16 bidVol,
     uint16 askVol,
     uint64 weight
-  ) internal {
+  ) internal returns (uint bidParticipantIndex, uint askParticipantIndex) {
+    // todo: if we don't want to allow double commit in the same epoch, uncomment:
+    // {
+    //   Commitment memory commit = commitments[epoch][subId][node];
+    //   require(commit.timestamp == 0, "commited");
+    // }
+
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
     // both bid and ask?
@@ -323,11 +331,18 @@ contract CommitmentLinkedList {
 
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
-    bidQueues[COLLECTING][subId].addParticipantToLinkedList(bidVol, weight, bidCollat, node, epoch);
-    askQueues[COLLECTING][subId].addParticipantToLinkedList(askVol, weight, askCollat, node, epoch);
+    bidParticipantIndex =
+      bidQueues[COLLECTING][subId].addParticipantToLinkedList(bidVol, weight, bidCollat, node, epoch);
+    askParticipantIndex =
+      askQueues[COLLECTING][subId].addParticipantToLinkedList(askVol, weight, askCollat, node, epoch);
 
     // subtract from total deposit
     nodes[owner].depositLeft -= (bidCollat + askCollat);
+
+    // add to commitment array
+    commitments[epoch][subId][node] = Commitment(
+      bidVol, askVol, uint32(bidParticipantIndex), uint32(askParticipantIndex), weight, uint64(block.timestamp)
+    );
   }
 
   // todo: plugin blacksholes for actual trading price.
@@ -336,18 +351,18 @@ contract CommitmentLinkedList {
   }
 
   // todo: how much to locked up, given the weight on a bid
-  function getBidLockUp(uint64 weight, uint96 /*subId*/, uint16 bid) public returns (uint128) {
-    return SafeCast.toUint128(_getContractsToLock(bid) * uint256(weight) * uint256(bid)); // todo: bids need to be in dollars
+  function getBidLockUp(uint64 weight, uint96, /*subId*/ uint16 bid) public returns (uint128) {
+    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid)); // todo: bids need to be in dollars
   }
 
   // todo: how much to locked up, given the weight on a bid
-  function getAskLockUp(uint64 weight, uint96 /*subId*/, uint16 ask) public returns (uint128) {
-    uint256 contracts = _getContractsToLock(ask);
-    return SafeCast.toUint128(contracts * (uint256(weight) * spotPrice / 1e18 * 2e17) / 1e18);
+  function getAskLockUp(uint64 weight, uint96, /*subId*/ uint16 ask) public returns (uint128) {
+    uint contracts = _getContractsToLock(ask);
+    return SafeCast.toUint128(contracts * (uint(weight) * spotPrice / 1e18 * 2e17) / 1e18);
   }
 
-  function _getContractsToLock(uint16 bidOrAsk) internal returns (uint256) {
-    return (MAX_GAS_COST * 1e18) / (uint256(bidOrAsk) * TOLERANCE);
+  function _getContractsToLock(uint16 bidOrAsk) internal returns (uint) {
+    return (MAX_GAS_COST * 1e18) / (uint(bidOrAsk) * TOLERANCE);
   }
 
   function checkRollover() external {
