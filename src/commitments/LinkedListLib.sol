@@ -109,7 +109,8 @@ library LinkedListLib {
 
     volEntity.totalWeight += weight;
 
-    return (list.length);
+    // always added to the last index
+    return (volEntity.participants.length - 1);
   }
 
   function removeWeightFromVolList(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 weight)
@@ -146,8 +147,6 @@ library LinkedListLib {
 
       delete volEntity.participants;
     } else {
-      // todo: return participants
-      // run through participants, find up to weight
       uint64 sum;
       for (uint i = 0; i < volEntity.participants.length; i++) {
         CommitmentLinkedList.Participant memory participant = volEntity.participants[i];
@@ -175,6 +174,21 @@ library LinkedListLib {
     }
 
     return (participants, length);
+  }
+
+  function removeParticipant(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 participantIndx) internal {
+    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
+
+    uint64 weight = volEntity.participants[participantIndx].weight;
+
+    // move last element to "participantIndex"
+    uint totalParticipants = volEntity.participants.length;
+    if (participantIndx != totalParticipants - 1) {
+      volEntity.participants[participantIndx] = volEntity.participants[totalParticipants - 1];
+    }
+
+    volEntity.participants.pop();
+    volEntity.totalWeight -= weight;
   }
 
   function clearList(CommitmentLinkedList.SortedList storage list) internal {

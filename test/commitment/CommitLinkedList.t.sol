@@ -13,8 +13,6 @@ import "src/commitments/CommitmentLinkedList.sol";
 import "src/Account.sol";
 
 contract UNIT_CommitLinkedList is Test {
-  address bob = address(0xbb);
-
   CommitmentLinkedList commitment;
   uint16 constant commitmentWeight = 1;
 
@@ -30,12 +28,17 @@ contract UNIT_CommitLinkedList is Test {
 
   Account account;
 
+  address alice = address(0xaaaa);
+  address bob = address(0xb0b0b0b);
+  address charlie = address(0xcccc);
+  address david = address(0xda00d);
+
+  address random = address(0x7749);
+
   function setUp() public {
     account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
 
     dumbManager = new DumbManager(address(account));
-
-    accId = account.createAccount(address(this), IManager(address(dumbManager)));
 
     /* mock tokens that can be deposited into accounts */
     usdc = new MockERC20("USDC", "USDC");
@@ -46,25 +49,48 @@ contract UNIT_CommitLinkedList is Test {
     commitment =
     new CommitmentLinkedList(address(account), address(usdc), address(usdcAsset), address(optionAsset), address(dumbManager));
 
-    account.approve(address(commitment), accId);
+    address[4] memory roles;
+    roles[0] = alice;
+    roles[1] = bob;
+    roles[2] = charlie;
+    roles[3] = david;
 
+    for (uint i = 0; i < roles.length; i++) {
+      usdc.mint(roles[i], 10_000_000e18);
+
+      vm.startPrank(roles[i]);
+      usdc.approve(address(commitment), type(uint).max);
+      usdc.approve(address(usdcAsset), type(uint).max);
+      commitment.register();
+      commitment.deposit(10_000_000e18);
+      vm.stopPrank();
+    }
+
+    // give usdc to this address: make it the executor
     usdc.mint(address(this), 10_000_000e18);
     usdc.approve(address(commitment), type(uint).max);
     usdc.approve(address(usdcAsset), type(uint).max);
-
     commitment.register();
+    // approve
+    accId = account.createAccount(address(this), IManager(address(dumbManager)));
+    account.approve(address(commitment), accId);
+    commitment.deposit(1_000_000e18);
+    usdcAsset.deposit(accId, 0, 1_000_000e18);
 
     vm.warp(block.timestamp + 1 days);
-
-    commitment.deposit(1_000_000e18);
-
-    usdcAsset.deposit(accId, 0, 1_000_000e18);
   }
 
   function testCanCommit() public {
+    vm.prank(alice);
     commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.prank(bob);
     commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.prank(charlie);
     commitment.commit(subId, 97, 107, commitmentWeight);
+
+    vm.prank(david);
     commitment.commit(subId, 100, 110, commitmentWeight);
 
     vm.warp(block.timestamp + 10 minutes);
@@ -73,6 +99,42 @@ contract UNIT_CommitLinkedList is Test {
 
     assertEq(commitment.pendingLength(), 4);
     assertEq(commitment.collectingLength(), 0);
+  }
+
+  function testCommitRecordBindedOrders() public {
+    vm.prank(alice);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.prank(bob);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.prank(charlie);
+    commitment.commit(subId, 95, 100, commitmentWeight); // different ask
+
+    vm.warp(block.timestamp + 10 minutes);
+
+    commitment.checkRollover();
+
+    uint64 aliceNodeId = 1;
+
+    (uint16 bidVol, uint16 askVol, uint64 aliceBidIdx, uint64 aliceAskIdx,,) =
+      commitment.commitments(commitment.pendingEpoch(), subId, aliceNodeId);
+    assertEq(bidVol, 95);
+    assertEq(askVol, 105);
+    assertEq(aliceBidIdx, 0);
+    assertEq(aliceAskIdx, 0);
+
+    uint64 bobNodeId = 2;
+
+    (,, uint64 bobBidIdx, uint64 bobAskIdx,,) = commitment.commitments(commitment.pendingEpoch(), subId, bobNodeId);
+    assertEq(bobBidIdx, 1);
+    assertEq(bobAskIdx, 1);
+
+    uint64 charlieNodeId = 3;
+    (,, uint64 charlieBidIdx, uint64 charlieAskIdx,,) =
+      commitment.commitments(commitment.pendingEpoch(), subId, charlieNodeId);
+    assertEq(charlieBidIdx, 2);
+    assertEq(charlieAskIdx, 0);
   }
 
   function testCanExecuteCommit() public {
@@ -168,9 +230,9 @@ contract UNIT_CommitLinkedList is Test {
     uint128 bidCollat = commitment.getBidLockUp(commitmentWeight, subId, 80);
     uint128 askCollat = commitment.getAskLockUp(commitmentWeight, subId, 100);
     uint128 amount = bidCollat + askCollat;
-    usdc.mint(bob, amount);
+    usdc.mint(random, amount);
 
-    vm.startPrank(bob);
+    vm.startPrank(random);
 
     usdc.approve(address(commitment), type(uint).max);
 

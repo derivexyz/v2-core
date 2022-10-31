@@ -89,7 +89,7 @@ contract CommitmentLinkedList {
 
   mapping(uint64 => address) public nodesOwner;
 
-  uint64 nextId = 1;
+  uint64 currentId = 0;
 
   mapping(uint96 => FinalizedQuote) public bestFinalizedBids;
   mapping(uint96 => FinalizedQuote) public bestFinalizedAsks;
@@ -100,7 +100,8 @@ contract CommitmentLinkedList {
   uint public TOLERANCE = 5e16; // 5%
   uint public spotPrice = 1500e18; // todo: connect to spot oracle
 
-  uint64 public epoch;
+  uint64 public collectingEpoch = 1;
+  uint64 public pendingEpoch = 0;
 
   uint64 pendingStartTimestamp;
   uint64 collectingStartTimestamp;
@@ -163,7 +164,7 @@ contract CommitmentLinkedList {
   function register() external returns (uint64 nodeId) {
     if (nodes[msg.sender].nodeId != 0) revert Registered();
 
-    nodeId = ++nextId;
+    nodeId = ++currentId;
 
     // create accountId and
     uint accountId = IAccount(account).createAccount(address(this), IManager(manager));
@@ -225,55 +226,64 @@ contract CommitmentLinkedList {
     // check account Id is from message.sender
     require(IAccount(account).ownerOf(executorAccount) == msg.sender, "auth");
 
-    (uint8 cachePENDING,) = _checkRollover();
+    _checkRollover();
 
     // update total weight for an subId
-    uint64 newTotalSubIdWeight = weights[cachePENDING][subId][isBid] - weight;
-    if (newTotalSubIdWeight != 0) {
-      weights[cachePENDING][subId][isBid] = newTotalSubIdWeight;
-    } else {
-      weights[cachePENDING][subId][isBid] = 0;
-    }
+    weights[PENDING][subId][isBid] -= weight;
 
     uint premiumPerUnit = _getUnitPremium(vol, subId);
 
+    // cache variable to avoid stack too deep when trying to access subId later
+    mapping(uint64 => Commitment) storage subIdCommits = commitments[PENDING][subId];
+
     if (isBid) {
       // update storage
-      SortedList storage list = bidQueues[cachePENDING][subId];
+      SortedList storage list = bidQueues[PENDING][subId];
       (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
+
+      SortedList storage askList = askQueues[PENDING][subId];
 
       // trade with counter parties
       AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](numCounterParties * 2);
       for (uint i; i < numCounterParties; i++) {
         if (counterParties[i].weight == 0) return;
-        Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
-        // paid option from executor to node
-        transferBatch[2 * i] = AccountStructs.AssetTransfer({
-          fromAcc: executorAccount,
-          toAcc: node.accountId,
-          asset: IAsset(optionToken),
-          subId: subId,
-          amount: int(uint(counterParties[i].weight)),
-          assetData: bytes32(0)
-        });
-        // paid premium from node to executor
-        transferBatch[2 * i + 1] = AccountStructs.AssetTransfer({
-          fromAcc: node.accountId,
-          toAcc: executorAccount,
-          asset: IAsset(quoteAsset),
-          subId: 0,
-          amount: int(uint(premiumPerUnit * counterParties[i].weight)),
-          assetData: bytes32(0)
-        });
+        {
+          Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
-        node.depositLeft += counterParties[i].collateral;
+          // remove binding ask from the same "counter party"
+          askList.removeParticipant(
+            subIdCommits[counterParties[i].nodeId].askVol, subIdCommits[counterParties[i].nodeId].askParticipantIndex
+          );
+
+          // paid option from executor to node
+          transferBatch[2 * i] = AccountStructs.AssetTransfer({
+            fromAcc: executorAccount,
+            toAcc: node.accountId,
+            asset: IAsset(optionToken),
+            subId: subId,
+            amount: int(uint(counterParties[i].weight)),
+            assetData: bytes32(0)
+          });
+          // paid premium from node to executor
+          transferBatch[2 * i + 1] = AccountStructs.AssetTransfer({
+            fromAcc: node.accountId,
+            toAcc: executorAccount,
+            asset: IAsset(quoteAsset),
+            subId: 0,
+            amount: int(uint(premiumPerUnit * counterParties[i].weight)),
+            assetData: bytes32(0)
+          });
+          node.depositLeft += counterParties[i].collateral;
+        }
       }
       IAccount(account).submitTransfers(transferBatch, "");
     } else {
       // update storage
-      SortedList storage list = askQueues[cachePENDING][subId];
+      SortedList storage list = askQueues[PENDING][subId];
       (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
+
+      // todo: remove linked bids
 
       // trade with counter parties
       AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](numCounterParties * 2);
@@ -314,11 +324,10 @@ contract CommitmentLinkedList {
     uint16 askVol,
     uint64 weight
   ) internal returns (uint bidParticipantIndex, uint askParticipantIndex) {
-    // todo: if we don't want to allow double commit in the same epoch, uncomment:
-    // {
-    //   Commitment memory commit = commitments[epoch][subId][node];
-    //   require(commit.timestamp == 0, "commited");
-    // }
+    {
+      Commitment memory commit = commitments[collectingEpoch][subId][node];
+      require(commit.timestamp == 0, "commited");
+    }
 
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
@@ -332,15 +341,16 @@ contract CommitmentLinkedList {
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
     bidParticipantIndex =
-      bidQueues[COLLECTING][subId].addParticipantToLinkedList(bidVol, weight, bidCollat, node, epoch);
+      bidQueues[COLLECTING][subId].addParticipantToLinkedList(bidVol, weight, bidCollat, node, collectingEpoch);
     askParticipantIndex =
-      askQueues[COLLECTING][subId].addParticipantToLinkedList(askVol, weight, askCollat, node, epoch);
+      askQueues[COLLECTING][subId].addParticipantToLinkedList(askVol, weight, askCollat, node, collectingEpoch);
 
     // subtract from total deposit
     nodes[owner].depositLeft -= (bidCollat + askCollat);
 
     // add to commitment array
-    commitments[epoch][subId][node] = Commitment(
+    console2.log("collectingEpoch", collectingEpoch, node);
+    commitments[collectingEpoch][subId][node] = Commitment(
       bidVol, askVol, uint32(bidParticipantIndex), uint32(askParticipantIndex), weight, uint64(block.timestamp)
     );
   }
@@ -408,7 +418,9 @@ contract CommitmentLinkedList {
     // dont override the array with 0. just reset length
     delete length[cachePENDING]; // delete the length for "new collecting"
 
-    epoch += 1;
+    // roll both collecting and pending epoch.
+    collectingEpoch += 1;
+    pendingEpoch += 1;
 
     return (cacheCOLLECTING, cachePENDING);
   }
