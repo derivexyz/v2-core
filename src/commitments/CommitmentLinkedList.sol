@@ -94,8 +94,8 @@ contract CommitmentLinkedList {
   mapping(uint96 => FinalizedQuote) public bestFinalizedBids;
   mapping(uint96 => FinalizedQuote) public bestFinalizedAsks;
 
-  uint8 public COLLECTING = 0;
-  uint8 public PENDING = 1;
+  uint8 public COLLECTING = 1;
+  uint8 public PENDING = 0;
   uint public MAX_GAS_COST = 1e18; // $1
   uint public TOLERANCE = 5e16; // 5%
   uint public spotPrice = 1500e18; // todo: connect to spot oracle
@@ -234,13 +234,14 @@ contract CommitmentLinkedList {
     uint premiumPerUnit = _getUnitPremium(vol, subId);
 
     // cache variable to avoid stack too deep when trying to access subId later
-    mapping(uint64 => Commitment) storage subIdCommits = commitments[PENDING][subId];
+    mapping(uint64 => Commitment) storage nodeToCommit = commitments[PENDING][subId];
 
     if (isBid) {
       // update storage
       SortedList storage list = bidQueues[PENDING][subId];
       (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
 
+      console2.log("PENDING", PENDING);
       SortedList storage askList = askQueues[PENDING][subId];
 
       // trade with counter parties
@@ -252,8 +253,11 @@ contract CommitmentLinkedList {
           Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
           // remove binding ask from the same "counter party"
+          console2.log("remving vol", nodeToCommit[counterParties[i].nodeId].askVol);
+          console2.log("remving node", counterParties[i].nodeId);
+          console2.log("remving idx", nodeToCommit[counterParties[i].nodeId].askParticipantIndex);
           askList.removeParticipant(
-            subIdCommits[counterParties[i].nodeId].askVol, subIdCommits[counterParties[i].nodeId].askParticipantIndex
+            nodeToCommit[counterParties[i].nodeId].askVol, nodeToCommit[counterParties[i].nodeId].askParticipantIndex
           );
 
           // paid option from executor to node
@@ -349,7 +353,6 @@ contract CommitmentLinkedList {
     nodes[owner].depositLeft -= (bidCollat + askCollat);
 
     // add to commitment array
-    console2.log("collectingEpoch", collectingEpoch, node);
     commitments[collectingEpoch][subId][node] = Commitment(
       bidVol, askVol, uint32(bidParticipantIndex), uint32(askParticipantIndex), weight, uint64(block.timestamp)
     );
@@ -436,11 +439,13 @@ contract CommitmentLinkedList {
 
       // return head of bid
       if (bidList.end != 0) {
-        bestFinalizedBids[subId] = FinalizedQuote(bidList.end, bidList.entities[bidList.end].totalWeight);
+        (uint16 highestBid, uint64 weight) = bidList.findFistNoneZeroWeightFromEnd();
+        bestFinalizedBids[subId] = FinalizedQuote(highestBid, weight);
       }
 
       if (askList.head != 0) {
-        bestFinalizedAsks[subId] = FinalizedQuote(askList.head, askList.entities[askList.head].totalWeight);
+        (uint16 lowestAsk, uint64 weight) = askList.findFistNoneZeroWeightFromStart();
+        bestFinalizedAsks[subId] = FinalizedQuote(lowestAsk, weight);
       }
 
       bidList.clearList();

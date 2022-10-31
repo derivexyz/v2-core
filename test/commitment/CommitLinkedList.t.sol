@@ -138,9 +138,13 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testCanExecuteCommit() public {
+    vm.prank(alice);
     commitment.commit(subId, 96, 107, commitmentWeight); // collecting: 1, pending: 0
+    vm.prank(bob);
     commitment.commit(subId, 92, 103, commitmentWeight); // collecting: 2, pending: 0
+    vm.prank(charlie);
     commitment.commit(subId, 97, 106, commitmentWeight); // collecting: 3, pending: 0
+    vm.prank(david);
     commitment.commit(subId, 91, 100, commitmentWeight); // collecting: 3, pending: 0
     assertEq(commitment.collectingLength(), 4);
     assertEq(commitment.collectingWeight(subId, true), commitmentWeight * 4);
@@ -330,7 +334,9 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testShouldRolloverBlankIfPendingIsEmpty() public {
+    vm.prank(alice);
     commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
+    vm.prank(bob);
     commitment.commit(subId, 96, 106, commitmentWeight); // collecting: 2, pending: 0
 
     vm.warp(block.timestamp + 10 minutes);
@@ -339,6 +345,11 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(commitment.pendingLength(), 2);
     assertEq(commitment.pendingWeight(subId, true), commitmentWeight * 2);
     assertEq(commitment.pendingWeight(subId, false), commitmentWeight * 2);
+
+    uint64 aliceNodeId = 1;
+
+    (uint16 bidVol, uint16 askVol, uint64 aliceBidIdx, uint64 aliceAskIdx,,) =
+      commitment.commitments(commitment.pendingEpoch(), subId, aliceNodeId);
 
     // execute all bids
     commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
@@ -355,8 +366,8 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(bidWeights, 0);
 
     (uint16 bestAsk, uint64 askWeight) = commitment.bestFinalizedAsks(subId);
-    assertEq(bestAsk, 105);
-    assertEq(askWeight, commitmentWeight);
+    assertEq(bestAsk, 0);
+    assertEq(askWeight, 0);
 
     assertEq(commitment.pendingLength(), 1);
   }

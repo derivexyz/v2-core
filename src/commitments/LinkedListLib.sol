@@ -176,18 +176,40 @@ library LinkedListLib {
     return (participants, length);
   }
 
+  function findFistNoneZeroWeightFromStart(CommitmentLinkedList.SortedList storage list)
+    internal
+    returns (uint16 vol, uint64 weight)
+  {
+    uint16 startVol = list.head;
+    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
+    while (volEntity.totalWeight == 0) {
+      if (volEntity.next == 0) return (0, 0);
+      volEntity = list.entities[volEntity.next];
+    }
+    return (volEntity.vol, volEntity.totalWeight);
+  }
+
+  function findFistNoneZeroWeightFromEnd(CommitmentLinkedList.SortedList storage list)
+    internal
+    returns (uint16 vol, uint64 weight)
+  {
+    uint16 startVol = list.end;
+    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
+    while (volEntity.totalWeight == 0) {
+      if (volEntity.prev == 0) return (0, 0);
+      volEntity = list.entities[volEntity.prev];
+    }
+    return (volEntity.vol, volEntity.totalWeight);
+  }
+
   function removeParticipant(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 participantIndx) internal {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
 
     uint64 weight = volEntity.participants[participantIndx].weight;
 
-    // move last element to "participantIndex"
-    uint totalParticipants = volEntity.participants.length;
-    if (participantIndx != totalParticipants - 1) {
-      volEntity.participants[participantIndx] = volEntity.participants[totalParticipants - 1];
-    }
+    // do not change the array length, otherwise we will mess up the index
+    delete volEntity.participants[participantIndx];
 
-    volEntity.participants.pop();
     volEntity.totalWeight -= weight;
   }
 
