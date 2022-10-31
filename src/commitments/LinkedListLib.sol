@@ -6,20 +6,20 @@ import "./CommitmentLinkedList.sol";
 import "forge-std/console2.sol";
 
 // struct SortedList {
-//   mapping(uint16 => VolEntity) entities;
+//   mapping(uint16 => VolInfo) entities;
 //   uint16 length;
 //   uint16 head;
 //   uint16 end;
 // }
 
-// struct VolEntity {
+// struct VolInfo {
 //   uint16 prev;
 //   uint16 next;
 //   uint16 vol;
-//   address[] participants;
+//   address[] stakers;
 // }
 
-// struct Participant {
+// struct Staker {
 //   uint64 nodeId;
 //   uint64 weight;
 // }
@@ -29,8 +29,8 @@ library LinkedListLib {
 
   /// @param weight: standard size to commit
   /// @param collateral amount USDC locked
-  /// @return index in the participant list
-  function addParticipantToLinkedList(
+  /// @return index in the staker list
+  function addStakerToLinkedList(
     CommitmentLinkedList.SortedList storage list,
     uint16 vol,
     uint64 weight, // todo: can probably pack all to single word
@@ -38,7 +38,7 @@ library LinkedListLib {
     uint64 nodeId,
     uint64 epoch
   ) internal returns (uint) {
-    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
+    CommitmentLinkedList.VolInfo storage volEntity = list.entities[vol];
     if (!volEntity.initialized || volEntity.epoch != epoch) {
       // find the position to insert the node
       // find the first one larger than "vol"
@@ -57,7 +57,7 @@ library LinkedListLib {
           if (currentVol > vol) {
             break;
           } else {
-            CommitmentLinkedList.VolEntity memory current = list.entities[currentVol];
+            CommitmentLinkedList.VolInfo memory current = list.entities[currentVol];
             currentVol = current.next;
 
             // we reach the end!
@@ -91,7 +91,7 @@ library LinkedListLib {
       volEntity.prev = prev;
       volEntity.next = next;
       volEntity.initialized = true;
-      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight, collateral));
+      volEntity.stakers.push(CommitmentLinkedList.Staker(nodeId, weight, collateral));
 
       // update the prev and next node
       if (prev != 0) list.entities[prev].next = vol;
@@ -100,30 +100,29 @@ library LinkedListLib {
       list.length += 1;
     } else {
       // already have this vol node.
-      // decide if increase weight or push to participant array.
+      // decide if increase weight or push to staker array.
       // right now, just push to the array.
-      volEntity.participants.push(CommitmentLinkedList.Participant(nodeId, weight, collateral));
+      volEntity.stakers.push(CommitmentLinkedList.Staker(nodeId, weight, collateral));
     }
 
     volEntity.totalWeight += weight;
 
     // always added to the last index
-    return (volEntity.participants.length - 1);
+    return (volEntity.stakers.length - 1);
   }
 
   function removeWeightFromVolList(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 weight)
     internal
-    returns (CommitmentLinkedList.Participant[] memory, uint length)
+    returns (CommitmentLinkedList.Staker[] memory, uint length)
   {
-    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
+    CommitmentLinkedList.VolInfo storage volEntity = list.entities[vol];
     if (!volEntity.initialized) revert NotInVolArray();
 
     uint64 newTotalWeight = volEntity.totalWeight - weight;
 
     volEntity.totalWeight = newTotalWeight;
 
-    CommitmentLinkedList.Participant[] memory participants =
-      new CommitmentLinkedList.Participant[](volEntity.participants.length);
+    CommitmentLinkedList.Staker[] memory stakers = new CommitmentLinkedList.Staker[](volEntity.stakers.length);
 
     if (newTotalWeight == 0) {
       // remove node from the linked list
@@ -139,58 +138,58 @@ library LinkedListLib {
         list.end = cachePrev;
       }
 
-      // return all participants
-      participants = volEntity.participants;
-      length = participants.length;
+      // return all stakers
+      stakers = volEntity.stakers;
+      length = stakers.length;
 
-      delete volEntity.participants;
+      delete volEntity.stakers;
     } else {
       uint64 sum;
-      for (uint i = 0; i < volEntity.participants.length; i++) {
+      for (uint i = 0; i < volEntity.stakers.length; i++) {
         length += 1;
-        CommitmentLinkedList.Participant memory participant = volEntity.participants[i];
-        if (sum + participant.weight > weight) {
+        CommitmentLinkedList.Staker memory staker = volEntity.stakers[i];
+        if (sum + staker.weight > weight) {
           uint64 amountExecuted = weight - sum;
 
-          uint128 collatToUnlock = participant.collateral * amountExecuted / participant.weight;
+          uint128 collatToUnlock = staker.collateral * amountExecuted / staker.weight;
 
           // the payout is old collateral - newCollat
-          participants[i] = CommitmentLinkedList.Participant(participant.nodeId, amountExecuted, collatToUnlock);
+          stakers[i] = CommitmentLinkedList.Staker(staker.nodeId, amountExecuted, collatToUnlock);
 
           // update state
-          volEntity.participants[i].weight -= amountExecuted;
-          volEntity.participants[i].collateral -= collatToUnlock;
+          volEntity.stakers[i].weight -= amountExecuted;
+          volEntity.stakers[i].collateral -= collatToUnlock;
 
           break;
         } else {
-          participants[i] = participant;
+          stakers[i] = staker;
 
-          volEntity.participants[i].weight = 0;
-          volEntity.participants[i].collateral = 0;
+          volEntity.stakers[i].weight = 0;
+          volEntity.stakers[i].collateral = 0;
         }
       }
     }
 
-    return (participants, length);
+    return (stakers, length);
   }
 
-  function removeParticipantWeight(
+  function removeStakerWeight(
     CommitmentLinkedList.SortedList storage list,
     uint16 vol,
     uint64 weightToReduce,
-    uint64 participantIndx
+    uint64 stakerIndx
   ) internal {
-    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
+    CommitmentLinkedList.VolInfo storage volEntity = list.entities[vol];
 
-    uint64 participantWeight = volEntity.participants[participantIndx].weight;
+    uint64 stakerWeight = volEntity.stakers[stakerIndx].weight;
 
     // do not change the array length, otherwise we will mess up the index
-    uint participantNewWeight = participantWeight - weightToReduce;
+    uint stakerNewWeight = stakerWeight - weightToReduce;
 
-    if (participantNewWeight == 0) {
-      delete volEntity.participants[participantIndx];
+    if (stakerNewWeight == 0) {
+      delete volEntity.stakers[stakerIndx];
     } else {
-      volEntity.participants[participantIndx].weight -= weightToReduce;
+      volEntity.stakers[stakerIndx].weight -= weightToReduce;
     }
 
     // reduce totalWeight and check if we need to keep this vol

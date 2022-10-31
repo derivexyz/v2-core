@@ -25,8 +25,8 @@ contract CommitmentLinkedList {
   struct Commitment {
     uint16 bidVol;
     uint16 askVol;
-    uint32 bidParticipantIndex;
-    uint32 askParticipantIndex;
+    uint32 bidStakerIndex;
+    uint32 askStakerIndex;
     uint64 weight;
     uint64 timestamp;
   }
@@ -47,23 +47,23 @@ contract CommitmentLinkedList {
   // for bid: we go from end to find the highest
   // for ask: we go from head to find the lowest
   struct SortedList {
-    mapping(uint16 => VolEntity) entities;
+    mapping(uint16 => VolInfo) entities;
     uint16 length;
     uint16 head;
     uint16 end;
   }
 
-  struct VolEntity {
+  struct VolInfo {
     uint16 vol;
     uint16 prev;
     uint16 next;
     uint64 totalWeight;
     uint64 epoch;
     bool initialized;
-    Participant[] participants;
+    Staker[] stakers;
   }
 
-  struct Participant {
+  struct Staker {
     uint64 nodeId;
     uint64 weight;
     uint128 collateral;
@@ -224,7 +224,7 @@ contract CommitmentLinkedList {
     if (isBid) {
       // update storage
       SortedList storage list = bidQueues[PENDING][subId];
-      (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
+      (Staker[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
       SortedList storage askList = askQueues[PENDING][subId];
 
       // trade with counter parties
@@ -236,10 +236,10 @@ contract CommitmentLinkedList {
           Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
           // remove binding ask from the same "counter party"
-          askList.removeParticipantWeight(
+          askList.removeStakerWeight(
             nodeToCommit[counterParties[i].nodeId].askVol,
             counterParties[i].weight,
-            nodeToCommit[counterParties[i].nodeId].askParticipantIndex
+            nodeToCommit[counterParties[i].nodeId].askStakerIndex
           );
 
           // paid option from executor to node
@@ -269,7 +269,7 @@ contract CommitmentLinkedList {
     } else {
       // update storage
       SortedList storage list = askQueues[PENDING][subId];
-      (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
+      (Staker[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
 
       // used to remove linked bids
       SortedList storage bidList = bidQueues[PENDING][subId];
@@ -280,10 +280,10 @@ contract CommitmentLinkedList {
         if (counterParties[i].weight == 0) return;
         Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
-        bidList.removeParticipantWeight(
+        bidList.removeStakerWeight(
           nodeToCommit[counterParties[i].nodeId].bidVol,
           counterParties[i].weight,
-          nodeToCommit[counterParties[i].nodeId].bidParticipantIndex
+          nodeToCommit[counterParties[i].nodeId].bidStakerIndex
         );
 
         // paid option from node to executor
@@ -320,7 +320,7 @@ contract CommitmentLinkedList {
     uint16 bidVol,
     uint16 askVol,
     uint64 weight
-  ) internal returns (uint bidParticipantIndex, uint askParticipantIndex) {
+  ) internal returns (uint bidStakerIndex, uint askStakerIndex) {
     if (commitments[collectingEpoch][subId][node].timestamp != 0) revert AlreadyCommitted();
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
@@ -329,18 +329,17 @@ contract CommitmentLinkedList {
 
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
-    bidParticipantIndex =
-      bidQueues[COLLECTING][subId].addParticipantToLinkedList(bidVol, weight, bidCollat, node, collectingEpoch);
-    askParticipantIndex =
-      askQueues[COLLECTING][subId].addParticipantToLinkedList(askVol, weight, askCollat, node, collectingEpoch);
+    bidStakerIndex =
+      bidQueues[COLLECTING][subId].addStakerToLinkedList(bidVol, weight, bidCollat, node, collectingEpoch);
+    askStakerIndex =
+      askQueues[COLLECTING][subId].addStakerToLinkedList(askVol, weight, askCollat, node, collectingEpoch);
 
     // subtract from total deposit
     nodes[owner].depositLeft -= (bidCollat + askCollat);
 
     // add to commitment array
-    commitments[collectingEpoch][subId][node] = Commitment(
-      bidVol, askVol, uint32(bidParticipantIndex), uint32(askParticipantIndex), weight, uint64(block.timestamp)
-    );
+    commitments[collectingEpoch][subId][node] =
+      Commitment(bidVol, askVol, uint32(bidStakerIndex), uint32(askStakerIndex), weight, uint64(block.timestamp));
   }
 
   // todo: plugin blacksholes for actual trading price.
