@@ -73,7 +73,6 @@ contract CommitmentLinkedList {
   mapping(uint8 => mapping(uint96 => SortedList)) public bidQueues;
   mapping(uint8 => mapping(uint96 => SortedList)) public askQueues;
 
-  
   /// @dev pending/collecting => subid
   mapping(uint8 => uint96[]) public subIds;
 
@@ -326,7 +325,6 @@ contract CommitmentLinkedList {
     require(commitments[collectingEpoch][subId][node].timestamp == 0, "commited");
 
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
-
 
     uint128 bidCollat = getBidLockUp(weight, subId, bidVol);
     uint128 askCollat = getAskLockUp(weight, subId, askVol);

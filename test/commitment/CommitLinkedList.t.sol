@@ -384,7 +384,7 @@ contract UNIT_CommitLinkedList is Test {
     commitment.commit(subId, 95, 110, commitmentWeight); // collecting: 2, pending: 2
 
     assertEq(commitment.pendingLength(), 2);
-    
+
     // execute all bids
     commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
     commitment.executeCommit(accId, subId, true, 96, commitmentWeight);
