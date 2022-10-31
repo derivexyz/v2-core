@@ -163,7 +163,7 @@ contract UNIT_CommitLinkedList is Test {
     vm.startPrank(alice);
     commitment.commit(subId, 95, 105, commitmentWeight);
 
-    vm.expectRevert(bytes("commited"));
+    vm.expectRevert(CommitmentLinkedList.AlreadyCommitted.selector);
     commitment.commit(subId, 95, 105, commitmentWeight);
 
     vm.stopPrank();

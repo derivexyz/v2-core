@@ -17,9 +17,10 @@ contract CommitmentLinkedList {
   using SafeCast for uint128;
 
   error NotExecutable();
-
+  error AlreadyCommitted();
   error Registered();
   error NotRegistered();
+  error BadInputLength();
 
   struct Commitment {
     uint16 bidVol;
@@ -193,18 +194,16 @@ contract CommitmentLinkedList {
   ) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
-    uint valueLength = _subIds.length;
-    if (_bidVols.length != valueLength || _askVols.length != valueLength || _weights.length != valueLength) {
-      revert("bad inputs");
-    }
+    uint _length = _subIds.length;
+    if (_bidVols.length != _length || _askVols.length != _length || _weights.length != _length) revert BadInputLength();
 
     uint64 node = nodes[msg.sender].nodeId;
 
-    for (uint i = 0; i < valueLength; i++) {
+    for (uint i = 0; i < _length; i++) {
       _addCommitToQueue(cacheCOLLECTING, msg.sender, node, _subIds[i], _bidVols[i], _askVols[i], _weights[i]);
     }
 
-    length[cacheCOLLECTING] += uint8(valueLength);
+    length[cacheCOLLECTING] += uint8(_length);
 
     // todo: update collectingStartTimestamp in check rollover if it comes with commits
     if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
@@ -322,8 +321,7 @@ contract CommitmentLinkedList {
     uint16 askVol,
     uint64 weight
   ) internal returns (uint bidParticipantIndex, uint askParticipantIndex) {
-    require(commitments[collectingEpoch][subId][node].timestamp == 0, "commited");
-
+    if (commitments[collectingEpoch][subId][node].timestamp != 0) revert AlreadyCommitted();
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
     uint128 bidCollat = getBidLockUp(weight, subId, bidVol);
