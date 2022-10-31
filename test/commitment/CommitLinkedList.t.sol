@@ -103,16 +103,6 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(commitment.collectingLength(), 0);
   }
 
-  function testCannotDoubleCommitSameSubId() public {
-    vm.startPrank(alice);
-    commitment.commit(subId, 95, 105, commitmentWeight);
-
-    vm.expectRevert(bytes("commited"));
-    commitment.commit(subId, 95, 105, commitmentWeight);
-
-    vm.stopPrank();
-  }
-
   function testEpochsAreUpdatedCorrectly() public {
     assertEq(commitment.collectingEpoch(), 1);
     assertEq(commitment.pendingEpoch(), 0);
@@ -137,6 +127,46 @@ contract UNIT_CommitLinkedList is Test {
 
     assertEq(commitment.collectingEpoch(), 3);
     assertEq(commitment.pendingEpoch(), 2);
+  }
+
+  function testAutomaticRollover() public {
+    // --- epoch 1 ---
+    assertEq(commitment.collectingEpoch(), 1);
+    assertEq(commitment.pendingEpoch(), 0);
+
+    vm.prank(alice);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.warp(block.timestamp + 10 minutes);
+
+    // --- epoch 2 ---
+    vm.prank(alice);
+    // this transaction should automatically rollover epochs
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    assertEq(commitment.pendingLength(), 1);
+    assertEq(commitment.collectingLength(), 1);
+    assertEq(commitment.collectingEpoch(), 2);
+    assertEq(commitment.pendingEpoch(), 1);
+
+    vm.warp(block.timestamp + 10 minutes);
+
+    // --- epoch 2 ---
+    // this transaction should automatically rollover epochs
+    commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
+
+    assertEq(commitment.collectingEpoch(), 3);
+    assertEq(commitment.pendingEpoch(), 2);
+  }
+
+  function testCannotDoubleCommitSameSubId() public {
+    vm.startPrank(alice);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.expectRevert(bytes("commited"));
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.stopPrank();
   }
 
   function testCommitRecordBindedOrders() public {

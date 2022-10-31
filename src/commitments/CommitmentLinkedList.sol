@@ -234,7 +234,7 @@ contract CommitmentLinkedList {
     uint premiumPerUnit = _getUnitPremium(vol, subId);
 
     // cache variable to avoid stack too deep when trying to access subId later
-    mapping(uint64 => Commitment) storage nodeToCommit = commitments[PENDING][subId];
+    mapping(uint64 => Commitment) storage nodeToCommit = commitments[pendingEpoch][subId];
 
     if (isBid) {
       // update storage
@@ -275,6 +275,8 @@ contract CommitmentLinkedList {
             amount: int(uint(premiumPerUnit * counterParties[i].weight)),
             assetData: bytes32(0)
           });
+
+          // todo: free collateral of ask too
           node.depositLeft += counterParties[i].collateral;
         }
       }
@@ -318,6 +320,7 @@ contract CommitmentLinkedList {
           assetData: bytes32(0)
         });
 
+        // todo: free collateral of bids too
         node.depositLeft += counterParties[i].collateral;
       }
       IAccount(account).submitTransfers(transferBatch, "");
