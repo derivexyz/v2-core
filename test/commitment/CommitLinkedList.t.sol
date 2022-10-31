@@ -161,73 +161,58 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testCanExecuteCommitMultiple() public {
-    uint96[] memory subIds = new uint96[](6);
-    subIds[0] = subId;
-    subIds[1] = subId;
-    subIds[2] = subId;
-    subIds[3] = subId;
-    subIds[4] = subId;
-    subIds[5] = subId;
+    vm.prank(alice);
+    commitment.commit(subId, 90, 95, commitmentWeight);
 
-    uint16[] memory bids = new uint16[](6);
-    bids[0] = 90;
-    bids[1] = 91;
-    bids[2] = 95;
+    vm.prank(bob);
+    commitment.commit(subId, 95, 99, commitmentWeight);
 
-    bids[3] = 93;
-    bids[4] = 94;
-    bids[5] = 92;
+    vm.prank(charlie);
+    commitment.commit(subId, 93, 101, commitmentWeight);
 
-    uint16[] memory asks = new uint16[](6);
-    asks[0] = 95;
-    asks[1] = 96;
-    asks[2] = 97;
+    vm.prank(david);
+    commitment.commit(subId, 91, 99, commitmentWeight);
 
-    asks[3] = 100;
-    asks[4] = 99;
-    asks[5] = 98;
-
-    uint64[] memory weights = new uint64[](6);
-    for (uint i; i < 6; i++) {
-      weights[i] = commitmentWeight;
-    }
-
-    commitment.commitMultiple(subIds, bids, asks, weights);
-    assertEq(commitment.collectingLength(), 6);
+    assertEq(commitment.collectingLength(), 4);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
-    assertEq(commitment.pendingLength(), 6);
+    assertEq(commitment.pendingLength(), 4);
 
     (uint16 lowestBid, uint16 highestBid,) = commitment.pendingBidListInfo(subId);
     assertEq(lowestBid, 90);
     assertEq(highestBid, 95);
 
     // remove 90 vol
-    commitment.executeCommit(accId, subId, true, 90, commitmentWeight);
-    commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
+    commitment.executeCommit(accId, subId, true, 90, commitmentWeight); // linked with 95 ask
+    // commitment.executeCommit(accId, subId, true, 95, commitmentWeight); // linked with 99 ask
 
-    (lowestBid, highestBid,) = commitment.pendingBidListInfo(subId);
+    (lowestBid,,) = commitment.pendingBidListInfo(subId);
     assertEq(lowestBid, 91);
-    assertEq(highestBid, 94);
+
+    (uint16 lowestAsk,,) = commitment.pendingAskListInfo(subId);
+    assertEq(lowestAsk, 99);
 
     // // remove ask
-    commitment.executeCommit(accId, subId, false, 95, commitmentWeight);
-    commitment.executeCommit(accId, subId, false, 96, commitmentWeight);
+    // commitment.executeCommit(accId, subId, false, 101, commitmentWeight); // linked with 93 bid
 
-    (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
-    assertEq(lowestAsk, 97);
-    assertEq(highestAsk, 100);
+    // (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
+
+    // // bid is also updated
+    // (lowestBid, highestBid,) = commitment.pendingBidListInfo(subId);
+
+    // assertEq(lowestAsk, 97);
+    // assertEq(highestAsk, 100);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
-    (uint16 bestVol,) = commitment.bestFinalizedBids(subId);
-    assertEq(bestVol, 94);
+    // (uint16 bestVol,) = commitment.bestFinalizedBids(subId);
+    // assertEq(bestVol, 94);
 
     (uint16 bestAsk,) = commitment.bestFinalizedAsks(subId);
-    assertEq(bestAsk, 97);
+    assertEq(bestAsk, 99);
   }
 
   function testCannotCommitMoreThanDepositRequirement() public {

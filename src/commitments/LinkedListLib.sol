@@ -84,8 +84,6 @@ library LinkedListLib {
           next = list.head;
           list.head = vol;
         }
-        // if (isBid) console2.log("this round prev, next:", prev, next);
-        // if (isBid) console2.log("===");
       }
 
       // update prev and next
@@ -176,32 +174,6 @@ library LinkedListLib {
     return (participants, length);
   }
 
-  function findFistNoneZeroWeightFromStart(CommitmentLinkedList.SortedList storage list)
-    internal
-    returns (uint16 vol, uint64 weight)
-  {
-    uint16 startVol = list.head;
-    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
-    while (volEntity.totalWeight == 0) {
-      if (volEntity.next == 0) return (0, 0);
-      volEntity = list.entities[volEntity.next];
-    }
-    return (volEntity.vol, volEntity.totalWeight);
-  }
-
-  function findFistNoneZeroWeightFromEnd(CommitmentLinkedList.SortedList storage list)
-    internal
-    returns (uint16 vol, uint64 weight)
-  {
-    uint16 startVol = list.end;
-    CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
-    while (volEntity.totalWeight == 0) {
-      if (volEntity.prev == 0) return (0, 0);
-      volEntity = list.entities[volEntity.prev];
-    }
-    return (volEntity.vol, volEntity.totalWeight);
-  }
-
   function removeParticipant(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 participantIndx) internal {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
 
@@ -211,6 +183,21 @@ library LinkedListLib {
     delete volEntity.participants[participantIndx];
 
     volEntity.totalWeight -= weight;
+
+    if (volEntity.totalWeight != 0) return;
+
+    // if totalWeigth = 0: remove from linked list
+    (uint16 cachePrev, uint16 cacheNext) = (volEntity.prev, volEntity.next);
+    if (cachePrev != 0) {
+      list.entities[cachePrev].next = cacheNext;
+    } else {
+      list.head = cacheNext;
+    }
+    if (cacheNext != 0) {
+      list.entities[cacheNext].prev = cachePrev;
+    } else {
+      list.end = cachePrev;
+    }
   }
 
   function clearList(CommitmentLinkedList.SortedList storage list) internal {

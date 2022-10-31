@@ -241,7 +241,6 @@ contract CommitmentLinkedList {
       SortedList storage list = bidQueues[PENDING][subId];
       (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
 
-      console2.log("PENDING", PENDING);
       SortedList storage askList = askQueues[PENDING][subId];
 
       // trade with counter parties
@@ -253,9 +252,6 @@ contract CommitmentLinkedList {
           Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
           // remove binding ask from the same "counter party"
-          console2.log("remving vol", nodeToCommit[counterParties[i].nodeId].askVol);
-          console2.log("remving node", counterParties[i].nodeId);
-          console2.log("remving idx", nodeToCommit[counterParties[i].nodeId].askParticipantIndex);
           askList.removeParticipant(
             nodeToCommit[counterParties[i].nodeId].askVol, nodeToCommit[counterParties[i].nodeId].askParticipantIndex
           );
@@ -439,13 +435,11 @@ contract CommitmentLinkedList {
 
       // return head of bid
       if (bidList.end != 0) {
-        (uint16 highestBid, uint64 weight) = bidList.findFistNoneZeroWeightFromEnd();
-        bestFinalizedBids[subId] = FinalizedQuote(highestBid, weight);
+        bestFinalizedBids[subId] = FinalizedQuote(askList.end, askList.entities[askList.end].totalWeight);
       }
 
       if (askList.head != 0) {
-        (uint16 lowestAsk, uint64 weight) = askList.findFistNoneZeroWeightFromStart();
-        bestFinalizedAsks[subId] = FinalizedQuote(lowestAsk, weight);
+        bestFinalizedAsks[subId] = FinalizedQuote(askList.head, askList.entities[askList.head].totalWeight);
       }
 
       bidList.clearList();
