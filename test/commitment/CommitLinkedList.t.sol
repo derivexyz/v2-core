@@ -55,27 +55,29 @@ contract UNIT_CommitLinkedList is Test {
     roles[2] = charlie;
     roles[3] = david;
 
+    uint128 oneMillion = 1_000_000e18;
+
     for (uint i = 0; i < roles.length; i++) {
-      usdc.mint(roles[i], 10_000_000e18);
+      usdc.mint(roles[i], oneMillion);
 
       vm.startPrank(roles[i]);
       usdc.approve(address(commitment), type(uint).max);
       usdc.approve(address(usdcAsset), type(uint).max);
       commitment.register();
-      commitment.deposit(10_000_000e18);
+      commitment.deposit(oneMillion);
       vm.stopPrank();
     }
 
-    // give usdc to this address: make it the executor
-    usdc.mint(address(this), 10_000_000e18);
+    // give usdc to this address: (executor)
+    usdc.mint(address(this), oneMillion);
     usdc.approve(address(commitment), type(uint).max);
     usdc.approve(address(usdcAsset), type(uint).max);
     commitment.register();
-    // approve
+    // deposit into account so it can execute
     accId = account.createAccount(address(this), IManager(address(dumbManager)));
+    usdcAsset.deposit(accId, 0, oneMillion);
+    // approve commitment contract to trade from my account
     account.approve(address(commitment), accId);
-    commitment.deposit(1_000_000e18);
-    usdcAsset.deposit(accId, 0, 1_000_000e18);
 
     vm.warp(block.timestamp + 1 days);
   }
@@ -99,6 +101,42 @@ contract UNIT_CommitLinkedList is Test {
 
     assertEq(commitment.pendingLength(), 4);
     assertEq(commitment.collectingLength(), 0);
+  }
+
+  function testCannotDoubleCommitSameSubId() public {
+    vm.startPrank(alice);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.expectRevert(bytes("commited"));
+    commitment.commit(subId, 95, 105, commitmentWeight);
+
+    vm.stopPrank();
+  }
+
+  function testEpochsAreUpdatedCorrectly() public {
+    assertEq(commitment.collectingEpoch(), 1);
+    assertEq(commitment.pendingEpoch(), 0);
+
+    // commit and roll over
+    vm.prank(alice);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    // ----- new epoch
+
+    assertEq(commitment.collectingEpoch(), 2);
+    assertEq(commitment.pendingEpoch(), 1);
+
+    vm.prank(alice);
+    commitment.commit(subId, 95, 105, commitmentWeight);
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    // ----- new epoch
+
+    assertEq(commitment.collectingEpoch(), 3);
+    assertEq(commitment.pendingEpoch(), 2);
   }
 
   function testCommitRecordBindedOrders() public {
@@ -260,7 +298,7 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(lowestBid, 92);
     assertEq(highestBid, 94);
 
-    // 90 - 96 order is executed
+    // (90, 96) order is executed, so asks were also updated
     (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
     assertEq(lowestAsk, 98);
     assertEq(highestAsk, 100);
@@ -316,6 +354,7 @@ contract UNIT_CommitLinkedList is Test {
     commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
     commitment.executeCommit(accId, subId, true, 96, commitmentWeight);
 
+    vm.prank(alice);
     commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
 
     vm.warp(block.timestamp + 10 minutes);
