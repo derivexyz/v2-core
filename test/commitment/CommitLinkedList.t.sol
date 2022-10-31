@@ -338,6 +338,7 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testShouldRolloverBlankIfPendingIsEmpty() public {
+    //  ----- epoch 1 ------
     vm.prank(alice);
     commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
     vm.prank(bob);
@@ -345,6 +346,13 @@ contract UNIT_CommitLinkedList is Test {
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover(); // collecting: 0, pending: 2
+
+    // ----- epoch 1 ------
+
+    vm.prank(alice);
+    commitment.commit(subId, 99, 109, commitmentWeight); // collecting: 1, pending: 2
+    vm.prank(bob);
+    commitment.commit(subId, 95, 110, commitmentWeight); // collecting: 2, pending: 2
 
     assertEq(commitment.pendingLength(), 2);
     assertEq(commitment.pendingWeight(subId, true), commitmentWeight * 2);
@@ -354,13 +362,10 @@ contract UNIT_CommitLinkedList is Test {
     commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
     commitment.executeCommit(accId, subId, true, 96, commitmentWeight);
 
-    vm.prank(alice);
-    commitment.commit(subId, 95, 105, commitmentWeight); // collecting: 1, pending: 0
-
     vm.warp(block.timestamp + 10 minutes);
-
     commitment.checkRollover();
 
+    // ----- epoch 2 ------
     (uint16 bestBid, uint64 bidWeights) = commitment.bestFinalizedBids(subId);
     assertEq(bestBid, 0);
     assertEq(bidWeights, 0);
@@ -369,6 +374,35 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(bestAsk, 0);
     assertEq(askWeight, 0);
 
-    assertEq(commitment.pendingLength(), 1);
+    assertEq(commitment.pendingLength(), 2);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    // ----- epoch 3 ------
+    (bestBid, bidWeights) = commitment.bestFinalizedBids(subId);
+    assertEq(bestBid, 99);
+    assertEq(bidWeights, commitmentWeight);
+
+    (bestAsk, askWeight) = commitment.bestFinalizedAsks(subId);
+    assertEq(bestAsk, 109);
+    assertEq(askWeight, commitmentWeight);
+
+    assertEq(commitment.pendingLength(), 0);
+
+    vm.warp(block.timestamp + 10 minutes);
+    commitment.checkRollover();
+
+    // ----- epoch 4 ------
+    // Nothing change
+    (bestBid, bidWeights) = commitment.bestFinalizedBids(subId);
+    assertEq(bestBid, 99);
+    assertEq(bidWeights, commitmentWeight);
+
+    (bestAsk, askWeight) = commitment.bestFinalizedAsks(subId);
+    assertEq(bestAsk, 109);
+    assertEq(askWeight, commitmentWeight);
+
+    assertEq(commitment.pendingLength(), 0);
   }
 }
