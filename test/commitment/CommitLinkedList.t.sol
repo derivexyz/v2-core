@@ -239,27 +239,14 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testCanExecutePartialSize() public {
-    uint96[] memory subIds = new uint96[](3);
-    subIds[0] = subId;
-    subIds[1] = subId;
-    subIds[2] = subId;
+    vm.prank(alice);
+    commitment.commit(subId, 90, 96, commitmentWeight * 2);
 
-    uint16[] memory bids = new uint16[](3);
-    bids[0] = 90;
-    bids[1] = 92;
-    bids[2] = 94;
+    vm.prank(bob);
+    commitment.commit(subId, 92, 98, commitmentWeight * 2);
 
-    uint16[] memory asks = new uint16[](3);
-    asks[0] = 96;
-    asks[1] = 98;
-    asks[2] = 100;
-
-    uint64[] memory weights = new uint64[](3);
-    for (uint i; i < 3; i++) {
-      weights[i] = commitmentWeight * 2;
-    }
-
-    commitment.commitMultiple(subIds, bids, asks, weights);
+    vm.prank(charlie);
+    commitment.commit(subId, 94, 100, commitmentWeight * 2);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
@@ -273,48 +260,38 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(lowestBid, 92);
     assertEq(highestBid, 94);
 
-    // // remove ask
-    commitment.executeCommit(accId, subId, false, 96, commitmentWeight);
-    commitment.executeCommit(accId, subId, false, 98, commitmentWeight);
-    commitment.executeCommit(accId, subId, false, 100, commitmentWeight * 2);
-
+    // 90 - 96 order is executed
     (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
-    assertEq(lowestAsk, 96);
-    assertEq(highestAsk, 98);
+    assertEq(lowestAsk, 98);
+    assertEq(highestAsk, 100);
+
+    // // remove ask, partial weight
+    commitment.executeCommit(accId, subId, false, 98, commitmentWeight);
+    commitment.executeCommit(accId, subId, false, 100, commitmentWeight);
+
+    (lowestAsk, highestAsk,) = commitment.pendingAskListInfo(subId);
+    assertEq(lowestAsk, 98);
+    assertEq(highestAsk, 100);
   }
 
   function testExecuteWillTrade() public {
-    uint96[] memory subIds = new uint96[](2);
-    subIds[0] = subId;
-    subIds[1] = subId;
+    vm.prank(alice);
+    commitment.commit(subId, 90, 96, commitmentWeight * 2);
 
-    uint16[] memory bids = new uint16[](2);
-    bids[0] = 90;
-    bids[1] = 92;
-
-    uint16[] memory asks = new uint16[](2);
-    asks[0] = 96;
-    asks[1] = 98;
-
-    uint64[] memory weights = new uint64[](2);
-    weights[0] = commitmentWeight;
-    weights[1] = commitmentWeight;
-
-    commitment.commitMultiple(subIds, bids, asks, weights);
+    vm.prank(bob);
+    commitment.commit(subId, 92, 98, commitmentWeight * 2);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
-    // execute against 90 bid
+    // execute against bids
     commitment.executeCommit(accId, subId, true, 90, commitmentWeight);
-    // executge against 92 bid
     commitment.executeCommit(accId, subId, true, 92, commitmentWeight);
 
     // check that executing against bids will update executor balance
     assertEq(account.getBalance(accId, optionAsset, subId), -int(uint(2 * commitmentWeight)));
 
-    // // remove ask
-    // execute against 90 bid
+    // execute against asks
     commitment.executeCommit(accId, subId, false, 96, commitmentWeight);
     commitment.executeCommit(accId, subId, false, 98, commitmentWeight);
 

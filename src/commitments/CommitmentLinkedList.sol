@@ -240,7 +240,6 @@ contract CommitmentLinkedList {
       // update storage
       SortedList storage list = bidQueues[PENDING][subId];
       (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
-
       SortedList storage askList = askQueues[PENDING][subId];
 
       // trade with counter parties
@@ -377,7 +376,7 @@ contract CommitmentLinkedList {
     return SafeCast.toUint128(contracts * (uint(weight) * spotPrice / 1e18 * 2e17) / 1e18);
   }
 
-  function _getContractsToLock(uint16 bidOrAsk) internal returns (uint) {
+  function _getContractsToLock(uint16 bidOrAsk) internal view returns (uint) {
     return (MAX_GAS_COST * 1e18) / (uint(bidOrAsk) * TOLERANCE);
   }
 

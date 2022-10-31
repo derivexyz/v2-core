@@ -147,6 +147,7 @@ library LinkedListLib {
     } else {
       uint64 sum;
       for (uint i = 0; i < volEntity.participants.length; i++) {
+        length += 1;
         CommitmentLinkedList.Participant memory participant = volEntity.participants[i];
         if (sum + participant.weight > weight) {
           uint64 amountExecuted = weight - sum;
@@ -167,7 +168,6 @@ library LinkedListLib {
           volEntity.participants[i].weight = 0;
           volEntity.participants[i].collateral = 0;
         }
-        length += 1;
       }
     }
 
