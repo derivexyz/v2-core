@@ -176,9 +176,7 @@ contract CommitmentLinkedList {
   function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint64 weight) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
-    uint64 node = stakers[msg.sender].stakerId;
-
-    _addCommitToQueue(cacheCOLLECTING, msg.sender, node, subId, bidVol, askVol, weight);
+    _addCommitToQueue(cacheCOLLECTING, msg.sender, stakers[msg.sender].stakerId, subId, bidVol, askVol, weight);
 
     length[cacheCOLLECTING] += 1;
 
@@ -251,7 +249,7 @@ contract CommitmentLinkedList {
             amount: int(uint(counterParties[i].weight)),
             assetData: bytes32(0)
           });
-          // paid premium from node to executor
+          // paid premium from staker to executor
           transferBatch[2 * i + 1] = AccountStructs.AssetTransfer({
             fromAcc: staker.accountId,
             toAcc: executorAccount,
@@ -286,7 +284,7 @@ contract CommitmentLinkedList {
           stakerCommits[counterParties[i].stakerId].bidStakerIndex
         );
 
-        // paid option from node to executor
+        // paid option from staker to executor
         transferBatch[2 * i] = AccountStructs.AssetTransfer({
           fromAcc: staker.accountId,
           toAcc: executorAccount,
@@ -295,7 +293,7 @@ contract CommitmentLinkedList {
           amount: int(uint(counterParties[i].weight)),
           assetData: bytes32(0)
         });
-        // paid premium from executor to node
+        // paid premium from executor to staker
         transferBatch[2 * i + 1] = AccountStructs.AssetTransfer({
           fromAcc: executorAccount,
           toAcc: staker.accountId,
@@ -315,13 +313,13 @@ contract CommitmentLinkedList {
   function _addCommitToQueue(
     uint8 cacheCOLLECTING,
     address owner,
-    uint64 node,
+    uint64 stakerId,
     uint96 subId,
     uint16 bidVol,
     uint16 askVol,
     uint64 weight
   ) internal returns (uint bidStakerIndex, uint askStakerIndex) {
-    if (commitments[collectingEpoch][subId][node].timestamp != 0) revert AlreadyCommitted();
+    if (commitments[collectingEpoch][subId][stakerId].timestamp != 0) revert AlreadyCommitted();
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
     uint128 bidCollat = getBidLockUp(weight, subId, bidVol);
@@ -330,15 +328,15 @@ contract CommitmentLinkedList {
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
     bidStakerIndex =
-      bidQueues[COLLECTING][subId].addStakerToLinkedList(bidVol, weight, bidCollat, node, collectingEpoch);
+      bidQueues[COLLECTING][subId].addStakerToLinkedList(bidVol, weight, bidCollat, stakerId, collectingEpoch);
     askStakerIndex =
-      askQueues[COLLECTING][subId].addStakerToLinkedList(askVol, weight, askCollat, node, collectingEpoch);
+      askQueues[COLLECTING][subId].addStakerToLinkedList(askVol, weight, askCollat, stakerId, collectingEpoch);
 
     // subtract from total deposit
     stakers[owner].depositLeft -= (bidCollat + askCollat);
 
     // add to commitment array
-    commitments[collectingEpoch][subId][node] =
+    commitments[collectingEpoch][subId][stakerId] =
       Commitment(bidVol, askVol, uint32(bidStakerIndex), uint32(askStakerIndex), weight, uint64(block.timestamp));
   }
 
