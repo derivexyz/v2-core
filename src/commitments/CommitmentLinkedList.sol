@@ -252,8 +252,10 @@ contract CommitmentLinkedList {
           Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
 
           // remove binding ask from the same "counter party"
-          askList.removeParticipant(
-            nodeToCommit[counterParties[i].nodeId].askVol, nodeToCommit[counterParties[i].nodeId].askParticipantIndex
+          askList.removeParticipantWeight(
+            nodeToCommit[counterParties[i].nodeId].askVol,
+            counterParties[i].weight,
+            nodeToCommit[counterParties[i].nodeId].askParticipantIndex
           );
 
           // paid option from executor to node
@@ -283,13 +285,21 @@ contract CommitmentLinkedList {
       SortedList storage list = askQueues[PENDING][subId];
       (Participant[] memory counterParties, uint numCounterParties) = list.removeWeightFromVolList(vol, weight);
 
-      // todo: remove linked bids
+      // used to remove linked bids
+      SortedList storage bidList = bidQueues[PENDING][subId];
 
       // trade with counter parties
       AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](numCounterParties * 2);
       for (uint i; i < numCounterParties; i++) {
         if (counterParties[i].weight == 0) return;
         Node storage node = nodes[nodesOwner[counterParties[i].nodeId]];
+
+        bidList.removeParticipantWeight(
+          nodeToCommit[counterParties[i].nodeId].bidVol,
+          counterParties[i].weight,
+          nodeToCommit[counterParties[i].nodeId].bidParticipantIndex
+        );
+
         // paid option from node to executor
         transferBatch[2 * i] = AccountStructs.AssetTransfer({
           fromAcc: node.accountId,
@@ -324,10 +334,7 @@ contract CommitmentLinkedList {
     uint16 askVol,
     uint64 weight
   ) internal returns (uint bidParticipantIndex, uint askParticipantIndex) {
-    {
-      Commitment memory commit = commitments[collectingEpoch][subId][node];
-      require(commit.timestamp == 0, "commited");
-    }
+    require(commitments[collectingEpoch][subId][node].timestamp == 0, "commited");
 
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
@@ -435,7 +442,7 @@ contract CommitmentLinkedList {
 
       // return head of bid
       if (bidList.end != 0) {
-        bestFinalizedBids[subId] = FinalizedQuote(askList.end, askList.entities[askList.end].totalWeight);
+        bestFinalizedBids[subId] = FinalizedQuote(bidList.end, askList.entities[askList.end].totalWeight);
       }
 
       if (askList.head != 0) {

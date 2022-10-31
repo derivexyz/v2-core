@@ -186,33 +186,37 @@ contract UNIT_CommitLinkedList is Test {
 
     // remove 90 vol
     commitment.executeCommit(accId, subId, true, 90, commitmentWeight); // linked with 95 ask
-    // commitment.executeCommit(accId, subId, true, 95, commitmentWeight); // linked with 99 ask
+    commitment.executeCommit(accId, subId, true, 95, commitmentWeight); // linked with 99 ask
 
     (lowestBid,,) = commitment.pendingBidListInfo(subId);
     assertEq(lowestBid, 91);
 
-    (uint16 lowestAsk,,) = commitment.pendingAskListInfo(subId);
+    (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
     assertEq(lowestAsk, 99);
+    assertEq(highestAsk, 101);
 
     // // remove ask
-    // commitment.executeCommit(accId, subId, false, 101, commitmentWeight); // linked with 93 bid
+    commitment.executeCommit(accId, subId, false, 101, commitmentWeight); // linked with 93 bid
 
-    // (uint16 lowestAsk, uint16 highestAsk,) = commitment.pendingAskListInfo(subId);
+    (lowestAsk, highestAsk,) = commitment.pendingAskListInfo(subId);
+    assertEq(lowestAsk, 99);
+    assertEq(highestAsk, 99);
 
     // // bid is also updated
-    // (lowestBid, highestBid,) = commitment.pendingBidListInfo(subId);
-
-    // assertEq(lowestAsk, 97);
-    // assertEq(highestAsk, 100);
+    (lowestBid, highestBid,) = commitment.pendingBidListInfo(subId);
+    assertEq(lowestBid, 91);
+    assertEq(highestBid, 91);
 
     vm.warp(block.timestamp + 10 minutes);
     commitment.checkRollover();
 
-    // (uint16 bestVol,) = commitment.bestFinalizedBids(subId);
-    // assertEq(bestVol, 94);
+    (uint16 bestVol, uint64 bidWeight) = commitment.bestFinalizedBids(subId);
+    assertEq(bestVol, 91);
+    assertEq(bidWeight, commitmentWeight);
 
-    (uint16 bestAsk,) = commitment.bestFinalizedAsks(subId);
+    (uint16 bestAsk, uint64 askWeight) = commitment.bestFinalizedAsks(subId);
     assertEq(bestAsk, 99);
+    assertEq(askWeight, commitmentWeight);
   }
 
   function testCannotCommitMoreThanDepositRequirement() public {
@@ -330,11 +334,6 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(commitment.pendingLength(), 2);
     assertEq(commitment.pendingWeight(subId, true), commitmentWeight * 2);
     assertEq(commitment.pendingWeight(subId, false), commitmentWeight * 2);
-
-    uint64 aliceNodeId = 1;
-
-    (uint16 bidVol, uint16 askVol, uint64 aliceBidIdx, uint64 aliceAskIdx,,) =
-      commitment.commitments(commitment.pendingEpoch(), subId, aliceNodeId);
 
     // execute all bids
     commitment.executeCommit(accId, subId, true, 95, commitmentWeight);

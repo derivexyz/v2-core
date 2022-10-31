@@ -174,15 +174,27 @@ library LinkedListLib {
     return (participants, length);
   }
 
-  function removeParticipant(CommitmentLinkedList.SortedList storage list, uint16 vol, uint64 participantIndx) internal {
+  function removeParticipantWeight(
+    CommitmentLinkedList.SortedList storage list,
+    uint16 vol,
+    uint64 weightToReduce,
+    uint64 participantIndx
+  ) internal {
     CommitmentLinkedList.VolEntity storage volEntity = list.entities[vol];
 
-    uint64 weight = volEntity.participants[participantIndx].weight;
+    uint64 participantWeight = volEntity.participants[participantIndx].weight;
 
     // do not change the array length, otherwise we will mess up the index
-    delete volEntity.participants[participantIndx];
+    uint participantNewWeight = participantWeight - weightToReduce;
 
-    volEntity.totalWeight -= weight;
+    if (participantNewWeight == 0) {
+      delete volEntity.participants[participantIndx];
+    } else {
+      volEntity.participants[participantIndx].weight -= weightToReduce;
+    }
+
+    // reduce totalWeight and check if we need to keep this vol
+    volEntity.totalWeight -= weightToReduce;
 
     if (volEntity.totalWeight != 0) return;
 
