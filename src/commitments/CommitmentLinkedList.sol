@@ -10,6 +10,7 @@ import "../interfaces/IAsset.sol";
 import "../../test/shared/mocks/MockAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "test/account/mocks/assets/OptionToken.sol";
 
 contract CommitmentLinkedList {
   using DynamicArrayLib for uint96[];
@@ -106,14 +107,14 @@ contract CommitmentLinkedList {
 
   address immutable quote;
   address immutable quoteAsset;
-  address immutable optionToken;
+  OptionToken immutable optionToken;
   address immutable account;
   address immutable manager;
 
   constructor(address _account, address _quote, address _quoteAsset, address _optionToken, address _manager) {
     account = _account;
     quoteAsset = _quoteAsset;
-    optionToken = _optionToken;
+    optionToken = OptionToken(_optionToken);
     quote = _quote;
     manager = _manager;
     IERC20(_quote).approve(quoteAsset, type(uint).max);
@@ -244,7 +245,7 @@ contract CommitmentLinkedList {
           transferBatch[2 * i] = AccountStructs.AssetTransfer({
             fromAcc: executorAccount,
             toAcc: staker.accountId,
-            asset: IAsset(optionToken),
+            asset: IAsset(address(optionToken)),
             subId: subId,
             amount: int(uint(counterParties[i].weight)),
             assetData: bytes32(0)
@@ -259,7 +260,6 @@ contract CommitmentLinkedList {
             assetData: bytes32(0)
           });
 
-          // todo: free collateral of ask too
           staker.depositLeft += counterParties[i].collateral;
         }
       }
@@ -288,7 +288,7 @@ contract CommitmentLinkedList {
         transferBatch[2 * i] = AccountStructs.AssetTransfer({
           fromAcc: staker.accountId,
           toAcc: executorAccount,
-          asset: IAsset(optionToken),
+          asset: IAsset(address(optionToken)),
           subId: subId,
           amount: int(uint(counterParties[i].weight)),
           assetData: bytes32(0)
@@ -303,7 +303,6 @@ contract CommitmentLinkedList {
           assetData: bytes32(0)
         });
 
-        // todo: free collateral of bids too
         staker.depositLeft += counterParties[i].collateral;
       }
       IAccount(account).submitTransfers(transferBatch, "");
@@ -318,40 +317,46 @@ contract CommitmentLinkedList {
     uint16 bidVol,
     uint16 askVol,
     uint64 weight
-  ) internal returns (uint bidStakerIndex, uint askStakerIndex) {
+  ) internal {
     if (commitments[collectingEpoch][subId][stakerId].timestamp != 0) revert AlreadyCommitted();
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
-    uint128 bidCollat = getBidLockUp(weight, subId, bidVol);
-    uint128 askCollat = getAskLockUp(weight, subId, askVol);
-
+    // take max of bid / ask collat sine both are removed upon execution
+    uint128 collat = getCollatLockUp(weight, subId, bidVol, askVol);
+    
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
-    bidStakerIndex =
-      bidQueues[COLLECTING][subId].addStakerToLinkedList(bidVol, weight, bidCollat, stakerId, collectingEpoch);
-    askStakerIndex =
-      askQueues[COLLECTING][subId].addStakerToLinkedList(askVol, weight, askCollat, stakerId, collectingEpoch);
+    uint bidStakerIndex =
+      bidQueues[COLLECTING][subId].addStakerToLinkedList(bidVol, weight, collat, stakerId, collectingEpoch);
+    uint askStakerIndex =
+      askQueues[COLLECTING][subId].addStakerToLinkedList(askVol, weight, collat, stakerId, collectingEpoch);
 
     // subtract from total deposit
-    stakers[owner].depositLeft -= (bidCollat + askCollat);
+    stakers[owner].depositLeft -= collat;
 
     // add to commitment array
     commitments[collectingEpoch][subId][stakerId] =
       Commitment(bidVol, askVol, uint32(bidStakerIndex), uint32(askStakerIndex), weight, uint64(block.timestamp));
   }
 
-  // todo: plugin blacksholes for actual trading price.
-  function _getUnitPremium(uint16, /*vol*/ uint96 /*subId*/ ) internal returns (uint) {
-    return 10_000000;
+  function _getUnitPremium(uint16 vol, uint96 subId) internal view returns (uint) {
+    // todo: spot needs to be dynamic
+    return uint256(optionToken.getValue(uint(subId), 1e18, spotPrice, uint(vol) * 1e16));
   }
 
-  // todo: how much to locked up, given the weight on a bid
-  function getBidLockUp(uint64 weight, uint96, /*subId*/ uint16 bid) public returns (uint128) {
-    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid)); // todo: bids need to be in dollars
+  function getCollatLockUp(uint64 weight, uint96 subId, uint16 bidVol, uint16 askVol) public view returns (uint128) {
+    uint16 bidPremium = SafeCast.toUint16(_getUnitPremium(bidVol, subId) / 1e18);
+    uint16 askPremium = SafeCast.toUint16(_getUnitPremium(askVol, subId) / 1e18);
+    uint128 bidCollat = _getBidLockUp(weight, subId, bidPremium);
+    uint128 askCollat = _getAskLockUp(weight, subId, askPremium);
+    return (askCollat > bidCollat) ? askCollat : bidCollat; 
   }
 
-  // todo: how much to locked up, given the weight on a bid
-  function getAskLockUp(uint64 weight, uint96, /*subId*/ uint16 ask) public returns (uint128) {
+  function _getBidLockUp(uint64 weight, uint96, /*subId*/ uint16 bid) internal view returns (uint128) {
+    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid)); 
+  }
+
+  function _getAskLockUp(uint64 weight, uint96, /*subId*/ uint16 ask) internal view returns (uint128) {
     uint contracts = _getContractsToLock(ask);
     return SafeCast.toUint128(contracts * (uint(weight) * spotPrice / 1e18 * 2e17) / 1e18);
   }

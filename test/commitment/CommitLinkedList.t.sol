@@ -6,8 +6,11 @@ import "forge-std/console2.sol";
 
 import "../shared/mocks/MockERC20.sol";
 import "../shared/mocks/MockAsset.sol";
+import "test/account/mocks/assets/OptionToken.sol";
 import "../shared/mocks/MockManager.sol";
 import "../account/mocks/managers/DumbManager.sol";
+import "test/account/mocks/feeds/SettlementPricer.sol";
+import "test/account/mocks/feeds/PriceFeeds.sol";
 
 import "src/commitments/CommitmentLinkedList.sol";
 import "src/Account.sol";
@@ -22,7 +25,9 @@ contract UNIT_CommitLinkedList is Test {
 
   MockERC20 usdc;
   MockAsset usdcAsset;
-  MockAsset optionAsset;
+  OptionToken optionAsset;
+  TestPriceFeeds priceFeeds;
+  SettlementPricer settlementPricer;
 
   uint accId;
 
@@ -44,7 +49,14 @@ contract UNIT_CommitLinkedList is Test {
     usdc = new MockERC20("USDC", "USDC");
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
 
-    optionAsset = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
+    /* option related deploys */
+    priceFeeds = new TestPriceFeeds();
+    priceFeeds.setSpotForFeed(0, 1e18);
+    priceFeeds.setSpotForFeed(1, 1500e18);
+    settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
+    optionAsset = new OptionToken(IAccount(address(account)), priceFeeds, settlementPricer, 1);
+    addListings(); // 49 listings
+    optionAsset.setManagerAllowed(IManager(dumbManager), true);
 
     commitment =
     new CommitmentLinkedList(address(account), address(usdc), address(usdcAsset), address(optionAsset), address(dumbManager));
@@ -287,9 +299,7 @@ contract UNIT_CommitLinkedList is Test {
   }
 
   function testCannotCommitMoreThanDepositRequirement() public {
-    uint128 bidCollat = commitment.getBidLockUp(commitmentWeight, subId, 80);
-    uint128 askCollat = commitment.getAskLockUp(commitmentWeight, subId, 100);
-    uint128 amount = bidCollat + askCollat;
+    uint128 amount = commitment.getCollatLockUp(commitmentWeight, subId, 80, 100);
     usdc.mint(random, amount);
 
     vm.startPrank(random);
@@ -431,5 +441,17 @@ contract UNIT_CommitLinkedList is Test {
     assertEq(askWeight, commitmentWeight);
 
     assertEq(commitment.pendingLength(), 0);
+  }
+
+  function addListings() public {
+    uint72[11] memory strikes =
+      [500e18, 1000e18, 1300e18, 1400e18, 1450e18, 1500e18, 1550e18, 1600e18, 1700e18, 2000e18, 2500e18];
+
+    uint32[7] memory expiries = [1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks];
+    for (uint s = 0; s < strikes.length; s++) {
+      for (uint e = 0; e < expiries.length; e++) {
+        optionAsset.addListing(strikes[s], expiries[e], true);
+      }
+    }
   }
 }
