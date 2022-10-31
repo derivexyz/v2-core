@@ -215,7 +215,6 @@ contract UNIT_CommitLinkedList is Test {
     vm.prank(david);
     commitment.commit(subId, 91, 100, commitmentWeight); // collecting: 3, pending: 0
     assertEq(commitment.collectingLength(), 4);
-    assertEq(commitment.collectingWeight(subId, true), commitmentWeight * 4);
 
     (uint16 lowestBid, uint16 highestBid, uint16 bidLength) = commitment.collectingBidListInfo(subId);
     assertEq(lowestBid, 91);
@@ -385,9 +384,7 @@ contract UNIT_CommitLinkedList is Test {
     commitment.commit(subId, 95, 110, commitmentWeight); // collecting: 2, pending: 2
 
     assertEq(commitment.pendingLength(), 2);
-    assertEq(commitment.pendingWeight(subId, true), commitmentWeight * 2);
-    assertEq(commitment.pendingWeight(subId, false), commitmentWeight * 2);
-
+    
     // execute all bids
     commitment.executeCommit(accId, subId, true, 95, commitmentWeight);
     commitment.executeCommit(accId, subId, true, 96, commitmentWeight);

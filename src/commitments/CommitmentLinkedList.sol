@@ -73,9 +73,7 @@ contract CommitmentLinkedList {
   mapping(uint8 => mapping(uint96 => SortedList)) public bidQueues;
   mapping(uint8 => mapping(uint96 => SortedList)) public askQueues;
 
-  /// @dev pending/collecting => subid => totalWeights
-  mapping(uint8 => mapping(uint96 => mapping(bool => uint64))) public weights;
-
+  
   /// @dev pending/collecting => subid
   mapping(uint8 => uint96[]) public subIds;
 
@@ -127,14 +125,6 @@ contract CommitmentLinkedList {
 
   function collectingLength() external view returns (uint) {
     return length[COLLECTING];
-  }
-
-  function pendingWeight(uint96 subId, bool isBid) external view returns (uint) {
-    return weights[PENDING][subId][isBid];
-  }
-
-  function collectingWeight(uint96 subId, bool isBid) external view returns (uint) {
-    return weights[COLLECTING][subId][isBid];
   }
 
   function pendingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end, uint16 length_) {
@@ -227,9 +217,6 @@ contract CommitmentLinkedList {
     require(IAccount(account).ownerOf(executorAccount) == msg.sender, "auth");
 
     _checkRollover();
-
-    // update total weight for an subId
-    weights[PENDING][subId][isBid] -= weight;
 
     uint premiumPerUnit = _getUnitPremium(vol, subId);
 
@@ -340,9 +327,6 @@ contract CommitmentLinkedList {
 
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
-    // both bid and ask?
-    weights[cacheCOLLECTING][subId][true] += weight;
-    weights[cacheCOLLECTING][subId][false] += weight;
 
     uint128 bidCollat = getBidLockUp(weight, subId, bidVol);
     uint128 askCollat = getAskLockUp(weight, subId, askVol);
