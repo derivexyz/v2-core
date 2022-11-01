@@ -323,7 +323,7 @@ contract CommitmentLinkedList {
 
     // take max of bid / ask collat sine both are removed upon execution
     uint128 collat = getCollatLockUp(weight, subId, bidVol, askVol);
-    
+
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
     uint bidStakerIndex =
@@ -341,7 +341,7 @@ contract CommitmentLinkedList {
 
   function _getUnitPremium(uint16 vol, uint96 subId) internal view returns (uint) {
     // todo: spot needs to be dynamic
-    return uint256(optionToken.getValue(uint(subId), 1e18, spotPrice, uint(vol) * 1e16));
+    return uint(optionToken.getValue(uint(subId), 1e18, spotPrice, uint(vol) * 1e16));
   }
 
   function getCollatLockUp(uint64 weight, uint96 subId, uint16 bidVol, uint16 askVol) public view returns (uint128) {
@@ -349,11 +349,11 @@ contract CommitmentLinkedList {
     uint16 askPremium = SafeCast.toUint16(_getUnitPremium(askVol, subId) / 1e18);
     uint128 bidCollat = _getBidLockUp(weight, subId, bidPremium);
     uint128 askCollat = _getAskLockUp(weight, subId, askPremium);
-    return (askCollat > bidCollat) ? askCollat : bidCollat; 
+    return (askCollat > bidCollat) ? askCollat : bidCollat;
   }
 
   function _getBidLockUp(uint64 weight, uint96, /*subId*/ uint16 bid) internal view returns (uint128) {
-    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid)); 
+    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid));
   }
 
   function _getAskLockUp(uint64 weight, uint96, /*subId*/ uint16 ask) internal view returns (uint128) {

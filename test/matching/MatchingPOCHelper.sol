@@ -66,7 +66,7 @@ abstract contract MatchingPOCHelper is Test {
 
     /* Options */
     settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
-    optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
+    optionAdapter = new OptionToken(IAccount(address(account)), priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
     rm =
