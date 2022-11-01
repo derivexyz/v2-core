@@ -207,7 +207,7 @@ contract StallAttackLinkedList is SimulationHelper {
     uint32[7] memory expiries = [1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks];
     for (uint s = 0; s < strikes.length; s++) {
       for (uint e = 0; e < expiries.length; e++) {
-        optionAdapter.addListing(strikes[s], expiries[e], true);
+        optionAdapter.addListing(strikes[s], block.timestamp + expiries[e], true);
       }
     }
   }

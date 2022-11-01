@@ -11,7 +11,8 @@ import "../shared/mocks/MockManager.sol";
 import "../account/mocks/managers/DumbManager.sol";
 import "test/account/mocks/feeds/SettlementPricer.sol";
 import "test/account/mocks/feeds/PriceFeeds.sol";
-
+import "test/account/mocks/assets/lending/Lending.sol";
+import "test/account/mocks/assets/lending/ContinuousJumpRateModel.sol";
 import "src/commitments/CommitmentLinkedList.sol";
 import "src/Account.sol";
 
@@ -24,7 +25,9 @@ contract UNIT_CommitLinkedList is Test {
   MockManager dumbManager;
 
   MockERC20 usdc;
-  MockAsset usdcAsset;
+  // MockAsset usdcAsset;
+  Lending usdcAsset;
+  InterestRateModel interestRateModel;
   OptionToken optionAsset;
   TestPriceFeeds priceFeeds;
   SettlementPricer settlementPricer;
@@ -47,7 +50,10 @@ contract UNIT_CommitLinkedList is Test {
 
     /* mock tokens that can be deposited into accounts */
     usdc = new MockERC20("USDC", "USDC");
-    usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+    interestRateModel = new ContinuousJumpRateModel(5e16, 1e17, 2e17, 5e17);
+    usdcAsset = new Lending(IERC20(usdc), IAccount(address(account)), interestRateModel);
+    usdcAsset.setManagerAllowed(IManager(dumbManager), true);
+    // usdcAsset = new Lending(IERC20(usdc), IAccount(address(account)), false);
 
     /* option related deploys */
     priceFeeds = new TestPriceFeeds();
@@ -87,7 +93,7 @@ contract UNIT_CommitLinkedList is Test {
     commitment.register();
     // deposit into account so it can execute
     accId = account.createAccount(address(this), IManager(address(dumbManager)));
-    usdcAsset.deposit(accId, 0, oneMillion);
+    usdcAsset.deposit(accId, oneMillion);
     // approve commitment contract to trade from my account
     account.approve(address(commitment), accId);
 
@@ -491,7 +497,7 @@ contract UNIT_CommitLinkedList is Test {
     uint32[7] memory expiries = [1 weeks, 2 weeks, 4 weeks, 8 weeks, 12 weeks, 26 weeks, 52 weeks];
     for (uint s = 0; s < strikes.length; s++) {
       for (uint e = 0; e < expiries.length; e++) {
-        optionAsset.addListing(strikes[s], expiries[e], true);
+        optionAsset.addListing(strikes[s], block.timestamp + expiries[e], true);
       }
     }
   }
