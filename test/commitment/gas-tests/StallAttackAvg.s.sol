@@ -22,7 +22,9 @@ import "./SimulationHelper.sol";
 // run  with `forge script StallAttackScript --fork-url http://localhost:8545` against anvil
 // OptionToken deployment fails when running outside of localhost
 
-contract StallAttack is SimulationHelper {
+contract StallAttackAvg is SimulationHelper {
+  CommitmentAverage commitment;
+
   /* address setup */
   address node = vm.addr(2);
   address attacker = vm.addr(3);
@@ -76,7 +78,7 @@ contract StallAttack is SimulationHelper {
 
       /* determine whether response is needed */
       (uint16 newBid, uint16 newAsk, uint8 attackSubId, uint128 newWeight) =
-        _generateAttackResponse(SPREAD_MUL, WEIGHT_MUL, DEPOSIT_CAP);
+        _generateAttackResponse(SPREAD_MUL, WEIGHT_MUL);
 
       if (newWeight > 0 && i != 0) {
         // attack started
@@ -148,7 +150,7 @@ contract StallAttack is SimulationHelper {
   /**
    * @dev defender moves all excess capital to the attacked node
    */
-  function _generateAttackResponse(uint16 spreadMultiple, uint128 weightMultiple, uint depositCap)
+  function _generateAttackResponse(uint16 spreadMultiple, uint128 weightMultiple)
     public
     returns (uint16 newBid, uint16 newAsk, uint8 subId, uint128 weight)
   {
@@ -197,4 +199,24 @@ contract StallAttack is SimulationHelper {
     console2.log("post clear commits");
     console2.log(col, pen, fin);
   }
+
+  function _depositToNode(address node_, uint amount) public {
+    _mintDai(node_, amount);
+    // setup: not counting gas
+    vm.startBroadcast(node_);
+
+    dai.approve(address(commitment), type(uint).max);
+
+    commitment.deposit(amount); // deposit $50k DAI
+
+    vm.stopBroadcast();
+  }
+
+  function _deployCommitment() public {
+    vm.startBroadcast(owner);
+    // /* setup commitment contract */
+    commitment = new CommitmentAverage(address(account), address(manager), address(lending), address(dai));
+    vm.stopBroadcast();
+  }
+
 }
