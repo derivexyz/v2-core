@@ -43,11 +43,8 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
     account.setAssetAllowances(aliceAcc, address(signedQuote), assetAllowances);
     vm.stopPrank();
 
-    SignedQuote.QuoteTransfer memory optionTransfer = SignedQuote.QuoteTransfer({
-      asset: address(optionAdapter),
-      subId: subId,
-      amount: int(50e18)
-    });
+    SignedQuote.QuoteTransfer memory optionTransfer =
+      SignedQuote.QuoteTransfer({asset: address(optionAdapter), subId: subId, amount: int(50e18)});
 
     SignedQuote.QuoteData memory quote = SignedQuote.QuoteData({
       fromAcc: bobAcc,
@@ -62,7 +59,7 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
     vm.startPrank(alice);
     bytes32 quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(3, quoteHash);
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
+    signedQuote.executeSignature(quote, SignedQuote.Signature(v, r, s), aliceAcc);
 
     assertEq(account.getBalance(aliceAcc, IAsset(optionAdapter), subId), optionTransfer.amount);
     assertEq(account.getBalance(bobAcc, IAsset(optionAdapter), subId), -optionTransfer.amount);
@@ -71,7 +68,7 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
     // check noonce to revert the repeat attempt
     vm.startPrank(alice);
     vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
+    signedQuote.executeSignature(quote, SignedQuote.Signature(v, r, s), aliceAcc);
     vm.stopPrank();
 
     // check higher noonce succeeding
@@ -86,8 +83,8 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
       nonce: 1
     });
     quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(3, quoteHash);
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
+    (v, r, s) = vm.sign(3, quoteHash);
+    signedQuote.executeSignature(quote, SignedQuote.Signature(v, r, s), aliceAcc);
     vm.stopPrank();
 
     // check higher noonce deadline
@@ -102,10 +99,10 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
       nonce: 2
     });
     quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(3, quoteHash);
+    (v, r, s) = vm.sign(3, quoteHash);
     vm.warp(block.timestamp + 31);
     vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
+    signedQuote.executeSignature(quote, SignedQuote.Signature(v, r, s), aliceAcc);
     vm.stopPrank();
 
     // expect revert since Alice must be msg.sender to execute the quote
@@ -120,9 +117,9 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
       nonce: 0
     });
     quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(3, quoteHash);
+    (v, r, s) = vm.sign(3, quoteHash);
     vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
+    signedQuote.executeSignature(quote, SignedQuote.Signature(v, r, s), aliceAcc);
     vm.stopPrank();
 
     // expect revert since Alice signed, not Bob
@@ -137,9 +134,9 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
       nonce: 0
     });
     quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(2, quoteHash);
+    (v, r, s) = vm.sign(2, quoteHash);
     vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
+    signedQuote.executeSignature(quote, SignedQuote.Signature(v, r, s), aliceAcc);
     vm.stopPrank();
   }
 }

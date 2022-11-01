@@ -9,8 +9,7 @@ import "../libraries/AssetDeltaLib.sol";
 import "../Account.sol";
 
 contract SignedQuote {
-
-    // can be put in a vector to represent a combo
+  // can be put in a vector to represent a combo
   struct QuoteTransfer {
     address asset;
     uint subId;
@@ -23,9 +22,9 @@ contract SignedQuote {
     bytes32 s;
   }
 
-    // mock quotes
-    // assume the signer must be the fromAcc
-    // assume price > 0 => fromAcc receives $ equal to price
+  // mock quotes
+  // assume the signer must be the fromAcc
+  // assume price > 0 => fromAcc receives $ equal to price
   struct QuoteData {
     uint fromAcc;
     uint toAcc;
@@ -48,6 +47,7 @@ contract SignedQuote {
   // can always check this contract for if there's a
   // mapping(uint256 => mapping(uint256 => bool)) usedNonces;
   mapping(bytes32 => bool) usedNonces;
+
   constructor(Account _account) {
     account = _account;
   }
@@ -66,7 +66,7 @@ contract SignedQuote {
     // check if the quote has a named counterparty
     // TODO will someone actually have 0 as account ID? can we force it not to?
     // TODO make toAcc flexible to allow firms support whitelisted set of people?
-    require((toAcc == quote.toAcc) || (quote.toAcc == uint(0))); 
+    require((toAcc == quote.toAcc) || (quote.toAcc == uint(0)));
     // check that the caller actually owns the toAcc they claim
     require(msg.sender == account.ownerOf(toAcc));
     // TODO to protect MMs, may want to allow quote pulling (via a separate tx)
