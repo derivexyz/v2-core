@@ -33,8 +33,8 @@ contract UNIT_CommitLinkedList is Test {
 
   Account account;
 
-  address alice = address(0xaaaa);
-  address bob = address(0xb0b0b0b);
+  address alice = vm.addr(1);
+  address bob = vm.addr(2);
   address charlie = address(0xcccc);
   address david = address(0xda00d);
 
@@ -113,6 +113,47 @@ contract UNIT_CommitLinkedList is Test {
 
     assertEq(commitment.pendingLength(), 4);
     assertEq(commitment.collectingLength(), 0);
+  }
+
+  function testCanCommitOnBehalfOfOthers() public {
+    uint64 expiry = uint64(block.timestamp + 10 minutes);
+
+    vm.startPrank(alice);
+    CommitmentLinkedList.QuoteCommitment memory quote =
+      CommitmentLinkedList.QuoteCommitment(subId, 95, 105, expiry, commitmentWeight, 1);
+    bytes32 quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, quoteHash); // alice is vm.addr(1)
+    CommitmentLinkedList.Signature memory sig = CommitmentLinkedList.Signature(v, r, s);
+    vm.stopPrank();
+
+    commitment.commitOnBehalf(alice, quote, sig);
+
+    vm.warp(block.timestamp + 10 minutes);
+
+    commitment.checkRollover();
+
+    assertEq(commitment.pendingLength(), 1);
+    assertEq(commitment.collectingLength(), 0);
+  }
+
+  function testCancelQuoteWithNonce() public {
+    uint64 expiry = uint64(block.timestamp + 10 minutes);
+
+    // alice sign the order
+    vm.startPrank(alice);
+    uint64 nonce = 1;
+    CommitmentLinkedList.QuoteCommitment memory quote =
+      CommitmentLinkedList.QuoteCommitment(subId, 95, 105, expiry, commitmentWeight, nonce);
+    bytes32 quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, quoteHash); // alice is vm.addr(1)
+    CommitmentLinkedList.Signature memory sig = CommitmentLinkedList.Signature(v, r, s);
+
+    // beofre commit is submitted on-chain, increase the nonce
+    commitment.increaseNonce(1);
+    vm.stopPrank();
+
+    vm.expectRevert(bytes("nonce"));
+    commitment.commitOnBehalf(alice, quote, sig);
   }
 
   function testEpochsAreUpdatedCorrectly() public {
