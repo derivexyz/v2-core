@@ -8,6 +8,8 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "src/interfaces/IAccount.sol";
 import "../interfaces/IAsset.sol";
 import "../../test/shared/mocks/MockAsset.sol";
+import "test/account/mocks/assets/lending/Lending.sol";
+
 import "src/interfaces/AccountStructs.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "test/account/mocks/assets/OptionToken.sol";
@@ -206,7 +208,7 @@ contract CommitmentLinkedList {
   function deposit(uint128 amount) external {
     if (stakers[msg.sender].stakerId == 0) revert NotRegistered();
     IERC20(quote).transferFrom(msg.sender, address(this), amount);
-    MockAsset(quoteAsset).deposit(stakers[msg.sender].accountId, 0, amount);
+    Lending(quoteAsset).deposit(stakers[msg.sender].accountId, amount);
 
     stakers[msg.sender].totalDeposit += amount;
     stakers[msg.sender].depositLeft += amount;
@@ -430,8 +432,8 @@ contract CommitmentLinkedList {
   }
 
   function getCollatLockUp(uint64 weight, uint96 subId, uint16 bidVol, uint16 askVol) public view returns (uint128) {
-    uint16 bidPremium = SafeCast.toUint16(_getUnitPremium(bidVol, subId) / 1e18);
-    uint16 askPremium = SafeCast.toUint16(_getUnitPremium(askVol, subId) / 1e18);
+    uint bidPremium = _getUnitPremium(bidVol, subId);
+    uint askPremium = _getUnitPremium(askVol, subId);
     uint128 bidCollat = _getBidLockUp(weight, subId, bidPremium);
     uint128 askCollat = _getAskLockUp(weight, subId, askPremium);
     return (askCollat > bidCollat) ? askCollat : bidCollat;
@@ -458,17 +460,20 @@ contract CommitmentLinkedList {
     return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
   }
 
-  function _getBidLockUp(uint64 weight, uint96, /*subId*/ uint16 bid) internal view returns (uint128) {
-    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid));
+  function _getBidLockUp(uint64 weight, uint96, /*subId*/ uint bid) internal view returns (uint128) {
+    uint contracts = _getContractsToLock(bid);
+    return SafeCast.toUint128(contracts * uint(weight) * uint(bid) / 1e18);
   }
 
-  function _getAskLockUp(uint64 weight, uint96, /*subId*/ uint16 ask) internal view returns (uint128) {
+  function _getAskLockUp(uint64 weight, uint96, /*subId*/ uint ask) internal view returns (uint128) {
     uint contracts = _getContractsToLock(ask);
-    return SafeCast.toUint128(contracts * (uint(weight) * spotPrice / 1e18 * 2e17) / 1e18);
+    uint collateralBuffer = uint(weight) * spotPrice * 2e17 / 1e18; // weight is not decimal math
+    return SafeCast.toUint128(contracts * collateralBuffer / 1e18);
   }
 
-  function _getContractsToLock(uint16 bidOrAsk) internal view returns (uint) {
-    return (MAX_GAS_COST * 1e18) / (uint(bidOrAsk) * TOLERANCE);
+  function _getContractsToLock(uint bidOrAsk) internal view returns (uint) {
+    // bidOrAsk uses decimal math
+    return (MAX_GAS_COST * 1e18) / (bidOrAsk * TOLERANCE / 1e18);
   }
 
   function _checkRollover() internal returns (uint8 newPENDING, uint8 newCOLLECTING) {
