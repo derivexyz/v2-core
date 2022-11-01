@@ -161,6 +161,20 @@ contract CommitmentLinkedList {
     length_ = bidQueues[PENDING][subId].length;
   }
 
+  function pendingBestBidAsk(uint96 subId) external view returns (
+    uint16 bestBid, uint64 bidWeight, uint16 bestAsk, uint64 askWeight
+  ) {
+    uint16 end = bidQueues[PENDING][subId].end;
+    VolNode memory bidNode = bidQueues[PENDING][subId].nodes[end];
+    bidWeight = bidNode.totalWeight;
+    bestBid = bidNode.vol;
+
+    uint16 head = askQueues[PENDING][subId].head;
+    VolNode memory askNode = askQueues[PENDING][subId].nodes[head];
+    askWeight = askNode.totalWeight;
+    bestAsk = askNode.vol;
+  }
+
   function collectingBidListInfo(uint96 subId) external view returns (uint16 head, uint16 end, uint16 length_) {
     head = bidQueues[COLLECTING][subId].head;
     end = bidQueues[COLLECTING][subId].end;
@@ -206,7 +220,8 @@ contract CommitmentLinkedList {
   function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint64 weight) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
-    _addCommitToQueue(cacheCOLLECTING, msg.sender, stakers[msg.sender].stakerId, subId, bidVol, askVol, weight);
+    uint128 collatToLock = _addCommitToQueue(cacheCOLLECTING, stakers[msg.sender].stakerId, subId, bidVol, askVol, weight);
+    stakers[msg.sender].depositLeft = stakers[msg.sender].totalDeposit - collatToLock;
 
     length[cacheCOLLECTING] += 1;
 
@@ -225,11 +240,16 @@ contract CommitmentLinkedList {
     uint _length = _subIds.length;
     if (_bidVols.length != _length || _askVols.length != _length || _weights.length != _length) revert BadInputLength();
 
-    uint64 node = stakers[msg.sender].stakerId;
-
+    uint128 collatToLock;
     for (uint i = 0; i < _length; i++) {
-      _addCommitToQueue(cacheCOLLECTING, msg.sender, node, _subIds[i], _bidVols[i], _askVols[i], _weights[i]);
+      collatToLock += _addCommitToQueue(
+        cacheCOLLECTING, stakers[msg.sender].stakerId, _subIds[i], _bidVols[i], _askVols[i], _weights[i]
+      );
     }
+
+    // auto-clears deposits from old epochs
+    // todo: block multiple deposits per epoch
+    stakers[msg.sender].depositLeft = stakers[msg.sender].totalDeposit - collatToLock;
 
     length[cacheCOLLECTING] += uint8(_length);
 
@@ -243,10 +263,12 @@ contract CommitmentLinkedList {
 
     _verifyQuote(_quote, sig, signer);
 
-    _addCommitToQueue(
-      cacheCOLLECTING, signer, stakers[signer].stakerId, _quote.subId, _quote.bidVol, _quote.askVol, _quote.weight
+    // todo: support multiple commitments (currently clears depositLeft)
+    uint128 collatToLock = _addCommitToQueue(
+      cacheCOLLECTING, stakers[signer].stakerId, _quote.subId, _quote.bidVol, _quote.askVol, _quote.weight
     );
 
+    stakers[signer].depositLeft = stakers[signer].totalDeposit - collatToLock;
     length[cacheCOLLECTING] += 1;
 
     // todo: update collectingStartTimestamp in check rollover if it comes with commits
@@ -258,7 +280,7 @@ contract CommitmentLinkedList {
   // ============================================
 
   /// @dev commit to the 'collecting' block
-  function executeCommit(uint executorAccount, uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
+  function executeCommit(uint executorAccount, uint96 subId, bool isBid, uint16 vol, uint64 weight) external {
     // check account Id is from message.sender
     require(IAccount(account).ownerOf(executorAccount) == msg.sender, "auth");
 
@@ -309,7 +331,8 @@ contract CommitmentLinkedList {
             assetData: bytes32(0)
           });
 
-          staker.depositLeft += counterParties[i].collateral;
+          /* premium sent to executor */
+          staker.totalDeposit -= SafeCast.toUint128(premiumPerUnit * counterParties[i].weight);
         }
       }
       IAccount(account).submitTransfers(transferBatch, "");
@@ -352,7 +375,8 @@ contract CommitmentLinkedList {
           assetData: bytes32(0)
         });
 
-        staker.depositLeft += counterParties[i].collateral;
+        /* collateral now used to cover short */
+        staker.totalDeposit -= counterParties[i].collateral;
       }
       IAccount(account).submitTransfers(transferBatch, "");
     }
@@ -376,18 +400,17 @@ contract CommitmentLinkedList {
 
   function _addCommitToQueue(
     uint8 cacheCOLLECTING,
-    address owner,
     uint64 stakerId,
     uint96 subId,
     uint16 bidVol,
     uint16 askVol,
     uint64 weight
-  ) internal {
+  ) internal returns (uint128 collat) {
     if (commitments[collectingEpoch][subId][stakerId].timestamp != 0) revert AlreadyCommitted();
     subIds[cacheCOLLECTING].addUniqueToArray(subId);
 
     // take max of bid / ask collat sine both are removed upon execution
-    uint128 collat = getCollatLockUp(weight, subId, bidVol, askVol);
+    collat = getCollatLockUp(weight, subId, bidVol, askVol);
 
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
@@ -395,9 +418,6 @@ contract CommitmentLinkedList {
       bidQueues[COLLECTING][subId].addStakerToLinkedList(bidVol, weight, collat, stakerId, collectingEpoch);
     uint askStakerIndex =
       askQueues[COLLECTING][subId].addStakerToLinkedList(askVol, weight, collat, stakerId, collectingEpoch);
-
-    // subtract from total deposit
-    stakers[owner].depositLeft -= collat;
 
     // add to commitment array
     commitments[collectingEpoch][subId][stakerId] =
