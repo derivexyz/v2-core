@@ -39,6 +39,7 @@ contract CommitmentLinkedList {
 
   struct StakerInfo {
     uint64 stakerId;
+    uint64 nonce;
     uint128 totalDeposit; // todo: can probably reduce to one word
     uint128 depositLeft;
     uint accountId;
@@ -68,6 +69,22 @@ contract CommitmentLinkedList {
     uint64 stakerId;
     uint64 weight;
     uint128 collateral;
+  }
+
+  struct QuoteCommitment {
+    uint96 subId;
+    uint16 bidVol;
+    uint16 askVol;
+    uint64 expiry;
+    uint64 weight;
+    uint64 nonce;
+  }
+  // uint128 maxCollat; // specify max collat?
+
+  struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
   }
 
   // only 0 ~ 1 is used
@@ -120,6 +137,10 @@ contract CommitmentLinkedList {
     IERC20(_quote).approve(quoteAsset, type(uint).max);
   }
 
+  // ============================================
+  //                 View functions
+  // ============================================
+
   function pendingLength() external view returns (uint) {
     return length[PENDING];
   }
@@ -152,6 +173,10 @@ contract CommitmentLinkedList {
     length_ = askQueues[COLLECTING][subId].length;
   }
 
+  // ============================================
+  //                 Setup Staker
+  // ============================================
+
   function register() external returns (uint64 stakerId) {
     if (stakers[msg.sender].stakerId != 0) revert Registered();
 
@@ -160,7 +185,7 @@ contract CommitmentLinkedList {
     // create accountId and
     uint accountId = IAccount(account).createAccount(address(this), IManager(manager));
 
-    stakers[msg.sender] = StakerInfo(stakerId, 0, 0, accountId);
+    stakers[msg.sender] = StakerInfo(stakerId, 0, 0, 0, accountId);
     stakerAddresses[stakerId] = msg.sender;
   }
 
@@ -172,6 +197,10 @@ contract CommitmentLinkedList {
     stakers[msg.sender].totalDeposit += amount;
     stakers[msg.sender].depositLeft += amount;
   }
+
+  // ============================================
+  //                 Submit Commits
+  // ============================================
 
   /// @dev commit to the 'collecting' block
   function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint64 weight) external {
@@ -207,6 +236,26 @@ contract CommitmentLinkedList {
     // todo: update collectingStartTimestamp in check rollover if it comes with commits
     if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
   }
+
+  ///@dev commit on behalf of an market maker by signature
+  function commitOnBehalf(address signer, QuoteCommitment memory _quote, Signature memory sig) external {
+    (, uint8 cacheCOLLECTING) = _checkRollover();
+
+    _verifyQuote(_quote, sig, signer);
+
+    _addCommitToQueue(
+      cacheCOLLECTING, signer, stakers[signer].stakerId, _quote.subId, _quote.bidVol, _quote.askVol, _quote.weight
+    );
+
+    length[cacheCOLLECTING] += 1;
+
+    // todo: update collectingStartTimestamp in check rollover if it comes with commits
+    if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
+  }
+
+  // ============================================
+  //                 Execute Commits
+  // ============================================
 
   /// @dev commit to the 'collecting' block
   function executeCommit(uint executorAccount, uint96 subId, bool isBid, uint16 vol, uint16 weight) external {
@@ -309,6 +358,22 @@ contract CommitmentLinkedList {
     }
   }
 
+  // ============================================
+  //                  Life cycle
+  // ============================================
+  function checkRollover() external {
+    _checkRollover();
+  }
+
+  ///@dev used to make a quote invalid
+  function increaseNonce(uint64 _amountToIncrease) external {
+    stakers[msg.sender].nonce += _amountToIncrease;
+  }
+
+  // ============================================
+  //               Internal Functions
+  // ============================================
+
   function _addCommitToQueue(
     uint8 cacheCOLLECTING,
     address owner,
@@ -323,7 +388,7 @@ contract CommitmentLinkedList {
 
     // take max of bid / ask collat sine both are removed upon execution
     uint128 collat = getCollatLockUp(weight, subId, bidVol, askVol);
-    
+
     // add to both bid and ask queue with the same collateral
     // using COLLECTING instead of cache because of stack too deep
     uint bidStakerIndex =
@@ -341,7 +406,7 @@ contract CommitmentLinkedList {
 
   function _getUnitPremium(uint16 vol, uint96 subId) internal view returns (uint) {
     // todo: spot needs to be dynamic
-    return uint256(optionToken.getValue(uint(subId), 1e18, spotPrice, uint(vol) * 1e16));
+    return uint(optionToken.getValue(uint(subId), 1e18, spotPrice, uint(vol) * 1e16));
   }
 
   function getCollatLockUp(uint64 weight, uint96 subId, uint16 bidVol, uint16 askVol) public view returns (uint128) {
@@ -349,11 +414,32 @@ contract CommitmentLinkedList {
     uint16 askPremium = SafeCast.toUint16(_getUnitPremium(askVol, subId) / 1e18);
     uint128 bidCollat = _getBidLockUp(weight, subId, bidPremium);
     uint128 askCollat = _getAskLockUp(weight, subId, askPremium);
-    return (askCollat > bidCollat) ? askCollat : bidCollat; 
+    return (askCollat > bidCollat) ? askCollat : bidCollat;
+  }
+
+  function _verifyQuote(QuoteCommitment memory _quote, Signature memory sig, address signer) internal view {
+    // verify signature
+    bytes32 message = _prefixed(keccak256(abi.encode(_quote)));
+    require(ecrecover(message, sig.v, sig.r, sig.s) == signer, "!signer");
+
+    // verify signer is a staker in the system
+    require(stakers[signer].stakerId != 0, "!staker");
+
+    // verify nonce. Won't increase
+    require(_quote.nonce > stakers[signer].nonce, "nonce");
+
+    // verify expiry
+    // todo: make sure expiry > next pending end
+    require(_quote.expiry > block.timestamp + 5 minutes, "expiring");
+  }
+
+  // todo: change this to EIP712 signature
+  function _prefixed(bytes32 hash) internal pure returns (bytes32) {
+    return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
   }
 
   function _getBidLockUp(uint64 weight, uint96, /*subId*/ uint16 bid) internal view returns (uint128) {
-    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid)); 
+    return SafeCast.toUint128(_getContractsToLock(bid) * uint(weight) * uint(bid));
   }
 
   function _getAskLockUp(uint64 weight, uint96, /*subId*/ uint16 ask) internal view returns (uint128) {
@@ -363,10 +449,6 @@ contract CommitmentLinkedList {
 
   function _getContractsToLock(uint16 bidOrAsk) internal view returns (uint) {
     return (MAX_GAS_COST * 1e18) / (uint(bidOrAsk) * TOLERANCE);
-  }
-
-  function checkRollover() external {
-    _checkRollover();
   }
 
   function _checkRollover() internal returns (uint8 newPENDING, uint8 newCOLLECTING) {
