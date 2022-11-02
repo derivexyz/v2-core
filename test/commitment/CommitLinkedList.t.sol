@@ -128,13 +128,11 @@ contract UNIT_CommitLinkedList is Test {
   function testCanCommitOnBehalfOfOthers() public {
     uint64 expiry = uint64(block.timestamp + 10 minutes);
 
-    vm.startPrank(alice);
     CommitmentLinkedList.QuoteCommitment memory quote =
       CommitmentLinkedList.QuoteCommitment(subId, 95, 105, expiry, commitmentWeight, 1);
     bytes32 quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, quoteHash); // alice is vm.addr(1)
     CommitmentLinkedList.Signature memory sig = CommitmentLinkedList.Signature(v, r, s);
-    vm.stopPrank();
 
     commitment.commitOnBehalf(alice, quote, sig);
 
@@ -159,7 +157,6 @@ contract UNIT_CommitLinkedList is Test {
       address user = vm.addr(privKey);
       signers[i] = user;
 
-      vm.startPrank(user);
       uint64 nonce = 1;
 
       uint16 bid = 95 + i;
@@ -170,7 +167,6 @@ contract UNIT_CommitLinkedList is Test {
         keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quotes[i]))));
       (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, quoteHash); // alice is vm.addr(1)
       sigs[i] = CommitmentLinkedList.Signature(v, r, s);
-      vm.stopPrank();
     }
 
     commitment.commitBatchOnBehalf(signers, quotes, sigs);
