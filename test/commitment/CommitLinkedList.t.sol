@@ -104,6 +104,15 @@ contract UNIT_CommitLinkedList is Test {
     vm.warp(block.timestamp + 1 days);
   }
 
+  function canRegisterAndDepositForOthers() public {
+    uint128 amount = 10000 * 1e6;
+    uint stakerId = commitment.registerAndDepositFor(random, amount);
+
+    (uint _stakerId,,,,) = commitment.stakers(random);
+
+    assertEq(_stakerId, stakerId);
+  }
+
   function testCanCommit() public {
     vm.prank(alice);
     commitment.commit(subId, 95, 105, commitmentWeight);
