@@ -64,7 +64,7 @@ abstract contract AccountPOCHelper is Test {
 
     /* Options */
     settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
-    optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
+    optionAdapter = new OptionToken(IAccount(address(account)), priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
     rm =
@@ -151,6 +151,12 @@ abstract contract AccountPOCHelper is Test {
       vm.stopPrank();
     }
     return accountId;
+  }
+
+  function mintDai(address user, uint amount) public {
+    vm.startPrank(owner);
+    dai.mint(user, amount);
+    vm.stopPrank();
   }
 
   function createAccountAndDepositDaiLending(address user, uint balance) public returns (uint accountId) {
