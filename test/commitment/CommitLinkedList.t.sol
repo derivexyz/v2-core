@@ -36,10 +36,17 @@ contract UNIT_CommitLinkedList is Test {
 
   Account account;
 
-  address alice = vm.addr(1);
-  address bob = vm.addr(2);
-  address charlie = address(0xcccc);
-  address david = address(0xda00d);
+  uint alicePrivKey = 1;
+  uint bobPrivKey = 2;
+  uint charliePrivKey = 3;
+  uint davidPrivKey = 4;
+  uint edPrivKey = 5;
+
+  address alice = vm.addr(alicePrivKey);
+  address bob = vm.addr(bobPrivKey);
+  address charlie = vm.addr(charliePrivKey);
+  address david = vm.addr(davidPrivKey);
+  address ed = vm.addr(edPrivKey);
 
   address random = address(0x7749);
 
@@ -67,18 +74,15 @@ contract UNIT_CommitLinkedList is Test {
     commitment =
     new CommitmentLinkedList(address(account), address(usdc), address(usdcAsset), address(optionAsset), address(dumbManager));
 
-    address[4] memory roles;
-    roles[0] = alice;
-    roles[1] = bob;
-    roles[2] = charlie;
-    roles[3] = david;
-
     uint128 oneMillion = 1_000_000e18;
 
-    for (uint i = 0; i < roles.length; i++) {
-      usdc.mint(roles[i], oneMillion);
+    for (uint i = 0; i < 5; i++) {
+      uint privKey = i + 1;
+      address user = vm.addr(privKey);
 
-      vm.startPrank(roles[i]);
+      usdc.mint(user, oneMillion);
+
+      vm.startPrank(user);
       usdc.approve(address(commitment), type(uint).max);
       usdc.approve(address(usdcAsset), type(uint).max);
       commitment.register();
@@ -140,6 +144,42 @@ contract UNIT_CommitLinkedList is Test {
 
     assertEq(commitment.pendingLength(), 1);
     assertEq(commitment.collectingLength(), 0);
+  }
+
+  function testCanBatchCommitOnBehalfOfOthers() public {
+    uint64 expiry = uint64(block.timestamp + 10 minutes);
+
+    CommitmentLinkedList.QuoteCommitment[] memory quotes = new CommitmentLinkedList.QuoteCommitment[](5);
+    CommitmentLinkedList.Signature[] memory sigs = new CommitmentLinkedList.Signature[](5);
+    address[] memory signers = new address[](5);
+
+    // prank from alice to ed
+    for (uint16 i = 0; i < 5; i++) {
+      uint privKey = i + 1;
+      address user = vm.addr(privKey);
+      signers[i] = user;
+
+      vm.startPrank(user);
+      uint64 nonce = 1;
+
+      uint16 bid = 95 + i;
+      uint16 ask = 105 + i;
+
+      quotes[i] = CommitmentLinkedList.QuoteCommitment(subId, bid, ask, expiry, commitmentWeight, nonce);
+      bytes32 quoteHash =
+        keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quotes[i]))));
+      (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, quoteHash); // alice is vm.addr(1)
+      sigs[i] = CommitmentLinkedList.Signature(v, r, s);
+      vm.stopPrank();
+    }
+
+    commitment.commitBatchOnBehalf(signers, quotes, sigs);
+
+    vm.warp(block.timestamp + 10 minutes);
+
+    commitment.checkRollover();
+
+    assertEq(commitment.pendingLength(), 5);
   }
 
   function testCancelQuoteWithNonce() public {

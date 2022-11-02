@@ -163,9 +163,11 @@ contract CommitmentLinkedList {
     length_ = bidQueues[PENDING][subId].length;
   }
 
-  function pendingBestBidAsk(uint96 subId) external view returns (
-    uint16 bestBid, uint64 bidWeight, uint16 bestAsk, uint64 askWeight
-  ) {
+  function pendingBestBidAsk(uint96 subId)
+    external
+    view
+    returns (uint16 bestBid, uint64 bidWeight, uint16 bestAsk, uint64 askWeight)
+  {
     uint16 end = bidQueues[PENDING][subId].end;
     VolNode memory bidNode = bidQueues[PENDING][subId].nodes[end];
     bidWeight = bidNode.totalWeight;
@@ -222,7 +224,8 @@ contract CommitmentLinkedList {
   function commit(uint96 subId, uint16 bidVol, uint16 askVol, uint64 weight) external {
     (, uint8 cacheCOLLECTING) = _checkRollover();
 
-    uint128 collatToLock = _addCommitToQueue(cacheCOLLECTING, stakers[msg.sender].stakerId, subId, bidVol, askVol, weight);
+    uint128 collatToLock =
+      _addCommitToQueue(cacheCOLLECTING, stakers[msg.sender].stakerId, subId, bidVol, askVol, weight);
     stakers[msg.sender].depositLeft = stakers[msg.sender].totalDeposit - collatToLock;
 
     length[cacheCOLLECTING] += 1;
@@ -274,6 +277,38 @@ contract CommitmentLinkedList {
     length[cacheCOLLECTING] += 1;
 
     // todo: update collectingStartTimestamp in check rollover if it comes with commits
+    if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
+  }
+
+  ///@dev commit on behalf of an market maker by signature
+  function commitBatchOnBehalf(
+    address[] calldata signers,
+    QuoteCommitment[] calldata _quotes,
+    Signature[] calldata sigs
+  ) external {
+    (, uint8 cacheCOLLECTING) = _checkRollover();
+
+    uint _length = signers.length;
+    if (_quotes.length != _length || sigs.length != _length) revert BadInputLength();
+
+    for (uint i; i < _length; i++) {
+      address signer = signers[i];
+      _verifyQuote(_quotes[i], sigs[i], signer);
+
+      uint128 collatToLock = _addCommitToQueue(
+        cacheCOLLECTING,
+        stakers[signer].stakerId,
+        _quotes[i].subId,
+        _quotes[i].bidVol,
+        _quotes[i].askVol,
+        _quotes[i].weight
+      );
+
+      stakers[signer].depositLeft = stakers[signer].totalDeposit - collatToLock;
+    }
+
+    length[cacheCOLLECTING] += uint32(_length);
+
     if (collectingStartTimestamp == 0) collectingStartTimestamp = uint64(block.timestamp);
   }
 

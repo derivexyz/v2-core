@@ -218,5 +218,4 @@ contract StallAttackAvg is SimulationHelper {
     commitment = new CommitmentAverage(address(account), address(manager), address(lending), address(dai));
     vm.stopBroadcast();
   }
-
 }

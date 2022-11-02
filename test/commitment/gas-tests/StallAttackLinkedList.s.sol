@@ -91,7 +91,6 @@ contract StallAttackLinkedList is SimulationHelper {
       /* deposit more if needed */
       _depositToNode(honestStaker, commitment.getCollatLockUp(newWeight, attackSubId, newBid, newAsk));
 
-
       if (newWeight > 0 && i != 0) {
         // attack started
         console2.log("attack spotted... %s", newWeight);
@@ -115,17 +114,18 @@ contract StallAttackLinkedList is SimulationHelper {
       vm.startBroadcast(attacker);
       (,, uint16 bestAsk, uint64 askWeight) = commitment.pendingBestBidAsk(1); // assume only one in queue
       commitment.executeCommit(
-        attackerAccId, 
+        attackerAccId,
         1, // subId
         false, // isBid = false
         bestAsk,
-        askWeight);
+        askWeight
+      );
 
       vm.stopBroadcast();
 
       /* get state */
       (,, currLength) = commitment.pendingBidListInfo(1);
-      (, , stakerDeposits,,) = commitment.stakers(honestStaker);
+      (,, stakerDeposits,,) = commitment.stakers(honestStaker);
 
       /* print new state */
       console.log("Epoch %s", i + 1);
@@ -169,7 +169,8 @@ contract StallAttackLinkedList is SimulationHelper {
    * @dev defender moves all excess capital to the attacked node
    */
   function _generateAttackResponse(uint16 spreadMultiple, uint64 weightMultiple)
-    public view
+    public
+    view
     returns (uint16 newBid, uint16 newAsk, uint96 subId, uint64 weight)
   {
     /* see if any epoch is attacked */
@@ -182,7 +183,7 @@ contract StallAttackLinkedList is SimulationHelper {
     uint16 currBid;
     for (uint96 i; i < ACTIVE_SUBIDS; i++) {
       pendingLength = commitment.pendingLength();
-      (currBid, currAsk, , , currWeight, ) = commitment.commitments(commitment.PENDING(), i, 1);
+      (currBid, currAsk,,, currWeight,) = commitment.commitments(commitment.PENDING(), i, 1);
 
       if (pendingLength == 0) {
         isAttacked = true;
@@ -215,7 +216,6 @@ contract StallAttackLinkedList is SimulationHelper {
   function _printCommits(uint96 subId, uint64 stakerId) public view {
     (,,,, uint64 commitWeight,) = commitment.commitments(commitment.COLLECTING(), subId, stakerId);
     console2.log("commit weight for subId 1: %s", commitWeight);
-    
   }
 
   function _depositToNode(address staker, uint amount) public {
@@ -241,5 +241,4 @@ contract StallAttackLinkedList is SimulationHelper {
       address(manager));
     vm.stopBroadcast();
   }
-
 }

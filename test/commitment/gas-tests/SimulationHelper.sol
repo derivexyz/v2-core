@@ -42,7 +42,6 @@ contract SimulationHelper is Script {
   /* address setup */
   address owner = vm.addr(1);
 
-
   function _depositToAccount(address user, uint acc, uint amount) internal {
     // mint DAI
     _mintDai(user, amount);
