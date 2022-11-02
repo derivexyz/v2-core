@@ -218,17 +218,17 @@ contract CommitmentLinkedList {
 
   /// @dev temp function for gas test to setup account for others
   function registerAndDepositFor(address user, uint128 amount) external returns (uint64 stakerId) {
-      // crete account
-      if (stakers[user].stakerId != 0) revert Registered();
-      stakerId = ++currentId;
-      uint accountId = IAccount(account).createAccount(address(this), IManager(manager));
-      
-      stakerAddresses[stakerId] = user;
+    // crete account
+    if (stakers[user].stakerId != 0) revert Registered();
+    stakerId = ++currentId;
+    uint accountId = IAccount(account).createAccount(address(this), IManager(manager));
 
-      IERC20(quote).transferFrom(msg.sender, address(this), amount);
-      Lending(quoteAsset).deposit(stakers[msg.sender].accountId, amount);
+    stakerAddresses[stakerId] = user;
 
-      stakers[user] = StakerInfo(stakerId, 0, amount, amount, accountId);
+    IERC20(quote).transferFrom(msg.sender, address(this), amount);
+    Lending(quoteAsset).deposit(stakers[msg.sender].accountId, amount);
+
+    stakers[user] = StakerInfo(stakerId, 0, amount, amount, accountId);
   }
 
   // ============================================
