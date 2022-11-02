@@ -241,7 +241,8 @@ contract CommitmentLinkedList {
 
     uint128 collatToLock =
       _addCommitToQueue(cacheCOLLECTING, stakers[msg.sender].stakerId, subId, bidVol, askVol, weight);
-    stakers[msg.sender].depositLeft = stakers[msg.sender].totalDeposit - collatToLock;
+
+    stakers[msg.sender].depositLeft -= collatToLock;
 
     length[cacheCOLLECTING] += 1;
 
@@ -478,7 +479,8 @@ contract CommitmentLinkedList {
 
   function _getUnitPremium(uint16 vol, uint96 subId) internal view returns (uint) {
     // todo: spot needs to be dynamic
-    return uint(optionToken.getValue(uint(subId), 1e18, spotPrice, uint(vol) * 1e16));
+    // return uint(optionToken.getValue(uint(subId), 1e18, spotPrice, uint(vol) * 1e16));
+    return 10e18;
   }
 
   function getCollatLockUp(uint64 weight, uint96 subId, uint16 bidVol, uint16 askVol) public view returns (uint128) {

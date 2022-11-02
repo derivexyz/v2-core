@@ -160,7 +160,6 @@ contract UNIT_CommitLinkedList is Test {
     CommitmentLinkedList.Signature[] memory sigs = new CommitmentLinkedList.Signature[](5);
     address[] memory signers = new address[](5);
 
-    // prank from alice to ed
     for (uint16 i = 0; i < 5; i++) {
       uint privKey = i + 1;
       address user = vm.addr(privKey);
