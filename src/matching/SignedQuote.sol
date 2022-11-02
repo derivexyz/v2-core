@@ -39,14 +39,6 @@ contract SignedQuote {
   Account account;
   address owner = msg.sender;
 
-  // maps accountID => {noonce => isUsed}
-  // TODO maybe there's a better way since if I lose track of my noonces it becomes hard to recover
-  // use quote data hash mapping isntead? quoteHash => bool?
-  // ^ has a problem that we may want to execute same quote several times
-  // typically, deadline would be different in that case
-  // maybe keep noonce so that MMs can sign many of the same order if they want to?
-  // can always check this contract for if there's a
-  // mapping(uint256 => mapping(uint256 => bool)) usedNonces;
   mapping(bytes32 => bool) usedNonces;
   constructor(Account _account) {
     account = _account;
@@ -72,6 +64,7 @@ contract SignedQuote {
     // TODO to protect MMs, may want to allow quote pulling (via a separate tx)
     // also, deadline may need to be capped by some reasonable number
     // e.g. if quote.deadline - block.timestamp > 1 hour (some const), maybe revert?
+    // or could allow a msg cancel request
     require(block.timestamp < quote.deadline);
 
     require(quote.quoteAddr == address(this));
