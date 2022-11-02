@@ -13,6 +13,7 @@ import "test/account/mocks/assets/lending/Lending.sol";
 
 contract SignedVolComboQuote {
   using BlackScholesV2 for BlackScholesV2.Black76Inputs;
+
   // can be put in a vector to represent a combo
   struct TransferData {
     address asset;
@@ -117,7 +118,8 @@ contract SignedVolComboQuote {
 
     PricingData[] memory pricings = callerArgs.isBuying ? quote.asks : quote.bids;
     int price = _volComboQuoteToPrice(quote.transfers, pricings);
-    require(callerArgs.isBuying ? (price < callerArgs.limitPrice) : (price > callerArgs.limitPrice)); 
+    require(callerArgs.isBuying ? (price <= callerArgs.limitPrice) : (price >= callerArgs.limitPrice),
+     "Taker limit price exceeded"); 
 
     AccountStructs.AssetTransfer[] memory netTransfer = new AccountStructs.AssetTransfer[](1 + quote.transfers.length);
     for (uint i = 0; i < quote.transfers.length; i++)

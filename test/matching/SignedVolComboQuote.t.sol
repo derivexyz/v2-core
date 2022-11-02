@@ -4,9 +4,9 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "./MatchingPOCHelper.sol";
-import "src/matching/SignedQuote.sol";
+import "src/matching/SignedVolComboQuote.sol";
 
-contract POC_SignedQuote is Test, MatchingPOCHelper {
+contract POC_SignedVolComboQuote is Test, MatchingPOCHelper {
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;
@@ -25,7 +25,7 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
     bobAcc = createAccountAndDepositUSDC(bob, 10000000e18);
   }
 
-  function testCanTradeQuote() public {
+  function testCanTradeVolSingleQuote() public {
     uint subId = optionAdapter.addListing(1500e18, block.timestamp + 604800, true);
 
     // give quote wrapper allowance over both
@@ -36,110 +36,61 @@ contract POC_SignedQuote is Test, MatchingPOCHelper {
       AccountStructs.AssetAllowance({asset: IAsset(usdcAdapter), positive: type(uint).max, negative: type(uint).max});
 
     vm.startPrank(bob);
-    account.setAssetAllowances(bobAcc, address(signedQuote), assetAllowances);
+    account.setAssetAllowances(bobAcc, address(signedVolComboQuote), assetAllowances);
     vm.stopPrank();
 
     vm.startPrank(alice);
-    account.setAssetAllowances(aliceAcc, address(signedQuote), assetAllowances);
+    account.setAssetAllowances(aliceAcc, address(signedVolComboQuote), assetAllowances);
     vm.stopPrank();
 
-    SignedQuote.QuoteTransfer memory optionTransfer = SignedQuote.QuoteTransfer({
+    SignedVolComboQuote.TransferData[] memory transfers = new SignedVolComboQuote.TransferData[](1);
+    SignedVolComboQuote.PricingData[] memory bids = new SignedVolComboQuote.PricingData[](1);
+    SignedVolComboQuote.PricingData[] memory asks = new SignedVolComboQuote.PricingData[](1);
+    transfers[0] = SignedVolComboQuote.TransferData({
       asset: address(optionAdapter),
-      subId: subId,
+      subId: uint96(subId),
       amount: int(50e18)
     });
+    bids[0] = SignedVolComboQuote.PricingData({
+      volatility: uint128(0.9e18),
+      fwdSpread: int128(-2e18-0.1e18), // $2 dividend, bob's bid fwd is smaller since he expects to pay for a hedge
+      discount: uint64(1e18)
+    });
+    asks[0] = SignedVolComboQuote.PricingData({
+      volatility: uint128(0.91e18),
+      fwdSpread: int128(-2e18+0.1e18), // $2 dividend, if bob is selling, he prices fwd a little higher
+      discount: uint64(1e18)
+    });
 
-    SignedQuote.QuoteData memory quote = SignedQuote.QuoteData({
+    SignedVolComboQuote.QuoteComboData memory quote = SignedVolComboQuote.QuoteComboData({
       fromAcc: bobAcc,
       toAcc: uint(0),
-      transfer: optionTransfer,
-      price: 1000e18,
+      transfers: transfers,
+      bids: bids,
+      asks: asks,
       deadline: uint(block.timestamp + 30),
-      quoteAddr: address(signedQuote),
+      quoteAddr: address(signedVolComboQuote),
       nonce: 0
     });
 
     vm.startPrank(alice);
     bytes32 quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
+    SignedVolComboQuote.CallerArgs memory callerArgs = SignedVolComboQuote.CallerArgs({
+      toAcc: aliceAcc,
+      isBuying: true,
+      limitPrice: 0
+    });
+    callerArgs.limitPrice = signedVolComboQuote.volComboQuoteToPrice(callerArgs, quote);
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(3, quoteHash);
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
+    
+    signedVolComboQuote.executeSignature(callerArgs, quote, SignedVolComboQuote.Signature(v,r,s));
 
-    assertEq(account.getBalance(aliceAcc, IAsset(optionAdapter), subId), optionTransfer.amount);
-    assertEq(account.getBalance(bobAcc, IAsset(optionAdapter), subId), -optionTransfer.amount);
+    assertEq(account.getBalance(aliceAcc, IAsset(optionAdapter), subId), transfers[0].amount);
+    assertEq(account.getBalance(bobAcc, IAsset(optionAdapter), subId), -transfers[0].amount);
+
+    assertEq(account.getBalance(aliceAcc, IAsset(usdcAdapter), subId), int(10000000e18)-callerArgs.limitPrice);
+    assertEq(account.getBalance(bobAcc, IAsset(usdcAdapter), subId), int(10000000e18)+callerArgs.limitPrice);
     vm.stopPrank();
 
-    // check noonce to revert the repeat attempt
-    vm.startPrank(alice);
-    vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
-    vm.stopPrank();
-
-    // check higher noonce succeeding
-    vm.startPrank(alice);
-    quote = SignedQuote.QuoteData({
-      fromAcc: bobAcc,
-      toAcc: uint(0),
-      transfer: optionTransfer,
-      price: 1000e18,
-      deadline: uint(block.timestamp + 30),
-      quoteAddr: address(signedQuote),
-      nonce: 1
-    });
-    quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(3, quoteHash);
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
-    vm.stopPrank();
-
-    // check higher noonce deadline
-    vm.startPrank(alice);
-    quote = SignedQuote.QuoteData({
-      fromAcc: bobAcc,
-      toAcc: uint(0),
-      transfer: optionTransfer,
-      price: 1000e18,
-      deadline: uint(block.timestamp + 30),
-      quoteAddr: address(signedQuote),
-      nonce: 2
-    });
-    quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(3, quoteHash);
-    vm.warp(block.timestamp + 31);
-    vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
-    vm.stopPrank();
-
-    // expect revert since Alice must be msg.sender to execute the quote
-    vm.startPrank(bob);
-    quote = SignedQuote.QuoteData({
-      fromAcc: bobAcc,
-      toAcc: uint(0),
-      transfer: optionTransfer,
-      price: 1000e18,
-      deadline: uint(block.timestamp + 30),
-      quoteAddr: address(signedQuote),
-      nonce: 0
-    });
-    quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(3, quoteHash);
-    vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
-    vm.stopPrank();
-
-    // expect revert since Alice signed, not Bob
-    vm.startPrank(alice);
-    quote = SignedQuote.QuoteData({
-      fromAcc: bobAcc,
-      toAcc: uint(0),
-      transfer: optionTransfer,
-      price: 1000e18,
-      deadline: uint(block.timestamp + 30),
-      quoteAddr: address(signedQuote),
-      nonce: 0
-    });
-    quoteHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(quote))));
-    (v,r,s) = vm.sign(2, quoteHash);
-    vm.expectRevert(bytes(""));
-    signedQuote.executeSignature(quote, SignedQuote.Signature(v,r,s), aliceAcc);
-    vm.stopPrank();
   }
 }

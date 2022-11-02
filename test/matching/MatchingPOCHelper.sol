@@ -6,6 +6,7 @@ import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/matching/SignedQuote.sol";
+import "src/matching/SignedVolComboQuote.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -33,6 +34,7 @@ abstract contract MatchingPOCHelper is Test {
   InterestRateModel interestRateModel;
   PortfolioRiskPOCManager rm;
   SignedQuote signedQuote;
+  SignedVolComboQuote signedVolComboQuote;
 
   uint usdcFeedId = 0;
   uint wethFeedId = 1;
@@ -48,7 +50,6 @@ abstract contract MatchingPOCHelper is Test {
 
     /* Base Layer */
     account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
-    signedQuote = new SignedQuote(account);
     /* Feeds | Oracles | Vol Engine */
     priceFeeds = new TestPriceFeeds();
 
@@ -74,6 +75,10 @@ abstract contract MatchingPOCHelper is Test {
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);
+
+    /* Matching */
+    signedQuote = new SignedQuote(account);
+    signedVolComboQuote = new SignedVolComboQuote(account, address(usdcAdapter), address(optionAdapter));
 
     vm.stopPrank();
   }
