@@ -39,21 +39,25 @@ contract OptimisticManager is Owned, IManager {
     bytes32 s;
   }
 
-  /** ------------------------ * 
-            Modifiers
-   * ------------------------ **/ 
+  /**
+   * ------------------------ * 
+   *           Modifiers
+   * ------------------------ *
+   */
 
-   modifier onlyProposer {
-     _;
-   }
+  modifier onlyProposer() {
+    _;
+  }
 
-   modifier onlyVoucher {
-     _;
-   }
-  
-  /** ------------------------ * 
-        Proposer functions
-   * ------------------------ **/ 
+  modifier onlyVoucher() {
+    _;
+  }
+
+  /**
+   * ------------------------ * 
+   *       Proposer functions
+   * ------------------------ *
+   */
 
   ///@dev stake LYRA and become a proposer
   function stake() external {}
@@ -69,16 +73,20 @@ contract OptimisticManager is Owned, IManager {
     // store final states of all relevent accounts
   }
 
-  /** ------------------------ * 
-        Voucher Functions
-   * ------------------------ **/ 
+  /**
+   * ------------------------ * 
+   *       Voucher Functions
+   * ------------------------ *
+   */
 
-   ///@dev deposit USDC to become a voucher
+  ///@dev deposit USDC to become a voucher
   function deposit() external {}
 
-  /** ------------------------ * 
-      Challenge Pending Trades
-   * ------------------------ **/ 
+  /**
+   * ------------------------ * 
+   *     Challenge Pending Trades
+   * ------------------------ *
+   */
 
   function challengeProposalInQueue(uint accountId, SVIParameters memory svi) external {
     // validate through svi
@@ -90,9 +98,11 @@ contract OptimisticManager is Owned, IManager {
     // give bounty $LYRA to challenger
   }
 
-  /** ------------------------ * 
-          Challenge Vouches
-   * ------------------------ **/ 
+  /**
+   * ------------------------ * 
+   *         Challenge Vouches
+   * ------------------------ *
+   */
 
   function challengeVouch(uint vouchId, SVIParameters memory svi) external {
     // validate through svi
@@ -106,14 +116,16 @@ contract OptimisticManager is Owned, IManager {
     // pay the challenger
   }
 
-  /** ------------------------ * 
-          Public Functions
-   * ------------------------ **/ 
+  /**
+   * ------------------------ * 
+   *         Public Functions
+   * ------------------------ *
+   */
 
   ///@dev propose transfers, get signature from proposer
   function proposeTransfersFromUser(
     AccountStructs.AssetTransfer[] calldata transfers,
-    uint256 proposerId,
+    uint proposerId,
     Signature memory proposerSignature
   ) external {
     // validate proposer signature
@@ -133,7 +145,7 @@ contract OptimisticManager is Owned, IManager {
     // validate proposer signature
 
     // calculate the "max loss" of the trade
-    // 
+    //
 
     // reduce max loss from voucher deposit
 
@@ -145,10 +157,11 @@ contract OptimisticManager is Owned, IManager {
   /// @dev user execute the commitment from proposer and get some cashback if it's challenged
   function executeProposalCommitment(uint accountId, bytes calldata stateRoot, Signature memory signature) external {}
 
-
-  /** ------------------------ * 
-            Validations
-   * ------------------------ **/ 
+  /**
+   * ------------------------ * 
+   *           Validations
+   * ------------------------ *
+   */
 
   /// @dev view function to run svi validation on current state of an account
   function validateSVIWithCurrentState(uint accountId, SVIParameters memory svi) external returns (bool valid) {
@@ -172,9 +185,11 @@ contract OptimisticManager is Owned, IManager {
     return true;
   }
 
-  /** ------------------------ * 
-        Manger Interface 
-   * ------------------------ **/ 
+  /**
+   * ------------------------ * 
+   *       Manger Interface 
+   * ------------------------ *
+   */
 
   /// @dev all trades have to go through proposeTransfer
   function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory) public override {
