@@ -39,37 +39,124 @@ contract OptimisticManager is Owned, IManager {
     bytes32 s;
   }
 
-  ///@dev stake lyra and become a proposer
+  /** ------------------------ * 
+            Modifiers
+   * ------------------------ **/ 
+
+   modifier onlyProposer {
+     _;
+   }
+
+   modifier onlyVoucher {
+     _;
+   }
+  
+  /** ------------------------ * 
+        Proposer functions
+   * ------------------------ **/ 
+
+  ///@dev stake LYRA and become a proposer
   function stake() external {}
 
   ///@dev propose batch transfers
   function proposeTransfersFromProposer(AccountStructs.AssetTransfer[] calldata transfers) external {
     // check msg.sender is proposer
 
-    // make sure the proposer is approved to update account
+    // store transferDetails
 
-    // store account state root at the end of transfers
+    // add to queue
+
+    // store final states of all relevent accounts
   }
 
-  ///@dev propose batch transfers
+  /** ------------------------ * 
+        Voucher Functions
+   * ------------------------ **/ 
+
+   ///@dev deposit USDC to become a voucher
+  function deposit() external {}
+
+  /** ------------------------ * 
+      Challenge Pending Trades
+   * ------------------------ **/ 
+
+  function challengeProposalInQueue(uint accountId, SVIParameters memory svi) external {
+    // validate through svi
+
+    // mark as challenged (remove from the queue)
+
+    // burn % of penalty $LYRA
+
+    // give bounty $LYRA to challenger
+  }
+
+  /** ------------------------ * 
+          Challenge Vouches
+   * ------------------------ **/ 
+
+  function challengeVouch(uint vouchId, SVIParameters memory svi) external {
+    // validate through svi
+
+    // mark as challenged (remove from the queue)
+
+    // penalize $USD from the voucher's account
+
+    // reset voucher's deposited value (based on amount penalised)
+
+    // pay the challenger
+  }
+
+  /** ------------------------ * 
+          Public Functions
+   * ------------------------ **/ 
+
+  ///@dev propose transfers, get signature from proposer
   function proposeTransfersFromUser(
     AccountStructs.AssetTransfer[] calldata transfers,
+    uint256 proposerId,
     Signature memory proposerSignature
   ) external {
-    // store account state root at the end of transfers
+    // validate proposer signature
+
+    // store transferDetails
+
+    // add to queue
+
+    // store final states of all relevent accounts
   }
 
-  function challengeState(uint accountId, SVIParameters memory svi) external {}
+  function executeTransersWithVouch(
+    uint voucherId,
+    Signature memory voucherSignature,
+    AccountStructs.AssetTransfer[] calldata transfers
+  ) external {
+    // validate proposer signature
 
-  /// @dev user execute the commitment from proposer, get the penalty
-  function executeCommitment(uint accountId, bytes calldata stateRoot, Signature memory signature) external {}
+    // calculate the "max loss" of the trade
+    // 
 
-  /// @dev view function to run svi validation on current account state
+    // reduce max loss from voucher deposit
+
+    // execute the trade on accounts directly
+
+    // stored the "vouch data" state after transactions, timestamp, deposits
+  }
+
+  /// @dev user execute the commitment from proposer and get some cashback if it's challenged
+  function executeProposalCommitment(uint accountId, bytes calldata stateRoot, Signature memory signature) external {}
+
+
+  /** ------------------------ * 
+            Validations
+   * ------------------------ **/ 
+
+  /// @dev view function to run svi validation on current state of an account
   function validateSVIWithCurrentState(uint accountId, SVIParameters memory svi) external returns (bool valid) {
     AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(accountId);
     return _validateSVIWithState(balances, svi);
   }
 
+  /// @dev validate account state with a set of svi curve parameters
   function validateSVIState(AccountStructs.AssetBalance[] memory assetBalances, SVIParameters memory svi)
     external
     returns (bool valid)
@@ -77,12 +164,17 @@ contract OptimisticManager is Owned, IManager {
     return _validateSVIWithState(assetBalances, svi);
   }
 
+  /// @dev validate account state with a set of svi curve parameters
   function _validateSVIWithState(AccountStructs.AssetBalance[] memory assetBalances, SVIParameters memory svi)
     internal
     returns (bool valid)
   {
     return true;
   }
+
+  /** ------------------------ * 
+        Manger Interface 
+   * ------------------------ **/ 
 
   /// @dev all trades have to go through proposeTransfer
   function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory) public override {
