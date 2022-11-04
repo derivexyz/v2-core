@@ -40,8 +40,8 @@ contract OptimisticManager is Owned, IManager {
   }
 
   /**
-   * ------------------------ * 
-   *           Modifiers
+   * ------------------------ *
+   *       Modifiers
    * ------------------------ *
    */
 
@@ -54,8 +54,8 @@ contract OptimisticManager is Owned, IManager {
   }
 
   /**
-   * ------------------------ * 
-   *       Proposer functions
+   * ------------------------ *
+   *    Proposer functions
    * ------------------------ *
    */
 
@@ -74,17 +74,20 @@ contract OptimisticManager is Owned, IManager {
   }
 
   /**
-   * ------------------------ * 
-   *       Voucher Functions
+   * ------------------------ *
+   *    Voucher Functions
    * ------------------------ *
    */
 
   ///@dev deposit USDC to become a voucher
   function deposit() external {}
 
+  ///@dev unlock USDC from vouches longer than 5 minutes
+  function unlockFunds() external {}
+
   /**
-   * ------------------------ * 
-   *     Challenge Pending Trades
+   * ------------------------ *
+   * Challenge Pending Trades
    * ------------------------ *
    */
 
@@ -99,8 +102,8 @@ contract OptimisticManager is Owned, IManager {
   }
 
   /**
-   * ------------------------ * 
-   *         Challenge Vouches
+   * ------------------------ *
+   *     Challenge Vouches
    * ------------------------ *
    */
 
@@ -117,8 +120,8 @@ contract OptimisticManager is Owned, IManager {
   }
 
   /**
-   * ------------------------ * 
-   *         Public Functions
+   * ------------------------ *
+   *      Public Functions
    * ------------------------ *
    */
 
@@ -158,8 +161,8 @@ contract OptimisticManager is Owned, IManager {
   function executeProposalCommitment(uint accountId, bytes calldata stateRoot, Signature memory signature) external {}
 
   /**
-   * ------------------------ * 
-   *           Validations
+   * ------------------------ *
+   *        Validations
    * ------------------------ *
    */
 
@@ -186,8 +189,8 @@ contract OptimisticManager is Owned, IManager {
   }
 
   /**
-   * ------------------------ * 
-   *       Manger Interface 
+   * ------------------------ *
+   *     Manger Interface
    * ------------------------ *
    */
 
