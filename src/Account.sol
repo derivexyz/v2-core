@@ -509,6 +509,27 @@ contract Account is Allowances, ERC721, AccountStructs {
     return assetBalances;
   }
 
+  /**
+   * @notice preview final balances after executing all transfers
+   * @param accountId ID of account
+   */
+  function getAccountBalancesAfterAdjustments(uint accountId, AssetTransfer[] memory assetTransfers)
+    external
+    view
+    returns (AssetBalance[] memory assetBalances)
+  {
+    uint allAssetBalancesLen = heldAssets[accountId].length;
+    assetBalances = new AssetBalance[](allAssetBalancesLen);
+    // for (uint i; i < allAssetBalancesLen; i++) {
+    //   HeldAsset memory heldAsset = heldAssets[accountId][i];
+    //   BalanceAndOrder memory userBalanceAndOrder = balanceAndOrder[accountId][heldAsset.asset][uint(heldAsset.subId)];
+
+    //   assetBalances[i] =
+    //     AssetBalance({asset: heldAsset.asset, subId: uint(heldAsset.subId), balance: int(userBalanceAndOrder.balance)});
+    // }
+    return assetBalances;
+  }
+
   ////////////
   // Access //
   ////////////

@@ -62,9 +62,29 @@ contract OptimisticManager is Owned, IManager {
   ///@dev stake LYRA and become a proposer
   function stake() external {}
 
-  ///@dev propose batch transfers
-  function proposeTransfersFromProposer(AccountStructs.AssetTransfer[] calldata transfers) external {
+  ///@dev propose transfer
+  ///@dev previous state has to be included in signature.
+  ///@param sig signature from "fromAcc"
+  function proposeTransferFromProposer(AccountStructs.AssetTransfer calldata transfer, Signature memory sig) external {
     // check msg.sender is proposer
+
+    // verify signatures for "from account"
+
+    // store transferDetails
+
+    // add to queue
+
+    // store final states of all relevent accounts
+  }
+
+  ///@dev propose trades
+  ///@param sigs signatures from all relevent party
+  function proposeTradesFromProposer(AccountStructs.AssetTransfer[] calldata transfers, Signature[] calldata sigs)
+    external
+  {
+    // check msg.sender is proposer
+
+    // verify signatures for all "from account"
 
     // store transferDetails
 
@@ -196,6 +216,7 @@ contract OptimisticManager is Owned, IManager {
 
   /// @dev all trades have to go through proposeTransfer
   function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory) public override {
+    // can open up to trades from Account, if voucher signaure is provided in data
     revert("bad flow");
   }
 
