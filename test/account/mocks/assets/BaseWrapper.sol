@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin/token/ERC20/IERC20.sol";
 import "synthetix/Owned.sol";
 
 import "src/interfaces/IAsset.sol";

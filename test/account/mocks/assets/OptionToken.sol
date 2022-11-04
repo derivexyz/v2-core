@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/DecimalMath.sol";
 import "synthetix/Owned.sol";
 import "src/libraries/BlackScholesV2.sol";
