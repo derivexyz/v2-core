@@ -44,9 +44,9 @@ interface ManagerStructs {
   }
 
   struct TradeProposal {
-    Trade trade;
-    bytes32 accountAPreHash;
-    bytes32 accountBPreHash;
+    AccountStructs.AssetTransfer[] transfers;
+    address[] fromSigners;
+    bytes32[] senderPreHashes;
     uint salt;
   }
 }

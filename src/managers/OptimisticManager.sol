@@ -22,6 +22,8 @@ contract OptimisticManager is Owned, IManager, ManagerStructs, AccountStructs {
 
   mapping(uint => bytes32) public lastProposedStateRoot;
 
+  mapping(uint => AssetBalance[]) public lastProposedPostState;
+
   mapping(address => uint) public proposerStakes;
 
   // Constants
@@ -68,34 +70,43 @@ contract OptimisticManager is Owned, IManager, ManagerStructs, AccountStructs {
     proposerStakes[msg.sender] += amount;
   }
 
-  ///@dev propose transfer
-  ///@dev previous state has to be included in signature.
-  ///@param sig signature from "fromAcc"
-  function proposeTransferFromProposer(TransferProposal calldata proposal, Signature memory sig) external {
-    // check msg.sender has enough stake
-    _lockupLyraStake(msg.sender, 1);
+  // ///@dev propose transfer
+  // ///@dev previous state has to be included in signature.
+  // ///@param sig signature from "fromAcc"
+  // function proposeTransferFromProposer(TransferProposal calldata proposal, Signature memory sig) external {
+  //   // check msg.sender has enough stake
+  //   _lockupLyraStake(msg.sender, 1);
 
-    _validateTransferProposalSig(proposal, sig, account.ownerOf(proposal.transfer.fromAcc));
+  //   _validateTransferProposalSig(proposal, sig, account.ownerOf(proposal.transfer.fromAcc));
 
-    // verify the startRoot matches lastProposedStateRoot or the current state of the "from" account
-    if (!_isValidPreState(proposal.transfer.fromAcc, proposal.senderPreHash)) revert OM_BadPreState();
+  //   // verify the startRoot matches lastProposedStateRoot or the current state of the "from" account
+  //   if (!_isValidPreState(proposal.transfer.fromAcc, proposal.senderPreHash)) revert OM_BadPreState();
 
-    // store transferDetails to queue (so we can execute later)
+  //   // store transferDetails to queue (so we can execute later)
 
-    // store final states of all relevent accounts to lastProposedStateRoot
-  }
+  //   // store final states of all relevent accounts to lastProposedStateRoot
+  // }
 
   ///@dev propose trades
   ///@param sigs signatures from all relevent party
-  function proposeTradesFromProposer(AssetTransfer[] calldata transfers, Signature[] calldata sigs) external {
-    // check msg.sender has enough stake
-    _lockupLyraStake(msg.sender, 2);
+  function proposeTradesFromProposer(TradeProposal memory proposal, Signature[] calldata sigs) external {
+    uint numOfTransfers = proposal.transfers.length;
 
-    // verify signatures from both accounts
+    // check msg.sender has enough stake
+    _lockupLyraStake(msg.sender, numOfTransfers);
+
+    // verify signatures from all "from" accounts
+    for (uint i; i < numOfTransfers; i++) {
+      uint fromAcc = proposal.transfers[i].fromAcc;
+
+      _validateTradeProposalSig(proposal, sigs[i], account.ownerOf(fromAcc));
+
+      if (!_isValidPreState(fromAcc, proposal.senderPreHashes[i])) revert OM_BadPreState();
+
+      _updateLastProposedRoot(fromAcc, proposal.transfers);
+    }
 
     // verify the startRoot matches for both accounts
-    // for all accounts
-    // _isValidPreState()
 
     // store transferDetails to queue (so we can execute later)
 
@@ -115,12 +126,22 @@ contract OptimisticManager is Owned, IManager, ManagerStructs, AccountStructs {
   function unlockFunds() external {}
 
   /**
-   * ------------------------ *
-   * Challenge Pending Trades
-   * ------------------------ *
+   * ----------------------------- *
+   *  Challenge Pending Proposals
+   * ----------------------------- *
    */
 
   function challengeTransferProposalInQueue(uint accountId, SVIParameters memory svi) external {
+    // validate through svi
+
+    // mark as challenged (remove from the queue)
+
+    // burn % of penalty $LYRA
+
+    // give bounty $LYRA to challenger
+  }
+
+  function challengeTradeProposalInQueue(uint accountId, SVIParameters memory svi) external {
     // validate through svi
 
     // mark as challenged (remove from the queue)
@@ -258,11 +279,11 @@ contract OptimisticManager is Owned, IManager, ManagerStructs, AccountStructs {
    * ------------------------------------ *
    */
 
-  function _validateTransferProposalSig(TransferProposal memory transfer, Signature memory sig, address signer)
+  function _validateTradeProposalSig(TradeProposal memory trade, Signature memory sig, address signer)
     internal
     returns (bool valid)
   {
-    bytes32 structHash = keccak256(abi.encode(transfer));
+    bytes32 structHash = keccak256(abi.encode(trade));
     address _signer = ECDSA.recover(structHash, sig.v, sig.r, sig.s);
     if (signer != _signer) revert OM_BadSignature();
   }
@@ -278,6 +299,21 @@ contract OptimisticManager is Owned, IManager, ManagerStructs, AccountStructs {
     return preStateHash == currentHash;
   }
 
+  /// @dev update the last proposed root
+  function _updateLastProposedRoot(uint accountId, AssetTransfer[] memory allTransfers)
+    internal
+    returns (bytes32 postHash)
+  {
+    // @todo: filter relevent trades
+    AssetTransfer[] memory filter = allTransfers;
+
+    postHash = _previewAccountHash(accountId, allTransfers);
+
+    lastProposedStateRoot[accountId] = postHash;
+
+    // store post-stimulation account state too
+  }
+
   /// @dev validate account state with a set of svi curve parameters
   function _validateSVIWithState(AssetBalance[] memory assetBalances, SVIParameters memory svi)
     internal
@@ -291,7 +327,11 @@ contract OptimisticManager is Owned, IManager, ManagerStructs, AccountStructs {
     return bytes32(0);
   }
 
-  function _previewAccountHash(uint accountId, AssetAdjustment[] memory adjs) internal returns (bytes32) {
+  function _previewAccountHash(uint accountId, AssetTransfer[] memory adjs) internal returns (bytes32) {
+    // todo: filter out unrelevant transfers
+
+    // todo: if the account is affected by previous proposals, get it from cached storage
+
     // todo: read from account (preview state after adjustments)
     return keccak256(abi.encode(block.difficulty));
   }
