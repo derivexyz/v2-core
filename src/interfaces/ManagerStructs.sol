@@ -4,20 +4,6 @@ pragma solidity ^0.8.13;
 import "./IAsset.sol";
 
 interface ManagerStructs {
-  // trade
-  struct Trade {
-    uint accA;
-    uint accB;
-    IAsset assetA;
-    uint96 assetASubId;
-    IAsset assetB;
-    uint96 assetBSubId;
-    uint128 amountA;
-    uint128 amountB;
-  }
-
-  // for transfer, look at AccountStructs.AssetTransfer
-
   // svi parameters
   struct SVIParameters {
     uint a;
@@ -35,18 +21,26 @@ interface ManagerStructs {
     bytes32 s;
   }
 
-  // Proposals
-
-  struct TransferProposal {
-    AccountStructs.AssetTransfer transfer;
-    bytes32 senderPreHash;
-    uint salt;
-  }
-
+  // Proposal
   struct TradeProposal {
     AccountStructs.AssetTransfer[] transfers;
     address[] fromSigners;
     bytes32[] senderPreHashes;
     uint salt;
+  }
+
+  struct AccountSnapshot {
+    uint lastProposalId;
+    bytes32 postRoot;
+    AccountStructs.AssetBalance[] postBalances;
+  }
+
+  struct ProposalInQueue {
+    uint[] accounts;
+    bytes32[] preTxHashes;
+    bytes32[] postTxHashes;
+    AccountStructs.AssetTransfer[] transfers;
+    uint timestamp;
+    bool isChallenged;
   }
 }
