@@ -12,7 +12,7 @@ import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/ManagerStructs.sol";
 
-contract OptimisticManager is Owned, IManager {
+contract OptimisticManager is Owned, IManager, ManagerStructs {
   using DecimalMath for uint;
   using SafeCast for uint;
 
@@ -20,24 +20,13 @@ contract OptimisticManager is Owned, IManager {
 
   mapping(uint => bytes32) public lastProposedStateRoot;
 
+  mapping(address => uint) public proposerStakes;
+
+  // Constants
+  uint public lyraStakePerProposal = 100 * 1e18;
+
   constructor(IAccount account_) Owned() {
     account = account_;
-  }
-
-  struct SVIParameters {
-    uint a;
-    uint b;
-    uint c;
-    uint d;
-    uint e;
-  }
-
-  // proposer can give commitment to users that a trade would go through with a signature.
-  // if a particular transaction is challenged, user use this commitment to get a "penalty" from proposer
-  struct Signature {
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
   }
 
   /**
@@ -47,16 +36,17 @@ contract OptimisticManager is Owned, IManager {
    */
   error OM_BadPreState();
 
+  // need more Lyra to back a proposal
+  error OM_NotEnoughStake();
+
+  // revert on bad contract flow
+  error OM_NotImplemented();
+
   /**
    * ------------------------ *
    *       Modifiers
    * ------------------------ *
    */
-
-  modifier onlyProposer() {
-    _;
-  }
-
   modifier onlyVoucher() {
     _;
   }
@@ -68,7 +58,11 @@ contract OptimisticManager is Owned, IManager {
    */
 
   ///@dev stake LYRA and become a proposer
-  function stake() external {}
+  function stake(uint amount) external {
+    // todo: pull LYRA
+
+    proposerStakes[msg.sender] += amount;
+  }
 
   ///@dev propose transfer
   ///@dev previous state has to be included in signature.
@@ -76,7 +70,8 @@ contract OptimisticManager is Owned, IManager {
   function proposeTransferFromProposer(ManagerStructs.TransferProposal calldata proposal, Signature memory sig)
     external
   {
-    // check msg.sender is proposer
+    // check msg.sender has enough stake
+    _lockupLyraStake(msg.sender, 1);
 
     // verify signatures for "from account"
 
@@ -87,6 +82,8 @@ contract OptimisticManager is Owned, IManager {
 
     // add to queue
 
+    // lock up stake
+
     // store final states of all relevent accounts to lastProposedStateRoot
   }
 
@@ -95,7 +92,8 @@ contract OptimisticManager is Owned, IManager {
   function proposeTradesFromProposer(AccountStructs.AssetTransfer[] calldata transfers, Signature[] calldata sigs)
     external
   {
-    // check msg.sender is proposer
+    // check msg.sender has enough stake
+    _lockupLyraStake(msg.sender, 2);
 
     // verify signatures from both accounts
 
@@ -128,7 +126,7 @@ contract OptimisticManager is Owned, IManager {
    * ------------------------ *
    */
 
-  function challengeProposalInQueue(uint accountId, SVIParameters memory svi) external {
+  function challengeTransferProposalInQueue(uint accountId, SVIParameters memory svi) external {
     // validate through svi
 
     // mark as challenged (remove from the queue)
@@ -165,10 +163,12 @@ contract OptimisticManager is Owned, IManager {
   ///@dev propose transfers, get signature from proposer
   function proposeTransfersFromUser(
     AccountStructs.AssetTransfer[] calldata transfers,
-    uint proposerId,
+    address proposer,
     Signature memory proposerSignature
   ) external {
     // validate proposer signature
+
+    _lockupLyraStake(proposer, 1);
 
     // store transferDetails
 
@@ -221,6 +221,43 @@ contract OptimisticManager is Owned, IManager {
     return _validateSVIWithState(assetBalances, svi);
   }
 
+  /**
+   * ------------------------ *
+   *     Manger Interface
+   * ------------------------ *
+   */
+
+  /// @dev all trades have to go through proposeTransfer
+  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory) public override {
+    // can open up to trades from Account, if voucher signaure is provided in data
+    revert OM_NotImplemented();
+  }
+
+  function handleManagerChange(uint, IManager _manager) external view {
+    revert OM_NotImplemented();
+  }
+
+  /**
+   * ------------------------------------ *
+   *   Internal functions for proposer
+   * ------------------------------------ *
+   */
+
+  function _lockupLyraStake(address _proposer, uint _numOfTrades) internal {
+    uint stake = proposerStakes[_proposer];
+    uint cost = lyraStakePerProposal * _numOfTrades;
+    if (stake < cost) revert OM_NotEnoughStake();
+    unchecked {
+      proposerStakes[_proposer] = stake - cost;
+    }
+  }
+
+  /**
+   * ------------------------------------ *
+   *   Internal functions for validation
+   * ------------------------------------ *
+   */
+
   ///@dev validate if provided state hash is valid to execute against. It has to
   ///     1. match the account state from Account.sol
   ///     2. be equivalent to lastProposedStateRoot
@@ -241,26 +278,12 @@ contract OptimisticManager is Owned, IManager {
   }
 
   function _getCurrentAccountHash(uint accountId) internal returns (bytes32) {
+    // todo: read from account
     return bytes32(0);
   }
 
   function _previewAccountHash(uint accountId, AccountStructs.AssetAdjustment[] memory adjs) internal returns (bytes32) {
+    // todo: read from account (preview state after adjustments)
     return keccak256(abi.encode(block.difficulty));
-  }
-
-  /**
-   * ------------------------ *
-   *     Manger Interface
-   * ------------------------ *
-   */
-
-  /// @dev all trades have to go through proposeTransfer
-  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory) public override {
-    // can open up to trades from Account, if voucher signaure is provided in data
-    revert("bad flow");
-  }
-
-  function handleManagerChange(uint, IManager _manager) external view {
-    revert("not implemented");
   }
 }

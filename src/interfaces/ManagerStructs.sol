@@ -18,6 +18,23 @@ interface ManagerStructs {
 
   // for transfer, look at AccountStructs.AssetTransfer
 
+  // svi parameters
+  struct SVIParameters {
+    uint a;
+    uint b;
+    uint c;
+    uint d;
+    uint e;
+  }
+
+  // proposer can give commitment to users that a trade would go through with a signature.
+  // if a particular transaction is challenged, user use this commitment to get a "penalty" from proposer
+  struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+  }
+
   // Proposals
 
   struct TransferProposal {
