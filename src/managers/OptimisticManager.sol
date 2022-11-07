@@ -40,7 +40,8 @@ contract OptimisticManager is Owned, IManager {
     bytes32 s;
   }
 
-  /** ------------------------ *
+  /**
+   * ------------------------ *
    *          Errors
    * ------------------------ *
    */
@@ -72,7 +73,9 @@ contract OptimisticManager is Owned, IManager {
   ///@dev propose transfer
   ///@dev previous state has to be included in signature.
   ///@param sig signature from "fromAcc"
-  function proposeTransferFromProposer(ManagerStructs.TransferProposal calldata proposal, Signature memory sig) external {
+  function proposeTransferFromProposer(ManagerStructs.TransferProposal calldata proposal, Signature memory sig)
+    external
+  {
     // check msg.sender is proposer
 
     // verify signatures for "from account"
@@ -80,7 +83,7 @@ contract OptimisticManager is Owned, IManager {
     // verify the startRoot matches lastProposedStateRoot or the current state of the "from" account
     if (!_isValidPreState(proposal.transfer.fromAcc, proposal.senderPreHash)) revert OM_BadPreState();
 
-    // store transferDetails 
+    // store transferDetails
 
     // add to queue
 
@@ -182,7 +185,7 @@ contract OptimisticManager is Owned, IManager {
     // validate proposer signature
 
     // calculate the "max loss" of the trade
-    
+
     // make sure the account has no pending state updates (lastSeenAccountStateRoot)
 
     // reduce max loss from voucher deposit
@@ -204,7 +207,6 @@ contract OptimisticManager is Owned, IManager {
     return _isValidPreState(accountId, preStateHash);
   }
 
-
   /// @dev view function to run svi validation on current state of an account
   function validateSVIWithCurrentState(uint accountId, SVIParameters memory svi) external returns (bool valid) {
     AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(accountId);
@@ -219,7 +221,7 @@ contract OptimisticManager is Owned, IManager {
     return _validateSVIWithState(assetBalances, svi);
   }
 
-  ///@dev validate if provided state hash is valid to execute against. It has to 
+  ///@dev validate if provided state hash is valid to execute against. It has to
   ///     1. match the account state from Account.sol
   ///     2. be equivalent to lastProposedStateRoot
   function _isValidPreState(uint accountId, bytes32 preStateHash) internal returns (bool valid) {
@@ -238,12 +240,12 @@ contract OptimisticManager is Owned, IManager {
     return true;
   }
 
-  function _getCurrentAccountHash(uint256 accountId) internal returns (bytes32) {
+  function _getCurrentAccountHash(uint accountId) internal returns (bytes32) {
     return bytes32(0);
   }
 
-  function _previewAccountHash(uint256 accountId,  AccountStructs.AssetAdjustment[] memory adjs) internal returns (bytes32) {
-    return  keccak256(abi.encode(block.difficulty));
+  function _previewAccountHash(uint accountId, AccountStructs.AssetAdjustment[] memory adjs) internal returns (bytes32) {
+    return keccak256(abi.encode(block.difficulty));
   }
 
   /**
