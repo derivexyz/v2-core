@@ -20,13 +20,12 @@ interface ManagerStructs {
 
   // Proposals
 
-  struct TradeProposal {
-    Trade trade;
-    bytes32 accountAPreHash;
-    bytes32 accountBPreHash;
+  struct TransferProposal {
+    AccountStructs.AssetTransfer transfer;
+    bytes32 senderPreHash;
   }
 
-  struct TransferProposal {
+  struct TradeProposal {
     Trade trade;
     bytes32 accountAPreHash;
     bytes32 accountBPreHash;

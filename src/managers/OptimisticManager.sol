@@ -10,6 +10,7 @@ import "forge-std/console2.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
+import "src/interfaces/ManagerStructs.sol";
 
 contract OptimisticManager is Owned, IManager {
   using DecimalMath for uint;
@@ -17,7 +18,7 @@ contract OptimisticManager is Owned, IManager {
 
   IAccount account;
 
-  mapping(uint => bytes32) public lastAccountStateRoot;
+  mapping(uint => bytes32) public lastProposedStateRoot;
 
   constructor(IAccount account_) Owned() {
     account = account_;
@@ -38,6 +39,12 @@ contract OptimisticManager is Owned, IManager {
     bytes32 r;
     bytes32 s;
   }
+
+  /** ------------------------ *
+   *          Errors
+   * ------------------------ *
+   */
+  error OM_BadPreState();
 
   /**
    * ------------------------ *
@@ -65,16 +72,19 @@ contract OptimisticManager is Owned, IManager {
   ///@dev propose transfer
   ///@dev previous state has to be included in signature.
   ///@param sig signature from "fromAcc"
-  function proposeTransferFromProposer(AccountStructs.AssetTransfer calldata transfer, Signature memory sig) external {
+  function proposeTransferFromProposer(ManagerStructs.TransferProposal calldata proposal, Signature memory sig) external {
     // check msg.sender is proposer
 
     // verify signatures for "from account"
 
-    // store transferDetails
+    // verify the startRoot matches lastProposedStateRoot or the current state of the "from" account
+    if (!_isValidPreState(proposal.transfer.fromAcc, proposal.senderPreHash)) revert OM_BadPreState();
+
+    // store transferDetails 
 
     // add to queue
 
-    // store final states of all relevent accounts
+    // store final states of all relevent accounts to lastProposedStateRoot
   }
 
   ///@dev propose trades
@@ -84,13 +94,17 @@ contract OptimisticManager is Owned, IManager {
   {
     // check msg.sender is proposer
 
-    // verify signatures for all "from account"
+    // verify signatures from both accounts
+
+    // verify the startRoot matches for both accounts
+    // for all accounts
+    // _isValidPreState()
 
     // store transferDetails
 
     // add to queue
 
-    // store final states of all relevent accounts
+    // store final states of all relevent accounts to lastProposedStateRoot
   }
 
   /**
@@ -160,7 +174,7 @@ contract OptimisticManager is Owned, IManager {
     // store final states of all relevent accounts
   }
 
-  function executeTransersWithVouch(
+  function vouchTransfers(
     uint voucherId,
     Signature memory voucherSignature,
     AccountStructs.AssetTransfer[] calldata transfers
@@ -168,7 +182,8 @@ contract OptimisticManager is Owned, IManager {
     // validate proposer signature
 
     // calculate the "max loss" of the trade
-    //
+    
+    // make sure the account has no pending state updates (lastSeenAccountStateRoot)
 
     // reduce max loss from voucher deposit
 
@@ -185,6 +200,10 @@ contract OptimisticManager is Owned, IManager {
    *        Validations
    * ------------------------ *
    */
+  function validateIsValidPreState(uint accountId, bytes32 preStateHash) external returns (bool valid) {
+    return _isValidPreState(accountId, preStateHash);
+  }
+
 
   /// @dev view function to run svi validation on current state of an account
   function validateSVIWithCurrentState(uint accountId, SVIParameters memory svi) external returns (bool valid) {
@@ -200,12 +219,31 @@ contract OptimisticManager is Owned, IManager {
     return _validateSVIWithState(assetBalances, svi);
   }
 
+  ///@dev validate if provided state hash is valid to execute against. It has to 
+  ///     1. match the account state from Account.sol
+  ///     2. be equivalent to lastProposedStateRoot
+  function _isValidPreState(uint accountId, bytes32 preStateHash) internal returns (bool valid) {
+    bytes32 stored = lastProposedStateRoot[accountId];
+    if (stored != bytes32(0)) return preStateHash == stored;
+
+    bytes32 currentHash = _getCurrentAccountHash(accountId);
+    return preStateHash == currentHash;
+  }
+
   /// @dev validate account state with a set of svi curve parameters
   function _validateSVIWithState(AccountStructs.AssetBalance[] memory assetBalances, SVIParameters memory svi)
     internal
     returns (bool valid)
   {
     return true;
+  }
+
+  function _getCurrentAccountHash(uint256 accountId) internal returns (bytes32) {
+    return bytes32(0);
+  }
+
+  function _previewAccountHash(uint256 accountId,  AccountStructs.AssetAdjustment[] memory adjs) internal returns (bytes32) {
+    return  keccak256(abi.encode(block.difficulty));
   }
 
   /**
