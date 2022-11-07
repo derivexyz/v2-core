@@ -40,11 +40,13 @@ interface ManagerStructs {
   struct TransferProposal {
     AccountStructs.AssetTransfer transfer;
     bytes32 senderPreHash;
+    uint salt;
   }
 
   struct TradeProposal {
     Trade trade;
     bytes32 accountAPreHash;
     bytes32 accountBPreHash;
+    uint salt;
   }
 }

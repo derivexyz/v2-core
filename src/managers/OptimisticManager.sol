@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/cryptography/ECDSA.sol";
+
 import "synthetix/Owned.sol";
 import "synthetix/DecimalMath.sol";
 import "forge-std/console2.sol";
@@ -12,7 +14,7 @@ import "src/interfaces/IAccount.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/ManagerStructs.sol";
 
-contract OptimisticManager is Owned, IManager, ManagerStructs {
+contract OptimisticManager is Owned, IManager, ManagerStructs, AccountStructs {
   using DecimalMath for uint;
   using SafeCast for uint;
 
@@ -38,6 +40,8 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
 
   // need more Lyra to back a proposal
   error OM_NotEnoughStake();
+
+  error OM_BadSignature();
 
   // revert on bad contract flow
   error OM_NotImplemented();
@@ -67,31 +71,23 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
   ///@dev propose transfer
   ///@dev previous state has to be included in signature.
   ///@param sig signature from "fromAcc"
-  function proposeTransferFromProposer(ManagerStructs.TransferProposal calldata proposal, Signature memory sig)
-    external
-  {
+  function proposeTransferFromProposer(TransferProposal calldata proposal, Signature memory sig) external {
     // check msg.sender has enough stake
     _lockupLyraStake(msg.sender, 1);
 
-    // verify signatures for "from account"
+    _validateTransferProposalSig(proposal, sig, account.ownerOf(proposal.transfer.fromAcc));
 
     // verify the startRoot matches lastProposedStateRoot or the current state of the "from" account
     if (!_isValidPreState(proposal.transfer.fromAcc, proposal.senderPreHash)) revert OM_BadPreState();
 
-    // store transferDetails
-
-    // add to queue
-
-    // lock up stake
+    // store transferDetails to queue (so we can execute later)
 
     // store final states of all relevent accounts to lastProposedStateRoot
   }
 
   ///@dev propose trades
   ///@param sigs signatures from all relevent party
-  function proposeTradesFromProposer(AccountStructs.AssetTransfer[] calldata transfers, Signature[] calldata sigs)
-    external
-  {
+  function proposeTradesFromProposer(AssetTransfer[] calldata transfers, Signature[] calldata sigs) external {
     // check msg.sender has enough stake
     _lockupLyraStake(msg.sender, 2);
 
@@ -101,9 +97,7 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
     // for all accounts
     // _isValidPreState()
 
-    // store transferDetails
-
-    // add to queue
+    // store transferDetails to queue (so we can execute later)
 
     // store final states of all relevent accounts to lastProposedStateRoot
   }
@@ -162,7 +156,7 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
 
   ///@dev propose transfers, get signature from proposer
   function proposeTransfersFromUser(
-    AccountStructs.AssetTransfer[] calldata transfers,
+    AssetTransfer[] calldata transfers,
     address proposer,
     Signature memory proposerSignature
   ) external {
@@ -177,11 +171,9 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
     // store final states of all relevent accounts
   }
 
-  function vouchTransfers(
-    uint voucherId,
-    Signature memory voucherSignature,
-    AccountStructs.AssetTransfer[] calldata transfers
-  ) external {
+  function vouchTransfers(uint voucherId, Signature memory voucherSignature, AssetTransfer[] calldata transfers)
+    external
+  {
     // validate proposer signature
 
     // calculate the "max loss" of the trade
@@ -193,6 +185,14 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
     // execute the trade on accounts directly
 
     // stored the "vouch data" state after transactions, timestamp, deposits
+  }
+
+  function executeProposalsInQueue() external {
+    // execute on account if not challenged
+
+    // if preState doesn't match the current state, refund the stake to staker and nothing happend. (cancelled)
+
+    // clear lastProposedStateRoots
   }
 
   /// @dev user execute the commitment from proposer and get some cashback if it's challenged
@@ -209,12 +209,12 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
 
   /// @dev view function to run svi validation on current state of an account
   function validateSVIWithCurrentState(uint accountId, SVIParameters memory svi) external returns (bool valid) {
-    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(accountId);
+    AssetBalance[] memory balances = account.getAccountBalances(accountId);
     return _validateSVIWithState(balances, svi);
   }
 
   /// @dev validate account state with a set of svi curve parameters
-  function validateSVIState(AccountStructs.AssetBalance[] memory assetBalances, SVIParameters memory svi)
+  function validateSVIState(AssetBalance[] memory assetBalances, SVIParameters memory svi)
     external
     returns (bool valid)
   {
@@ -258,6 +258,15 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
    * ------------------------------------ *
    */
 
+  function _validateTransferProposalSig(TransferProposal memory transfer, Signature memory sig, address signer)
+    internal
+    returns (bool valid)
+  {
+    bytes32 structHash = keccak256(abi.encode(transfer));
+    address _signer = ECDSA.recover(structHash, sig.v, sig.r, sig.s);
+    if (signer != _signer) revert OM_BadSignature();
+  }
+
   ///@dev validate if provided state hash is valid to execute against. It has to
   ///     1. match the account state from Account.sol
   ///     2. be equivalent to lastProposedStateRoot
@@ -270,7 +279,7 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
   }
 
   /// @dev validate account state with a set of svi curve parameters
-  function _validateSVIWithState(AccountStructs.AssetBalance[] memory assetBalances, SVIParameters memory svi)
+  function _validateSVIWithState(AssetBalance[] memory assetBalances, SVIParameters memory svi)
     internal
     returns (bool valid)
   {
@@ -282,7 +291,7 @@ contract OptimisticManager is Owned, IManager, ManagerStructs {
     return bytes32(0);
   }
 
-  function _previewAccountHash(uint accountId, AccountStructs.AssetAdjustment[] memory adjs) internal returns (bytes32) {
+  function _previewAccountHash(uint accountId, AssetAdjustment[] memory adjs) internal returns (bytes32) {
     // todo: read from account (preview state after adjustments)
     return keccak256(abi.encode(block.difficulty));
   }
