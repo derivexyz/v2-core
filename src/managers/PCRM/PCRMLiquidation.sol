@@ -11,6 +11,4 @@ import "openzeppelin/utils/math/SafeCast.sol";
  *         1. start an auction for a underwater account
  *         2. determine what part of the portfolio should be put on liquidation
  */
-contract PCRMLiquidation {
-
-}
+contract PCRMLiquidation {}
