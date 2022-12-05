@@ -20,7 +20,7 @@ There are three big parts that compose of the **base layer**: `Account`, `Manage
 
 ### Account
 
-An `Account` is a fully-permissionless contract that allows anyone to create an account entity (represent as ERC721), which stores a list of `{asset, subId, balance}` for a user. Each `asset` can have multiple `subIds` that represent asset sub categories (e.g. asset->option, subId->Jan 1st, $1000 Strike, ETH Call). 
+An `Account` is a fully permission-less contract that allows anyone to create an account entity (represent as ERC721), which stores a list of `{asset, subId, balance}` for a user. Each `asset` can have multiple `subIds` that represent asset sub categories (e.g. asset->option, subId->Jan 1st, $1000 Strike, ETH Call). 
 
 The primary goal of `Account` is to give different **Managers** and **Assets** the flexibility to create unique validation rules for various account actions.
 
@@ -37,11 +37,11 @@ P.S. Go to [Accounts](./account) for some more detailed documentation about the 
   
 ### Managers
 
-A manager should be used to govern a set of accounts, and has certain previlleges. The 3x main jobs of a manager: 
+A manager should be used to govern a set of accounts, and has certain privileges. The 3x main jobs of a manager: 
 
 * **Account state validation**: After a transaction is executed on an account, the manager will take a look at the final state of an account and decide if this account is valid. For example, a transaction that leaves an account holding only -1000 USDC should be denied. But if the account has another 10 ETH in it, it's probably okay.
 * **Debt Management**: It is also the manager's obligation to determine "dangerous accounts" that might leave the system in debt and take care of liquidations.
-* **Settlement**:  If an account has assets with expiry, the manager should also handle the settlment after expiry. For example, if an account long 1 2000-ETH-CALL-DEC01-2022 and it expired in the money, the manager has the right to increase the account's usdc balance, and burn the option balance at expiry.
+* **Settlement**:  If an account has assets with expiry, the manager should also handle the settlement after expiry. For example, if an account long 1 2000-ETH-CALL-DEC01-2022 and it expired in the money, the manager has the right to increase the account's usdc balance, and burn the option balance at expiry.
 
 #### Manager Privileges 
 
@@ -78,21 +78,21 @@ This means that a set of connected managers and assets will form a "trusted grou
 
 To check these requirements, whenever a trade happens, `Account` passes the transfer information to the **Asset** contract through the **asset hook** to make sure the final balance of an account is valid and the account is controlled by a good manager, and at the end of all **transfers**, it triggers the **manager hook** to let the manager determine the final state of an account.
 
-It's worth mentioning that because the **account contract** is totally permissionless, anyone can spin up their own "ecosystem" with risk totally separated from other ecosystems.
+It's worth mentioning that because the **account contract** is totally permission-less, anyone can spin up their own "ecosystem" with risk totally separated from other ecosystems.
 
 ![account-permission](./imgs/overall/account-permissions.png)
 
 ## Lyra V2
 
-The ultimate goal of Lyra v2 is to build (1) a super capital efficient margin system for both traders and AMMs and (2) a modular framework for upgrading existing contracts and supplementing the Lyra ecosystem with new features. At the base layer, this will be composed of 1 manager and 3 assets. You can find the more detailed documentation about each modules from the links below: 
+The ultimate goal of Lyra v2 is to build a permission-less margin system for both traders and AMMs, with a modular framework for upgrading existing contracts and supplementing the Lyra ecosystem with new features. At the base layer, this will be composed of 2 manager and 3 assets at the launch of V2. You can find the more detailed documentation about each modules from the links below: 
 
-* (Manager) [Portfolio Margning Risk Manager](./) 
+* (Manager) [FCRM: Fully Collateralized Risk Manager](./) 
+* (Manager) [PCRM: Partially Collateralized Risk Manager](./) 
 * (Asset) [Lending (Borrowable USD)](./)
 * (Asset) [Option Token](./)
 * (Asset) [Future Token](./)
 
 ![scope](./imgs/overall/v2-scope.png)
-
 
 There will also be 2 other AMMs being built:
 
