@@ -31,7 +31,7 @@ contract PCRMLiquidation {
   function flagLiquidation(uint accountId) external {
     // check that account is underwater
 
-    // indicate risk manager to freeze the account (or do we let the liquidation module hold the account?)
+    // request the manager to transfer the account ownership to the liquidation module
 
     // start an auction
   }
@@ -49,6 +49,8 @@ contract PCRMLiquidation {
     // calculate f base on portfolio and price
 
     // trigger transfer on Account
+
+    // if the auction ends, transfer the account back to original owner
   }
 
   /**

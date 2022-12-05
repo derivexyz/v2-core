@@ -7,9 +7,9 @@ enum AuctionState {
   ENDED
 }
 
-// todo: if we let the liquidation module hold the account, has to keep track of the original owner
 struct AuctionDetail {
   AuctionState status;
+  address owner;
   uint accountId;
   uint initDebtValue;
   uint ratePerSecond; // the rate to increase the value of debt per second.
