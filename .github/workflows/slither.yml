@@ -20,9 +20,10 @@ jobs:
         with:
           target: "src/"
           sarif: results.sarif
-          fail-on: none
+          fail-on: high
 
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: ${{ steps.slither.outputs.sarif }}
+      # # Disabled until we go public so we can integrate with code-scanning
+      # - name: Upload SARIF file 
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   with:
+      #     sarif_file: ${{ steps.slither.outputs.sarif }}
