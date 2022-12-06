@@ -51,6 +51,8 @@ contract PCRMLiquidation {
     // trigger transfer on Account
 
     // if the auction ends, transfer the account back to original owner
+
+    // update auction id state
   }
 
   /**
@@ -58,7 +60,7 @@ contract PCRMLiquidation {
    *         anyone can use this function to trigger the bail out pool to take the position.
    */
   function bailOutPorfolio(uint auctionid) external {
-    // check auction state
+    // check auction state 
 
     // tansfer whole account to the bail out pool
   }
@@ -68,7 +70,7 @@ contract PCRMLiquidation {
   ////////////////////
 
   function _startAuction(uint accountId) internal returns (uint auctionId) {
-    // get the account
+    // get the account detail
 
     // calculate init price to sell the portfolio (intrinsic value of all long and short)
 
