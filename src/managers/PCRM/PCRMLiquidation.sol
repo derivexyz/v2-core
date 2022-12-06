@@ -30,7 +30,7 @@ contract PCRMLiquidation {
 
   /**
    * @notice
-   * @dev 
+   * @dev
    * @param accountId account to be flagged
    */
   function flagLiquidation(uint accountId) external {
