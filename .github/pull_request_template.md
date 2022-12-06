@@ -10,6 +10,7 @@ Any implementation detail worth pointing out, if any.
 
 Ensure you completed **all of the steps** below before submitting your pull request:
 
-- [ ] Ran `forge snapshot`?
-- [ ] Ran `forge fmt`?
-- [ ] Ran `forge test`?
+- [ ] Ran `forge snapshot`
+- [ ] Ran `forge fmt`
+- [ ] Ran `forge test`
+- [ ] 100% test coverage on code changes
