@@ -6,6 +6,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install dependencies
+        run: forge install
+
       - name: Run Slither
         uses: crytic/slither-action@v0.2.0
         id: slither
