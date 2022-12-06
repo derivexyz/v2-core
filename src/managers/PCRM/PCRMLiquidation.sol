@@ -60,7 +60,7 @@ contract PCRMLiquidation {
    *         anyone can use this function to trigger the bail out pool to take the position.
    */
   function bailOutPorfolio(uint auctionid) external {
-    // check auction state 
+    // check auction state
 
     // tansfer whole account to the bail out pool
   }

@@ -14,26 +14,20 @@ enum AuctionState {
 struct AuctionDetail {
   /// @dev status of the auction
   AuctionState status;
-  
   /// @dev origin owner of the account
   address owner;
-  
   /// @dev accountId
   uint accountId;
-  
   /// @dev positive number indicating initial amount of total debt
   ///      represent "How much cash to pay liquidator" to take the whole position
   ///      it should be be initialised as the total intrisic value of all short positions.
   uint initDebtValue;
-  
   /// @dev the rate to increase the value of debt per second
-  ///      the debt should be increasing overtime (willing to pay more for someone to take this position) 
+  ///      the debt should be increasing overtime (willing to pay more for someone to take this position)
   ///      and be capped at total cash in the account.
-  uint ratePerSecond; 
-  
+  uint ratePerSecond;
   /// @dev percentage of position left to be auctioned.
   uint percentageLeft;
-  
   /// @dev timestamp that the auction started at
   uint64 startTimestamp;
 }
