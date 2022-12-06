@@ -10,7 +10,7 @@ Any implementation detail worth pointing out, if any.
 
 Ensure you completed **all of the steps** below before submitting your pull request:
 
-- [ ] Add [natspec](https://docs.soliditylang.org/en/latest/natspec-format.html) to all the functions
+- [ ] Add [natspec](https://docs.soliditylang.org/en/latest/natspec-format.html) for all functions / parameters
 - [ ] Ran `forge snapshot`
 - [ ] Ran `forge fmt`
 - [ ] Ran `forge test`
