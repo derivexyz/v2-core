@@ -14,8 +14,7 @@ Breakdown the progress of the PR for everyone to see what else you intend to inc
 
 - [ ] Draft implementation for `function`
 - [ ] Unit tests for `function`
-- [ ] Final cleanup
-- [ ] Gas optimization for function `_functionA` and `_functionB`
+- [ ] Gas optimization for `function`
 
 ## Checklist
 
