@@ -86,7 +86,7 @@ It's worth mentioning that because the **account contract** is totally permissio
 
 The ultimate goal of Lyra v2 is to build a permission-less margin system for both traders and AMMs, with a modular framework for upgrading existing contracts and supplementing the Lyra ecosystem with new features. At the base layer, this will be composed of 2 manager and 3 assets at the launch of V2. You can find the more detailed documentation about each modules from the links below: 
 
-* (Manager) [FCRM: Fully Collateralized Risk Manager](./) 
+* (Manager) [MLRM: Max Loss Risk Manager](./) 
 * (Manager) [PCRM: Partially Collateralized Risk Manager](./) 
 * (Asset) [Lending (Borrowable USD)](./)
 * (Asset) [Option Token](./)
