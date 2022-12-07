@@ -48,7 +48,7 @@ solc-select use 0.8.13
 ### Run analysis
 
 ```shell
-slither src --exclude-low
+slither src
 ```
 
 #### Triage issues
@@ -56,5 +56,5 @@ slither src --exclude-low
 Make sure to triage all findings introduced by new PR. They should be appended to `slither.db.json` after the following:
 
 ```shell
-slither src --exclude-low --triage-mode
+slither src --triage-mode
 ```
