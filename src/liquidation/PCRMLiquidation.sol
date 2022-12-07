@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
-import "../../interfaces/LiquidationStructs.sol";
+import "../interfaces/LiquidationStructs.sol";
 
 /**
  * @title PCRMLiquidation
