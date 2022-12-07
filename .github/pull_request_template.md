@@ -6,6 +6,17 @@ Describe the changes made in your pull request here.
 
 Any implementation detail worth pointing out, if any.
 
+## Todo
+
+Breakdown the progress of the PR for everyone to see what else you intend to include in this PR.
+
+(Examples:)
+
+- [ ] draft implementation for *feature-one*
+- [ ] unit tests for feature-one
+- [ ] Final cleanup
+- [ ] Gas optimization for function `_functionA` and `_functionB`
+
 ## Checklist
 
 Ensure you completed **all of the steps** below before submitting your pull request:
