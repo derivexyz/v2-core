@@ -152,6 +152,7 @@ contract Account is Allowances, ERC721, AccountStructs {
       IAsset(uniqueAssets[i]).handleManagerChange(accountId, newManager);
     }
 
+    // update the manager after all checks (external calls) are done. expected reentry pattern
     manager[accountId] = newManager;
 
     // trigger the manager hook on the new manager. Same as post-transfer checks
