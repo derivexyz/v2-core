@@ -48,5 +48,13 @@ solc-select use 0.8.13
 ### Run analysis
 
 ```shell
-slither ./src
+slither src --exclude-low
+```
+
+### To Triage findings
+
+Make sure to triage all findings introduced by new PR. They should be added to `slither.db`.
+
+```shell
+slither src --exclude-low --triage-mode
 ```
