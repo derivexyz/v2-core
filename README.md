@@ -51,9 +51,9 @@ solc-select use 0.8.13
 slither src --exclude-low
 ```
 
-### To Triage findings
+#### Triage issues
 
-Make sure to triage all findings introduced by new PR. They should be added to `slither.db`.
+Make sure to triage all findings introduced by new PR. They should be appended to `slither.db.json` after the following:
 
 ```shell
 slither src --exclude-low --triage-mode

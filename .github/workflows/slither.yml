@@ -20,7 +20,7 @@ jobs:
         with:
           target: "src/"
           sarif: results.sarif
-          fail-on: high
+          fail-on: medium # fail if new issues are introduced
 
       # # Disabled until we go public so we can integrate with code-scanning
       # - name: Upload SARIF file 
