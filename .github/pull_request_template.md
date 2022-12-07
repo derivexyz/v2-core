@@ -12,8 +12,8 @@ Breakdown the progress of the PR for everyone to see what else you intend to inc
 
 (Examples:)
 
-- [ ] draft implementation for *feature-one*
-- [ ] unit tests for feature-one
+- [ ] Draft implementation for `function`
+- [ ] Unit tests for `function`
 - [ ] Final cleanup
 - [ ] Gas optimization for function `_functionA` and `_functionB`
 
