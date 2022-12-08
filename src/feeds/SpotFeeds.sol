@@ -2,10 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/ISpotFeeds.sol";
-import "synthetix/Owned.sol";
 
 // Adapter condenses all deposited positions into a single position per subId
-contract SpotFeeds is ISpotFeeds, Owned {
+contract SpotFeeds is ISpotFeeds {
   
   ///////////////
   // Variables //
@@ -63,6 +62,15 @@ contract SpotFeeds is ISpotFeeds, Owned {
   //////////////////
   // Adding feeds //
   //////////////////
+    
+  /**
+  * @notice Assigns a trading pair to a given feedId and chainlink aggregator
+  * @param pair bytes that returns the trading pair (e.g. "ETH/USDC")
+  * @return feedId id set for a given trading pair
+  */
+  function addFeed(bytes32 pair, address chainlinkAggregator) external returns (uint feedId) {
+  // todo: integrate with chainlink
+  }
 
   //////////
   // View //
