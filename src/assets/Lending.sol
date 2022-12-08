@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-
+import "openzeppelin/access/Ownable.sol";
 import "../interfaces/IAsset.sol";
 
 /**
@@ -11,9 +11,23 @@ import "../interfaces/IAsset.sol";
  * @dev
  * @author Lyra
  */
-contract Lending is IAsset {
+contract Lending is Ownable, IAsset {
 
+  ///@dev account contract address
   address public immutable account;
+
+  /////////////////////////
+  //   State Variables   //
+  /////////////////////////
+
+  ///@dev borrow index
+  uint public borrowIndex;
+
+  ///@dev supply index
+  uint public supplyIndex;
+
+  ///@dev last timestamp that the interest is accrued
+  uint public lastTimestamp;
 
   ///@dev whitelisted managers
   mapping (address => bool) public whitelistedManager;
@@ -22,8 +36,19 @@ contract Lending is IAsset {
   //   Errors   //
   ////////////////
 
-  /// @dev emited when user trying to upgrade to a unknown manager
+  /// @dev caller is not account
+  error LA_NotAccount();
+
+  /// @dev revert when user trying to upgrade to a unknown manager
   error LA_UnknownManager();
+
+  ///////////////////
+  //   Modifiers   //
+  ///////////////////
+  modifier onlyAccount() {
+    if (msg.sender != account) revert LA_NotAccount();
+    _;
+  }
 
   /////////////////////
   //   Constructor   //
@@ -51,8 +76,13 @@ contract Lending is IAsset {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external returns (int finalBalance, bool needAllowance) {
-    // todo: monify manager
+  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+    // todo: verify manager
+
+    // accur interest rate
+    _accurInterest();
+
+    // todo: accur interest on prebalance
 
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
@@ -65,7 +95,38 @@ contract Lending is IAsset {
    * @notice triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint /*accountId*/, IManager newManager) external {
-    if (!whitelistedManager[newManager]) revert LA_UnknownManager();
+  function handleManagerChange(uint /*accountId*/, IManager newManager) external view {
+    if (!whitelistedManager[address(newManager)]) revert LA_UnknownManager();
+  }
+
+  //////////////////////////////
+  //   Owner-only Functions   //
+  //////////////////////////////
+
+  /**
+   * @notice whitelist or un-whitelist a manager
+   * @param _manager manager address
+   * @param _whitelisted true to whitelist
+   */
+  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
+    whitelistedManager[_manager] = _whitelisted;
+  }
+
+  ////////////////////////////
+  //   External Functions   //
+  ////////////////////////////
+
+
+  ////////////////////////////
+  //   Internal Functions   //
+  ////////////////////////////
+
+  /**
+   * @dev update interest rate
+   */
+  function _accurInterest() internal {
+    //todo: actual interest updates 
+
+    lastTimestamp = block.timestamp;
   }
 }
