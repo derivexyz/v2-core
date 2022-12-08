@@ -22,7 +22,7 @@ contract SpotFeeds is ISpotFeeds {
   //    Constructor     //
   ////////////////////////
 
-  constructor() Owned {}
+  constructor() {}
 
   ///////////////
   // Get Price //
