@@ -39,8 +39,8 @@ contract Lending is IAsset {
 
   /**
    * @notice triggered when an adjustment is triggered on the asset balance
-   * @dev    the function will imply interest rate and modify the final balance.
-   * @param manager the manager contract that will verify the end state. Should verify if this is a trusted manager
+   * @dev    we imply interest rate and modify the final balance. final balance can be positive or negative.
+   * @param manager the manager contract that will verify the end state
    * @param caller the msg.sender that initiate the transfer, can assume to be a address authorized by user
    * @return finalBalance the final balance to be recorded in the account
    * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
@@ -51,6 +51,7 @@ contract Lending is IAsset {
     IManager manager,
     address caller
   ) external returns (int finalBalance, bool needAllowance) {
+    // todo: monify manager
 
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
