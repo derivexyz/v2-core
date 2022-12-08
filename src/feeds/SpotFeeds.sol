@@ -17,11 +17,14 @@ contract SpotFeeds is ISpotFeeds {
   // Variables //
   ///////////////
 
+  /// @dev maps tradingPair to feedId
   mapping(bytes32 => uint) tradingPairToFeedId;
+  /// @dev maps feedId to tradingPair
   mapping(uint => bytes32) feedIdToTradingPair;
 
   /// @dev first id starts from 1
   uint lastFeedId;
+  /// @dev maps feedId to aggregator details
   mapping(uint => Aggregator) aggregators;
 
   ////////////
