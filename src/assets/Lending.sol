@@ -52,6 +52,11 @@ contract Lending is IAsset {
     address caller
   ) external returns (int finalBalance, bool needAllowance) {
 
+    // finalBalance can go positive or negative
+    finalBalance = preBalance + adjustment.amount;
+    
+    // need allowance if trying to deduct balance
+    needAllowance = adjustment.amount < 0;
   }
 
   /**
