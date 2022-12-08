@@ -169,9 +169,7 @@ interface IAccount is IAllowances, IERC721 {
 
   error AC_TooManyTransfers();
 
-  error AC_NotOwnerOrERC721Approved(
-    address spender, uint accountId, address accountOwner, IManager manager, address approved
-  );
+  error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 
   error AC_CannotTransferAssetToOneself(address caller, uint accountId);
 

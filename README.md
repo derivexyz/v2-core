@@ -33,3 +33,28 @@ forge test --match-contract="POC_" -vvv
 ## Documentation
 
 Go to [docs](./docs) to understand the high level of the design, transaction flow and how different **Lyra v2 components** works together.
+
+## Static Analysis - Slither
+ 
+### Installation
+
+```shell
+pip3 install slither-analyzer
+pip3 install solc-select
+solc-select install 0.8.13
+solc-select use 0.8.13
+```
+
+### Run analysis
+
+```shell
+slither src
+```
+
+#### Triage issues
+
+Make sure to triage all findings introduced by new PR. They should be appended to `slither.db.json` after the following:
+
+```shell
+slither src --triage-mode
+```
