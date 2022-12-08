@@ -5,12 +5,24 @@ import "src/interfaces/ISpotFeeds.sol";
 import "chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract SpotFeeds is ISpotFeeds {
+  /* only 1x SLOAD when getting price */
+  struct Aggregator {
+    // address of chainlink aggregator
+    AggregatorV3Interface aggregator;
+    // decimal units of returned spot price
+    uint8 decimals;
+  }
+
   ///////////////
   // Variables //
   ///////////////
 
   mapping(bytes32 => uint) tradingPairToFeedId;
   mapping(uint => bytes32) feedIdToTradingPair;
+
+  /// @dev first id starts from 1
+  uint lastFeedId;
+  mapping(uint => Aggregator) aggregators;
 
   ////////////
   // Events //
@@ -66,7 +78,15 @@ contract SpotFeeds is ISpotFeeds {
    * @return feedId id set for a given trading pair
    */
   function addFeed(bytes32 pair, address chainlinkAggregator) external returns (uint feedId) {
-    // todo: integrate with chainlink
+    feedId = ++lastFeedId;
+
+    /* store decimals once to reduce external calls during getSpotPrice */
+    aggregators[feedId] = Aggregator({
+      aggregator: AggregatorV3Interface(chainlinkAggregator),
+      decimals: AggregatorV3Interface(chainlinkAggregator).decimals()
+    });
+    tradingPairToFeedId[pair] = feedId;
+    feedIdToTradingPair[feedId] = pair;
   }
 
   //////////
