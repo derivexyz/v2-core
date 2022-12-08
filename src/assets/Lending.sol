@@ -7,12 +7,12 @@ import "openzeppelin/access/Ownable.sol";
 import "../interfaces/IAsset.sol";
 
 /**
- * @title cash asset with built-in lending feature
- * @dev
+ * @title cash asset with built-in lending feature.
+ * @dev   user can deposit USDC and credit this cash asset into their account
+ *        users can borrow cash by having a negative balance in their account (if allowed by manager)
  * @author Lyra
  */
 contract Lending is Ownable, IAsset {
-
   ///@dev account contract address
   address public immutable account;
 
@@ -30,7 +30,7 @@ contract Lending is Ownable, IAsset {
   uint public lastTimestamp;
 
   ///@dev whitelisted managers
-  mapping (address => bool) public whitelistedManager;
+  mapping(address => bool) public whitelistedManager;
 
   ////////////////
   //   Errors   //
@@ -86,7 +86,7 @@ contract Lending is Ownable, IAsset {
 
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
-    
+
     // need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
   }
@@ -95,7 +95,7 @@ contract Lending is Ownable, IAsset {
    * @notice triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint /*accountId*/, IManager newManager) external view {
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) revert LA_UnknownManager();
   }
 
@@ -116,7 +116,6 @@ contract Lending is Ownable, IAsset {
   //   External Functions   //
   ////////////////////////////
 
-
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
@@ -125,7 +124,7 @@ contract Lending is Ownable, IAsset {
    * @dev update interest rate
    */
   function _accurInterest() internal {
-    //todo: actual interest updates 
+    //todo: actual interest updates
 
     lastTimestamp = block.timestamp;
   }

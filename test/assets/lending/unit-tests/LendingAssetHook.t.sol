@@ -10,16 +10,18 @@ import "../../../shared/mocks/MockManager.sol";
 import "../../../../src/assets/Lending.sol";
 import "../../../../src/Account.sol";
 
-contract UNIT_LendingHook is Test {
+contract UNIT_LendingAssetHook is Test {
   Lending lending;
+
   MockERC20 usdc;
+
   MockManager manager;
 
   Account account;
-  
+
   function setUp() public {
     account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
-    
+
     manager = new MockManager(address(account));
     usdc = new MockERC20("USDC", "USDC");
 
@@ -40,24 +42,20 @@ contract UNIT_LendingHook is Test {
     (int postBalance, bool needAllowance) = lending.handleAdjustment(adjustment, 0, manager, address(this));
 
     assertEq(lending.lastTimestamp(), block.timestamp);
-
     assertEq(needAllowance, false);
-
     // todo: updaete this check to include interest
     assertEq(postBalance, delta);
   }
 
   function testAssetHookAccurInterestOnNegativeAdjustment() public {
-    
     int delta = -100;
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, lending, 0, delta, 0x00);
 
     // stimulate call from account
     vm.prank(address(account));
-    (int postBalance, bool needAllowance ) = lending.handleAdjustment(adjustment, 0, manager, address(this));
+    (int postBalance, bool needAllowance) = lending.handleAdjustment(adjustment, 0, manager, address(this));
 
     assertEq(needAllowance, true);
-
     // todo: updaete this check to include interest
     assertEq(postBalance, delta);
   }
@@ -73,5 +71,4 @@ contract UNIT_LendingHook is Test {
     vm.prank(address(account));
     lending.handleManagerChange(0, manager);
   }
-  
 }
