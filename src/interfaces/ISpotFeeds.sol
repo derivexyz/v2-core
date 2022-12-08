@@ -6,6 +6,7 @@ pragma solidity ^0.8.13;
  * @author Lyra
  * @notice Spot feed adapter interface intended to be inherited 
  *         by a variety of feed options, including Chainlink aggregators.
+ *         NOTE: spotPrice always assumed to return 18 decimal place uint
  */
  
  interface ISpotFeeds {
@@ -15,7 +16,14 @@ pragma solidity ^0.8.13;
   * @param feedId id set for a given trading pair
   * @return spotPrice 18 decimal price of trading pair
   */
-  function getSpotForFeed(uint feedId) external returns (uint spotPrice);
+  function getSpot(uint feedId) external returns (uint spotPrice);
+
+  /**
+  * @notice Gets spot price for a given tradingPair
+  * @param pair bytes that returns the trading pair (e.g. "ETH/USDC")
+  * @return spotPrice 18 decimal price of trading pair
+  */
+  function getSpot(bytes32 pair) external returns (uint spotPrice);
 
   /**
   * @notice Returns feedId for a given pair
