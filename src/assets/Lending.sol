@@ -79,8 +79,8 @@ contract Lending is Ownable, IAsset {
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     // todo: verify manager
 
-    // accurue interest rate
-    _accurueInterest();
+    // accrue interest rate
+    _accrueInterest();
 
     // todo: accrue interest on prebalance
 
@@ -123,7 +123,7 @@ contract Lending is Ownable, IAsset {
   /**
    * @dev update interest rate
    */
-  function _accurInterest() internal {
+  function _accrueInterest() internal {
     //todo: actual interest updates
 
     lastTimestamp = block.timestamp;
