@@ -79,10 +79,10 @@ contract Lending is Ownable, IAsset {
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     // todo: verify manager
 
-    // accur interest rate
-    _accurInterest();
+    // accurue interest rate
+    _accurueInterest();
 
-    // todo: accur interest on prebalance
+    // todo: accrue interest on prebalance
 
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
