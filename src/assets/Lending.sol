@@ -147,7 +147,7 @@ contract Lending is Owned, IAsset {
         amount: int(amountInAccount),
         assetData: bytes32(0)
       }),
-      true, // do not trigger callback on handleAdjustment so we apply interest
+      true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
 
