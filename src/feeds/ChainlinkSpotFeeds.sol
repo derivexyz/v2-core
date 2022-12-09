@@ -18,14 +18,14 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   ///////////////
 
   /// @dev maps tradingPair to feedId
-  mapping(bytes32 => uint) tradingPairToFeedId;
+  mapping(bytes32 => uint) public tradingPairToFeedId;
   /// @dev maps feedId to tradingPair
-  mapping(uint => bytes32) feedIdToTradingPair;
+  mapping(uint => bytes32) public feedIdToTradingPair;
 
   /// @dev first id starts from 1
-  uint lastFeedId;
+  uint public lastFeedId;
   /// @dev maps feedId to aggregator details
-  mapping(uint => Aggregator) aggregators;
+  mapping(uint => Aggregator) public aggregators;
 
   ////////////
   // Events //
