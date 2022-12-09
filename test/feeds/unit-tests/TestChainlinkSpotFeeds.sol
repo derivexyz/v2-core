@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
+
 contract TestChainlinkSpotFeeds is Test {
   ChainlinkSpotFeeds spotFeeds;
   MockV3Aggregator aggregator1;
@@ -17,7 +18,7 @@ contract TestChainlinkSpotFeeds is Test {
     aggregator2 = new MockV3Aggregator(18, 10000e18);
     spotFeeds = new ChainlinkSpotFeeds();
   }
-  
+
   //////////////////
   // Adding Feeds //
   //////////////////
@@ -63,7 +64,7 @@ contract TestChainlinkSpotFeeds is Test {
 
     /* get correct initial feed */
     spotFeeds.getSpot(1);
-    
+
     // todo: test once spot price logic is implemented
   }
 

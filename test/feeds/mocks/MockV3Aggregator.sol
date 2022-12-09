@@ -12,31 +12,21 @@ import "chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
  * its answer is unimportant
  */
 contract MockV3Aggregator is AggregatorV3Interface {
-  uint256 public constant override version = 0;
+  uint public constant override version = 0;
 
-  uint256 public latestRound;
+  uint public latestRound;
   uint8 public override decimals;
 
-  mapping(uint256 => int256) public getAnswer;
-  mapping(uint256 => uint256) public getTimestamp;
-  mapping(uint256 => uint256) private getStartedAt;
+  mapping(uint => int) public getAnswer;
+  mapping(uint => uint) public getTimestamp;
+  mapping(uint => uint) private getStartedAt;
 
-  constructor(uint8 _decimals, int256 _initialAnswer) {
+  constructor(uint8 _decimals, int _initialAnswer) {
     decimals = _decimals;
-    updateRoundData(
-      uint80(++latestRound),
-      _initialAnswer,
-      block.timestamp,
-      block.timestamp
-    );
+    updateRoundData(uint80(++latestRound), _initialAnswer, block.timestamp, block.timestamp);
   }
 
-  function updateRoundData(
-    uint80 _roundId,
-    int256 _answer,
-    uint256 _timestamp,
-    uint256 _startedAt
-  ) public {
+  function updateRoundData(uint80 _roundId, int _answer, uint _timestamp, uint _startedAt) public {
     latestRound = _roundId;
     getAnswer[latestRound] = _answer;
     getTimestamp[latestRound] = _timestamp;
@@ -47,13 +37,7 @@ contract MockV3Aggregator is AggregatorV3Interface {
     external
     view
     override
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    )
+    returns (uint80 roundId, int answer, uint startedAt, uint updatedAt, uint80 answeredInRound)
   {
     return (_roundId, getAnswer[_roundId], getStartedAt[_roundId], getTimestamp[_roundId], _roundId);
   }
@@ -62,13 +46,7 @@ contract MockV3Aggregator is AggregatorV3Interface {
     external
     view
     override
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    )
+    returns (uint80 roundId, int answer, uint startedAt, uint updatedAt, uint80 answeredInRound)
   {
     return (
       uint80(latestRound),
