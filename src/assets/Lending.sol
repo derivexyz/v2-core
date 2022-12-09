@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "openzeppelin/access/Ownable.sol";
+import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
 
 /**
@@ -12,7 +12,7 @@ import "../interfaces/IAsset.sol";
  *        users can borrow cash by having a negative balance in their account (if allowed by manager)
  * @author Lyra
  */
-contract Lending is Ownable, IAsset {
+contract Lending is Owned, IAsset {
   ///@dev account contract address
   address public immutable account;
 
