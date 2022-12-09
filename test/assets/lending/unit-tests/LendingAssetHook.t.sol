@@ -12,20 +12,17 @@ import "../../../../src/Account.sol";
 
 contract UNIT_LendingAssetHook is Test {
   Lending lending;
-
   MockERC20 usdc;
-
   MockManager manager;
-
-  Account account;
+  address account;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = address(0xaa);
 
-    manager = new MockManager(address(account));
+    manager = new MockManager(account);
     usdc = new MockERC20("USDC", "USDC");
 
-    lending = new Lending(address(account), address(usdc));
+    lending = new Lending(account, address(usdc));
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
@@ -39,7 +36,7 @@ contract UNIT_LendingAssetHook is Test {
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, lending, 0, 0, 0x00);
     vm.expectRevert(Lending.LA_UnknownManager.selector);
 
-    vm.prank(address(account));
+    vm.prank(account);
     lending.handleAdjustment(adjustment, 0, manager, address(this));
   }
 
@@ -48,7 +45,7 @@ contract UNIT_LendingAssetHook is Test {
     int delta = 100;
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, lending, 0, delta, 0x00);
 
-    vm.prank(address(account));
+    vm.prank(account);
     (int postBalance, bool needAllowance) = lending.handleAdjustment(adjustment, 0, manager, address(this));
 
     assertEq(lending.lastTimestamp(), block.timestamp);
@@ -63,7 +60,7 @@ contract UNIT_LendingAssetHook is Test {
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, lending, 0, delta, 0x00);
 
     // stimulate call from account
-    vm.prank(address(account));
+    vm.prank(account);
     (int postBalance, bool needAllowance) = lending.handleAdjustment(adjustment, 0, manager, address(this));
 
     assertEq(needAllowance, true);
@@ -73,13 +70,15 @@ contract UNIT_LendingAssetHook is Test {
 
   function testChangeManagerHookRevertOnNonWhitelistedManager() public {
     vm.expectRevert(Lending.LA_UnknownManager.selector);
-    vm.prank(address(account));
+    
+    vm.prank(account);
     lending.handleManagerChange(0, manager);
   }
 
   function testWillNotRevertOnLegalManagerUpdate() public {
     lending.setWhitelistManager(address(manager), true);
-    vm.prank(address(account));
+    
+    vm.prank(account);
     lending.handleManagerChange(0, manager);
   }
 }
