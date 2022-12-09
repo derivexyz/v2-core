@@ -153,7 +153,6 @@ contract Lending is Owned, IAsset {
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint amount, address recipient) external {
-
     if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
 
     IERC20(usdc).safeTransfer(recipient, amount);
@@ -212,6 +211,4 @@ contract Lending is Owned, IAsset {
 
   /// @dev caller is not owner of the account
   error LA_OnlyAccountOwner();
-
-  
 }
