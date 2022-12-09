@@ -8,7 +8,6 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/Lending.sol";
-import "../../../../src/Account.sol";
 
 contract UNIT_LendingAssetHook is Test {
   Lending lending;
@@ -70,14 +69,14 @@ contract UNIT_LendingAssetHook is Test {
 
   function testChangeManagerHookRevertOnNonWhitelistedManager() public {
     vm.expectRevert(Lending.LA_UnknownManager.selector);
-    
+
     vm.prank(account);
     lending.handleManagerChange(0, manager);
   }
 
   function testWillNotRevertOnLegalManagerUpdate() public {
     lending.setWhitelistManager(address(manager), true);
-    
+
     vm.prank(account);
     lending.handleManagerChange(0, manager);
   }
