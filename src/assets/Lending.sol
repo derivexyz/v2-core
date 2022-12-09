@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
+import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
@@ -22,6 +23,9 @@ contract Lending is Owned, IAsset {
 
   ///@dev usdc address
   address public immutable usdc;
+
+  ///@dev store usdc decimals as immutable 
+  uint8 private immutable usdcDecimals;
 
   /////////////////////////
   //   State Variables   //
@@ -63,6 +67,7 @@ contract Lending is Owned, IAsset {
 
   constructor(address _account, address _usdc) {
     usdc = _usdc;
+    usdcDecimals = IERC20Metadata(_usdc).decimals();
     account = IAccount(_account);
   }
 
@@ -127,19 +132,19 @@ contract Lending is Owned, IAsset {
   /**
    * @dev deposit USDC and increase account balance
    * @param recipientAccount account id to receive the cash asset
-   * @param amount amount of
+   * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external {
-    // todo: decimals conversion
-    // assuming we're using same decimals for token amount + cash amount in Account
     IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
+
+    uint amountInAccount = _convertDecimals(amount, usdcDecimals, 18);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
-        amount: int(amount),
+        amount: int(amountInAccount),
         assetData: bytes32(0)
       }),
       true, // do not trigger callback on handleAdjustment so we apply interest
@@ -168,5 +173,22 @@ contract Lending is Owned, IAsset {
     //todo: actual interest updates
 
     lastTimestamp = block.timestamp;
+  }
+
+  /**
+   * @dev convert amount based on decimals
+   * @param amount amount in fromDecimals
+   * @param fromDecimals original decimals
+   * @param toDecimals target decimals
+   */
+  function _convertDecimals(uint amount, uint8 fromDecimals, uint8 toDecimals) internal pure returns (uint) {
+    if (fromDecimals == toDecimals) return amount;
+    unchecked {
+      // scale down
+      if (fromDecimals > toDecimals) return amount / (10 ** (fromDecimals - toDecimals));
+
+      // scale up
+      return amount * (10 ** (toDecimals - fromDecimals));  
+    }
   }
 }
