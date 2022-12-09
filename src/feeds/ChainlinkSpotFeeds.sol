@@ -17,7 +17,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   // Variables //
   ///////////////
 
-  /// @dev maps feedId to tradingPair
+  /// @dev maps feedId to trading pair symbol 
   mapping(uint => bytes32) public feedIdToSymbol;
 
   /// @dev first id starts from 1
@@ -65,7 +65,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   //////////////////
 
   /**
-   * @notice Assigns a trading pair to a given feedId and chainlink aggregator
+   * @notice Assigns a chainlink aggregator and symbol to a given feedId
    * @param symbol bytes that returns the trading pair (e.g. "ETH/USDC")
    * @return feedId id set for a given trading pair
    */
@@ -85,7 +85,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   //////////
 
   /**
-   * @notice Returns the pair name for a given feedId
+   * @notice Returns the trading pair symbol for a given feedId
    * @param feedId id of the feed
    * @return symbol bytes that returns the trading pair (e.g. "ETH/USDC")
    */
