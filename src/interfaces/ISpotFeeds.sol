@@ -18,23 +18,9 @@ interface ISpotFeeds {
   function getSpot(uint feedId) external returns (uint spotPrice);
 
   /**
-   * @notice Gets spot price for a given tradingPair
-   * @param pair bytes that returns the trading pair (e.g. "ETH/USDC")
-   * @return spotPrice 18 decimal price of trading pair
-   */
-  function getSpot(bytes32 pair) external returns (uint spotPrice);
-
-  /**
-   * @notice Returns feedId for a given pair
-   * @param pair bytes that returns the trading pair (e.g. "ETH/USDC")
-   * @return feedId id of the feed
-   */
-  function getFeedId(bytes32 pair) external view returns (uint feedId);
-
-  /**
    * @notice Returns the pair name for a given feedId
    * @param feedId id of the feed
-   * @return pair bytes that returns the trading pair (e.g. "ETH/USDC")
+   * @return symbol bytes that returns the trading pair (e.g. "ETH/USDC")
    */
-  function getTradingPair(uint feedId) external view returns (bytes32 pair);
+  function getSymbol(uint feedId) external view returns (bytes32 symbol);
 }
