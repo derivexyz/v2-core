@@ -2,9 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
+import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
+import "../interfaces/IAccount.sol";
 
 /**
  * @title cash asset with built-in lending feature.
@@ -13,8 +15,13 @@ import "../interfaces/IAsset.sol";
  * @author Lyra
  */
 contract Lending is Owned, IAsset {
+  using SafeERC20 for IERC20;
+
   ///@dev account contract address
-  address public immutable account;
+  IAccount public immutable account;
+
+  ///@dev usdc address
+  address public immutable usdc;
 
   /////////////////////////
   //   State Variables   //
@@ -46,7 +53,7 @@ contract Lending is Owned, IAsset {
   //   Modifiers   //
   ///////////////////
   modifier onlyAccount() {
-    if (msg.sender != account) revert LA_NotAccount();
+    if (msg.sender != address(account)) revert LA_NotAccount();
     _;
   }
 
@@ -54,12 +61,13 @@ contract Lending is Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(address _account) {
-    account = _account;
+  constructor(address _account, address _usdc) {
+    usdc = _usdc;
+    account = IAccount(_account);
   }
 
   //////////////////////////
-  //   IAsset Functions   //
+  //    Account Hooks     //
   //////////////////////////
 
   /**
@@ -77,7 +85,7 @@ contract Lending is Owned, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    // todo: verify manager
+    _checkManager(address(manager));
 
     // accrue interest rate
     _accrueInterest();
@@ -96,7 +104,7 @@ contract Lending is Owned, IAsset {
    * @dev block update with non-whitelisted manager
    */
   function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
-    if (!whitelistedManager[address(newManager)]) revert LA_UnknownManager();
+    _checkManager(address(newManager));
   }
 
   //////////////////////////////
@@ -116,9 +124,42 @@ contract Lending is Owned, IAsset {
   //   External Functions   //
   ////////////////////////////
 
+  /**
+   * @dev deposit USDC and increase account balance
+   * @param recipientAccount account id to receive the cash asset
+   * @param amount amount of
+   */
+  function deposit(uint recipientAccount, uint amount) external {
+    // todo: decimals conversion
+    // assuming we're using same decimals for token amount + cash amount in Account
+    IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
+
+    account.assetAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: recipientAccount,
+        asset: IAsset(address(this)),
+        subId: 0,
+        amount: int(amount),
+        assetData: bytes32(0)
+      }),
+      true, // do not trigger callback on handleAdjustment so we apply interest
+      ""
+    );
+
+    // invoke handleAdjustment hook so the manager is checked, and interest is applied.
+  }
+
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
+
+  /**
+   * @dev revert if manager address is not whitelisted by this contract
+   * @param manager manager address
+   */
+  function _checkManager(address manager) internal view {
+    if (!whitelistedManager[manager]) revert LA_UnknownManager();
+  }
 
   /**
    * @dev update interest rate

@@ -25,7 +25,7 @@ contract UNIT_LendingAssetHook is Test {
     manager = new MockManager(address(account));
     usdc = new MockERC20("USDC", "USDC");
 
-    lending = new Lending(address(account));
+    lending = new Lending(address(account), address(usdc));
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
@@ -34,7 +34,17 @@ contract UNIT_LendingAssetHook is Test {
     lending.handleAdjustment(adjustment, 0, manager, address(this));
   }
 
+  function testCannotExecuteHandleAdjustmentIfManagerIsNotWhitelisted() public {
+    /* this could happen if someone is trying to transfer our cash asset to an account controlled by malicious manager */
+    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, lending, 0, 0, 0x00);
+    vm.expectRevert(Lending.LA_UnknownManager.selector);
+
+    vm.prank(address(account));
+    lending.handleAdjustment(adjustment, 0, manager, address(this));
+  }
+
   function testAssetHookAccurInterestOnPositiveAdjustment() public {
+    lending.setWhitelistManager(address(manager), true);
     int delta = 100;
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, lending, 0, delta, 0x00);
 
@@ -48,6 +58,7 @@ contract UNIT_LendingAssetHook is Test {
   }
 
   function testAssetHookAccurInterestOnNegativeAdjustment() public {
+    lending.setWhitelistManager(address(manager), true);
     int delta = -100;
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, lending, 0, delta, 0x00);
 
