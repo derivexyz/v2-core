@@ -43,16 +43,6 @@ contract Lending is Owned, IAsset {
   ///@dev whitelisted managers
   mapping(address => bool) public whitelistedManager;
 
-  ////////////////
-  //   Errors   //
-  ////////////////
-
-  /// @dev caller is not account
-  error LA_NotAccount();
-
-  /// @dev revert when user trying to upgrade to a unknown manager
-  error LA_UnknownManager();
-
   ///////////////////
   //   Modifiers   //
   ///////////////////
@@ -190,4 +180,14 @@ contract Lending is Owned, IAsset {
       else return amount * (10 ** (toDecimals - fromDecimals));
     }
   }
+
+  ////////////////
+  //   Errors   //
+  ////////////////
+
+  /// @dev caller is not account
+  error LA_NotAccount();
+
+  /// @dev revert when user trying to upgrade to a unknown manager
+  error LA_UnknownManager();
 }
