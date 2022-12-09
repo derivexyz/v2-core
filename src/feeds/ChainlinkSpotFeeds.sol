@@ -17,7 +17,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   // Variables //
   ///////////////
 
-  /// @dev maps feedId to trading pair symbol 
+  /// @dev maps feedId to trading pair symbol
   mapping(uint => bytes32) public feedIdToSymbol;
 
   /// @dev first id starts from 1
