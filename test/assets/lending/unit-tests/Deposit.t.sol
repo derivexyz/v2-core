@@ -10,6 +10,9 @@ import "../../../shared/mocks/MockManager.sol";
 import "../../../../src/assets/Lending.sol";
 import "../../../../src/Account.sol";
 
+/**
+ * @dev we deploy actual Account contract in these tests to simplify verification process
+ */
 contract UNIT_LendingDeposit is Test {
   Lending lending;
   MockERC20 usdc;
@@ -33,7 +36,7 @@ contract UNIT_LendingDeposit is Test {
 
     // 10000 USDC with 18 decimals
     usdc.mint(address(this), 10000 ether);
-    usdc.approve(address(lending), type(uint256).max);
+    usdc.approve(address(lending), type(uint).max);
 
     accountId = account.createAccount(address(this), manager);
   }
@@ -61,12 +64,11 @@ contract UNIT_LendingDeposit is Test {
 
     // deposit again
     lending.deposit(accountId, depositAmount);
-    
+
     assertEq(lending.lastTimestamp(), block.timestamp);
     // todo: test accrueInterest
-  } 
+  }
 }
-
 
 contract UNIT_LendingDeposit6Decimals is Test {
   Lending lending;
@@ -87,13 +89,48 @@ contract UNIT_LendingDeposit6Decimals is Test {
 
     // 10000 USDC with 6 decimals
     usdc.mint(address(this), 10000e6);
-    usdc.approve(address(lending), type(uint256).max);
+    usdc.approve(address(lending), type(uint).max);
 
     accountId = account.createAccount(address(this), manager);
   }
 
   function testDepositWorkWithTokensWith6Decimals() public {
     uint depositAmount = 100e6;
+    lending.deposit(accountId, depositAmount);
+
+    int balance = account.getBalance(accountId, lending, 0);
+
+    // amount should be scaled to 18 decimals in account
+    assertEq(balance, 100 ether);
+  }
+}
+
+contract UNIT_LendingDeposit20Decimals is Test {
+  Lending lending;
+  Account account;
+
+  uint accountId;
+
+  function setUp() public {
+    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    MockManager manager = new MockManager(address(account));
+    MockERC20 usdc = new MockERC20("USDC", "USDC");
+
+    // set USDC to 20 decimals
+    usdc.setDecimals(20);
+
+    lending = new Lending(address(account), address(usdc));
+    lending.setWhitelistManager(address(manager), true);
+
+    // 10000 USDC with 20 decimals
+    usdc.mint(address(this), 10000e20);
+    usdc.approve(address(lending), type(uint).max);
+
+    accountId = account.createAccount(address(this), manager);
+  }
+
+  function testDepositWorkWithTokensWith6Decimals() public {
+    uint depositAmount = 100e20;
     lending.deposit(accountId, depositAmount);
 
     int balance = account.getBalance(accountId, lending, 0);

@@ -24,7 +24,7 @@ contract Lending is Owned, IAsset {
   ///@dev usdc address
   address public immutable usdc;
 
-  ///@dev store usdc decimals as immutable 
+  ///@dev store usdc decimals as immutable
   uint8 private immutable usdcDecimals;
 
   /////////////////////////
@@ -186,9 +186,8 @@ contract Lending is Owned, IAsset {
     unchecked {
       // scale down
       if (fromDecimals > toDecimals) return amount / (10 ** (fromDecimals - toDecimals));
-
       // scale up
-      return amount * (10 ** (toDecimals - fromDecimals));  
+      else return amount * (10 ** (toDecimals - fromDecimals));
     }
   }
 }

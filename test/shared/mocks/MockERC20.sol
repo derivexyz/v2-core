@@ -16,7 +16,7 @@ contract MockERC20 is ERC20 {
     _decimals = newDecimals;
   }
 
-  function decimals() override public view returns (uint8) {
+  function decimals() public view override returns (uint8) {
     return _decimals;
   }
 
