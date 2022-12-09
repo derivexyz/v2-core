@@ -58,16 +58,42 @@ contract TestChainlinkSpotFeeds is Test {
   // Getting Spot Price //
   ////////////////////////
 
-  function testGetSpotWithFeedId() public {}
+  function testGetSpotWithFeedId() public {
+    _addAllFeeds();
 
-  function testGetSpotWithTradingPair() public {}
+    /* get correct initial feed */
+    spotFeeds.getSpot(1);
+    
+    // todo: test once spot price logic is implemented
+  }
+
+  function testGetSpotWithTradingPair() public {
+    _addAllFeeds();
+
+    /* get correct initial feed */
+    spotFeeds.getSpot(pair1);
+    // todo: test once spot price logic is implemented
+  }
 
   //////////////////////////
   // Getting Feed Details //
   //////////////////////////
 
-  function testGetFeedId() public {}
+  function testGetFeedId() public {
+    _addAllFeeds();
 
-  function testGetTradingPair() public {}
+    assertEq(spotFeeds.getFeedId("ETH/USD"), 1);
+    assertEq(spotFeeds.getFeedId("BTC/USD"), 2);
+  }
 
+  function testGetTradingPair() public {
+    _addAllFeeds();
+    assertEq(spotFeeds.getTradingPair(1), "ETH/USD");
+    assertEq(spotFeeds.getTradingPair(2), "BTC/USD");
+  }
+
+  function _addAllFeeds() internal {
+    spotFeeds.addFeed(pair1, address(aggregator1));
+    spotFeeds.addFeed(pair2, address(aggregator2));
+  }
 }
