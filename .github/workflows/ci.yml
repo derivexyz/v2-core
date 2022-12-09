@@ -5,8 +5,7 @@ on:
       - master
   pull_request:
     branches:
-      - "*"
-      - "cicd/github-tests"
+      - "**"
 
 jobs:
   ci-check:
