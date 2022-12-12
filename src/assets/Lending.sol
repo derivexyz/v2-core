@@ -146,6 +146,31 @@ contract Lending is Owned, IAsset {
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
 
+  /**
+   * @notice withdraw USDC from a Lyra account
+   * @param accountId account id to withdraw
+   * @param amount amount of usdc
+   * @param recipient USDC recipient
+   */
+  function withdraw(uint accountId, uint amount, address recipient) external {
+    if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
+
+    IERC20(usdc).safeTransfer(recipient, amount);
+
+    uint cashAmount = amount.convertDecimals(usdcDecimals, 18);
+
+    account.assetAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: accountId,
+        asset: IAsset(address(this)),
+        subId: 0,
+        amount: -int(cashAmount),
+        assetData: bytes32(0)
+      }),
+      true, // do trigger callback on handleAdjustment so we apply interest
+      ""
+    );
+  }
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
@@ -167,6 +192,13 @@ contract Lending is Owned, IAsset {
     lastTimestamp = block.timestamp;
   }
 
+  /**
+   * @dev get current account cash balance
+   */
+  // function _getStaleBalance(uint accountId) internal view returns (int balance) {
+  //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
+  // }
+
   ////////////////
   //   Errors   //
   ////////////////
@@ -176,4 +208,7 @@ contract Lending is Owned, IAsset {
 
   /// @dev revert when user trying to upgrade to a unknown manager
   error LA_UnknownManager();
+
+  /// @dev caller is not owner of the account
+  error LA_OnlyAccountOwner();
 }
