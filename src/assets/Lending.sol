@@ -195,9 +195,9 @@ contract Lending is Owned, IAsset {
   /**
    * @dev get current account cash balance
    */
-  function _getStaleBalance(uint accountId) internal view returns (int balance) {
-    balance = account.getBalance(accountId, IAsset(address(this)), 0);
-  }
+  // function _getStaleBalance(uint accountId) internal view returns (int balance) {
+  //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
+  // }
 
   ////////////////
   //   Errors   //
