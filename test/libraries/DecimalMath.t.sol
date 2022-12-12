@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "../../src/libraries/DecimalMath.sol";
 
 /**
- * For current `forge coverage` to wrok, i needs to call an external contract then invoke internal library
+ * @dev for current `forge coverage` to wrok, i needs to call an external contract then invoke internal library
  */
 contract DecimalMathTester {
   function convertDecimals(uint amount, uint8 from, uint8 to) external returns (uint) {
