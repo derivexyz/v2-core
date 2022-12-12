@@ -246,4 +246,7 @@ contract OptionToken is IAsset, Owned {
       totalLongs[subId] += uint(postBal);
     }
   }
+
+  // add in a function prefixed with test here to prevent coverage to pick it up.
+  function test() public {}
 }

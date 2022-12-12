@@ -1,5 +1,5 @@
 //SPDX-License-Identifier:ISC
-pragma solidity 0.8.13;
+pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/ERC20.sol";
 
@@ -24,4 +24,7 @@ contract MockERC20 is ERC20 {
     require(permitted[msg.sender], "only permitted");
     ERC20._burn(account, amount);
   }
+
+  // add in a function prefixed with test here to prevent coverage to pick it up.
+  function test() public {}
 }

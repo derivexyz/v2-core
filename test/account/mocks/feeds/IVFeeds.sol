@@ -28,4 +28,7 @@ contract IVFeeds is Owned {
   function getIVForSubId(IAsset asset, uint subId) external view returns (uint iv) {
     return getIVForFeed(feedIds[asset][subId]);
   }
+
+  // add in a function prefixed with test here to prevent coverage to pick it up.
+  function test() public {}
 }

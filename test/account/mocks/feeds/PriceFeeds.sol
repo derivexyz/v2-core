@@ -37,4 +37,7 @@ contract TestPriceFeeds is PriceFeeds, Owned {
   function getSpotForAsset(IAsset asset) external view override returns (uint spotPrice) {
     return getSpotForFeed(assetToFeedId[asset]);
   }
+
+  // add in a function prefixed with test here to prevent coverage to pick it up.
+  function test() public {}
 }

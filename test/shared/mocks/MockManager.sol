@@ -53,4 +53,7 @@ contract MockManager is IManager {
   function setLogAdjustmentTriggers(bool _log) external {
     logAdjustmentTriggers = _log;
   }
+
+  // add in a function prefixed with test here to prevent coverage to pick it up.
+  function test() public {}
 }
