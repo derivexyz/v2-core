@@ -17,11 +17,9 @@ library DecimalMath {
    */
   function convertDecimals(uint amount, uint8 fromDecimals, uint8 toDecimals) internal pure returns (uint) {
     if (fromDecimals == toDecimals) return amount;
-    unchecked {
-      // scale down
-      if (fromDecimals > toDecimals) return amount / (10 ** (fromDecimals - toDecimals));
-      // scale up
-      return amount * (10 ** (toDecimals - fromDecimals));
-    }
+    // scale down
+    if (fromDecimals > toDecimals) return amount / (10 ** (fromDecimals - toDecimals));
+    // scale up
+    return amount * (10 ** (toDecimals - fromDecimals));
   }
 }
