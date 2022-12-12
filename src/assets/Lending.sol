@@ -2,9 +2,13 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
+import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
+import "../interfaces/IAccount.sol";
+import "../libraries/DecimalMath.sol";
 
 /**
  * @title cash asset with built-in lending feature.
@@ -13,8 +17,17 @@ import "../interfaces/IAsset.sol";
  * @author Lyra
  */
 contract Lending is Owned, IAsset {
+  using SafeERC20 for IERC20;
+  using DecimalMath for uint;
+
   ///@dev account contract address
-  address public immutable account;
+  IAccount public immutable account;
+
+  ///@dev usdc address
+  address public immutable usdc;
+
+  ///@dev store usdc decimals as immutable
+  uint8 private immutable usdcDecimals;
 
   /////////////////////////
   //   State Variables   //
@@ -32,21 +45,11 @@ contract Lending is Owned, IAsset {
   ///@dev whitelisted managers
   mapping(address => bool) public whitelistedManager;
 
-  ////////////////
-  //   Errors   //
-  ////////////////
-
-  /// @dev caller is not account
-  error LA_NotAccount();
-
-  /// @dev revert when user trying to upgrade to a unknown manager
-  error LA_UnknownManager();
-
   ///////////////////
   //   Modifiers   //
   ///////////////////
   modifier onlyAccount() {
-    if (msg.sender != account) revert LA_NotAccount();
+    if (msg.sender != address(account)) revert LA_NotAccount();
     _;
   }
 
@@ -54,12 +57,14 @@ contract Lending is Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(address _account) {
-    account = _account;
+  constructor(address _account, address _usdc) {
+    usdc = _usdc;
+    usdcDecimals = IERC20Metadata(_usdc).decimals();
+    account = IAccount(_account);
   }
 
   //////////////////////////
-  //   IAsset Functions   //
+  //    Account Hooks     //
   //////////////////////////
 
   /**
@@ -77,7 +82,7 @@ contract Lending is Owned, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    // todo: verify manager
+    _checkManager(address(manager));
 
     // accrue interest rate
     _accrueInterest();
@@ -96,7 +101,7 @@ contract Lending is Owned, IAsset {
    * @dev block update with non-whitelisted manager
    */
   function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
-    if (!whitelistedManager[address(newManager)]) revert LA_UnknownManager();
+    _checkManager(address(newManager));
   }
 
   //////////////////////////////
@@ -116,9 +121,42 @@ contract Lending is Owned, IAsset {
   //   External Functions   //
   ////////////////////////////
 
+  /**
+   * @dev deposit USDC and increase account balance
+   * @param recipientAccount account id to receive the cash asset
+   * @param amount amount of USDC to deposit
+   */
+  function deposit(uint recipientAccount, uint amount) external {
+    IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
+
+    uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
+
+    account.assetAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: recipientAccount,
+        asset: IAsset(address(this)),
+        subId: 0,
+        amount: int(amountInAccount),
+        assetData: bytes32(0)
+      }),
+      true, // do trigger callback on handleAdjustment so we apply interest
+      ""
+    );
+
+    // invoke handleAdjustment hook so the manager is checked, and interest is applied.
+  }
+
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
+
+  /**
+   * @dev revert if manager address is not whitelisted by this contract
+   * @param manager manager address
+   */
+  function _checkManager(address manager) internal view {
+    if (!whitelistedManager[manager]) revert LA_UnknownManager();
+  }
 
   /**
    * @dev update interest rate
@@ -128,4 +166,14 @@ contract Lending is Owned, IAsset {
 
     lastTimestamp = block.timestamp;
   }
+
+  ////////////////
+  //   Errors   //
+  ////////////////
+
+  /// @dev caller is not account
+  error LA_NotAccount();
+
+  /// @dev revert when user trying to upgrade to a unknown manager
+  error LA_UnknownManager();
 }
