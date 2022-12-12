@@ -39,6 +39,12 @@ contract Lending is Owned, IAsset {
   ///@dev supply index
   uint public supplyIndex;
 
+  ///@dev amount of USDC that has been supplied
+  uint public totalSupply;
+
+  ///@dev total amount of negative balances)
+  uint public totalBorrow;
+
   ///@dev last timestamp that the interest is accrued
   uint public lastTimestamp;
 
@@ -143,6 +149,8 @@ contract Lending is Owned, IAsset {
       ""
     );
 
+    totalSupply += amountInAccount;
+
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
 
@@ -171,6 +179,8 @@ contract Lending is Owned, IAsset {
       ""
     );
   }
+
+  totalSupply -= cashAmount;
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
