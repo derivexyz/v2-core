@@ -17,198 +17,212 @@ import "../libraries/DecimalMath.sol";
  * @author Lyra
  */
 contract Lending is Owned, IAsset {
-  using SafeERC20 for IERC20;
-  using DecimalMath for uint;
+    using SafeERC20 for IERC20;
+    using DecimalMath for uint;
 
-  ///@dev account contract address
-  IAccount public immutable account;
+    ///@dev account contract address
+    IAccount public immutable account;
 
-  ///@dev usdc address
-  address public immutable usdc;
+    ///@dev usdc address
+    address public immutable usdc;
 
-  ///@dev store usdc decimals as immutable
-  uint8 private immutable usdcDecimals;
+    ///@dev store usdc decimals as immutable
+    uint8 private immutable usdcDecimals;
 
-  /////////////////////////
-  //   State Variables   //
-  /////////////////////////
+    /////////////////////////
+    //   State Variables   //
+    /////////////////////////
 
-  ///@dev borrow index
-  uint public borrowIndex;
+    ///@dev borrow index
+    uint public borrowIndex;
 
-  ///@dev supply index
-  uint public supplyIndex;
+    ///@dev supply index
+    uint public supplyIndex;
 
-  ///@dev last timestamp that the interest is accrued
-  uint public lastTimestamp;
+    ///@dev last timestamp that the interest is accrued
+    uint public lastTimestamp;
 
-  ///@dev whitelisted managers
-  mapping(address => bool) public whitelistedManager;
+    ///@dev whitelisted managers
+    mapping(address => bool) public whitelistedManager;
 
-  ///////////////////
-  //   Modifiers   //
-  ///////////////////
-  modifier onlyAccount() {
-    if (msg.sender != address(account)) revert LA_NotAccount();
-    _;
-  }
+    ///////////////////
+    //   Modifiers   //
+    ///////////////////
+    modifier onlyAccount() {
+        if (msg.sender != address(account)) revert LA_NotAccount();
+        _;
+    }
 
-  /////////////////////
-  //   Constructor   //
-  /////////////////////
+    /////////////////////
+    //   Constructor   //
+    /////////////////////
 
-  constructor(address _account, address _usdc) {
-    usdc = _usdc;
-    usdcDecimals = IERC20Metadata(_usdc).decimals();
-    account = IAccount(_account);
-  }
+    constructor(address _account, address _usdc) {
+        usdc = _usdc;
+        usdcDecimals = IERC20Metadata(_usdc).decimals();
+        account = IAccount(_account);
+    }
 
-  //////////////////////////
-  //    Account Hooks     //
-  //////////////////////////
+    //////////////////////////
+    //    Account Hooks     //
+    //////////////////////////
 
-  /**
-   * @notice triggered when an adjustment is triggered on the asset balance
-   * @dev    we imply interest rate and modify the final balance. final balance can be positive or negative.
-   * @param adjustment details about adjustment, containing account, subId, amount
-   * @param preBalance balance before adjustment
-   * @param manager the manager contract that will verify the end state
-   * @return finalBalance the final balance to be recorded in the account
-   * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
-   */
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
-    int preBalance,
-    IManager manager,
-    address /*caller*/
-  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    _checkManager(address(manager));
+    /**
+     * @notice triggered when an adjustment is triggered on the asset balance
+     * @dev    we imply interest rate and modify the final balance. final balance can be positive or negative.
+     * @param adjustment details about adjustment, containing account, subId, amount
+     * @param preBalance balance before adjustment
+     * @param manager the manager contract that will verify the end state
+     * @return finalBalance the final balance to be recorded in the account
+     * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
+     */
+    function handleAdjustment(
+        AccountStructs.AssetAdjustment memory adjustment,
+        int preBalance,
+        IManager manager,
+        address /*caller*/
+    ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+        _checkManager(address(manager));
 
-    // accrue interest rate
-    _accrueInterest();
+        // accrue interest rate
+        _accrueInterest();
 
-    // todo: accrue interest on prebalance
+        // todo: accrue interest on prebalance
 
-    // finalBalance can go positive or negative
-    finalBalance = preBalance + adjustment.amount;
+        // finalBalance can go positive or negative
+        finalBalance = preBalance + adjustment.amount;
 
-    // need allowance if trying to deduct balance
-    needAllowance = adjustment.amount < 0;
-  }
+        // need allowance if trying to deduct balance
+        needAllowance = adjustment.amount < 0;
+    }
 
-  /**
-   * @notice triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
-   */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
-    _checkManager(address(newManager));
-  }
+    /**
+     * @notice triggered when a user wants to migrate an account to a new manager
+     * @dev block update with non-whitelisted manager
+     */
+    function handleManagerChange(
+        uint,
+        /*accountId*/
+        IManager newManager
+    ) external view {
+        _checkManager(address(newManager));
+    }
 
-  //////////////////////////////
-  //   Owner-only Functions   //
-  //////////////////////////////
+    //////////////////////////////
+    //   Owner-only Functions   //
+    //////////////////////////////
 
-  /**
-   * @notice whitelist or un-whitelist a manager
-   * @param _manager manager address
-   * @param _whitelisted true to whitelist
-   */
-  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
-    whitelistedManager[_manager] = _whitelisted;
-  }
+    /**
+     * @notice whitelist or un-whitelist a manager
+     * @param _manager manager address
+     * @param _whitelisted true to whitelist
+     */
+    function setWhitelistManager(address _manager, bool _whitelisted)
+        external
+        onlyOwner
+    {
+        whitelistedManager[_manager] = _whitelisted;
+    }
 
-  ////////////////////////////
-  //   External Functions   //
-  ////////////////////////////
+    ////////////////////////////
+    //   External Functions   //
+    ////////////////////////////
 
-  /**
-   * @dev deposit USDC and increase account balance
-   * @param recipientAccount account id to receive the cash asset
-   * @param amount amount of USDC to deposit
-   */
-  function deposit(uint recipientAccount, uint amount) external {
-    IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
+    /**
+     * @dev deposit USDC and increase account balance
+     * @param recipientAccount account id to receive the cash asset
+     * @param amount amount of USDC to deposit
+     */
+    function deposit(uint recipientAccount, uint amount) external {
+        IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
 
-    uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
+        uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
 
-    account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: recipientAccount,
-        asset: IAsset(address(this)),
-        subId: 0,
-        amount: int(amountInAccount),
-        assetData: bytes32(0)
-      }),
-      true, // do trigger callback on handleAdjustment so we apply interest
-      ""
-    );
+        account.assetAdjustment(
+            AccountStructs.AssetAdjustment({
+                acc: recipientAccount,
+                asset: IAsset(address(this)),
+                subId: 0,
+                amount: int(amountInAccount),
+                assetData: bytes32(0)
+            }),
+            true, // do trigger callback on handleAdjustment so we apply interest
+            ""
+        );
 
-    // invoke handleAdjustment hook so the manager is checked, and interest is applied.
-  }
+        // invoke handleAdjustment hook so the manager is checked, and interest is applied.
+    }
 
-  /**
-   * @notice withdraw USDC from a Lyra account
-   * @param accountId account id to withdraw
-   * @param amount amount of usdc
-   * @param recipient USDC recipient
-   */
-  function withdraw(uint accountId, uint amount, address recipient) external {
-    if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
+    /**
+     * @notice withdraw USDC from a Lyra account
+     * @param accountId account id to withdraw
+     * @param amount amount of usdc
+     * @param recipient USDC recipient
+     */
+    function withdraw(
+        uint accountId,
+        uint amount,
+        address recipient
+    ) external {
+        if (msg.sender != account.ownerOf(accountId))
+            revert LA_OnlyAccountOwner();
 
-    IERC20(usdc).safeTransfer(recipient, amount);
+        IERC20(usdc).safeTransfer(recipient, amount);
 
-    uint cashAmount = amount.convertDecimals(usdcDecimals, 18);
+        uint cashAmount = amount.convertDecimals(usdcDecimals, 18);
 
-    account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: accountId,
-        asset: IAsset(address(this)),
-        subId: 0,
-        amount: -int(cashAmount),
-        assetData: bytes32(0)
-      }),
-      true, // do trigger callback on handleAdjustment so we apply interest
-      ""
-    );
-  }
-  ////////////////////////////
-  //   Internal Functions   //
-  ////////////////////////////
+        account.assetAdjustment(
+            AccountStructs.AssetAdjustment({
+                acc: accountId,
+                asset: IAsset(address(this)),
+                subId: 0,
+                amount: -int(cashAmount),
+                assetData: bytes32(0)
+            }),
+            true, // do trigger callback on handleAdjustment so we apply interest
+            ""
+        );
+    }
 
-  /**
-   * @dev revert if manager address is not whitelisted by this contract
-   * @param manager manager address
-   */
-  function _checkManager(address manager) internal view {
-    if (!whitelistedManager[manager]) revert LA_UnknownManager();
-  }
+    ////////////////////////////
+    //   Internal Functions   //
+    ////////////////////////////
 
-  /**
-   * @dev update interest rate
-   */
-  function _accrueInterest() internal {
-    //todo: actual interest updates
+    /**
+     * @dev revert if manager address is not whitelisted by this contract
+     * @param manager manager address
+     */
+    function _checkManager(address manager) internal view {
+        if (!whitelistedManager[manager]) revert LA_UnknownManager();
+    }
 
-    lastTimestamp = block.timestamp;
-  }
+    /**
+     * @dev update interest rate
+     */
+    function _accrueInterest() internal {
+        //todo: actual interest updates
+        uint util = borrowIndex / supplyIndex;
 
-  /**
-   * @dev get current account cash balance
-   */
-  // function _getStaleBalance(uint accountId) internal view returns (int balance) {
-  //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
-  // }
+        lastTimestamp = block.timestamp;
+    }
 
-  ////////////////
-  //   Errors   //
-  ////////////////
+    /**
+     * @dev get current account cash balance
+     */
+    // function _getStaleBalance(uint accountId) internal view returns (int balance) {
+    //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
+    // }
 
-  /// @dev caller is not account
-  error LA_NotAccount();
+    ////////////////
+    //   Errors   //
+    ////////////////
 
-  /// @dev revert when user trying to upgrade to a unknown manager
-  error LA_UnknownManager();
+    /// @dev caller is not account
+    error LA_NotAccount();
 
-  /// @dev caller is not owner of the account
-  error LA_OnlyAccountOwner();
+    /// @dev revert when user trying to upgrade to a unknown manager
+    error LA_UnknownManager();
+
+    /// @dev caller is not owner of the account
+    error LA_OnlyAccountOwner();
 }
