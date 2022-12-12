@@ -166,7 +166,7 @@ contract Lending is Owned, IAsset {
 
     lastTimestamp = block.timestamp;
   }
-  
+
   ////////////////
   //   Errors   //
   ////////////////
