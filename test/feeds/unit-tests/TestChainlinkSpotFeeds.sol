@@ -24,35 +24,41 @@ contract TestChainlinkSpotFeeds is Test {
   //////////////////
 
   function testEmptyFeedId() public {
-    spotFeeds.addFeed(symbol1, address(aggregator1));
-    spotFeeds.addFeed(symbol2, address(aggregator2));
+    spotFeeds.addFeed(symbol1, address(aggregator1), 1 hours);
+    spotFeeds.addFeed(symbol2, address(aggregator2), 2 hours);
 
     /* test empty feedId */
-    (AggregatorV3Interface aggregatorResult, uint8 decimalResult) = spotFeeds.aggregators(1000001);
+    (AggregatorV3Interface aggregatorResult, uint8 decimalResult, uint64 staleLimit) = spotFeeds.aggregators(1000001);
     assertEq(address(aggregatorResult), address(0));
     assertEq(decimalResult, 0);
+    assertEq(staleLimit, 0);
+
+    // todo: expect revert
   }
 
   function testAddMultipleFeeds() public {
     /* variable setting */
     AggregatorV3Interface aggregatorResult;
     uint8 decimalResult;
+    uint64 staleLimit;
 
     /* test first spot price */
-    spotFeeds.addFeed(symbol1, address(aggregator1));
+    spotFeeds.addFeed(symbol1, address(aggregator1), 1 hours);
     /* check result */
     assertEq(spotFeeds.lastFeedId(), 1);
-    (aggregatorResult, decimalResult) = spotFeeds.aggregators(1);
+    (aggregatorResult, decimalResult, staleLimit) = spotFeeds.aggregators(1);
     assertEq(address(aggregatorResult), address(aggregator1));
     assertEq(decimalResult, 8);
+    assertEq(staleLimit, 1 hours);
 
     /* test second spot price */
-    spotFeeds.addFeed(symbol2, address(aggregator2));
+    spotFeeds.addFeed(symbol2, address(aggregator2), 2 hours);
     /* check result */
     assertEq(spotFeeds.lastFeedId(), 2);
-    (aggregatorResult, decimalResult) = spotFeeds.aggregators(2);
+    (aggregatorResult, decimalResult, staleLimit) = spotFeeds.aggregators(2);
     assertEq(address(aggregatorResult), address(aggregator2));
     assertEq(decimalResult, 18);
+    assertEq(staleLimit, 2 hours);
   }
 
   ////////////////////////
@@ -79,7 +85,7 @@ contract TestChainlinkSpotFeeds is Test {
   }
 
   function _addAllFeeds() internal {
-    spotFeeds.addFeed(symbol1, address(aggregator1));
-    spotFeeds.addFeed(symbol2, address(aggregator2));
+    spotFeeds.addFeed(symbol1, address(aggregator1), 1 hours);
+    spotFeeds.addFeed(symbol2, address(aggregator2), 2 hours);
   }
 }
