@@ -8,6 +8,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccount.sol";
+import "../libraries/DecimalMath.sol";
 
 /**
  * @title cash asset with built-in lending feature.
@@ -17,6 +18,7 @@ import "../interfaces/IAccount.sol";
  */
 contract Lending is Owned, IAsset {
   using SafeERC20 for IERC20;
+  using DecimalMath for uint;
 
   ///@dev account contract address
   IAccount public immutable account;
@@ -127,7 +129,7 @@ contract Lending is Owned, IAsset {
   function deposit(uint recipientAccount, uint amount) external {
     IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
 
-    uint amountInAccount = _convertDecimals(amount, usdcDecimals, 18);
+    uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -164,23 +166,7 @@ contract Lending is Owned, IAsset {
 
     lastTimestamp = block.timestamp;
   }
-
-  /**
-   * @dev convert amount based on decimals
-   * @param amount amount in fromDecimals
-   * @param fromDecimals original decimals
-   * @param toDecimals target decimals
-   */
-  function _convertDecimals(uint amount, uint8 fromDecimals, uint8 toDecimals) internal pure returns (uint) {
-    if (fromDecimals == toDecimals) return amount;
-    unchecked {
-      // scale down
-      if (fromDecimals > toDecimals) return amount / (10 ** (fromDecimals - toDecimals));
-      // scale up
-      else return amount * (10 ** (toDecimals - fromDecimals));
-    }
-  }
-
+  
   ////////////////
   //   Errors   //
   ////////////////
