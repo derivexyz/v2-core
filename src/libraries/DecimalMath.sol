@@ -21,7 +21,7 @@ library DecimalMath {
       // scale down
       if (fromDecimals > toDecimals) return amount / (10 ** (fromDecimals - toDecimals));
       // scale up
-      else return amount * (10 ** (toDecimals - fromDecimals));
+      return amount * (10 ** (toDecimals - fromDecimals));
     }
   }
 }
