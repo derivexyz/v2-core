@@ -188,7 +188,8 @@ contract Lending is Owned, IAsset {
    */
   function _accrueInterest() internal {
     //todo: actual interest updates
-
+    uint util = borrowIndex / supplyIndex;
+    
     lastTimestamp = block.timestamp;
   }
 
