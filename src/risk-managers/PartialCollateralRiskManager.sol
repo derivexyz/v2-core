@@ -15,6 +15,19 @@ import "synthetix/Owned.sol";
  */
 contract PartialCollateralRiskManager is IManager, Owned {
 
+  struct ExpiryHolding {
+    uint expiry;
+    StrikeHolding[] strikes;
+  }
+
+  struct StrikeHolding {
+    uint strike;
+    int calls;
+    int puts;
+    int forwards;
+
+  }
+
   ///////////////
   // Variables //
   ///////////////
@@ -59,27 +72,50 @@ contract PartialCollateralRiskManager is IManager, Owned {
     address, 
     AccountStructs.AssetDelta[] memory, 
     bytes memory
-  ) public override {
-    // todo: PCRM check
+  ) public view override {
+    // todo: whitelist check
+
+    /* PCRM calculations */
+    ExpiryHolding[] memory expiries = _sortOptions(account.getAccountBalances(accountId));
+    getInitialMargin(expiries);
   }
 
-  function handleManagerChange(uint accountId, IManager newManager) external {}
+  function handleManagerChange(uint accountId, IManager newManager) external {
+    // todo: nextManager whitelist check
+  }
 
+  // todo: refactor to handle maintenance and initial margin
+  function getInitialMargin(ExpiryHolding[] memory expiries) public view returns (int margin) {
+    for (uint i; i < expiries.length; i++) {
+      margin += _calcExpiryValue(expiries[i]);
+    }
+
+    margin += _calcCashValue();
+  }
 
   ////////////////////////
   // Option Margin Util //
   ////////////////////////
   // todo: make public getters for these
+  // todo: apply all the penalties / discounts in each function
 
-  function _sortOptions(AccountStructs.HeldAsset[] memory heldAssets) internal view {
+  function _sortOptions(
+    AccountStructs.AssetBalance[] memory assets
+  ) internal view returns (ExpiryHolding[] memory expiryHoldings) {
     // todo: sort out each expiry / strike 
+    // todo: ignore the lendingAsset
+    // todo: add limit to # of expiries and # of options
   }
 
-  function _getExpiryValue() internal view {
+  function _calcExpiryValue(ExpiryHolding memory expiry) internal view returns (int expiryValue) {
+    expiryValue;
+    for (uint i; i < expiry.strikes.length; i++) {
+      expiryValue += _calcStrikeValue(expiry.strikes[i]);
+    }
 
   }
 
-  function _getStrikeValue() internal view {
+  function _calcStrikeValue(StrikeHolding memory strikeHoldings) internal view returns (int strikeValue) {
     // todo: get call, put, forward values
   }
 
@@ -87,7 +123,7 @@ contract PartialCollateralRiskManager is IManager, Owned {
   // Cash Margin Util //
   //////////////////////
 
-  function _getCashValue() internal view {
+  function _calcCashValue() internal view returns (int cashValue) {
     // todo: apply interest rate shock
   }
 
