@@ -113,7 +113,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
     }
 
     if (staleLimit == 0) {
-      revert SG_StaleLimitCannotBeZero();
+      revert SF_StaleLimitCannotBeZero();
     }
 
     /* store decimals once to reduce external calls during getSpotPrice */
@@ -144,7 +144,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
 
   error SF_InvalidAggregator();
 
-  error SG_StaleLimitCannotBeZero();
+  error SF_StaleLimitCannotBeZero();
 
   error SF_SpotFeedStale(uint updatedAt, uint currentTime, uint staleLimit);
 

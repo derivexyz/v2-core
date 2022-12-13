@@ -14,7 +14,7 @@ contract TestChainlinkSpotFeeds is Test {
   bytes32 symbol2 = "BTC/USD";
 
   function setUp() public {
-    aggregator1 = new MockV3Aggregator(8, 1000e18);
+    aggregator1 = new MockV3Aggregator(8, 1000e8);
     aggregator2 = new MockV3Aggregator(18, 10000e18);
     spotFeeds = new ChainlinkSpotFeeds();
   }
@@ -32,8 +32,6 @@ contract TestChainlinkSpotFeeds is Test {
     assertEq(address(aggregatorResult), address(0));
     assertEq(decimalResult, 0);
     assertEq(staleLimit, 0);
-
-    // todo: expect revert
   }
 
   function testAddMultipleFeeds() public {
@@ -61,17 +59,52 @@ contract TestChainlinkSpotFeeds is Test {
     assertEq(staleLimit, 2 hours);
   }
 
+  function testFailInvalidAggregatorAddition() public {
+    spotFeeds.addFeed(symbol1, address(0), 1 hours);
+    vm.expectRevert(
+      abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector)
+    );
+  }
+
+  function testFailInvalidStaleLimit() public {
+    spotFeeds.addFeed(symbol1, address(aggregator2), 0);
+    vm.expectRevert(
+      abi.encodeWithSelector(ChainlinkSpotFeeds.SF_StaleLimitCannotBeZero.selector)
+    );
+  }
+
   ////////////////////////
   // Getting Spot Price //
   ////////////////////////
+
+  function testFailGetSpotWhenInvalidAggregator() public {
+    _addAllFeeds();
+    spotFeeds.getSpot(1000001);
+    vm.expectRevert(
+      abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector)
+    );
+  }
+
+  function testFailGetSpotWhenStale() public {
+    _addAllFeeds();
+    uint oldTime = block.timestamp;
+    skip(1 hours + 1 minutes);
+    spotFeeds.getSpot(1);
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ChainlinkSpotFeeds.SF_SpotFeedStale.selector,
+        oldTime, block.timestamp, 1 hours)
+    );
+  }
 
   function testGetSpotWithFeedId() public {
     _addAllFeeds();
 
     /* get correct initial feed */
-    spotFeeds.getSpot(1);
-
-    // todo: test once spot price logic is implemented
+    uint ethSpotPrice = spotFeeds.getSpot(1);
+    uint btcSpotPrice = spotFeeds.getSpot(2);
+    assertEq(ethSpotPrice, 1000e18);
+    assertEq(btcSpotPrice, 10000e18);
   }
 
   //////////////////////////
