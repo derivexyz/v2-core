@@ -117,7 +117,7 @@ contract FixedPointMathLibTest is Test {
   }
 
   function testSqrt() public {
-    assertEq(tester.sqrt(uint(1e10*1e10 * 1e18)), 1e10 * 1e18);
+    assertEq(tester.sqrt(uint(1e10 * 1e10 * 1e18)), 1e10 * 1e18);
 
     // sqrt(0.5) = 0.70710678118
     assertEq(tester.sqrt(0.5e18), 707106781_186547524);
