@@ -1,15 +1,17 @@
 <div align="center">
   <h1 align="center"> Lyra V2 Core</h1>
 
-  <img src="https://github.com/lyra-finance/v2-core/actions/workflows/slither.yml/badge.svg?branch=master"/>
-
-<p align='center'>
+  <p align='center'>
     <br>
     <br>
     <img src='./docs/imgs/overall/logo.png' alt='lyra' width="300" />
     <h5 align="center"> Cool slogan goes here </h6>
 </p> 
 </div>
+
+[![CI](https://github.com/lyra-finance/v2-core/actions/workflows/ci.yml/badge.svg)](https://github.com/lyra-finance/v2-core/actions/workflows/ci.yml)
+[![Slither Analysis](https://github.com/lyra-finance/v2-core/actions/workflows/slither.yml/badge.svg)](https://github.com/lyra-finance/v2-core/actions/workflows/slither.yml)
+[![codecov](https://codecov.io/gh/lyra-finance/v2-core/branch/master/graph/badge.svg?token=43B951MYIN)](https://codecov.io/gh/lyra-finance/v2-core)
 
 ## Installation and Build
 
