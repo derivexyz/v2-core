@@ -61,16 +61,12 @@ contract TestChainlinkSpotFeeds is Test {
 
   function testFailInvalidAggregatorAddition() public {
     spotFeeds.addFeed(symbol1, address(0), 1 hours);
-    vm.expectRevert(
-      abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector)
-    );
+    vm.expectRevert(abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector));
   }
 
   function testFailInvalidStaleLimit() public {
     spotFeeds.addFeed(symbol1, address(aggregator2), 0);
-    vm.expectRevert(
-      abi.encodeWithSelector(ChainlinkSpotFeeds.SF_StaleLimitCannotBeZero.selector)
-    );
+    vm.expectRevert(abi.encodeWithSelector(ChainlinkSpotFeeds.SF_StaleLimitCannotBeZero.selector));
   }
 
   ////////////////////////
@@ -80,9 +76,7 @@ contract TestChainlinkSpotFeeds is Test {
   function testFailGetSpotWhenInvalidAggregator() public {
     _addAllFeeds();
     spotFeeds.getSpot(1000001);
-    vm.expectRevert(
-      abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector)
-    );
+    vm.expectRevert(abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector));
   }
 
   function testFailGetSpotWhenStale() public {
@@ -91,9 +85,7 @@ contract TestChainlinkSpotFeeds is Test {
     skip(1 hours + 1 minutes);
     spotFeeds.getSpot(1);
     vm.expectRevert(
-      abi.encodeWithSelector(
-        ChainlinkSpotFeeds.SF_SpotFeedStale.selector,
-        oldTime, block.timestamp, 1 hours)
+      abi.encodeWithSelector(ChainlinkSpotFeeds.SF_SpotFeedStale.selector, oldTime, block.timestamp, 1 hours)
     );
   }
 
@@ -112,7 +104,7 @@ contract TestChainlinkSpotFeeds is Test {
 
     /* add a carried over feed */
     skip(3 hours);
-    _updateFeed(aggregator1, 2, 500e8, 1); 
+    _updateFeed(aggregator1, 2, 500e8, 1);
 
     /* should revert since answer carried over from stale round */
     (uint spotPrice, uint updatedAt) = spotFeeds.getSpotAndUpdatedAt(1);
@@ -130,7 +122,6 @@ contract TestChainlinkSpotFeeds is Test {
     assertEq(spotFeeds.getSymbol(2), "BTC/USD");
   }
 
-
   /////////////
   // Helpers //
   /////////////
@@ -143,5 +134,4 @@ contract TestChainlinkSpotFeeds is Test {
   function _updateFeed(MockV3Aggregator aggregator, uint80 roundId, int spotPrice, uint80 answeredInRound) internal {
     aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
   }
-
 }

@@ -27,7 +27,9 @@ contract MockV3Aggregator is AggregatorV3Interface {
     updateRoundData(uint80(++latestRound), _initialAnswer, block.timestamp, block.timestamp, uint80(latestRound));
   }
 
-  function updateRoundData(uint80 _roundId, int _answer, uint _timestamp, uint _startedAt, uint80 answeredInRound) public {
+  function updateRoundData(uint80 _roundId, int _answer, uint _timestamp, uint _startedAt, uint80 answeredInRound)
+    public
+  {
     latestRound = _roundId;
     getAnswer[latestRound] = _answer;
     getTimestamp[latestRound] = _timestamp;
@@ -41,7 +43,13 @@ contract MockV3Aggregator is AggregatorV3Interface {
     override
     returns (uint80 roundId, int answer, uint startedAt, uint updatedAt, uint80 answeredInRound)
   {
-    return (_roundId, getAnswer[_roundId], getStartedAt[_roundId], getTimestamp[_roundId], uint80(getAnsweredRoundIn[_roundId]));
+    return (
+      _roundId,
+      getAnswer[_roundId],
+      getStartedAt[_roundId],
+      getTimestamp[_roundId],
+      uint80(getAnsweredRoundIn[_roundId])
+    );
   }
 
   function latestRoundData()

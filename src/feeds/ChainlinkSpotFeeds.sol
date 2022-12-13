@@ -57,7 +57,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
     uint staleLimit = aggregators[feedId].staleLimit;
     if (currentTime - updatedAt > staleLimit) {
       revert SF_SpotFeedStale(updatedAt, currentTime, staleLimit);
-    } 
+    }
 
     return spotPrice;
   }
@@ -75,23 +75,17 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
       revert SF_InvalidAggregator();
     }
 
-    (uint80 roundId,
-    int answer,,
-    uint updatedAt,
-    uint80 answeredInRound) = chainlinkAggregator.aggregator.latestRoundData();
+    (uint80 roundId, int answer,, uint updatedAt, uint80 answeredInRound) =
+      chainlinkAggregator.aggregator.latestRoundData();
 
     /* Chainlink carries over answer if consensus was not reached. 
      * Must get the timestamp of the actual round when answer was recorded */
     if (roundId != answeredInRound) {
-      (, , , updatedAt, ) = chainlinkAggregator.aggregator.getRoundData(answeredInRound);
+      (,,, updatedAt,) = chainlinkAggregator.aggregator.getRoundData(answeredInRound);
     }
 
     /* Convert to correct decimals and uint*/
-    uint spotPrice = DecimalMath.convertDecimals(
-      SafeCast.toUint256(answer),
-      chainlinkAggregator.decimals,
-      18
-    );
+    uint spotPrice = DecimalMath.convertDecimals(SafeCast.toUint256(answer), chainlinkAggregator.decimals, 18);
 
     return (spotPrice, updatedAt);
   }
@@ -147,5 +141,4 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   error SF_StaleLimitCannotBeZero();
 
   error SF_SpotFeedStale(uint updatedAt, uint currentTime, uint staleLimit);
-
 }
