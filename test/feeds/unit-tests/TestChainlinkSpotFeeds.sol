@@ -107,6 +107,19 @@ contract TestChainlinkSpotFeeds is Test {
     assertEq(btcSpotPrice, 10000e18);
   }
 
+  function testDetectCarriedOverFeed() public {
+    _addAllFeeds();
+
+    /* add a carried over feed */
+    skip(3 hours);
+    _updateFeed(aggregator1, 2, 500e8, 1); 
+
+    /* should revert since answer carried over from stale round */
+    (uint spotPrice, uint updatedAt) = spotFeeds.getSpotAndUpdatedAt(1);
+    assertEq(spotPrice, 500e18);
+    assertEq(updatedAt, block.timestamp - 3 hours);
+  }
+
   //////////////////////////
   // Getting Feed Details //
   //////////////////////////
@@ -117,8 +130,18 @@ contract TestChainlinkSpotFeeds is Test {
     assertEq(spotFeeds.getSymbol(2), "BTC/USD");
   }
 
-  function _addAllFeeds() internal {
+
+  /////////////
+  // Helpers //
+  /////////////
+
+  function _addAllFeeds() public {
     spotFeeds.addFeed(symbol1, address(aggregator1), 1 hours);
     spotFeeds.addFeed(symbol2, address(aggregator2), 2 hours);
   }
+
+  function _updateFeed(MockV3Aggregator aggregator, uint80 roundId, int spotPrice, uint80 answeredInRound) internal {
+    aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
+  }
+
 }
