@@ -6,9 +6,11 @@ import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/Account.sol";
 import "src/interfaces/IManager.sol";
+import "src/interfaces/IAsset.sol";
+import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 
-contract TestOption is Test {
+contract UNIT_TestOption is Test {
   Account account;
   MockManager manager;
 
@@ -17,7 +19,9 @@ contract TestOption is Test {
   Option option;
 
   address alice = address(0xaa);
+  address bob = address(0xbb);
   uint aliceAcc;
+  uint bobAcc;
 
   function setUp() public {
     account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
@@ -31,6 +35,7 @@ contract TestOption is Test {
 
     vm.startPrank(alice);
     aliceAcc = account.createAccount(alice, IManager(manager));
+    bobAcc = account.createAccount(bob, IManager(manager));
   }
 
   //////////////
@@ -38,11 +43,19 @@ contract TestOption is Test {
   //////////////
 
   function testWhitelistedManagerCheck() public {
-
+    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: 1,
+      amount: 1e18,
+      assetData: ''
+    });
+    account.submitTransfer(assetTransfer, '');
   }
 
   function testValidSubIdCheck() public {
-
+    // todo: test out of bounds subId
   }
 
   ////////////////////
@@ -50,7 +63,21 @@ contract TestOption is Test {
   ////////////////////
 
   function testValidManagerChange() public {
+    /* ensure account holds asset before manager changed*/
+    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: 1,
+      amount: 1e18,
+      assetData: ''
+    });
+    account.submitTransfer(assetTransfer, '');
+    MockManager newManager = new MockManager(address(account));
 
+
+    // todo: test change to valid manager
+    account.changeManager(aliceAcc, IManager(address(newManager)), '');
   }
 
 
@@ -59,23 +86,27 @@ contract TestOption is Test {
   ////////////////
 
   function testSetSettlementPrice() public {
-
+    // todo: do actual price check
+    option.setSettlementPrice(0);
   }
 
-  function testCalcSettlementValue() public {
-
+  function testCalcSettlementValue() public view {
+    // todo: do actual calc
+    option.calcSettlementValue(0, 0);
   }
 
   ///////////
   // Utils //
   ///////////
 
-  function testDecodeSubId() public {
-
+  function testDecodeSubId() public view {
+    // todo: do actual decode
+    option.getOptionDetails(0);
   }
 
-  function testEncodeSubId() public {
-
+  function testEncodeSubId() public view {
+    // todo: do actual encode
+    option.getSubId(0, 0, true);
   }
 
 }
