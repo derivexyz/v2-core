@@ -82,8 +82,8 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
 
     /* Chainlink carries over answer if consensus was not reached. 
      * Must get the timestamp of the actual round when answer was recorded */
-    if (roundId == answeredInRound) {
-      (roundId, , , updatedAt, ) = chainlinkAggregator.aggregator.latestRoundData();
+    if (roundId != answeredInRound) {
+      (, , , updatedAt, ) = chainlinkAggregator.aggregator.getRoundData(answeredInRound);
     }
 
     /* Convert to correct decimals and uint*/
