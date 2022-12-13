@@ -9,6 +9,7 @@ import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccount.sol";
 import "../libraries/DecimalMath.sol";
+import "forge-std/Script.sol";
 
 /**
  * @title cash asset with built-in lending feature.
@@ -19,6 +20,8 @@ import "../libraries/DecimalMath.sol";
 contract Lending is Owned, IAsset {
   using SafeERC20 for IERC20;
   using DecimalMath for uint;
+  using SafeCast for int;
+  using SafeCast for uint;
 
   ///@dev account contract address
   IAccount public immutable account;
@@ -33,17 +36,20 @@ contract Lending is Owned, IAsset {
   //   State Variables   //
   /////////////////////////
 
+  ///@dev amount of USDC that has been supplied
+  uint public totalSupply;
+
+  ///@dev total amount of negative balances
+  uint public totalBorrow;
+
+  ///@dev total accrued fees
+  uint public accruedFees;
+
   ///@dev borrow index
   uint public borrowIndex;
 
   ///@dev supply index
   uint public supplyIndex;
-
-  ///@dev amount of USDC that has been supplied
-  uint public totalSupply;
-
-  ///@dev total amount of negative balances)
-  uint public totalBorrow;
 
   ///@dev last timestamp that the interest is accrued
   uint public lastTimestamp;
@@ -88,18 +94,44 @@ contract Lending is Owned, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+    console.log("lending handle adjustment");
+    if (preBalance == 0 && adjustment.amount == 0) {
+      return (0, false);
+    }
     _checkManager(address(manager));
+
+    // finalBalance can go positive or negative
+    finalBalance = preBalance + adjustment.amount;
+
+    // update totalSupply and totalBorrow amounts
+    if (adjustment.amount < 0) {
+      if ((-adjustment.amount).toUint256() > totalSupply) revert LA_WithdrawMoreThanSupply(adjustment.amount, totalSupply);
+    }
+
+    if (preBalance <= 0 && finalBalance <= 0) {
+      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
+    } else if (preBalance >= 0 && finalBalance >= 0) {
+      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
+    } else if (preBalance < 0 && finalBalance > 0) {
+      totalBorrow -= (-preBalance).toUint256();
+      totalSupply += finalBalance.toUint256();
+    } else {
+      // (preBalance > 0 && finalBalance < 0)
+      totalBorrow += (-finalBalance).toUint256();
+      totalSupply -= preBalance.toUint256();
+    }
 
     // accrue interest rate
     _accrueInterest();
 
     // todo: accrue interest on prebalance
+  
 
-    // finalBalance can go positive or negative
-    finalBalance = preBalance + adjustment.amount;
-
+   
     // need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
+
+    console.log("END of handle adjustment");
   }
 
   /**
@@ -133,10 +165,14 @@ contract Lending is Owned, IAsset {
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external {
+    // if (amount == 0) return;
+
     IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
-
+    // console.log("here");
     uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
+    // console.log("after");
 
+    console.log("amount", amountInAccount);
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
@@ -149,7 +185,9 @@ contract Lending is Owned, IAsset {
       ""
     );
 
-    totalSupply += amountInAccount;
+
+    console.log("after again");
+    // totalSupply += amountInAccount;
 
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
@@ -163,11 +201,13 @@ contract Lending is Owned, IAsset {
   function withdraw(uint accountId, uint amount, address recipient) external {
     if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
 
+    int preBalance = account.getBalance(accountId, IAsset(address(this)), 0);
+
     IERC20(usdc).safeTransfer(recipient, amount);
 
     uint cashAmount = amount.convertDecimals(usdcDecimals, 18);
 
-    account.assetAdjustment(
+    int postBalance = account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
@@ -178,9 +218,18 @@ contract Lending is Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
+
+
+    // totalSupply -= cashAmount;
+ 
+    // if (postBalance < 0) {
+      
+    //   totalBorrow += SafeCast.toUint256(preBalance - postBalance);
+
+  
+    // }
   }
 
-  totalSupply -= cashAmount;
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
@@ -198,7 +247,7 @@ contract Lending is Owned, IAsset {
    */
   function _accrueInterest() internal {
     //todo: actual interest updates
-    uint util = borrowIndex / supplyIndex;
+    // uint util = borrowIndex / supplyIndex;
     
     lastTimestamp = block.timestamp;
   }
@@ -222,4 +271,10 @@ contract Lending is Owned, IAsset {
 
   /// @dev caller is not owner of the account
   error LA_OnlyAccountOwner();
+
+  /// @dev withdraw more than supply
+  error LA_WithdrawMoreThanSupply(int withdrawAmount, uint totalSupply);
+  
+  /// @dev accrued interest is stale
+  error LA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
 }

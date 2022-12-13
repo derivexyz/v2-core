@@ -67,6 +67,16 @@ contract UNIT_LendingDeposit is Test {
     assertEq(lending.lastTimestamp(), block.timestamp);
     // todo: test accrueInterest
   }
+
+  function testDepositIncreasesTotalSupply(uint depositAmount) public {
+    vm.assume(depositAmount <= 10000 ether);
+
+    uint preSupply = lending.totalSupply();
+    lending.deposit(accountId, depositAmount);
+    uint postSupply = lending.totalSupply();
+
+    assertEq(postSupply-preSupply, depositAmount);
+  }
 }
 
 contract UNIT_LendingDeposit6Decimals is Test {

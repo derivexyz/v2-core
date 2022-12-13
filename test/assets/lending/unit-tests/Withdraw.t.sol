@@ -89,4 +89,13 @@ contract UNIT_LendingWithdraw is Test {
     // todo: number might change based on interest
     assertEq(accBalance, -(int(amountToBorrow)));
   }
+
+  function testWithdrawDecreasesTotalSupply(uint withdrawAmount) public {
+    vm.assume(withdrawAmount <= 10000 ether);
+
+    uint beforeWithdraw = lending.totalSupply();
+    lending.withdraw(accountId, withdrawAmount, address(this));
+    uint afterWithdraw = lending.totalSupply();
+    assertEq(beforeWithdraw-withdrawAmount, afterWithdraw);
+  }
 }
