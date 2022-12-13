@@ -24,13 +24,13 @@ contract FixedPointMathTester {
     return result;
   }
 
-  function ilog2(uint x) external pure returns (uint r) {
-    uint result = FixedPointMathLib.ilog2(x);
+  function exp(int x) external pure returns (uint r) {
+    uint result = FixedPointMathLib.exp(x);
     return result;
   }
 
-  function exp(int x) external pure returns (uint r) {
-    uint result = FixedPointMathLib.exp(x);
+  function sqrt(uint x) external pure returns (uint r) {
+    uint result = FixedPointMathLib.sqrt(x);
     return result;
   }
 }
@@ -99,5 +99,33 @@ contract FixedPointMathLibTest is Test {
 
     // exp(-41) = 1.5628822e-18
     assertEq(tester.exp(-41e18), 1);
+  }
+
+  function testExpPercise() public {
+    // exp(10) = 22026.4657948
+    assertEq(tester.expPrecise(10e27), 22026_465794806_716516861_000000000);
+
+    // exp(136) will overflow
+    vm.expectRevert(FixedPointMathLib.ExpOverflow.selector);
+    tester.expPrecise(136e27);
+
+    // exp(0) = 1
+    assertEq(tester.expPrecise(0), 999999999999999999_000000000);
+
+    // exp(-1) = 0.36787944117
+    assertEq(tester.expPrecise(-1e27), 367879441_171442321_000000000);
+  }
+
+  function testSqrt() public {
+    assertEq(tester.sqrt(uint(1e10*1e10 * 1e18)), 1e10 * 1e18);
+
+    // sqrt(0.5) = 0.70710678118
+    assertEq(tester.sqrt(0.5e18), 707106781_186547524);
+
+    // sqrt(1) = 0.70710678118
+    assertEq(tester.sqrt(1e18), 1e18);
+
+    // exp(0) = 1
+    assertEq(tester.sqrt(0), 0);
   }
 }
