@@ -74,7 +74,6 @@ contract UNIT_LendingDeposit is Test {
     uint preSupply = lending.totalSupply();
     lending.deposit(accountId, depositAmount);
     uint postSupply = lending.totalSupply();
-
     assertEq(postSupply-preSupply, depositAmount);
   }
 }

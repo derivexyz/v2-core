@@ -20,8 +20,8 @@ import "forge-std/Script.sol";
 contract Lending is Owned, IAsset {
   using SafeERC20 for IERC20;
   using DecimalMath for uint;
-  using SafeCast for int;
   using SafeCast for uint;
+  using SafeCast for int;
 
   ///@dev account contract address
   IAccount public immutable account;
@@ -95,18 +95,18 @@ contract Lending is Owned, IAsset {
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     console.log("lending handle adjustment");
+    _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
     }
-    _checkManager(address(manager));
 
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
 
     // update totalSupply and totalBorrow amounts
-    if (adjustment.amount < 0) {
-      if ((-adjustment.amount).toUint256() > totalSupply) revert LA_WithdrawMoreThanSupply(adjustment.amount, totalSupply);
-    }
+    // if (adjustment.amount < 0) {
+    //   if ((-adjustment.amount).toUint256() > totalSupply) revert LA_WithdrawMoreThanSupply(adjustment.amount, totalSupply);
+    // }
 
     if (preBalance <= 0 && finalBalance <= 0) {
       totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
@@ -126,7 +126,6 @@ contract Lending is Owned, IAsset {
 
     // todo: accrue interest on prebalance
   
-
    
     // need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
@@ -184,11 +183,8 @@ contract Lending is Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
-
-
     console.log("after again");
-    // totalSupply += amountInAccount;
-
+ 
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
 
@@ -218,16 +214,6 @@ contract Lending is Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
-
-
-    // totalSupply -= cashAmount;
- 
-    // if (postBalance < 0) {
-      
-    //   totalBorrow += SafeCast.toUint256(preBalance - postBalance);
-
-  
-    // }
   }
 
   ////////////////////////////
