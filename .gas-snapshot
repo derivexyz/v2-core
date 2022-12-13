@@ -61,3 +61,7 @@ UNIT_ChangeManager:testMigrationShouldNotMakeDuplicatedCallToAssets() (gas: 1270
 DecimalMathTest:testConversionSameDecimals() (gas: 5772)
 DecimalMathTest:testConversionScaleDown() (gas: 7972)
 DecimalMathTest:testConversionScaleUp() (gas: 7965)
+IntLibTest:testAbsConstraint() (gas: 8289)
+IntLibTest:testAbsNegative() (gas: 6722)
+IntLibTest:testAbsPositive() (gas: 6397)
+IntLibTest:testAbsZero() (gas: 5522)
