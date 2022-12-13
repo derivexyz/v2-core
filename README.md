@@ -1,6 +1,8 @@
 <div align="center">
   <h1 align="center"> Lyra V2 Core</h1>
 
+  <img src="https://github.com/lyra-finance/v2-core/actions/workflows/slither.yml/badge.svg?branch=master"/>
+
 <p align='center'>
     <br>
     <br>
