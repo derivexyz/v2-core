@@ -9,7 +9,7 @@ import "../../src/libraries/IntLib.sol";
  * @dev for current `forge coverage` to wrok, i needs to call an external contract then invoke internal library
  */
 contract IntLibTester {
-  function abs(int a) external view returns (uint) {
+  function abs(int a) external pure returns (uint) {
     // it has to store result and return to work!
     uint res = IntLib.abs(a);
     return res;

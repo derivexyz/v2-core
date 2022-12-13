@@ -104,32 +104,36 @@ contract ArrayLibTest is Test {
   function testAddUniqueAddrToArray() public {
     address[] memory emptyArr = new address[](5);
 
-    (address[] memory arr, uint len) = tester.addUniqueToArray(emptyArr, address(5), 0);
-    assertEq(arr[0], address(5));
+    address element = address(5);
+
+    (address[] memory arr, uint len) = tester.addUniqueToArray(emptyArr, element, 0);
+    assertEq(arr[0], element);
     assertEq(len, 1);
 
     // add same element to arr again
-    (arr, len) = tester.addUniqueToArray(arr, address(5), len);
-    assertEq(arr[0], address(5));
+    (arr, len) = tester.addUniqueToArray(arr, element, len);
+    assertEq(arr[0], element);
     assertEq(len, 1);
   }
 
   function testAddUniqueAddrLengthTooLarge() public {
     address[] memory emptyArr = new address[](5);
 
+    address element = address(5);
+
     // we should pass in 0 here as we no there are no entries in the array
     // if we pass in the wrong length, the entry will be added to the wrong index
     uint wrongLengthToPass = 1;
-    (address[] memory arr, uint len) = tester.addUniqueToArray(emptyArr, address(5), wrongLengthToPass);
+    (address[] memory arr, uint len) = tester.addUniqueToArray(emptyArr, element, wrongLengthToPass);
     assertEq(arr[0], address(0)); // index 0 remains empty
-    assertEq(arr[1], address(5)); // 1 got added to index 1
+    assertEq(arr[1], element); // address(5) got added to index 1
     assertEq(len, 2);
 
     // first entry is empty, so it will append the array directly without checking
-    (arr, len) = tester.addUniqueToArray(arr, address(5), len);
+    (arr, len) = tester.addUniqueToArray(arr, element, len);
     assertEq(arr[0], address(0));
-    assertEq(arr[1], address(5));
-    assertEq(arr[2], address(5));
+    assertEq(arr[1], element);
+    assertEq(arr[2], element);
     assertEq(len, 3);
   }
 
@@ -138,12 +142,14 @@ contract ArrayLibTest is Test {
     nonEmptyArr[0] = address(1);
     nonEmptyArr[1] = address(100);
 
+    address element = address(5);
+
     // we should pass in 2 here.
     // passing in 1 will make the function only check the index 0, and append the result on index 1
     uint wrongLengthToPass = 1;
-    (address[] memory arr, uint len) = tester.addUniqueToArray(nonEmptyArr, address(5), wrongLengthToPass);
+    (address[] memory arr, uint len) = tester.addUniqueToArray(nonEmptyArr, element, wrongLengthToPass);
     assertEq(arr[0], address(1)); // index 0 remains empty
-    assertEq(arr[1], address(5)); // 1 got added to index 1
+    assertEq(arr[1], element); // 1 got added to index 1
     assertEq(len, 2);
   }
 }
