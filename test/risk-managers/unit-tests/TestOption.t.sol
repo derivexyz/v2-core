@@ -49,15 +49,33 @@ contract TestOption is Test {
   // Manager Change //
   ////////////////////
 
+  function testValidManagerChange() public {
+
+  }
+
 
   ////////////////
   // Settlement //
   ////////////////
 
+  function testSetSettlementPrice() public {
 
+  }
+
+  function testCalcSettlementValue() public {
+
+  }
 
   ///////////
   // Utils //
   ///////////
+
+  function testDecodeSubId() public {
+
+  }
+
+  function testEncodeSubId() public {
+
+  }
 
 }

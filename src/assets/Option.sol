@@ -68,7 +68,7 @@ contract Option is IAsset, Owned {
     // todo: uint96 encoding library 
   }
 
-  function getSettlementValue(uint subId, int balance) external view returns (int pnl, bool priceSettled) {
+  function calcSettlementValue(uint subId, int balance) external view returns (int pnl, bool priceSettled) {
     // todo: basic pnl
   }
 
