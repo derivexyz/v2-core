@@ -33,6 +33,16 @@ contract FixedPointMathTester {
     uint result = FixedPointMathLib.sqrt(x);
     return result;
   }
+
+  function stdNormal(int x) external pure returns (uint r) {
+    uint result = FixedPointMathLib.stdNormal(x);
+    return result;
+  }
+
+  function stdNormalCDF(int x) external pure returns (uint r) {
+    uint result = FixedPointMathLib.stdNormalCDF(x);
+    return result;
+  }
 }
 
 contract FixedPointMathLibTest is Test {
@@ -127,5 +137,39 @@ contract FixedPointMathLibTest is Test {
 
     // exp(0) = 1
     assertEq(tester.sqrt(0), 0);
+  }
+
+  function testStdNormalCDF() public {
+    // stdNormalCDF(1) = 0.84134
+    assertEq(tester.stdNormalCDF(1e18), 841344746_068542957);
+    assertEq(tester.stdNormalCDF(-1e18), 158655253_931457043); // 1 - stdNormCDF(1)
+
+    // stdNormalCDF(2) = 0.84134
+    assertEq(tester.stdNormalCDF(2e18), 977249868_051820775);
+    assertEq(tester.stdNormalCDF(-2e18), 22750131_948179225); // 1 - stdNormCDF(2)
+
+    // stdNormalCDF(10) is close to 1
+    assertEq(tester.stdNormalCDF(10e18), 1e18);
+    assertEq(tester.stdNormalCDF(-10e18), 0);
+
+    // stdNormalCDF(38) is close to 1
+    assertEq(tester.stdNormalCDF(38e18), 1e18);
+    assertEq(tester.stdNormalCDF(-38e18), 0);
+
+    // stdNormalCDF(0) = 0.5
+    assertEq(tester.stdNormalCDF(0), 0.5e18 - 1); // -1 for percision loss
+  }
+
+  // https://keisan.casio.com/exec/system/1180573188
+  function testStdNormal() public {
+    // stdNormal (1) = 0.24197
+    assertEq(tester.stdNormal(1e18), 241970724_519143349);
+    assertEq(tester.stdNormal(-1e18), 241970724_519143349);
+
+    // stdNormal (2) = 0.05399096651318805195056
+    assertEq(tester.stdNormal(2e18), 53990966_513188051);
+
+    // stdNormal (0.5) = 0.3520653267642994777747
+    assertEq(tester.stdNormal(0.5e18), 352065326_764299477);
   }
 }
