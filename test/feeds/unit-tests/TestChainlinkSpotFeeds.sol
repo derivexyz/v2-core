@@ -59,34 +59,34 @@ contract TestChainlinkSpotFeeds is Test {
     assertEq(staleLimit, 2 hours);
   }
 
-  function testFailInvalidAggregatorAddition() public {
-    spotFeeds.addFeed(symbol1, address(0), 1 hours);
+  function testCannotSetInvalidAggregatorAddition() public {
     vm.expectRevert(abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector));
+    spotFeeds.addFeed(symbol1, address(0), 1 hours);
   }
 
-  function testFailInvalidStaleLimit() public {
-    spotFeeds.addFeed(symbol1, address(aggregator2), 0);
+  function testCannotSetInvalidStaleLimit() public {
     vm.expectRevert(abi.encodeWithSelector(ChainlinkSpotFeeds.SF_StaleLimitCannotBeZero.selector));
+    spotFeeds.addFeed(symbol1, address(aggregator2), 0);
   }
 
   ////////////////////////
   // Getting Spot Price //
   ////////////////////////
 
-  function testFailGetSpotWhenInvalidAggregator() public {
+  function testCannotGetSpotWhenInvalidAggregator() public {
     _addAllFeeds();
-    spotFeeds.getSpot(1000001);
     vm.expectRevert(abi.encodeWithSelector(ChainlinkSpotFeeds.SF_InvalidAggregator.selector));
+    spotFeeds.getSpot(1000001);
   }
 
-  function testFailGetSpotWhenStale() public {
+  function testCannotGetSpotWhenStale() public {
     _addAllFeeds();
     uint oldTime = block.timestamp;
     skip(1 hours + 1 minutes);
-    spotFeeds.getSpot(1);
     vm.expectRevert(
       abi.encodeWithSelector(ChainlinkSpotFeeds.SF_SpotFeedStale.selector, oldTime, block.timestamp, 1 hours)
     );
+    spotFeeds.getSpot(1);
   }
 
   function testGetSpotWithFeedId() public {
