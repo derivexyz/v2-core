@@ -21,11 +21,10 @@ contract PartialCollateralRiskManager is IManager, Owned {
   }
 
   struct StrikeHolding {
-    uint strike;
-    int calls;
-    int puts;
-    int forwards;
-
+    uint64 strike;
+    int64 calls;
+    int64 puts;
+    int64 forwards;
   }
 
   ///////////////
