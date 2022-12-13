@@ -38,6 +38,6 @@ contract TestPriceFeeds is PriceFeeds, Owned {
     return getSpotForFeed(assetToFeedId[asset]);
   }
 
-  // add in a function prefixed with test here to prevent coverage to pick it up.
+  // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
 }
