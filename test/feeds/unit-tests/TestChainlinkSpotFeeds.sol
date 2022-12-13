@@ -40,7 +40,7 @@ contract TestChainlinkSpotFeeds is Test {
     uint8 decimalResult;
     uint64 staleLimit;
 
-    /* test first spot price */
+    /* test first aggregator */
     spotFeeds.addFeed(symbol1, address(aggregator1), 1 hours);
     /* check result */
     assertEq(spotFeeds.lastFeedId(), 1);
@@ -49,7 +49,7 @@ contract TestChainlinkSpotFeeds is Test {
     assertEq(decimalResult, 8);
     assertEq(staleLimit, 1 hours);
 
-    /* test second spot price */
+    /* test second aggregator */
     spotFeeds.addFeed(symbol2, address(aggregator2), 2 hours);
     /* check result */
     assertEq(spotFeeds.lastFeedId(), 2);
