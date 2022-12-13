@@ -155,7 +155,4 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     return transferBatch;
   }
-
-  // add in a function prefixed with test here to prevent coverage from picking it up.
-  // function test() public {}
 }
