@@ -157,26 +157,26 @@ library BlackScholesV2 {
    * @param d1 Internal coefficient of Black-Scholes
    * @param d2 Internal coefficient of Black-Scholes
    */
-  function _optionPricesDollarDelta(uint tAnnualised, uint spot, uint strikePrice, int rate, int d1, int d2)
-    internal
-    pure
-    returns (uint call, uint put, int callDelta, int putDelta)
-  {
-    uint strikePricePV =
-      strikePrice.multiplyDecimal(FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised)))));
-    uint Nd1 = FixedPointMathLib.stdNormalCDF(d1);
-    uint spotNd1 = spot.multiplyDecimal(Nd1);
-    uint strikePriceNd2 = strikePricePV.multiplyDecimal(FixedPointMathLib.stdNormalCDF(d2));
+  // function _optionPricesDollarDelta(uint tAnnualised, uint spot, uint strikePrice, int rate, int d1, int d2)
+  //   internal
+  //   pure
+  //   returns (uint call, uint put, int callDelta, int putDelta)
+  // {
+  //   uint strikePricePV =
+  //     strikePrice.multiplyDecimal(FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised)))));
+  //   uint Nd1 = FixedPointMathLib.stdNormalCDF(d1);
+  //   uint spotNd1 = spot.multiplyDecimal(Nd1);
+  //   uint strikePriceNd2 = strikePricePV.multiplyDecimal(FixedPointMathLib.stdNormalCDF(d2));
 
-    // We clamp to zero if the minuend is less than the subtrahend
-    // In some scenarios it may be better to compute put price instead and derive call from it depending on which way
-    // around is more precise.
-    call = strikePriceNd2 <= spotNd1 ? spotNd1 - strikePriceNd2 : 0;
-    put = call + strikePricePV;
-    put = spot <= put ? put - spot : 0;
-    callDelta = int(Nd1).multiplyDecimal(int(spot));
-    putDelta = (int(Nd1) - int(UNIT)).multiplyDecimal(int(spot));
-  }
+  //   // We clamp to zero if the minuend is less than the subtrahend
+  //   // In some scenarios it may be better to compute put price instead and derive call from it depending on which way
+  //   // around is more precise.
+  //   call = strikePriceNd2 <= spotNd1 ? spotNd1 - strikePriceNd2 : 0;
+  //   put = call + strikePricePV;
+  //   put = spot <= put ? put - spot : 0;
+  //   callDelta = int(Nd1).multiplyDecimal(int(spot));
+  //   putDelta = (int(Nd1) - int(UNIT)).multiplyDecimal(int(spot));
+  // }
 
   /*
    * Greeks
