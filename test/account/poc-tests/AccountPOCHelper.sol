@@ -218,4 +218,7 @@ abstract contract AccountPOCHelper is Test {
 
     account.submitTransfers(transferBatch, "");
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function testCoverageChill() public {}
 }
