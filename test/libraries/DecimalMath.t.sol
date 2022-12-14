@@ -9,7 +9,7 @@ import "../../src/libraries/DecimalMath.sol";
  * @dev for current `forge coverage` to wrok, i needs to call an external contract then invoke internal library
  */
 contract DecimalMathTester {
-  function convertDecimals(uint amount, uint8 from, uint8 to) external returns (uint) {
+  function convertDecimals(uint amount, uint8 from, uint8 to) external pure returns (uint) {
     // it has to store result and return to work!
     uint res = DecimalMath.convertDecimals(amount, from, to);
     return res;

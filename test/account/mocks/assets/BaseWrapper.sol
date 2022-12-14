@@ -64,4 +64,7 @@ contract BaseWrapper is IAsset, Owned {
   }
 
   function handleManagerChange(uint, IManager) external pure override {}
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function test() public {}
 }
