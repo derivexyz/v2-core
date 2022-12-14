@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: ISC
-pragma solidity 0.8.13;
+pragma solidity ^0.8.13;
 
 // Libraries
 import "synthetix/SignedDecimalMath.sol";
@@ -73,17 +73,17 @@ library BlackScholesV2 {
   /**
    * @dev Returns call/put prices and delta/stdVega for options with given parameters.
    */
-  function pricesDeltaGamma(BlackScholesInputs memory bsInput) public pure returns (PricesDeltaGamma memory) {
-    uint tAnnualised = _annualise(bsInput.timeToExpirySec);
-    (int d1, int d2, int k, uint sqrtTau) = _d1d2kSqrtTau(
-      tAnnualised, bsInput.volatilityDecimal, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal
-    );
-    (uint callPrice, uint putPrice, int callDelta, int putDelta) = _optionPricesDollarDelta(
-      tAnnualised, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal, d1, d2
-    );
-    uint dollarGamma = _dollarGamma(sqrtTau, bsInput.spotDecimal, bsInput.volatilityDecimal, d1);
-    return PricesDeltaGamma(callPrice, putPrice, callDelta, putDelta, dollarGamma, k, sqrtTau);
-  }
+  // function pricesDeltaGamma(BlackScholesInputs memory bsInput) public pure returns (PricesDeltaGamma memory) {
+  //   uint tAnnualised = _annualise(bsInput.timeToExpirySec);
+  //   (int d1, int d2, int k, uint sqrtTau) = _d1d2kSqrtTau(
+  //     tAnnualised, bsInput.volatilityDecimal, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal
+  //   );
+  //   (uint callPrice, uint putPrice, int callDelta, int putDelta) = _optionPricesDollarDelta(
+  //     tAnnualised, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal, d1, d2
+  //   );
+  //   uint dollarGamma = _dollarGamma(sqrtTau, bsInput.spotDecimal, bsInput.volatilityDecimal, d1);
+  //   return PricesDeltaGamma(callPrice, putPrice, callDelta, putDelta, dollarGamma, k, sqrtTau);
+  // }
 
   //////////////////////
   // Computing Greeks //
@@ -157,26 +157,26 @@ library BlackScholesV2 {
    * @param d1 Internal coefficient of Black-Scholes
    * @param d2 Internal coefficient of Black-Scholes
    */
-  function _optionPricesDollarDelta(uint tAnnualised, uint spot, uint strikePrice, int rate, int d1, int d2)
-    internal
-    pure
-    returns (uint call, uint put, int callDelta, int putDelta)
-  {
-    uint strikePricePV =
-      strikePrice.multiplyDecimal(FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised)))));
-    uint Nd1 = FixedPointMathLib.stdNormalCDF(d1);
-    uint spotNd1 = spot.multiplyDecimal(Nd1);
-    uint strikePriceNd2 = strikePricePV.multiplyDecimal(FixedPointMathLib.stdNormalCDF(d2));
+  // function _optionPricesDollarDelta(uint tAnnualised, uint spot, uint strikePrice, int rate, int d1, int d2)
+  //   internal
+  //   pure
+  //   returns (uint call, uint put, int callDelta, int putDelta)
+  // {
+  //   uint strikePricePV =
+  //     strikePrice.multiplyDecimal(FixedPointMathLib.exp(int(-rate.multiplyDecimal(int(tAnnualised)))));
+  //   uint Nd1 = FixedPointMathLib.stdNormalCDF(d1);
+  //   uint spotNd1 = spot.multiplyDecimal(Nd1);
+  //   uint strikePriceNd2 = strikePricePV.multiplyDecimal(FixedPointMathLib.stdNormalCDF(d2));
 
-    // We clamp to zero if the minuend is less than the subtrahend
-    // In some scenarios it may be better to compute put price instead and derive call from it depending on which way
-    // around is more precise.
-    call = strikePriceNd2 <= spotNd1 ? spotNd1 - strikePriceNd2 : 0;
-    put = call + strikePricePV;
-    put = spot <= put ? put - spot : 0;
-    callDelta = int(Nd1).multiplyDecimal(int(spot));
-    putDelta = (int(Nd1) - int(UNIT)).multiplyDecimal(int(spot));
-  }
+  //   // We clamp to zero if the minuend is less than the subtrahend
+  //   // In some scenarios it may be better to compute put price instead and derive call from it depending on which way
+  //   // around is more precise.
+  //   call = strikePriceNd2 <= spotNd1 ? spotNd1 - strikePriceNd2 : 0;
+  //   put = call + strikePricePV;
+  //   put = spot <= put ? put - spot : 0;
+  //   callDelta = int(Nd1).multiplyDecimal(int(spot));
+  //   putDelta = (int(Nd1) - int(UNIT)).multiplyDecimal(int(spot));
+  // }
 
   /*
    * Greeks
@@ -186,14 +186,14 @@ library BlackScholesV2 {
    * @dev Returns the option's delta value
    * @param d1 Internal coefficient of Black-Scholes
    */
-  function _delta(int d1) internal pure returns (int callDelta, int putDelta) {
-    callDelta = int(FixedPointMathLib.stdNormalCDF(d1));
-    putDelta = callDelta - int(UNIT);
-  }
+  // function _delta(int d1) internal pure returns (int callDelta, int putDelta) {
+  //   callDelta = int(FixedPointMathLib.stdNormalCDF(d1));
+  //   putDelta = callDelta - int(UNIT);
+  // }
 
-  function _dollarGamma(uint sqrtTau, uint spot, uint iv, int d1) internal pure returns (uint) {
-    return FixedPointMathLib.stdNormal(d1).divideDecimal(sqrtTau.multiplyDecimal(iv)).multiplyDecimal(spot);
-  }
+  // function _dollarGamma(uint sqrtTau, uint spot, uint iv, int d1) internal pure returns (uint) {
+  //   return FixedPointMathLib.stdNormal(d1).divideDecimal(sqrtTau.multiplyDecimal(iv)).multiplyDecimal(spot);
+  // }
 
   /**
    * @dev Converts an integer number of seconds to a fractional number of years.

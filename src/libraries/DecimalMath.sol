@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 /**
- * @title ArrayLib
+ * @title DecimalMath
  * @author Lyra
  * @notice util functions for converting decimals
  */

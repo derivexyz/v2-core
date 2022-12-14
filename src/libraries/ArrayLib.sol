@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/AccountStructs.sol";
-import "forge-std/console2.sol";
 
 /**
  * @title ArrayLib
