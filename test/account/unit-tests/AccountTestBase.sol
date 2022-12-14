@@ -113,4 +113,7 @@ contract AccountTestBase is Test {
 
     account.submitTransfer(transfer, "");
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function test() public {}
 }

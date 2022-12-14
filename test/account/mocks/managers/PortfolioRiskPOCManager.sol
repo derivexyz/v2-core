@@ -232,4 +232,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
   function handleManagerChange(uint, IManager _manager) external view {
     require(address(_manager) != nextManager && nextManager != address(0), "wrong manager");
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function test() public {}
 }
