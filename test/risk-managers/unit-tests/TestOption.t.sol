@@ -28,7 +28,7 @@ contract UNIT_TestOption is Test {
 
     aggregator = new MockV3Aggregator(18, 1000e18);
     spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator));
+    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
 
     option = new Option();
     manager = new MockManager(address(account));
