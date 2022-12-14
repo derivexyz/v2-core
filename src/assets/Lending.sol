@@ -11,6 +11,7 @@ import "../interfaces/IAccount.sol";
 import "../libraries/DecimalMath.sol";
 import "forge-std/Script.sol";
 
+
 /**
  * @title cash asset with built-in lending feature.
  * @dev   user can deposit USDC and credit this cash asset into their account
@@ -100,14 +101,18 @@ contract Lending is Owned, IAsset {
       return (0, false);
     }
 
+    // accrue interest rate
+    _accrueInterest();
+
+    // todo: accrue interest on prebalance
+
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
 
-    // update totalSupply and totalBorrow amounts
-    // if (adjustment.amount < 0) {
-    //   if ((-adjustment.amount).toUint256() > totalSupply) revert LA_WithdrawMoreThanSupply(adjustment.amount, totalSupply);
-    // }
+    // need allowance if trying to deduct balance
+    needAllowance = adjustment.amount < 0;
 
+    // update totalSupply and totalBorrow amounts
     if (preBalance <= 0 && finalBalance <= 0) {
       totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
     } else if (preBalance >= 0 && finalBalance >= 0) {
@@ -120,16 +125,7 @@ contract Lending is Owned, IAsset {
       totalBorrow += (-finalBalance).toUint256();
       totalSupply -= preBalance.toUint256();
     }
-
-    // accrue interest rate
-    _accrueInterest();
-
-    // todo: accrue interest on prebalance
-  
-   
-    // need allowance if trying to deduct balance
-    needAllowance = adjustment.amount < 0;
-
+    
     console.log("END of handle adjustment");
   }
 
