@@ -6,6 +6,11 @@ import "src/libraries/DecimalMath.sol";
 import "chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
+/**
+ * @title ChainlinkSpotFeeds
+ * @author Lyra
+ * @notice Adapter for Chainlink spot aggregator that also does staleness checks
+ */
 contract ChainlinkSpotFeeds is ISpotFeeds {
   /* only 1x SLOAD when getting price */
   struct Aggregator {
@@ -21,12 +26,12 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   // Variables //
   ///////////////
 
-  /// @dev maps feedId to trading pair symbol
+  /// @dev Maps feedId to trading pair symbol.
   mapping(uint => bytes32) public feedIdToSymbol;
 
-  /// @dev first id starts from 1
+  /// @dev ID which will be assigned to the next feed.
   uint public lastFeedId;
-  /// @dev maps feedId to aggregator details
+  /// @dev Maps feedId to aggregator details
   mapping(uint => Aggregator) public aggregators;
 
   ////////////
@@ -46,9 +51,9 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   ///////////////
 
   /**
-   * @notice Gets spot price for a given feedId
-   * @param feedId id set for a given trading pair
-   * @return spotPrice 18 decimal price of trading pair
+   * @notice Gets spot price for a given feedId.
+   * @param feedId ID set for a given trading pair.
+   * @return spotPrice 18 decimal price of trading pair.
    */
   function getSpot(uint feedId) external view returns (uint) {
     (uint spotPrice, uint updatedAt) = getSpotAndUpdatedAt(feedId);
@@ -64,10 +69,10 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
 
   /**
    * @notice Uses chainlinks `AggregatorV3` oracles to retrieve price.
-   *         The price is always converted to an 18 decimal uint
-   * @param feedId id set for a given trading pair
+   *         The price is always converted to an 18 decimal uint.
+   * @param feedId ID set for a given trading pair
    * @return spotPrice 18 decimal price of trading pair
-   * @return updatedAt timestamp of update
+   * @return updatedAt Timestamp of update
    */
   function getSpotAndUpdatedAt(uint feedId) public view returns (uint, uint) {
     Aggregator memory chainlinkAggregator = aggregators[feedId];
@@ -78,13 +83,13 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
     (uint80 roundId, int answer,, uint updatedAt, uint80 answeredInRound) =
       chainlinkAggregator.aggregator.latestRoundData();
 
-    /* Chainlink carries over answer if consensus was not reached. 
-     * Must get the timestamp of the actual round when answer was recorded */
+    // Chainlink carries over answer if consensus was not reached. 
+    // Must get the timestamp of the actual round when answer was recorded.
     if (roundId != answeredInRound) {
       (,,, updatedAt,) = chainlinkAggregator.aggregator.getRoundData(answeredInRound);
     }
 
-    /* Convert to correct decimals and uint*/
+    // Convert to correct decimals and uint.
     uint spotPrice = DecimalMath.convertDecimals(SafeCast.toUint256(answer), chainlinkAggregator.decimals, 18);
 
     return (spotPrice, updatedAt);
@@ -96,8 +101,8 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
 
   /**
    * @notice Assigns a chainlink aggregator and symbol to a given feedId
-   * @param symbol bytes that returns the trading pair (e.g. "ETH/USDC")
-   * @return feedId id set for a given trading pair
+   * @param symbol Bytes that returns the trading pair (e.g. "ETH/USDC")
+   * @return feedId ID set for a given trading pair
    */
   function addFeed(bytes32 symbol, address chainlinkAggregator, uint64 staleLimit) external returns (uint feedId) {
     feedId = ++lastFeedId;
@@ -110,7 +115,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
       revert SF_StaleLimitCannotBeZero();
     }
 
-    /* store decimals once to reduce external calls during getSpotPrice */
+    // Store decimals once to reduce external calls during `getSpotPrice`.
     aggregators[feedId] = Aggregator({
       aggregator: AggregatorV3Interface(chainlinkAggregator),
       decimals: AggregatorV3Interface(chainlinkAggregator).decimals(),
@@ -125,8 +130,8 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
 
   /**
    * @notice Returns the trading pair symbol for a given feedId
-   * @param feedId id of the feed
-   * @return symbol bytes that returns the trading pair (e.g. "ETH/USDC")
+   * @param feedId ID of the feed
+   * @return symbol Bytes that returns the trading pair (e.g. "ETH/USDC")
    */
   function getSymbol(uint feedId) external view returns (bytes32 symbol) {
     return feedIdToSymbol[feedId];
