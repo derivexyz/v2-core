@@ -66,7 +66,7 @@ contract UNIT_TestPCRM is Test {
   // Margin calculations //
   /////////////////////////
 
-  function testInitialMarginCalculation() public {
+  function testInitialMarginCalculation() public view {
     PartialCollateralRiskManager.StrikeHolding[] memory strikes = 
       new PartialCollateralRiskManager.StrikeHolding[](1);
     strikes[0] = PartialCollateralRiskManager.StrikeHolding({
@@ -88,7 +88,7 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
-  function testMaintenanceMarginCalculation() public {
+  function testMaintenanceMarginCalculation() public view {
     PartialCollateralRiskManager.StrikeHolding[] memory strikes = 
       new PartialCollateralRiskManager.StrikeHolding[](1);
     strikes[0] = PartialCollateralRiskManager.StrikeHolding({

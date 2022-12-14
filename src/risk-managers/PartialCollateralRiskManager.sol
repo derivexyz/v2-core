@@ -48,9 +48,23 @@ contract PartialCollateralRiskManager is IManager, Owned {
   /// @dev reserved option asset
   Option public immutable option;
 
+  /// @dev dutch auction contract used to auction liquidatable accounts
+  address public immutable dutchAuction;
+
   ////////////
   // Events //
   ////////////
+
+  ///////////////
+  // Modifiers //
+  ///////////////
+
+  modifier onlyAuction() {
+    if (msg.sender != dutchAuction) {
+      revert PCRM_OnlyAuction(msg.sender, dutchAuction);
+    }
+    _;
+  }
 
   ////////////////////////
   //    Constructor     //
@@ -66,6 +80,7 @@ contract PartialCollateralRiskManager is IManager, Owned {
     spotFeeds = ISpotFeeds(spotFeeds_);
     lending = Lending(lending_);
     option = Option(option_);
+    dutchAuction = address(0); // todo: add once dutch auction interface present
   }
 
 
@@ -90,6 +105,18 @@ contract PartialCollateralRiskManager is IManager, Owned {
     // todo: nextManager whitelist check
   }
 
+  //////////////////
+  // Liquidations //
+  ////////////////// 
+
+  function startAuction(uint accountId) external {
+    // todo: check that account is liquidatable / freeze account / call out to auction contract
+  }
+
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyAuction() {
+    // todo: this would be only dutch auction contract
+  }
+
   /////////////////
   // Margin Math //
   ///////////////// 
@@ -107,8 +134,6 @@ contract PartialCollateralRiskManager is IManager, Owned {
 
   
   // Option Margin Math
-  // todo: make public getters for these
-  // todo: apply all the penalties / discounts in each function
 
   function _calcExpiryValue(
     ExpiryHolding memory expiry, 
@@ -118,7 +143,6 @@ contract PartialCollateralRiskManager is IManager, Owned {
     for (uint i; i < expiry.strikes.length; i++) {
       expiryValue += _calcStrikeValue(expiry.strikes[i], marginType);
     }
-
   }
 
   function _calcStrikeValue(
@@ -127,7 +151,6 @@ contract PartialCollateralRiskManager is IManager, Owned {
   ) internal view returns (int strikeValue) {
     // todo: get call, put, forward values
   }
-
   
   // Cash Margin Math
   
@@ -162,5 +185,7 @@ contract PartialCollateralRiskManager is IManager, Owned {
   ////////////
   // Errors //
   ////////////  
+
+  error PCRM_OnlyAuction(address sender, address auction);
 
 }
