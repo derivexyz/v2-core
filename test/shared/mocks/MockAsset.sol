@@ -103,4 +103,7 @@ contract MockAsset is IAsset {
   function setRecordManagerChangeCalls(bool _record) external {
     recordMangerChangeCalls = _record;
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function test() public {}
 }

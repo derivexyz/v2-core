@@ -34,4 +34,7 @@ contract MockERC20 is ERC20 {
     require(permitted[msg.sender], "only permitted");
     ERC20._burn(account, amount);
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function test() public {}
 }
