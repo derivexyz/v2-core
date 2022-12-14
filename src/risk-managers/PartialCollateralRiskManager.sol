@@ -57,15 +57,15 @@ contract PartialCollateralRiskManager is IManager, Owned {
   ////////////////////////
 
   constructor(
-    IAccount account_,
-    ISpotFeeds spotFeeds_,
-    Lending lending_,
-    Option option_
+    address account_,
+    address spotFeeds_,
+    address lending_,
+    address option_
   ) Owned() {
-    account = account_;
-    spotFeeds = spotFeeds_;
-    lending = lending_;
-    option = option_;
+    account = IAccount(account_);
+    spotFeeds = ISpotFeeds(spotFeeds_);
+    lending = Lending(lending_);
+    option = Option(option_);
   }
 
 
