@@ -98,4 +98,20 @@ contract UNIT_LendingWithdraw is Test {
     uint afterWithdraw = lending.totalSupply();
     assertEq(beforeWithdraw-withdrawAmount, afterWithdraw);
   }
+
+  function testWithdrawIncreasesTotalBorrow(uint amountToBorrow) public {
+    vm.assume(amountToBorrow <= 10000 ether);
+
+    uint emptyAccount = account.createAccount(address(this), manager);
+    uint totalBorrow = lending.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    uint usdcBefore = usdc.balanceOf(address(this));
+    lending.withdraw(emptyAccount, amountToBorrow, address(this));
+    uint usdcAfter = usdc.balanceOf(address(this));
+
+    totalBorrow = lending.totalBorrow();
+    assertEq(usdcAfter - usdcBefore, amountToBorrow);
+    assertEq(totalBorrow, amountToBorrow);
+  }
 }

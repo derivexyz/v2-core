@@ -11,11 +11,10 @@ import "../interfaces/IAccount.sol";
 import "../libraries/DecimalMath.sol";
 import "forge-std/Script.sol";
 
-
 /**
- * @title cash asset with built-in lending feature.
- * @dev   user can deposit USDC and credit this cash asset into their account
- *        users can borrow cash by having a negative balance in their account (if allowed by manager)
+ * @title Cash asset with built-in lending feature.
+ * @dev   Users can deposit USDC and credit this cash asset into their account.
+ *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
 contract Lending is Owned, IAsset {
@@ -24,32 +23,32 @@ contract Lending is Owned, IAsset {
   using SafeCast for uint;
   using SafeCast for int;
 
-  ///@dev account contract address
+  ///@dev Account contract address
   IAccount public immutable account;
 
-  ///@dev usdc address
+  ///@dev The USDC token address
   address public immutable usdc;
 
-  ///@dev store usdc decimals as immutable
+  ///@dev Store USDC token decimal as immutable
   uint8 private immutable usdcDecimals;
 
   /////////////////////////
   //   State Variables   //
   /////////////////////////
 
-  ///@dev amount of USDC that has been supplied
+  ///@dev Total amount of USDC that has been supplied
   uint public totalSupply;
 
-  ///@dev total amount of negative balances
+  ///@dev Total amount of negative balances
   uint public totalBorrow;
 
-  ///@dev total accrued fees
+  ///@dev Total accrued fees from interest
   uint public accruedFees;
 
-  ///@dev borrow index
+  ///@dev Represents the growth of $1 of debt since deploy
   uint public borrowIndex;
 
-  ///@dev supply index
+  ///@dev Represents the growth of $1 of positive balance since deploy
   uint public supplyIndex;
 
   ///@dev last timestamp that the interest is accrued
@@ -58,14 +57,7 @@ contract Lending is Owned, IAsset {
   ///@dev whitelisted managers
   mapping(address => bool) public whitelistedManager;
 
-  ///////////////////
-  //   Modifiers   //
-  ///////////////////
-  modifier onlyAccount() {
-    if (msg.sender != address(account)) revert LA_NotAccount();
-    _;
-  }
-
+  
   /////////////////////
   //   Constructor   //
   /////////////////////
@@ -74,67 +66,6 @@ contract Lending is Owned, IAsset {
     usdc = _usdc;
     usdcDecimals = IERC20Metadata(_usdc).decimals();
     account = IAccount(_account);
-  }
-
-  //////////////////////////
-  //    Account Hooks     //
-  //////////////////////////
-
-  /**
-   * @notice triggered when an adjustment is triggered on the asset balance
-   * @dev    we imply interest rate and modify the final balance. final balance can be positive or negative.
-   * @param adjustment details about adjustment, containing account, subId, amount
-   * @param preBalance balance before adjustment
-   * @param manager the manager contract that will verify the end state
-   * @return finalBalance the final balance to be recorded in the account
-   * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
-   */
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
-    int preBalance,
-    IManager manager,
-    address /*caller*/
-  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    console.log("lending handle adjustment");
-    _checkManager(address(manager));
-    if (preBalance == 0 && adjustment.amount == 0) {
-      return (0, false);
-    }
-
-    // accrue interest rate
-    _accrueInterest();
-
-    // todo: accrue interest on prebalance
-
-    // finalBalance can go positive or negative
-    finalBalance = preBalance + adjustment.amount;
-
-    // need allowance if trying to deduct balance
-    needAllowance = adjustment.amount < 0;
-
-    // update totalSupply and totalBorrow amounts
-    if (preBalance <= 0 && finalBalance <= 0) {
-      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
-    } else if (preBalance >= 0 && finalBalance >= 0) {
-      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
-    } else if (preBalance < 0 && finalBalance > 0) {
-      totalBorrow -= (-preBalance).toUint256();
-      totalSupply += finalBalance.toUint256();
-    } else {
-      // (preBalance > 0 && finalBalance < 0)
-      totalBorrow += (-finalBalance).toUint256();
-      totalSupply -= preBalance.toUint256();
-    }
-    
-    console.log("END of handle adjustment");
-  }
-
-  /**
-   * @notice triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
-   */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
-    _checkManager(address(newManager));
   }
 
   //////////////////////////////
@@ -212,6 +143,88 @@ contract Lending is Owned, IAsset {
     );
   }
 
+  //////////////////////////
+  //    Account Hooks     //
+  //////////////////////////
+
+  /**
+   * @notice triggered when an adjustment is triggered on the asset balance
+   * @dev    we imply interest rate and modify the final balance. final balance can be positive or negative.
+   * @param adjustment details about adjustment, containing account, subId, amount
+   * @param preBalance balance before adjustment
+   * @param manager the manager contract that will verify the end state
+   * @return finalBalance the final balance to be recorded in the account
+   * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
+   */
+  function handleAdjustment(
+    AccountStructs.AssetAdjustment memory adjustment,
+    int preBalance,
+    IManager manager,
+    address /*caller*/
+  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+    console.log(" ---------- lending handle adjustment");
+    _checkManager(address(manager));
+    if (preBalance == 0 && adjustment.amount == 0) {
+      return (0, false);
+    }
+
+    // accrue interest rate
+    _accrueInterest();
+
+    // todo: accrue interest on prebalance
+
+    // finalBalance can go positive or negative
+    finalBalance = preBalance + adjustment.amount;
+
+    // need allowance if trying to deduct balance
+    needAllowance = adjustment.amount < 0;
+
+    if (adjustment.amount >= 0) {
+    console.log("Adjustment+ ", adjustment.amount.toUint256());
+    } else {
+    console.log("Adjustment- ", (-adjustment.amount).toUint256());
+    }
+    if (preBalance >= 0) {
+    console.log("PreBalance+ ", preBalance.toUint256());
+    } else {
+    console.log("PreBalance- ", (-preBalance).toUint256());
+    }
+    if (finalBalance >= 0) {
+    console.log("FinBalance+ ", finalBalance.toUint256());
+    } else {
+    console.log("FinBalance- ", (-finalBalance).toUint256());
+    }
+
+    console.log("Before borrow", totalBorrow);
+    console.log("Before supply", totalSupply);
+    // update totalSupply and totalBorrow amounts
+    if (preBalance <= 0 && finalBalance <= 0) {
+      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
+    } else if (preBalance >= 0 && finalBalance >= 0) {
+      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
+    } else if (preBalance < 0 && finalBalance > 0) {
+      totalBorrow -= (-preBalance).toUint256();
+      totalSupply += finalBalance.toUint256();
+    } else {
+      // (preBalance > 0 && finalBalance < 0)
+      totalBorrow += (-finalBalance).toUint256();
+      totalSupply -= preBalance.toUint256();
+    }
+    console.log("After  borrow", totalBorrow);
+    console.log("After  supply", totalSupply);
+
+
+    console.log(" ---------- END of handle adjustment");
+  }
+
+  /**
+   * @notice triggered when a user wants to migrate an account to a new manager
+   * @dev block update with non-whitelisted manager
+   */
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+    _checkManager(address(newManager));
+  }
+
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
@@ -241,6 +254,15 @@ contract Lending is Owned, IAsset {
   //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
   // }
 
+  ///////////////////
+  //   Modifiers   //
+  ///////////////////
+
+  modifier onlyAccount() {
+    if (msg.sender != address(account)) revert LA_NotAccount();
+    _;
+  }
+
   ////////////////
   //   Errors   //
   ////////////////
@@ -253,9 +275,6 @@ contract Lending is Owned, IAsset {
 
   /// @dev caller is not owner of the account
   error LA_OnlyAccountOwner();
-
-  /// @dev withdraw more than supply
-  error LA_WithdrawMoreThanSupply(int withdrawAmount, uint totalSupply);
   
   /// @dev accrued interest is stale
   error LA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);

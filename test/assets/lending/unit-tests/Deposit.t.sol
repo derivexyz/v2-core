@@ -76,6 +76,31 @@ contract UNIT_LendingDeposit is Test {
     uint postSupply = lending.totalSupply();
     assertEq(postSupply-preSupply, depositAmount);
   }
+
+  function testDepositDecreasesTotalBorrow(uint amountToBorrow, uint depositAmount) public {
+    vm.assume(amountToBorrow <= 1000 ether);
+    vm.assume(depositAmount <= amountToBorrow);
+
+    lending.deposit(accountId, 10000 ether);
+    uint newAccount = account.createAccount(address(this), manager);
+    uint totalBorrow = lending.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    uint usdcBefore = usdc.balanceOf(address(this));
+    lending.withdraw(newAccount, amountToBorrow, address(this));
+    uint usdcAfter = usdc.balanceOf(address(this));
+
+    assertEq(usdcAfter - usdcBefore, amountToBorrow);
+    assertEq(lending.totalBorrow(), amountToBorrow);
+
+    console.log("Amount to borrow", amountToBorrow);
+    console.log("Deposited amount", depositAmount);
+    lending.deposit(newAccount, depositAmount);
+    
+    totalBorrow = lending.totalBorrow();
+    console.log("totalBorrow", lending.totalBorrow());
+    assertEq(totalBorrow, amountToBorrow - depositAmount);
+  }
 }
 
 contract UNIT_LendingDeposit6Decimals is Test {
