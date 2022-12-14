@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./AccountStructs.sol";
 
 // Interface for Dutch Auction Contract
 interface IDutchAuction {
@@ -9,7 +8,6 @@ interface IDutchAuction {
   struct AuctionDetails {
     address account;
     bytes32 auctionId; // hash of the time and the address??
-    HeldAssets[] assets; // array of assets to be auctioned
     uint depositedMargin;
     uint intialMargin;
     uint maintenceMargin;
@@ -37,4 +35,8 @@ interface IDutchAuction {
   function currentPercentageOfPortfolioToLiquidate(uint auctionId) external view returns(uint);
 
   function endAuction(uint auctionId) external returns(uint);
+
+  function getMaxProportion(uint accountId) external returns(uint);
+   
+  function addRiskManger() external;
 }

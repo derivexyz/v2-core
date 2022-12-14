@@ -7,3 +7,5 @@ lcov.info
 node_modules
 yarn-error.log
 .husky
+.vscode
+foundry.toml
