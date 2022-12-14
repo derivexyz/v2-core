@@ -9,7 +9,6 @@ on:
 
 jobs:
   ci-check:
-    if: github.event.pull_request.draft == false # Don't run if PR is draft
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
