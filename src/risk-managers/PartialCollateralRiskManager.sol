@@ -15,6 +15,11 @@ import "synthetix/Owned.sol";
  */
 contract PartialCollateralRiskManager is IManager, Owned {
 
+  enum MarginType {
+    INITIAL,
+    MAINTENANCE
+  }
+
   struct ExpiryHolding {
     uint expiry;
     StrikeHolding[] strikes;
@@ -83,13 +88,23 @@ contract PartialCollateralRiskManager is IManager, Owned {
     // todo: nextManager whitelist check
   }
 
-  // todo: refactor to handle maintenance and initial margin
   function getInitialMargin(ExpiryHolding[] memory expiries) public view returns (int margin) {
+    return _calcMargin(expiries, MarginType.INITIAL);
+  }
+
+  function getMaintenanceMargin(ExpiryHolding[] memory expiries) public view returns (int margin) {
+    return _calcMargin(expiries, MarginType.MAINTENANCE);
+  }
+
+  function _calcMargin(
+    ExpiryHolding[] memory expiries, 
+    MarginType marginType
+  ) internal view returns (int margin) {
     for (uint i; i < expiries.length; i++) {
-      margin += _calcExpiryValue(expiries[i]);
+      margin += _calcExpiryValue(expiries[i], marginType);
     }
 
-    margin += _calcCashValue();
+    margin += _calcCashValue(marginType);
   }
 
   ////////////////////////
@@ -106,15 +121,21 @@ contract PartialCollateralRiskManager is IManager, Owned {
     // todo: add limit to # of expiries and # of options
   }
 
-  function _calcExpiryValue(ExpiryHolding memory expiry) internal view returns (int expiryValue) {
+  function _calcExpiryValue(
+    ExpiryHolding memory expiry, 
+    MarginType marginType
+  ) internal view returns (int expiryValue) {
     expiryValue;
     for (uint i; i < expiry.strikes.length; i++) {
-      expiryValue += _calcStrikeValue(expiry.strikes[i]);
+      expiryValue += _calcStrikeValue(expiry.strikes[i], marginType);
     }
 
   }
 
-  function _calcStrikeValue(StrikeHolding memory strikeHoldings) internal view returns (int strikeValue) {
+  function _calcStrikeValue(
+    StrikeHolding memory strikeHoldings, 
+    MarginType marginType
+  ) internal view returns (int strikeValue) {
     // todo: get call, put, forward values
   }
 
@@ -122,7 +143,7 @@ contract PartialCollateralRiskManager is IManager, Owned {
   // Cash Margin Util //
   //////////////////////
 
-  function _calcCashValue() internal view returns (int cashValue) {
+  function _calcCashValue(MarginType marginType) internal view returns (int cashValue) {
     // todo: apply interest rate shock
   }
 
