@@ -2,8 +2,15 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/ISpotFeeds.sol";
+import "src/libraries/DecimalMath.sol";
 import "chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
 
+/**
+ * @title ChainlinkSpotFeeds
+ * @author Lyra
+ * @notice Adapter for Chainlink spot aggregator that also does staleness checks
+ */
 contract ChainlinkSpotFeeds is ISpotFeeds {
   /* only 1x SLOAD when getting price */
   struct Aggregator {
@@ -11,25 +18,28 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
     AggregatorV3Interface aggregator;
     // decimal units of returned spot price
     uint8 decimals;
+    // stale limit in seconds
+    uint64 staleLimit;
   }
 
   ///////////////
   // Variables //
   ///////////////
 
-  /// @dev maps feedId to trading pair symbol
+  /// @dev Maps feedId to trading pair symbol.
   mapping(uint => bytes32) public feedIdToSymbol;
 
-  /// @dev first id starts from 1
+  /// @dev ID which will be assigned to the next feed.
   uint public lastFeedId;
-  /// @dev maps feedId to aggregator details
+  /// @dev Maps feedId to aggregator details
   mapping(uint => Aggregator) public aggregators;
 
   ////////////
   // Events //
   ////////////
 
-  // todo: add events
+  /// @dev Emmitted when new feed added
+  event AddedFeed(uint indexed feedId, bytes32 indexed symbol, address indexed aggregator, uint64 staleLimit);
 
   ////////////////////////
   //    Constructor     //
@@ -42,22 +52,48 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   ///////////////
 
   /**
-   * @notice Gets spot price for a given feedId
-   * @param feedId id set for a given trading pair
-   * @return spotPrice 18 decimal price of trading pair
+   * @notice Gets spot price for a given feedId.
+   * @param feedId ID set for a given trading pair.
+   * @return spotPrice 18 decimal price of trading pair.
    */
-  function getSpot(uint feedId) external returns (uint spotPrice) {
-    return _getSpot(feedId);
+  function getSpot(uint feedId) external view returns (uint) {
+    (uint spotPrice, uint updatedAt) = getSpotAndUpdatedAt(feedId);
+
+    uint currentTime = block.timestamp;
+    uint staleLimit = aggregators[feedId].staleLimit;
+    if (currentTime - updatedAt > staleLimit) {
+      revert SF_SpotFeedStale(updatedAt, currentTime, staleLimit);
+    }
+
+    return spotPrice;
   }
 
   /**
    * @notice Uses chainlinks `AggregatorV3` oracles to retrieve price.
-   *         The price is always converted to an 18 decimal uint
-   * @param feedId id set for a given trading pair
+   *         The price is always converted to an 18 decimal uint.
+   * @param feedId ID set for a given trading pair
    * @return spotPrice 18 decimal price of trading pair
+   * @return updatedAt Timestamp of update
    */
-  function _getSpot(uint feedId) internal returns (uint spotPrice) {
-    // todo: integrate with chainlink
+  function getSpotAndUpdatedAt(uint feedId) public view returns (uint, uint) {
+    Aggregator memory chainlinkAggregator = aggregators[feedId];
+    if (address(chainlinkAggregator.aggregator) == address(0)) {
+      revert SF_InvalidAggregator();
+    }
+
+    (uint80 roundId, int answer,, uint updatedAt, uint80 answeredInRound) =
+      chainlinkAggregator.aggregator.latestRoundData();
+
+    // Chainlink carries over answer if consensus was not reached.
+    // Must get the timestamp of the actual round when answer was recorded.
+    if (roundId != answeredInRound) {
+      (,,, updatedAt,) = chainlinkAggregator.aggregator.getRoundData(answeredInRound);
+    }
+
+    // Convert to correct decimals and uint.
+    uint spotPrice = DecimalMath.convertDecimals(SafeCast.toUint256(answer), chainlinkAggregator.decimals, 18);
+
+    return (spotPrice, updatedAt);
   }
 
   //////////////////
@@ -66,18 +102,29 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
 
   /**
    * @notice Assigns a chainlink aggregator and symbol to a given feedId
-   * @param symbol bytes that returns the trading pair (e.g. "ETH/USDC")
-   * @return feedId id set for a given trading pair
+   * @param symbol Bytes that returns the trading pair (e.g. "ETH/USDC")
+   * @return feedId ID set for a given trading pair
    */
-  function addFeed(bytes32 symbol, address chainlinkAggregator) external returns (uint feedId) {
+  function addFeed(bytes32 symbol, address chainlinkAggregator, uint64 staleLimit) external returns (uint feedId) {
     feedId = ++lastFeedId;
 
-    /* store decimals once to reduce external calls during getSpotPrice */
+    if (chainlinkAggregator == address(0)) {
+      revert SF_InvalidAggregator();
+    }
+
+    if (staleLimit == 0) {
+      revert SF_StaleLimitCannotBeZero();
+    }
+
+    // Store decimals once to reduce external calls during `getSpotPrice`.
     aggregators[feedId] = Aggregator({
       aggregator: AggregatorV3Interface(chainlinkAggregator),
-      decimals: AggregatorV3Interface(chainlinkAggregator).decimals()
+      decimals: AggregatorV3Interface(chainlinkAggregator).decimals(),
+      staleLimit: staleLimit
     });
     feedIdToSymbol[feedId] = symbol;
+
+    emit AddedFeed(feedId, symbol, chainlinkAggregator, staleLimit);
   }
 
   //////////
@@ -86,8 +133,8 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
 
   /**
    * @notice Returns the trading pair symbol for a given feedId
-   * @param feedId id of the feed
-   * @return symbol bytes that returns the trading pair (e.g. "ETH/USDC")
+   * @param feedId ID of the feed
+   * @return symbol Bytes that returns the trading pair (e.g. "ETH/USDC")
    */
   function getSymbol(uint feedId) external view returns (bytes32 symbol) {
     return feedIdToSymbol[feedId];
@@ -96,4 +143,10 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   ////////////
   // Errors //
   ////////////
+
+  error SF_InvalidAggregator();
+
+  error SF_StaleLimitCannotBeZero();
+
+  error SF_SpotFeedStale(uint updatedAt, uint currentTime, uint staleLimit);
 }
