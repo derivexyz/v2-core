@@ -38,7 +38,8 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
   // Events //
   ////////////
 
-  // todo: add events
+  /// @dev Emmitted when new feed added
+  event AddedFeed(uint indexed feedId, bytes32 indexed symbol, address indexed aggregator, uint64 staleLimit);
 
   ////////////////////////
   //    Constructor     //
@@ -83,7 +84,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
     (uint80 roundId, int answer,, uint updatedAt, uint80 answeredInRound) =
       chainlinkAggregator.aggregator.latestRoundData();
 
-    // Chainlink carries over answer if consensus was not reached. 
+    // Chainlink carries over answer if consensus was not reached.
     // Must get the timestamp of the actual round when answer was recorded.
     if (roundId != answeredInRound) {
       (,,, updatedAt,) = chainlinkAggregator.aggregator.getRoundData(answeredInRound);
@@ -122,6 +123,8 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
       staleLimit: staleLimit
     });
     feedIdToSymbol[feedId] = symbol;
+
+    emit AddedFeed(feedId, symbol, chainlinkAggregator, staleLimit);
   }
 
   //////////
