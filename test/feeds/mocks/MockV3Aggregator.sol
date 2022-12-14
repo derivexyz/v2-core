@@ -20,17 +20,21 @@ contract MockV3Aggregator is AggregatorV3Interface {
   mapping(uint => int) public getAnswer;
   mapping(uint => uint) public getTimestamp;
   mapping(uint => uint) private getStartedAt;
+  mapping(uint => uint) private getAnsweredRoundIn;
 
   constructor(uint8 _decimals, int _initialAnswer) {
     decimals = _decimals;
-    updateRoundData(uint80(++latestRound), _initialAnswer, block.timestamp, block.timestamp);
+    updateRoundData(uint80(++latestRound), _initialAnswer, block.timestamp, block.timestamp, uint80(latestRound));
   }
 
-  function updateRoundData(uint80 _roundId, int _answer, uint _timestamp, uint _startedAt) public {
+  function updateRoundData(uint80 _roundId, int _answer, uint _timestamp, uint _startedAt, uint80 answeredInRound)
+    public
+  {
     latestRound = _roundId;
     getAnswer[latestRound] = _answer;
     getTimestamp[latestRound] = _timestamp;
     getStartedAt[latestRound] = _startedAt;
+    getAnsweredRoundIn[latestRound] = answeredInRound;
   }
 
   function getRoundData(uint80 _roundId)
@@ -39,7 +43,13 @@ contract MockV3Aggregator is AggregatorV3Interface {
     override
     returns (uint80 roundId, int answer, uint startedAt, uint updatedAt, uint80 answeredInRound)
   {
-    return (_roundId, getAnswer[_roundId], getStartedAt[_roundId], getTimestamp[_roundId], _roundId);
+    return (
+      _roundId,
+      getAnswer[_roundId],
+      getStartedAt[_roundId],
+      getTimestamp[_roundId],
+      uint80(getAnsweredRoundIn[_roundId])
+    );
   }
 
   function latestRoundData()
@@ -53,7 +63,7 @@ contract MockV3Aggregator is AggregatorV3Interface {
       getAnswer[latestRound],
       getStartedAt[latestRound],
       getTimestamp[latestRound],
-      uint80(latestRound)
+      uint80(getAnsweredRoundIn[latestRound])
     );
   }
 
