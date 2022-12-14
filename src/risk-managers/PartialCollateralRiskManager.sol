@@ -69,7 +69,9 @@ contract PartialCollateralRiskManager is IManager, Owned {
   }
 
 
-  // Features
+  ///////////////////
+  // Account Hooks //
+  /////////////////// 
 
   function handleAdjustment(
     uint accountId, 
@@ -79,22 +81,18 @@ contract PartialCollateralRiskManager is IManager, Owned {
   ) public view override {
     // todo: whitelist check
 
-    /* PCRM calculations */
+    // PCRM calculations
     ExpiryHolding[] memory expiries = _sortOptions(account.getAccountBalances(accountId));
-    getInitialMargin(expiries);
+    _calcMargin(expiries, MarginType.INITIAL);
   }
 
   function handleManagerChange(uint accountId, IManager newManager) external {
     // todo: nextManager whitelist check
   }
 
-  function getInitialMargin(ExpiryHolding[] memory expiries) public view returns (int margin) {
-    return _calcMargin(expiries, MarginType.INITIAL);
-  }
-
-  function getMaintenanceMargin(ExpiryHolding[] memory expiries) public view returns (int margin) {
-    return _calcMargin(expiries, MarginType.MAINTENANCE);
-  }
+  /////////////////
+  // Margin Math //
+  ///////////////// 
 
   function _calcMargin(
     ExpiryHolding[] memory expiries, 
@@ -107,19 +105,10 @@ contract PartialCollateralRiskManager is IManager, Owned {
     margin += _calcCashValue(marginType);
   }
 
-  ////////////////////////
-  // Option Margin Util //
-  ////////////////////////
+  
+  // Option Margin Math
   // todo: make public getters for these
   // todo: apply all the penalties / discounts in each function
-
-  function _sortOptions(
-    AccountStructs.AssetBalance[] memory assets
-  ) internal view returns (ExpiryHolding[] memory expiryHoldings) {
-    // todo: sort out each expiry / strike 
-    // todo: ignore the lendingAsset
-    // todo: add limit to # of expiries and # of options
-  }
 
   function _calcExpiryValue(
     ExpiryHolding memory expiry, 
@@ -139,17 +128,36 @@ contract PartialCollateralRiskManager is IManager, Owned {
     // todo: get call, put, forward values
   }
 
-  //////////////////////
-  // Cash Margin Util //
-  //////////////////////
-
+  
+  // Cash Margin Math
+  
   function _calcCashValue(MarginType marginType) internal view returns (int cashValue) {
     // todo: apply interest rate shock
   }
 
   //////////
+  // Util //
+  //////////
+
+  function _sortOptions(
+    AccountStructs.AssetBalance[] memory assets
+  ) internal view returns (ExpiryHolding[] memory expiryHoldings) {
+    // todo: sort out each expiry / strike 
+    // todo: ignore the lendingAsset
+    // todo: add limit to # of expiries and # of options
+  }
+
+  //////////
   // View //
   //////////
+
+  function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
+    return _calcMargin(expiries, MarginType.INITIAL);
+  }
+
+  function getMaintenanceMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
+    return _calcMargin(expiries, MarginType.MAINTENANCE);
+  }
 
   ////////////
   // Errors //
