@@ -20,7 +20,7 @@ interface IDutchAuction {
     bool insolvent;
     bool ongoing;
     uint startBlock;
-    uint endBlock;image.png
+    uint endBlock;
   }
 
   struct DutchAuctionParameters {
@@ -37,8 +37,6 @@ interface IDutchAuction {
   function auctionDetails(uint auctionId) external view returns(AuctionDetails memory);
 
   function currentAuctionPrice(uint auctionId) external view returns(uint);
-
-  function currentPercentageOfPortfolioToLiquidate(uint auctionId) external view returns(uint);
 
   function endAuction(uint auctionId) external returns(uint);
 
