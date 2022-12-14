@@ -5,13 +5,22 @@ import "./interfaces/IDutchAuction.sol";
 
 contract DutchAuction is IDutchAuction {
 
+  mapping(address => bool) public isRiskManagers;
+  mapping(bytes32 => AuctionDetails) public auctions;
+
   constructor() {}
 
-  function addRiskManger() external {}
+  function addRiskManger() external returns(bool) {
+    isRiskManagers[msg.sender] = true;
+    return true;
+  }
   
   // can only be called by the manager and will initiate an auction
-  function startAuction(AuctionDetails memory auction) external returns(uint) {
-    
+  function startAuction(AuctionDetails memory auction) external returns(bytes32) {
+    require(isRiskManagers[msg.sender], "Only Risk Managers can start auctions");
+    bytes32 auctionId = keccak256(auction.accountId + block.timestamp);
+    auctions[auctionId] = auction;
+    return auctionId;
   }
 
   // a user submits a bid for a particular auction

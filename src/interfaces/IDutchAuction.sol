@@ -6,15 +6,21 @@ pragma solidity ^0.8.13;
 interface IDutchAuction {
 
   struct AuctionDetails {
-    address account;
-    bytes32 auctionId; // hash of the time and the address??
+    uint accountId;
     uint depositedMargin;
     uint intialMargin;
     uint maintenceMargin;
     uint upperBound;
     uint lowerBound;
+  }
+
+  struct Auction {
+    AuctionDetails auction;
+    uint currentScalar;
+    bool insolvent;
+    bool ongoing;
     uint startBlock;
-    uint endBlock;
+    uint endBlock;image.png
   }
 
   struct DutchAuctionParameters {
@@ -23,7 +29,7 @@ interface IDutchAuction {
   }
 
   // can only be called by the manager and will initiate an auction
-  function startAuction(AuctionDetails memory auction) external returns(uint);
+  function startAuction(AuctionDetails memory auction) external returns(bytes32);
 
   // a user submits a bid for a particular auction
   function bid(uint auctionId, uint amount) external returns(uint);
@@ -38,5 +44,5 @@ interface IDutchAuction {
 
   function getMaxProportion(uint accountId) external returns(uint);
    
-  function addRiskManger() external;
+  function addRiskManger() external returns(bool);
 }
