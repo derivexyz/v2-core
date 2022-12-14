@@ -51,13 +51,12 @@ contract Lending is Owned, IAsset {
   ///@dev Represents the growth of $1 of positive balance since deploy
   uint public supplyIndex;
 
-  ///@dev last timestamp that the interest is accrued
+  ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
 
   ///@dev whitelisted managers
   mapping(address => bool) public whitelistedManager;
 
-  
   /////////////////////
   //   Constructor   //
   /////////////////////
@@ -91,14 +90,9 @@ contract Lending is Owned, IAsset {
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external {
-    // if (amount == 0) return;
-
     IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
-    // console.log("here");
     uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
-    // console.log("after");
 
-    console.log("amount", amountInAccount);
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
@@ -110,8 +104,7 @@ contract Lending is Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
-    console.log("after again");
- 
+
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
 
@@ -212,7 +205,6 @@ contract Lending is Owned, IAsset {
     }
     console.log("After  borrow", totalBorrow);
     console.log("After  supply", totalSupply);
-
 
     console.log(" ---------- END of handle adjustment");
   }
