@@ -5,57 +5,36 @@ import "synthetix/Owned.sol";
 import "src/interfaces/IAsset.sol";
 
 interface PriceFeeds {
-    function assignFeedToAsset(IAsset asset, uint256 feedId) external;
-    function setSpotForFeed(uint256 feedId, uint256 spotPrice) external;
-    function getSpotForFeed(uint256 feedId)
-        external
-        view
-        returns (uint256 spotPrice);
-    function getSpotForAsset(IAsset asset)
-        external
-        view
-        returns (uint256 spotPrice);
+  function assignFeedToAsset(IAsset asset, uint feedId) external;
+  function setSpotForFeed(uint feedId, uint spotPrice) external;
+  function getSpotForFeed(uint feedId) external view returns (uint spotPrice);
+  function getSpotForAsset(IAsset asset) external view returns (uint spotPrice);
 
-    function assetToFeedId(IAsset asset)
-        external
-        view
-        returns (uint256 feedId);
+  function assetToFeedId(IAsset asset) external view returns (uint feedId);
 }
 
 contract TestPriceFeeds is PriceFeeds, Owned {
-    mapping(IAsset => uint256) public assetToFeedId; // asset => feedId;
-    mapping(uint256 => uint256) spotPrices; // feedId => spotPrice;
+  mapping(IAsset => uint) public assetToFeedId; // asset => feedId;
+  mapping(uint => uint) spotPrices; // feedId => spotPrice;
 
-    constructor() Owned() {}
+  constructor() Owned() {}
 
-    function setSpotForFeed(uint256 feedId, uint256 spotPrice)
-        external
-        onlyOwner
-    {
-        spotPrices[feedId] = spotPrice;
-    }
+  function setSpotForFeed(uint feedId, uint spotPrice) external onlyOwner {
+    spotPrices[feedId] = spotPrice;
+  }
 
-    function getSpotForFeed(uint256 feedId)
-        public
-        view
-        returns (uint256 spotPrice)
-    {
-        spotPrice = spotPrices[feedId];
-        require(spotPrice != 0, "No spot price for asset");
-        return spotPrice;
-    }
+  function getSpotForFeed(uint feedId) public view returns (uint spotPrice) {
+    spotPrice = spotPrices[feedId];
+    require(spotPrice != 0, "No spot price for asset");
+    return spotPrice;
+  }
 
-    function assignFeedToAsset(IAsset asset, uint256 feedId) external {
-        require(msg.sender == address(asset), "only asset can assign its feed");
-        assetToFeedId[asset] = feedId;
-    }
+  function assignFeedToAsset(IAsset asset, uint feedId) external {
+    require(msg.sender == address(asset), "only asset can assign its feed");
+    assetToFeedId[asset] = feedId;
+  }
 
-    function getSpotForAsset(IAsset asset)
-        external
-        view
-        override
-        returns (uint256 spotPrice)
-    {
-        return getSpotForFeed(assetToFeedId[asset]);
-    }
+  function getSpotForAsset(IAsset asset) external view override returns (uint spotPrice) {
+    return getSpotForFeed(assetToFeedId[asset]);
+  }
 }
