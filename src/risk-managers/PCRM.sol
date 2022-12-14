@@ -13,7 +13,7 @@ import "synthetix/Owned.sol";
  * @author Lyra
  * @notice Risk Manager that controls transfer and margin requirements
  */
-contract PartialCollateralRiskManager is IManager, Owned {
+contract PCRM is IManager, Owned {
 
   enum MarginType {
     INITIAL,

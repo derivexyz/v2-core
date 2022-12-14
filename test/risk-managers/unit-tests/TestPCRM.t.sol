@@ -4,7 +4,7 @@ import "forge-std/Test.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
-import "src/risk-managers/PartialCollateralRiskManager.sol";
+import "src/risk-managers/PCRM.sol";
 import "src/Account.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
@@ -13,7 +13,7 @@ import "test/shared/mocks/MockManager.sol";
 
 contract UNIT_TestPCRM is Test {
   Account account;
-  PartialCollateralRiskManager manager;
+  PCRM manager;
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
   MockV3Aggregator aggregator;
@@ -32,7 +32,7 @@ contract UNIT_TestPCRM is Test {
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
 
     option = new Option();
-    manager = new PartialCollateralRiskManager(
+    manager = new PCRM(
       address(account),
       address(spotFeeds),
       address(0), // lending
@@ -67,18 +67,18 @@ contract UNIT_TestPCRM is Test {
   /////////////////////////
 
   function testInitialMarginCalculation() public view {
-    PartialCollateralRiskManager.StrikeHolding[] memory strikes = 
-      new PartialCollateralRiskManager.StrikeHolding[](1);
-    strikes[0] = PartialCollateralRiskManager.StrikeHolding({
+    PCRM.StrikeHolding[] memory strikes = 
+      new PCRM.StrikeHolding[](1);
+    strikes[0] = PCRM.StrikeHolding({
       strike: 0,
       calls: 0,
       puts: 0,
       forwards: 0
     });
 
-    PartialCollateralRiskManager.ExpiryHolding[] memory expiries = 
-      new PartialCollateralRiskManager.ExpiryHolding[](1);
-    expiries[0] = PartialCollateralRiskManager.ExpiryHolding({
+    PCRM.ExpiryHolding[] memory expiries = 
+      new PCRM.ExpiryHolding[](1);
+    expiries[0] = PCRM.ExpiryHolding({
       expiry: 0, 
       strikes: strikes
     });
@@ -89,18 +89,18 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testMaintenanceMarginCalculation() public view {
-    PartialCollateralRiskManager.StrikeHolding[] memory strikes = 
-      new PartialCollateralRiskManager.StrikeHolding[](1);
-    strikes[0] = PartialCollateralRiskManager.StrikeHolding({
+    PCRM.StrikeHolding[] memory strikes = 
+      new PCRM.StrikeHolding[](1);
+    strikes[0] = PCRM.StrikeHolding({
       strike: 0,
       calls: 0,
       puts: 0,
       forwards: 0
     });
 
-    PartialCollateralRiskManager.ExpiryHolding[] memory expiries = 
-      new PartialCollateralRiskManager.ExpiryHolding[](1);
-    expiries[0] = PartialCollateralRiskManager.ExpiryHolding({
+    PCRM.ExpiryHolding[] memory expiries = 
+      new PCRM.ExpiryHolding[](1);
+    expiries[0] = PCRM.ExpiryHolding({
       expiry: 0, 
       strikes: strikes
     });
