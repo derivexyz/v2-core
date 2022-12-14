@@ -263,4 +263,7 @@ contract AccountGasScript is Script {
 
     expiry = block.timestamp + 1 days;
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function test() public {}
 }
