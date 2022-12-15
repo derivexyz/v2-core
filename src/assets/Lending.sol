@@ -90,7 +90,7 @@ contract Lending is Owned, IAsset {
    */
   function deposit(uint recipientAccount, uint amount) external {
     IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
-    uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
+    uint amountInAccount = amount.to18Decimals(usdcDecimals);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -118,7 +118,7 @@ contract Lending is Owned, IAsset {
 
     IERC20(usdc).safeTransfer(recipient, amount);
 
-    uint cashAmount = amount.convertDecimals(usdcDecimals, 18);
+    uint cashAmount = amount.to18Decimals(usdcDecimals);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
