@@ -6,13 +6,30 @@ pragma solidity ^0.8.13;
  * @author Lyra
  * @notice Risk Manager that controls transfer and margin requirements
  */
-
 interface IPCRM {
-  function startAuction(uint accountId) external {}
+  struct ExpiryHolding {
+    uint expiry;
+    StrikeHolding[] strikes;
+  }
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external {}
+  struct StrikeHolding {
+    uint64 strike;
+    int64 calls;
+    int64 puts;
+    int64 forwards;
+  }
 
-  function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {}
+  function getSortedHoldings(
+    uint accountId
+  ) external view returns (ExpiryHolding[] memory expiryHoldings) {}
 
-  function getMaintenanceMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {}
+  function executeBid(
+    uint accountId, 
+    uint liquidatorId, 
+    uint portion, 
+    uint cashAmount
+  ) external returns (
+    int finalInitialMargin, 
+    ExpiryHolding[] memory
+  ) {}
 }

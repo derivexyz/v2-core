@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccount.sol";
 import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IDutchAuction.sol";
 import "src/assets/Lending.sol";
 import "src/assets/Option.sol";
 import "synthetix/Owned.sol";
@@ -49,7 +50,7 @@ contract PCRM is IManager, Owned {
   Option public immutable option;
 
   /// @dev dutch auction contract used to auction liquidatable accounts
-  address public immutable dutchAuction;
+  IDutchAuction public immutable dutchAuction;
 
   ////////////
   // Events //
@@ -80,7 +81,7 @@ contract PCRM is IManager, Owned {
     spotFeeds = ISpotFeeds(spotFeeds_);
     lending = Lending(lending_);
     option = Option(option_);
-    dutchAuction = address(0); // todo: add once dutch auction interface present
+    dutchAuction = IDutchAuction(address(0)); // todo: add once dutch auction interface present
   }
 
 
@@ -97,7 +98,7 @@ contract PCRM is IManager, Owned {
     // todo: whitelist check
 
     // PCRM calculations
-    ExpiryHolding[] memory expiries = _sortOptions(account.getAccountBalances(accountId));
+    ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
     _calcMargin(expiries, MarginType.INITIAL);
   }
 
@@ -110,10 +111,12 @@ contract PCRM is IManager, Owned {
   ////////////////// 
 
   function startAuction(uint accountId) external {
+    dutchAuction.startAuction();
     // todo: check that account is liquidatable / freeze account / call out to auction contract
   }
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyAuction() {
+    dutchAuction.getMaxLiquidatablePortion(0);
     // todo: this would be only dutch auction contract
   }
 
@@ -162,7 +165,7 @@ contract PCRM is IManager, Owned {
   // Util //
   //////////
 
-  function _sortOptions(
+  function _sortHoldings(
     AccountStructs.AssetBalance[] memory assets
   ) internal view returns (ExpiryHolding[] memory expiryHoldings) {
     // todo: sort out each expiry / strike 
@@ -174,6 +177,9 @@ contract PCRM is IManager, Owned {
   // View //
   //////////
 
+  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {}
+
+  // todo: public view function to get margin values directly through accountId
   function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
     return _calcMargin(expiries, MarginType.INITIAL);
   }
