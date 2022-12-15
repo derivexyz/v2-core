@@ -34,13 +34,16 @@ interface IDutchAuction {
   // a user submits a bid for a particular auction
   function bid(uint auctionId, uint amount) external returns(uint);
 
+  // view to get the details on an auction
   function auctionDetails(uint auctionId) external view returns(AuctionDetails memory);
 
+  // gets the current price of an auction bound between Vmax and Vlower
   function currentAuctionPrice(uint auctionId) external view returns(uint);
 
-  function endAuction(uint auctionId) external returns(uint);
-
+  // TODO: may not be required anymore
   function getMaxProportion(uint accountId) external returns(uint);
-   
+
+  // adds a risk manager that can initiate auctions
+  // may need to check if it is the accounts verified risk manager
   function addRiskManger() external returns(bool);
 }
