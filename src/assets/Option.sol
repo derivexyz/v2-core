@@ -36,7 +36,7 @@ contract Option is IAsset, Owned {
     // todo: check whitelist
 
     // todo: make sure valid subId
-    return (preBalance + adjustment.amount, false);
+    return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
 
   function handleManagerChange(uint accountId, IManager newManager) external {

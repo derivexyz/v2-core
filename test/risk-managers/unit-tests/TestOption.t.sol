@@ -36,6 +36,12 @@ contract UNIT_TestOption is Test {
     vm.startPrank(alice);
     aliceAcc = account.createAccount(alice, IManager(manager));
     bobAcc = account.createAccount(bob, IManager(manager));
+    vm.stopPrank();
+
+
+    vm.startPrank(bob);
+    account.approve(alice, bobAcc);
+    vm.stopPrank();
   }
 
   //////////////
@@ -43,6 +49,7 @@ contract UNIT_TestOption is Test {
   //////////////
 
   function testWhitelistedManagerCheck() public {
+    vm.startPrank(alice);
     AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
@@ -52,6 +59,7 @@ contract UNIT_TestOption is Test {
       assetData: ""
     });
     account.submitTransfer(assetTransfer, "");
+    vm.stopPrank();
   }
 
   function testValidSubIdCheck() public {
@@ -64,6 +72,7 @@ contract UNIT_TestOption is Test {
 
   function testValidManagerChange() public {
     /* ensure account holds asset before manager changed*/
+    vm.startPrank(alice);
     AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
@@ -77,6 +86,7 @@ contract UNIT_TestOption is Test {
 
     // todo: test change to valid manager
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    vm.stopPrank();
   }
 
   ////////////////

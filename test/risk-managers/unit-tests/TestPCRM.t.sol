@@ -48,13 +48,18 @@ contract UNIT_TestPCRM is Test {
     aliceAcc = account.createAccount(alice, IManager(manager));
     bobAcc = account.createAccount(bob, IManager(manager));
     vm.stopPrank();
+
+    vm.startPrank(bob);
+    account.approve(alice, bobAcc);
+    vm.stopPrank();
   }
 
   //////////////
   // Transfer //
   //////////////
 
-  function testWhitelistManagerCheck() public {
+  function testHandleAdjustment() public {
+    vm.startPrank(alice);
     AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
@@ -64,6 +69,7 @@ contract UNIT_TestPCRM is Test {
       assetData: ""
     });
     account.submitTransfer(assetTransfer, "");
+    vm.stopPrank();
 
     // todo: actually do manager
   }
