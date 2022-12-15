@@ -88,7 +88,7 @@ contract InterestRateModel is IInterestRateModel, Owned {
    * @param borrows total outstanding debt
    * @return InterestFactor : e^(rt) - 1
    */
-  function getBorrowInterestFactor(uint elapsedTime, uint cash, uint borrows) external view override returns (uint) {
+  function getBorrowInterestFactor(uint elapsedTime, uint cash, uint borrows) external view returns (uint) {
     uint r = getBorrowRate(cash, borrows);
     return FixedPointMathLib.exp((elapsedTime * r / SECONDS_PER_YEAR).toInt256()) - DecimalMath.UNIT;
   }
@@ -119,7 +119,7 @@ contract InterestRateModel is IInterestRateModel, Owned {
    * @param feeFactor The current reserve factor for the market
    * @return The supply rate percentage per block as a mantissa (scaled by BASE)
    */
-  function getSupplyRate(uint cash, uint borrows, uint supply, uint feeFactor) public view override returns (uint) {
+  function getSupplyRate(uint cash, uint borrows, uint supply, uint feeFactor) external view returns (uint) {
     uint oneMinusReserveFactor = DecimalMath.UNIT - feeFactor;
     uint borrowRate = getBorrowRate(cash, borrows);
     uint ratePostReserve = borrowRate.multiplyDecimal(oneMinusReserveFactor);
