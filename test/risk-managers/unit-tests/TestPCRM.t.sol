@@ -119,8 +119,8 @@ contract UNIT_TestPCRM is Test {
   // Liquidations //
   //////////////////
 
-  function testStartAuction() public {
-    manager.startAuction(aliceAcc);
+  function testCheckAndStartLiquidation() public {
+    manager.checkAndStartLiquidation(aliceAcc);
   }
 
   function testExecuteBid() public {

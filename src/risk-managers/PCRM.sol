@@ -15,11 +15,12 @@ import "synthetix/Owned.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 contract PCRM is IManager, Owned {
-  enum MarginType
-  /// margin required for trade to pass
-  {
+  /**
+   * INITIAL: margin required for trade to pass
+   * MAINTENANCE: margin required to prevent liquidation
+   */
+  enum MarginType {
     INITIAL,
-    /// margin required to prevent liquidation
     MAINTENANCE
   }
 
@@ -124,7 +125,7 @@ contract PCRM is IManager, Owned {
    * @notice Confirm account is liquidatable and puts up for dutch auction.
    * @param accountId Account for which to check trade.
    */
-  function startAuction(uint accountId) external {
+  function checkAndStartLiquidation(uint accountId) external {
     dutchAuction.startAuction(accountId);
     // todo: check that account is liquidatable / freeze account / call out to auction contract
   }
