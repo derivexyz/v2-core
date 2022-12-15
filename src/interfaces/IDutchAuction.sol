@@ -8,5 +8,5 @@ pragma solidity ^0.8.13;
  */
 
 interface IDutchAuction {
-  function startAuction(uint accountId) external {}
+  function startAuction(uint accountId) external;
 }

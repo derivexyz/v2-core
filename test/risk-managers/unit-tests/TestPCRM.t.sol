@@ -10,6 +10,7 @@ import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
+import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestPCRM is Test {
   Account account;
@@ -18,6 +19,7 @@ contract UNIT_TestPCRM is Test {
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
   MockV3Aggregator aggregator;
   Option option;
+  MockDutchAuction auction;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -31,17 +33,21 @@ contract UNIT_TestPCRM is Test {
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
 
+    auction = new MockDutchAuction();
+
     option = new Option();
     manager = new PCRM(
       address(account),
       address(spotFeeds),
       address(0), // lending
-      address(option)
+      address(option),
+      address(auction)
     );
 
     vm.startPrank(alice);
     aliceAcc = account.createAccount(alice, IManager(manager));
     bobAcc = account.createAccount(bob, IManager(manager));
+    vm.stopPrank();
   }
 
   //////////////
@@ -55,9 +61,9 @@ contract UNIT_TestPCRM is Test {
       asset: IAsset(option),
       subId: 1,
       amount: 1e18,
-      assetData: ''
+      assetData: ""
     });
-    account.submitTransfer(assetTransfer, '');
+    account.submitTransfer(assetTransfer, "");
 
     // todo: actually do manager
   }
@@ -67,21 +73,11 @@ contract UNIT_TestPCRM is Test {
   /////////////////////////
 
   function testInitialMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = 
-      new PCRM.StrikeHolding[](1);
-    strikes[0] = PCRM.StrikeHolding({
-      strike: 0,
-      calls: 0,
-      puts: 0,
-      forwards: 0
-    });
+    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
+    strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding[] memory expiries = 
-      new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({
-      expiry: 0, 
-      strikes: strikes
-    });
+    PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
+    expiries[0] = PCRM.ExpiryHolding({expiry: 0, strikes: strikes});
 
     manager.getInitialMargin(expiries);
 
@@ -89,21 +85,11 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testMaintenanceMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = 
-      new PCRM.StrikeHolding[](1);
-    strikes[0] = PCRM.StrikeHolding({
-      strike: 0,
-      calls: 0,
-      puts: 0,
-      forwards: 0
-    });
+    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
+    strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding[] memory expiries = 
-      new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({
-      expiry: 0, 
-      strikes: strikes
-    });
+    PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
+    expiries[0] = PCRM.ExpiryHolding({expiry: 0, strikes: strikes});
 
     manager.getMaintenanceMargin(expiries);
 
@@ -117,9 +103,33 @@ contract UNIT_TestPCRM is Test {
   function testValidManagerChange() public {
     MockManager newManager = new MockManager(address(account));
 
-
     // todo: test change to valid manager
-    account.changeManager(aliceAcc, IManager(address(newManager)), '');
+    vm.startPrank(address(alice));
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    vm.stopPrank();
   }
 
+  //////////////////
+  // Liquidations //
+  //////////////////
+
+  function testStartAuction() public {
+    manager.startAuction(aliceAcc);
+  }
+
+  function testExecuteBid() public {
+    vm.startPrank(address(auction));
+    manager.executeBid(aliceAcc, 0, 5e17, 0);
+    vm.stopPrank();
+  }
+
+  //////////
+  // View //
+  //////////
+
+  function testGetSortedHoldings() public {
+    vm.startPrank(address(alice));
+    manager.getSortedHoldings(aliceAcc);
+    vm.stopPrank();
+  }
 }

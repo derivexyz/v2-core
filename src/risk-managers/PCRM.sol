@@ -61,8 +61,8 @@ contract PCRM is IManager, Owned {
   ///////////////
 
   modifier onlyAuction() {
-    if (msg.sender != dutchAuction) {
-      revert PCRM_OnlyAuction(msg.sender, dutchAuction);
+    if (msg.sender != address(dutchAuction)) {
+      revert PCRM_OnlyAuction(msg.sender, address(dutchAuction));
     }
     _;
   }
@@ -75,13 +75,14 @@ contract PCRM is IManager, Owned {
     address account_,
     address spotFeeds_,
     address lending_,
-    address option_
+    address option_,
+    address auction_
   ) Owned() {
     account = IAccount(account_);
     spotFeeds = ISpotFeeds(spotFeeds_);
     lending = Lending(lending_);
     option = Option(option_);
-    dutchAuction = IDutchAuction(address(0)); // todo: add once dutch auction interface present
+    dutchAuction = IDutchAuction(auction_);
   }
 
 
@@ -111,12 +112,19 @@ contract PCRM is IManager, Owned {
   ////////////////// 
 
   function startAuction(uint accountId) external {
-    dutchAuction.startAuction();
+    dutchAuction.startAuction(accountId);
     // todo: check that account is liquidatable / freeze account / call out to auction contract
   }
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyAuction() {
-    dutchAuction.getMaxLiquidatablePortion(0);
+  function executeBid(
+    uint accountId, 
+    uint liquidatorId, 
+    uint portion, 
+    uint cashAmount
+  ) external onlyAuction() returns (
+    int finalInitialMargin, 
+    ExpiryHolding[] memory
+  ) {
     // todo: this would be only dutch auction contract
   }
 
@@ -134,7 +142,6 @@ contract PCRM is IManager, Owned {
 
     margin += _calcCashValue(marginType);
   }
-
   
   // Option Margin Math
 
@@ -177,7 +184,9 @@ contract PCRM is IManager, Owned {
   // View //
   //////////
 
-  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {}
+  function getSortedHoldings(
+    uint accountId
+  ) external view returns (ExpiryHolding[] memory expiryHoldings) {}
 
   // todo: public view function to get margin values directly through accountId
   function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {

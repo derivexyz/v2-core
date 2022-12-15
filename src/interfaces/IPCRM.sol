@@ -21,7 +21,9 @@ interface IPCRM {
 
   function getSortedHoldings(
     uint accountId
-  ) external view returns (ExpiryHolding[] memory expiryHoldings) {}
+  ) external view returns (
+    ExpiryHolding[] memory expiryHoldings
+  );
 
   function executeBid(
     uint accountId, 
@@ -31,5 +33,5 @@ interface IPCRM {
   ) external returns (
     int finalInitialMargin, 
     ExpiryHolding[] memory
-  ) {}
+  );
 }

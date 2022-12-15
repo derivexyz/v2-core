@@ -11,7 +11,6 @@ import "synthetix/Owned.sol";
  * @notice Option asset that defines subIds, value and settlement
  */
 contract Option is IAsset, Owned {
-
   ///////////////
   // Variables //
   ///////////////
@@ -37,18 +36,16 @@ contract Option is IAsset, Owned {
     // todo: check whitelist
 
     // todo: make sure valid subId
-    return (preBalance + adjustment.amount, adjustment.amount < 0);
+    return (preBalance + adjustment.amount, false);
   }
 
   function handleManagerChange(uint accountId, IManager newManager) external {
     // todo: check whitelist
   }
 
-
   ////////////////
   // Settlement //
   ////////////////
-
 
   /**
    * @notice Locks-in price at which option settles.
@@ -68,7 +65,7 @@ contract Option is IAsset, Owned {
    * @param subId ID of option.
    */
   function getOptionDetails(uint96 subId) external view returns (uint expiry, uint strike, bool isCall) {
-    // todo: uint96 encoding library 
+    // todo: uint96 encoding library
   }
 
   /**
@@ -78,7 +75,7 @@ contract Option is IAsset, Owned {
    * @param isCall Whether option is a call or put
    */
   function getSubId(uint32 expiry, uint64 strike, bool isCall) external view returns (uint96 subId) {
-    // todo: uint96 encoding library 
+    // todo: uint96 encoding library
   }
 
   /**
@@ -94,6 +91,5 @@ contract Option is IAsset, Owned {
 
   ////////////
   // Errors //
-  ////////////  
-
+  ////////////
 }

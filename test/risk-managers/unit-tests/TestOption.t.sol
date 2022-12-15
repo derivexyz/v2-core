@@ -49,9 +49,9 @@ contract UNIT_TestOption is Test {
       asset: IAsset(option),
       subId: 1,
       amount: 1e18,
-      assetData: ''
+      assetData: ""
     });
-    account.submitTransfer(assetTransfer, '');
+    account.submitTransfer(assetTransfer, "");
   }
 
   function testValidSubIdCheck() public {
@@ -70,16 +70,14 @@ contract UNIT_TestOption is Test {
       asset: IAsset(option),
       subId: 1,
       amount: 1e18,
-      assetData: ''
+      assetData: ""
     });
-    account.submitTransfer(assetTransfer, '');
+    account.submitTransfer(assetTransfer, "");
     MockManager newManager = new MockManager(address(account));
 
-
     // todo: test change to valid manager
-    account.changeManager(aliceAcc, IManager(address(newManager)), '');
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
   }
-
 
   ////////////////
   // Settlement //
@@ -108,5 +106,4 @@ contract UNIT_TestOption is Test {
     // todo: do actual encode
     option.getSubId(0, 0, true);
   }
-
 }
