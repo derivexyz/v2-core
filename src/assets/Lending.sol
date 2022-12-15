@@ -150,9 +150,8 @@ contract Lending is Owned, IAsset {
     AccountStructs.AssetAdjustment memory adjustment,
     int preBalance,
     IManager manager,
-    address /*caller*/
+    address caller
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
     }
@@ -164,6 +163,12 @@ contract Lending is Owned, IAsset {
 
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
+
+    // only check if negative
+    if (finalBalance < 0 || caller == address(manager)) {
+      // need this or (caller == address(manager)) to fix test testBadAccountCanStealMoney
+      _checkManager(address(manager));
+    }
 
     // need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
