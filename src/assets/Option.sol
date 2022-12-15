@@ -19,6 +19,9 @@ contract Option is IAsset, Owned {
   // Events //
   ////////////
 
+  /// @dev Emitted when spot price for option settlement determined
+  event SettlementPriceSet(uint indexed subId, uint settlementPrice);
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -54,6 +57,7 @@ contract Option is IAsset, Owned {
    */
   function setSettlementPrice(uint subId) external {
     // todo: integrate with settlementFeeds
+    emit SettlementPriceSet(subId, 0);
   }
 
   //////////
