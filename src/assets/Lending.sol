@@ -9,7 +9,6 @@ import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccount.sol";
 import "../libraries/DecimalMath.sol";
-import "forge-std/Script.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
@@ -155,7 +154,6 @@ contract Lending is Owned, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    console.log(" ---------- lending handle adjustment");
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
@@ -172,24 +170,6 @@ contract Lending is Owned, IAsset {
     // need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    if (adjustment.amount >= 0) {
-    console.log("Adjustment+ ", adjustment.amount.toUint256());
-    } else {
-    console.log("Adjustment- ", (-adjustment.amount).toUint256());
-    }
-    if (preBalance >= 0) {
-    console.log("PreBalance+ ", preBalance.toUint256());
-    } else {
-    console.log("PreBalance- ", (-preBalance).toUint256());
-    }
-    if (finalBalance >= 0) {
-    console.log("FinBalance+ ", finalBalance.toUint256());
-    } else {
-    console.log("FinBalance- ", (-finalBalance).toUint256());
-    }
-
-    console.log("Before borrow", totalBorrow);
-    console.log("Before supply", totalSupply);
     // update totalSupply and totalBorrow amounts
     if (preBalance <= 0 && finalBalance <= 0) {
       totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
@@ -203,10 +183,6 @@ contract Lending is Owned, IAsset {
       totalBorrow += (-finalBalance).toUint256();
       totalSupply -= preBalance.toUint256();
     }
-    console.log("After  borrow", totalBorrow);
-    console.log("After  supply", totalSupply);
-
-    console.log(" ---------- END of handle adjustment");
   }
 
   /**

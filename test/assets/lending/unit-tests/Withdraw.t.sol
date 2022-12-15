@@ -37,7 +37,7 @@ contract UNIT_LendingWithdraw is Test {
     lending.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 18 decimals
-    depositedAmount = 1000_000 ether;
+    depositedAmount = 10000 ether;
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(lending), type(uint).max);
 
@@ -113,5 +113,21 @@ contract UNIT_LendingWithdraw is Test {
     totalBorrow = lending.totalBorrow();
     assertEq(usdcAfter - usdcBefore, amountToBorrow);
     assertEq(totalBorrow, amountToBorrow);
+  }
+
+  function testWithdrawPositiveBalanceToNegativeBalance(uint depositAmount, uint withdrawAmount) public {
+    vm.assume(withdrawAmount <= 10000 ether);
+    vm.assume(depositAmount <= withdrawAmount);
+
+    usdc.mint(address(this), depositedAmount);
+    uint newAccount = account.createAccount(address(this), manager);
+    lending.deposit(newAccount, depositAmount);
+
+    uint usdcBefore = usdc.balanceOf(address(this));
+    lending.withdraw(newAccount, withdrawAmount, address(this));
+    uint usdcAfter = usdc.balanceOf(address(this));
+
+    int balance = account.getBalance(newAccount, lending, 0);
+    assertEq(balance, int(depositAmount)-int(withdrawAmount));
   }
 }

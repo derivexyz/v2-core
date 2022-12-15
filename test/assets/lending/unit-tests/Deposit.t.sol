@@ -93,13 +93,32 @@ contract UNIT_LendingDeposit is Test {
     assertEq(usdcAfter - usdcBefore, amountToBorrow);
     assertEq(lending.totalBorrow(), amountToBorrow);
 
-    console.log("Amount to borrow", amountToBorrow);
-    console.log("Deposited amount", depositAmount);
     lending.deposit(newAccount, depositAmount);
     
     totalBorrow = lending.totalBorrow();
-    console.log("totalBorrow", lending.totalBorrow());
     assertEq(totalBorrow, amountToBorrow - depositAmount);
+  }
+
+  function testDepositNegativeBalanceToPositiveBalance(uint depositAmount, uint withdrawAmount) public {
+    vm.assume(depositAmount <= 1000 ether);
+    vm.assume(depositAmount >= withdrawAmount);
+
+    lending.deposit(accountId, 1000 ether);
+    uint newAccount = account.createAccount(address(this), manager);
+    uint totalBorrow = lending.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    uint usdcBefore = usdc.balanceOf(address(this));
+    lending.withdraw(newAccount, withdrawAmount, address(this));
+    uint usdcAfter = usdc.balanceOf(address(this));
+
+    assertEq(usdcAfter - usdcBefore, withdrawAmount);
+    assertEq(lending.totalBorrow(), withdrawAmount);
+
+    lending.deposit(newAccount, depositAmount);
+    
+    int balance = account.getBalance(newAccount, lending, 0);
+    assertEq(balance, int(depositAmount)-int(withdrawAmount));
   }
 }
 
