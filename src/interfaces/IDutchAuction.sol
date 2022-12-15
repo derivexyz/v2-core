@@ -7,9 +7,6 @@ interface IDutchAuction {
 
   struct AuctionDetails {
     uint accountId;
-    uint depositedMargin;
-    uint intialMargin;
-    uint maintenceMargin;
     uint upperBound;
     uint lowerBound;
   }
@@ -21,6 +18,7 @@ interface IDutchAuction {
     bool ongoing;
     uint startBlock;
     uint endBlock;
+    uint dv; // the amount to decrease by each step
   }
 
   struct DutchAuctionParameters {
