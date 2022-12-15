@@ -116,13 +116,11 @@ contract Lending is Owned, IAsset {
   function withdraw(uint accountId, uint amount, address recipient) external {
     if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
 
-    int preBalance = account.getBalance(accountId, IAsset(address(this)), 0);
-
     IERC20(usdc).safeTransfer(recipient, amount);
 
     uint cashAmount = amount.convertDecimals(usdcDecimals, 18);
 
-    int postBalance = account.assetAdjustment(
+    account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
