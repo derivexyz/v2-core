@@ -39,6 +39,7 @@ contract DutchAuction is IDutchAuction {
 
 
     // add bid
+    IPCRM.executeBid(accountId, liquidatorId, portion, cashAmount); // not sure about the liquidator difference
   }
 
   function auctionDetails(bytes32 auctionId) external view returns(AuctionDetails memory) {
