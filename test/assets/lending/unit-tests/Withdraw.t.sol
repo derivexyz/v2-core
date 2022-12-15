@@ -123,9 +123,7 @@ contract UNIT_LendingWithdraw is Test {
     uint newAccount = account.createAccount(address(this), manager);
     lending.deposit(newAccount, depositAmount);
 
-    uint usdcBefore = usdc.balanceOf(address(this));
     lending.withdraw(newAccount, withdrawAmount, address(this));
-    uint usdcAfter = usdc.balanceOf(address(this));
 
     int balance = account.getBalance(newAccount, lending, 0);
     assertEq(balance, int(depositAmount) - int(withdrawAmount));
