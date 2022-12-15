@@ -40,4 +40,7 @@ contract DumbManager is MockManager {
     // read the value, so we calculate the SLOADs
     IAccount(account).getAccountBalances(accountId);
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function testCoverageChill() public {}
 }
