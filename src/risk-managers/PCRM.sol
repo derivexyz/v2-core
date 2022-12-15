@@ -15,9 +15,9 @@ import "synthetix/Owned.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 contract PCRM is IManager, Owned {
-
-  enum MarginType {
-    /// margin required for trade to pass
+  enum MarginType
+  /// margin required for trade to pass
+  {
     INITIAL,
     /// margin required to prevent liquidation
     MAINTENANCE
@@ -26,7 +26,7 @@ contract PCRM is IManager, Owned {
   struct ExpiryHolding {
     /// timestamp of expiry for all strike holdings
     uint expiry;
-    /// array of strike holding details 
+    /// array of strike holding details
     StrikeHolding[] strikes;
   }
 
@@ -37,7 +37,7 @@ contract PCRM is IManager, Owned {
     int64 calls;
     /// number of puts held
     int64 puts;
-    /// number of forwards held 
+    /// number of forwards held
     int64 forwards;
   }
 
@@ -79,13 +79,7 @@ contract PCRM is IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(
-    address account_,
-    address spotFeeds_,
-    address lending_,
-    address option_,
-    address auction_
-  ) Owned() {
+  constructor(address account_, address spotFeeds_, address lending_, address option_, address auction_) Owned() {
     account = IAccount(account_);
     spotFeeds = ISpotFeeds(spotFeeds_);
     lending = Lending(lending_);
@@ -93,21 +87,19 @@ contract PCRM is IManager, Owned {
     dutchAuction = IDutchAuction(auction_);
   }
 
-
   ///////////////////
   // Account Hooks //
-  /////////////////// 
+  ///////////////////
 
   /**
    * @notice Ensures asset is valid and initial margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(
-    uint accountId, 
-    address, 
-    AccountStructs.AssetDelta[] memory, 
-    bytes memory
-  ) public view override {
+  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory)
+    public
+    view
+    override
+  {
     // todo: whitelist check
 
     // PCRM calculations
@@ -126,7 +118,7 @@ contract PCRM is IManager, Owned {
 
   //////////////////
   // Liquidations //
-  ////////////////// 
+  //////////////////
 
   /**
    * @notice Confirm account is liquidatable and puts up for dutch auction.
@@ -151,22 +143,17 @@ contract PCRM is IManager, Owned {
    * @return expiryHoldings Sorted array of option holdings used to recompute new auction bounds
    * @return cash Amount of cash held or borrowed in account
    */
-  function executeBid(
-    uint accountId, 
-    uint liquidatorId, 
-    uint portion, 
-    uint cashAmount
-  ) external onlyAuction() returns (
-    int postExecutionInitialMargin, 
-    ExpiryHolding[] memory,
-    int cash
-  ) {
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
+    external
+    onlyAuction
+    returns (int postExecutionInitialMargin, ExpiryHolding[] memory, int cash)
+  {
     // todo: this would be only dutch auction contract
   }
 
   /////////////////
   // Margin Math //
-  ///////////////// 
+  /////////////////
 
   /**
    * @notice Calculate the initial or maintenance margin of account.
@@ -175,17 +162,14 @@ contract PCRM is IManager, Owned {
    * @param marginType Initial or maintenance margin.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(
-    ExpiryHolding[] memory expiries, 
-    MarginType marginType
-  ) internal view returns (int margin) {
+  function _calcMargin(ExpiryHolding[] memory expiries, MarginType marginType) internal view returns (int margin) {
     for (uint i; i < expiries.length; i++) {
       margin += _calcExpiryValue(expiries[i], marginType);
     }
 
     margin += _calcCashValue(marginType);
   }
-  
+
   // Option Margin Math
 
   /**
@@ -194,10 +178,7 @@ contract PCRM is IManager, Owned {
    * @param marginType Initial or maintenance margin.
    * @return expiryValue Value of assets or debt of options in a given expiry.
    */
-  function _calcExpiryValue(
-    ExpiryHolding memory expiry, 
-    MarginType marginType
-  ) internal view returns (int expiryValue) {
+  function _calcExpiryValue(ExpiryHolding memory expiry, MarginType marginType) internal view returns (int expiryValue) {
     expiryValue;
     for (uint i; i < expiry.strikes.length; i++) {
       expiryValue += _calcStrikeValue(expiry.strikes[i], marginType);
@@ -210,15 +191,16 @@ contract PCRM is IManager, Owned {
    * @param marginType Initial or maintenance margin.
    * @return strikeValue Value of assets or debt of options of a given strike.
    */
-  function _calcStrikeValue(
-    StrikeHolding memory strikeHoldings, 
-    MarginType marginType
-  ) internal view returns (int strikeValue) {
+  function _calcStrikeValue(StrikeHolding memory strikeHoldings, MarginType marginType)
+    internal
+    view
+    returns (int strikeValue)
+  {
     // todo: get call, put, forward values
   }
-  
+
   // Cash Margin Math
-  
+
   /**
    * @notice Calculate the discounted value of cash in account.
    * @param marginType Initial or maintenance margin.
@@ -233,15 +215,17 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Sort all option holdings into an array of 
+   * @notice Sort all option holdings into an array of
    *         [expiries][strikes][calls / puts / forwards].
    * @param assets Array of balances for given asset and subId.
    * @return expiryHoldings Sorted array of option holdings.
    */
-  function _sortHoldings(
-    AccountStructs.AssetBalance[] memory assets
-  ) internal view returns (ExpiryHolding[] memory expiryHoldings) {
-    // todo: sort out each expiry / strike 
+  function _sortHoldings(AccountStructs.AssetBalance[] memory assets)
+    internal
+    view
+    returns (ExpiryHolding[] memory expiryHoldings)
+  {
+    // todo: sort out each expiry / strike
     // todo: ignore the lendingAsset
     // todo: add limit to # of expiries and # of options
   }
@@ -250,16 +234,13 @@ contract PCRM is IManager, Owned {
   // View //
   //////////
 
-
   /**
-   * @notice Sort all option holdings of an account into an array of 
+   * @notice Sort all option holdings of an account into an array of
    *         [expiries][strikes][calls / puts / forwards].
    * @param accountId ID of account to sort.
    * @return expiryHoldings Sorted array of option holdings.
    */
-  function getSortedHoldings(
-    uint accountId
-  ) external view returns (ExpiryHolding[] memory expiryHoldings) {}
+  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {}
 
   /**
    * @notice Calculate the initial margin of account.
@@ -284,8 +265,7 @@ contract PCRM is IManager, Owned {
 
   ////////////
   // Errors //
-  ////////////  
+  ////////////
 
   error PCRM_OnlyAuction(address sender, address auction);
-
 }

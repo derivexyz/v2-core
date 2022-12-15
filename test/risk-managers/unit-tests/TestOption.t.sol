@@ -38,7 +38,6 @@ contract UNIT_TestOption is Test {
     bobAcc = account.createAccount(bob, IManager(manager));
     vm.stopPrank();
 
-
     vm.startPrank(bob);
     account.approve(alice, bobAcc);
     vm.stopPrank();

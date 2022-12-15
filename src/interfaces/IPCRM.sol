@@ -19,21 +19,9 @@ interface IPCRM {
     int64 forwards;
   }
 
-  function getSortedHoldings(
-    uint accountId
-  ) external view returns (
-    ExpiryHolding[] memory expiryHoldings,
-    int cash
-  );
+  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings, int cash);
 
-  function executeBid(
-    uint accountId, 
-    uint liquidatorId, 
-    uint portion, 
-    uint cashAmount
-  ) external returns (
-    int finalInitialMargin, 
-    ExpiryHolding[] memory,
-    int cash
-  );
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
+    external
+    returns (int finalInitialMargin, ExpiryHolding[] memory, int cash);
 }

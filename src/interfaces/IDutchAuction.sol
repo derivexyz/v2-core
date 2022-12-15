@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 /**
- * @title Dutch Auction 
+ * @title Dutch Auction
  * @author Lyra
  * @notice Auction contract for conducting liquidations of PCRM accounts
  */
