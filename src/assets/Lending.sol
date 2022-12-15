@@ -179,7 +179,7 @@ contract Lending is Owned, IAsset {
       if (finalBalance < 0) {
         // account is trying to borrow abs(finalBalance) now
         totalBorrow += (-finalBalance).toUint256();
-      } 
+      }
     } else {
       // the account has debt (negative balance)
       if (finalBalance <= 0) {
