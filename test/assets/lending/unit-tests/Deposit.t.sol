@@ -74,7 +74,7 @@ contract UNIT_LendingDeposit is Test {
     uint preSupply = lending.totalSupply();
     lending.deposit(accountId, depositAmount);
     uint postSupply = lending.totalSupply();
-    assertEq(postSupply-preSupply, depositAmount);
+    assertEq(postSupply - preSupply, depositAmount);
   }
 
   function testDepositDecreasesTotalBorrow(uint amountToBorrow, uint depositAmount) public {
@@ -94,7 +94,7 @@ contract UNIT_LendingDeposit is Test {
     assertEq(lending.totalBorrow(), amountToBorrow);
 
     lending.deposit(newAccount, depositAmount);
-    
+
     totalBorrow = lending.totalBorrow();
     assertEq(totalBorrow, amountToBorrow - depositAmount);
   }
@@ -116,9 +116,9 @@ contract UNIT_LendingDeposit is Test {
     assertEq(lending.totalBorrow(), withdrawAmount);
 
     lending.deposit(newAccount, depositAmount);
-    
+
     int balance = account.getBalance(newAccount, lending, 0);
-    assertEq(balance, int(depositAmount)-int(withdrawAmount));
+    assertEq(balance, int(depositAmount) - int(withdrawAmount));
   }
 }
 

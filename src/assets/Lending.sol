@@ -209,7 +209,7 @@ contract Lending is Owned, IAsset {
   function _accrueInterest() internal {
     //todo: actual interest updates
     // uint util = borrowIndex / supplyIndex;
-    
+
     lastTimestamp = block.timestamp;
   }
 
@@ -241,7 +241,7 @@ contract Lending is Owned, IAsset {
 
   /// @dev caller is not owner of the account
   error LA_OnlyAccountOwner();
-  
+
   /// @dev accrued interest is stale
   error LA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
 }

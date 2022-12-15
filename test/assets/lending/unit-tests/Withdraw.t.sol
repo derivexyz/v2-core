@@ -96,7 +96,7 @@ contract UNIT_LendingWithdraw is Test {
     uint beforeWithdraw = lending.totalSupply();
     lending.withdraw(accountId, withdrawAmount, address(this));
     uint afterWithdraw = lending.totalSupply();
-    assertEq(beforeWithdraw-withdrawAmount, afterWithdraw);
+    assertEq(beforeWithdraw - withdrawAmount, afterWithdraw);
   }
 
   function testWithdrawIncreasesTotalBorrow(uint amountToBorrow) public {
@@ -128,6 +128,6 @@ contract UNIT_LendingWithdraw is Test {
     uint usdcAfter = usdc.balanceOf(address(this));
 
     int balance = account.getBalance(newAccount, lending, 0);
-    assertEq(balance, int(depositAmount)-int(withdrawAmount));
+    assertEq(balance, int(depositAmount) - int(withdrawAmount));
   }
 }
