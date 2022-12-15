@@ -104,6 +104,9 @@ contract Lending is Owned, IAsset {
       ""
     );
 
+    // update the totalSupply (should this be updatd before or after adjustment hook?)
+    totalSupply += amountInAccount;
+
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
 
@@ -131,6 +134,9 @@ contract Lending is Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
+
+    // update the totalSupply (should this be updatd before or after adjustment hook?)
+    totalSupply -= cashAmount;
   }
 
   //////////////////////////
@@ -168,18 +174,22 @@ contract Lending is Owned, IAsset {
     // need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    // update totalSupply and totalBorrow amounts
-    if (preBalance <= 0 && finalBalance <= 0) {
-      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
-    } else if (preBalance >= 0 && finalBalance >= 0) {
-      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
-    } else if (preBalance < 0 && finalBalance > 0) {
-      totalBorrow -= (-preBalance).toUint256();
-      totalSupply += finalBalance.toUint256();
+    if (preBalance >= 0) {
+      // prebalance > 0: the account didn't borrow anything
+      if (finalBalance < 0) {
+        // account is trying to borrow abs(finalBalance) now
+        totalBorrow += (-finalBalance).toUint256();
+      } 
     } else {
-      // (preBalance > 0 && finalBalance < 0)
-      totalBorrow += (-finalBalance).toUint256();
-      totalSupply -= preBalance.toUint256();
+      // the account has debt (negative balance)
+      if (finalBalance <= 0) {
+        // the account is borrowing more, or repaying part of the debt
+        totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
+      } else {
+        // finalBalacne is positive now
+        // the account is repaying all its debt
+        totalBorrow -= (-preBalance).toUint256();
+      }
     }
   }
 
