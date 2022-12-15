@@ -17,19 +17,27 @@ import "synthetix/Owned.sol";
 contract PCRM is IManager, Owned {
 
   enum MarginType {
+    /// margin required for trade to pass
     INITIAL,
+    /// margin required to prevent liquidation
     MAINTENANCE
   }
 
   struct ExpiryHolding {
+    /// timestamp of expiry for all strike holdings
     uint expiry;
+    /// array of strike holding details 
     StrikeHolding[] strikes;
   }
 
   struct StrikeHolding {
+    /// strike price of held options
     uint64 strike;
+    /// number of calls held
     int64 calls;
+    /// number of puts held
     int64 puts;
+    /// number of forwards held 
     int64 forwards;
   }
 
@@ -90,6 +98,10 @@ contract PCRM is IManager, Owned {
   // Account Hooks //
   /////////////////// 
 
+  /**
+   * @notice Ensures asset is valid and initial margin is met.
+   * @param accountId Account for which to check trade.
+   */
   function handleAdjustment(
     uint accountId, 
     address, 
@@ -103,6 +115,11 @@ contract PCRM is IManager, Owned {
     _calcMargin(expiries, MarginType.INITIAL);
   }
 
+  /**
+   * @notice Ensures new manager is valid.
+   * @param accountId Account for which to check trade.
+   * @param newManager IManager to change account to.
+   */
   function handleManagerChange(uint accountId, IManager newManager) external {
     // todo: nextManager whitelist check
   }
@@ -111,19 +128,38 @@ contract PCRM is IManager, Owned {
   // Liquidations //
   ////////////////// 
 
+  /**
+   * @notice Confirm account is liquidatable and puts up for dutch auction.
+   * @param accountId Account for which to check trade.
+   */
   function startAuction(uint accountId) external {
     dutchAuction.startAuction(accountId);
     // todo: check that account is liquidatable / freeze account / call out to auction contract
   }
 
+  /**
+   * @notice Transfers portion of account to the liquidator.
+   *         Transfers cash to the liquidated account.
+   * @dev Auction contract can decide to either:
+   *      - revert / process bid
+   *      - continue / complete auction
+   * @param accountId ID of account which is being liquidated.
+   * @param liquidatorId Liquidator account ID.
+   * @param portion Portion of account that is requested to be liquidated.
+   * @param cashAmount Cash amount liquidator is offering for portion of account.
+   * @return postExecutionInitialMargin InitialMargin of account after portion is liquidated.
+   * @return expiryHoldings Sorted array of option holdings used to recompute new auction bounds
+   * @return cash Amount of cash held or borrowed in account
+   */
   function executeBid(
     uint accountId, 
     uint liquidatorId, 
     uint portion, 
     uint cashAmount
   ) external onlyAuction() returns (
-    int finalInitialMargin, 
-    ExpiryHolding[] memory
+    int postExecutionInitialMargin, 
+    ExpiryHolding[] memory,
+    int cash
   ) {
     // todo: this would be only dutch auction contract
   }
@@ -132,6 +168,13 @@ contract PCRM is IManager, Owned {
   // Margin Math //
   ///////////////// 
 
+  /**
+   * @notice Calculate the initial or maintenance margin of account.
+   *         A negative value means the account is X amount over the required margin.
+   * @param expiries Sorted array of option holdings.
+   * @param marginType Initial or maintenance margin.
+   * @return margin Amount by which account is over or under the required margin.
+   */
   function _calcMargin(
     ExpiryHolding[] memory expiries, 
     MarginType marginType
@@ -145,6 +188,12 @@ contract PCRM is IManager, Owned {
   
   // Option Margin Math
 
+  /**
+   * @notice Calculate the discounted value of option holdings in a specific expiry.
+   * @param expiry All option holdings within an expiry.
+   * @param marginType Initial or maintenance margin.
+   * @return expiryValue Value of assets or debt of options in a given expiry.
+   */
   function _calcExpiryValue(
     ExpiryHolding memory expiry, 
     MarginType marginType
@@ -155,6 +204,12 @@ contract PCRM is IManager, Owned {
     }
   }
 
+  /**
+   * @notice Calculate the discounted value of option holdings in a specific strike.
+   * @param strikeHoldings All option holdings of the same strike.
+   * @param marginType Initial or maintenance margin.
+   * @return strikeValue Value of assets or debt of options of a given strike.
+   */
   function _calcStrikeValue(
     StrikeHolding memory strikeHoldings, 
     MarginType marginType
@@ -164,6 +219,11 @@ contract PCRM is IManager, Owned {
   
   // Cash Margin Math
   
+  /**
+   * @notice Calculate the discounted value of cash in account.
+   * @param marginType Initial or maintenance margin.
+   * @return cashValue Discounted value of cash held in account.
+   */
   function _calcCashValue(MarginType marginType) internal view returns (int cashValue) {
     // todo: apply interest rate shock
   }
@@ -172,6 +232,12 @@ contract PCRM is IManager, Owned {
   // Util //
   //////////
 
+  /**
+   * @notice Sort all option holdings into an array of 
+   *         [expiries][strikes][calls / puts / forwards].
+   * @param assets Array of balances for given asset and subId.
+   * @return expiryHoldings Sorted array of option holdings.
+   */
   function _sortHoldings(
     AccountStructs.AssetBalance[] memory assets
   ) internal view returns (ExpiryHolding[] memory expiryHoldings) {
@@ -184,15 +250,34 @@ contract PCRM is IManager, Owned {
   // View //
   //////////
 
+
+  /**
+   * @notice Sort all option holdings of an account into an array of 
+   *         [expiries][strikes][calls / puts / forwards].
+   * @param accountId ID of account to sort.
+   * @return expiryHoldings Sorted array of option holdings.
+   */
   function getSortedHoldings(
     uint accountId
   ) external view returns (ExpiryHolding[] memory expiryHoldings) {}
 
+  /**
+   * @notice Calculate the initial margin of account.
+   *         A negative value means the account is X amount over the required margin.
+   * @param expiries Sorted array of option holdings.
+   * @return margin Amount by which account is over or under the required margin.
+   */
   // todo: public view function to get margin values directly through accountId
   function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
     return _calcMargin(expiries, MarginType.INITIAL);
   }
 
+  /**
+   * @notice Calculate the maintenance margin of account.
+   *         A negative value means the account is X amount over the required margin.
+   * @param expiries Sorted array of option holdings.
+   * @return margin Amount by which account is over or under the required margin.
+   */
   function getMaintenanceMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
     return _calcMargin(expiries, MarginType.MAINTENANCE);
   }
