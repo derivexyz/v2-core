@@ -67,61 +67,6 @@ contract UNIT_LendingDeposit is Test {
     assertEq(lending.lastTimestamp(), block.timestamp);
     // todo: test accrueInterest
   }
-
-  function testFuzzDepositIncreasesTotalSupply(uint depositAmount) public {
-    // deposit will increase supply if the account balance is > 0 after deposit.
-    vm.assume(depositAmount <= 10000 ether);
-
-    uint preSupply = lending.totalSupply();
-    lending.deposit(accountId, depositAmount);
-    uint postSupply = lending.totalSupply();
-    assertEq(postSupply - preSupply, depositAmount);
-  }
-
-  function testFuzzDepositDecreasesTotalBorrow(uint amountToBorrow, uint depositAmount) public {
-    // deposit will decrease total borrow if account starting balance is negative
-    vm.assume(amountToBorrow <= 1000 ether);
-    vm.assume(depositAmount <= amountToBorrow);
-
-    lending.deposit(accountId, 10000 ether);
-    uint newAccount = account.createAccount(address(this), manager);
-    uint totalBorrow = lending.totalBorrow();
-    assertEq(totalBorrow, 0);
-
-    uint usdcBefore = usdc.balanceOf(address(this));
-    lending.withdraw(newAccount, amountToBorrow, address(this));
-    uint usdcAfter = usdc.balanceOf(address(this));
-
-    assertEq(usdcAfter - usdcBefore, amountToBorrow);
-    assertEq(lending.totalBorrow(), amountToBorrow);
-
-    lending.deposit(newAccount, depositAmount);
-
-    totalBorrow = lending.totalBorrow();
-    assertEq(totalBorrow, amountToBorrow - depositAmount);
-  }
-
-  function testDepositNegativeBalanceToPositiveBalance(uint depositAmount, uint withdrawAmount) public {
-    vm.assume(depositAmount <= 1000 ether);
-    vm.assume(depositAmount >= withdrawAmount);
-
-    lending.deposit(accountId, 1000 ether);
-    uint newAccount = account.createAccount(address(this), manager);
-    uint totalBorrow = lending.totalBorrow();
-    assertEq(totalBorrow, 0);
-
-    uint usdcBefore = usdc.balanceOf(address(this));
-    lending.withdraw(newAccount, withdrawAmount, address(this));
-    uint usdcAfter = usdc.balanceOf(address(this));
-
-    assertEq(usdcAfter - usdcBefore, withdrawAmount);
-    assertEq(lending.totalBorrow(), withdrawAmount);
-
-    lending.deposit(newAccount, depositAmount);
-
-    int balance = account.getBalance(newAccount, lending, 0);
-    assertEq(balance, int(depositAmount) - int(withdrawAmount));
-  }
 }
 
 contract UNIT_LendingDeposit6Decimals is Test {
