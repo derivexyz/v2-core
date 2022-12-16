@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "src/libraries/DecimalMath.sol";
+
 /**
  * @title OptionEncoding
  * @author Lyra
@@ -8,6 +10,9 @@ pragma solidity ^0.8.13;
  */
 
 library OptionEncoding {
+  uint constant UINT32_MAX = 4294967295;
+  uint constant UINT64_MAX = 18446744073709551615;
+
   /**
    * @dev Convert option details into subId
    * @param expiry timestamp of expiry
@@ -22,8 +27,17 @@ library OptionEncoding {
   ) internal pure returns (
     uint96 subId
   ) {
-    // check that expiry fits into uint32
-    // check that strike fits into uint64
+    if (expiry > UINT32_MAX) {
+      revert OE_ExpiryLargerThanUint32(expiry);
+    }
+    uint32 castExpiry = uint32(expiry);
+
+    strike= DecimalMath.convertDecimals(strike, 18, 8);
+    if (strike > UINT64_MAX) {
+      revert OE_StrikeLargerThanUint64(strike);
+    }
+    uint64 castStrike = uint64(strike);
+
     // todo: option encoding
   }
 
@@ -44,5 +58,12 @@ library OptionEncoding {
     // todo: option decoding
     // cast up into uints
   }
+
+  ////////////
+  // Errors //
+  ////////////
+
+  error OE_ExpiryLargerThanUint32(uint strike);
+  error OE_StrikeLargerThanUint64(uint expiry);
 
 }
