@@ -53,7 +53,7 @@ contract Lending is Owned, IAsset {
   ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
 
-  ///@dev whitelisted managers
+  ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
 
   /////////////////////
@@ -90,7 +90,7 @@ contract Lending is Owned, IAsset {
    */
   function deposit(uint recipientAccount, uint amount) external {
     IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
-    uint amountInAccount = amount.convertDecimals(usdcDecimals, 18);
+    uint amountInAccount = amount.to18Decimals(usdcDecimals);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -118,7 +118,7 @@ contract Lending is Owned, IAsset {
 
     IERC20(usdc).safeTransfer(recipient, amount);
 
-    uint cashAmount = amount.convertDecimals(usdcDecimals, 18);
+    uint cashAmount = amount.to18Decimals(usdcDecimals);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -138,13 +138,13 @@ contract Lending is Owned, IAsset {
   //////////////////////////
 
   /**
-   * @notice triggered when an adjustment is triggered on the asset balance
-   * @dev    we imply interest rate and modify the final balance. final balance can be positive or negative.
-   * @param adjustment details about adjustment, containing account, subId, amount
-   * @param preBalance balance before adjustment
-   * @param manager the manager contract that will verify the end state
-   * @return finalBalance the final balance to be recorded in the account
-   * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
+   * @notice This function is called by the Account contract whenever a CashAsset balance is modified.
+   * @dev    This function will apply any interest to the balance and return the final balance. final balance can be positive or negative.
+   * @param adjustment Details about adjustment, containing account, subId, amount
+   * @param preBalance Balance before adjustment
+   * @param manager The manager contract that will verify the end state
+   * @return finalBalance The final balance to be recorded in the account
+   * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
@@ -169,18 +169,7 @@ contract Lending is Owned, IAsset {
     needAllowance = adjustment.amount < 0;
 
     // update totalSupply and totalBorrow amounts
-    if (preBalance <= 0 && finalBalance <= 0) {
-      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
-    } else if (preBalance >= 0 && finalBalance >= 0) {
-      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
-    } else if (preBalance < 0 && finalBalance > 0) {
-      totalBorrow -= (-preBalance).toUint256();
-      totalSupply += finalBalance.toUint256();
-    } else {
-      // (preBalance > 0 && finalBalance < 0)
-      totalBorrow += (-finalBalance).toUint256();
-      totalSupply -= preBalance.toUint256();
-    }
+    _updateSupplyAndBorrow(preBalance, finalBalance);
   }
 
   /**
@@ -211,6 +200,26 @@ contract Lending is Owned, IAsset {
     // uint util = borrowIndex / supplyIndex;
 
     lastTimestamp = block.timestamp;
+  }
+
+  /**
+   * @dev Updates state of totalSupply and totalBorrow
+   * @param preBalance The balance before the asset adjustment was made
+   * @param finalBalance The balance after the asset adjustment was made
+   */
+  function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
+    if (preBalance <= 0 && finalBalance <= 0) {
+      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
+    } else if (preBalance >= 0 && finalBalance >= 0) {
+      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
+    } else if (preBalance < 0 && finalBalance > 0) {
+      totalBorrow -= (-preBalance).toUint256();
+      totalSupply += finalBalance.toUint256();
+    } else {
+      // (preBalance > 0 && finalBalance < 0)
+      totalBorrow += (-finalBalance).toUint256();
+      totalSupply -= preBalance.toUint256();
+    }
   }
 
   /**

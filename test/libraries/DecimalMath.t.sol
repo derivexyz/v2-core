@@ -14,6 +14,16 @@ contract DecimalMathTester {
     uint res = DecimalMath.convertDecimals(amount, from, to);
     return res;
   }
+
+  function to18Decimals(uint amount, uint8 from) external pure returns (uint) {
+    uint res = DecimalMath.to18Decimals(amount, from);
+    return res;
+  }
+
+  function from18Decimals(uint amount, uint8 to) external pure returns (uint) {
+    uint res = DecimalMath.from18Decimals(amount, to);
+    return res;
+  }
 }
 
 contract DecimalMathTest is Test {
@@ -47,5 +57,25 @@ contract DecimalMathTest is Test {
 
     uint result2 = tester.convertDecimals(amount, 18, 6);
     assertEq(result2, 1e6);
+  }
+
+  function testConversion18To18() public {
+    uint amount = 1 ether;
+    assertEq(tester.to18Decimals(amount, 18), amount);
+    assertEq(tester.from18Decimals(amount, 18), amount);
+  }
+
+  function testConversionBetweenLowerAnd18() public {
+    uint amountIn6 = 1e6;
+    uint amountIn18 = 1e18;
+    assertEq(tester.to18Decimals(amountIn6, 6), amountIn18);
+    assertEq(tester.from18Decimals(amountIn18, 6), amountIn6);
+  }
+
+  function testConversionBetween18AndHigher() public {
+    uint amountIn27 = 1e27;
+    uint amountIn18 = 1e18;
+    assertEq(tester.to18Decimals(amountIn27, 27), amountIn18);
+    assertEq(tester.from18Decimals(amountIn18, 27), amountIn27);
   }
 }
