@@ -169,18 +169,7 @@ contract Lending is Owned, IAsset {
     needAllowance = adjustment.amount < 0;
 
     // update totalSupply and totalBorrow amounts
-    if (preBalance <= 0 && finalBalance <= 0) {
-      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
-    } else if (preBalance >= 0 && finalBalance >= 0) {
-      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
-    } else if (preBalance < 0 && finalBalance > 0) {
-      totalBorrow -= (-preBalance).toUint256();
-      totalSupply += finalBalance.toUint256();
-    } else {
-      // (preBalance > 0 && finalBalance < 0)
-      totalBorrow += (-finalBalance).toUint256();
-      totalSupply -= preBalance.toUint256();
-    }
+    _updateSupplyAndBorrow(preBalance, finalBalance);
   }
 
   /**
@@ -211,6 +200,26 @@ contract Lending is Owned, IAsset {
     // uint util = borrowIndex / supplyIndex;
 
     lastTimestamp = block.timestamp;
+  }
+
+  /**
+   * @dev Updates state of totalSupply and totalBorrow
+   * @param preBalance The balance before the asset adjustment was made
+   * @param finalBalance The balance after the asset adjustment was made
+   */
+  function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
+    if (preBalance <= 0 && finalBalance <= 0) {
+      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
+    } else if (preBalance >= 0 && finalBalance >= 0) {
+      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
+    } else if (preBalance < 0 && finalBalance > 0) {
+      totalBorrow -= (-preBalance).toUint256();
+      totalSupply += finalBalance.toUint256();
+    } else {
+      // (preBalance > 0 && finalBalance < 0)
+      totalBorrow += (-finalBalance).toUint256();
+      totalSupply -= preBalance.toUint256();
+    }
   }
 
   /**
