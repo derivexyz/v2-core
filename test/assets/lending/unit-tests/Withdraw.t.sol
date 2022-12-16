@@ -89,43 +89,4 @@ contract UNIT_LendingWithdraw is Test {
     // todo: number might change based on interest
     assertEq(accBalance, -(int(amountToBorrow)));
   }
-
-  function testWithdrawDecreasesTotalSupply(uint withdrawAmount) public {
-    vm.assume(withdrawAmount <= 10000 ether);
-
-    uint beforeWithdraw = lending.totalSupply();
-    lending.withdraw(accountId, withdrawAmount, address(this));
-    uint afterWithdraw = lending.totalSupply();
-    assertEq(beforeWithdraw - withdrawAmount, afterWithdraw);
-  }
-
-  function testWithdrawIncreasesTotalBorrow(uint amountToBorrow) public {
-    vm.assume(amountToBorrow <= 10000 ether);
-
-    uint emptyAccount = account.createAccount(address(this), manager);
-    uint totalBorrow = lending.totalBorrow();
-    assertEq(totalBorrow, 0);
-
-    uint usdcBefore = usdc.balanceOf(address(this));
-    lending.withdraw(emptyAccount, amountToBorrow, address(this));
-    uint usdcAfter = usdc.balanceOf(address(this));
-
-    totalBorrow = lending.totalBorrow();
-    assertEq(usdcAfter - usdcBefore, amountToBorrow);
-    assertEq(totalBorrow, amountToBorrow);
-  }
-
-  function testWithdrawPositiveBalanceToNegativeBalance(uint depositAmount, uint withdrawAmount) public {
-    vm.assume(withdrawAmount <= 10000 ether);
-    vm.assume(depositAmount <= withdrawAmount);
-
-    usdc.mint(address(this), depositedAmount);
-    uint newAccount = account.createAccount(address(this), manager);
-    lending.deposit(newAccount, depositAmount);
-
-    lending.withdraw(newAccount, withdrawAmount, address(this));
-
-    int balance = account.getBalance(newAccount, lending, 0);
-    assertEq(balance, int(depositAmount) - int(withdrawAmount));
-  }
 }
