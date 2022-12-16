@@ -49,7 +49,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
    * --------------------- */
 
   function testNormalTransfersDoesnotChangeBorrowOrSupply() public {
-    // if all balances before and after a tx are positive 
+    // if all balances before and after a tx are positive
     // both totalSupply and totalBorrow stays the same
     uint trasnsferAmount = depositedAmount / 2;
 
@@ -80,7 +80,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
   function testBorrowWillChangeSupplyAndTotalBorrow() public {
     // if someone with 0 balance transfer to another account (borrow from the system)
     // making the balances: -1000 & 1000: this will be reflected by both totalBorrow and totalSupply
-    
+
     uint trasnsferAmount = depositedAmount / 2;
 
     uint borrowAccount = account.createAccount(address(this), manager);
@@ -252,7 +252,6 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
   /* ------------------- *
    |      Withdraw       *
    * ------------------- */
-
 
   function testFuzzWithdrawDecreasesTotalSupply(uint withdrawAmount) public {
     // withdraw will decrease totalSupply if account started with positive balance
