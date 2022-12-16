@@ -78,7 +78,7 @@ contract Option is IAsset, Owned {
    * @param strike Strike price of option.
    * @param isCall Whether option is a call or put
    */
-  function getSubId(uint32 expiry, uint64 strike, bool isCall) external view returns (uint96 subId) {
+  function getSubId(uint expiry, uint32 strike, bool isCall) external view returns (uint96 subId) {
     // todo: uint96 encoding library
   }
 
