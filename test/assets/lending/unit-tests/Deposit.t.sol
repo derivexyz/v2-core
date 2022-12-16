@@ -68,7 +68,8 @@ contract UNIT_LendingDeposit is Test {
     // todo: test accrueInterest
   }
 
-  function testDepositIncreasesTotalSupply(uint depositAmount) public {
+  function testFuzzDepositIncreasesTotalSupply(uint depositAmount) public {
+    // deposit will increase supply if the account balance is > 0 after deposit.
     vm.assume(depositAmount <= 10000 ether);
 
     uint preSupply = lending.totalSupply();
@@ -77,7 +78,8 @@ contract UNIT_LendingDeposit is Test {
     assertEq(postSupply - preSupply, depositAmount);
   }
 
-  function testDepositDecreasesTotalBorrow(uint amountToBorrow, uint depositAmount) public {
+  function testFuzzDepositDecreasesTotalBorrow(uint amountToBorrow, uint depositAmount) public {
+    // deposit will decrease total borrow if account starting balance is negative
     vm.assume(amountToBorrow <= 1000 ether);
     vm.assume(depositAmount <= amountToBorrow);
 

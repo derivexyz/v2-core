@@ -41,7 +41,7 @@ contract UNIT_CashAssetTransfer is Test {
     lending.deposit(accountId, depositedAmount);
   }
 
-  function testTransferToNewAccountDoesnotChangeBorrowOrSupply(uint amountToBorrow, uint trasnsferAmount) public {
+  function testFuzzTransferToNewAccountDoesnotChangeBorrowOrSupply(uint amountToBorrow, uint trasnsferAmount) public {
     vm.assume(amountToBorrow <= depositedAmount);
 
     vm.assume(trasnsferAmount <= depositedAmount);
@@ -75,7 +75,7 @@ contract UNIT_CashAssetTransfer is Test {
     assertEq(totalBorrowBefore, totalBorrowAfter);
   }
 
-  function testTransferDoesnotChangeInvariant(uint amountToBorrow, int anyAmount) public {
+  function testFuzzTransferDoesnotChangeInvariant(uint amountToBorrow, int anyAmount) public {
     vm.assume(amountToBorrow <= depositedAmount);
     vm.assume(anyAmount <= int(depositedAmount));
     vm.assume(anyAmount > type(int96).min); // make sure it does not underflow
@@ -102,7 +102,7 @@ contract UNIT_CashAssetTransfer is Test {
     uint totalBorrowAfter = lending.totalBorrow();
     uint totalSupplyAfter = lending.totalSupply();
 
-    // invariant: balanceOf = totalSupply - totalBalance holds
+    // invariant: balanceOf = totalSupply - totalBorrow holds
     assertEq(totalSupplyBefore - totalBorrowBefore, totalSupplyAfter - totalBorrowAfter);
   }
 }

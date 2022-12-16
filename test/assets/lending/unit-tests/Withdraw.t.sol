@@ -90,7 +90,8 @@ contract UNIT_LendingWithdraw is Test {
     assertEq(accBalance, -(int(amountToBorrow)));
   }
 
-  function testWithdrawDecreasesTotalSupply(uint withdrawAmount) public {
+  function testFuzzWithdrawDecreasesTotalSupply(uint withdrawAmount) public {
+    // withdraw will decrease totalSupply if account started with positive balance
     vm.assume(withdrawAmount <= 10000 ether);
 
     uint beforeWithdraw = lending.totalSupply();
@@ -99,7 +100,8 @@ contract UNIT_LendingWithdraw is Test {
     assertEq(beforeWithdraw - withdrawAmount, afterWithdraw);
   }
 
-  function testWithdrawIncreasesTotalBorrow(uint amountToBorrow) public {
+  function testFuzzWithdrawIncreasesTotalBorrow(uint amountToBorrow) public {
+    // withdraw will increase totalBorrow if account ended with a negative balance
     vm.assume(amountToBorrow <= 10000 ether);
 
     uint emptyAccount = account.createAccount(address(this), manager);
@@ -115,7 +117,7 @@ contract UNIT_LendingWithdraw is Test {
     assertEq(totalBorrow, amountToBorrow);
   }
 
-  function testWithdrawPositiveBalanceToNegativeBalance(uint depositAmount, uint withdrawAmount) public {
+  function testFuzzWithdrawPositiveBalanceToNegativeBalance(uint depositAmount, uint withdrawAmount) public {
     vm.assume(withdrawAmount <= 10000 ether);
     vm.assume(depositAmount <= withdrawAmount);
 
