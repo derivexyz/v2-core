@@ -11,7 +11,7 @@ import "src/libraries/DecimalMath.sol";
 
 library OptionEncoding {
   uint constant UINT32_MAX = 4294967295;
-  uint constant UINT64_MAX = 18446744073709551615;
+  uint constant UINT63_MAX = 9223372036854775808;
 
   /**
    * @dev Convert option details into subId
@@ -30,15 +30,15 @@ library OptionEncoding {
     if (expiry > UINT32_MAX) {
       revert OE_ExpiryLargerThanUint32(expiry);
     }
-    uint32 castExpiry = uint32(expiry);
 
     strike= DecimalMath.convertDecimals(strike, 18, 8);
-    if (strike > UINT64_MAX) {
-      revert OE_StrikeLargerThanUint64(strike);
+    if (strike > UINT63_MAX) {
+      revert OE_StrikeLargerThanUint63(strike);
     }
-    uint64 castStrike = uint64(strike);
 
-    // todo: option encoding
+    uint96 shiftedStrike = uint96(strike) << 32;
+    uint96 shiftedIsCall = ((isCall) ? 1 : 0) << 95;
+    subId = uint96(expiry) | shiftedStrike | shiftedIsCall;
   }
 
   /**
@@ -64,6 +64,6 @@ library OptionEncoding {
   ////////////
 
   error OE_ExpiryLargerThanUint32(uint strike);
-  error OE_StrikeLargerThanUint64(uint expiry);
+  error OE_StrikeLargerThanUint63(uint expiry);
 
 }
