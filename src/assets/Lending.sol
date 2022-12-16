@@ -35,7 +35,7 @@ contract Lending is Owned, IAsset {
   //   State Variables   //
   /////////////////////////
 
-  ///@dev Total amount of USDC that has been supplied
+  ///@dev Total amount of positive balances
   uint public totalSupply;
 
   ///@dev Total amount of negative balances
