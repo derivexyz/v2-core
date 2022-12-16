@@ -10,13 +10,12 @@ import "../libraries/DecimalMath.sol";
 import "../libraries/FixedPointMathLib.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccount.sol";
-import "../interfaces/IInterestRateModel.sol";
 
 /**
  * @title Modeled off of Compound's JumpRateModel and Aave's compounding model
  * @author Lyra
  */
-contract InterestRateModel is IInterestRateModel, Owned {
+contract InterestRateModel is Owned {
   using DecimalMath for uint;
   using SafeCast for uint;
 
@@ -28,16 +27,16 @@ contract InterestRateModel is IInterestRateModel, Owned {
   uint public constant SECONDS_PER_YEAR = 31536000;
 
   ///@dev The base yearly interest rate which is the y-intercept when utilization rate is 0
-  uint public baseRatePerYear;
+  uint public minRate;
 
   ///@dev The multiplier of utilization rate that gives the slope of the interest rate
-  uint public multiplier;
-  
-  ///@dev The multiplier after hitting a specified utilization point
-  uint public jumpMultiplier;
+  uint public rateMultipler;
 
-  ///@dev The utilization point at which the jump multiplier is applied
-  uint public kink;
+  ///@dev The multiplier after hitting the optimal utilization point
+  uint public highRateMultipler;
+
+  ///@dev The utilization point at which the highRateMultipler is applied
+  uint public optimalUtil;
 
   ////////////////////////
   //    Constructor     //
@@ -45,39 +44,42 @@ contract InterestRateModel is IInterestRateModel, Owned {
 
   /**
    * @notice Construct an interest rate model
-   * @param baseRatePerYear_ The approximate target base APR, as a mantissa (scaled by BASE)
-   * @param multiplier_ The rate of increase in interest rate wrt utilization (scaled by BASE)
-   * @param jumpMultiplier_ The multiplierPerBlock after hitting a specified utilization point
-   * @param kink_ The utilization point at which the jump multiplier is applied
+   * @param _minRate The approximate target base APR, as a mantissa
+   * @param _rateMultipler The rate of increase in interest rate wrt utilization
+   * @param _highRateMultipler The multiplier after hitting a specified utilization point
+   * @param _optimalUtil The utilization point at which the highRateMultipler is applied
    */
-  constructor(uint baseRatePerYear_, uint multiplier_, uint jumpMultiplier_, uint kink_) {
-    baseRatePerYear = baseRatePerYear_;
-    multiplier = multiplier_;
-    jumpMultiplier = jumpMultiplier_;
-    kink = kink_;
+  constructor(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil) {
+    minRate = _minRate;
+    rateMultipler = _rateMultipler;
+    highRateMultipler = _highRateMultipler;
+    optimalUtil = _optimalUtil;
 
-    emit InterestRateParamsSet(baseRatePerYear, multiplier, jumpMultiplier, kink);
+    emit InterestRateParamsSet(minRate, rateMultipler, highRateMultipler, optimalUtil);
   }
 
   //////////////////////////////
   //   Owner-only Functions   //
   //////////////////////////////
-  
+
   /**
    * @notice Allows owner to set the interest rate parameters
    */
-  function setInterestRateParams(uint _baseRatePerYear, uint _multiplier, uint _jumpMultiplier, uint _kink) external onlyOwner {
-    baseRatePerYear = _baseRatePerYear;
-    multiplier = _multiplier;
-    jumpMultiplier = _jumpMultiplier;
-    kink = _kink;
+  function setInterestRateParams(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil)
+    external
+    onlyOwner
+  {
+    minRate = _minRate;
+    rateMultipler = _rateMultipler;
+    highRateMultipler = _highRateMultipler;
+    optimalUtil = _optimalUtil;
 
-    emit InterestRateParamsSet(_multiplier, _baseRatePerYear, _jumpMultiplier, _kink);
+    emit InterestRateParamsSet(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
   }
 
-  ////////////////////////////
-  //   External Functions   //
-  ////////////////////////////
+  ////////////////////////
+  //   Interest Rates   //
+  ////////////////////////
 
   /**
    * @notice Function to calculate the interest using a compounded interest rate formula
@@ -95,44 +97,29 @@ contract InterestRateModel is IInterestRateModel, Owned {
 
   /**
    * @notice Calculates the current borrow rate per block, with the error code expected by the market
-   * @param cash The amount of cash in the market
+   * @param cash The balance of stablecoin for the cash asset
    * @param borrows The amount of borrows in the market
    * @return The borrow rate percentage per block as a mantissa (scaled by BASE)
    */
-  function getBorrowRate(uint cash, uint borrows) public view override returns (uint) {
-    uint util = utilizationRate(cash, borrows);
+  function getBorrowRate(uint cash, uint borrows) public view returns (uint) {
+    uint util = getUtilRate(cash, borrows);
 
-    if (util <= kink) {
-      return util.multiplyDecimal(multiplier) + baseRatePerYear;
+    if (util <= optimalUtil) {
+      return util.multiplyDecimal(rateMultipler) + minRate;
     } else {
-      uint normalRate = kink.multiplyDecimal(multiplier) + baseRatePerYear;
-      uint excessUtil = util - kink;
-      return excessUtil.multiplyDecimal(jumpMultiplier) + normalRate;
+      uint normalRate = optimalUtil.multiplyDecimal(rateMultipler) + minRate;
+      uint excessUtil = util - optimalUtil;
+      return excessUtil.multiplyDecimal(highRateMultipler) + normalRate;
     }
   }
 
   /**
-   * @notice Calculates the current supply rate per block
-   * @param cash The amount of cash in the market
-   * @param borrows The amount of borrows in the market
-   * @param supply The amount of borrows in the market
-   * @param feeFactor The current reserve factor for the market
-   * @return The supply rate percentage per block as a mantissa (scaled by BASE)
-   */
-  function getSupplyRate(uint cash, uint borrows, uint supply, uint feeFactor) external view returns (uint) {
-    uint oneMinusReserveFactor = DecimalMath.UNIT - feeFactor;
-    uint borrowRate = getBorrowRate(cash, borrows);
-    uint ratePostReserve = borrowRate.multiplyDecimal(oneMinusReserveFactor);
-    return ratePostReserve.multiplyDecimal(borrows).divideDecimal(supply);
-  }
-
-  /**
    * @notice Calculates the utilization rate of the market: `borrows / cash`
-   * @param cash The amount of cash in the market
-   * @param borrows The amount of borrows in the market
+   * @param cash The balance of stablecoin for the cash asset
+   * @param borrows The amount of borrows for the cash asset
    * @return The utilization rate as a mantissa between [0, BASE]
    */
-  function utilizationRate(uint cash, uint borrows) public pure returns (uint) {
+  function getUtilRate(uint cash, uint borrows) public pure returns (uint) {
     // Utilization rate is 0 when there are no borrows
     if (borrows == 0) {
       return 0;
@@ -146,5 +133,5 @@ contract InterestRateModel is IInterestRateModel, Owned {
   ////////////
 
   ///@dev Emitted when interest rate parameters are set
-  event  InterestRateParamsSet(uint baseRatePerYear, uint multiplier, uint jumpMultiplier, uint kink);
+  event InterestRateParamsSet(uint minRate, uint rateMultipler, uint highRateMultipler, uint optimalUtil);
 }
