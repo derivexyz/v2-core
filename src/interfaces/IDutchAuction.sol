@@ -13,7 +13,6 @@ interface IDutchAuction {
 
   struct Auction {
     AuctionDetails auction;
-    uint currentScalar;
     bool insolvent;
     bool ongoing;
     uint startBlock;
