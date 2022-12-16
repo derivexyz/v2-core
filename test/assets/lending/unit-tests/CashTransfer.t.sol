@@ -41,14 +41,77 @@ contract UNIT_CashAssetTransfer is Test {
     lending.deposit(accountId, depositedAmount);
   }
 
-  function testFuzzTransferToNewAccountDoesnotChangeBorrowOrSupply(uint amountToBorrow, uint trasnsferAmount) public {
+  function testNormalTransfersDoesnotChangeBorrowOrSupply() public {
+    // if all balances before and after a transfer is positive, these numbers will not be updated
+    uint trasnsferAmount = depositedAmount / 2;
+
+    uint totalSupplyBefore = lending.totalSupply();
+    uint totalBorrowBefore = lending.totalBorrow();
+
+    uint emptyAccount = account.createAccount(address(this), manager);
+
+    // transfer cash to an empty account.
+    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
+      fromAcc: accountId,
+      toAcc: emptyAccount,
+      asset: IAsset(lending),
+      subId: 0,
+      amount: int(trasnsferAmount),
+      assetData: bytes32(0)
+    });
+    account.submitTransfer(transfer, "");
+
+    uint totalBorrowAfter = lending.totalBorrow();
+    uint totalSupplyAfter = lending.totalSupply();
+
+    // total supply and total borrow is the same
+    assertEq(totalSupplyBefore, totalSupplyAfter);
+    assertEq(totalBorrowBefore, totalBorrowAfter);
+  }
+
+  function testTransferWhichCreateBorrowWillChangeSupplyAndBorrow() public {
+    // if someone from balance 0 transfer to another account
+    // making the balances: -1000 & 1000: this will be reflected by both totalBorrow and totalSupply
+    // borrow some amount, make both totalSupply and totalBorrow none-negative
+
+    uint trasnsferAmount = depositedAmount / 2;
+
+    uint borrowAccount = account.createAccount(address(this), manager);
+
+    uint totalSupplyBefore = lending.totalSupply();
+    uint totalBorrowBefore = lending.totalBorrow();
+
+    uint emptyAccount = account.createAccount(address(this), manager);
+
+    // transfer cash to an empty account. (borrow account ended in negative balance)
+    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
+      fromAcc: borrowAccount,
+      toAcc: emptyAccount,
+      asset: IAsset(lending),
+      subId: 0,
+      amount: int(trasnsferAmount),
+      assetData: bytes32(0)
+    });
+    account.submitTransfer(transfer, "");
+
+    uint totalBorrowAfter = lending.totalBorrow();
+    uint totalSupplyAfter = lending.totalSupply();
+
+    // total supply and total borrow is the same
+    assertEq(totalSupplyBefore + trasnsferAmount, totalSupplyAfter);
+    assertEq(totalBorrowBefore + trasnsferAmount, totalBorrowAfter);
+  }
+
+  function testFuzzNormalTransferToNewAccountDoesnotChangeBorrowOrSupply(uint amountToBorrow, uint trasnsferAmount)
+    public
+  {
+    // if amount transfer is higher than deposited, user transfer their own funds without borrowing from the system
     vm.assume(amountToBorrow <= depositedAmount);
 
     vm.assume(trasnsferAmount <= depositedAmount);
 
     // borrow some amount, make both totalSupply and totalBorrow none-negative
     uint borrowAccount = account.createAccount(address(this), manager);
-    uint totalBorrow = lending.totalBorrow();
     lending.withdraw(borrowAccount, amountToBorrow, address(this));
 
     uint totalSupplyBefore = lending.totalSupply();
@@ -82,7 +145,6 @@ contract UNIT_CashAssetTransfer is Test {
 
     // borrow some amount, make both totalSupply and totalBorrow none-negative
     uint borrowAccount = account.createAccount(address(this), manager);
-    uint totalBorrow = lending.totalBorrow();
     lending.withdraw(borrowAccount, amountToBorrow, address(this));
 
     uint totalSupplyBefore = lending.totalSupply();
