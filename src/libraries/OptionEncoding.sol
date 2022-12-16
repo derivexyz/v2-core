@@ -7,6 +7,8 @@ import "src/libraries/DecimalMath.sol";
  * @title OptionEncoding
  * @author Lyra
  * @notice util functions for encoding / decoding IDs into option details
+ *         [ 32 bits ] [ 63 bits ] [ 1 bit ] = uint96 subId
+ *            expiry     strike      isCall 
  */
 
 library OptionEncoding {
@@ -55,8 +57,9 @@ library OptionEncoding {
     uint strike, 
     bool isCall
   ) {
-    // todo: option decoding
-    // cast up into uints
+    expiry = subId & UINT32_MAX;
+    strike = (subId >> 32) & UINT63_MAX;
+    isCall = (subId >> 95) > 0;
   }
 
   ////////////
