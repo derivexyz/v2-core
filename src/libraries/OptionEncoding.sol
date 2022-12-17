@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "src/libraries/DecimalMath.sol";
+import "forge-std/console2.sol";
 
 /**
  * @title OptionEncoding
@@ -13,7 +14,7 @@ import "src/libraries/DecimalMath.sol";
 
 library OptionEncoding {
   uint constant UINT32_MAX = 4294967295;
-  uint constant UINT63_MAX = 9223372036854775808;
+  uint constant UINT63_MAX = 9223372036854775807;
 
   /**
    * @dev Convert option details into subId
@@ -30,16 +31,20 @@ library OptionEncoding {
     uint96 subId
   ) {
     if (expiry > UINT32_MAX) {
-      revert OE_ExpiryLargerThanUint32(expiry);
+      revert OE_ExpiryTooLarge(expiry);
+    }
+
+    if (strike % 1e10 > 0) {
+      revert OE_StrikeTooGranular(strike);
     }
 
     strike= DecimalMath.convertDecimals(strike, 18, 8);
     if (strike > UINT63_MAX) {
-      revert OE_StrikeLargerThanUint63(strike);
+      revert OE_StrikeTooLarge(strike);
     }
 
     uint96 shiftedStrike = uint96(strike) << 32;
-    uint96 shiftedIsCall = ((isCall) ? 1 : 0) << 95;
+    uint96 shiftedIsCall = uint96((isCall) ? 1 : 0) << 95;
     subId = uint96(expiry) | shiftedStrike | shiftedIsCall;
   }
 
@@ -58,7 +63,7 @@ library OptionEncoding {
     bool isCall
   ) {
     expiry = subId & UINT32_MAX;
-    strike = (subId >> 32) & UINT63_MAX;
+    strike = DecimalMath.convertDecimals((subId >> 32) & UINT63_MAX, 8, 18);
     isCall = (subId >> 95) > 0;
   }
 
@@ -66,7 +71,8 @@ library OptionEncoding {
   // Errors //
   ////////////
 
-  error OE_ExpiryLargerThanUint32(uint strike);
-  error OE_StrikeLargerThanUint63(uint expiry);
+  error OE_ExpiryTooLarge(uint expiry);
+  error OE_StrikeTooLarge(uint strike);
+  error OE_StrikeTooGranular(uint strike);
 
 }
