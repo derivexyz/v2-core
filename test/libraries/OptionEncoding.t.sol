@@ -6,31 +6,18 @@ import "forge-std/Test.sol";
 import "../../src/libraries/OptionEncoding.sol";
 
 contract OptionEncodingTester {
-  function toSubId(
-    uint expiry, 
-    uint strike, 
-    bool isCall
-  ) external view returns (
-    uint96
-  ) {
+  function toSubId(uint expiry, uint strike, bool isCall) external pure returns (uint96) {
     uint96 subId = OptionEncoding.toSubId(expiry, strike, isCall);
     return subId;
   }
 
-  function fromSubId(
-    uint96 subId
-  ) external pure returns (
-    uint, 
-    uint, 
-    bool
-  ) {
+  function fromSubId(uint96 subId) external pure returns (uint, uint, bool) {
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId);
     return (expiry, strike, isCall);
   }
 }
 
 contract OptionEncodingTest is Test {
-
   OptionEncodingTester tester;
 
   function setUp() public {
@@ -69,9 +56,26 @@ contract OptionEncodingTest is Test {
     _assertCorrectSubId(subId, expiry, strike, isCall);
   }
 
-  function _assertCorrectSubId(
-    uint96 subId, uint expectedExpiry, uint expectedStrike, bool expectedIsCall
-  ) internal {
+  function testExpiryTooLarge() public {
+    uint expiry = 7288361592000; // epoch time for Year 2200
+    vm.expectRevert(abi.encodeWithSelector(OptionEncoding.OE_ExpiryTooLarge.selector, expiry));
+    tester.toSubId(expiry, 1e18, true);
+  }
+
+  function testStrikeTooLarge() public {
+    // (1) add 10 decimal places (2) > uint63.max but remove decimal points
+    uint strike = 100_000_000_000e8 * 1e10;
+    vm.expectRevert(abi.encodeWithSelector(OptionEncoding.OE_StrikeTooLarge.selector, strike / 1e10));
+    tester.toSubId(1 days, strike, true);
+  }
+
+  function testStrikeTooGranular() public {
+    uint strike = 100.00000000001e18; // more than 10 decimal point precision
+    vm.expectRevert(abi.encodeWithSelector(OptionEncoding.OE_StrikeTooGranular.selector, strike));
+    tester.toSubId(1 days, strike, true);
+  }
+
+  function _assertCorrectSubId(uint96 subId, uint expectedExpiry, uint expectedStrike, bool expectedIsCall) internal {
     (uint expiry, uint strike, bool isCall) = tester.fromSubId(subId);
     assertEq(expiry, expectedExpiry);
     assertEq(strike, expectedStrike);
