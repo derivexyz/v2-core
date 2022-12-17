@@ -11,19 +11,21 @@ contract OptionEncodingTester {
     uint strike, 
     bool isCall
   ) external view returns (
-    uint96 subId
+    uint96
   ) {
-    return OptionEncoding.toSubId(expiry, strike, isCall);
+    uint96 subId = OptionEncoding.toSubId(expiry, strike, isCall);
+    return subId;
   }
 
   function fromSubId(
     uint96 subId
   ) external pure returns (
-    uint expiry, 
-    uint strike, 
-    bool isCall
+    uint, 
+    uint, 
+    bool
   ) {
-    return OptionEncoding.fromSubId(subId);
+    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId);
+    return (expiry, strike, isCall);
   }
 }
 
