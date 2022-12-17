@@ -30,15 +30,19 @@ library OptionEncoding {
   ) internal pure returns (
     uint96 subId
   ) {
+    // can support expiry up to year 2106
     if (expiry > UINT32_MAX) {
       revert OE_ExpiryTooLarge(expiry);
     }
 
+    // can support strike granularity down to 8 decimal points
     if (strike % 1e10 > 0) {
       revert OE_StrikeTooGranular(strike);
     }
 
     strike= DecimalMath.convertDecimals(strike, 18, 8);
+
+    // can support strike as high as 9,223,372,036,854,775,807
     if (strike > UINT63_MAX) {
       revert OE_StrikeTooLarge(strike);
     }
