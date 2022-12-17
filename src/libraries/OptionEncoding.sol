@@ -9,7 +9,7 @@ import "forge-std/console2.sol";
  * @author Lyra
  * @notice util functions for encoding / decoding IDs into option details
  *         [ 32 bits ] [ 63 bits ] [ 1 bit ] = uint96 subId
- *            expiry     strike      isCall 
+ *            expiry     strike      isCall
  */
 library OptionEncoding {
   uint constant UINT32_MAX = 4294967295;
@@ -18,17 +18,11 @@ library OptionEncoding {
   /**
    * @dev Convert option details into subId
    * @param expiry timestamp of expiry
-   * @param strike 18 decimal strike price 
+   * @param strike 18 decimal strike price
    * @param isCall if call, then true
    * @return subId ID of option
    */
-  function toSubId(
-    uint expiry, 
-    uint strike, 
-    bool isCall
-  ) internal pure returns (
-    uint96 subId
-  ) {
+  function toSubId(uint expiry, uint strike, bool isCall) internal pure returns (uint96 subId) {
     // can support expiry up to year 2106
     if (expiry > UINT32_MAX) {
       revert OE_ExpiryTooLarge(expiry);
@@ -39,7 +33,7 @@ library OptionEncoding {
       revert OE_StrikeTooGranular(strike);
     }
 
-    strike= DecimalMath.convertDecimals(strike, 18, 8);
+    strike = DecimalMath.convertDecimals(strike, 18, 8);
 
     // can support strike as high as 9,223,372,036,854,775,807
     if (strike > UINT63_MAX) {
@@ -55,16 +49,10 @@ library OptionEncoding {
    * @dev Convert subId into option details
    * @param subId ID of option
    * @return expiry timestamp of expiry
-   * @return strike 18 decimal strike price 
+   * @return strike 18 decimal strike price
    * @return isCall if call, then true
    */
-  function fromSubId(
-    uint96 subId
-  ) internal pure returns (
-    uint expiry, 
-    uint strike, 
-    bool isCall
-  ) {
+  function fromSubId(uint96 subId) internal pure returns (uint expiry, uint strike, bool isCall) {
     expiry = subId & UINT32_MAX;
     strike = DecimalMath.convertDecimals((subId >> 32) & UINT63_MAX, 8, 18);
     isCall = (subId >> 95) > 0;
@@ -77,5 +65,4 @@ library OptionEncoding {
   error OE_ExpiryTooLarge(uint expiry);
   error OE_StrikeTooLarge(uint strike);
   error OE_StrikeTooGranular(uint strike);
-
 }
