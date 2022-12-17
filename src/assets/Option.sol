@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "synthetix/Owned.sol";
+import "src/libraries/OptionEncoding.sol";
 
 /**
  * @title Option
@@ -68,8 +69,8 @@ contract Option is IAsset, Owned {
    * @notice Decode subId into expiry, strike and whether option is call or put
    * @param subId ID of option.
    */
-  function getOptionDetails(uint96 subId) external view returns (uint expiry, uint strike, bool isCall) {
-    // todo: uint96 encoding library
+  function getOptionDetails(uint96 subId) external pure returns (uint expiry, uint strike, bool isCall) {
+    return OptionEncoding.fromSubId(subId);
   }
 
   /**
@@ -78,8 +79,8 @@ contract Option is IAsset, Owned {
    * @param strike Strike price of option.
    * @param isCall Whether option is a call or put
    */
-  function getSubId(uint expiry, uint32 strike, bool isCall) external view returns (uint96 subId) {
-    // todo: uint96 encoding library
+  function getSubId(uint expiry, uint strike, bool isCall) external pure returns (uint96 subId) {
+    return OptionEncoding.toSubId(expiry, strike, isCall);
   }
 
   /**

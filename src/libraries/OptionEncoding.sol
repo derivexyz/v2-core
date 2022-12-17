@@ -11,7 +11,6 @@ import "forge-std/console2.sol";
  *         [ 32 bits ] [ 63 bits ] [ 1 bit ] = uint96 subId
  *            expiry     strike      isCall 
  */
-
 library OptionEncoding {
   uint constant UINT32_MAX = 4294967295;
   uint constant UINT63_MAX = 9223372036854775807;
