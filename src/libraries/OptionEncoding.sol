@@ -7,9 +7,12 @@ import "forge-std/console2.sol";
 /**
  * @title OptionEncoding
  * @author Lyra
- * @notice util functions for encoding / decoding IDs into option details
+ * @notice Util functions for encoding / decoding IDs into option details.
  *         [ 32 bits ] [ 63 bits ] [ 1 bit ] = uint96 subId
  *            expiry     strike      isCall
+ *         Can support:
+ *         - expiries: up to year 2106
+ *         - strikes: down to 8 decimal points and up to $90B
  */
 library OptionEncoding {
   uint constant UINT32_MAX = 4294967295;
@@ -35,7 +38,7 @@ library OptionEncoding {
 
     strike = DecimalMath.convertDecimals(strike, 18, 8);
 
-    // can support strike as high as 9,223,372,036,854,775,807
+    // can support strike as high as $92,233,720,368
     if (strike > UINT63_MAX) {
       revert OE_StrikeTooLarge(strike);
     }
