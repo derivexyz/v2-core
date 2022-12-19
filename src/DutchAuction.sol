@@ -29,7 +29,6 @@ contract DutchAuction is IDutchAuction {
   /// @notice Adds a risk manager that can initiate auctions
   /// @dev This function is used to add a risk manager that can initiate auctions
   /// @return bool returns true if the risk manager is added
-  /// @inheritdoc	Copies all missing tags from the base function (must be followed by the contract name)
   function addRiskManger() external returns(bool) {
     isRiskManagers[msg.sender] = true;
     return isRiskManagers[msg.sender];
@@ -107,17 +106,18 @@ contract DutchAuction is IDutchAuction {
   /// @param accountId the accountId of the account that is being liquidated
   /// @return spot the spot price of the asset, TODO: consider how this is going to work with options on different spot markets.
   function getVMax(uint accountId, int spot) internal returns(int) {
-    (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
-    int portfolioMargin = cash;
-    for (uint i = 0; i < expiryHoldings.length; i++) {
-      // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
-      for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
-        portfolioMargin += expiryHoldings[i].strikes[j].puts * int64(expiryHoldings[i].strikes[j].strike);
-        portfolioMargin += expiryHoldings[i].strikes[j].calls * spot;
-      }
-    }
-    // need to discuss with mech how this is going to work
-    return portfolioMargin;
+    // (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
+    // int portfolioMargin = cash;
+    // for (uint i = 0; i < expiryHoldings.length; i++) {
+    //   // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
+    //   for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
+    //     portfolioMargin += expiryHoldings[i].strikes[j].puts * int64(expiryHoldings[i].strikes[j].strike);
+    //     portfolioMargin += expiryHoldings[i].strikes[j].calls * spot;
+    //   }
+    // }
+    // // need to discuss with mech how this is going to work
+    // return portfolioMargin;
+    return 0;
   } 
 
   /// @notice gets the lower bound for the liquidation price
@@ -128,8 +128,8 @@ contract DutchAuction is IDutchAuction {
 
     // TODO: need to do some more work on this. 
     // vmin is going to be difficult to compute
-    (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
-    int portfolioMargin = cash;
+    // (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
+    // int portfolioMargin = cash;
     // for (uint i = 0; i < expiryHoldings.length; i++) {
 
     //   // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
@@ -140,7 +140,8 @@ contract DutchAuction is IDutchAuction {
     //   }
     // }
 
-    return portfolioMargin;
+    // return portfolioMargin;
+    return 0;
   }
 
   /// @notice gets the current bid price for a particular auction at the current block
