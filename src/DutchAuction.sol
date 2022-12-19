@@ -40,8 +40,8 @@ contract DutchAuction is IDutchAuction {
 
     bytes32 auctionId = keccak256(abi.encodePacked(accountId, block.timestamp));
     uint price = spotFeed.getSpot(1);
-    uint upperBound = getVMax(accountId, price);
-    uint lowerBound = getVmin(accountId, price);
+    int upperBound = getVMax(accountId, int(price));
+    int lowerBound = getVmin(accountId, int(price));
 
     auctions[auctionId] = Auction({
       insolvent: false,
@@ -61,7 +61,7 @@ contract DutchAuction is IDutchAuction {
   /// @dev Takes in the auction and returns the account id
   /// @param auctionId the bytesId that corresponds to a particular auction
   /// @return amount the amount as a percantage of the portfolio that the user is willing to purchase
-  function bid(bytes memory auctionId, int amount) external returns(uint) {
+  function bid(bytes32 auctionId, int amount) external returns(uint) {
     // need to check if the timelimit for the auction has been ecplised
     // the position is thus insolvent otherwise
     // need to check if this amount would put the portfolio over is matience marign
@@ -75,7 +75,7 @@ contract DutchAuction is IDutchAuction {
 
   }
 
-  function auctionDetails(bytes32 auctionId) external view returns(AuctionDetails memory) {
+  function auctionDetails(bytes32 auctionId) external view returns(Auction memory) {
     return auctions[auctionId];
   }
 
@@ -101,9 +101,10 @@ contract DutchAuction is IDutchAuction {
       }
     }
     // need to discuss with mech how this is going to work
+    return portfolioMargin;
   } 
 
-  function getVmin(uint accountId, int spot) internal returns(uint) {
+  function getVmin(uint accountId, int spot) internal returns(int) {
 
     // TODO: need to do some more work on this. 
     // vmin is going to be difficult to compute
@@ -118,19 +119,20 @@ contract DutchAuction is IDutchAuction {
         portfolioMargin += expiryHoldings[i].strikes[j].calls * spot;
       }
     }
+
+    return portfolioMargin;
   }
 
-  function getCurrentBidPrice(bytes32 auctionId) view internal returns(uint) {
+  function getCurrentBidPrice(bytes32 auctionId) view external returns(int) {
     // need to check if the auction is still ongoing
     // if not then return the lower bound
     // otherwise return using dv 
     Auction memory auction = auctions[auctionId];
-    uint upperBound = auction.auction.upperBound;
-    uint numSteps = tx.block / (auction.startBlock - auction.endBlock); // TODO: need to find the number of steps here, block number / (startBlock - endBlock)
-
+    int upperBound = auction.auction.upperBound;
+    uint numSteps = block.number / parameters.stepInterval; // will round down to whole number. 
 
     // dv = (Vmax - Vmin) * numSteps
-    return upperBound - auction.dv * numSteps;
+    return upperBound - int(auction.dv * numSteps);
   }
 
   ////////////

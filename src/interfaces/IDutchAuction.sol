@@ -7,8 +7,8 @@ interface IDutchAuction {
 
   struct AuctionDetails {
     uint accountId;
-    uint upperBound;
-    uint lowerBound;
+    int upperBound;
+    int lowerBound;
   }
 
   struct Auction {
@@ -30,13 +30,13 @@ interface IDutchAuction {
   function startAuction(uint accountId) external returns(bytes32);
 
   // a user submits a bid for a particular auction
-  function bid(uint auctionId, uint amount) external returns(uint);
+  function bid(bytes32 auctionId, int amount) external returns(uint);
 
   // view to get the details on an auction
-  function auctionDetails(uint auctionId) external view returns(AuctionDetails memory);
+  function auctionDetails(bytes32 auctionId) external view returns(Auction memory);
 
   // gets the current price of an auction bound between Vmax and Vlower
-  function currentAuctionPrice(uint auctionId) external view returns(uint);
+  function getCurrentBidPrice(bytes32 auctionId) external view returns(int);
 
   // TODO: may not be required anymore
   function getMaxProportion(uint accountId) external returns(uint);
