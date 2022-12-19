@@ -3,11 +3,15 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/cryptography/EIP712.sol";
+import "openzeppelin/utils/cryptography/SignatureChecker.sol";
+
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./Allowances.sol";
 import "./libraries/ArrayLib.sol";
 import "./libraries/AssetDeltaLib.sol";
+import "./libraries/PermitAllowanceLib.sol";
 
 /**
  * todo: update memory to calldata
@@ -19,7 +23,7 @@ import "./libraries/AssetDeltaLib.sol";
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract Account is Allowances, ERC721, AccountStructs {
+contract Account is Allowances, ERC721, EIP712, AccountStructs {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;
@@ -88,7 +92,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   //    Constructor     //
   ////////////////////////
 
-  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
+  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) EIP712("Lyra", "1") {}
 
   ////////////////////////
   // Account Management //
@@ -196,6 +200,28 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     address owner = ownerOf(accountId);
     _setSubIdAllowances(accountId, owner, delegate, allowances);
+  }
+
+  function permit(PermitAllowance calldata allowancePermit, bytes calldata signature) external {
+
+  }
+
+  function _permit(PermitAllowance calldata allowancePermit, bytes calldata signature) internal {
+    // owner of the account, who should be the signer
+    address owner = ownerOf(allowancePermit.accountId);
+
+    bytes32 hash = PermitAllowanceLib.hash(allowancePermit);
+
+    // check signature
+    if(!SignatureChecker.isValidSignatureNow(owner, hash, signature)) revert AC_InvalidPermitSignature();
+
+    // consume nonce
+
+    // update asset allowance
+    _setAssetAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.assetAllowances);
+
+    // update subId allowance
+    _setSubIdAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.subIdAllowances);
   }
 
   /////////////////////////
@@ -537,6 +563,8 @@ contract Account is Allowances, ERC721, AccountStructs {
   error AC_OnlyAsset();
 
   error AC_TooManyTransfers();
+
+  error AC_InvalidPermitSignature();
 
   error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 
