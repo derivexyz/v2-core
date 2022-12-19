@@ -3,20 +3,24 @@ pragma solidity ^0.8.13;
 
 import "./interfaces/IDutchAuction.sol";
 import "./interfaces/IPCRM.sol";
+import "./interfaces/ISpotFeeds.sol";
 
 contract DutchAuction is IDutchAuction {
   
   mapping(address => bool) public isRiskManagers;
   mapping(bytes32 => Auction) public auctions;
-  DutchAuction public parameters;
+  DutchAuctionParameters public parameters;
+  ISpotFeeds public spotFeed;
 
-  constructor() {}
+  constructor(ISpotFeeds _spotFeed) {
+    spotFeed = _spotFeed;
+  }
   
   /// @notice Sets the dutch Auction Parameters
   /// @dev This function is used to set the parameters for the dutch auction
   /// @param params A struct that contains all the parameters for the dutch auction
   /// @return Documents the parameters for the dutch auction that were just set.
-  function setDutchAuctionParameters(DutchAuctionParameters memory params) external returns(DutchAuction memory) {
+  function setDutchAuctionParameters(DutchAuctionParameters memory params) external returns(DutchAuctionParameters memory) {
     // set the parameters for the dutch auction
     parameters = params;
     return parameters;
@@ -35,11 +39,11 @@ contract DutchAuction is IDutchAuction {
     }
 
     bytes32 auctionId = keccak256(abi.encodePacked(accountId, block.timestamp));
-    uint upperBound = getVMax(accountId);
-    uint lowerBound = getVmin(accountId);
+    uint price = spotFeed.getSpot(1);
+    uint upperBound = getVMax(accountId, price);
+    uint lowerBound = getVmin(accountId, price);
 
     auctions[auctionId] = Auction({
-      accountId: accountId,
       insolvent: false,
       ongoing: true,
       startBlock: block.number,
@@ -57,7 +61,7 @@ contract DutchAuction is IDutchAuction {
   /// @dev Takes in the auction and returns the account id
   /// @param auctionId the bytesId that corresponds to a particular auction
   /// @return amount the amount as a percantage of the portfolio that the user is willing to purchase
-  function bid(bytes auctionId, int amount) external returns(uint) {
+  function bid(bytes memory auctionId, int amount) external returns(uint) {
     // need to check if the timelimit for the auction has been ecplised
     // the position is thus insolvent otherwise
     // need to check if this amount would put the portfolio over is matience marign
@@ -67,7 +71,7 @@ contract DutchAuction is IDutchAuction {
     // if the user has less margin then the amount they are bidding then get it from the security module
 
     // add bid
-    IPCRM.executeBid(accountId, msg.sender, amount, cashAmount); // not sure about the liquidator difference
+    // IPCRM.executeBid(accountId, msg.sender, amount, cashAmount); // not sure about the liquidator difference
 
   }
 
@@ -86,41 +90,44 @@ contract DutchAuction is IDutchAuction {
   // internal //
   ///////////////
 
-  function getVMax(uint accountId) internal returns(uint) {
+  function getVMax(uint accountId, int spot) internal returns(int) {
     (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
-    uint portfolioMargin = cash;
+    int portfolioMargin = cash;
     for (uint i = 0; i < expiryHoldings.length; i++) {
       // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
       for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
-        portfolioMargin += expiryHoldings[i].strikes[j].puts * expiryHoldings[i].strikes[j].strike;
-        uint spot = IPCRM(msg.sender).getSpotPrice(expiryHoldings[i].expiry); // TODO: get spot.
+        portfolioMargin += expiryHoldings[i].strikes[j].puts * int64(expiryHoldings[i].strikes[j].strike);
         portfolioMargin += expiryHoldings[i].strikes[j].calls * spot;
       }
     }
     // need to discuss with mech how this is going to work
   } 
 
-  function getVmin(uint accountId) internal returns(uint) {
+  function getVmin(uint accountId, int spot) internal returns(uint) {
+
+    // TODO: need to do some more work on this. 
     // vmin is going to be difficult to compute
     (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
-    uint portfolioMargin = cash;
+    int portfolioMargin = cash;
     for (uint i = 0; i < expiryHoldings.length; i++) {
+
       // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
+    
       for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
-        portfolioMargin += expiryHoldings[i].strikes[j].puts * expiryHoldings[i].strikes[j].strike;
-        uint spot = IPCRM(msg.sender).getSpotPrice(expiryHoldings[i].expiry); // TODO: get spot.
+        portfolioMargin += expiryHoldings[i].strikes[j].puts * int64(expiryHoldings[i].strikes[j].strike);
         portfolioMargin += expiryHoldings[i].strikes[j].calls * spot;
       }
     }
   }
 
-  function getCurrentBidPrice(bytes auctionId) internal returns(uint) {
+  function getCurrentBidPrice(bytes32 auctionId) view internal returns(uint) {
     // need to check if the auction is still ongoing
     // if not then return the lower bound
     // otherwise return using dv 
-    Auction auction = auctions[auctionId];
-    uint upperBound = auction.upperBound;
-    uint numSteps = parameters.numSteps;
+    Auction memory auction = auctions[auctionId];
+    uint upperBound = auction.auction.upperBound;
+    uint numSteps = tx.block / (auction.startBlock - auction.endBlock); // TODO: need to find the number of steps here, block number / (startBlock - endBlock)
+
 
     // dv = (Vmax - Vmin) * numSteps
     return upperBound - auction.dv * numSteps;
@@ -139,7 +146,7 @@ contract DutchAuction is IDutchAuction {
   // emmited when an auction results in insolvency
   event Insolvent(bytes32 auctionId, uint accountId);
   
-  // emmited when an auction ends
+  // emmited when an auction ends, either by insolvency or by the assets of an account being purchased. 
   event AuctionEnded(bytes32 auctionId, uint accountId, uint amount);
 
 
