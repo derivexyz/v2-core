@@ -45,6 +45,13 @@ contract OptionEncodingTest is Test {
     isCall = true;
     subId = tester.toSubId(expiry, strike, isCall);
     _assertCorrectSubId(subId, expiry, strike, isCall);
+
+    // 1mo, zero strike, call
+    expiry = block.timestamp + 30 days;
+    strike = 0;
+    isCall = true;
+    subId = tester.toSubId(expiry, strike, isCall);
+    _assertCorrectSubId(subId, expiry, strike, isCall);
   }
 
   function testFuzzEncoding(uint expiry, uint strike, bool isCall) public {
