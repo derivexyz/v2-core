@@ -231,7 +231,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
     }
 
     // consume nonce
-    // todo: update to un-ordered nonce system like Permit2?
+    // todo [Anton]: update to un-ordered nonce system like Permit2?
     if (allowancePermit.nonce <= nonce[owner]) revert AC_NonceTooLow();
     nonce[owner] = allowancePermit.nonce;
 
@@ -252,19 +252,24 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @param managerData data passed to managers of both accounts
    */
   function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external {
-    (int fromDelta, int toDelta) = _transferAsset(assetTransfer);
-    _managerHook(
-      assetTransfer.fromAcc,
-      msg.sender,
-      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, fromDelta),
-      managerData
-    );
-    _managerHook(
-      assetTransfer.toAcc,
-      msg.sender,
-      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, toDelta),
-      managerData
-    );
+    _submitTransfer(assetTransfer, managerData);
+  }
+
+  /**
+   * @notice Permit and transfer in a single transaction
+   * @param assetTransfer Detailed struct on transfer (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData Data passed to managers of both accounts
+   * @param allowancePermit Detailed struct for permit (accountId, delegator allowance detail)
+   * @param signature ECDSA signature or EIP 1271 contract signature
+   */
+  function permitAndSubmitTransfer(
+    AssetTransfer calldata assetTransfer,
+    bytes calldata managerData,
+    PermitAllowance calldata allowancePermit,
+    bytes calldata signature
+  ) external {
+    _permit(allowancePermit, signature);
+    _submitTransfer(assetTransfer, managerData);
   }
 
   /**
@@ -307,6 +312,27 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
       AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
       _managerHook(seenAccounts[i], msg.sender, nonEmptyDeltas, managerData);
     }
+  }
+
+  /**
+   * @notice Transfer an amount from one account to another for a specific (asset, subId)
+   * @param assetTransfer Detail struct (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData Data passed to managers of both accounts
+   */
+  function _submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) internal {
+    (int fromDelta, int toDelta) = _transferAsset(assetTransfer);
+    _managerHook(
+      assetTransfer.fromAcc,
+      msg.sender,
+      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, fromDelta),
+      managerData
+    );
+    _managerHook(
+      assetTransfer.toAcc,
+      msg.sender,
+      AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, toDelta),
+      managerData
+    );
   }
 
   /**

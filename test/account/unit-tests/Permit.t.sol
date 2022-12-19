@@ -14,18 +14,10 @@ import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 
-contract UNIT_AccountPermit is Test {
+contract UNIT_AccountPermit is Test, AccountTestBase {
   uint private immutable privateKey;
   address private immutable pkOwner;
   bytes32 public domainSeparator;
-
-  IAsset asset = IAsset(address(0x8888));
-
-  address public alice;
-  address public bob;
-
-  Account account;
-  MockManager dumbManager;
 
   uint accountId;
   uint positiveAmount = 1e18;
@@ -37,16 +29,11 @@ contract UNIT_AccountPermit is Test {
   }
 
   function setUp() public {
-    alice = address(0xaa);
-    bob = address(0xbb);
-
     vm.chainId(1);
 
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    setUpAccounts();
 
     domainSeparator = account.domainSeparator();
-
-    dumbManager = new MockManager(address(account));
 
     // get a account for pkOwner
     accountId = account.createAccount(pkOwner, dumbManager);
@@ -95,7 +82,7 @@ contract UNIT_AccountPermit is Test {
   function testPermitCanUpdateAssetAllowance() public {
     uint nonce = 1;
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
-    assetAllowances[0] = AccountStructs.AssetAllowance(asset, positiveAmount, negativeAmount);
+    assetAllowances[0] = AccountStructs.AssetAllowance(usdcAsset, positiveAmount, negativeAmount);
     AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](0);
 
     AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
@@ -110,16 +97,16 @@ contract UNIT_AccountPermit is Test {
     bytes memory sig = _signPermit(privateKey, permit);
     account.permit(permit, sig);
 
-    assertEq(account.positiveAssetAllowance(accountId, pkOwner, asset, alice), positiveAmount);
-    assertEq(account.negativeAssetAllowance(accountId, pkOwner, asset, alice), negativeAmount);
+    assertEq(account.positiveAssetAllowance(accountId, pkOwner, usdcAsset, alice), positiveAmount);
+    assertEq(account.negativeAssetAllowance(accountId, pkOwner, usdcAsset, alice), negativeAmount);
   }
 
   function testPermitCanUpdateSubIdAllowance() public {
-    uint96 subId = 1;
+    uint96 subId = 0;
     uint nonce = 1;
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
     AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance(asset, subId, positiveAmount, negativeAmount);
+    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
 
     AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
       delegate: alice,
@@ -133,16 +120,16 @@ contract UNIT_AccountPermit is Test {
     bytes memory sig = _signPermit(privateKey, permit);
     account.permit(permit, sig);
 
-    assertEq(account.positiveSubIdAllowance(accountId, pkOwner, asset, subId, alice), positiveAmount);
-    assertEq(account.negativeSubIdAllowance(accountId, pkOwner, asset, subId, alice), negativeAmount);
+    assertEq(account.positiveSubIdAllowance(accountId, pkOwner, usdcAsset, subId, alice), positiveAmount);
+    assertEq(account.negativeSubIdAllowance(accountId, pkOwner, usdcAsset, subId, alice), negativeAmount);
   }
 
   function testCannotReuseSignature() public {
-    uint96 subId = 1;
+    uint96 subId = 0;
     uint nonce = 1;
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
     AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance(asset, subId, positiveAmount, negativeAmount);
+    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
 
     AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
       delegate: alice,
@@ -162,11 +149,11 @@ contract UNIT_AccountPermit is Test {
   }
 
   function testCannotReplayAttack() public {
-    uint96 subId = 1;
+    uint96 subId = 0;
     uint nonce = 1;
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
     AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance(asset, subId, positiveAmount, negativeAmount);
+    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
 
     AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
       delegate: alice,
@@ -183,6 +170,55 @@ contract UNIT_AccountPermit is Test {
 
     vm.expectRevert(Account.AC_InvalidPermitSignature.selector);
     account.permit(permit, sig);
+  }
+
+  function testPermitAndTransfer() public {
+    // deposit 1000 USDC to "accountId"
+    mintAndDeposit(alice, accountId, usdc, usdcAsset, 0, 1000e18);
+
+    uint nonce = 5;
+    uint96 subId = 0;
+    uint allowanceAmount = 500e18;
+
+    // sign signature to approve asset allowance + subId for 500 each
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
+    assetAllowances[0] = AccountStructs.AssetAllowance(usdcAsset, 0, allowanceAmount);
+    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
+    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, 0, allowanceAmount);
+
+    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+      delegate: bob, //
+      nonce: nonce,
+      accountId: accountId,
+      deadline: block.timestamp,
+      assetAllowances: assetAllowances,
+      subIdAllowances: subIdAllowances
+    });
+
+    bytes memory sig = _signPermit(privateKey, permit);
+
+    // bob send transfer to send money to himself!
+    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+      fromAcc: accountId,
+      toAcc: bobAcc,
+      asset: usdcAsset,
+      subId: subId,
+      amount: 1000e18,
+      assetData: bytes32(0)
+    });
+
+    int bobUsdcBefore = account.getBalance(bobAcc, usdcAsset, subId);
+
+    vm.startPrank(bob);
+    account.permitAndSubmitTransfer(transfer, "", permit, sig);
+
+    int bobUsdcAfter = account.getBalance(bobAcc, usdcAsset, subId);
+
+    assertEq(bobUsdcAfter - bobUsdcBefore, 1000e18);
+
+    // allowance is consumed immediately
+    assertEq(account.positiveAssetAllowance(accountId, pkOwner, usdcAsset, bob), 0);
+    assertEq(account.negativeAssetAllowance(accountId, pkOwner, usdcAsset, bob), 0);
   }
 
   function testDomainSeparator() public view {
