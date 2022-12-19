@@ -24,6 +24,10 @@ contract PCRMSortingTest is Test {
     tester = new PCRMSortingTester();
   }
 
+  ///////////////////////
+  // Forward Filtering //
+  ///////////////////////
+
   function testStrikeFilteringForZeroBalance() public {
     (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(0, 0, 0);
     assertEq(newCalls, 0);
@@ -43,5 +47,12 @@ contract PCRMSortingTest is Test {
     assertEq(newCalls, 3);
     assertEq(newPuts, 0);
     assertEq(newForwards, 7);
+  }
+
+  function testStrikeFilteringWhenShortForwardsPresent() public {
+    (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(-5, 10, 0);
+    assertEq(newCalls, 0);
+    assertEq(newPuts, 5);
+    assertEq(newForwards, -5);
   }
 }
