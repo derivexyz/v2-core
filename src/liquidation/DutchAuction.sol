@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./interfaces/IDutchAuction.sol";
-import "./interfaces/IPCRM.sol";
-import "./interfaces/ISpotFeeds.sol";
+import "../interfaces/IDutchAuction.sol";
+import "../interfaces/IPCRM.sol";
+import "../interfaces/ISpotFeeds.sol";
 
 contract DutchAuction is IDutchAuction {
   
@@ -20,6 +20,7 @@ contract DutchAuction is IDutchAuction {
   /// @dev This function is used to set the parameters for the dutch auction
   /// @param params A struct that contains all the parameters for the dutch auction
   /// @return Documents the parameters for the dutch auction that were just set.
+  // TODO: needs to be rescrited to owner
   function setDutchAuctionParameters(DutchAuctionParameters memory params) external returns(DutchAuctionParameters memory) {
     // set the parameters for the dutch auction
     parameters = params;
@@ -87,15 +88,11 @@ contract DutchAuction is IDutchAuction {
     return auctions[auctionId];
   }
 
-  function endAuction(uint auctionId) external returns(uint) {}
 
   /// @notice Gets the maximum size of the portfolio that could be bought at the current price
   /// @param accountId the id of the account being liquidated
   /// @return uint the proportion of the portfolio that could be bought at the current price
-  function getMaxProportion(uint accountId) external returns(uint) {
-
-  }
-
+  function getMaxProportion(uint accountId) external returns(uint) {}
 
   ///////////////
   // internal //
