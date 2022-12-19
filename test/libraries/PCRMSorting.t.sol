@@ -30,4 +30,18 @@ contract PCRMSortingTest is Test {
     assertEq(newPuts, 0);
     assertEq(newForwards, 0);
   }
+
+  function testStrikeFilteringForNoForwards() public {
+    (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(10, 10, 0);
+    assertEq(newCalls, 10);
+    assertEq(newPuts, 10);
+    assertEq(newForwards, 0);
+  }
+
+  function testStrikeFilteringWhenLongForwardsPresent() public {
+    (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(10, -7, 0);
+    assertEq(newCalls, 3);
+    assertEq(newPuts, 0);
+    assertEq(newForwards, 7);
+  }
 }

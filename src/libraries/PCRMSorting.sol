@@ -50,8 +50,8 @@ library PCRMSorting {
       additionalFwds = int(IntLib.absMin(calls, puts)) * fwdSign;
     }
 
-    newCalls = calls - newForwards;
-    newPuts = puts + newForwards;
+    newCalls = calls - additionalFwds;
+    newPuts = puts + additionalFwds;
     newForwards = forwards + additionalFwds;
   }
 

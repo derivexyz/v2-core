@@ -246,8 +246,11 @@ contract PCRM is IManager, Owned {
     // 1. create sorted [expiries][strikes] 2D array
     for (uint i; i < assets.length; ++i) {
       if (address(assets[i].asset) == address(option)) {
+
         // decode subId
-        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
+        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(
+          SafeCast.toUint96(assets[i].subId)
+        );
 
         // add new expiry or strike to holdings if unique
         (expiryIndex, numExpiriesHeld) = PCRMSorting.addUniqueExpiry(
@@ -269,8 +272,6 @@ contract PCRM is IManager, Owned {
 
     // 2. pair off all symmetric calls and puts into forwards
     PCRMSorting.filterForwards(expiryHoldings);
-
-    // todo [Josh]: add limit to # of expiries and # of options
   }
 
   //////////
