@@ -202,9 +202,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
     _setSubIdAllowances(accountId, owner, delegate, allowances);
   }
 
-  function permit(PermitAllowance calldata allowancePermit, bytes calldata signature) external {
-
-  }
+  function permit(PermitAllowance calldata allowancePermit, bytes calldata signature) external {}
 
   function _permit(PermitAllowance calldata allowancePermit, bytes calldata signature) internal {
     // owner of the account, who should be the signer
@@ -213,7 +211,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
     bytes32 hash = PermitAllowanceLib.hash(allowancePermit);
 
     // check signature
-    if(!SignatureChecker.isValidSignatureNow(owner, hash, signature)) revert AC_InvalidPermitSignature();
+    if (!SignatureChecker.isValidSignatureNow(owner, hash, signature)) revert AC_InvalidPermitSignature();
 
     // consume nonce
 

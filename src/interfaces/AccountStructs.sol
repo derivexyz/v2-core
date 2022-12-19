@@ -80,9 +80,7 @@ interface AccountStructs {
     uint accountId;
     // deadline on the permit signature
     uint deadline;
-
     AssetAllowance[] assetAllowances;
-
     SubIdAllowance[] subIdAllowances;
   }
 
