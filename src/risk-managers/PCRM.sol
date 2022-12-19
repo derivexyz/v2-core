@@ -241,6 +241,7 @@ contract PCRM is IManager, Owned {
     uint numStrikesHeld;
     uint expiryIndex;
     uint strikeIndex;
+    expiryHoldings = new PCRM.ExpiryHolding[](MAX_EXPIRIES);
 
     // 1. create sorted [expiries][strikes] 2D array
     for (uint i; i < assets.length; ++i) {
@@ -249,11 +250,10 @@ contract PCRM is IManager, Owned {
         (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
 
         // add new expiry or strike to holdings if unique
-        console2.log("hello", SafeCast.toUint96(assets[i].subId));
         (expiryIndex, numExpiriesHeld) = PCRMSorting.addUniqueExpiry(
-          expiryHoldings, expiry, numExpiriesHeld, MAX_EXPIRIES, MAX_STRIKES
+          expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES
         );
-        console2.log("hello1", expiryIndex);
+
         (strikeIndex, numStrikesHeld) = PCRMSorting.addUniqueStrike(
           expiryHoldings, expiryIndex, strike, numStrikesHeld
         );
@@ -266,7 +266,6 @@ contract PCRM is IManager, Owned {
         }
       }
     }
-    console2.log("hello2", expiryHoldings.length);
 
     // 2. pair off all symmetric calls and puts into forwards
     PCRMSorting.filterForwards(expiryHoldings);
