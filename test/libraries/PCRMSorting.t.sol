@@ -55,4 +55,51 @@ contract PCRMSortingTest is Test {
     assertEq(newPuts, 5);
     assertEq(newForwards, -5);
   }
+
+  function testFullFiltering() public {
+    // expiry 1
+    PCRM.StrikeHolding[] memory strikeHoldings_1 = new PCRM.StrikeHolding[](2);
+    strikeHoldings_1[0] = PCRM.StrikeHolding({
+      strike: 10e18,
+      calls: 10,
+      puts: -10,
+      forwards: 1
+    });
+    strikeHoldings_1[1] = PCRM.StrikeHolding({
+      strike: 10e18,
+      calls: 0,
+      puts: -10,
+      forwards: 5
+    });
+
+    // expiry 2
+    PCRM.StrikeHolding[] memory strikeHoldings_2 = new PCRM.StrikeHolding[](1);
+    strikeHoldings_2[0] = PCRM.StrikeHolding({
+      strike: 10e18,
+      calls: -3,
+      puts: 5,
+      forwards: 10
+    });
+
+    // all expiries
+    PCRM.ExpiryHolding[] memory holdings = new PCRM.ExpiryHolding[](2);
+    holdings[0] = PCRM.ExpiryHolding({
+      expiry: block.timestamp + 1 days,
+      strikes: strikeHoldings_1
+    });
+    holdings[1] = PCRM.ExpiryHolding({
+      expiry: block.timestamp + 7 days,
+      strikes: strikeHoldings_2
+    });
+
+    // check corrected filtering
+    tester.filterForwards(holdings);
+    assertEq(holdings[0].strikes[0].calls, 0);
+    assertEq(holdings[0].strikes[0].puts, 0);
+    assertEq(holdings[0].strikes[0].forwards, 11);
+    assertEq(holdings[0].strikes[0].calls, 0);
+    assertEq(holdings[0].strikes[0].puts, -10);
+    assertEq(holdings[0].strikes[0].forwards, 5);
+
+  }
 }
