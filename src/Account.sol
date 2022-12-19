@@ -10,6 +10,8 @@ import "./libraries/ArrayLib.sol";
 import "./libraries/AssetDeltaLib.sol";
 
 /**
+ * todo: update memory to calldata
+ * todo: permit
  * @title Account
  * @author Lyra
  * @notice Base layer that manages:
