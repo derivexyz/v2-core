@@ -36,13 +36,13 @@ contract PCRM is IManager, Owned {
 
   struct StrikeHolding {
     /// strike price of held options
-    uint64 strike;
+    uint strike;
     /// number of calls held
-    int64 calls;
+    int calls;
     /// number of puts held
-    int64 puts;
+    int puts;
     /// number of forwards held
-    int64 forwards;
+    int forwards;
   }
 
   ///////////////
@@ -239,11 +239,19 @@ contract PCRM is IManager, Owned {
         );
 
         (uint strikeIndex) = PCRMSorting.addUniqueStrike(
-          expiryHoldings, expiryIndex, SafeCast.toUint64(strike), expiryHoldings[expiryIndex].strikes.length
+          expiryHoldings, expiryIndex, strike, expiryHoldings[expiryIndex].strikes.length
         );
 
+        // to save on memory expansion costs, limiting max balances to int64
+        if (isCall) {
+          expiryHoldings[expiryIndex].strikes[strikeIndex].calls += assets[i].balance;
+        } else {
+          expiryHoldings[expiryIndex].strikes[strikeIndex].puts += assets[i].balance;
+        }
       }
     }
+
+    PCRMSorting.filterForwards(expiryHoldings);
 
     // todo: sort out each expiry / strike
     // todo: ignore the lendingAsset

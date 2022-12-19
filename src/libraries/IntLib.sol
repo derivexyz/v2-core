@@ -12,4 +12,12 @@ library IntLib {
   function abs(int amount) internal pure returns (uint absAmount) {
     return amount >= 0 ? uint(amount) : uint(-amount);
   }
+
+  function absMin(int a, int b) internal pure returns (uint absMinAmount) {
+    uint absA = abs(a);
+    uint absB = abs(b);
+    absMinAmount = (absA <= absB) 
+      ? absA
+      : absB;
+  }
 }
