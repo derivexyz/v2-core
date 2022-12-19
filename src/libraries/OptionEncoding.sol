@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/libraries/DecimalMath.sol";
-import "forge-std/console2.sol";
-
 /**
  * @title OptionEncoding
  * @author Lyra
@@ -36,7 +33,8 @@ library OptionEncoding {
       revert OE_StrikeTooGranular(strike);
     }
 
-    strike = DecimalMath.convertDecimals(strike, 18, 8);
+    // convert to 8 decimal points
+    strike = strike / 1e10;
 
     // can support strike as high as $92,233,720,368
     if (strike > UINT63_MAX) {
@@ -57,7 +55,7 @@ library OptionEncoding {
    */
   function fromSubId(uint96 subId) internal pure returns (uint expiry, uint strike, bool isCall) {
     expiry = subId & UINT32_MAX;
-    strike = DecimalMath.convertDecimals((subId >> 32) & UINT63_MAX, 8, 18);
+    strike = ((subId >> 32) & UINT63_MAX) * 1e10;
     isCall = (subId >> 95) > 0;
   }
 
