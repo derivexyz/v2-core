@@ -3,15 +3,17 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/cryptography/EIP712.sol";
+import "openzeppelin/utils/cryptography/SignatureChecker.sol";
+
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./Allowances.sol";
 import "./libraries/ArrayLib.sol";
 import "./libraries/AssetDeltaLib.sol";
+import "./libraries/PermitAllowanceLib.sol";
 
 /**
- * todo: update memory to calldata
- * todo: permit
  * @title Account
  * @author Lyra
  * @notice Base layer that manages:
@@ -19,7 +21,7 @@ import "./libraries/AssetDeltaLib.sol";
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract Account is Allowances, ERC721, AccountStructs {
+contract Account is Allowances, ERC721, EIP712, AccountStructs {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;
@@ -39,6 +41,9 @@ contract Account is Allowances, ERC721, AccountStructs {
 
   /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
+
+  /// @dev user nonce for permit
+  mapping(address => uint) public nonce;
 
   ////////////
   // Events //
@@ -88,7 +93,7 @@ contract Account is Allowances, ERC721, AccountStructs {
   //    Constructor     //
   ////////////////////////
 
-  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
+  constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) EIP712("Lyra", "1") {}
 
   ////////////////////////
   // Account Management //
@@ -196,6 +201,45 @@ contract Account is Allowances, ERC721, AccountStructs {
   {
     address owner = ownerOf(accountId);
     _setSubIdAllowances(accountId, owner, delegate, allowances);
+  }
+
+  /**
+   * @dev adjust allowance by owner signature
+   * @param allowancePermit struct specifying accountId, delegator and allowance detail
+   * @param signature ECDSA signature or EIP 1271 contract signature
+   */
+  function permit(PermitAllowance calldata allowancePermit, bytes calldata signature) external {
+    _permit(allowancePermit, signature);
+  }
+
+  /**
+   * @dev verify signature and update allowance mapping
+   * @param allowancePermit struct specifying accountId, delegator and allowance detail
+   * @param signature ECDSA signature or EIP 1271 contract signature
+   */
+  function _permit(PermitAllowance calldata allowancePermit, bytes calldata signature) internal {
+    if (allowancePermit.deadline < block.timestamp) revert AC_SignatureExpired();
+
+    // owner of the account, who should be the signer
+    address owner = ownerOf(allowancePermit.accountId);
+
+    bytes32 structHash = PermitAllowanceLib.hash(allowancePermit);
+
+    // check the signature is from the current owner
+    if (!SignatureChecker.isValidSignatureNow(owner, _hashTypedDataV4(structHash), signature)) {
+      revert AC_InvalidPermitSignature();
+    }
+
+    // consume nonce
+    // todo: update to un-ordered nonce system like Permit2?
+    if (allowancePermit.nonce <= nonce[owner]) revert AC_NonceTooLow();
+    nonce[owner] = allowancePermit.nonce;
+
+    // update asset allowance
+    _setAssetAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.assetAllowances);
+
+    // update subId allowance
+    _setSubIdAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.subIdAllowances);
   }
 
   /////////////////////////
@@ -512,6 +556,13 @@ contract Account is Allowances, ERC721, AccountStructs {
     return assetBalances;
   }
 
+  /**
+   * @dev get domain separator for signing
+   */
+  function domainSeparator() external view returns (bytes32) {
+    return _domainSeparatorV4();
+  }
+
   ////////////
   // Access //
   ////////////
@@ -537,6 +588,13 @@ contract Account is Allowances, ERC721, AccountStructs {
   error AC_OnlyAsset();
 
   error AC_TooManyTransfers();
+
+  error AC_InvalidPermitSignature();
+
+  error AC_SignatureExpired();
+
+  /// @dev nonce too low or already used
+  error AC_NonceTooLow();
 
   error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 

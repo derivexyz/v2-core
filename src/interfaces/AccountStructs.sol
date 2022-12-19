@@ -70,6 +70,20 @@ interface AccountStructs {
     bytes32 assetData;
   }
 
+  struct PermitAllowance {
+    // who to approve
+    address delegate;
+    // nonce for each signer
+    uint nonce;
+    // access are granted on account bases. A signer can have multiple accounts and it cannot be used
+    // to permit another account
+    uint accountId;
+    // deadline on the permit signature
+    uint deadline;
+    AssetAllowance[] assetAllowances;
+    SubIdAllowance[] subIdAllowances;
+  }
+
   ////////////////
   // Allowances //
   ////////////////
