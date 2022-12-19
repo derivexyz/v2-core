@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "src/interfaces/AccountStructs.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/libraries/IntLib.sol";
+import "forge-std/console2.sol";
 
 /**
  * @title PCRMSorting
@@ -58,27 +59,47 @@ library PCRMSorting {
   // Sorting //
   /////////////
 
-  function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen)
+  function addUniqueExpiry(
+    PCRM.ExpiryHolding[] memory expiryHoldings, 
+    uint newExpiry, 
+    uint arrayLen, 
+    uint maxExpiries,
+    uint maxStrikes
+  )
     internal
-    pure
-    returns (uint)
+    view
+    returns (uint, uint)
   {
+    // handle initial state
+    if (arrayLen == 0) {
+      expiryHoldings = new PCRM.ExpiryHolding[](maxExpiries);
+    }
+
+    // check if expiry exists
     (uint expiryIndex, bool found) = findInArray(expiryHoldings, newExpiry, arrayLen);
+
+    // return index if found or add new entry
     if (found == false) {
       unchecked {
         expiryHoldings[arrayLen++] = PCRM.ExpiryHolding({
           expiry: newExpiry,
-          strikes: new PCRM.StrikeHolding[](0)
+          strikes: new PCRM.StrikeHolding[](maxStrikes)
         });
       }
       expiryIndex = arrayLen;
-    }     
+    }
+    return (expiryIndex, arrayLen);
   }
 
-  function addUniqueStrike(PCRM.ExpiryHolding[] memory expiryHoldings, uint expiryIndex, uint newStrike, uint arrayLen)
+  function addUniqueStrike(
+    PCRM.ExpiryHolding[] memory expiryHoldings, 
+    uint expiryIndex, 
+    uint newStrike, 
+    uint arrayLen
+  )
     internal
     pure
-    returns (uint)
+    returns (uint, uint)
   {
     (uint strikeIndex, bool found) = findInArray(expiryHoldings[expiryIndex].strikes, newStrike, arrayLen);
     if (found == false) {
@@ -92,6 +113,7 @@ library PCRMSorting {
       }
       strikeIndex = arrayLen;
     }
+    return (expiryIndex, arrayLen);
   }
 
   // todo [Josh]: change to binary search

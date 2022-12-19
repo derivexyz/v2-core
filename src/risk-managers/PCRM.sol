@@ -12,6 +12,8 @@ import "src/libraries/PCRMSorting.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title PartialCollateralRiskManager
  * @author Lyra
@@ -64,6 +66,9 @@ contract PCRM is IManager, Owned {
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
+  uint public constant MAX_EXPIRIES = 20;
+  uint public constant MAX_STRIKES = 50;
+
   ////////////
   // Events //
   ////////////
@@ -107,8 +112,11 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
-    _calcMargin(expiries, MarginType.INITIAL);
+    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(accountId);
+    if (balances.length > 0) {
+      ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
+      _calcMargin(expiries, MarginType.INITIAL);
+    }
   }
 
   /**
@@ -229,6 +237,11 @@ contract PCRM is IManager, Owned {
     view
     returns (ExpiryHolding[] memory expiryHoldings)
   {
+    uint numExpiriesHeld;
+    uint numStrikesHeld;
+    uint expiryIndex;
+    uint strikeIndex;
+
     // 1. create sorted [expiries][strikes] 2D array
     for (uint i; i < assets.length; ++i) {
       if (address(assets[i].asset) == address(option)) {
@@ -236,11 +249,13 @@ contract PCRM is IManager, Owned {
         (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
 
         // add new expiry or strike to holdings if unique
-        (uint expiryIndex) = PCRMSorting.addUniqueExpiry(
-          expiryHoldings, expiry, expiryHoldings.length
+        console2.log("hello", SafeCast.toUint96(assets[i].subId));
+        (expiryIndex, numExpiriesHeld) = PCRMSorting.addUniqueExpiry(
+          expiryHoldings, expiry, numExpiriesHeld, MAX_EXPIRIES, MAX_STRIKES
         );
-        (uint strikeIndex) = PCRMSorting.addUniqueStrike(
-          expiryHoldings, expiryIndex, strike, expiryHoldings[expiryIndex].strikes.length
+        console2.log("hello1", expiryIndex);
+        (strikeIndex, numStrikesHeld) = PCRMSorting.addUniqueStrike(
+          expiryHoldings, expiryIndex, strike, numStrikesHeld
         );
 
         // add call or put balance
@@ -251,6 +266,7 @@ contract PCRM is IManager, Owned {
         }
       }
     }
+    console2.log("hello2", expiryHoldings.length);
 
     // 2. pair off all symmetric calls and puts into forwards
     PCRMSorting.filterForwards(expiryHoldings);
