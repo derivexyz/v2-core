@@ -35,19 +35,28 @@ contract DutchAuction is IDutchAuction {
     }
 
     bytes32 auctionId = keccak256(abi.encodePacked(accountId, block.timestamp));
+    uint upperBound = getVMax(accountId);
+    uint lowerBound = getVmin(accountId);
 
-    auctions[auctionId] = AuctionDetails({
+    auctions[auctionId] = Auction({
       accountId: accountId,
-      upperBound: 0,
-      lowerBound: 0
-    });
+      insolvent: false,
+      ongoing: true,
+      startBlock: block.number,
+      endBlock: block.number + parameters.lengthOfAuction,
+      dv: 0,
+      auction: AuctionDetails({
+      accountId: accountId,
+      upperBound: upperBound,
+      lowerBound: lowerBound
+    })});
     return auctionId;
   }
 
   /// @notice a user submits a bid for a particular auction
   /// @dev Takes in the auction and returns the account id
   /// @param auctionId the bytesId that corresponds to a particular auction
-  /// @return Documents the amount as a percantage of the portfolio that the user is willing to purchase
+  /// @return amount the amount as a percantage of the portfolio that the user is willing to purchase
   function bid(bytes auctionId, int amount) external returns(uint) {
     // need to check if the timelimit for the auction has been ecplised
     // the position is thus insolvent otherwise
@@ -58,7 +67,7 @@ contract DutchAuction is IDutchAuction {
     // if the user has less margin then the amount they are bidding then get it from the security module
 
     // add bid
-    IPCRM.executeBid(accountId, liquidatorId, portion, cashAmount); // not sure about the liquidator difference
+    IPCRM.executeBid(accountId, msg.sender, amount, cashAmount); // not sure about the liquidator difference
 
   }
 
@@ -116,6 +125,23 @@ contract DutchAuction is IDutchAuction {
     // dv = (Vmax - Vmin) * numSteps
     return upperBound - auction.dv * numSteps;
   }
+
+  ////////////
+  // EVENTS //
+  ////////////
+
+  // emmited when an auction starts
+  event AuctionStarted(bytes32 auctionId, uint accountId, uint upperBound, uint lowerBound);
+  
+  // emmited when a bid is placed
+  event Bid(bytes32 auctionId, address bidder, uint amount);
+  
+  // emmited when an auction results in insolvency
+  event Insolvent(bytes32 auctionId, uint accountId);
+  
+  // emmited when an auction ends
+  event AuctionEnded(bytes32 auctionId, uint accountId, uint amount);
+
 
   ////////////
   // ERRORS //

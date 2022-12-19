@@ -21,7 +21,8 @@ interface IDutchAuction {
   }
 
   struct DutchAuctionParameters {
-    uint numSteps;
+    uint stepInterval;
+    uint lengthOfAuction;
     address securityModule;
   }
 
