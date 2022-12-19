@@ -14,8 +14,6 @@ import "./libraries/AssetDeltaLib.sol";
 import "./libraries/PermitAllowanceLib.sol";
 
 /**
- * todo: update memory to calldata
- * todo: permit
  * @title Account
  * @author Lyra
  * @notice Base layer that manages:
