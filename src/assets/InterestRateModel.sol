@@ -12,8 +12,9 @@ import "../interfaces/IAsset.sol";
 import "../interfaces/IAccount.sol";
 
 /**
- * @title Modeled off of Compound's JumpRateModel and Aave's compounding model
+ * @title Interest Rate Model
  * @author Lyra
+ * @notice Contract that implements the logic for calculating the borrow rate
  */
 contract InterestRateModel is Owned {
   using DecimalMath for uint;
@@ -86,7 +87,7 @@ contract InterestRateModel is Owned {
    *         P_0 * e ^(rt) = Principal with accrued interest
    *
    * @param elapsedTime seconds since last interest accrual
-   * @param cash underlying ERC20 balance
+   * @param cash The balance of stablecoin for the cash asset
    * @param borrows total outstanding debt
    * @return InterestFactor : e^(rt) - 1
    */
@@ -96,7 +97,7 @@ contract InterestRateModel is Owned {
   }
 
   /**
-   * @notice Calculates the current borrow rate per block, with the error code expected by the market
+   * @notice Calculates the current borrow rate as a linear equation
    * @param cash The balance of stablecoin for the cash asset
    * @param borrows The amount of borrows in the market
    * @return The borrow rate percentage per block as a mantissa (scaled by BASE)
