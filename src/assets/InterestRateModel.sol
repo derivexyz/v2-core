@@ -82,22 +82,20 @@ contract InterestRateModel is Owned {
    *         P_0 * e ^(rt) = Principal with accrued interest
    *
    * @param elapsedTime seconds since last interest accrual
-   * @param cash The balance of stablecoin for the cash asset
-   * @param borrows total outstanding debt
-   * @return InterestFactor : e^(rt) - 1
+   * @param borrowRate the current borrow rate for the asset
+   * @return compounded interest rate: e^(rt) - 1
    */
-  function getBorrowInterestFactor(uint elapsedTime, uint cash, uint borrows) external view returns (uint) {
-    uint r = getBorrowRate(cash, borrows);
-    return FixedPointMathLib.exp((elapsedTime * r / SECONDS_PER_YEAR).toInt256()) - DecimalMath.UNIT;
+  function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure returns (uint) {
+    return FixedPointMathLib.exp((elapsedTime * borrowRate / SECONDS_PER_YEAR).toInt256()) - DecimalMath.UNIT;
   }
 
   /**
    * @notice Calculates the current borrow rate as a linear equation
    * @param cash The balance of stablecoin for the cash asset
    * @param borrows The amount of borrows in the market
-   * @return The borrow rate percentage per block as a mantissa (scaled by BASE)
+   * @return The borrow rate percentage as a mantissa
    */
-  function getBorrowRate(uint cash, uint borrows) public view returns (uint) {
+  function getBorrowRate(uint cash, uint borrows) external view returns (uint) {
     uint util = getUtilRate(cash, borrows);
 
     if (util <= optimalUtil) {
@@ -113,7 +111,7 @@ contract InterestRateModel is Owned {
    * @notice Calculates the utilization rate of the market: `borrows / cash`
    * @param cash The balance of stablecoin for the cash asset
    * @param borrows The amount of borrows for the cash asset
-   * @return The utilization rate as a mantissa between [0, BASE]
+   * @return The utilization rate as a mantissa between
    */
   function getUtilRate(uint cash, uint borrows) public pure returns (uint) {
     // Utilization rate is 0 when there are no borrows

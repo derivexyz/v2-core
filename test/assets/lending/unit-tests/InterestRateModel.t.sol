@@ -32,8 +32,16 @@ contract UNIT_InterestRateModel is Test {
     uint rateMultipler = 0.2 * 1e18;
     uint highRateMultipler = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
-    
+
     rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+  }
+
+  function testSetNewParams(uint minRate, uint rateMultipler, uint highRate, uint optimalUtil) public {
+    rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
+    assertEq(rateModel.minRate(), minRate);
+    assertEq(rateModel.rateMultipler(), rateMultipler);
+    assertEq(rateModel.highRateMultipler(), highRate);
+    assertEq(rateModel.optimalUtil(), optimalUtil);
   }
 
   function testFuzzUtilizationRate(uint cash, uint borrows) public {
@@ -49,7 +57,7 @@ contract UNIT_InterestRateModel is Test {
     }
   }
 
-   function testFuzzBorrowRate(uint cash, uint borrows) public {
+  function testFuzzBorrowRate(uint cash, uint borrows) public {
     vm.assume(cash <= 10000000000000000000000000000 ether);
     vm.assume(cash >= borrows);
 
@@ -58,7 +66,7 @@ contract UNIT_InterestRateModel is Test {
     uint minRate = rateModel.minRate();
     uint lowSlope = rateModel.rateMultipler();
     uint borrowRate = rateModel.getBorrowRate(cash, borrows);
-    
+
     if (util <= opUtil) {
       uint lowRate = util.multiplyDecimal(lowSlope) + minRate;
       assertEq(borrowRate, lowRate);
@@ -74,13 +82,13 @@ contract UNIT_InterestRateModel is Test {
   function testFuzzBorrowRate(uint time, uint cash, uint borrows) public {
     vm.assume(cash <= 100000 ether);
     vm.assume(cash >= borrows);
-    vm.assume(time >= block.timestamp && time <= block.timestamp + rateModel.SECONDS_PER_YEAR() * 1000); 
+    vm.assume(time >= block.timestamp && time <= block.timestamp + rateModel.SECONDS_PER_YEAR() * 1000);
 
     uint borrowRate = rateModel.getBorrowRate(cash, borrows);
-    uint interestFactor = rateModel.getBorrowInterestFactor(time, cash, borrows);
-    uint calculatedRate = FixedPointMathLib.exp((time * borrowRate / rateModel.SECONDS_PER_YEAR()).toInt256()) - DecimalMath.UNIT;
+    uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
+    uint calculatedRate =
+      FixedPointMathLib.exp((time * borrowRate / rateModel.SECONDS_PER_YEAR()).toInt256()) - DecimalMath.UNIT;
 
     assertEq(interestFactor, calculatedRate);
   }
 }
-

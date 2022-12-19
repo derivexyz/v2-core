@@ -24,7 +24,7 @@ library DecimalMath {
     return amount * (10 ** (toDecimals - fromDecimals));
   }
 
-   /**
+  /**
    * @dev A unit factor is divided out after the product of x and y is evaluated,
    * so that product must be less than 2**256.
    * @return The result of multiplying x and y, interpreting the operands as fixed-point
