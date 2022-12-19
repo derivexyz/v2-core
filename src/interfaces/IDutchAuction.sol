@@ -27,7 +27,7 @@ interface IDutchAuction {
   }
 
   // can only be called by the manager and will initiate an auction
-  function startAuction(AuctionDetails memory auction) external returns(bytes32);
+  function startAuction(uint accountId) external returns(bytes32);
 
   // a user submits a bid for a particular auction
   function bid(uint auctionId, uint amount) external returns(uint);
