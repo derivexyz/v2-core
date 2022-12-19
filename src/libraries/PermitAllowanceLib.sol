@@ -10,13 +10,15 @@ import "src/interfaces/AccountStructs.sol";
  */
 library PermitAllowanceLib {
   // todo: update
-  bytes32 public constant _PERMIT_BATCH_TRANSFER_FROM_TYPEHASH = keccak256(
-    "PermitBatchTransferFrom(TokenPermissions[] permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
+  bytes32 public constant _PERMIT_ALLOWANCE_TYPEHASH = keccak256(
+    "PermitAllowance(address delegate,uint256 nonce,uint256 accountId,uint256 deadline,AssetAllowance[] assetAllowances,SubIdAllowance[] subIdAllowances)"
   );
 
-  bytes32 public constant _ASSET_ALLOWANCE_TYPEHASH = keccak256("AssetAllowance(address,uint256,uint256)");
+  bytes32 public constant _ASSET_ALLOWANCE_TYPEHASH =
+    keccak256("AssetAllowance(address delegate,uint256 positive,uint256 negative)");
 
-  bytes32 public constant _SUBID_ALLOWANCE_TYPEHASH = keccak256("SubIdAllowance(address,uint256,uint256,uint256)");
+  bytes32 public constant _SUBID_ALLOWANCE_TYPEHASH =
+    keccak256("SubIdAllowance(address delegate,uint256 subId,uint256 positive,uint256 negative)");
 
   function hash(AccountStructs.PermitAllowance memory permit) internal pure returns (bytes32) {
     uint assetPermits = permit.assetAllowances.length;
@@ -34,7 +36,7 @@ library PermitAllowanceLib {
 
     return keccak256(
       abi.encode(
-        _PERMIT_BATCH_TRANSFER_FROM_TYPEHASH,
+        _PERMIT_ALLOWANCE_TYPEHASH,
         permit.delegate,
         permit.nonce,
         permit.accountId,

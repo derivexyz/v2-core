@@ -202,18 +202,30 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
     _setSubIdAllowances(accountId, owner, delegate, allowances);
   }
 
-  function permit(PermitAllowance calldata allowancePermit, bytes calldata signature) external {}
+  /**
+   * todo: update natspec
+   * @dev adjust allowance by signature
+   * @param allowancePermit struct specifying accountId, delegator
+   * @param signature signature {V, R, S}
+   */
+  function permit(PermitAllowance calldata allowancePermit, bytes calldata signature) external {
+    _permit(allowancePermit, signature);
+  }
 
   function _permit(PermitAllowance calldata allowancePermit, bytes calldata signature) internal {
+    if (allowancePermit.deadline < block.timestamp) revert AC_SignatureExpired();
+
     // owner of the account, who should be the signer
     address owner = ownerOf(allowancePermit.accountId);
 
-    bytes32 hash = PermitAllowanceLib.hash(allowancePermit);
+    bytes32 structHash = PermitAllowanceLib.hash(allowancePermit);
 
-    // check signature
-    if (!SignatureChecker.isValidSignatureNow(owner, hash, signature)) revert AC_InvalidPermitSignature();
+    // check the signature is from the current owner
+    if (!SignatureChecker.isValidSignatureNow(owner, _hashTypedDataV4(structHash), signature)) {
+      revert AC_InvalidPermitSignature();
+    }
 
-    // consume nonce
+    // todo: consume nonce
 
     // update asset allowance
     _setAssetAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.assetAllowances);
@@ -536,6 +548,13 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
     return assetBalances;
   }
 
+  /**
+   * @dev get domain separator for signing
+   */
+  function domainSeparator() external view returns (bytes32) {
+    return _domainSeparatorV4();
+  }
+
   ////////////
   // Access //
   ////////////
@@ -563,6 +582,8 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
   error AC_TooManyTransfers();
 
   error AC_InvalidPermitSignature();
+
+  error AC_SignatureExpired();
 
   error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 
