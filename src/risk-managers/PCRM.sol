@@ -7,6 +7,9 @@ import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/assets/Lending.sol";
 import "src/assets/Option.sol";
+import "src/libraries/OptionEncoding.sol";
+import "src/libraries/PCRMSorting.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 
 /**
@@ -226,6 +229,22 @@ contract PCRM is IManager, Owned {
     view
     returns (ExpiryHolding[] memory expiryHoldings)
   {
+
+    for (uint i; i < assets.length; ++i) {
+      if (address(assets[i].asset) == address(option)) {
+        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
+
+        (uint expiryIndex) = PCRMSorting.addUniqueExpiry(
+          expiryHoldings, expiry, expiryHoldings.length
+        );
+
+        (uint strikeIndex) = PCRMSorting.addUniqueStrike(
+          expiryHoldings, expiryIndex, SafeCast.toUint64(strike), expiryHoldings[expiryIndex].strikes.length
+        );
+
+      }
+    }
+
     // todo: sort out each expiry / strike
     // todo: ignore the lendingAsset
     // todo: add limit to # of expiries and # of options
