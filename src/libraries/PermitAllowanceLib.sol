@@ -9,7 +9,7 @@ import "src/interfaces/AccountStructs.sol";
  * @notice hash function for PermitAllowance object
  */
 library PermitAllowanceLib {
-  // todo: update
+
   bytes32 public constant _PERMIT_ALLOWANCE_TYPEHASH = keccak256(
     "PermitAllowance(address delegate,uint256 nonce,uint256 accountId,uint256 deadline,AssetAllowance[] assetAllowances,SubIdAllowance[] subIdAllowances)"
   );
@@ -20,6 +20,12 @@ library PermitAllowanceLib {
   bytes32 public constant _SUBID_ALLOWANCE_TYPEHASH =
     keccak256("SubIdAllowance(address delegate,uint256 subId,uint256 positive,uint256 negative)");
 
+  /**
+   * @dev hash the permit struct
+   *      this function only hash the permit struct, needs to be combined with domain seperator to prevent replay attack
+   *      and also to be compliant to EIP712 standard
+   * @param permit permit struct to be hashed    
+   */
   function hash(AccountStructs.PermitAllowance memory permit) internal pure returns (bytes32) {
     uint assetPermits = permit.assetAllowances.length;
     uint subIdPermits = permit.subIdAllowances.length;
@@ -41,8 +47,8 @@ library PermitAllowanceLib {
         permit.nonce,
         permit.accountId,
         permit.deadline,
-        keccak256(abi.encodePacked(assetAllowancesHashes)),
-        keccak256(abi.encodePacked(subIdAllowancesHashes))
+        keccak256(abi.encode(assetAllowancesHashes)),
+        keccak256(abi.encode(subIdAllowancesHashes))
       )
     );
   }

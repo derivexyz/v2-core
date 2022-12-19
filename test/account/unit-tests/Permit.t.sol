@@ -40,6 +40,8 @@ contract UNIT_AccountPermit is Test {
     alice = address(0xaa);
     bob = address(0xbb);
 
+    vm.chainId(1);
+
     account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
 
     domainSeparator = account.domainSeparator();
@@ -156,6 +158,30 @@ contract UNIT_AccountPermit is Test {
     account.permit(permit, sig);
 
     vm.expectRevert(Account.AC_NonceTooLow.selector);
+    account.permit(permit, sig);
+  }
+
+  function testCannotReplayAttack() public {
+    uint96 subId = 1;
+    uint nonce = 1;
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
+    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
+    subIdAllowances[0] = AccountStructs.SubIdAllowance(asset, subId, positiveAmount, negativeAmount);
+
+    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+      delegate: alice,
+      nonce: nonce,
+      accountId: accountId,
+      deadline: block.timestamp + 1,
+      assetAllowances: assetAllowances,
+      subIdAllowances: subIdAllowances
+    });
+
+    bytes memory sig = _signPermit(privateKey, permit);
+
+    vm.chainId(31337);
+
+    vm.expectRevert(Account.AC_InvalidPermitSignature.selector);
     account.permit(permit, sig);
   }
 
