@@ -229,20 +229,21 @@ contract PCRM is IManager, Owned {
     view
     returns (ExpiryHolding[] memory expiryHoldings)
   {
-
+    // 1. create sorted [expiries][strikes] 2D array
     for (uint i; i < assets.length; ++i) {
       if (address(assets[i].asset) == address(option)) {
+        // decode subId
         (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
 
+        // add new expiry or strike to holdings if unique
         (uint expiryIndex) = PCRMSorting.addUniqueExpiry(
           expiryHoldings, expiry, expiryHoldings.length
         );
-
         (uint strikeIndex) = PCRMSorting.addUniqueStrike(
           expiryHoldings, expiryIndex, strike, expiryHoldings[expiryIndex].strikes.length
         );
 
-        // to save on memory expansion costs, limiting max balances to int64
+        // add call or put balance
         if (isCall) {
           expiryHoldings[expiryIndex].strikes[strikeIndex].calls += assets[i].balance;
         } else {
@@ -251,11 +252,10 @@ contract PCRM is IManager, Owned {
       }
     }
 
+    // 2. pair off all symmetric calls and puts into forwards
     PCRMSorting.filterForwards(expiryHoldings);
 
-    // todo: sort out each expiry / strike
-    // todo: ignore the lendingAsset
-    // todo: add limit to # of expiries and # of options
+    // todo [Josh]: add limit to # of expiries and # of options
   }
 
   //////////

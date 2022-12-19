@@ -21,22 +21,24 @@ library PCRMSorting {
     internal
     pure 
   {
+    PCRM.StrikeHolding[] memory strikes;
     for (uint i; i < expiryHoldings.length; i++) {
-      for (uint j; j < expiryHoldings[i].strikes.length; j++) {
-        (int newCalls, int newPuts, int newForwards) = _filterForwards(
-          expiryHoldings[i].strikes[j].calls,
-          expiryHoldings[i].strikes[j].puts,
-          expiryHoldings[i].strikes[j].forwards
+      strikes = expiryHoldings[i].strikes;
+      for (uint j; j < strikes.length; j++) {
+        (
+          strikes[j].calls,
+          strikes[j].puts,
+          strikes[j].forwards
+        ) = filterForwardsForStrike(
+          strikes[j].calls,
+          strikes[j].puts,
+          strikes[j].forwards
         );
-
-        expiryHoldings[i].strikes[j].calls = newCalls;
-        expiryHoldings[i].strikes[j].puts = newPuts;
-        expiryHoldings[i].strikes[j].forwards = newForwards;
       }
     }
   }
 
-  function _filterForwards(int calls, int puts, int forwards) 
+  function filterForwardsForStrike(int calls, int puts, int forwards) 
     internal
     pure
     returns (int newCalls, int newPuts, int newForwards) {
