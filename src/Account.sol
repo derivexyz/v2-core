@@ -42,6 +42,9 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
   /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
 
+  /// @dev user nonce for permit
+  mapping(address => uint) public nonce;
+
   ////////////
   // Events //
   ////////////
@@ -201,15 +204,19 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
   }
 
   /**
-   * todo: update natspec
-   * @dev adjust allowance by signature
-   * @param allowancePermit struct specifying accountId, delegator
-   * @param signature signature {V, R, S}
+   * @dev adjust allowance by owner signature
+   * @param allowancePermit struct specifying accountId, delegator and allowance detail
+   * @param signature ECDSA signature or EIP 1271 contract signature
    */
   function permit(PermitAllowance calldata allowancePermit, bytes calldata signature) external {
     _permit(allowancePermit, signature);
   }
 
+  /**
+   * @dev verify signature and update allowance mapping
+   * @param allowancePermit struct specifying accountId, delegator and allowance detail
+   * @param signature ECDSA signature or EIP 1271 contract signature
+   */
   function _permit(PermitAllowance calldata allowancePermit, bytes calldata signature) internal {
     if (allowancePermit.deadline < block.timestamp) revert AC_SignatureExpired();
 
@@ -223,7 +230,10 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
       revert AC_InvalidPermitSignature();
     }
 
-    // todo: consume nonce
+    // consume nonce
+    // todo: update to un-ordered nonce system like Permit2?
+    if (allowancePermit.nonce <= nonce[owner]) revert AC_NonceTooLow();
+    nonce[owner] = allowancePermit.nonce;
 
     // update asset allowance
     _setAssetAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.assetAllowances);
@@ -582,6 +592,9 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
   error AC_InvalidPermitSignature();
 
   error AC_SignatureExpired();
+
+  /// @dev nonce too low or already used
+  error AC_NonceTooLow();
 
   error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
 

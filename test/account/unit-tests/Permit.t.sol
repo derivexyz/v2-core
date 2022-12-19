@@ -135,6 +135,35 @@ contract UNIT_AccountPermit is Test {
     assertEq(account.negativeSubIdAllowance(accountId, pkOwner, asset, subId, alice), negativeAmount);
   }
 
+  function testCannotReuseSignature() public {
+    uint96 subId = 1;
+    uint nonce = 1;
+    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
+    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
+    subIdAllowances[0] = AccountStructs.SubIdAllowance(asset, subId, positiveAmount, negativeAmount);
+
+    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+      delegate: alice,
+      nonce: nonce,
+      accountId: accountId,
+      deadline: block.timestamp + 1,
+      assetAllowances: assetAllowances,
+      subIdAllowances: subIdAllowances
+    });
+
+    bytes memory sig = _signPermit(privateKey, permit);
+    // first permit should pass
+    account.permit(permit, sig);
+
+    vm.expectRevert(Account.AC_NonceTooLow.selector);
+    account.permit(permit, sig);
+  }
+
+  function testDomainSeparator() public view {
+    // just for coverage for now
+    account.domainSeparator();
+  }
+
   function _signPermit(uint pk, AccountStructs.PermitAllowance memory permit) internal view returns (bytes memory) {
     bytes32 structHash = PermitAllowanceLib.hash(permit);
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, ECDSA.toTypedDataHash(domainSeparator, structHash));
