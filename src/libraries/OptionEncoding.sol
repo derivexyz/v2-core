@@ -8,8 +8,8 @@ import "forge-std/console2.sol";
  * @title OptionEncoding
  * @author Lyra
  * @notice Util functions for encoding / decoding IDs into option details.
- *         [ 32 bits ] [ 63 bits ] [ 1 bit ] = uint96 subId
- *            expiry     strike      isCall
+ *         [ 1 bit ] [ 63 bits ] [ 32 bit ] = uint96 subId
+ *           isCall     strike     expiry
  *         Can support:
  *         - expiries: up to year 2106
  *         - strikes: down to 8 decimal points and up to $90B
