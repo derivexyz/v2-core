@@ -72,28 +72,15 @@ contract UNIT_InterestRateModel is Test {
   }
 
   function testFuzzBorrowRate(uint time, uint cash, uint borrows) public {
-  // function testFuzzBorrowRate() public {
     vm.assume(cash <= 100000 ether);
     vm.assume(cash >= borrows);
-    vm.assume(time >= block.timestamp); 
-    // uint time = block.timestamp;
-    // uint cash = 3;
-    // uint borrows = 0;
+    vm.assume(time >= block.timestamp && time <= block.timestamp + rateModel.SECONDS_PER_YEAR() * 1000); 
 
-   uint borrowRate = rateModel.getBorrowRate(cash, borrows);
-   console.log("borrowRate", borrowRate);
+    uint borrowRate = rateModel.getBorrowRate(cash, borrows);
+    uint interestFactor = rateModel.getBorrowInterestFactor(time, cash, borrows);
+    uint calculatedRate = FixedPointMathLib.exp((time * borrowRate / rateModel.SECONDS_PER_YEAR()).toInt256()) - DecimalMath.UNIT;
 
-  int test = (time * borrowRate / rateModel.SECONDS_PER_YEAR()).toInt256();
-  console.log("test", uint(test));
-  uint exp = FixedPointMathLib.exp(test);
-  console.log("exp", exp);
-
-   uint interestFactor = rateModel.getBorrowInterestFactor(time, cash, borrows);
-   console.log("interestFactor", interestFactor);
-   uint calculatedRate = FixedPointMathLib.exp((time * borrowRate / rateModel.SECONDS_PER_YEAR()).toInt256()) - DecimalMath.UNIT;
-   assertEq(interestFactor, calculatedRate);
+    assertEq(interestFactor, calculatedRate);
   }
-
-
 }
 

@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "openzeppelin/token/ERC20/IERC20.sol";
-import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../libraries/DecimalMath.sol";
 import "../libraries/FixedPointMathLib.sol";
-import "../interfaces/IAsset.sol";
-import "../interfaces/IAccount.sol";
 
 /**
  * @title Interest Rate Model
