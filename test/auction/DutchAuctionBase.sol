@@ -13,8 +13,7 @@ import "../../src/liquidation/DutchAuction.sol";
 import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
 
-// TOOD: make this a script to set up the enviroment
-contract DutchAuctionBase is Script {
+contract DutchAuctionBase is Test {
   uint ownAcc;
   uint expiry;
   Account account;
@@ -27,13 +26,11 @@ contract DutchAuctionBase is Script {
   DutchAuction dutchAuction;
 
   function run() external {
-    vm.startBroadcast();
-
+    console.log('gets to deploy mock system');
     deployMockSystem();
-
+    console.log('mock suystem deploys mock');
     setupAccounts(500);
   }
-
 
   function setupAccounts(uint amount) public {
     // create 1 account for EOA
@@ -69,7 +66,7 @@ contract DutchAuctionBase is Script {
 
     /* Risk Manager */
     manager = new MockManager(address(account));
-
+    console.log('gets to here');
     /*
      Feed for Spot*/
     feed = new MockFeed();
