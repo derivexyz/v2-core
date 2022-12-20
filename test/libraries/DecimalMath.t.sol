@@ -26,12 +26,12 @@ contract DecimalMathTester {
   }
 
   function multiplyDecimal(uint x, uint y) external pure returns (uint) {
-    uint res = DecimalMath.multiplyDecimal(x,y);
+    uint res = DecimalMath.multiplyDecimal(x, y);
     return res;
   }
 
   function divideDecimal(uint x, uint y) external pure returns (uint) {
-    uint res = DecimalMath.divideDecimal(x,y);
+    uint res = DecimalMath.divideDecimal(x, y);
     return res;
   }
 }
@@ -92,14 +92,13 @@ contract DecimalMathTest is Test {
   function testFuzzMultiplyDecimal(uint x, uint y) public {
     vm.assume(x < 1e42);
     vm.assume(y < 1e42);
-    assertEq(tester.multiplyDecimal(x,y), (x*y)/ 1e18);
+    assertEq(tester.multiplyDecimal(x, y), (x * y) / 1e18);
   }
 
   function testFuzzDivideDecimal(uint x, uint y) public {
     vm.assume(x < 1e42);
     vm.assume(y < 1e42);
     vm.assume(y != 0);
-    assertEq(tester.divideDecimal(x,y), (x*1e18)/ y);
+    assertEq(tester.divideDecimal(x, y), (x * 1e18) / y);
   }
-
 }
