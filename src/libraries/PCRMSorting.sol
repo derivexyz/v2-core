@@ -88,20 +88,21 @@ library PCRMSorting {
   }
 
   function addUniqueStrike(
-    PCRM.ExpiryHolding memory expiryHolding, 
-    uint newStrike 
+    PCRM.StrikeHolding[] memory strikeHoldings, 
+    uint newStrike ,
+    uint arrayLen
 )
     internal
-    view
+    pure
     returns (uint, uint)
   {
     (uint strikeIndex, bool found) = findInArray(
-      expiryHolding.strikes, newStrike, expiryHolding.numStrikesHeld
+      strikeHoldings, newStrike, arrayLen
     );
     if (found == false) {
-      strikeIndex = expiryHolding.numStrikesHeld++;
+      strikeIndex = arrayLen++;
       unchecked {
-        expiryHolding.strikes[strikeIndex] = PCRM.StrikeHolding({
+        strikeHoldings[strikeIndex] = PCRM.StrikeHolding({
           strike: newStrike,
           calls: 0,
           puts: 0,
@@ -109,7 +110,7 @@ library PCRMSorting {
         });
       }
     }
-    return (strikeIndex, expiryHolding.numStrikesHeld);
+    return (strikeIndex, arrayLen);
   }
 
   // todo [Josh]: change to binary search

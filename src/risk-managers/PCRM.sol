@@ -256,8 +256,8 @@ contract PCRM is IManager, Owned {
         );
 
 
-        (strikeIndex, ) = PCRMSorting.addUniqueStrike(
-          expiryHoldings[expiryIndex], strike
+        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMSorting.addUniqueStrike(
+          expiryHoldings[expiryIndex].strikes, strike, expiryHoldings[expiryIndex].numStrikesHeld
         );
 
         // add call or put balance

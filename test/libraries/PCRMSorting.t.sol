@@ -22,7 +22,7 @@ contract PCRMSortingTester {
     PCRM.ExpiryHolding[] memory expiryHoldings, 
     uint newExpiry, 
     uint arrayLen, 
-    uint maxStrikes) external view returns (uint, uint) {
+    uint maxStrikes) external pure returns (uint, uint) {
     (uint expiryIndex, uint newArrayLen) = PCRMSorting.addUniqueExpiry(
       expiryHoldings, 
       newExpiry, 
@@ -43,21 +43,22 @@ contract PCRMSortingTester {
   }
 
   function addUniqueStrike(
-    PCRM.ExpiryHolding memory expiryHolding, 
-    uint newStrike
+    PCRM.StrikeHolding[] memory strikeHoldings, 
+    uint newStrike,
+    uint numStrikesHeld
   ) external view returns (uint, uint) {
-    uint oldArrayLen = expiryHolding.numStrikesHeld;
     (uint strikeIndex, uint newArrayLen) = PCRMSorting.addUniqueStrike(
-      expiryHolding, 
-      newStrike
+      strikeHoldings, 
+      newStrike,
+      numStrikesHeld
     );
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
-    if (expiryHolding.strikes[strikeIndex].strike != newStrike) {
+    if (strikeHoldings[strikeIndex].strike != newStrike) {
       revert("invalid strike price");
     } 
 
-    if (newArrayLen > oldArrayLen && strikeIndex != oldArrayLen) {
+    if (newArrayLen > numStrikesHeld && strikeIndex != numStrikesHeld) {
       revert("invalid strike index");
     }
 
@@ -154,7 +155,7 @@ contract PCRMSortingTest is Test {
 
   function testAddUniqueStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0], 1250e18);
+    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0].strikes, 1250e18, 2);
 
     assertEq(strikeIndex, 2);
     assertEq(newArrayLen, 3);
@@ -162,7 +163,7 @@ contract PCRMSortingTest is Test {
 
   function testAddExistingStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0], 10e18);
+    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0].strikes, 10e18, 2);
 
     assertEq(strikeIndex, 0);
     assertEq(newArrayLen, 2);
@@ -171,7 +172,7 @@ contract PCRMSortingTest is Test {
   //////////
   // Util //
   //////////
-  function _getDefaultHoldings() public returns (PCRM.ExpiryHolding[] memory) {
+  function _getDefaultHoldings() public view returns (PCRM.ExpiryHolding[] memory) {
     // expiry 1
     PCRM.StrikeHolding[] memory strikeHoldings_1 = new PCRM.StrikeHolding[](pcrm.MAX_STRIKES());
     strikeHoldings_1[0] = PCRM.StrikeHolding({
