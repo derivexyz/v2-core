@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
-import "../../../../src/assets/Lending.sol";
+import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/Account.sol";
 
 /**
@@ -16,7 +16,7 @@ import "../../../../src/Account.sol";
  * withdraw
  */
 contract UNIT_CashAssetTotalSupplyBorrow is Test {
-  Lending lending;
+  CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
   Account account;
@@ -32,16 +32,16 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    lending = new Lending(address(account), address(usdc));
+    cashAsset = new CashAsset(address(account), address(usdc));
 
-    lending.setWhitelistManager(address(manager), true);
+    cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 18 decimals
     usdc.mint(address(this), depositedAmount);
-    usdc.approve(address(lending), type(uint).max);
+    usdc.approve(address(cashAsset), type(uint).max);
 
     accountId = account.createAccount(address(this), manager);
-    lending.deposit(accountId, depositedAmount);
+    cashAsset.deposit(accountId, depositedAmount);
   }
 
   /* --------------------- *
@@ -53,8 +53,8 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     // both totalSupply and totalBorrow stays the same
     uint trasnsferAmount = depositedAmount / 2;
 
-    uint totalSupplyBefore = lending.totalSupply();
-    uint totalBorrowBefore = lending.totalBorrow();
+    uint totalSupplyBefore = cashAsset.totalSupply();
+    uint totalBorrowBefore = cashAsset.totalBorrow();
 
     uint emptyAccount = account.createAccount(address(this), manager);
 
@@ -62,15 +62,15 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: emptyAccount,
-      asset: IAsset(lending),
+      asset: IAsset(cashAsset),
       subId: 0,
       amount: int(trasnsferAmount),
       assetData: bytes32(0)
     });
     account.submitTransfer(transfer, "");
 
-    uint totalBorrowAfter = lending.totalBorrow();
-    uint totalSupplyAfter = lending.totalSupply();
+    uint totalBorrowAfter = cashAsset.totalBorrow();
+    uint totalSupplyAfter = cashAsset.totalSupply();
 
     // total supply and total borrow is the same
     assertEq(totalSupplyBefore, totalSupplyAfter);
@@ -85,8 +85,8 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     uint borrowAccount = account.createAccount(address(this), manager);
 
-    uint totalSupplyBefore = lending.totalSupply();
-    uint totalBorrowBefore = lending.totalBorrow();
+    uint totalSupplyBefore = cashAsset.totalSupply();
+    uint totalBorrowBefore = cashAsset.totalBorrow();
 
     uint emptyAccount = account.createAccount(address(this), manager);
 
@@ -94,15 +94,15 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
       fromAcc: borrowAccount,
       toAcc: emptyAccount,
-      asset: IAsset(lending),
+      asset: IAsset(cashAsset),
       subId: 0,
       amount: int(trasnsferAmount),
       assetData: bytes32(0)
     });
     account.submitTransfer(transfer, "");
 
-    uint totalBorrowAfter = lending.totalBorrow();
-    uint totalSupplyAfter = lending.totalSupply();
+    uint totalBorrowAfter = cashAsset.totalBorrow();
+    uint totalSupplyAfter = cashAsset.totalSupply();
 
     // total supply and total borrow is the same
     assertEq(totalSupplyBefore + trasnsferAmount, totalSupplyAfter);
@@ -119,10 +119,10 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     // borrow some amount, make both totalSupply and totalBorrow none-negative
     uint borrowAccount = account.createAccount(address(this), manager);
-    lending.withdraw(borrowAccount, amountToBorrow, address(this));
+    cashAsset.withdraw(borrowAccount, amountToBorrow, address(this));
 
-    uint totalSupplyBefore = lending.totalSupply();
-    uint totalBorrowBefore = lending.totalBorrow();
+    uint totalSupplyBefore = cashAsset.totalSupply();
+    uint totalBorrowBefore = cashAsset.totalBorrow();
 
     uint emptyAccount = account.createAccount(address(this), manager);
 
@@ -130,15 +130,15 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: emptyAccount,
-      asset: IAsset(lending),
+      asset: IAsset(cashAsset),
       subId: 0,
       amount: int(trasnsferAmount),
       assetData: bytes32(0)
     });
     account.submitTransfer(transfer, "");
 
-    uint totalBorrowAfter = lending.totalBorrow();
-    uint totalSupplyAfter = lending.totalSupply();
+    uint totalBorrowAfter = cashAsset.totalBorrow();
+    uint totalSupplyAfter = cashAsset.totalSupply();
 
     // total supply and total borrow is the same
     assertEq(totalSupplyBefore, totalSupplyAfter);
@@ -152,24 +152,24 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     // borrow some amount, make both totalSupply and totalBorrow none-negative
     uint borrowAccount = account.createAccount(address(this), manager);
-    lending.withdraw(borrowAccount, amountToBorrow, address(this));
+    cashAsset.withdraw(borrowAccount, amountToBorrow, address(this));
 
-    uint totalSupplyBefore = lending.totalSupply();
-    uint totalBorrowBefore = lending.totalBorrow();
+    uint totalSupplyBefore = cashAsset.totalSupply();
+    uint totalBorrowBefore = cashAsset.totalBorrow();
 
     // transfer cash to an empty account.
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: borrowAccount,
-      asset: IAsset(lending),
+      asset: IAsset(cashAsset),
       subId: 0,
       amount: anyAmount, // it can be moving positive and negative witin accounts
       assetData: bytes32(0)
     });
     account.submitTransfer(transfer, "");
 
-    uint totalBorrowAfter = lending.totalBorrow();
-    uint totalSupplyAfter = lending.totalSupply();
+    uint totalBorrowAfter = cashAsset.totalBorrow();
+    uint totalSupplyAfter = cashAsset.totalSupply();
 
     // invariant: balanceOf = totalSupply - totalBorrow holds
     assertEq(totalSupplyBefore - totalBorrowBefore, totalSupplyAfter - totalBorrowAfter);
@@ -183,11 +183,11 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     // deposit will increase supply if the account balance is > 0 after deposit.
     vm.assume(depositAmount <= 10000 ether);
 
-    uint preSupply = lending.totalSupply();
+    uint preSupply = cashAsset.totalSupply();
 
     usdc.mint(address(this), depositAmount);
-    lending.deposit(accountId, depositAmount);
-    uint postSupply = lending.totalSupply();
+    cashAsset.deposit(accountId, depositAmount);
+    uint postSupply = cashAsset.totalSupply();
     assertEq(postSupply - preSupply, depositAmount);
   }
 
@@ -197,19 +197,19 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     vm.assume(depositAmount <= amountToBorrow);
 
     uint newAccount = account.createAccount(address(this), manager);
-    uint totalBorrow = lending.totalBorrow();
+    uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
     uint usdcBefore = usdc.balanceOf(address(this));
-    lending.withdraw(newAccount, amountToBorrow, address(this));
+    cashAsset.withdraw(newAccount, amountToBorrow, address(this));
     uint usdcAfter = usdc.balanceOf(address(this));
 
     assertEq(usdcAfter - usdcBefore, amountToBorrow);
-    assertEq(lending.totalBorrow(), amountToBorrow);
+    assertEq(cashAsset.totalBorrow(), amountToBorrow);
 
-    lending.deposit(newAccount, depositAmount);
+    cashAsset.deposit(newAccount, depositAmount);
 
-    totalBorrow = lending.totalBorrow();
+    totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, amountToBorrow - depositAmount);
   }
 
@@ -222,24 +222,24 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     uint newAccount = account.createAccount(address(this), manager);
 
     uint usdcBefore = usdc.balanceOf(address(this));
-    lending.withdraw(newAccount, withdrawAmount, address(this));
+    cashAsset.withdraw(newAccount, withdrawAmount, address(this));
     uint usdcAfter = usdc.balanceOf(address(this));
 
     assertEq(usdcAfter - usdcBefore, withdrawAmount);
-    assertEq(lending.totalBorrow(), withdrawAmount);
+    assertEq(cashAsset.totalBorrow(), withdrawAmount);
 
     // test state after deposit
 
-    uint totalBorrowBefore = lending.totalBorrow();
-    uint totalSupplyBefore = lending.totalSupply();
+    uint totalBorrowBefore = cashAsset.totalBorrow();
+    uint totalSupplyBefore = cashAsset.totalSupply();
 
     usdc.mint(address(this), depositAmount);
-    lending.deposit(newAccount, depositAmount);
+    cashAsset.deposit(newAccount, depositAmount);
 
-    uint totalSupplyAfter = lending.totalSupply();
-    uint totalBorrowAfter = lending.totalBorrow();
+    uint totalSupplyAfter = cashAsset.totalSupply();
+    uint totalBorrowAfter = cashAsset.totalBorrow();
 
-    int balance = account.getBalance(newAccount, lending, 0);
+    int balance = account.getBalance(newAccount, cashAsset, 0);
     assertEq(balance, int(depositAmount) - int(withdrawAmount));
 
     // total supply is increased by amount above 0
@@ -257,9 +257,9 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     // withdraw will decrease totalSupply if account started with positive balance
     vm.assume(withdrawAmount <= 10000 ether);
 
-    uint beforeWithdraw = lending.totalSupply();
-    lending.withdraw(accountId, withdrawAmount, address(this));
-    uint afterWithdraw = lending.totalSupply();
+    uint beforeWithdraw = cashAsset.totalSupply();
+    cashAsset.withdraw(accountId, withdrawAmount, address(this));
+    uint afterWithdraw = cashAsset.totalSupply();
     assertEq(beforeWithdraw - withdrawAmount, afterWithdraw);
   }
 
@@ -268,14 +268,14 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     vm.assume(amountToBorrow <= 10000 ether);
 
     uint emptyAccount = account.createAccount(address(this), manager);
-    uint totalBorrow = lending.totalBorrow();
+    uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
     uint usdcBefore = usdc.balanceOf(address(this));
-    lending.withdraw(emptyAccount, amountToBorrow, address(this));
+    cashAsset.withdraw(emptyAccount, amountToBorrow, address(this));
     uint usdcAfter = usdc.balanceOf(address(this));
 
-    totalBorrow = lending.totalBorrow();
+    totalBorrow = cashAsset.totalBorrow();
     assertEq(usdcAfter - usdcBefore, amountToBorrow);
     assertEq(totalBorrow, amountToBorrow);
   }
@@ -288,14 +288,14 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     usdc.mint(address(this), depositedAmount);
     uint newAccount = account.createAccount(address(this), manager);
-    lending.deposit(newAccount, depositAmount);
+    cashAsset.deposit(newAccount, depositAmount);
 
     // test after withdraw
 
-    lending.withdraw(newAccount, withdrawAmount, address(this));
-    uint totalBorrow = lending.totalBorrow();
+    cashAsset.withdraw(newAccount, withdrawAmount, address(this));
+    uint totalBorrow = cashAsset.totalBorrow();
 
-    int balance = account.getBalance(newAccount, lending, 0);
+    int balance = account.getBalance(newAccount, cashAsset, 0);
     assertEq(balance, int(depositAmount) - int(withdrawAmount));
     assertEq(totalBorrow, withdrawAmount - depositAmount);
   }
