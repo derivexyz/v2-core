@@ -34,7 +34,7 @@ contract UNIT_InterestRateModel is Test {
     assertEq(rateModel.optimalUtil(), optimalUtil);
   }
 
-  function testSetMinRate() public {
+  function testCannotSetMinRate() public {
     uint minRate = 11e18;
     uint rateMultipler = 0;
     uint highRate = 0;
@@ -44,7 +44,7 @@ contract UNIT_InterestRateModel is Test {
     rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
   }
 
-  function testSetRateMultipler() public {
+  function testCannotSetRateMultipler() public {
     uint minRate = 0;
     uint rateMultipler = 11e18;
     uint highRate = 0;
@@ -54,7 +54,7 @@ contract UNIT_InterestRateModel is Test {
     rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
   }
 
-  function testSetHigherRate() public {
+  function testCannotSetHigherRate() public {
     uint minRate = 0;
     uint rateMultipler = 0;
     uint highRate = 11e18;
@@ -64,7 +64,7 @@ contract UNIT_InterestRateModel is Test {
     rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
   }
 
-  function testSetOptimalUtil() public {
+  function testCannotSetOptimalUtil() public {
     uint minRate = 0;
     uint rateMultipler = 0;
     uint highRate = 0;
