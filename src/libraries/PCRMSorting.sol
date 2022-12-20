@@ -9,7 +9,7 @@ import "forge-std/console2.sol";
 /**
  * @title PCRMSorting
  * @author Lyra
- * @notice util functions for sorting PCRM account holdings
+ * @notice util functions for sorting / filtering PCRM account holdings
  */
 
 library PCRMSorting {
@@ -18,6 +18,11 @@ library PCRMSorting {
   // Filtering //
   ///////////////
 
+  /**
+   * @notice Take in account holdings and return updated holdings with filtered forwards
+   * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
+   * @param expiryHoldings All account option holdings. Refer to PCRM.sol
+   */
   function filterForwards(PCRM.ExpiryHolding[] memory expiryHoldings) 
     internal
     pure 
@@ -39,6 +44,16 @@ library PCRMSorting {
     }
   }
 
+  /**
+   * @notice Pairs off calls and puts of the same strike into forwards
+   *         Forward = Call - Put. Positive sign counts as a Long Forward
+   * @param calls # of call contracts
+   * @param puts # of put contracts
+   * @param forwards # of forward contracts
+   * @return newCalls # of call contracts post pair-off
+   * @return newPuts # of put contracts post pair-off
+   * @return newForwards # of forward contracts post pair-off
+   */
   function filterForwardsForStrike(int calls, int puts, int forwards) 
     internal
     pure
@@ -59,6 +74,15 @@ library PCRMSorting {
   // Sorting //
   /////////////
 
+  /**
+   * @notice Adds new expiry struct if not present in holdings
+   * @param expiryHoldings All account option holdings. Refer to PCRM.sol
+   * @param newExpiry epoch time of new expiry
+   * @param arrayLen # of expiries already active
+   * @param maxStrikes max # of strikes allowed per expiry
+   * @return expiryIndex index of existing or added expiry struct
+   * @return newArrayLen new # of expiries post addition
+   */
   function addUniqueExpiry(
     PCRM.ExpiryHolding[] memory expiryHoldings, 
     uint newExpiry, 
@@ -87,6 +111,14 @@ library PCRMSorting {
     return (expiryIndex, arrayLen);
   }
 
+  /**
+   * @notice Adds new strike struct if not present in holdings
+   * @param strikeHoldings All holdings for a given expiry. Refer to PCRM.sol
+   * @param newStrike strike price
+   * @param arrayLen # of strikes already active
+   * @return strikeIndex index of existing or added strike struct
+   * @return newArrayLen new # of strikes post addition
+   */
   function addUniqueStrike(
     PCRM.StrikeHolding[] memory strikeHoldings, 
     uint newStrike ,
@@ -113,8 +145,16 @@ library PCRMSorting {
     return (strikeIndex, arrayLen);
   }
 
-  // todo [Josh]: change to binary search
+  // todo [Josh]: maybe change to binary search
 
+  /**
+   * @dev return if an expiry exists in an array of expiry holdings
+   * @param expiryHoldings All account option holdings. Refer to PCRM.sol
+   * @param expiryToFind  expiry to find
+   * @param arrayLen # of expiries already active
+   * @return index index of the found element. 0 if not found
+   * @return found true if found
+   */
   function findInArray(PCRM.ExpiryHolding[] memory expiryHoldings, uint expiryToFind, uint arrayLen) 
     internal 
     pure 
@@ -129,7 +169,14 @@ library PCRMSorting {
     }
   }
 
-
+  /**
+   * @dev return if an expiry exists in an array of expiry holdings
+   * @param strikeHoldings All holdings for a given expiry. Refer to PCRM.sol
+   * @param strikeToFind  strike to find
+   * @param arrayLen # of strikes already active
+   * @return index index of the found element. 0 if not found
+   * @return found true if found
+   */
   function findInArray(PCRM.StrikeHolding[] memory strikeHoldings, uint strikeToFind, uint arrayLen) 
     internal 
     pure 
