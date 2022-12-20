@@ -75,12 +75,14 @@ interface AccountStructs {
     address delegate;
     // nonce for each signer
     uint nonce;
-    // access are granted on account bases. A signer can have multiple accounts and it cannot be used
-    // to permit another account
+    // access are granted on account bases. A signer can have multiple accounts and the signature cannot be
+    // applied to permit another account
     uint accountId;
     // deadline on the permit signature
     uint deadline;
+    // array of "asset allowance" to set
     AssetAllowance[] assetAllowances;
+    // array of "subid allowance" to set
     SubIdAllowance[] subIdAllowances;
   }
 

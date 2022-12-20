@@ -231,7 +231,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
     }
 
     // consume nonce
-    // todo: update to un-ordered nonce system like Permit2?
+    // todo [Anton]: update to un-ordered nonce system like Permit2?
     if (allowancePermit.nonce <= nonce[owner]) revert AC_NonceTooLow();
     nonce[owner] = allowancePermit.nonce;
 
@@ -251,7 +251,63 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to managers of both accounts
    */
-  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external {
+  function submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData) external {
+    _submitTransfer(assetTransfer, managerData);
+  }
+
+  /**
+   * @notice Batch several transfers
+   *         Gas efficient when modifying the same account several times,
+   *         as _managerHook() is only performed once per account
+   * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData data passed to every manager involved in trade
+   */
+  function submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData) external {
+    _submitTransfers(assetTransfers, managerData);
+  }
+
+  /**
+   * @notice Permit and transfer in a single transaction
+   * @param assetTransfer Detailed struct on transfer (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData Data passed to managers of both accounts
+   * @param allowancePermit Detailed struct for permit (accountId, delegator allowance detail)
+   * @param signature ECDSA signature or EIP 1271 contract signature
+   */
+  function permitAndSubmitTransfer(
+    AssetTransfer calldata assetTransfer,
+    bytes calldata managerData,
+    PermitAllowance calldata allowancePermit,
+    bytes calldata signature
+  ) external {
+    _permit(allowancePermit, signature);
+    _submitTransfer(assetTransfer, managerData);
+  }
+
+  /**
+   * @notice Batch multiple permits and transfers
+   * @param assetTransfers Array of transfers to perform
+   * @param managerData Data passed to managers of both accounts
+   * @param allowancePermits Array of permit struct (accountId, delegator allowance detail)
+   * @param signatures Array of permit signatures
+   */
+  function permitAndSubmitTransfers(
+    AssetTransfer[] calldata assetTransfers,
+    bytes calldata managerData,
+    PermitAllowance[] calldata allowancePermits,
+    bytes[] calldata signatures
+  ) external {
+    for (uint i; i < allowancePermits.length; ++i) {
+      _permit(allowancePermits[i], signatures[i]);
+    }
+    _submitTransfers(assetTransfers, managerData);
+  }
+
+  /**
+   * @notice Transfer an amount from one account to another for a specific (asset, subId)
+   * @param assetTransfer Detail struct (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData Data passed to managers of both accounts
+   */
+  function _submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData) internal {
     (int fromDelta, int toDelta) = _transferAsset(assetTransfer);
     _managerHook(
       assetTransfer.fromAcc,
@@ -271,16 +327,17 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @notice Batch several transfers
    *         Gas efficient when modifying the same account several times,
    *         as _managerHook() is only performed once per account
-   * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
-   * @param managerData data passed to every manager involved in trade
+   * @param assetTransfers Array of (fromAcc, toAcc, asset, subId, amount)
+   * @param managerData Data passed to every manager involved in trade
    */
-  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external {
+  function _submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData) internal {
     uint transfersLen = assetTransfers.length;
 
-    /* Keep track of seen accounts to assess risk once per account */
+    // keep track of seen accounts to assess risk once per account
     uint[] memory seenAccounts = new uint[](transfersLen * 2);
 
-    // seen index => delta[]
+    // keep track of the array of "asset delta" for each account
+    // assetDeltas[i] stores asset delta array for seenAccounts[i]
     AssetDeltaArrayCache[] memory assetDeltas = new AssetDeltaArrayCache[](transfersLen * 2);
 
     uint nextSeenId = 0;
@@ -314,7 +371,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @dev    update the allowance and balanceAndOrder storage
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    */
-  function _transferAsset(AssetTransfer memory assetTransfer) internal returns (int fromDelta, int toDelta) {
+  function _transferAsset(AssetTransfer calldata assetTransfer) internal returns (int fromDelta, int toDelta) {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
       revert AC_CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
     }
