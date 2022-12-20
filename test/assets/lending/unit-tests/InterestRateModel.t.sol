@@ -89,6 +89,15 @@ contract UNIT_InterestRateModel is Test {
     assertEq(highRate, 0.26 * 1e18);
   }
 
+  function testNoBorrows() public {
+    uint supply = 10000;
+    uint borrows = 0;
+
+    // Borrow rate should be minRate if util is 0
+    uint rate = rateModel.getBorrowRate(supply, borrows);
+    assertEq(rate, rateModel.minRate());
+  }
+
   function testFuzzUtilizationRate(uint supply, uint borrows) public {
     vm.assume(supply <= 10000000000000000000000000000 ether);
     vm.assume(supply >= borrows);
