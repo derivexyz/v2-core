@@ -49,15 +49,16 @@ library PCRMSorting {
     returns (int newCalls, int newPuts, int newForwards)
   {
     // if calls and puts have opposing signs, forwards are present
-    int additionalFwds;
     if (calls * puts < 0) {
       int fwdSign = (calls > 0) ? int(1) : -1;
-      additionalFwds = int(IntLib.absMin(calls, puts)) * fwdSign;
+      int additionalFwds = int(IntLib.absMin(calls, puts)) * fwdSign;
+      return (
+        calls - additionalFwds,
+        puts + additionalFwds,
+        forwards + additionalFwds
+      );
     }
-
-    newCalls = calls - additionalFwds;
-    newPuts = puts + additionalFwds;
-    newForwards = forwards + additionalFwds;
+    return (calls, puts, forwards);
   }
 
   /////////////

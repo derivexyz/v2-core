@@ -12,8 +12,6 @@ import "src/libraries/PCRMSorting.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title PartialCollateralRiskManager
  * @author Lyra
