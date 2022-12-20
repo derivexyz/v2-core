@@ -13,22 +13,23 @@ import "forge-std/console2.sol";
  */
 
 library PCRMSorting {
-  ///////////////
-  // Filtering //
-  ///////////////
+  
+  //////////////
+  // Forwards //
+  //////////////
 
   /**
-   * @notice Take in account holdings and return updated holdings with filtered forwards
+   * @notice Take in account holdings and return updated holdings with forwards
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
    * @param expiryHoldings All account option holdings. Refer to PCRM.sol
    */
-  function filterForwards(PCRM.ExpiryHolding[] memory expiryHoldings) internal pure {
+  function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings) internal pure {
     PCRM.StrikeHolding[] memory strikes;
     for (uint i; i < expiryHoldings.length; i++) {
       strikes = expiryHoldings[i].strikes;
       for (uint j; j < strikes.length; j++) {
         (strikes[j].calls, strikes[j].puts, strikes[j].forwards) =
-          filterForwardsForStrike(strikes[j].calls, strikes[j].puts, strikes[j].forwards);
+          findForwards(strikes[j].calls, strikes[j].puts, strikes[j].forwards);
       }
     }
   }
@@ -43,7 +44,7 @@ library PCRMSorting {
    * @return newPuts # of put contracts post pair-off
    * @return newForwards # of forward contracts post pair-off
    */
-  function filterForwardsForStrike(int calls, int puts, int forwards)
+  function findForwards(int calls, int puts, int forwards)
     internal
     pure
     returns (int newCalls, int newPuts, int newForwards)
@@ -82,7 +83,7 @@ library PCRMSorting {
     if (found == false) {
       expiryIndex = arrayLen++;
       unchecked {
-        expiryHoldings[arrayLen] =
+        expiryHoldings[expiryIndex] =
           PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
       }
     }

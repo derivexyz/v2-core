@@ -7,21 +7,21 @@ import "forge-std/console2.sol";
 import "../../src/libraries/PCRMSorting.sol";
 
 contract PCRMSortingTester {
-  function filterForwards(PCRM.ExpiryHolding[] memory expiryHoldings)
+  function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings)
     external
     pure
     returns (PCRM.ExpiryHolding[] memory)
   {
-    PCRMSorting.filterForwards(expiryHoldings);
+    PCRMSorting.updateForwards(expiryHoldings);
     return expiryHoldings;
   }
 
-  function filterForwardsForStrike(int calls, int puts, int forwards)
+  function findForwards(int calls, int puts, int forwards)
     external
     pure
     returns (int newCalls, int newPuts, int newForwards)
   {
-    (newCalls, newPuts, newForwards) = PCRMSorting.filterForwardsForStrike(calls, puts, forwards);
+    (newCalls, newPuts, newForwards) = PCRMSorting.findForwards(calls, puts, forwards);
   }
 
   function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
@@ -78,39 +78,39 @@ contract PCRMSortingTest is Test {
   // Forward Filtering //
   ///////////////////////
 
-  function testStrikeFilteringForZeroBalance() public {
-    (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(0, 0, 0);
+  function testFindingForwardsWhenZeroBalance() public {
+    (int newCalls, int newPuts, int newForwards) = tester.findForwards(0, 0, 0);
     assertEq(newCalls, 0);
     assertEq(newPuts, 0);
     assertEq(newForwards, 0);
   }
 
-  function testStrikeFilteringForNoForwards() public {
-    (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(10, 10, 0);
+  function testFindingForwardsWhenNoForwards() public {
+    (int newCalls, int newPuts, int newForwards) = tester.findForwards(10, 10, 0);
     assertEq(newCalls, 10);
     assertEq(newPuts, 10);
     assertEq(newForwards, 0);
   }
 
-  function testStrikeFilteringWhenLongForwardsPresent() public {
-    (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(10, -7, 0);
+  function testFindingForwardsWhenLongForwardsPresent() public {
+    (int newCalls, int newPuts, int newForwards) = tester.findForwards(10, -7, 0);
     assertEq(newCalls, 3);
     assertEq(newPuts, 0);
     assertEq(newForwards, 7);
   }
 
-  function testStrikeFilteringWhenShortForwardsPresent() public {
-    (int newCalls, int newPuts, int newForwards) = tester.filterForwardsForStrike(-5, 10, 0);
+  function testFindingForwardsWhenShortForwardsPresent() public {
+    (int newCalls, int newPuts, int newForwards) = tester.findForwards(-5, 10, 0);
     assertEq(newCalls, 0);
     assertEq(newPuts, 5);
     assertEq(newForwards, -5);
   }
 
-  function testFullFiltering() public {
+  function testUpdateForwardsForAllHoldings() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
 
     // check corrected filtering
-    holdings = tester.filterForwards(holdings);
+    holdings = tester.updateForwards(holdings);
     assertEq(holdings[0].strikes[0].calls, 0);
     assertEq(holdings[0].strikes[0].puts, 0);
     assertEq(holdings[0].strikes[0].forwards, 11);

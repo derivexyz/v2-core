@@ -263,7 +263,7 @@ contract PCRM is IManager, Owned {
     }
 
     // 2. pair off all symmetric calls and puts into forwards
-    PCRMSorting.filterForwards(expiryHoldings);
+    PCRMSorting.updateForwards(expiryHoldings);
   }
 
   //////////
