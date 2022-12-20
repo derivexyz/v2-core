@@ -34,42 +34,49 @@ contract UNIT_InterestRateModel is Test {
     assertEq(rateModel.optimalUtil(), optimalUtil);
   }
 
-  function testFailSetMinRate() public {
+  function testSetMinRate() public {
     uint minRate = 11e18;
     uint rateMultipler = 0;
     uint highRate = 0;
     uint optimalUtil = 0;
+
+    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, minRate));
     rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
   }
 
-  function testFailSetRateMultipler() public {
+  function testSetRateMultipler() public {
     uint minRate = 0;
     uint rateMultipler = 11e18;
     uint highRate = 0;
     uint optimalUtil = 0;
+
+    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, rateMultipler));
     rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
   }
 
-  function testFailSetHigherRate() public {
+  function testSetHigherRate() public {
     uint minRate = 0;
     uint rateMultipler = 0;
     uint highRate = 11e18;
     uint optimalUtil = 0;
+
+    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, highRate));
     rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
   }
 
-  function testFailSetOptimalUtil() public {
+  function testSetOptimalUtil() public {
     uint minRate = 0;
     uint rateMultipler = 0;
     uint highRate = 0;
     uint optimalUtil = 11e18;
+
+    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, optimalUtil));
     rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
   }
 
   function testLowUtilBorrowRate() public {
     uint supply = 10000;
     uint borrows = 5000;
-    uint util = rateModel.getUtilRate(supply, borrows);
 
     // Borrow rate should be 0.5 * 0.2 + 0.06 = 0.16
     uint lowRate = rateModel.getBorrowRate(supply, borrows);
@@ -79,7 +86,6 @@ contract UNIT_InterestRateModel is Test {
   function testHighUtilBorrowRate() public {
     uint supply = 10000;
     uint borrows = 8000;
-    uint util = rateModel.getUtilRate(supply, borrows);
 
     // Borrow rate should be 0.5 * 0.2 + 0.06 = 0.16
     // normal rate = 0.6 * 0.2 + 0.06
