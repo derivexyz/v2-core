@@ -70,12 +70,17 @@ contract PCRMSortingGas is Script {
   function _gasMaxAssets() public {
     AccountStructs.AssetTransfer[] memory assetTransfers = _composeMaxTransfers();
 
-    // estimate tx cost
+    // create account
+    for (uint i; i < assetTransfers.length; i++) {
+      account.submitTransfer(assetTransfers[i], "");
+    }
+
+    // estimate gas for only sorting
     uint initGas = gasleft();
-    account.submitTransfers(assetTransfers, "");
+    pcrm.getSortedHoldings(aliceAcc);
     uint endGas = gasleft();
 
-    console.log("gas:maxAssets:", initGas - endGas);
+    console.log("gas: 128 assets in PCRM:", initGas - endGas);
   }
 
   function _setup() public {
@@ -103,7 +108,7 @@ contract PCRMSortingGas is Script {
     uint max_expiries = pcrm.MAX_EXPIRIES();
 
     uint max_unique_options = max_strikes * max_expiries;
-    AccountStructs.AssetTransfer[] memory assetTransfers = new AccountStructs.AssetTransfer[](max_unique_options);
+    assetTransfers = new AccountStructs.AssetTransfer[](max_unique_options);
 
     //
     uint baseExpiry = block.timestamp;
@@ -125,6 +130,8 @@ contract PCRMSortingGas is Script {
           amount: 1e18,
           assetData: ""
         });
+
+        // todo [Josh]: maxed out at 100 deltas per transfer
 
       }
     }
