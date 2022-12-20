@@ -24,6 +24,16 @@ contract DecimalMathTester {
     uint res = DecimalMath.from18Decimals(amount, to);
     return res;
   }
+
+  function multiplyDecimal(uint x, uint y) external pure returns (uint) {
+    uint res = DecimalMath.multiplyDecimal(x, y);
+    return res;
+  }
+
+  function divideDecimal(uint x, uint y) external pure returns (uint) {
+    uint res = DecimalMath.divideDecimal(x, y);
+    return res;
+  }
 }
 
 contract DecimalMathTest is Test {
@@ -77,5 +87,18 @@ contract DecimalMathTest is Test {
     uint amountIn18 = 1e18;
     assertEq(tester.to18Decimals(amountIn27, 27), amountIn18);
     assertEq(tester.from18Decimals(amountIn18, 27), amountIn27);
+  }
+
+  function testFuzzMultiplyDecimal(uint x, uint y) public {
+    vm.assume(x < 1e36);
+    vm.assume(y < 1e36);
+    assertEq(tester.multiplyDecimal(x, y), (x * y) / 1e18);
+  }
+
+  function testFuzzDivideDecimal(uint x, uint y) public {
+    vm.assume(x < 1e36);
+    vm.assume(y < 1e36);
+    vm.assume(y != 0);
+    assertEq(tester.divideDecimal(x, y), (x * 1e18) / y);
   }
 }
