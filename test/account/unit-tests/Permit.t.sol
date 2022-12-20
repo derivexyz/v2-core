@@ -271,7 +271,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     });
     signatures[1] = _signPermit(privateKey2, permits[1]);
 
-    // orderbook send transfer to send money to himself!
+    // orderbook will submit a trade to exchange USDC <> CoolToken
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
     transferBatch[0] = AccountStructs.AssetTransfer({
       fromAcc: accountId,
