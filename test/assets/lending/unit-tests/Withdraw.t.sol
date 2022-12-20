@@ -37,7 +37,7 @@ contract UNIT_LendingWithdraw is Test {
     lending.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 18 decimals
-    depositedAmount = 1000_000 ether;
+    depositedAmount = 10000 ether;
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(lending), type(uint).max);
 
