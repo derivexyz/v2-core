@@ -57,10 +57,11 @@ contract PCRMSortingGas is Script {
       amount: 1e18,
       assetData: ""
     });
+    account.submitTransfer(transfer, "");
 
     // estimate tx cost
     uint initGas = gasleft();
-    account.submitTransfer(transfer, "");
+    pcrm.getSortedHoldings(aliceAcc);
     uint endGas = gasleft();
 
     console.log("gas:singleAsset:", initGas - endGas);
