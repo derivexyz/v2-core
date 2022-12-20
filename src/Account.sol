@@ -251,7 +251,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to managers of both accounts
    */
-  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external {
+  function submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData) external {
     _submitTransfer(assetTransfer, managerData);
   }
 
@@ -262,7 +262,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to every manager involved in trade
    */
-  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external {
+  function submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData) external {
     _submitTransfers(assetTransfers, managerData);
   }
 
@@ -307,7 +307,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @param assetTransfer Detail struct (fromAcc, toAcc, asset, subId, amount)
    * @param managerData Data passed to managers of both accounts
    */
-  function _submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) internal {
+  function _submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData) internal {
     (int fromDelta, int toDelta) = _transferAsset(assetTransfer);
     _managerHook(
       assetTransfer.fromAcc,
@@ -330,7 +330,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @param assetTransfers Array of (fromAcc, toAcc, asset, subId, amount)
    * @param managerData Data passed to every manager involved in trade
    */
-  function _submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) internal {
+  function _submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData) internal {
     uint transfersLen = assetTransfers.length;
 
     // keep track of seen accounts to assess risk once per account
@@ -371,7 +371,7 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @dev    update the allowance and balanceAndOrder storage
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    */
-  function _transferAsset(AssetTransfer memory assetTransfer) internal returns (int fromDelta, int toDelta) {
+  function _transferAsset(AssetTransfer calldata assetTransfer) internal returns (int fromDelta, int toDelta) {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
       revert AC_CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
     }
