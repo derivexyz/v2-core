@@ -234,7 +234,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     // deposit 1000 USDC to "accountId"
     mintAndDeposit(alice, accountId, usdc, usdcAsset, 0, tradeAmount);
 
-    // depost 500 coolToken for account2
+    // depost 1000 coolToken for account2
     mintAndDeposit(alice, accountId2, coolToken, coolAsset, tokenSubId, tradeAmount);
 
     // premits and signature arrays
