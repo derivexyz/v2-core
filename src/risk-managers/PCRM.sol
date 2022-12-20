@@ -66,8 +66,8 @@ contract PCRM is IManager, Owned {
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
-  uint public constant MAX_EXPIRIES = 20;
-  uint public constant MAX_STRIKES = 50;
+  uint public constant MAX_EXPIRIES = 16;
+  uint public constant MAX_STRIKES = 32;
 
   ////////////
   // Events //

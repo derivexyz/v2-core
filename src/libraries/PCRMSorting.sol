@@ -66,7 +66,7 @@ library PCRMSorting {
     uint maxStrikes
   )
     internal
-    view
+    pure
     returns (uint, uint)
   {
 
@@ -93,7 +93,7 @@ library PCRMSorting {
     uint arrayLen
   )
     internal
-    pure
+    view
     returns (uint, uint)
   {
     (uint strikeIndex, bool found) = findInArray(expiryHoldings[expiryIndex].strikes, newStrike, arrayLen);

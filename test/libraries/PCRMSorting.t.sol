@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 
 import "../../src/libraries/PCRMSorting.sol";
 
@@ -15,13 +16,41 @@ contract PCRMSortingTester {
   ) {
     (newCalls, newPuts, newForwards) = PCRMSorting.filterForwardsForStrike(calls, puts, forwards);
   }
+
+  function addUniqueStrike(
+    PCRM.ExpiryHolding[] memory expiryHoldings, 
+    uint expiryIndex, 
+    uint newStrike, 
+    uint arrayLen) external returns (uint, uint) {
+    (uint strikeIndex, uint newArrayLen) = PCRMSorting.addUniqueStrike(
+      expiryHoldings, 
+      expiryIndex, 
+      newStrike, 
+      arrayLen
+    );
+
+    // had to inline error checks here since array modified via reference and getting stack overflow errors
+    if (expiryHoldings[expiryIndex].strikes[strikeIndex].strike != newStrike) {
+      revert("invalid strike price");
+    } 
+
+    if (newArrayLen > arrayLen && strikeIndex != arrayLen) {
+      revert("invalid strike index");
+    }
+
+    return (strikeIndex, newArrayLen);
+  }
 }
 
 contract PCRMSortingTest is Test {
   PCRMSortingTester tester;
+  PCRM pcrm;
 
   function setUp() public {
     tester = new PCRMSortingTester();
+    pcrm = new PCRM(
+      address(0), address(0), address(0), address(0), address(0)
+    );
   }
 
   ///////////////////////
@@ -57,40 +86,7 @@ contract PCRMSortingTest is Test {
   }
 
   function testFullFiltering() public {
-    // expiry 1
-    PCRM.StrikeHolding[] memory strikeHoldings_1 = new PCRM.StrikeHolding[](2);
-    strikeHoldings_1[0] = PCRM.StrikeHolding({
-      strike: 10e18,
-      calls: 10,
-      puts: -10,
-      forwards: 1
-    });
-    strikeHoldings_1[1] = PCRM.StrikeHolding({
-      strike: 10e18,
-      calls: 0,
-      puts: -10,
-      forwards: 5
-    });
-
-    // expiry 2
-    PCRM.StrikeHolding[] memory strikeHoldings_2 = new PCRM.StrikeHolding[](1);
-    strikeHoldings_2[0] = PCRM.StrikeHolding({
-      strike: 10e18,
-      calls: -3,
-      puts: 5,
-      forwards: 10
-    });
-
-    // all expiries
-    PCRM.ExpiryHolding[] memory holdings = new PCRM.ExpiryHolding[](2);
-    holdings[0] = PCRM.ExpiryHolding({
-      expiry: block.timestamp + 1 days,
-      strikes: strikeHoldings_1
-    });
-    holdings[1] = PCRM.ExpiryHolding({
-      expiry: block.timestamp + 7 days,
-      strikes: strikeHoldings_2
-    });
+    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
 
     // check corrected filtering
     tester.filterForwards(holdings);
@@ -101,5 +97,67 @@ contract PCRMSortingTest is Test {
     assertEq(holdings[0].strikes[0].puts, -10);
     assertEq(holdings[0].strikes[0].forwards, 5);
 
+  }
+
+  //////////////////////////////
+  // Unique Elements in Array //
+  //////////////////////////////
+
+  function testAddUniqueStrike() public {
+    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
+    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings, 0, 1250e18, 2);
+
+    assertEq(strikeIndex, 2);
+    assertEq(newArrayLen, 3);
+  }
+
+  function testAddExistingStrike() public {
+    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
+    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings, 0, 10e18, 2);
+
+    assertEq(strikeIndex, 0);
+    assertEq(newArrayLen, 2);
+  }
+
+  //////////
+  // Util //
+  //////////
+  function _getDefaultHoldings() public returns (PCRM.ExpiryHolding[] memory) {
+    // expiry 1
+    PCRM.StrikeHolding[] memory strikeHoldings_1 = new PCRM.StrikeHolding[](pcrm.MAX_STRIKES());
+    strikeHoldings_1[0] = PCRM.StrikeHolding({
+      strike: 10e18,
+      calls: 10,
+      puts: -10,
+      forwards: 1
+    });
+    strikeHoldings_1[1] = PCRM.StrikeHolding({
+      strike: 15e18,
+      calls: 0,
+      puts: -10,
+      forwards: 5
+    });
+
+    // expiry 2
+    PCRM.StrikeHolding[] memory strikeHoldings_2 = new PCRM.StrikeHolding[](pcrm.MAX_STRIKES());
+    strikeHoldings_2[0] = PCRM.StrikeHolding({
+      strike: 20e18,
+      calls: -3,
+      puts: 5,
+      forwards: 10
+    });
+
+    // all expiries
+    PCRM.ExpiryHolding[] memory holdings = new PCRM.ExpiryHolding[](pcrm.MAX_EXPIRIES());
+    holdings[0] = PCRM.ExpiryHolding({
+      expiry: block.timestamp + 1 days,
+      strikes: strikeHoldings_1
+    });
+    holdings[1] = PCRM.ExpiryHolding({
+      expiry: block.timestamp + 7 days,
+      strikes: strikeHoldings_2
+    });
+
+    return holdings;
   }
 }
