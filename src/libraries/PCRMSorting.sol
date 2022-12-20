@@ -80,9 +80,9 @@ library PCRMSorting {
 
     // return index if found or add new entry
     if (found == false) {
-      expiryIndex = arrayLen;
+      expiryIndex = arrayLen++;
       unchecked {
-        expiryHoldings[arrayLen++] =
+        expiryHoldings[arrayLen] =
           PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
       }
     }
@@ -102,7 +102,10 @@ library PCRMSorting {
     pure
     returns (uint, uint)
   {
+    // check if strike exists
     (uint strikeIndex, bool found) = findInArray(strikeHoldings, newStrike, arrayLen);
+
+    // return index if found or add new entry
     if (found == false) {
       strikeIndex = arrayLen++;
       unchecked {
