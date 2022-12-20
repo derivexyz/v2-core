@@ -2,30 +2,16 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-
-import "../../../shared/mocks/MockERC20.sol";
-import "../../../shared/mocks/MockManager.sol";
-
-import "../../../../src/assets/Lending.sol";
 import "../../../../src/assets/InterestRateModel.sol";
-import "../../../../src/Account.sol";
 
 /**
- * @dev we deploy actual Account contract in these tests to simplify verification process
+ * @dev Simple testing for the InterestRateModel
  */
 contract UNIT_InterestRateModel is Test {
   using DecimalMath for uint;
   using SafeCast for uint;
 
-  Lending lending;
   InterestRateModel rateModel;
-  MockERC20 usdc;
-  MockManager manager;
-  MockManager badManager;
-  Account account;
-
-  uint accountId;
-  uint depositedAmount;
 
   function setUp() public {
     uint minRate = 0.06 * 1e18;
