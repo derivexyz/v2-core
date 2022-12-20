@@ -52,11 +52,7 @@ library PCRMSorting {
     if (calls * puts < 0) {
       int fwdSign = (calls > 0) ? int(1) : -1;
       int additionalFwds = int(IntLib.absMin(calls, puts)) * fwdSign;
-      return (
-        calls - additionalFwds,
-        puts + additionalFwds,
-        forwards + additionalFwds
-      );
+      return (calls - additionalFwds, puts + additionalFwds, forwards + additionalFwds);
     }
     return (calls, puts, forwards);
   }
