@@ -112,11 +112,8 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(accountId);
-    if (balances.length > 0) {
-      ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
-      _calcMargin(expiries, MarginType.INITIAL);
-    }
+    ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
+    _calcMargin(expiries, MarginType.INITIAL);
   }
 
   /**
@@ -284,7 +281,9 @@ contract PCRM is IManager, Owned {
    * @param accountId ID of account to sort.
    * @return expiryHoldings Sorted array of option holdings.
    */
-  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {}
+  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
+    return _sortHoldings(account.getAccountBalances(accountId));
+  }
 
   /**
    * @notice Calculate the initial margin of account.
