@@ -13,7 +13,7 @@ POC tests on setting allowance on a real world asset with `subId`
 - [x] Can transfer asset with subId allowance
 - [x] Can only auth to trade with specific option token subId
 
-### `Lending.t.sol`
+### `CashAsset.t.sol`
 
 POC asset contract to handle lending & accrue interest on adjustmentHook.
 

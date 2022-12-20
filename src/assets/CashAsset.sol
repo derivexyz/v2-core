@@ -16,7 +16,7 @@ import "../libraries/DecimalMath.sol";
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
-contract Lending is Owned, IAsset {
+contract CashAsset is Owned, IAsset {
   using SafeERC20 for IERC20;
   using DecimalMath for uint;
   using SafeCast for uint;
