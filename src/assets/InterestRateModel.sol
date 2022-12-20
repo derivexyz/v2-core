@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "synthetix/Owned.sol";
 import "../libraries/DecimalMath.sol";
 import "../libraries/FixedPointMathLib.sol";
 
@@ -11,7 +10,7 @@ import "../libraries/FixedPointMathLib.sol";
  * @author Lyra
  * @notice Contract that implements the logic for calculating the borrow rate
  */
-contract InterestRateModel is Owned {
+contract InterestRateModel {
   using DecimalMath for uint;
   using SafeCast for uint;
 
@@ -46,21 +45,16 @@ contract InterestRateModel is Owned {
    * @param _optimalUtil The utilization point at which the highRateMultipler is applied
    */
   constructor(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil) {
-    _setInterestRateParams(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
-  }
+    if (_minRate > 1e18) revert ParameterMustBeLessThanOne(_minRate);
+    if (_rateMultipler > 1e18) revert ParameterMustBeLessThanOne(_rateMultipler);
+    if (_highRateMultipler > 1e18) revert ParameterMustBeLessThanOne(_highRateMultipler);
+    if (_optimalUtil > 1e18) revert ParameterMustBeLessThanOne(_optimalUtil);
+    minRate = _minRate;
+    rateMultipler = _rateMultipler;
+    highRateMultipler = _highRateMultipler;
+    optimalUtil = _optimalUtil;
 
-  //////////////////////////////
-  //   Owner-only Functions   //
-  //////////////////////////////
-
-  /**
-   * @notice Allows owner to set the interest rate parameters
-   */
-  function setInterestRateParams(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil)
-    external
-    onlyOwner
-  {
-    _setInterestRateParams(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
+    emit InterestRateParamsSet(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
   }
 
   ////////////////////////
@@ -110,26 +104,6 @@ contract InterestRateModel is Owned {
     }
 
     return borrows.divideDecimal(supply);
-  }
-
-  //////////////
-  // Internal //
-  //////////////
-
-  function _setInterestRateParams(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil)
-    internal
-    onlyOwner
-  {
-    if (_minRate > 1e18) revert ParameterMustBeLessThanOne(_minRate);
-    if (_rateMultipler > 1e18) revert ParameterMustBeLessThanOne(_rateMultipler);
-    if (_highRateMultipler > 1e18) revert ParameterMustBeLessThanOne(_highRateMultipler);
-    if (_optimalUtil > 1e18) revert ParameterMustBeLessThanOne(_optimalUtil);
-    minRate = _minRate;
-    rateMultipler = _rateMultipler;
-    highRateMultipler = _highRateMultipler;
-    optimalUtil = _optimalUtil;
-
-    emit InterestRateParamsSet(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
   }
 
   ////////////

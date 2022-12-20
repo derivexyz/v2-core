@@ -22,58 +22,6 @@ contract UNIT_InterestRateModel is Test {
     rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
   }
 
-  function testSetNewParams(uint minRate, uint rateMultipler, uint highRate, uint optimalUtil) public {
-    vm.assume(minRate <= 1e18);
-    vm.assume(rateMultipler <= 1e18);
-    vm.assume(highRate <= 1e18);
-    vm.assume(optimalUtil <= 1e18);
-    rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
-    assertEq(rateModel.minRate(), minRate);
-    assertEq(rateModel.rateMultipler(), rateMultipler);
-    assertEq(rateModel.highRateMultipler(), highRate);
-    assertEq(rateModel.optimalUtil(), optimalUtil);
-  }
-
-  function testCannotSetMinRate() public {
-    uint minRate = 11e18;
-    uint rateMultipler = 0;
-    uint highRate = 0;
-    uint optimalUtil = 0;
-
-    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, minRate));
-    rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
-  }
-
-  function testCannotSetRateMultipler() public {
-    uint minRate = 0;
-    uint rateMultipler = 11e18;
-    uint highRate = 0;
-    uint optimalUtil = 0;
-
-    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, rateMultipler));
-    rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
-  }
-
-  function testCannotSetHigherRate() public {
-    uint minRate = 0;
-    uint rateMultipler = 0;
-    uint highRate = 11e18;
-    uint optimalUtil = 0;
-
-    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, highRate));
-    rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
-  }
-
-  function testCannotSetOptimalUtil() public {
-    uint minRate = 0;
-    uint rateMultipler = 0;
-    uint highRate = 0;
-    uint optimalUtil = 11e18;
-
-    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.ParameterMustBeLessThanOne.selector, optimalUtil));
-    rateModel.setInterestRateParams(minRate, rateMultipler, highRate, optimalUtil);
-  }
-
   function testLowUtilBorrowRate() public {
     uint supply = 10000;
     uint borrows = 5000;
