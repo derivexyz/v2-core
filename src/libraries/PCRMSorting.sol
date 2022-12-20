@@ -13,7 +13,6 @@ import "forge-std/console2.sol";
  */
 
 library PCRMSorting {
-  
   //////////////
   // Forwards //
   //////////////

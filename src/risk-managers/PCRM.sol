@@ -229,6 +229,8 @@ contract PCRM is IManager, Owned {
    * @param assets Array of balances for given asset and subId.
    * @return expiryHoldings Sorted array of option holdings.
    */
+
+  // todo [Josh]: possibly better to rename to "arrange" / "group" / "classify"
   function _sortHoldings(AccountStructs.AssetBalance[] memory assets)
     internal
     view
