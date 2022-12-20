@@ -43,23 +43,21 @@ contract PCRMSortingTester {
   }
 
   function addUniqueStrike(
-    PCRM.ExpiryHolding[] memory expiryHoldings, 
-    uint expiryIndex, 
-    uint newStrike, 
-    uint arrayLen) external view returns (uint, uint) {
+    PCRM.ExpiryHolding memory expiryHolding, 
+    uint newStrike
+  ) external view returns (uint, uint) {
+    uint oldArrayLen = expiryHolding.numStrikesHeld;
     (uint strikeIndex, uint newArrayLen) = PCRMSorting.addUniqueStrike(
-      expiryHoldings, 
-      expiryIndex, 
-      newStrike, 
-      arrayLen
+      expiryHolding, 
+      newStrike
     );
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
-    if (expiryHoldings[expiryIndex].strikes[strikeIndex].strike != newStrike) {
+    if (expiryHolding.strikes[strikeIndex].strike != newStrike) {
       revert("invalid strike price");
     } 
 
-    if (newArrayLen > arrayLen && strikeIndex != arrayLen) {
+    if (newArrayLen > oldArrayLen && strikeIndex != oldArrayLen) {
       revert("invalid strike index");
     }
 
@@ -156,7 +154,7 @@ contract PCRMSortingTest is Test {
 
   function testAddUniqueStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings, 0, 1250e18, 2);
+    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0], 1250e18);
 
     assertEq(strikeIndex, 2);
     assertEq(newArrayLen, 3);
@@ -164,7 +162,7 @@ contract PCRMSortingTest is Test {
 
   function testAddExistingStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings, 0, 10e18, 2);
+    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0], 10e18);
 
     assertEq(strikeIndex, 0);
     assertEq(newArrayLen, 2);
@@ -202,10 +200,12 @@ contract PCRMSortingTest is Test {
     PCRM.ExpiryHolding[] memory holdings = new PCRM.ExpiryHolding[](pcrm.MAX_EXPIRIES());
     holdings[0] = PCRM.ExpiryHolding({
       expiry: block.timestamp + 1 days,
+      numStrikesHeld: 2,
       strikes: strikeHoldings_1
     });
     holdings[1] = PCRM.ExpiryHolding({
       expiry: block.timestamp + 7 days,
+      numStrikesHeld: 1,
       strikes: strikeHoldings_2
     });
 

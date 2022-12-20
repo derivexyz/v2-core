@@ -32,6 +32,8 @@ contract PCRM is IManager, Owned {
   struct ExpiryHolding {
     /// timestamp of expiry for all strike holdings
     uint expiry;
+    /// # of strikes with active balances
+    uint numStrikesHeld;
     /// array of strike holding details
     StrikeHolding[] strikes;
   }
@@ -235,7 +237,6 @@ contract PCRM is IManager, Owned {
     returns (ExpiryHolding[] memory expiryHoldings)
   {
     uint numExpiriesHeld;
-    uint numStrikesHeld;
     uint expiryIndex;
     uint strikeIndex;
     expiryHoldings = new PCRM.ExpiryHolding[](MAX_EXPIRIES);
@@ -254,8 +255,9 @@ contract PCRM is IManager, Owned {
           expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES
         );
 
-        (strikeIndex, numStrikesHeld) = PCRMSorting.addUniqueStrike(
-          expiryHoldings, expiryIndex, strike, numStrikesHeld
+
+        (strikeIndex, ) = PCRMSorting.addUniqueStrike(
+          expiryHoldings[expiryIndex], strike
         );
 
         // add call or put balance
@@ -266,6 +268,7 @@ contract PCRM is IManager, Owned {
         }
       }
     }
+
 
     // 2. pair off all symmetric calls and puts into forwards
     PCRMSorting.filterForwards(expiryHoldings);

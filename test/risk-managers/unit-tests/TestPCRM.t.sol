@@ -83,7 +83,7 @@ contract UNIT_TestPCRM is Test {
     strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 
     PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({expiry: 0, strikes: strikes});
+    expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getInitialMargin(expiries);
 
@@ -95,7 +95,7 @@ contract UNIT_TestPCRM is Test {
     strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 
     PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({expiry: 0, strikes: strikes});
+    expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getMaintenanceMargin(expiries);
 
@@ -135,7 +135,62 @@ contract UNIT_TestPCRM is Test {
 
   function testGetSortedHoldings() public {
     vm.startPrank(address(alice));
-    manager.getSortedHoldings(aliceAcc);
+    uint callSubId = OptionEncoding.toSubId(
+      block.timestamp + 1 days,
+      1000e18,
+      true
+    );
+
+    uint putSubId = OptionEncoding.toSubId(
+      block.timestamp + 1 days,
+      900e18,
+      false
+    );
+
+    uint longtermSubId = OptionEncoding.toSubId(
+      block.timestamp + 365 days,
+      10e18,
+      false
+    );
+
+    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory putTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: putSubId,
+      amount: 10e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: longtermSubId,
+      amount: 5e18,
+      assetData: ""
+    });
+    account.submitTransfer(callTransfer, "");
+    account.submitTransfer(putTransfer, "");
+    account.submitTransfer(longtermTransfer, "");
+
     vm.stopPrank();
+
+    PCRM.ExpiryHolding[] memory holdings = manager.getSortedHoldings(aliceAcc);
+    assertEq(holdings[0].strikes[0].strike, 1000e18);
+    assertEq(holdings[0].strikes[0].calls, 1e18);
+
+    assertEq(holdings[0].strikes[1].strike, 900e18);
+    assertEq(holdings[0].strikes[1].puts, 10e18);
+
+    assertEq(holdings[1].strikes[0].strike, 10e18);
+    assertEq(holdings[1].strikes[0].puts, 5e18);
   }
 }
