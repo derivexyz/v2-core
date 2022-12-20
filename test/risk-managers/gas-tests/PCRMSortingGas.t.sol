@@ -75,12 +75,17 @@ contract PCRMSortingGas is Script {
       account.submitTransfer(assetTransfers[i], "");
     }
 
-    // estimate gas for only sorting
+    // estimate gas for only getting balances
     uint initGas = gasleft();
-    pcrm.getSortedHoldings(aliceAcc);
+    account.getAccountBalances(aliceAcc);
     uint endGas = gasleft();
+    console.log("gas: getting 128 asset balances from account:", initGas - endGas);
 
-    console.log("gas: 128 assets in PCRM:", initGas - endGas);
+    // estimate gas for sorting + getting balances
+    initGas = gasleft();
+    pcrm.getSortedHoldings(aliceAcc);
+    endGas = gasleft();
+    console.log("gas: sorting 128 assets in PCRM:", initGas - endGas);
   }
 
   function _setup() public {
