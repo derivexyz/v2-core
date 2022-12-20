@@ -20,18 +20,18 @@ contract InterestRateModel is Owned {
   /////////////////////
 
   ///@dev The approximate number of seconds per year
-  uint public constant SECONDS_PER_YEAR = 31536000;
+  uint public constant SECONDS_PER_YEAR = 365 days;
 
-  ///@dev The base yearly interest rate which is the y-intercept when utilization rate is 0
+  ///@dev The base yearly interest rate represented as a mantissa (0-1e18)
   uint public minRate;
 
-  ///@dev The multiplier of utilization rate that gives the slope of the interest rate
+  ///@dev The multiplier of utilization rate that gives the slope of the interest rate as a mantissa
   uint public rateMultipler;
 
   ///@dev The multiplier after hitting the optimal utilization point
   uint public highRateMultipler;
 
-  ///@dev The utilization point at which the highRateMultipler is applied
+  ///@dev The utilization point at which the highRateMultipler is applied, represented as a mantissa
   uint public optimalUtil;
 
   ////////////////////////
@@ -40,18 +40,13 @@ contract InterestRateModel is Owned {
 
   /**
    * @notice Construct an interest rate model
-   * @param _minRate The approximate target base APR, as a mantissa
+   * @param _minRate The approximate target base APR
    * @param _rateMultipler The rate of increase in interest rate wrt utilization
    * @param _highRateMultipler The multiplier after hitting a specified utilization point
    * @param _optimalUtil The utilization point at which the highRateMultipler is applied
    */
   constructor(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil) {
-    minRate = _minRate;
-    rateMultipler = _rateMultipler;
-    highRateMultipler = _highRateMultipler;
-    optimalUtil = _optimalUtil;
-
-    emit InterestRateParamsSet(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    _setInterestRateParams(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
   }
 
   //////////////////////////////
@@ -65,12 +60,7 @@ contract InterestRateModel is Owned {
     external
     onlyOwner
   {
-    minRate = _minRate;
-    rateMultipler = _rateMultipler;
-    highRateMultipler = _highRateMultipler;
-    optimalUtil = _optimalUtil;
-
-    emit InterestRateParamsSet(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
+    _setInterestRateParams(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
   }
 
   ////////////////////////
@@ -81,9 +71,9 @@ contract InterestRateModel is Owned {
    * @notice Function to calculate the interest using a compounded interest rate formula
    *         P_0 * e ^(rt) = Principal with accrued interest
    *
-   * @param elapsedTime seconds since last interest accrual
-   * @param borrowRate the current borrow rate for the asset
-   * @return compounded interest rate: e^(rt) - 1
+   * @param elapsedTime Seconds since last interest accrual
+   * @param borrowRate The current borrow rate for the asset
+   * @return Compounded interest rate: e^(rt) - 1
    */
   function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure returns (uint) {
     return FixedPointMathLib.exp((elapsedTime * borrowRate / SECONDS_PER_YEAR).toInt256()) - DecimalMath.UNIT;
@@ -91,12 +81,12 @@ contract InterestRateModel is Owned {
 
   /**
    * @notice Calculates the current borrow rate as a linear equation
-   * @param cash The balance of stablecoin for the cash asset
+   * @param supply The supplied amount of stablecoin for the asset
    * @param borrows The amount of borrows in the market
    * @return The borrow rate percentage as a mantissa
    */
-  function getBorrowRate(uint cash, uint borrows) external view returns (uint) {
-    uint util = getUtilRate(cash, borrows);
+  function getBorrowRate(uint supply, uint borrows) external view returns (uint) {
+    uint util = getUtilRate(supply, borrows);
 
     if (util <= optimalUtil) {
       return util.multiplyDecimal(rateMultipler) + minRate;
@@ -108,18 +98,38 @@ contract InterestRateModel is Owned {
   }
 
   /**
-   * @notice Calculates the utilization rate of the market: `borrows / cash`
-   * @param cash The balance of stablecoin for the cash asset
-   * @param borrows The amount of borrows for the cash asset
+   * @notice Calculates the utilization rate of the market: `borrows / supply`
+   * @param supply The supplied amount of stablecoin for the asset
+   * @param borrows The amount of borrows for the asset
    * @return The utilization rate as a mantissa between
    */
-  function getUtilRate(uint cash, uint borrows) public pure returns (uint) {
+  function getUtilRate(uint supply, uint borrows) public pure returns (uint) {
     // Utilization rate is 0 when there are no borrows
     if (borrows == 0) {
       return 0;
     }
 
-    return borrows.divideDecimal(cash);
+    return borrows.divideDecimal(supply);
+  }
+
+  //////////////
+  // Internal //
+  //////////////
+
+  function _setInterestRateParams(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil)
+    internal
+    onlyOwner
+  {
+    if (_minRate > 1e18) revert ParameterMustBeLessThanOne(_minRate);
+    if (_rateMultipler > 1e18) revert ParameterMustBeLessThanOne(_rateMultipler);
+    if (_highRateMultipler > 1e18) revert ParameterMustBeLessThanOne(_highRateMultipler);
+    if (_optimalUtil > 1e18) revert ParameterMustBeLessThanOne(_optimalUtil);
+    minRate = _minRate;
+    rateMultipler = _rateMultipler;
+    highRateMultipler = _highRateMultipler;
+    optimalUtil = _optimalUtil;
+
+    emit InterestRateParamsSet(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
   }
 
   ////////////
@@ -128,4 +138,11 @@ contract InterestRateModel is Owned {
 
   ///@dev Emitted when interest rate parameters are set
   event InterestRateParamsSet(uint minRate, uint rateMultipler, uint highRateMultipler, uint optimalUtil);
+
+  ////////////
+  // Errors //
+  ////////////
+
+  ///@dev Revert when the parameter set is greater than 1e18
+  error ParameterMustBeLessThanOne(uint param);
 }

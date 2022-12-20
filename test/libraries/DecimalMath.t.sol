@@ -90,14 +90,14 @@ contract DecimalMathTest is Test {
   }
 
   function testFuzzMultiplyDecimal(uint x, uint y) public {
-    vm.assume(x < 1e42);
-    vm.assume(y < 1e42);
+    vm.assume(x < 1e36);
+    vm.assume(y < 1e36);
     assertEq(tester.multiplyDecimal(x, y), (x * y) / 1e18);
   }
 
   function testFuzzDivideDecimal(uint x, uint y) public {
-    vm.assume(x < 1e42);
-    vm.assume(y < 1e42);
+    vm.assume(x < 1e36);
+    vm.assume(y < 1e36);
     vm.assume(y != 0);
     assertEq(tester.divideDecimal(x, y), (x * 1e18) / y);
   }
