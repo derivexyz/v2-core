@@ -14,10 +14,9 @@ import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
 
 contract UNIT_DutchAuctionView is Test {
-  
   address alice;
   address bob;
-  
+
   uint aliceAcc;
   uint bobAcc;
   uint expiry;
@@ -31,9 +30,8 @@ contract UNIT_DutchAuctionView is Test {
   MockFeed feed;
   DutchAuction dutchAuction;
   IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
-  
-  uint tokenSubId = 1000;
 
+  uint tokenSubId = 1000;
 
   function setUp() public {
     deployMockSystem();
@@ -75,7 +73,7 @@ contract UNIT_DutchAuctionView is Test {
 
     /* Risk Manager */
     manager = new MockManager(address(account));
-    console.log('gets to here');
+    console.log("gets to here");
     /*
      Feed for Spot*/
     feed = new MockFeed();
@@ -111,11 +109,9 @@ contract UNIT_DutchAuctionView is Test {
     assertEq(securityModule, dutchAuctionParameters.securityModule);
 
     // change params
-    dutchAuction.setDutchAuctionParameters(IDutchAuction.DutchAuctionParameters({
-      stepInterval: 2,
-      lengthOfAuction: 200,
-      securityModule: address(1)
-    }));
+    dutchAuction.setDutchAuctionParameters(
+      IDutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
+    );
 
     // check if params changed
     (stepInterval, lengthOfAuction, securityModule) = dutchAuction.parameters();
@@ -136,6 +132,6 @@ contract UNIT_DutchAuctionView is Test {
   }
 
   function testGetSpotFeed() public {
-    assertEq(address(dutchAuction.spotFeed()), address(spotFeed));
+    assertEq(address(dutchAuction.spotFeed()), address(feed));
   }
-} 
+}

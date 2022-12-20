@@ -54,7 +54,7 @@ contract DutchAuction is IDutchAuction {
       ongoing: true,
       startBlock: block.number,
       endBlock: block.number + parameters.lengthOfAuction,
-      dv: 0,
+      dv: 0, // TODO: need to be able to calculate dv
       auction: AuctionDetails({
       accountId: accountId,
       upperBound: upperBound,

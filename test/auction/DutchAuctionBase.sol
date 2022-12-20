@@ -26,9 +26,9 @@ contract DutchAuctionBase is Test {
   DutchAuction dutchAuction;
 
   function run() external {
-    console.log('gets to deploy mock system');
+    console.log("gets to deploy mock system");
     deployMockSystem();
-    console.log('mock suystem deploys mock');
+    console.log("mock suystem deploys mock");
     setupAccounts(500);
   }
 
@@ -66,7 +66,7 @@ contract DutchAuctionBase is Test {
 
     /* Risk Manager */
     manager = new MockManager(address(account));
-    console.log('gets to here');
+    console.log("gets to here");
     /*
      Feed for Spot*/
     feed = new MockFeed();
@@ -74,6 +74,4 @@ contract DutchAuctionBase is Test {
 
     dutchAuction = new DutchAuction(MockFeed(address(feed)));
   }
-
-  
 }
