@@ -34,7 +34,6 @@ contract DutchAuctionBase is Script {
     setupAccounts(500);
   }
 
-
   function setupAccounts(uint amount) public {
     // create 1 account for EOA
     ownAcc = account.createAccount(msg.sender, IManager(address(manager)));
@@ -77,6 +76,4 @@ contract DutchAuctionBase is Script {
 
     dutchAuction = new DutchAuction(MockFeed(address(feed)));
   }
-
-  
 }
