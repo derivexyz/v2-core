@@ -73,7 +73,7 @@ contract UNIT_DutchAuctionView is Test {
 
     /* Risk Manager */
     manager = new MockManager(address(account));
-    console.log("gets to here");
+
     /*
      Feed for Spot*/
     feed = new MockFeed();
