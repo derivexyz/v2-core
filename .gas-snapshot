@@ -58,9 +58,12 @@ UNIT_ChangeManager:testCannotChangeToSameManager() (gas: 21429)
 UNIT_ChangeManager:testCannotMigrateIfAssetDisagree() (gas: 42057)
 UNIT_ChangeManager:testCannotMigrateIfOldManagerDisagree() (gas: 32048)
 UNIT_ChangeManager:testMigrationShouldNotMakeDuplicatedCallToAssets() (gas: 1270746)
+<<<<<<< HEAD
 UNIT_DutchAuctionView:testGetParams() (gas: 81557)
 UNIT_DutchAuctionView:testGetRiskManager() (gas: 43045)
 UNIT_DutchAuctionView:testGetSpotFeed() (gas: 9741)
+=======
+>>>>>>> proto-1-liquidations
 ArrayLibTest:testAddUniqueAddrLengthTooLarge() (gas: 14592)
 ArrayLibTest:testAddUniqueAddrLengthTooSmall() (gas: 9920)
 ArrayLibTest:testAddUniqueAddrToArray() (gas: 14133)
