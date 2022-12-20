@@ -7,6 +7,9 @@ import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/assets/Lending.sol";
 import "src/assets/Option.sol";
+import "src/libraries/OptionEncoding.sol";
+import "src/libraries/PCRMSorting.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 
 /**
@@ -27,19 +30,21 @@ contract PCRM is IManager, Owned {
   struct ExpiryHolding {
     /// timestamp of expiry for all strike holdings
     uint expiry;
+    /// # of strikes with active balances
+    uint numStrikesHeld;
     /// array of strike holding details
     StrikeHolding[] strikes;
   }
 
   struct StrikeHolding {
     /// strike price of held options
-    uint64 strike;
+    uint strike;
     /// number of calls held
-    int64 calls;
+    int calls;
     /// number of puts held
-    int64 puts;
+    int puts;
     /// number of forwards held
-    int64 forwards;
+    int forwards;
   }
 
   ///////////////
@@ -60,6 +65,9 @@ contract PCRM is IManager, Owned {
 
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
+
+  uint public constant MAX_EXPIRIES = 8;
+  uint public constant MAX_STRIKES = 16;
 
   ////////////
   // Events //
@@ -101,7 +109,7 @@ contract PCRM is IManager, Owned {
     view
     override
   {
-    // todo: whitelist check
+    // todo [Josh]: whitelist check
 
     // PCRM calculations
     ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
@@ -114,7 +122,7 @@ contract PCRM is IManager, Owned {
    * @param newManager IManager to change account to.
    */
   function handleManagerChange(uint accountId, IManager newManager) external {
-    // todo: nextManager whitelist check
+    // todo [Josh]: nextManager whitelist check
   }
 
   //////////////////
@@ -127,7 +135,7 @@ contract PCRM is IManager, Owned {
    */
   function checkAndStartLiquidation(uint accountId) external {
     dutchAuction.startAuction(accountId);
-    // todo: check that account is liquidatable / freeze account / call out to auction contract
+    // todo [Cameron / dom]: check that account is liquidatable / freeze account / call out to auction contract
   }
 
   /**
@@ -149,7 +157,7 @@ contract PCRM is IManager, Owned {
     onlyAuction
     returns (int postExecutionInitialMargin, ExpiryHolding[] memory, int cash)
   {
-    // todo: this would be only dutch auction contract
+    // todo [Cameron / Dom]: this would be only dutch auction contract
   }
 
   /////////////////
@@ -197,7 +205,7 @@ contract PCRM is IManager, Owned {
     view
     returns (int strikeValue)
   {
-    // todo: get call, put, forward values
+    // todo [Josh]: get call, put, forward values
   }
 
   // Cash Margin Math
@@ -208,7 +216,7 @@ contract PCRM is IManager, Owned {
    * @return cashValue Discounted value of cash held in account.
    */
   function _calcCashValue(MarginType marginType) internal view returns (int cashValue) {
-    // todo: apply interest rate shock
+    // todo [Josh]: apply interest rate shock
   }
 
   //////////
@@ -221,14 +229,43 @@ contract PCRM is IManager, Owned {
    * @param assets Array of balances for given asset and subId.
    * @return expiryHoldings Sorted array of option holdings.
    */
+
+  // todo [Josh]: possibly better to rename to "arrange" / "group" / "classify"
   function _sortHoldings(AccountStructs.AssetBalance[] memory assets)
     internal
     view
     returns (ExpiryHolding[] memory expiryHoldings)
   {
-    // todo: sort out each expiry / strike
-    // todo: ignore the lendingAsset
-    // todo: add limit to # of expiries and # of options
+    uint numExpiriesHeld;
+    uint expiryIndex;
+    uint strikeIndex;
+    expiryHoldings = new PCRM.ExpiryHolding[](MAX_EXPIRIES);
+
+    // 1. create sorted [expiries][strikes] 2D array
+    for (uint i; i < assets.length; ++i) {
+      if (address(assets[i].asset) == address(option)) {
+        // decode subId
+        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
+
+        // add new expiry or strike to holdings if unique
+        (expiryIndex, numExpiriesHeld) =
+          PCRMSorting.addUniqueExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
+
+        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMSorting.addUniqueStrike(
+          expiryHoldings[expiryIndex].strikes, strike, expiryHoldings[expiryIndex].numStrikesHeld
+        );
+
+        // add call or put balance
+        if (isCall) {
+          expiryHoldings[expiryIndex].strikes[strikeIndex].calls += assets[i].balance;
+        } else {
+          expiryHoldings[expiryIndex].strikes[strikeIndex].puts += assets[i].balance;
+        }
+      }
+    }
+
+    // 2. pair off all symmetric calls and puts into forwards
+    PCRMSorting.updateForwards(expiryHoldings);
   }
 
   //////////
@@ -241,7 +278,9 @@ contract PCRM is IManager, Owned {
    * @param accountId ID of account to sort.
    * @return expiryHoldings Sorted array of option holdings.
    */
-  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {}
+  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
+    return _sortHoldings(account.getAccountBalances(accountId));
+  }
 
   /**
    * @notice Calculate the initial margin of account.
@@ -249,7 +288,7 @@ contract PCRM is IManager, Owned {
    * @param expiries Sorted array of option holdings.
    * @return margin Amount by which account is over or under the required margin.
    */
-  // todo: public view function to get margin values directly through accountId
+  // todo [Josh]: public view function to get margin values directly through accountId
   function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
     return _calcMargin(expiries, MarginType.INITIAL);
   }
