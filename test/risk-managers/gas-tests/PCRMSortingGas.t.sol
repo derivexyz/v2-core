@@ -35,7 +35,6 @@ contract PCRMSortingGas is Script {
     bobAcc = account.createAccount(bob, IManager(pcrm));
     vm.stopBroadcast();
 
-
     vm.startBroadcast(bob);
     account.approve(alice, bobAcc);
     vm.stopBroadcast();
@@ -45,7 +44,7 @@ contract PCRMSortingGas is Script {
     // gas tests
     _gasSingleOption();
     _gasMaxAssets();
-    
+
     vm.stopBroadcast();
   }
 
@@ -102,7 +101,7 @@ contract PCRMSortingGas is Script {
     );
   }
 
-  function _composeMaxTransfers() public returns (AccountStructs.AssetTransfer[] memory assetTransfers) {
+  function _composeMaxTransfers() public view returns (AccountStructs.AssetTransfer[] memory assetTransfers) {
     //
     uint max_strikes = pcrm.MAX_STRIKES();
     uint max_expiries = pcrm.MAX_EXPIRIES();
@@ -115,13 +114,7 @@ contract PCRMSortingGas is Script {
     uint baseStrike = 0;
     for (uint i; i < max_expiries; i++) {
       for (uint j; j < max_strikes; j++) {
-        uint newSubId = OptionEncoding.toSubId(
-          baseExpiry + i,
-          baseStrike + j * 10e18,
-          true
-        );
-        // console2.log(baseExpiry + i);
-        // console2.log(baseStrike + j * 10e18);
+        uint newSubId = OptionEncoding.toSubId(baseExpiry + i, baseStrike + j * 10e18, true);
         assetTransfers[i * max_strikes + j] = AccountStructs.AssetTransfer({
           fromAcc: aliceAcc,
           toAcc: bobAcc,
@@ -130,13 +123,9 @@ contract PCRMSortingGas is Script {
           amount: 1e18,
           assetData: ""
         });
-
-        // todo [Josh]: maxed out at 100 deltas per transfer
-
       }
     }
 
     return assetTransfers;
-
   }
 }

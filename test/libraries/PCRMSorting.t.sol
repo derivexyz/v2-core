@@ -45,7 +45,7 @@ contract PCRMSortingTester {
 
   function addUniqueStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint numStrikesHeld)
     external
-    view
+    pure
     returns (uint, uint)
   {
     (uint strikeIndex, uint newArrayLen) = PCRMSorting.addUniqueStrike(strikeHoldings, newStrike, numStrikesHeld);
