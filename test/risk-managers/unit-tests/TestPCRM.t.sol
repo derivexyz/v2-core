@@ -135,23 +135,11 @@ contract UNIT_TestPCRM is Test {
 
   function testGetSortedHoldings() public {
     vm.startPrank(address(alice));
-    uint callSubId = OptionEncoding.toSubId(
-      block.timestamp + 1 days,
-      1000e18,
-      true
-    );
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
-    uint putSubId = OptionEncoding.toSubId(
-      block.timestamp + 1 days,
-      900e18,
-      false
-    );
+    uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 900e18, false);
 
-    uint longtermSubId = OptionEncoding.toSubId(
-      block.timestamp + 365 days,
-      10e18,
-      false
-    );
+    uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
 
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,

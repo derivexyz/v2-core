@@ -13,7 +13,6 @@ import "forge-std/console2.sol";
  */
 
 library PCRMSorting {
-
   ///////////////
   // Filtering //
   ///////////////
@@ -23,23 +22,13 @@ library PCRMSorting {
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
    * @param expiryHoldings All account option holdings. Refer to PCRM.sol
    */
-  function filterForwards(PCRM.ExpiryHolding[] memory expiryHoldings) 
-    internal
-    pure 
-  {
+  function filterForwards(PCRM.ExpiryHolding[] memory expiryHoldings) internal pure {
     PCRM.StrikeHolding[] memory strikes;
     for (uint i; i < expiryHoldings.length; i++) {
       strikes = expiryHoldings[i].strikes;
       for (uint j; j < strikes.length; j++) {
-        (
-          strikes[j].calls,
-          strikes[j].puts,
-          strikes[j].forwards
-        ) = filterForwardsForStrike(
-          strikes[j].calls,
-          strikes[j].puts,
-          strikes[j].forwards
-        );
+        (strikes[j].calls, strikes[j].puts, strikes[j].forwards) =
+          filterForwardsForStrike(strikes[j].calls, strikes[j].puts, strikes[j].forwards);
       }
     }
   }
@@ -54,10 +43,11 @@ library PCRMSorting {
    * @return newPuts # of put contracts post pair-off
    * @return newForwards # of forward contracts post pair-off
    */
-  function filterForwardsForStrike(int calls, int puts, int forwards) 
+  function filterForwardsForStrike(int calls, int puts, int forwards)
     internal
     pure
-    returns (int newCalls, int newPuts, int newForwards) {
+    returns (int newCalls, int newPuts, int newForwards)
+  {
     // if calls and puts have opposing signs, forwards are present
     int additionalFwds;
     if (calls * puts < 0) {
@@ -83,17 +73,11 @@ library PCRMSorting {
    * @return expiryIndex index of existing or added expiry struct
    * @return newArrayLen new # of expiries post addition
    */
-  function addUniqueExpiry(
-    PCRM.ExpiryHolding[] memory expiryHoldings, 
-    uint newExpiry, 
-    uint arrayLen, 
-    uint maxStrikes
-  )
+  function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
     internal
     pure
     returns (uint, uint)
   {
-
     // check if expiry exists
     (uint expiryIndex, bool found) = findInArray(expiryHoldings, newExpiry, arrayLen);
 
@@ -101,11 +85,8 @@ library PCRMSorting {
     if (found == false) {
       expiryIndex = arrayLen;
       unchecked {
-        expiryHoldings[arrayLen++] = PCRM.ExpiryHolding({
-          expiry: newExpiry,
-          numStrikesHeld: 0,
-          strikes: new PCRM.StrikeHolding[](maxStrikes)
-        });
+        expiryHoldings[arrayLen++] =
+          PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
       }
     }
     return (expiryIndex, arrayLen);
@@ -119,27 +100,16 @@ library PCRMSorting {
    * @return strikeIndex index of existing or added strike struct
    * @return newArrayLen new # of strikes post addition
    */
-  function addUniqueStrike(
-    PCRM.StrikeHolding[] memory strikeHoldings, 
-    uint newStrike ,
-    uint arrayLen
-)
+  function addUniqueStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint arrayLen)
     internal
     pure
     returns (uint, uint)
   {
-    (uint strikeIndex, bool found) = findInArray(
-      strikeHoldings, newStrike, arrayLen
-    );
+    (uint strikeIndex, bool found) = findInArray(strikeHoldings, newStrike, arrayLen);
     if (found == false) {
       strikeIndex = arrayLen++;
       unchecked {
-        strikeHoldings[strikeIndex] = PCRM.StrikeHolding({
-          strike: newStrike,
-          calls: 0,
-          puts: 0,
-          forwards: 0 
-        });
+        strikeHoldings[strikeIndex] = PCRM.StrikeHolding({strike: newStrike, calls: 0, puts: 0, forwards: 0});
       }
     }
     return (strikeIndex, arrayLen);
@@ -155,10 +125,11 @@ library PCRMSorting {
    * @return index index of the found element. 0 if not found
    * @return found true if found
    */
-  function findInArray(PCRM.ExpiryHolding[] memory expiryHoldings, uint expiryToFind, uint arrayLen) 
-    internal 
-    pure 
-    returns (uint index, bool found) {
+  function findInArray(PCRM.ExpiryHolding[] memory expiryHoldings, uint expiryToFind, uint arrayLen)
+    internal
+    pure
+    returns (uint index, bool found)
+  {
     unchecked {
       for (uint i; i < arrayLen; ++i) {
         if (expiryHoldings[i].expiry == expiryToFind) {
@@ -177,10 +148,11 @@ library PCRMSorting {
    * @return index index of the found element. 0 if not found
    * @return found true if found
    */
-  function findInArray(PCRM.StrikeHolding[] memory strikeHoldings, uint strikeToFind, uint arrayLen) 
-    internal 
-    pure 
-    returns (uint index, bool found) {
+  function findInArray(PCRM.StrikeHolding[] memory strikeHoldings, uint strikeToFind, uint arrayLen)
+    internal
+    pure
+    returns (uint index, bool found)
+  {
     unchecked {
       for (uint i; i < arrayLen; ++i) {
         if (strikeHoldings[i].strike == strikeToFind) {

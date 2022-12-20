@@ -16,8 +16,6 @@ library IntLib {
   function absMin(int a, int b) internal pure returns (uint absMinAmount) {
     uint absA = abs(a);
     uint absB = abs(b);
-    absMinAmount = (absA <= absB) 
-      ? absA
-      : absB;
+    absMinAmount = (absA <= absB) ? absA : absB;
   }
 }
