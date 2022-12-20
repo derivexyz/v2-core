@@ -7,8 +7,9 @@ import "forge-std/console2.sol";
 import "../../src/libraries/PCRMSorting.sol";
 
 contract PCRMSortingTester {
-  function filterForwards(PCRM.ExpiryHolding[] memory expiryHoldings) external pure {
+  function filterForwards(PCRM.ExpiryHolding[] memory expiryHoldings) external pure returns (PCRM.ExpiryHolding[] memory) {
     PCRMSorting.filterForwards(expiryHoldings);
+    return expiryHoldings;
   }
 
   function filterForwardsForStrike(int calls, int puts, int forwards) external pure returns (
@@ -17,11 +18,35 @@ contract PCRMSortingTester {
     (newCalls, newPuts, newForwards) = PCRMSorting.filterForwardsForStrike(calls, puts, forwards);
   }
 
+  function addUniqueExpiry(
+    PCRM.ExpiryHolding[] memory expiryHoldings, 
+    uint newExpiry, 
+    uint arrayLen, 
+    uint maxStrikes) external view returns (uint, uint) {
+    (uint expiryIndex, uint newArrayLen) = PCRMSorting.addUniqueExpiry(
+      expiryHoldings, 
+      newExpiry, 
+      arrayLen, 
+      maxStrikes
+    );
+
+    // had to inline error checks here since array modified via reference and getting stack overflow errors
+    if (expiryHoldings[expiryIndex].expiry != newExpiry) {
+      revert("invalid expiry entry");
+    } 
+
+    if (newArrayLen > arrayLen && expiryIndex != arrayLen) {
+      revert("invalid expiry index");
+    }
+
+    return (expiryIndex, newArrayLen);
+  }
+
   function addUniqueStrike(
     PCRM.ExpiryHolding[] memory expiryHoldings, 
     uint expiryIndex, 
     uint newStrike, 
-    uint arrayLen) external returns (uint, uint) {
+    uint arrayLen) external view returns (uint, uint) {
     (uint strikeIndex, uint newArrayLen) = PCRMSorting.addUniqueStrike(
       expiryHoldings, 
       expiryIndex, 
@@ -89,19 +114,45 @@ contract PCRMSortingTest is Test {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
 
     // check corrected filtering
-    tester.filterForwards(holdings);
+    holdings = tester.filterForwards(holdings);
     assertEq(holdings[0].strikes[0].calls, 0);
     assertEq(holdings[0].strikes[0].puts, 0);
     assertEq(holdings[0].strikes[0].forwards, 11);
-    assertEq(holdings[0].strikes[0].calls, 0);
-    assertEq(holdings[0].strikes[0].puts, -10);
-    assertEq(holdings[0].strikes[0].forwards, 5);
+    assertEq(holdings[0].strikes[1].calls, 0);
+    assertEq(holdings[0].strikes[1].puts, -10);
+    assertEq(holdings[0].strikes[1].forwards, 5);
 
   }
 
   //////////////////////////////
   // Unique Elements in Array //
   //////////////////////////////
+
+  function testAddUniqueExpiry() public {
+    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
+    (uint expiryIndex, uint newArrayLen) = tester.addUniqueExpiry(
+      holdings, 
+      block.timestamp + 30 days, 
+      2, 
+      pcrm.MAX_STRIKES()
+    );
+
+    assertEq(expiryIndex, 2);
+    assertEq(newArrayLen, 3);
+  }
+
+  function testAddExistingExpiry() public {
+    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
+    (uint expiryIndex, uint newArrayLen) = tester.addUniqueExpiry(
+      holdings, 
+      holdings[0].expiry, 
+      2, 
+      pcrm.MAX_STRIKES()
+    );
+
+    assertEq(expiryIndex, 0);
+    assertEq(newArrayLen, 2);
+  }
 
   function testAddUniqueStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
