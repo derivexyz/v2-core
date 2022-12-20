@@ -68,7 +68,7 @@ contract UNIT_InterestRateModel is Test {
   function testFuzzBorrowRate(uint time, uint cash, uint borrows) public {
     vm.assume(cash <= 100000 ether);
     vm.assume(cash >= borrows);
-    vm.assume(time >= block.timestamp && time <= block.timestamp + rateModel.SECONDS_PER_YEAR() * 1000);
+    vm.assume(time >= block.timestamp && time <= block.timestamp + rateModel.SECONDS_PER_YEAR() * 100);
 
     uint borrowRate = rateModel.getBorrowRate(cash, borrows);
     uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
