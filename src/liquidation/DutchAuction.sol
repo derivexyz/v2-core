@@ -46,6 +46,8 @@ contract DutchAuction is IDutchAuction {
       revert NotRiskManager(msg.sender);
     }
 
+    //TODO: finish this function
+
     bytes32 auctionId = keccak256(abi.encodePacked(accountId, block.timestamp));
     uint price = spotFeed.getSpot(1);
     (int upperBound) = getVMax(accountId, int(price));
@@ -147,7 +149,7 @@ contract DutchAuction is IDutchAuction {
     // otherwise return using dv
     Auction memory auction = auctions[auctionId];
     int upperBound = auction.auction.upperBound;
-    uint numSteps = block.number / parameters.stepInterval; // will round down to whole number.
+    uint numSteps = block.timestamp / parameters.stepInterval; // will round down to whole number.
 
     // dv = (Vmax - Vmin) * numSteps
     return upperBound - int(auction.dv * numSteps);
