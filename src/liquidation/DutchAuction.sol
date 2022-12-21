@@ -5,7 +5,7 @@ import "../interfaces/IPCRM.sol";
 import "../interfaces/ISpotFeeds.sol";
 
 contract DutchAuction {
-   struct AuctionDetails {
+  struct AuctionDetails {
     uint accountId;
     int upperBound;
     int lowerBound;
