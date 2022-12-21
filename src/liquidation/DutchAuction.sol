@@ -31,9 +31,9 @@ contract DutchAuction {
   DutchAuctionParameters public parameters;
   ISpotFeeds public spotFeed;
 
-  constructor(ISpotFeeds _spotFeed, IPCRM _riskManager) {
+  constructor(ISpotFeeds _spotFeed, address _riskManager) {
     spotFeed = _spotFeed;
-    riskManager = _riskManager;
+    riskManager = IPCRM(_riskManager);
   }
 
   /// @notice Sets the dutch Auction Parameters
@@ -56,7 +56,7 @@ contract DutchAuction {
   /// @return bytes32 the id of the auction that was just started
   function startAuction(uint accountId) external returns (bytes32) {
     if (address(riskManager) != msg.sender) {
-      revert NotRiskManager(msg.sender);
+      revert DA_NotRiskManager(msg.sender);
     }
 
     //TODO: finish this function
@@ -188,5 +188,5 @@ contract DutchAuction {
   // ERRORS //
   ////////////
 
-  error NotRiskManager(address sender);
+  error DA_NotRiskManager(address sender);
 }

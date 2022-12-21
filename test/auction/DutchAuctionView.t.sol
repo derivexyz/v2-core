@@ -11,7 +11,6 @@ import "../../src/liquidation/DutchAuction.sol";
 
 import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
-import "../shared/mocks/MockIPCRM.sol";
 
 contract UNIT_DutchAuctionView is Test {
   address alice;
@@ -26,7 +25,7 @@ contract UNIT_DutchAuctionView is Test {
   MockAsset usdcAsset;
   MockAsset optionAdapter;
   MockAsset coolAsset;
-  MockIPCRM manager;
+  MockManager manager;
   MockFeed feed;
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
@@ -72,7 +71,7 @@ contract UNIT_DutchAuctionView is Test {
     optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
 
     /* Risk Manager */
-    manager = new MockIPCRM(address(account));
+    manager = new MockManager(address(account));
 
     /*
      Feed for Spot*/
