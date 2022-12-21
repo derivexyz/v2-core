@@ -230,7 +230,6 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     // test state after deposit
 
-    uint totalBorrowBefore = cashAsset.totalBorrow();
     uint totalSupplyBefore = cashAsset.totalSupply();
 
     usdc.mint(address(this), depositAmount);
