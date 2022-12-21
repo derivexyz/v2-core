@@ -13,8 +13,7 @@ import "../../src/liquidation/DutchAuction.sol";
 import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
 
-// TOOD: make this a script to set up the enviroment
-contract DutchAuctionBase is Script {
+contract DutchAuctionBase is Test {
   uint ownAcc;
   uint expiry;
   Account account;
@@ -27,10 +26,7 @@ contract DutchAuctionBase is Script {
   DutchAuction dutchAuction;
 
   function run() external {
-    vm.startBroadcast();
-
     deployMockSystem();
-
     setupAccounts(500);
   }
 
@@ -68,7 +64,6 @@ contract DutchAuctionBase is Script {
 
     /* Risk Manager */
     manager = new MockManager(address(account));
-
     /*
      Feed for Spot*/
     feed = new MockFeed();
