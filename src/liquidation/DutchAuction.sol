@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../interfaces/IDutchAuction.sol";
 import "../interfaces/IPCRM.sol";
 import "../interfaces/ISpotFeeds.sol";
 
-contract DutchAuction is IDutchAuction {
-  mapping(address => bool) public isRiskManagers;
+contract DutchAuction {
+  IPCRM public riskManager;
   mapping(bytes32 => Auction) public auctions;
   DutchAuctionParameters public parameters;
   ISpotFeeds public spotFeed;
 
-  constructor(ISpotFeeds _spotFeed) {
+  constructor(ISpotFeeds _spotFeed, IPCRM _riskManager) {
     spotFeed = _spotFeed;
+    riskManager = riskManager;
   }
 
   /// @notice Sets the dutch Auction Parameters
@@ -27,14 +27,6 @@ contract DutchAuction is IDutchAuction {
     // set the parameters for the dutch auction
     parameters = params;
     return parameters;
-  }
-
-  /// @notice Adds a risk manager that can initiate auctions
-  /// @dev This function is used to add a risk manager that can initiate auctions
-  /// @return bool returns true if the risk manager is added
-  function addRiskManger() external returns (bool) {
-    isRiskManagers[msg.sender] = true;
-    return isRiskManagers[msg.sender];
   }
 
   /// @notice Called by the riskManager to start an auction
