@@ -5,6 +5,27 @@ import "../interfaces/IPCRM.sol";
 import "../interfaces/ISpotFeeds.sol";
 
 contract DutchAuction {
+   struct AuctionDetails {
+    uint accountId;
+    int upperBound;
+    int lowerBound;
+  }
+
+  struct Auction {
+    AuctionDetails auction;
+    bool insolvent;
+    bool ongoing;
+    uint startTime;
+    uint endTime;
+    uint dv; // TODO: mech says that this can be calculated once but potential issue with spot changing, the amount to decrease by each step
+  }
+
+  struct DutchAuctionParameters {
+    uint stepInterval;
+    uint lengthOfAuction;
+    address securityModule;
+  }
+
   IPCRM public riskManager;
   mapping(bytes32 => Auction) public auctions;
   DutchAuctionParameters public parameters;
@@ -12,7 +33,7 @@ contract DutchAuction {
 
   constructor(ISpotFeeds _spotFeed, IPCRM _riskManager) {
     spotFeed = _spotFeed;
-    riskManager = riskManager;
+    riskManager = _riskManager;
   }
 
   /// @notice Sets the dutch Auction Parameters
@@ -34,7 +55,7 @@ contract DutchAuction {
   /// @param accountId The id of the account being liquidated
   /// @return bytes32 the id of the auction that was just started
   function startAuction(uint accountId) external returns (bytes32) {
-    if (!isRiskManagers[msg.sender]) {
+    if (address(riskManager) != msg.sender) {
       revert NotRiskManager(msg.sender);
     }
 
@@ -48,8 +69,8 @@ contract DutchAuction {
     auctions[auctionId] = Auction({
       insolvent: false,
       ongoing: true,
-      startBlock: block.number,
-      endBlock: block.number + parameters.lengthOfAuction,
+      startTime: block.timestamp,
+      endTime: block.timestamp + parameters.lengthOfAuction,
       dv: 0, // TODO: need to be able to calculate dv
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: lowerBound})
     });

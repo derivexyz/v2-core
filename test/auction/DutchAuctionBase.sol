@@ -12,6 +12,7 @@ import "../../src/liquidation/DutchAuction.sol";
 
 import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
+import "../shared/mocks/MockIPCRM.sol";
 
 contract DutchAuctionBase is Test {
   uint ownAcc;
@@ -21,7 +22,7 @@ contract DutchAuctionBase is Test {
   MockERC20 dai;
   MockAsset usdcAdapter;
   MockAsset optionAdapter;
-  MockManager manager;
+  MockIPCRM manager;
   MockFeed feed;
   DutchAuction dutchAuction;
 
@@ -63,12 +64,13 @@ contract DutchAuctionBase is Test {
     optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
 
     /* Risk Manager */
-    manager = new MockManager(address(account));
+    manager = new MockIPCRM(address(account));
+
     /*
      Feed for Spot*/
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = new DutchAuction(MockFeed(address(feed)));
+    dutchAuction = new DutchAuction(feed, manager);
   }
 }

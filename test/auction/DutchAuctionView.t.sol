@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../../src/interfaces/IDutchAuction.sol";
 import "../../src/liquidation/DutchAuction.sol";
 import "../../src/Account.sol";
 import "../shared/mocks/MockERC20.sol";
@@ -12,6 +11,7 @@ import "../../src/liquidation/DutchAuction.sol";
 
 import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
+import "../shared/mocks/MockIPCRM.sol";
 
 contract UNIT_DutchAuctionView is Test {
   address alice;
@@ -26,10 +26,10 @@ contract UNIT_DutchAuctionView is Test {
   MockAsset usdcAsset;
   MockAsset optionAdapter;
   MockAsset coolAsset;
-  MockManager manager;
+  MockIPCRM manager;
   MockFeed feed;
   DutchAuction dutchAuction;
-  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+  DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
   uint tokenSubId = 1000;
 
@@ -72,14 +72,14 @@ contract UNIT_DutchAuctionView is Test {
     optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
 
     /* Risk Manager */
-    manager = new MockManager(address(account));
+    manager = new MockIPCRM(address(account));
 
     /*
      Feed for Spot*/
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = new DutchAuction(feed);
+    dutchAuction = new DutchAuction(feed, address(manager));
   }
 
   function mintAndDeposit(
@@ -110,7 +110,7 @@ contract UNIT_DutchAuctionView is Test {
 
     // change params
     dutchAuction.setDutchAuctionParameters(
-      IDutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
+      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
     );
 
     // check if params changed
@@ -121,14 +121,8 @@ contract UNIT_DutchAuctionView is Test {
   }
 
   function testGetRiskManager() public {
-    assertEq(dutchAuction.isRiskManagers(address(0)), false);
-    assertEq(dutchAuction.isRiskManagers(address(1)), false);
-    assertEq(dutchAuction.isRiskManagers(address(2)), false);
-
-    // setting a risk mananger
-    vm.prank(address(manager));
-    dutchAuction.addRiskManger();
-    assertEq(dutchAuction.isRiskManagers(address(manager)), true);
+    console.log("dutchAuction.riskManager():", address(dutchAuction.riskManager()));
+    assertEq(address(dutchAuction.riskManager()), address(manager));
   }
 
   function testGetSpotFeed() public {
