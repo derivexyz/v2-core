@@ -66,7 +66,10 @@ contract PCRM is IManager, Owned {
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
+  /// @dev max number of expiries allowed to be held in one account
   uint public constant MAX_EXPIRIES = 8;
+
+  /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 16;
 
   ////////////
@@ -135,7 +138,8 @@ contract PCRM is IManager, Owned {
    */
   function checkAndStartLiquidation(uint accountId) external {
     dutchAuction.startAuction(accountId);
-    // todo [Cameron / dom]: check that account is liquidatable / freeze account / call out to auction contract
+    // todo [Cameron / Dom]: check that account is liquidatable / freeze account / call out to auction contract
+    // todo [Cameron / Dom]: add account Id to send reward for flagging liquidation 
   }
 
   /**
@@ -179,8 +183,6 @@ contract PCRM is IManager, Owned {
     margin += _calcCashValue(marginType);
   }
 
-  // Option Margin Math
-
   /**
    * @notice Calculate the discounted value of option holdings in a specific expiry.
    * @param expiry All option holdings within an expiry.
@@ -207,8 +209,6 @@ contract PCRM is IManager, Owned {
   {
     // todo [Josh]: get call, put, forward values
   }
-
-  // Cash Margin Math
 
   /**
    * @notice Calculate the discounted value of cash in account.

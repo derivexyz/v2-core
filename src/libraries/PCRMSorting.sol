@@ -18,7 +18,7 @@ library PCRMSorting {
   //////////////
 
   /**
-   * @notice Take in account holdings and return updated holdings with forwards
+   * @notice Take in account holdings and update holdings in-place with forwards
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
    * @param expiryHoldings All account option holdings. Refer to PCRM.sol
    */
