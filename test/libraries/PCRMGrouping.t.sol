@@ -24,12 +24,12 @@ contract PCRMGroupingTester {
     (newCalls, newPuts, newForwards) = PCRMGrouping.findForwards(calls, puts, forwards);
   }
 
-  function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
+  function findOrAddExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
     external
     pure
     returns (uint, uint)
   {
-    (uint expiryIndex, uint newArrayLen) = PCRMGrouping.addUniqueExpiry(expiryHoldings, newExpiry, arrayLen, maxStrikes);
+    (uint expiryIndex, uint newArrayLen) = PCRMGrouping.findOrAddExpiry(expiryHoldings, newExpiry, arrayLen, maxStrikes);
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
     if (expiryHoldings[expiryIndex].expiry != newExpiry) {
@@ -43,12 +43,12 @@ contract PCRMGroupingTester {
     return (expiryIndex, newArrayLen);
   }
 
-  function addUniqueStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint numStrikesHeld)
+  function findOrAddStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint numStrikesHeld)
     external
     view
     returns (uint, uint)
   {
-    (uint strikeIndex, uint newArrayLen) = PCRMGrouping.addUniqueStrike(strikeHoldings, newStrike, numStrikesHeld);
+    (uint strikeIndex, uint newArrayLen) = PCRMGrouping.findOrAddStrike(strikeHoldings, newStrike, numStrikesHeld);
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
     if (strikeHoldings[strikeIndex].strike != newStrike) {
@@ -123,10 +123,10 @@ contract PCRMGroupingTest is Test {
   // Unique Elements in Array //
   //////////////////////////////
 
-  function testAddUniqueExpiry() public {
+  function testFindOrAddExpiry() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
     (uint expiryIndex, uint newArrayLen) =
-      tester.addUniqueExpiry(holdings, block.timestamp + 30 days, 2, pcrm.MAX_STRIKES());
+      tester.findOrAddExpiry(holdings, block.timestamp + 30 days, 2, pcrm.MAX_STRIKES());
 
     assertEq(expiryIndex, 2);
     assertEq(newArrayLen, 3);
@@ -134,15 +134,15 @@ contract PCRMGroupingTest is Test {
 
   function testAddExistingExpiry() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint expiryIndex, uint newArrayLen) = tester.addUniqueExpiry(holdings, holdings[0].expiry, 2, pcrm.MAX_STRIKES());
+    (uint expiryIndex, uint newArrayLen) = tester.findOrAddExpiry(holdings, holdings[0].expiry, 2, pcrm.MAX_STRIKES());
 
     assertEq(expiryIndex, 0);
     assertEq(newArrayLen, 2);
   }
 
-  function testAddUniqueStrike() public {
+  function testFindOrAddStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0].strikes, 1250e18, 2);
+    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings[0].strikes, 1250e18, 2);
 
     assertEq(strikeIndex, 2);
     assertEq(newArrayLen, 3);
@@ -150,7 +150,7 @@ contract PCRMGroupingTest is Test {
 
   function testAddExistingStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0].strikes, 10e18, 2);
+    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings[0].strikes, 10e18, 2);
 
     assertEq(strikeIndex, 0);
     assertEq(newArrayLen, 2);

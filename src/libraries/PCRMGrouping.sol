@@ -72,7 +72,7 @@ library PCRMGrouping {
    * @return expiryIndex index of existing or added expiry struct
    * @return newArrayLen new # of expiries post addition
    */
-  function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
+  function findOrAddExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
     internal
     pure
     returns (uint, uint)
@@ -97,7 +97,7 @@ library PCRMGrouping {
    * @return strikeIndex index of existing or added strike struct
    * @return newArrayLen new # of strikes post addition
    */
-  function addUniqueStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint arrayLen)
+  function findOrAddStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint arrayLen)
     internal
     pure
     returns (uint, uint)

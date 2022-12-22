@@ -248,9 +248,9 @@ contract PCRM is IManager, Owned {
 
         // add new expiry or strike to holdings if unique
         (expiryIndex, numExpiriesHeld) =
-          PCRMGrouping.addUniqueExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
+          PCRMGrouping.findOrAddExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
 
-        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMGrouping.addUniqueStrike(
+        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMGrouping.findOrAddStrike(
           expiryHoldings[expiryIndex].strikes, strike, expiryHoldings[expiryIndex].numStrikesHeld
         );
 
