@@ -137,7 +137,7 @@ contract UNIT_TestPCRM is Test {
     vm.startPrank(address(alice));
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
-    uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 900e18, false);
+    uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
 
     uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
 
@@ -154,7 +154,7 @@ contract UNIT_TestPCRM is Test {
       toAcc: aliceAcc,
       asset: IAsset(option),
       subId: putSubId,
-      amount: 10e18,
+      amount: -10e18,
       assetData: ""
     });
     AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
@@ -173,10 +173,9 @@ contract UNIT_TestPCRM is Test {
 
     PCRM.ExpiryHolding[] memory holdings = manager.getGroupedHoldings(aliceAcc);
     assertEq(holdings[0].strikes[0].strike, 1000e18);
-    assertEq(holdings[0].strikes[0].calls, 1e18);
-
-    assertEq(holdings[0].strikes[1].strike, 900e18);
-    assertEq(holdings[0].strikes[1].puts, 10e18);
+    assertEq(holdings[0].strikes[0].calls, 0);
+    assertEq(holdings[0].strikes[0].puts, -9e18);
+    assertEq(holdings[0].strikes[0].forwards, 1e18);
 
     assertEq(holdings[1].strikes[0].strike, 10e18);
     assertEq(holdings[1].strikes[0].puts, 5e18);

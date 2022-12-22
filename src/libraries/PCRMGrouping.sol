@@ -17,7 +17,7 @@ library PCRMGrouping {
   // Forwards //
   //////////////
 
-    /**
+  /**
    * @notice Take in a strike holding and update holding in-place with forwards
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
    * @param strike PCRM.StrikeHolding struct containing all holdings for a particular strike
@@ -62,11 +62,7 @@ library PCRMGrouping {
    * @param puts # of put contracts
    * @return additionalFwds # of forward contracts found
    */
-  function findForwards(int calls, int puts)
-    internal
-    pure
-    returns (int additionalFwds)
-  {
+  function findForwards(int calls, int puts) internal pure returns (int additionalFwds) {
     // if calls and puts have opposing signs, forwards are present
     if (calls * puts < 0) {
       int fwdSign = (calls > 0) ? int(1) : -1;
@@ -100,7 +96,7 @@ library PCRMGrouping {
     if (found == false) {
       expiryIndex = arrayLen++;
       expiryHoldings[expiryIndex] =
-      PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
+        PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
     }
     return (expiryIndex, arrayLen);
   }

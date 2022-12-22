@@ -9,7 +9,6 @@ pragma solidity ^0.8.13;
  */
 
 library IntLib {
-
   /**
    * @notice Returns absolute value.
    * @param amount Positive or negative integer.

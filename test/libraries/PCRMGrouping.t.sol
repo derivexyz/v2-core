@@ -7,12 +7,7 @@ import "forge-std/console2.sol";
 import "../../src/libraries/PCRMGrouping.sol";
 
 contract PCRMGroupingTester {
-
-  function updateForwards(PCRM.StrikeHolding memory strikeHolding)
-    external
-    pure
-    returns (PCRM.StrikeHolding memory)
-  {
+  function updateForwards(PCRM.StrikeHolding memory strikeHolding) external pure returns (PCRM.StrikeHolding memory) {
     PCRMGrouping.updateForwards(strikeHolding);
     return strikeHolding;
   }
@@ -26,11 +21,7 @@ contract PCRMGroupingTester {
     return expiryHoldings;
   }
 
-  function findForwards(int calls, int puts)
-    external
-    pure
-    returns (int newForwards)
-  {
+  function findForwards(int calls, int puts) external pure returns (int newForwards) {
     newForwards = PCRMGrouping.findForwards(calls, puts);
   }
 

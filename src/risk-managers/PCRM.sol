@@ -139,7 +139,7 @@ contract PCRM is IManager, Owned {
   function checkAndStartLiquidation(uint accountId) external {
     dutchAuction.startAuction(accountId);
     // todo [Cameron / Dom]: check that account is liquidatable / freeze account / call out to auction contract
-    // todo [Cameron / Dom]: add account Id to send reward for flagging liquidation 
+    // todo [Cameron / Dom]: add account Id to send reward for flagging liquidation
   }
 
   /**
@@ -239,9 +239,7 @@ contract PCRM is IManager, Owned {
     uint expiryIndex;
     uint strikeIndex;
     expiryHoldings = new PCRM.ExpiryHolding[](
-      MAX_EXPIRIES > assets.length 
-        ? assets.length 
-        : MAX_EXPIRIES
+      MAX_EXPIRIES > assets.length ? assets.length : MAX_EXPIRIES
     );
 
     ExpiryHolding memory currentExpiry;
@@ -258,10 +256,9 @@ contract PCRM is IManager, Owned {
         (expiryIndex, numExpiriesHeld) =
           PCRMGrouping.findOrAddExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
         currentExpiry = expiryHoldings[expiryIndex];
-        
-        (strikeIndex, currentExpiry.numStrikesHeld) = PCRMGrouping.findOrAddStrike(
-          currentExpiry.strikes, strike, currentExpiry.numStrikesHeld
-        );
+
+        (strikeIndex, currentExpiry.numStrikesHeld) =
+          PCRMGrouping.findOrAddStrike(currentExpiry.strikes, strike, currentExpiry.numStrikesHeld);
 
         // add call or put balance
         currentStrike = currentExpiry.strikes[strikeIndex];
