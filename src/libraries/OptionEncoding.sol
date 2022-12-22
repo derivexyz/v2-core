@@ -12,8 +12,8 @@ pragma solidity ^0.8.13;
  *         - strikes: down to 8 decimal points and up to $90B
  */
 library OptionEncoding {
-  uint constant UINT32_MAX = 4294967295;
-  uint constant UINT63_MAX = 9223372036854775807;
+  uint constant UINT32_MAX = 0xffffffff; // 4294967295;
+  uint constant UINT63_MAX = 0x7fffffffffffffff; // 9223372036854775807;
 
   /**
    * @dev Convert option details into subId
