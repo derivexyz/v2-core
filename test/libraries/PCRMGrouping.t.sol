@@ -16,12 +16,12 @@ contract PCRMGroupingTester {
     return expiryHoldings;
   }
 
-  function findForwards(int calls, int puts, int forwards)
+  function findForwards(int calls, int puts)
     external
     pure
-    returns (int newCalls, int newPuts, int newForwards)
+    returns (int newForwards)
   {
-    (newCalls, newPuts, newForwards) = PCRMGrouping.findForwards(calls, puts, forwards);
+    newForwards = PCRMGrouping.findForwards(calls, puts);
   }
 
   function findOrAddExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
@@ -79,30 +79,22 @@ contract PCRMGroupingTest is Test {
   ///////////////////////
 
   function testFindingForwardsWhenZeroBalance() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(0, 0, 0);
-    assertEq(newCalls, 0);
-    assertEq(newPuts, 0);
+    int newForwards = tester.findForwards(0, 0);
     assertEq(newForwards, 0);
   }
 
   function testFindingForwardsWhenNoForwards() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(10, 10, 0);
-    assertEq(newCalls, 10);
-    assertEq(newPuts, 10);
+    int newForwards = tester.findForwards(10, 10);
     assertEq(newForwards, 0);
   }
 
   function testFindingForwardsWhenLongForwardsPresent() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(10, -7, 0);
-    assertEq(newCalls, 3);
-    assertEq(newPuts, 0);
+    int newForwards = tester.findForwards(10, -7);
     assertEq(newForwards, 7);
   }
 
   function testFindingForwardsWhenShortForwardsPresent() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(-5, 10, 0);
-    assertEq(newCalls, 0);
-    assertEq(newPuts, 5);
+    int newForwards = tester.findForwards(-5, 10);
     assertEq(newForwards, -5);
   }
 

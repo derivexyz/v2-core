@@ -29,8 +29,12 @@ library PCRMGrouping {
       strikes = expiryHoldings[i].strikes;
       for (uint j; j < strikes.length; j++) {
         currentStrike = strikes[j];
-        (currentStrike.calls, currentStrike.puts, currentStrike.forwards) =
-          findForwards(currentStrike.calls, currentStrike.puts, currentStrike.forwards);
+        int additionalFwds = findForwards(currentStrike.calls, currentStrike.puts);
+        if (additionalFwds != 0) {
+          currentStrike.calls -= additionalFwds;
+          currentStrike.puts += additionalFwds;
+          currentStrike.forwards += additionalFwds;
+        }
       }
     }
   }
@@ -38,25 +42,22 @@ library PCRMGrouping {
   /**
    * @notice Pairs off calls and puts of the same strike into forwards
    *         Forward = Call - Put. Positive sign counts as a Long Forward
+   * @dev if not using updateForwards(), make sure to update calls and puts with additionalFwds
    * @param calls # of call contracts
    * @param puts # of put contracts
-   * @param forwards # of forward contracts
-   * @return newCalls # of call contracts post pair-off
-   * @return newPuts # of put contracts post pair-off
-   * @return newForwards # of forward contracts post pair-off
+   * @return additionalFwds # of forward contracts found
    */
-  function findForwards(int calls, int puts, int forwards)
+  function findForwards(int calls, int puts)
     internal
     pure
-    returns (int newCalls, int newPuts, int newForwards)
+    returns (int additionalFwds)
   {
     // if calls and puts have opposing signs, forwards are present
     if (calls * puts < 0) {
       int fwdSign = (calls > 0) ? int(1) : -1;
-      int additionalFwds = int(IntLib.absMin(calls, puts)) * fwdSign;
-      return (calls - additionalFwds, puts + additionalFwds, forwards + additionalFwds);
+      return int(IntLib.absMin(calls, puts)) * fwdSign;
     }
-    return (calls, puts, forwards);
+    return (0);
   }
 
   /////////////
