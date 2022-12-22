@@ -238,27 +238,35 @@ contract PCRM is IManager, Owned {
     uint numExpiriesHeld;
     uint expiryIndex;
     uint strikeIndex;
-    expiryHoldings = new PCRM.ExpiryHolding[](MAX_EXPIRIES);
+    expiryHoldings = new PCRM.ExpiryHolding[](
+      MAX_EXPIRIES > assets.length 
+        ? assets.length 
+        : MAX_EXPIRIES
+    );
 
+    ExpiryHolding memory currentExpiry;
+    AccountStructs.AssetBalance memory currentAsset;
     // 1. create sorted [expiries][strikes] 2D array
     for (uint i; i < assets.length; ++i) {
-      if (address(assets[i].asset) == address(option)) {
+      currentAsset = assets[i];
+      if (address(currentAsset.asset) == address(option)) {
         // decode subId
-        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
+        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
 
         // add new expiry or strike to holdings if unique
         (expiryIndex, numExpiriesHeld) =
           PCRMGrouping.findOrAddExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
-
-        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMGrouping.findOrAddStrike(
-          expiryHoldings[expiryIndex].strikes, strike, expiryHoldings[expiryIndex].numStrikesHeld
+        currentExpiry = expiryHoldings[expiryIndex];
+        
+        (strikeIndex, currentExpiry.numStrikesHeld) = PCRMGrouping.findOrAddStrike(
+          currentExpiry.strikes, strike, currentExpiry.numStrikesHeld
         );
 
         // add call or put balance
         if (isCall) {
-          expiryHoldings[expiryIndex].strikes[strikeIndex].calls += assets[i].balance;
+          currentExpiry.strikes[strikeIndex].calls += currentAsset.balance;
         } else {
-          expiryHoldings[expiryIndex].strikes[strikeIndex].puts += assets[i].balance;
+          currentExpiry.strikes[strikeIndex].puts += currentAsset.balance;
         }
       }
     }
