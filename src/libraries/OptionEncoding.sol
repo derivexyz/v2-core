@@ -11,6 +11,8 @@ pragma solidity ^0.8.13;
  *         - expiries: up to year 2106
  *         - strikes: down to 8 decimal points and up to $90B
  */
+
+ // todo [productor?]: auto-generated doc-strings
 library OptionEncoding {
   uint constant UINT32_MAX = 0xffffffff; // 4294967295;
   uint constant UINT63_MAX = 0x7fffffffffffffff; // 9223372036854775807;
