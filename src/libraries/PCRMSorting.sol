@@ -81,10 +81,8 @@ library PCRMSorting {
     // return index if found or add new entry
     if (found == false) {
       expiryIndex = arrayLen++;
-      unchecked {
-        expiryHoldings[expiryIndex] =
-          PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
-      }
+      expiryHoldings[expiryIndex] =
+      PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
     }
     return (expiryIndex, arrayLen);
   }
@@ -108,9 +106,7 @@ library PCRMSorting {
     // return index if found or add new entry
     if (found == false) {
       strikeIndex = arrayLen++;
-      unchecked {
-        strikeHoldings[strikeIndex] = PCRM.StrikeHolding({strike: newStrike, calls: 0, puts: 0, forwards: 0});
-      }
+      strikeHoldings[strikeIndex] = PCRM.StrikeHolding({strike: newStrike, calls: 0, puts: 0, forwards: 0});
     }
     return (strikeIndex, arrayLen);
   }
