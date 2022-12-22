@@ -24,11 +24,13 @@ library PCRMSorting {
    */
   function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings) internal pure {
     PCRM.StrikeHolding[] memory strikes;
+    PCRM.StrikeHolding memory currentStrike;
     for (uint i; i < expiryHoldings.length; i++) {
       strikes = expiryHoldings[i].strikes;
       for (uint j; j < strikes.length; j++) {
-        (strikes[j].calls, strikes[j].puts, strikes[j].forwards) =
-          findForwards(strikes[j].calls, strikes[j].puts, strikes[j].forwards);
+        currentStrike = strikes[j];
+        (currentStrike.calls, currentStrike.puts, currentStrike.forwards) =
+          findForwards(currentStrike.calls, currentStrike.puts, currentStrike.forwards);
       }
     }
   }
