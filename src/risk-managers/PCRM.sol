@@ -8,7 +8,7 @@ import "src/interfaces/IDutchAuction.sol";
 import "src/assets/Lending.sol";
 import "src/assets/Option.sol";
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMSorting.sol";
+import "src/libraries/PCRMGrouping.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 
@@ -115,7 +115,7 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
+    ExpiryHolding[] memory expiries = _groupHoldings(account.getAccountBalances(accountId));
     _calcMargin(expiries, MarginType.INITIAL);
   }
 
@@ -224,14 +224,13 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Sort all option holdings into an array of
+   * @notice Group all option holdings into an array of
    *         [expiries][strikes][calls / puts / forwards].
    * @param assets Array of balances for given asset and subId.
-   * @return expiryHoldings Sorted array of option holdings.
+   * @return expiryHoldings Grouped array of option holdings.
    */
 
-  // todo [Josh]: possibly better to rename to "arrange" / "group" / "classify"
-  function _sortHoldings(AccountStructs.AssetBalance[] memory assets)
+  function _groupHoldings(AccountStructs.AssetBalance[] memory assets)
     internal
     view
     returns (ExpiryHolding[] memory expiryHoldings)
@@ -249,9 +248,9 @@ contract PCRM is IManager, Owned {
 
         // add new expiry or strike to holdings if unique
         (expiryIndex, numExpiriesHeld) =
-          PCRMSorting.addUniqueExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
+          PCRMGrouping.addUniqueExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
 
-        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMSorting.addUniqueStrike(
+        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMGrouping.addUniqueStrike(
           expiryHoldings[expiryIndex].strikes, strike, expiryHoldings[expiryIndex].numStrikesHeld
         );
 
@@ -265,7 +264,7 @@ contract PCRM is IManager, Owned {
     }
 
     // 2. pair off all symmetric calls and puts into forwards
-    PCRMSorting.updateForwards(expiryHoldings);
+    PCRMGrouping.updateForwards(expiryHoldings);
   }
 
   //////////
@@ -273,13 +272,13 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Sort all option holdings of an account into an array of
+   * @notice Group all option holdings of an account into an array of
    *         [expiries][strikes][calls / puts / forwards].
    * @param accountId ID of account to sort.
-   * @return expiryHoldings Sorted array of option holdings.
+   * @return expiryHoldings Grouped array of option holdings.
    */
-  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
-    return _sortHoldings(account.getAccountBalances(accountId));
+  function getGroupedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
+    return _groupHoldings(account.getAccountBalances(accountId));
   }
 
   /**

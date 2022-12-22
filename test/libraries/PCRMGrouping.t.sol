@@ -4,15 +4,15 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../src/libraries/PCRMSorting.sol";
+import "../../src/libraries/PCRMGrouping.sol";
 
-contract PCRMSortingTester {
+contract PCRMGroupingTester {
   function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings)
     external
     pure
     returns (PCRM.ExpiryHolding[] memory)
   {
-    PCRMSorting.updateForwards(expiryHoldings);
+    PCRMGrouping.updateForwards(expiryHoldings);
     return expiryHoldings;
   }
 
@@ -21,7 +21,7 @@ contract PCRMSortingTester {
     pure
     returns (int newCalls, int newPuts, int newForwards)
   {
-    (newCalls, newPuts, newForwards) = PCRMSorting.findForwards(calls, puts, forwards);
+    (newCalls, newPuts, newForwards) = PCRMGrouping.findForwards(calls, puts, forwards);
   }
 
   function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
@@ -29,7 +29,7 @@ contract PCRMSortingTester {
     pure
     returns (uint, uint)
   {
-    (uint expiryIndex, uint newArrayLen) = PCRMSorting.addUniqueExpiry(expiryHoldings, newExpiry, arrayLen, maxStrikes);
+    (uint expiryIndex, uint newArrayLen) = PCRMGrouping.addUniqueExpiry(expiryHoldings, newExpiry, arrayLen, maxStrikes);
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
     if (expiryHoldings[expiryIndex].expiry != newExpiry) {
@@ -48,7 +48,7 @@ contract PCRMSortingTester {
     view
     returns (uint, uint)
   {
-    (uint strikeIndex, uint newArrayLen) = PCRMSorting.addUniqueStrike(strikeHoldings, newStrike, numStrikesHeld);
+    (uint strikeIndex, uint newArrayLen) = PCRMGrouping.addUniqueStrike(strikeHoldings, newStrike, numStrikesHeld);
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
     if (strikeHoldings[strikeIndex].strike != newStrike) {
@@ -63,12 +63,12 @@ contract PCRMSortingTester {
   }
 }
 
-contract PCRMSortingTest is Test {
-  PCRMSortingTester tester;
+contract PCRMGroupingTest is Test {
+  PCRMGroupingTester tester;
   PCRM pcrm;
 
   function setUp() public {
-    tester = new PCRMSortingTester();
+    tester = new PCRMGroupingTester();
     pcrm = new PCRM(
       address(0), address(0), address(0), address(0), address(0)
     );

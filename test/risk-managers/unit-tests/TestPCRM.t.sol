@@ -133,7 +133,7 @@ contract UNIT_TestPCRM is Test {
   // View //
   //////////
 
-  function testGetSortedHoldings() public {
+  function testGetGroupedHoldings() public {
     vm.startPrank(address(alice));
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
@@ -171,7 +171,7 @@ contract UNIT_TestPCRM is Test {
 
     vm.stopPrank();
 
-    PCRM.ExpiryHolding[] memory holdings = manager.getSortedHoldings(aliceAcc);
+    PCRM.ExpiryHolding[] memory holdings = manager.getGroupedHoldings(aliceAcc);
     assertEq(holdings[0].strikes[0].strike, 1000e18);
     assertEq(holdings[0].strikes[0].calls, 1e18);
 

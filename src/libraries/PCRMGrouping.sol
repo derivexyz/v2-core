@@ -7,12 +7,12 @@ import "src/libraries/IntLib.sol";
 import "forge-std/console2.sol";
 
 /**
- * @title PCRMSorting
+ * @title PCRMGrouping
  * @author Lyra
  * @notice util functions for sorting / filtering PCRM account holdings
  */
 
-library PCRMSorting {
+library PCRMGrouping {
   //////////////
   // Forwards //
   //////////////
