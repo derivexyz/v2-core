@@ -245,8 +245,9 @@ contract PCRM is IManager, Owned {
     );
 
     ExpiryHolding memory currentExpiry;
+    StrikeHolding memory currentStrike;
     AccountStructs.AssetBalance memory currentAsset;
-    // 1. create sorted [expiries][strikes] 2D array
+    // create sorted [expiries][strikes] 2D array
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
@@ -263,16 +264,19 @@ contract PCRM is IManager, Owned {
         );
 
         // add call or put balance
+        currentStrike = currentExpiry.strikes[strikeIndex];
         if (isCall) {
-          currentExpiry.strikes[strikeIndex].calls += currentAsset.balance;
+          currentStrike.calls += currentAsset.balance;
         } else {
-          currentExpiry.strikes[strikeIndex].puts += currentAsset.balance;
+          currentStrike.puts += currentAsset.balance;
+        }
+
+        // if both calls / puts present, pair-off into forwards
+        if (currentStrike.calls != 0 && currentStrike.puts != 0) {
+          PCRMGrouping.updateForwards(currentStrike);
         }
       }
     }
-
-    // 2. pair off all symmetric calls and puts into forwards
-    PCRMGrouping.updateForwards(expiryHoldings);
   }
 
   //////////

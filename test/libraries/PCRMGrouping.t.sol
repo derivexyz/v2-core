@@ -7,6 +7,16 @@ import "forge-std/console2.sol";
 import "../../src/libraries/PCRMGrouping.sol";
 
 contract PCRMGroupingTester {
+
+  function updateForwards(PCRM.StrikeHolding memory strikeHolding)
+    external
+    pure
+    returns (PCRM.StrikeHolding memory)
+  {
+    PCRMGrouping.updateForwards(strikeHolding);
+    return strikeHolding;
+  }
+
   function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings)
     external
     pure
@@ -96,6 +106,21 @@ contract PCRMGroupingTest is Test {
   function testFindingForwardsWhenShortForwardsPresent() public {
     int newForwards = tester.findForwards(-5, 10);
     assertEq(newForwards, -5);
+  }
+
+  function testUpdateForwardsForStrike() public {
+    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
+
+    // check corrected filtering
+    PCRM.StrikeHolding memory strike_0 = tester.updateForwards(holdings[0].strikes[0]);
+    assertEq(strike_0.calls, 0);
+    assertEq(strike_0.puts, 0);
+    assertEq(strike_0.forwards, 11);
+
+    PCRM.StrikeHolding memory strike_1 = tester.updateForwards(holdings[0].strikes[1]);
+    assertEq(strike_1.calls, 0);
+    assertEq(strike_1.puts, -10);
+    assertEq(strike_1.forwards, 5);
   }
 
   function testUpdateForwardsForAllHoldings() public {

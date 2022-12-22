@@ -17,9 +17,24 @@ library PCRMGrouping {
   // Forwards //
   //////////////
 
+    /**
+   * @notice Take in a strike holding and update holding in-place with forwards
+   * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
+   * @param strike PCRM.StrikeHolding struct containing all holdings for a particular strike
+   */
+  function updateForwards(PCRM.StrikeHolding memory strike) internal pure {
+    int additionalFwds = PCRMGrouping.findForwards(strike.calls, strike.puts);
+    if (additionalFwds != 0) {
+      strike.calls -= additionalFwds;
+      strike.puts += additionalFwds;
+      strike.forwards += additionalFwds;
+    }
+  }
+
   /**
    * @notice Take in account holdings and update holdings in-place with forwards
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
+   *      This function is meant to be used as a helper for front-end / market maker contracts
    * @param expiryHoldings All account option holdings. Refer to PCRM.sol
    */
   function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings) internal pure {
