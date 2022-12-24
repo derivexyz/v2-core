@@ -3,8 +3,9 @@ pragma solidity ^0.8.13;
 
 import "../interfaces/IPCRM.sol";
 import "../interfaces/ISpotFeeds.sol";
+import "../libraries/synthetix/Owned.sol";
 
-contract DutchAuction {
+contract DutchAuction is Owned {
   struct AuctionDetails {
     uint accountId;
     int upperBound;
@@ -31,7 +32,7 @@ contract DutchAuction {
   DutchAuctionParameters public parameters;
   ISpotFeeds public spotFeed;
 
-  constructor(ISpotFeeds _spotFeed, address _riskManager) {
+  constructor(ISpotFeeds _spotFeed, address _riskManager) Owned() {
     spotFeed = _spotFeed;
     riskManager = IPCRM(_riskManager);
   }
@@ -43,6 +44,7 @@ contract DutchAuction {
   // TODO: needs to be rescrited to owner
   function setDutchAuctionParameters(DutchAuctionParameters memory params)
     external
+    _onlyOwner()
     returns (DutchAuctionParameters memory)
   {
     // set the parameters for the dutch auction

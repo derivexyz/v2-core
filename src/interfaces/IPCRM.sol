@@ -9,6 +9,7 @@ pragma solidity ^0.8.13;
 interface IPCRM {
   struct ExpiryHolding {
     uint expiry;
+    uint numStrikeHoldings;
     StrikeHolding[] strikes;
   }
 
