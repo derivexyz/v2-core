@@ -7,28 +7,49 @@ import "src/libraries/IntLib.sol";
 import "forge-std/console2.sol";
 
 /**
- * @title PCRMSorting
+ * @title PCRMGrouping
  * @author Lyra
  * @notice util functions for sorting / filtering PCRM account holdings
  */
 
-library PCRMSorting {
+library PCRMGrouping {
   //////////////
   // Forwards //
   //////////////
 
   /**
-   * @notice Take in account holdings and return updated holdings with forwards
+   * @notice Take in a strike holding and update holding in-place with forwards
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
+   * @param strike PCRM.StrikeHolding struct containing all holdings for a particular strike
+   */
+  function updateForwards(PCRM.StrikeHolding memory strike) internal pure {
+    int additionalFwds = PCRMGrouping.findForwards(strike.calls, strike.puts);
+    if (additionalFwds != 0) {
+      strike.calls -= additionalFwds;
+      strike.puts += additionalFwds;
+      strike.forwards += additionalFwds;
+    }
+  }
+
+  /**
+   * @notice Take in account holdings and update holdings in-place with forwards
+   * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
+   *      This function is meant to be used as a helper for front-end / market maker contracts
    * @param expiryHoldings All account option holdings. Refer to PCRM.sol
    */
   function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings) internal pure {
     PCRM.StrikeHolding[] memory strikes;
+    PCRM.StrikeHolding memory currentStrike;
     for (uint i; i < expiryHoldings.length; i++) {
       strikes = expiryHoldings[i].strikes;
       for (uint j; j < strikes.length; j++) {
-        (strikes[j].calls, strikes[j].puts, strikes[j].forwards) =
-          findForwards(strikes[j].calls, strikes[j].puts, strikes[j].forwards);
+        currentStrike = strikes[j];
+        int additionalFwds = findForwards(currentStrike.calls, currentStrike.puts);
+        if (additionalFwds != 0) {
+          currentStrike.calls -= additionalFwds;
+          currentStrike.puts += additionalFwds;
+          currentStrike.forwards += additionalFwds;
+        }
       }
     }
   }
@@ -36,25 +57,18 @@ library PCRMSorting {
   /**
    * @notice Pairs off calls and puts of the same strike into forwards
    *         Forward = Call - Put. Positive sign counts as a Long Forward
+   * @dev if not using updateForwards(), make sure to update calls and puts with additionalFwds
    * @param calls # of call contracts
    * @param puts # of put contracts
-   * @param forwards # of forward contracts
-   * @return newCalls # of call contracts post pair-off
-   * @return newPuts # of put contracts post pair-off
-   * @return newForwards # of forward contracts post pair-off
+   * @return additionalFwds # of forward contracts found
    */
-  function findForwards(int calls, int puts, int forwards)
-    internal
-    pure
-    returns (int newCalls, int newPuts, int newForwards)
-  {
+  function findForwards(int calls, int puts) internal pure returns (int additionalFwds) {
     // if calls and puts have opposing signs, forwards are present
     if (calls * puts < 0) {
       int fwdSign = (calls > 0) ? int(1) : -1;
-      int additionalFwds = int(IntLib.absMin(calls, puts)) * fwdSign;
-      return (calls - additionalFwds, puts + additionalFwds, forwards + additionalFwds);
+      return int(IntLib.absMin(calls, puts)) * fwdSign;
     }
-    return (calls, puts, forwards);
+    return (0);
   }
 
   /////////////
@@ -70,7 +84,7 @@ library PCRMSorting {
    * @return expiryIndex index of existing or added expiry struct
    * @return newArrayLen new # of expiries post addition
    */
-  function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
+  function findOrAddExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
     internal
     pure
     returns (uint, uint)
@@ -81,10 +95,8 @@ library PCRMSorting {
     // return index if found or add new entry
     if (found == false) {
       expiryIndex = arrayLen++;
-      unchecked {
-        expiryHoldings[expiryIndex] =
-          PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
-      }
+      expiryHoldings[expiryIndex] =
+        PCRM.ExpiryHolding({expiry: newExpiry, numStrikesHeld: 0, strikes: new PCRM.StrikeHolding[](maxStrikes)});
     }
     return (expiryIndex, arrayLen);
   }
@@ -97,7 +109,7 @@ library PCRMSorting {
    * @return strikeIndex index of existing or added strike struct
    * @return newArrayLen new # of strikes post addition
    */
-  function addUniqueStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint arrayLen)
+  function findOrAddStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint arrayLen)
     internal
     pure
     returns (uint, uint)
@@ -108,9 +120,7 @@ library PCRMSorting {
     // return index if found or add new entry
     if (found == false) {
       strikeIndex = arrayLen++;
-      unchecked {
-        strikeHoldings[strikeIndex] = PCRM.StrikeHolding({strike: newStrike, calls: 0, puts: 0, forwards: 0});
-      }
+      strikeHoldings[strikeIndex] = PCRM.StrikeHolding({strike: newStrike, calls: 0, puts: 0, forwards: 0});
     }
     return (strikeIndex, arrayLen);
   }

@@ -4,32 +4,33 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../src/libraries/PCRMSorting.sol";
+import "../../src/libraries/PCRMGrouping.sol";
 
-contract PCRMSortingTester {
+contract PCRMGroupingTester {
+  function updateForwards(PCRM.StrikeHolding memory strikeHolding) external pure returns (PCRM.StrikeHolding memory) {
+    PCRMGrouping.updateForwards(strikeHolding);
+    return strikeHolding;
+  }
+
   function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings)
     external
     pure
     returns (PCRM.ExpiryHolding[] memory)
   {
-    PCRMSorting.updateForwards(expiryHoldings);
+    PCRMGrouping.updateForwards(expiryHoldings);
     return expiryHoldings;
   }
 
-  function findForwards(int calls, int puts, int forwards)
-    external
-    pure
-    returns (int newCalls, int newPuts, int newForwards)
-  {
-    (newCalls, newPuts, newForwards) = PCRMSorting.findForwards(calls, puts, forwards);
+  function findForwards(int calls, int puts) external pure returns (int newForwards) {
+    newForwards = PCRMGrouping.findForwards(calls, puts);
   }
 
-  function addUniqueExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
+  function findOrAddExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
     external
     pure
     returns (uint, uint)
   {
-    (uint expiryIndex, uint newArrayLen) = PCRMSorting.addUniqueExpiry(expiryHoldings, newExpiry, arrayLen, maxStrikes);
+    (uint expiryIndex, uint newArrayLen) = PCRMGrouping.findOrAddExpiry(expiryHoldings, newExpiry, arrayLen, maxStrikes);
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
     if (expiryHoldings[expiryIndex].expiry != newExpiry) {
@@ -43,12 +44,12 @@ contract PCRMSortingTester {
     return (expiryIndex, newArrayLen);
   }
 
-  function addUniqueStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint numStrikesHeld)
+  function findOrAddStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint numStrikesHeld)
     external
     view
     returns (uint, uint)
   {
-    (uint strikeIndex, uint newArrayLen) = PCRMSorting.addUniqueStrike(strikeHoldings, newStrike, numStrikesHeld);
+    (uint strikeIndex, uint newArrayLen) = PCRMGrouping.findOrAddStrike(strikeHoldings, newStrike, numStrikesHeld);
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
     if (strikeHoldings[strikeIndex].strike != newStrike) {
@@ -63,12 +64,12 @@ contract PCRMSortingTester {
   }
 }
 
-contract PCRMSortingTest is Test {
-  PCRMSortingTester tester;
+contract PCRMGroupingTest is Test {
+  PCRMGroupingTester tester;
   PCRM pcrm;
 
   function setUp() public {
-    tester = new PCRMSortingTester();
+    tester = new PCRMGroupingTester();
     pcrm = new PCRM(
       address(0), address(0), address(0), address(0), address(0)
     );
@@ -79,31 +80,38 @@ contract PCRMSortingTest is Test {
   ///////////////////////
 
   function testFindingForwardsWhenZeroBalance() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(0, 0, 0);
-    assertEq(newCalls, 0);
-    assertEq(newPuts, 0);
+    int newForwards = tester.findForwards(0, 0);
     assertEq(newForwards, 0);
   }
 
   function testFindingForwardsWhenNoForwards() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(10, 10, 0);
-    assertEq(newCalls, 10);
-    assertEq(newPuts, 10);
+    int newForwards = tester.findForwards(10, 10);
     assertEq(newForwards, 0);
   }
 
   function testFindingForwardsWhenLongForwardsPresent() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(10, -7, 0);
-    assertEq(newCalls, 3);
-    assertEq(newPuts, 0);
+    int newForwards = tester.findForwards(10, -7);
     assertEq(newForwards, 7);
   }
 
   function testFindingForwardsWhenShortForwardsPresent() public {
-    (int newCalls, int newPuts, int newForwards) = tester.findForwards(-5, 10, 0);
-    assertEq(newCalls, 0);
-    assertEq(newPuts, 5);
+    int newForwards = tester.findForwards(-5, 10);
     assertEq(newForwards, -5);
+  }
+
+  function testUpdateForwardsForStrike() public {
+    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
+
+    // check corrected filtering
+    PCRM.StrikeHolding memory strike_0 = tester.updateForwards(holdings[0].strikes[0]);
+    assertEq(strike_0.calls, 0);
+    assertEq(strike_0.puts, 0);
+    assertEq(strike_0.forwards, 11);
+
+    PCRM.StrikeHolding memory strike_1 = tester.updateForwards(holdings[0].strikes[1]);
+    assertEq(strike_1.calls, 0);
+    assertEq(strike_1.puts, -10);
+    assertEq(strike_1.forwards, 5);
   }
 
   function testUpdateForwardsForAllHoldings() public {
@@ -123,10 +131,10 @@ contract PCRMSortingTest is Test {
   // Unique Elements in Array //
   //////////////////////////////
 
-  function testAddUniqueExpiry() public {
+  function testFindOrAddExpiry() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
     (uint expiryIndex, uint newArrayLen) =
-      tester.addUniqueExpiry(holdings, block.timestamp + 30 days, 2, pcrm.MAX_STRIKES());
+      tester.findOrAddExpiry(holdings, block.timestamp + 30 days, 2, pcrm.MAX_STRIKES());
 
     assertEq(expiryIndex, 2);
     assertEq(newArrayLen, 3);
@@ -134,15 +142,15 @@ contract PCRMSortingTest is Test {
 
   function testAddExistingExpiry() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint expiryIndex, uint newArrayLen) = tester.addUniqueExpiry(holdings, holdings[0].expiry, 2, pcrm.MAX_STRIKES());
+    (uint expiryIndex, uint newArrayLen) = tester.findOrAddExpiry(holdings, holdings[0].expiry, 2, pcrm.MAX_STRIKES());
 
     assertEq(expiryIndex, 0);
     assertEq(newArrayLen, 2);
   }
 
-  function testAddUniqueStrike() public {
+  function testFindOrAddStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0].strikes, 1250e18, 2);
+    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings[0].strikes, 1250e18, 2);
 
     assertEq(strikeIndex, 2);
     assertEq(newArrayLen, 3);
@@ -150,7 +158,7 @@ contract PCRMSortingTest is Test {
 
   function testAddExistingStrike() public {
     PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.addUniqueStrike(holdings[0].strikes, 10e18, 2);
+    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings[0].strikes, 10e18, 2);
 
     assertEq(strikeIndex, 0);
     assertEq(newArrayLen, 2);

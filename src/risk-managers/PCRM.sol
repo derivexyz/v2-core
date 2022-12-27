@@ -8,7 +8,7 @@ import "src/interfaces/IDutchAuction.sol";
 import "src/assets/Lending.sol";
 import "src/assets/Option.sol";
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMSorting.sol";
+import "src/libraries/PCRMGrouping.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 
@@ -66,7 +66,10 @@ contract PCRM is IManager, Owned {
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
+  /// @dev max number of expiries allowed to be held in one account
   uint public constant MAX_EXPIRIES = 8;
+
+  /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 16;
 
   ////////////
@@ -112,7 +115,7 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    ExpiryHolding[] memory expiries = _sortHoldings(account.getAccountBalances(accountId));
+    ExpiryHolding[] memory expiries = _groupHoldings(account.getAccountBalances(accountId));
     _calcMargin(expiries, MarginType.INITIAL);
   }
 
@@ -135,7 +138,8 @@ contract PCRM is IManager, Owned {
    */
   function checkAndStartLiquidation(uint accountId) external {
     dutchAuction.startAuction(accountId);
-    // todo [Cameron / dom]: check that account is liquidatable / freeze account / call out to auction contract
+    // todo [Cameron / Dom]: check that account is liquidatable / freeze account / call out to auction contract
+    // todo [Cameron / Dom]: add account Id to send reward for flagging liquidation
   }
 
   /**
@@ -179,8 +183,6 @@ contract PCRM is IManager, Owned {
     margin += _calcCashValue(marginType);
   }
 
-  // Option Margin Math
-
   /**
    * @notice Calculate the discounted value of option holdings in a specific expiry.
    * @param expiry All option holdings within an expiry.
@@ -208,8 +210,6 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: get call, put, forward values
   }
 
-  // Cash Margin Math
-
   /**
    * @notice Calculate the discounted value of cash in account.
    * @param marginType Initial or maintenance margin.
@@ -224,14 +224,13 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Sort all option holdings into an array of
+   * @notice Group all option holdings into an array of
    *         [expiries][strikes][calls / puts / forwards].
    * @param assets Array of balances for given asset and subId.
-   * @return expiryHoldings Sorted array of option holdings.
+   * @return expiryHoldings Grouped array of option holdings.
    */
 
-  // todo [Josh]: possibly better to rename to "arrange" / "group" / "classify"
-  function _sortHoldings(AccountStructs.AssetBalance[] memory assets)
+  function _groupHoldings(AccountStructs.AssetBalance[] memory assets)
     internal
     view
     returns (ExpiryHolding[] memory expiryHoldings)
@@ -239,33 +238,42 @@ contract PCRM is IManager, Owned {
     uint numExpiriesHeld;
     uint expiryIndex;
     uint strikeIndex;
-    expiryHoldings = new PCRM.ExpiryHolding[](MAX_EXPIRIES);
+    expiryHoldings = new PCRM.ExpiryHolding[](
+      MAX_EXPIRIES > assets.length ? assets.length : MAX_EXPIRIES
+    );
 
-    // 1. create sorted [expiries][strikes] 2D array
+    ExpiryHolding memory currentExpiry;
+    StrikeHolding memory currentStrike;
+    AccountStructs.AssetBalance memory currentAsset;
+    // create sorted [expiries][strikes] 2D array
     for (uint i; i < assets.length; ++i) {
-      if (address(assets[i].asset) == address(option)) {
+      currentAsset = assets[i];
+      if (address(currentAsset.asset) == address(option)) {
         // decode subId
-        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(assets[i].subId));
+        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
 
         // add new expiry or strike to holdings if unique
         (expiryIndex, numExpiriesHeld) =
-          PCRMSorting.addUniqueExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
+          PCRMGrouping.findOrAddExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
+        currentExpiry = expiryHoldings[expiryIndex];
 
-        (strikeIndex, expiryHoldings[expiryIndex].numStrikesHeld) = PCRMSorting.addUniqueStrike(
-          expiryHoldings[expiryIndex].strikes, strike, expiryHoldings[expiryIndex].numStrikesHeld
-        );
+        (strikeIndex, currentExpiry.numStrikesHeld) =
+          PCRMGrouping.findOrAddStrike(currentExpiry.strikes, strike, currentExpiry.numStrikesHeld);
 
         // add call or put balance
+        currentStrike = currentExpiry.strikes[strikeIndex];
         if (isCall) {
-          expiryHoldings[expiryIndex].strikes[strikeIndex].calls += assets[i].balance;
+          currentStrike.calls += currentAsset.balance;
         } else {
-          expiryHoldings[expiryIndex].strikes[strikeIndex].puts += assets[i].balance;
+          currentStrike.puts += currentAsset.balance;
+        }
+
+        // if both calls / puts present, pair-off into forwards
+        if (currentStrike.calls != 0 && currentStrike.puts != 0) {
+          PCRMGrouping.updateForwards(currentStrike);
         }
       }
     }
-
-    // 2. pair off all symmetric calls and puts into forwards
-    PCRMSorting.updateForwards(expiryHoldings);
   }
 
   //////////
@@ -273,13 +281,13 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Sort all option holdings of an account into an array of
+   * @notice Group all option holdings of an account into an array of
    *         [expiries][strikes][calls / puts / forwards].
    * @param accountId ID of account to sort.
-   * @return expiryHoldings Sorted array of option holdings.
+   * @return expiryHoldings Grouped array of option holdings.
    */
-  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
-    return _sortHoldings(account.getAccountBalances(accountId));
+  function getGroupedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
+    return _groupHoldings(account.getAccountBalances(accountId));
   }
 
   /**

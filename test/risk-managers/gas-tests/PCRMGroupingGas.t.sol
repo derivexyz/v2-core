@@ -12,7 +12,7 @@ import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
-contract PCRMSortingGas is Script {
+contract PCRMGroupingGas is Script {
   Account account;
   PCRM pcrm;
 
@@ -61,7 +61,7 @@ contract PCRMSortingGas is Script {
 
     // estimate tx cost
     uint initGas = gasleft();
-    pcrm.getSortedHoldings(aliceAcc);
+    pcrm.getGroupedHoldings(aliceAcc);
     uint endGas = gasleft();
 
     console.log("gas:singleAsset:", initGas - endGas);
@@ -81,11 +81,11 @@ contract PCRMSortingGas is Script {
     uint endGas = gasleft();
     console.log("gas: getting 128 asset balances from account:", initGas - endGas);
 
-    // estimate gas for sorting + getting balances
+    // estimate gas for grouping + getting balances
     initGas = gasleft();
-    pcrm.getSortedHoldings(aliceAcc);
+    pcrm.getGroupedHoldings(aliceAcc);
     endGas = gasleft();
-    console.log("gas: sorting 128 assets in PCRM:", initGas - endGas);
+    console.log("gas: grouping 128 assets in PCRM:", initGas - endGas);
   }
 
   function _setup() public {
