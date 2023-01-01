@@ -18,7 +18,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
   }
 
   function testCannotTransferToSelf() public {
-    vm.expectRevert(abi.encodeWithSelector(Account.AC_CannotTransferAssetToOneself.selector, alice, aliceAcc));
+    vm.expectRevert(abi.encodeWithSelector(IAccount.AC_CannotTransferAssetToOneself.selector, alice, aliceAcc));
     vm.prank(alice);
     transferToken(aliceAcc, aliceAcc, usdcAsset, 0, 1e18);
   }
@@ -281,7 +281,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     // assume calls from coolAsset
     vm.prank(address(coolAsset));
 
-    vm.expectRevert(Account.AC_OnlyAsset.selector);
+    vm.expectRevert(IAccount.AC_OnlyAsset.selector);
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: newAccount,

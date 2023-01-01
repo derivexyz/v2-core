@@ -27,7 +27,7 @@ contract UNIT_Allowances is Test, AccountTestBase {
     AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
     vm.expectRevert(
       abi.encodeWithSelector(
-        Account.AC_NotOwnerOrERC721Approved.selector, alice, bobAcc, bob, address(dumbManager), address(0)
+        IAccount.AC_NotOwnerOrERC721Approved.selector, alice, bobAcc, bob, address(dumbManager), address(0)
       )
     );
     vm.prank(alice);

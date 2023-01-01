@@ -8,7 +8,7 @@ import "./IManager.sol";
 import "./AccountStructs.sol";
 
 // For full documentation refer to src/Account.sol";
-interface IAccount is IAllowances, IERC721 {
+interface IAccount is IERC721 {
   ///////////////////
   // Account Admin //
   ///////////////////
@@ -109,15 +109,36 @@ interface IAccount is IAllowances, IERC721 {
   // View //
   //////////
 
+  /**
+   * @dev return the manager address of the account
+   * @param accountId ID of account
+   */
   function manager(uint accountId) external view returns (IManager);
 
+  /**
+   * @dev return amount of asset in the account, and the order (index) of the asset in the asset array
+   * @param accountId ID of account
+   * @param asset IAsset of balance
+   * @param subId subId of balance
+   */
   function balanceAndOrder(uint accountId, IAsset asset, uint subId)
     external
     view
     returns (int240 balance, uint16 order);
 
+  /**
+   * @notice Gets an account's balance for an (asset, subId)
+   * @param accountId ID of account
+   * @param asset IAsset of balance
+   * @param subId subId of balance
+   */
   function getBalance(uint accountId, IAsset asset, uint subId) external view returns (int balance);
 
+  /**
+   * @notice Gets a list of all asset balances of an account
+   * @dev can use balanceAndOrder() to get the index of a specific balance
+   * @param accountId ID of account
+   */
   function getAccountBalances(uint accountId)
     external
     view
