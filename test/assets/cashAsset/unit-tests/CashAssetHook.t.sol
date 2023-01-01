@@ -8,6 +8,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
+import "../../../../src/interfaces/IAccount.sol";
 
 contract UNIT_CashAssetHook is Test {
   CashAsset cashAsset;
@@ -21,7 +22,7 @@ contract UNIT_CashAssetHook is Test {
     manager = new MockManager(account);
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, usdc);
+    cashAsset = new CashAsset(IAccount(account), usdc);
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {

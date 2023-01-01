@@ -29,7 +29,7 @@ contract UNIT_CashAssetDeposit is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -83,7 +83,7 @@ contract UNIT_LendingDeposit6Decimals is Test {
     // set USDC to 6 decimals
     usdc.setDecimals(6);
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 6 decimals
@@ -119,7 +119,7 @@ contract UNIT_LendingDeposit20Decimals is Test {
     // set USDC to 20 decimals!
     usdc.setDecimals(20);
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 20 decimals

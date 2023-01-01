@@ -60,10 +60,10 @@ contract CashAsset is Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(address _account, IERC20Metadata _stableAsset) {
+  constructor(IAccount _account, IERC20Metadata _stableAsset) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
-    account = IAccount(_account);
+    account = _account;
   }
 
   //////////////////////////////
