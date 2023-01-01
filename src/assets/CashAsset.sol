@@ -17,7 +17,7 @@ import "../libraries/DecimalMath.sol";
  * @author Lyra
  */
 contract CashAsset is Owned, IAsset {
-  using SafeERC20 for IERC20;
+  using SafeERC20 for IERC20Metadata;
   using DecimalMath for uint;
   using SafeCast for uint;
   using SafeCast for int;
@@ -25,11 +25,11 @@ contract CashAsset is Owned, IAsset {
   ///@dev Account contract address
   IAccount public immutable account;
 
-  ///@dev The USDC token address
-  address public immutable usdc;
+  ///@dev The token address for stable coin
+  IERC20Metadata public immutable stableAsset;
 
-  ///@dev Store USDC token decimal as immutable
-  uint8 private immutable usdcDecimals;
+  ///@dev Store stable coin decimal as immutable
+  uint8 private immutable stableDecimals;
 
   /////////////////////////
   //   State Variables   //
@@ -60,9 +60,9 @@ contract CashAsset is Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(address _account, address _usdc) {
-    usdc = _usdc;
-    usdcDecimals = IERC20Metadata(_usdc).decimals();
+  constructor(address _account, IERC20Metadata _stableAsset) {
+    stableAsset = _stableAsset;
+    stableDecimals = _stableAsset.decimals();
     account = IAccount(_account);
   }
 
@@ -89,8 +89,8 @@ contract CashAsset is Owned, IAsset {
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external {
-    IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
-    uint amountInAccount = amount.to18Decimals(usdcDecimals);
+    stableAsset.safeTransferFrom(msg.sender, address(this), amount);
+    uint amountInAccount = amount.to18Decimals(stableDecimals);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -110,15 +110,15 @@ contract CashAsset is Owned, IAsset {
   /**
    * @notice withdraw USDC from a Lyra account
    * @param accountId account id to withdraw
-   * @param amount amount of usdc
+   * @param amount amount of stable asset in its native decimals
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint amount, address recipient) external {
     if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
 
-    IERC20(usdc).safeTransfer(recipient, amount);
+    stableAsset.safeTransfer(recipient, amount);
 
-    uint cashAmount = amount.to18Decimals(usdcDecimals);
+    uint cashAmount = amount.to18Decimals(stableDecimals);
 
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({

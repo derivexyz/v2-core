@@ -32,7 +32,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(address(account), address(usdc));
+    cashAsset = new CashAsset(address(account), usdc);
 
     cashAsset.setWhitelistManager(address(manager), true);
 

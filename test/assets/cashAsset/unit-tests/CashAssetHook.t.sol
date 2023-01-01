@@ -21,7 +21,7 @@ contract UNIT_CashAssetHook is Test {
     manager = new MockManager(account);
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, address(usdc));
+    cashAsset = new CashAsset(account, usdc);
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
