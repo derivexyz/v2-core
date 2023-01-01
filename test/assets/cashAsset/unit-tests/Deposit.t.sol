@@ -43,7 +43,7 @@ contract UNIT_CashAssetDeposit is Test {
   function testCannotDepositIntoWeirdAccount() public {
     uint badAccount = account.createAccount(address(this), badManager);
 
-    vm.expectRevert(CashAsset.LA_UnknownManager.selector);
+    vm.expectRevert(ICashAsset.LA_UnknownManager.selector);
     cashAsset.deposit(badAccount, 100 ether);
   }
 

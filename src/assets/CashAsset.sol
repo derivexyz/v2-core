@@ -8,6 +8,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccount.sol";
+import "../interfaces/ICashAsset.sol";
 import "../libraries/DecimalMath.sol";
 
 /**
@@ -16,7 +17,7 @@ import "../libraries/DecimalMath.sol";
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
-contract CashAsset is Owned, IAsset {
+contract CashAsset is ICashAsset, Owned, IAsset {
   using SafeERC20 for IERC20Metadata;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -237,20 +238,4 @@ contract CashAsset is Owned, IAsset {
     if (msg.sender != address(account)) revert LA_NotAccount();
     _;
   }
-
-  ////////////////
-  //   Errors   //
-  ////////////////
-
-  /// @dev caller is not account
-  error LA_NotAccount();
-
-  /// @dev revert when user trying to upgrade to a unknown manager
-  error LA_UnknownManager();
-
-  /// @dev caller is not owner of the account
-  error LA_OnlyAccountOwner();
-
-  /// @dev accrued interest is stale
-  error LA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
 }

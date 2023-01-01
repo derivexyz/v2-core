@@ -61,13 +61,13 @@ contract UNIT_CashAssetWithdraw is Test {
 
   function testCannotWithdrawFromOthersAccount() public {
     vm.prank(badActor);
-    vm.expectRevert(CashAsset.LA_OnlyAccountOwner.selector);
+    vm.expectRevert(ICashAsset.LA_OnlyAccountOwner.selector);
     cashAsset.withdraw(accountId, 100 ether, address(this));
   }
 
   function testCannotWithdrawFromAccountNotControlledByTrustedManager() public {
     uint badAccount = account.createAccount(address(this), badManager);
-    vm.expectRevert(CashAsset.LA_UnknownManager.selector);
+    vm.expectRevert(ICashAsset.LA_UnknownManager.selector);
     cashAsset.withdraw(badAccount, 100 ether, address(this));
   }
 
