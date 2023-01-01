@@ -19,16 +19,16 @@ contract InterestRateModel {
   /////////////////////
 
   ///@dev The base yearly interest rate represented as a mantissa (0-1e18)
-  uint public minRate;
+  uint public immutable minRate;
 
   ///@dev The multiplier of utilization rate that gives the slope of the interest rate as a mantissa
-  uint public rateMultipler;
+  uint public immutable rateMultipler;
 
   ///@dev The multiplier after hitting the optimal utilization point
-  uint public highRateMultipler;
+  uint public immutable highRateMultipler;
 
   ///@dev The utilization point at which the highRateMultipler is applied, represented as a mantissa
-  uint public optimalUtil;
+  uint public immutable optimalUtil;
 
   ////////////////////////
   //    Constructor     //
