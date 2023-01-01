@@ -18,9 +18,6 @@ contract InterestRateModel {
   // State Variables //
   /////////////////////
 
-  ///@dev The approximate number of seconds per year
-  uint public constant SECONDS_PER_YEAR = 365 days;
-
   ///@dev The base yearly interest rate represented as a mantissa (0-1e18)
   uint public minRate;
 
@@ -70,7 +67,7 @@ contract InterestRateModel {
    * @return Compounded interest rate: e^(rt) - 1
    */
   function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure returns (uint) {
-    return FixedPointMathLib.exp((elapsedTime * borrowRate / SECONDS_PER_YEAR).toInt256()) - DecimalMath.UNIT;
+    return FixedPointMathLib.exp((elapsedTime * borrowRate / 365 days).toInt256()) - DecimalMath.UNIT;
   }
 
   /**

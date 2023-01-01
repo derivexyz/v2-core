@@ -90,12 +90,12 @@ contract UNIT_InterestRateModel is Test {
   function testFuzzBorrowRate(uint time, uint supply, uint borrows) public {
     vm.assume(supply <= 100000 ether);
     vm.assume(supply >= borrows);
-    vm.assume(time >= block.timestamp && time <= block.timestamp + rateModel.SECONDS_PER_YEAR() * 100);
+    vm.assume(time >= block.timestamp && time <= block.timestamp + (365 days) * 100);
 
     uint borrowRate = rateModel.getBorrowRate(supply, borrows);
     uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
     uint calculatedRate =
-      FixedPointMathLib.exp((time * borrowRate / rateModel.SECONDS_PER_YEAR()).toInt256()) - DecimalMath.UNIT;
+      FixedPointMathLib.exp((time * borrowRate / (365 days)).toInt256()) - DecimalMath.UNIT;
 
     assertEq(interestFactor, calculatedRate);
   }
