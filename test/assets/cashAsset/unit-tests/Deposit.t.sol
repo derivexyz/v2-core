@@ -104,7 +104,7 @@ contract UNIT_LendingDeposit6Decimals is Test {
   }
 }
 
-// test cases for asset > 20 decimals
+// test cases for asset > 18 decimals
 contract UNIT_LendingDeposit20Decimals is Test {
   CashAsset cashAsset;
   Account account;
