@@ -103,3 +103,39 @@ contract UNIT_LendingDeposit6Decimals is Test {
     assertEq(balance, 100 ether);
   }
 }
+
+// test cases for asset > 20 decimals
+contract UNIT_LendingDeposit20Decimals is Test {
+  CashAsset cashAsset;
+  Account account;
+
+  uint accountId;
+
+  function setUp() public {
+    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    MockManager manager = new MockManager(address(account));
+    MockERC20 usdc = new MockERC20("USDC", "USDC");
+
+    // set USDC to 20 decimals!
+    usdc.setDecimals(20);
+
+    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset.setWhitelistManager(address(manager), true);
+
+    // 10000 USDC with 20 decimals
+    usdc.mint(address(this), 10000e20);
+    usdc.approve(address(cashAsset), type(uint).max);
+
+    accountId = account.createAccount(address(this), manager);
+  }
+
+  function testDepositWorkWithTokensWith20Decimals() public {
+    uint depositAmount = 100e20;
+    cashAsset.deposit(accountId, depositAmount);
+
+    int balance = account.getBalance(accountId, cashAsset, 0);
+
+    // amount should be scaled to 18 decimals in account
+    assertEq(balance, 100 ether);
+  }
+}
