@@ -67,6 +67,7 @@ contract InterestRateModel {
    * @return Compounded interest rate: e^(rt) - 1
    */
   function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure returns (uint) {
+    if (elapsedTime == 0) revert NoElapsedTime(elapsedTime);
     return FixedPointMathLib.exp((elapsedTime * borrowRate / 365 days).toInt256()) - DecimalMath.UNIT;
   }
 
@@ -116,4 +117,5 @@ contract InterestRateModel {
 
   ///@dev Revert when the parameter set is greater than 1e18
   error ParameterMustBeLessThanOne(uint param);
+  error NoElapsedTime(uint elapsedTime);
 }

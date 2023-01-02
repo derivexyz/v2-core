@@ -52,6 +52,29 @@ contract UNIT_InterestRateModel is Test {
     assertEq(rate, rateModel.minRate());
   }
 
+  function testSimpleBorrowInterestFactor() public {
+    uint time = 1 weeks;
+    uint supply = 1000 ether;
+    uint borrows = 500 ether;
+
+    uint borrowRate = rateModel.getBorrowRate(supply, borrows);
+    uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
+    uint calculatedRate = FixedPointMathLib.exp((time * borrowRate / (365 days)).toInt256()) - DecimalMath.UNIT;
+
+    assertEq(interestFactor, calculatedRate);
+  }
+
+  function testCannotBorrowInterestFactorTimeZero() public {
+    uint time = 0;
+    uint supply = 1000 ether;
+    uint borrows = 500 ether;
+
+    uint borrowRate = rateModel.getBorrowRate(supply, borrows);
+    
+    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.NoElapsedTime.selector, time));
+    rateModel.getBorrowInterestFactor(time, borrowRate);
+  }
+
   function testFuzzUtilizationRate(uint supply, uint borrows) public {
     vm.assume(supply <= 10000000000000000000000000000 ether);
     vm.assume(supply >= borrows);
@@ -87,10 +110,10 @@ contract UNIT_InterestRateModel is Test {
     }
   }
 
-  function testFuzzBorrowRate(uint time, uint supply, uint borrows) public {
+  function testFuzzBorrowInterestFactor(uint time, uint supply, uint borrows) public {
     vm.assume(supply <= 100000 ether);
     vm.assume(supply >= borrows);
-    vm.assume(time >= block.timestamp && time <= block.timestamp + (365 days) * 100);
+    vm.assume(time > 0 && time <= block.timestamp + (365 days) * 100);
 
     uint borrowRate = rateModel.getBorrowRate(supply, borrows);
     uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
