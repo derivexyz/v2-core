@@ -10,7 +10,9 @@ import "src/assets/Option.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/Owned.sol";
+import "synthetix/SignedDecimalMath.sol";
 
 /**
  * @title PartialCollateralRiskManager
@@ -18,6 +20,8 @@ import "synthetix/Owned.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 contract PCRM is IManager, Owned {
+  using SignedDecimalMath for int;
+
   /**
    * INITIAL: margin required for trade to pass
    * MAINTENANCE: margin required to prevent liquidation
@@ -194,6 +198,22 @@ contract PCRM is IManager, Owned {
     for (uint i; i < expiry.strikes.length; i++) {
       expiryValue += _calcStrikeValue(expiry.strikes[i], marginType);
     }
+  }
+
+  function _calcSettledStrikeValue(
+    StrikeHolding memory strikeHoldings, 
+    uint settlementPrice
+  ) internal view returns (int expiryValue) {
+    int pnl = SafeCast.toInt256(settlementPrice) - SafeCast.toInt256(strikeHoldings.strike);
+
+    // calculate proceeds for forwards / calls / puts
+    expiryValue += strikeHoldings.calls.multiplyDecimal(SignedMath.max(pnl, 0));
+    expiryValue += strikeHoldings.puts.multiplyDecimal(SignedMath.min(-pnl, 0));
+    expiryValue += strikeHoldings.forwards.multiplyDecimal(pnl);
+  }
+
+  function _calcLiveStrikeValue() internal view returns (int expiryValue) {
+
   }
 
   /**
