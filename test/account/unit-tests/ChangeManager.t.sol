@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../../src/interfaces/IAccount.sol";
+import "../../../src/interfaces/IAccounts.sol";
 import "../../../src/Account.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
@@ -57,13 +57,13 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
 
   function testCannotChangeToSameManager() public {
     vm.prank(alice);
-    vm.expectRevert(abi.encodeWithSelector(IAccount.AC_CannotChangeToSameManager.selector, alice, aliceAcc));
+    vm.expectRevert(abi.encodeWithSelector(IAccounts.AC_CannotChangeToSameManager.selector, alice, aliceAcc));
     account.changeManager(aliceAcc, dumbManager, "");
     vm.stopPrank();
   }
 
   function testMigrationShouldNotMakeDuplicatedCallToAssets() public {
-    MockAsset mockOptionAsset = new MockAsset(coolToken, IAccount(address(account)), true); // allow negative balance
+    MockAsset mockOptionAsset = new MockAsset(coolToken, IAccounts(address(account)), true); // allow negative balance
     vm.label(address(mockOptionAsset), "DumbOption");
 
     // create another account just to transfer assets

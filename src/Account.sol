@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "./interfaces/IAccount.sol";
+import "./interfaces/IAccounts.sol";
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./Allowances.sol";
@@ -18,7 +18,7 @@ import "./libraries/AssetDeltaLib.sol";
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract Account is Allowances, ERC721, IAccount {
+contract Account is Allowances, ERC721, IAccounts {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;

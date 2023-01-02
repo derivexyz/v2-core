@@ -8,7 +8,7 @@ import "./IManager.sol";
 import "./AccountStructs.sol";
 
 // For full documentation refer to src/Account.sol";
-interface IAccount is AccountStructs, IERC721 {
+interface IAccounts is AccountStructs, IERC721 {
   ///////////////////
   // Account Admin //
   ///////////////////
@@ -52,8 +52,7 @@ interface IAccount is AccountStructs, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances)
-    external;
+  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances) external;
 
   /**
    * @notice Sets bidirectional allowances for a specific subId.
@@ -62,8 +61,7 @@ interface IAccount is AccountStructs, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each (asset, subId)
    */
-  function setSubIdAllowances(uint accountId, address delegate, SubIdAllowance[] memory allowances)
-    external;
+  function setSubIdAllowances(uint accountId, address delegate, SubIdAllowance[] memory allowances) external;
 
   /////////////////////////
   // Balance Adjustments //
@@ -92,11 +90,9 @@ interface IAccount is AccountStructs, IERC721 {
    * @param triggerAssetHook true if the adjustment need to be routed to Asset's custom hook
    * @param managerData data passed to manager of account
    */
-  function assetAdjustment(
-    AssetAdjustment memory adjustment,
-    bool triggerAssetHook,
-    bytes memory managerData
-  ) external returns (int postBalance);
+  function assetAdjustment(AssetAdjustment memory adjustment, bool triggerAssetHook, bytes memory managerData)
+    external
+    returns (int postBalance);
 
   /**
    * @notice Assymetric balance adjustment reserved for managers
@@ -139,10 +135,7 @@ interface IAccount is AccountStructs, IERC721 {
    * @dev can use balanceAndOrder() to get the index of a specific balance
    * @param accountId ID of account
    */
-  function getAccountBalances(uint accountId)
-    external
-    view
-    returns (AssetBalance[] memory assetBalances);
+  function getAccountBalances(uint accountId) external view returns (AssetBalance[] memory assetBalances);
 
   ////////////
   // Events //

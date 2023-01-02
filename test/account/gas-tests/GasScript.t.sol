@@ -237,10 +237,10 @@ contract AccountGasScript is Script {
     usdc = new MockERC20("usdc", "USDC");
 
     // usdc asset: deposit with usdc, cannot be negative
-    usdcAdapter = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+    usdcAdapter = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
 
     // optionAsset: not allow deposit, can be negative
-    optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
+    optionAdapter = new MockAsset(IERC20(address(0)), IAccounts(address(account)), true);
 
     /* Risk Manager */
     manager = new DumbManager(address(account));

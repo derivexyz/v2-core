@@ -7,7 +7,7 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
-import "../interfaces/IAccount.sol";
+import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../libraries/DecimalMath.sol";
 
@@ -24,7 +24,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   using SafeCast for int;
 
   ///@dev Account contract address
-  IAccount public immutable account;
+  IAccounts public immutable account;
 
   ///@dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
@@ -61,7 +61,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(IAccount _account, IERC20Metadata _stableAsset) {
+  constructor(IAccounts _account, IERC20Metadata _stableAsset) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     account = _account;
