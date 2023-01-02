@@ -134,4 +134,6 @@ contract PCRMGroupingGas is Script {
 
     return assetTransfers;
   }
+
+  function test() public {}
 }
