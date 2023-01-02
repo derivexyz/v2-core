@@ -14,6 +14,11 @@ contract IntLibTester {
     uint res = IntLib.abs(a);
     return res;
   }
+
+  function absMin(int a, int b) external pure returns (uint absMinAmount) {
+    uint res = IntLib.absMin(a, b);
+    return res;
+  }
 }
 
 contract IntLibTest is Test {
@@ -51,5 +56,13 @@ contract IntLibTest is Test {
     int minInt = type(int).min;
     vm.expectRevert();
     tester.abs(minInt);
+  }
+
+  function testAbsMin() public {
+    assertEq(tester.absMin(0, -100), 0);
+
+    assertEq(tester.absMin(-200, -100), 100);
+
+    assertEq(tester.absMin(200, 100), 100);
   }
 }
