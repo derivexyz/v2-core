@@ -18,7 +18,7 @@ import "./libraries/AssetDeltaLib.sol";
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract Account is Allowances, ERC721, AccountStructs, IAccount {
+contract Account is Allowances, ERC721, IAccount {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;
