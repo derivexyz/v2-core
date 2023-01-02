@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import "../../../src/interfaces/IAccounts.sol";
-import "../../../src/Account.sol";
+import "../../../src/Accounts.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";

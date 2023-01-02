@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/Account.sol";
+import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/AccountStructs.sol";
@@ -19,7 +19,7 @@ import "../mocks/managers/PortfolioRiskPOCManager.sol";
 import "../../shared/mocks/MockERC20.sol";
 
 abstract contract AccountPOCHelper is Test {
-  Account account;
+  Accounts account;
   MockERC20 weth;
   MockERC20 usdc;
   MockERC20 dai;
@@ -45,7 +45,7 @@ abstract contract AccountPOCHelper is Test {
     vm.startPrank(owner);
 
     /* Base Layer */
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Feeds | Oracles | Vol Engine */
     priceFeeds = new TestPriceFeeds();

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "synthetix/Owned.sol";
 import "src/interfaces/IAsset.sol";
-import "src/Account.sol";
+import "src/Accounts.sol";
 import "src/interfaces/AccountStructs.sol";
 import "../feeds/PriceFeeds.sol";
 
@@ -12,10 +12,10 @@ import "../feeds/PriceFeeds.sol";
 contract QuoteWrapper is IAsset, Owned {
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
-  Account account;
+  Accounts account;
   PriceFeeds priceFeeds;
 
-  constructor(IERC20 token_, Account account_, PriceFeeds feeds_, uint feedId) Owned() {
+  constructor(IERC20 token_, Accounts account_, PriceFeeds feeds_, uint feedId) Owned() {
     token = token_;
     account = account_;
     priceFeeds = feeds_;

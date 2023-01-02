@@ -17,7 +17,7 @@ import "../../shared/mocks/MockERC20.sol";
 
 contract AccountGasScript is Script {
   uint ownAcc;
-  Account account;
+  Accounts account;
   MockERC20 usdc;
   MockERC20 dai;
   MockAsset usdcAdapter;
@@ -231,7 +231,7 @@ contract AccountGasScript is Script {
   /// @dev deploy mock system
   function deployMockSystem() public {
     /* Base Layer */
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");

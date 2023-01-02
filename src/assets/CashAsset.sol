@@ -13,7 +13,7 @@ import "../libraries/DecimalMath.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into their account.
+ * @dev   Users can deposit USDC and credit this cash asset into their accounts.
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
@@ -24,7 +24,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   using SafeCast for int;
 
   ///@dev Account contract address
-  IAccounts public immutable account;
+  IAccounts public immutable accounts;
 
   ///@dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
@@ -61,10 +61,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(IAccounts _account, IERC20Metadata _stableAsset) {
+  constructor(IAccounts _accounts, IERC20Metadata _stableAsset) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
-    account = _account;
+    accounts = _accounts;
   }
 
   //////////////////////////////
@@ -93,7 +93,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     stableAsset.safeTransferFrom(msg.sender, address(this), amount);
     uint amountInAccount = amount.to18Decimals(stableDecimals);
 
-    account.assetAdjustment(
+    accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
@@ -115,13 +115,13 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint amount, address recipient) external {
-    if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
+    if (msg.sender != accounts.ownerOf(accountId)) revert LA_OnlyAccountOwner();
 
     stableAsset.safeTransfer(recipient, amount);
 
     uint cashAmount = amount.to18Decimals(stableDecimals);
 
-    account.assetAdjustment(
+    accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
@@ -227,7 +227,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev get current account cash balance
    */
   // function _getStaleBalance(uint accountId) internal view returns (int balance) {
-  //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
+  //   balance = accounts.getBalance(accountId, IAsset(address(this)), 0);
   // }
 
   ///////////////////
@@ -235,7 +235,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ///////////////////
 
   modifier onlyAccount() {
-    if (msg.sender != address(account)) revert LA_NotAccount();
+    if (msg.sender != address(accounts)) revert LA_NotAccount();
     _;
   }
 }

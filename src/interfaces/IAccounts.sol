@@ -7,7 +7,7 @@ import "./IAsset.sol";
 import "./IManager.sol";
 import "./AccountStructs.sol";
 
-// For full documentation refer to src/Account.sol";
+// For full documentation refer to src/Accounts.sol";
 interface IAccounts is AccountStructs, IERC721 {
   ///////////////////
   // Account Admin //
@@ -188,4 +188,11 @@ interface IAccounts is AccountStructs, IERC721 {
   error AC_CannotTransferAssetToOneself(address caller, uint accountId);
 
   error AC_CannotChangeToSameManager(address caller, uint accountId);
+
+  error AC_InvalidPermitSignature();
+
+  error AC_SignatureExpired();
+
+  /// @dev nonce too low or already used
+  error AC_NonceTooLow();
 }

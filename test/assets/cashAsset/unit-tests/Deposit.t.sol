@@ -7,7 +7,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Account.sol";
+import "../../../../src/Accounts.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -17,12 +17,12 @@ contract UNIT_CashAssetDeposit is Test {
   MockERC20 usdc;
   MockManager manager;
   MockManager badManager;
-  Account account;
+  Accounts account;
 
   uint accountId;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(account));
     badManager = new MockManager(address(account));
@@ -71,12 +71,12 @@ contract UNIT_CashAssetDeposit is Test {
 
 contract UNIT_LendingDeposit6Decimals is Test {
   CashAsset cashAsset;
-  Account account;
+  Accounts account;
 
   uint accountId;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
     MockManager manager = new MockManager(address(account));
     MockERC20 usdc = new MockERC20("USDC", "USDC");
 
@@ -107,12 +107,12 @@ contract UNIT_LendingDeposit6Decimals is Test {
 // test cases for asset > 18 decimals
 contract UNIT_LendingDeposit20Decimals is Test {
   CashAsset cashAsset;
-  Account account;
+  Accounts account;
 
   uint accountId;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
     MockManager manager = new MockManager(address(account));
     MockERC20 usdc = new MockERC20("USDC", "USDC");
 

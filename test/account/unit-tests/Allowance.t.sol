@@ -8,7 +8,7 @@ import "../../shared/mocks/MockAsset.sol";
 import "../../../src/interfaces/IAccounts.sol";
 import "../../../src/interfaces/AccountStructs.sol";
 import "../../../src/Allowances.sol";
-import "../../../src/Account.sol";
+import "../../../src/Accounts.sol";
 import {AccountTestBase} from "./AccountTestBase.sol";
 
 contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
