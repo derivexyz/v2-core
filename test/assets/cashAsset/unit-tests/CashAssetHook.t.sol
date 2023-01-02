@@ -25,7 +25,7 @@ contract UNIT_CashAssetHook is Test {
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
-    vm.expectRevert(CashAsset.LA_NotAccount.selector);
+    vm.expectRevert(CashAsset.CA_NotAccount.selector);
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
     cashAsset.handleAdjustment(adjustment, 0, manager, address(this));
   }
@@ -33,7 +33,7 @@ contract UNIT_CashAssetHook is Test {
   function testCannotExecuteHandleAdjustmentIfManagerIsNotWhitelisted() public {
     /* this could happen if someone is trying to transfer our cash asset to an account controlled by malicious manager */
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
-    vm.expectRevert(CashAsset.LA_UnknownManager.selector);
+    vm.expectRevert(CashAsset.CA_UnknownManager.selector);
 
     vm.prank(account);
     cashAsset.handleAdjustment(adjustment, 0, manager, address(this));
@@ -68,7 +68,7 @@ contract UNIT_CashAssetHook is Test {
   }
 
   function testChangeManagerHookRevertOnNonWhitelistedManager() public {
-    vm.expectRevert(CashAsset.LA_UnknownManager.selector);
+    vm.expectRevert(CashAsset.CA_UnknownManager.selector);
 
     vm.prank(account);
     cashAsset.handleManagerChange(0, manager);

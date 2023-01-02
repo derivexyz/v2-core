@@ -114,7 +114,7 @@ contract CashAsset is Owned, IAsset {
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint amount, address recipient) external {
-    if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
+    if (msg.sender != account.ownerOf(accountId)) revert CA_OnlyAccountOwner();
 
     stableAsset.safeTransfer(recipient, amount);
 
@@ -189,7 +189,7 @@ contract CashAsset is Owned, IAsset {
    * @param manager manager address
    */
   function _checkManager(address manager) internal view {
-    if (!whitelistedManager[manager]) revert LA_UnknownManager();
+    if (!whitelistedManager[manager]) revert CA_UnknownManager();
   }
 
   /**
@@ -234,7 +234,7 @@ contract CashAsset is Owned, IAsset {
   ///////////////////
 
   modifier onlyAccount() {
-    if (msg.sender != address(account)) revert LA_NotAccount();
+    if (msg.sender != address(account)) revert CA_NotAccount();
     _;
   }
 
@@ -243,14 +243,14 @@ contract CashAsset is Owned, IAsset {
   ////////////////
 
   /// @dev caller is not account
-  error LA_NotAccount();
+  error CA_NotAccount();
 
   /// @dev revert when user trying to upgrade to a unknown manager
-  error LA_UnknownManager();
+  error CA_UnknownManager();
 
   /// @dev caller is not owner of the account
-  error LA_OnlyAccountOwner();
+  error CA_OnlyAccountOwner();
 
   /// @dev accrued interest is stale
-  error LA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
+  error CA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
 }
