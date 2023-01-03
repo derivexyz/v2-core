@@ -9,10 +9,11 @@ import "src/interfaces/ICashAsset.sol";
 import "src/assets/Option.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
+import "src/libraries/BlackScholesV2.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/Owned.sol";
-import "synthetix/SignedDecimalMath.sol";
+// import "synthetix/SignedDecimalMath.sol";
 
 /**
  * @title PartialCollateralRiskManager
@@ -51,6 +52,17 @@ contract PCRM is IManager, Owned {
     int forwards;
   }
 
+  struct SpotShocks {
+    /// high spot value used for initial margin
+    uint spotUpInitial;
+    /// low spot value used for initial margin
+    uint spotDownInitial;
+    /// high spot value used for maintenance margin
+    uint spotUpMaintenance;
+    /// low spot value used for maintenance margin
+    uint spotDownMaintenance;
+  }
+
   ///////////////
   // Variables //
   ///////////////
@@ -75,6 +87,8 @@ contract PCRM is IManager, Owned {
 
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 16;
+
+  SpotShocks public spotShocks;
 
   ////////////
   // Events //
@@ -130,6 +144,25 @@ contract PCRM is IManager, Owned {
    */
   function handleManagerChange(uint accountId, IManager newManager) external {
     // todo [Josh]: nextManager whitelist check
+  }
+
+  ///////////
+  // Admin //
+  ///////////
+
+  function setSpotShocks(
+    uint _spotUpInitial, 
+    uint _spotDownInitial, 
+    uint _spotUpMaintenance, 
+    uint _spotDownMaintenance
+  ) external onlyOwner {
+    // todo [Josh]: add bounds
+    spotShocks = SpotShocks({
+      spotUpInitial: _spotUpInitial,
+      spotDownInitial: _spotDownInitial,
+      spotUpMaintenance: _spotUpMaintenance,
+      spotDownMaintenance: _spotDownMaintenance
+    });
   }
 
   //////////////////
@@ -212,8 +245,43 @@ contract PCRM is IManager, Owned {
     expiryValue += strikeHoldings.forwards.multiplyDecimal(pnl);
   }
 
-  function _calcLiveStrikeValue() internal view returns (int expiryValue) {
+  function _calcStrikeValue(
+    StrikeHolding memory strikeHoldings, 
+    bool isCurrentScenarioUp,
+    int spotUp,
+    int spotDown,
+    uint shockedVol,
+    uint timeToExpiry
+  ) internal view returns (int strikeValue) {
+    // calculate both up and down values
+    int markedDownCallValue = spotDown - SafeCast.toInt256(strikeHoldings.strike);
+    int markedDownPutValue = SafeCast.toInt256(strikeHoldings.strike) - spotUp;
 
+    // Calculate forward value.
+    strikeValue += (isCurrentScenarioUp) 
+       ? strikeHoldings.forwards.multiplyDecimal(-markedDownPutValue)
+       : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
+
+    // Get BlackSchole price
+    (uint callValue, uint putValue) = BlackScholesV2.prices(
+      BlackScholesV2.BlackScholesInputs({
+        timeToExpirySec: timeToExpiry,
+        volatilityDecimal: shockedVol,
+        spotDecimal: (isCurrentScenarioUp) ? SafeCast.toUint256(spotUp) : SafeCast.toUint256(spotDown),
+        strikePriceDecimal: strikeHoldings.strike,
+        rateDecimal: 0 // todo [Josh]: replace with proper RFR
+      })
+    );
+
+    // Calculate call value.
+    strikeValue += (strikeHoldings.calls >= 0) 
+      ? strikeHoldings.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
+      : strikeHoldings.calls.multiplyDecimal(SafeCast.toInt256(callValue));
+
+    // Calculate put value.
+    strikeValue += (strikeHoldings.puts >= 0) 
+      ? strikeHoldings.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
+      : strikeHoldings.puts.multiplyDecimal(SafeCast.toInt256(putValue));
   }
 
   /**
