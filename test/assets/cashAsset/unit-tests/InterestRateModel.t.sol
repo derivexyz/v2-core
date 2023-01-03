@@ -59,7 +59,9 @@ contract UNIT_InterestRateModel is Test {
 
     uint borrowRate = rateModel.getBorrowRate(supply, borrows);
     uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
-    uint calculatedRate = FixedPointMathLib.exp((time * borrowRate / (365 days)).toInt256()) - DecimalMath.UNIT;
+
+    // Should equal e^(time*borrowRate/365 days) - 1
+    uint calculatedRate = 3073205794798734; 
 
     assertEq(interestFactor, calculatedRate);
   }
