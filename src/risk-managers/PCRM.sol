@@ -166,29 +166,12 @@ contract PCRM is IManager, Owned {
   ///////////
 
   function setParams(
-    uint _spotUpInitial, 
-    uint _spotDownInitial, 
-    uint _spotUpMaintenance, 
-    uint _spotDownMaintenance,
-    uint _volShock,
-    uint _rfrShock,
-    uint _initialStaticDiscount,
-    uint _maintenanceStaticDiscount
+    Shocks calldata _shocks,
+    Discounts calldata _discounts
   ) external onlyOwner {
     // todo [Josh]: add bounds
-    shocks = Shocks({
-      spotUpInitial: _spotUpInitial,
-      spotDownInitial: _spotDownInitial,
-      spotUpMaintenance: _spotUpMaintenance,
-      spotDownMaintenance: _spotDownMaintenance,
-      vol: _volShock,
-      rfr: _rfrShock
-    });
-
-    discounts = Discounts({
-      initialStaticDiscount: _initialStaticDiscount,
-      maintenanceStaticDiscount: _maintenanceStaticDiscount
-    });
+    shocks = _shocks;
+    discounts = _discounts;
   }
 
   //////////////////
