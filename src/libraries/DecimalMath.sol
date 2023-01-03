@@ -39,6 +39,26 @@ library DecimalMath {
   }
 
   /**
+   * @dev convert amount to 18 decimals. rounds up if the number has trailing dust amount
+   * @param amount amount in fromDecimals
+   * @param fromDecimals original decimals
+   * @return amount in 18 decimals
+   */
+  function to18DecimalsRoundUp(uint amount, uint8 fromDecimals) internal pure returns (uint) {
+    if (fromDecimals == 18) return amount;
+    // scale down from larger decimals
+    if (fromDecimals > 18) {
+      uint denominator = (10 ** (fromDecimals - 18));
+      unchecked {
+        uint dust = (amount % denominator == 0) ? 0 : 1;
+        return (amount / denominator) + dust;
+      }
+    }
+    // scale up
+    return amount * (10 ** (18 - fromDecimals));
+  }
+
+  /**
    * @dev convert amount from 18 decimals to another decimal based
    * @param amount amount in 18 decimals
    * @param toDecimals target decimals
