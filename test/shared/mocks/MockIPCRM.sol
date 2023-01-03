@@ -6,8 +6,8 @@ import "../../../src/interfaces/IPCRM.sol";
 contract MockIPCRM is IPCRM {
   address account;
 
-  constructor(address account) {
-    account = account;
+  constructor(address _account) {
+    account = _account;
   }
 
   function getSortedHoldings(uint accountId)

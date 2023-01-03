@@ -4,7 +4,6 @@ out = 'out'
 
 optimizer = true
 optimizer_runs = 10_000
-solc_version = "0.8.13"
 
 
 [fmt]

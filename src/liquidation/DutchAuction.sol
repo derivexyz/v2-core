@@ -21,31 +21,53 @@ import "synthetix/Owned.sol";
  */
 contract DutchAuction is IDutchAuction, Owned {
   struct AuctionDetails {
+    /// the accountId that is being liquidated
     uint accountId;
+    /// The upperBound(starting price) of the auction in cash asset
     int upperBound;
+    /// The lowerBound(ending price) of the auction in cash asset
     int lowerBound;
   }
 
   struct Auction {
+    /// struct that references the auction details
     AuctionDetails auction;
+    /// Boolean that will be switched when the auction price passes through 0
     bool insolvent;
+    /// If an auction is active
     bool ongoing;
+    /// The startTime of the auction
     uint startTime;
+    /// The endTime of the auction
     uint endTime;
-    uint dv; // TODO: mech says that this can be calculated once but potential issue with spot changing, the amount to decrease by each step
+    /// The change in value of the portfolio per step in dollars
+    uint dv; 
   }
 
   struct DutchAuctionParameters {
+    /// Length of each step in seconds
     uint stepInterval;
+    /// Total length of an auction in seconds
     uint lengthOfAuction;
+    /// The address of the security module
     address securityModule;
   }
 
+  /// @dev auctionId => Auction for when an auction is started
   mapping(bytes32 => Auction) public auctions;
+
+  /// @dev auctionId => auctionOwner :TODO: for the risk manager that started the auction??
   mapping(bytes32 => address) public auctionOwner;
 
-  IPCRM public riskManager;
+  /// @dev The risk manager that is the parent of the dutch auction contract
+  IPCRM public immutable riskManager;
+
+  /// @dev The parameters for the dutch auction
   DutchAuctionParameters public parameters;
+
+  ////////////////////////
+  //    Constructor     //
+  ////////////////////////
 
   constructor(address _riskManager) Owned() {
     riskManager = IPCRM(_riskManager);
@@ -187,7 +209,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param spot the spot price of the asset
    *  TODO: consider how this is going to work with options on different spot markets.
    */
-  function _getVMin(uint accountId, int spot) internal view returns (int) {
+  function _getVMin(uint accountId, int spot) internal pure returns (int) {
     // TODO: need to do some more work on this.
     // vmin is going to be difficult to compute
     // (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);

@@ -19,15 +19,10 @@ contract UNIT_TestStartAuction is Test {
 
   uint aliceAcc;
   uint bobAcc;
-  uint expiry;
   Account account;
   MockERC20 usdc;
-  MockERC20 coolToken;
   MockAsset usdcAsset;
-  MockAsset optionAdapter;
-  MockAsset coolAsset;
   MockManager manager;
-  MockFeed feed;
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
@@ -45,15 +40,6 @@ contract UNIT_TestStartAuction is Test {
     // usdcAsset.deposit(ownAcc, 0, 100_000_000e18);
     aliceAcc = account.createAccount(alice, manager);
     bobAcc = account.createAccount(bob, manager);
-
-    coolToken = new MockERC20("Cool", "COOL");
-    coolAsset = new MockAsset(IERC20(coolToken), IAccount(address(account)), false);
-
-    // give Alice usdc, and give Bob coolToken
-    mintAndDeposit(alice, aliceAcc, usdc, usdcAsset, 0, 10000000e18);
-    mintAndDeposit(bob, bobAcc, coolToken, coolAsset, tokenSubId, 10000000e18);
-
-    expiry = block.timestamp + 1 days;
   }
 
   /// @dev deploy mock system
@@ -68,16 +54,9 @@ contract UNIT_TestStartAuction is Test {
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
 
-    // optionAsset: not allow deposit, can be negative
-    optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
 
     /* Risk Manager */
     manager = new MockManager(address(account));
-
-    /*
-     Feed for Spot*/
-    feed = new MockFeed();
-    feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
     dutchAuction = new DutchAuction(address(manager));
 
@@ -106,8 +85,6 @@ contract UNIT_TestStartAuction is Test {
   // TESTS //
   ///////////
 
-  ////////////
-
   /////////////////////////
   // Start Auction Tests //
   /////////////////////////
@@ -125,7 +102,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.auction.accountId, aliceAcc);
 
     // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(auctionId);
+    int  currentBidPrice = dutchAuction.getCurrentBidPrice(auctionId);
     assertEq(currentBidPrice, 0);
   }
 
