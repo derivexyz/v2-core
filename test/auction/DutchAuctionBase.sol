@@ -73,4 +73,6 @@ contract DutchAuctionBase is Test {
 
     dutchAuction = new DutchAuction(address(manager));
   }
+
+  function test() external {}
 }
