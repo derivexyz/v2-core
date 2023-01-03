@@ -41,6 +41,7 @@ contract DutchAuction is Owned {
   }
 
   mapping(bytes32 => Auction) public auctions;
+  mapping(bytes32 => address) public auctionOwner;
 
   IPCRM public riskManager;
   DutchAuctionParameters public parameters;
