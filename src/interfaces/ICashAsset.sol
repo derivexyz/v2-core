@@ -7,14 +7,14 @@ interface ICashAsset {
   ////////////////
 
   /// @dev caller is not account
-  error LA_NotAccount();
+  error CA_NotAccount();
 
   /// @dev revert when user trying to upgrade to a unknown manager
-  error LA_UnknownManager();
+  error CA_UnknownManager();
 
   /// @dev caller is not owner of the account
-  error LA_OnlyAccountOwner();
+  error CA_OnlyAccountOwner();
 
   /// @dev accrued interest is stale
-  error LA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
+  error CA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
 }
