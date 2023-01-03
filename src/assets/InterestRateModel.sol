@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "../libraries/DecimalMath.sol";
+import "../libraries/ConvertDecimals.sol";
 import "../libraries/FixedPointMathLib.sol";
 
 /**
@@ -11,27 +11,24 @@ import "../libraries/FixedPointMathLib.sol";
  * @notice Contract that implements the logic for calculating the borrow rate
  */
 contract InterestRateModel {
-  using DecimalMath for uint;
+  using ConvertDecimals for uint;
   using SafeCast for uint;
 
   /////////////////////
   // State Variables //
   /////////////////////
 
-  ///@dev The approximate number of seconds per year
-  uint public constant SECONDS_PER_YEAR = 365 days;
-
   ///@dev The base yearly interest rate represented as a mantissa (0-1e18)
-  uint public minRate;
+  uint public immutable minRate;
 
   ///@dev The multiplier of utilization rate that gives the slope of the interest rate as a mantissa
-  uint public rateMultipler;
+  uint public immutable rateMultipler;
 
   ///@dev The multiplier after hitting the optimal utilization point
-  uint public highRateMultipler;
+  uint public immutable highRateMultipler;
 
   ///@dev The utilization point at which the highRateMultipler is applied, represented as a mantissa
-  uint public optimalUtil;
+  uint public immutable optimalUtil;
 
   ////////////////////////
   //    Constructor     //
@@ -45,10 +42,10 @@ contract InterestRateModel {
    * @param _optimalUtil The utilization point at which the highRateMultipler is applied
    */
   constructor(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil) {
-    if (_minRate > 1e18) revert ParameterMustBeLessThanOne(_minRate);
-    if (_rateMultipler > 1e18) revert ParameterMustBeLessThanOne(_rateMultipler);
-    if (_highRateMultipler > 1e18) revert ParameterMustBeLessThanOne(_highRateMultipler);
-    if (_optimalUtil > 1e18) revert ParameterMustBeLessThanOne(_optimalUtil);
+    if (_minRate > 1e18) revert IRM_ParameterMustBeLessThanOne(_minRate);
+    if (_rateMultipler > 1e18) revert IRM_ParameterMustBeLessThanOne(_rateMultipler);
+    if (_highRateMultipler > 1e18) revert IRM_ParameterMustBeLessThanOne(_highRateMultipler);
+    if (_optimalUtil > 1e18) revert IRM_ParameterMustBeLessThanOne(_optimalUtil);
     minRate = _minRate;
     rateMultipler = _rateMultipler;
     highRateMultipler = _highRateMultipler;
@@ -70,7 +67,8 @@ contract InterestRateModel {
    * @return Compounded interest rate: e^(rt) - 1
    */
   function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure returns (uint) {
-    return FixedPointMathLib.exp((elapsedTime * borrowRate / SECONDS_PER_YEAR).toInt256()) - DecimalMath.UNIT;
+    if (elapsedTime == 0) revert IRM_NoElapsedTime(elapsedTime);
+    return FixedPointMathLib.exp((elapsedTime * borrowRate / 365 days).toInt256()) - ConvertDecimals.UNIT;
   }
 
   /**
@@ -118,5 +116,6 @@ contract InterestRateModel {
   ////////////
 
   ///@dev Revert when the parameter set is greater than 1e18
-  error ParameterMustBeLessThanOne(uint param);
+  error IRM_ParameterMustBeLessThanOne(uint param);
+  error IRM_NoElapsedTime(uint elapsedTime);
 }

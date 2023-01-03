@@ -8,7 +8,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Account.sol";
+import "../../../../src/Accounts.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -18,21 +18,21 @@ contract UNIT_CashAssetWithdraw is Test {
   MockERC20 usdc;
   MockManager manager;
   MockManager badManager;
-  Account account;
+  Accounts account;
   address badActor = address(0x0fac);
 
   uint accountId;
   uint depositedAmount;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(account));
     badManager = new MockManager(address(account));
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(address(account), address(usdc));
+    cashAsset = new CashAsset(account, usdc);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -61,13 +61,13 @@ contract UNIT_CashAssetWithdraw is Test {
 
   function testCannotWithdrawFromOthersAccount() public {
     vm.prank(badActor);
-    vm.expectRevert(CashAsset.LA_OnlyAccountOwner.selector);
+    vm.expectRevert(ICashAsset.CA_OnlyAccountOwner.selector);
     cashAsset.withdraw(accountId, 100 ether, address(this));
   }
 
   function testCannotWithdrawFromAccountNotControlledByTrustedManager() public {
     uint badAccount = account.createAccount(address(this), badManager);
-    vm.expectRevert(CashAsset.LA_UnknownManager.selector);
+    vm.expectRevert(ICashAsset.CA_UnknownManager.selector);
     cashAsset.withdraw(badAccount, 100 ether, address(this));
   }
 
@@ -88,5 +88,55 @@ contract UNIT_CashAssetWithdraw is Test {
 
     // todo: number might change based on interest
     assertEq(accBalance, -(int(amountToBorrow)));
+  }
+}
+
+/**
+ * @dev tests with mocked stable ERC20 with 20 decimals
+ */
+contract UNIT_CashAssetWithdrawLargeDecimals is Test {
+  CashAsset cashAsset;
+  MockERC20 usdc;
+  MockManager manager;
+  Accounts accounts;
+
+  uint accountId;
+
+  function setUp() public {
+    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+
+    manager = new MockManager(address(accounts));
+
+    usdc = new MockERC20("USDC", "USDC");
+
+    // usdc as 20 decimals
+    usdc.setDecimals(20);
+
+    cashAsset = new CashAsset(accounts, usdc);
+
+    cashAsset.setWhitelistManager(address(manager), true);
+
+    // 10000 USDC with 20 decimals
+    uint depositAmount = 10000 * 1e20;
+    usdc.mint(address(this), depositAmount);
+    usdc.approve(address(cashAsset), type(uint).max);
+
+    accountId = accounts.createAccount(address(this), manager);
+
+    cashAsset.deposit(accountId, depositAmount);
+  }
+
+  function testWithdrawDustWillUpdateAccountBalance() public {
+    // amount (7 * 1e-20) should be round up to (1 * 1e-18) in our account
+    uint amountToWithdraw = 7;
+
+    int cashBalanceBefore = accounts.getBalance(accountId, cashAsset, 0);
+
+    cashAsset.withdraw(accountId, amountToWithdraw, address(this));
+
+    int cashBalanceAfter = accounts.getBalance(accountId, cashAsset, 0);
+
+    // cash balance in account is deducted by 1 wei
+    assertEq(cashBalanceBefore - cashBalanceAfter, 1);
   }
 }

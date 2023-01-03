@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccount.sol";
+import "src/interfaces/IAccounts.sol";
 import "src/interfaces/AccountStructs.sol";
 
 import "../../../shared/mocks/MockManager.sol";
@@ -38,7 +38,7 @@ contract DumbManager is MockManager {
     super.handleAdjustment(accountId, sender, deltas, data);
 
     // read the value, so we calculate the SLOADs
-    IAccount(account).getAccountBalances(accountId);
+    IAccounts(account).getAccountBalances(accountId);
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.

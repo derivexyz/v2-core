@@ -3,7 +3,7 @@
 ## Agenda
 
 * [Base Layer Overview](#the-base-layer)
-  * [Account](#account)  
+  * [Accounts](#accounts)  
   * [Managers](#managers)
   * [Assets](#assets)
   * [Shared Risk and Hooks](#shared-risk)
@@ -18,13 +18,13 @@ There are three big parts that compose of the **base layer**: `Account`, `Manage
 
 ![base-layer](./imgs/overall/base-layer-basic.png)
 
-### Account
+### Accounts
 
-An `Account` is a fully permission-less contract that allows anyone to create an account entity (represent as ERC721), which stores a list of `{asset, subId, balance}` for a user. Each `asset` can have multiple `subIds` that represent asset sub categories (e.g. asset->option, subId->Jan 1st, $1000 Strike, ETH Call). 
+`Accounts` is a fully permission-less contract that allows anyone to create an account entity (represent as ERC721), which stores a list of `{asset, subId, balance}` for a user. Each `asset` can have multiple `subIds` that represent asset sub categories (e.g. asset->option, subId->Jan 1st, $1000 Strike, ETH Call). 
 
-The primary goal of `Account` is to give different **Managers** and **Assets** the flexibility to create unique validation rules for various account actions.
+The primary goal of `Accounts` is to give different **Managers** and **Assets** the flexibility to create unique validation rules for various account actions.
 
-The two main missions of `Account` are:
+The two main missions of `Accounts` are:
 
 * validate if `msg.sender` is authorized to change (increase or decrease) one account's balance.
 * inform all relevant parties about the trade. This includes:
@@ -33,7 +33,7 @@ The two main missions of `Account` are:
 
 Additionally, balances of assets can be either positive or negative. For example: if Alice wants to long 1 call and Bob wants to short 1 call, they no longer need to "deposit and create an option token in another contract". An approved party just submits a transfer and changes each account's balance from [0, 0] to [1, -1].
 
-P.S. Go to [Accounts](./account) for some more detailed documentation about the approval system and the hooks.
+P.S. Go to [Accounts](./accounts) for some more detailed documentation about the approval system and the hooks.
   
 ### Managers
 
@@ -53,7 +53,7 @@ The job of an **Asset** contract is to determine the result of a transfer, and m
 
 Some example:
 
-* a `WETHWrapper` **asset** can take a user's weth and update the user's balance in `Account`. Someone can also reduce their balance in `Account` and withdraw the real token. In the case of an "only-positive" asset, the asset can deny transfers that would make any balance negative.
+* a `WETHWrapper` **asset** can take a user's weth and update the user's balance in `Accounts`. Someone can also reduce their balance in `Accounts` and withdraw the real token. In the case of an "only-positive" asset, the asset can deny transfers that would make any balance negative.
 
 * an `OptionToken` **asset** does not allow deposits or withdrawals but balances can be both positive and negative. The asset blocks transfers (1) after expiry (2) of invalid subIds. The asset can also help the manager determine the value of a token at settlement or during account state validation.
 
@@ -76,7 +76,7 @@ This means that a set of connected managers and assets will form a "trusted grou
 
 #### Hooks
 
-To check these requirements, whenever a trade happens, `Account` passes the transfer information to the **Asset** contract through the **asset hook** to make sure the final balance of an account is valid and the account is controlled by a good manager, and at the end of all **transfers**, it triggers the **manager hook** to let the manager determine the final state of an account.
+To check these requirements, whenever a trade happens, `Accounts` passes the transfer information to the **Asset** contract through the **asset hook** to make sure the final balance of an account is valid and the account is controlled by a good manager, and at the end of all **transfers**, it triggers the **manager hook** to let the manager determine the final state of an account.
 
 It's worth mentioning that because the **account contract** is totally permission-less, anyone can spin up their own "ecosystem" with risk totally separated from other ecosystems.
 

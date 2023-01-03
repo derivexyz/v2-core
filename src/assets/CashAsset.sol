@@ -7,29 +7,30 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
-import "../interfaces/IAccount.sol";
-import "../libraries/DecimalMath.sol";
+import "../interfaces/IAccounts.sol";
+import "../interfaces/ICashAsset.sol";
+import "../libraries/ConvertDecimals.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into their account.
+ * @dev   Users can deposit USDC and credit this cash asset into their accounts.
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
-contract CashAsset is Owned, IAsset {
-  using SafeERC20 for IERC20;
-  using DecimalMath for uint;
+contract CashAsset is ICashAsset, Owned, IAsset {
+  using SafeERC20 for IERC20Metadata;
+  using ConvertDecimals for uint;
   using SafeCast for uint;
   using SafeCast for int;
 
   ///@dev Account contract address
-  IAccount public immutable account;
+  IAccounts public immutable accounts;
 
-  ///@dev The USDC token address
-  address public immutable usdc;
+  ///@dev The token address for stable coin
+  IERC20Metadata public immutable stableAsset;
 
-  ///@dev Store USDC token decimal as immutable
-  uint8 private immutable usdcDecimals;
+  ///@dev Store stable coin decimal as immutable
+  uint8 private immutable stableDecimals;
 
   /////////////////////////
   //   State Variables   //
@@ -60,10 +61,10 @@ contract CashAsset is Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(address _account, address _usdc) {
-    usdc = _usdc;
-    usdcDecimals = IERC20Metadata(_usdc).decimals();
-    account = IAccount(_account);
+  constructor(IAccounts _accounts, IERC20Metadata _stableAsset) {
+    stableAsset = _stableAsset;
+    stableDecimals = _stableAsset.decimals();
+    accounts = _accounts;
   }
 
   //////////////////////////////
@@ -89,10 +90,10 @@ contract CashAsset is Owned, IAsset {
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external {
-    IERC20(usdc).safeTransferFrom(msg.sender, address(this), amount);
-    uint amountInAccount = amount.to18Decimals(usdcDecimals);
+    stableAsset.safeTransferFrom(msg.sender, address(this), amount);
+    uint amountInAccount = amount.to18Decimals(stableDecimals);
 
-    account.assetAdjustment(
+    accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
@@ -110,17 +111,19 @@ contract CashAsset is Owned, IAsset {
   /**
    * @notice withdraw USDC from a Lyra account
    * @param accountId account id to withdraw
-   * @param amount amount of usdc
+   * @param amount amount of stable asset in its native decimals
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint amount, address recipient) external {
-    if (msg.sender != account.ownerOf(accountId)) revert LA_OnlyAccountOwner();
+    if (msg.sender != accounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
 
-    IERC20(usdc).safeTransfer(recipient, amount);
+    stableAsset.safeTransfer(recipient, amount);
 
-    uint cashAmount = amount.to18Decimals(usdcDecimals);
+    // if amount pass in is in higher decimals than 18, round up the trailing amount
+    // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
+    uint cashAmount = amount.to18DecimalsRoundUp(stableDecimals);
 
-    account.assetAdjustment(
+    accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
@@ -189,7 +192,7 @@ contract CashAsset is Owned, IAsset {
    * @param manager manager address
    */
   function _checkManager(address manager) internal view {
-    if (!whitelistedManager[manager]) revert LA_UnknownManager();
+    if (!whitelistedManager[manager]) revert CA_UnknownManager();
   }
 
   /**
@@ -226,7 +229,7 @@ contract CashAsset is Owned, IAsset {
    * @dev get current account cash balance
    */
   // function _getStaleBalance(uint accountId) internal view returns (int balance) {
-  //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
+  //   balance = accounts.getBalance(accountId, IAsset(address(this)), 0);
   // }
 
   ///////////////////
@@ -234,23 +237,7 @@ contract CashAsset is Owned, IAsset {
   ///////////////////
 
   modifier onlyAccount() {
-    if (msg.sender != address(account)) revert LA_NotAccount();
+    if (msg.sender != address(accounts)) revert CA_NotAccount();
     _;
   }
-
-  ////////////////
-  //   Errors   //
-  ////////////////
-
-  /// @dev caller is not account
-  error LA_NotAccount();
-
-  /// @dev revert when user trying to upgrade to a unknown manager
-  error LA_UnknownManager();
-
-  /// @dev caller is not owner of the account
-  error LA_OnlyAccountOwner();
-
-  /// @dev accrued interest is stale
-  error LA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
 }

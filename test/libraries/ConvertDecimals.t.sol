@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../../src/libraries/DecimalMath.sol";
+import "../../src/libraries/ConvertDecimals.sol";
 
 /**
  * @dev for current `forge coverage` to wrok, i needs to call an external contract then invoke internal library
@@ -11,34 +11,37 @@ import "../../src/libraries/DecimalMath.sol";
 contract DecimalMathTester {
   function convertDecimals(uint amount, uint8 from, uint8 to) external pure returns (uint) {
     // it has to store result and return to work!
-    uint res = DecimalMath.convertDecimals(amount, from, to);
+    uint res = ConvertDecimals.convertDecimals(amount, from, to);
     return res;
   }
 
   function to18Decimals(uint amount, uint8 from) external pure returns (uint) {
-    uint res = DecimalMath.to18Decimals(amount, from);
+    uint res = ConvertDecimals.to18Decimals(amount, from);
+    return res;
+  }
+
+  function to18DecimalsRoundUp(uint amount, uint8 from) external pure returns (uint) {
+    uint res = ConvertDecimals.to18DecimalsRoundUp(amount, from);
     return res;
   }
 
   function from18Decimals(uint amount, uint8 to) external pure returns (uint) {
-    uint res = DecimalMath.from18Decimals(amount, to);
+    uint res = ConvertDecimals.from18Decimals(amount, to);
     return res;
   }
 
   function multiplyDecimal(uint x, uint y) external pure returns (uint) {
-    uint res = DecimalMath.multiplyDecimal(x, y);
+    uint res = ConvertDecimals.multiplyDecimal(x, y);
     return res;
   }
 
   function divideDecimal(uint x, uint y) external pure returns (uint) {
-    uint res = DecimalMath.divideDecimal(x, y);
+    uint res = ConvertDecimals.divideDecimal(x, y);
     return res;
   }
 }
 
-contract DecimalMathTest is Test {
-  using DecimalMath for uint;
-
+contract ConvertDecimalMathTest is Test {
   DecimalMathTester tester;
 
   function setUp() public {
@@ -72,6 +75,8 @@ contract DecimalMathTest is Test {
   function testConversion18To18() public {
     uint amount = 1 ether;
     assertEq(tester.to18Decimals(amount, 18), amount);
+    assertEq(tester.to18DecimalsRoundUp(amount, 18), amount);
+
     assertEq(tester.from18Decimals(amount, 18), amount);
   }
 
@@ -79,6 +84,8 @@ contract DecimalMathTest is Test {
     uint amountIn6 = 1e6;
     uint amountIn18 = 1e18;
     assertEq(tester.to18Decimals(amountIn6, 6), amountIn18);
+    assertEq(tester.to18DecimalsRoundUp(amountIn6, 6), amountIn18);
+
     assertEq(tester.from18Decimals(amountIn18, 6), amountIn6);
   }
 
@@ -86,7 +93,17 @@ contract DecimalMathTest is Test {
     uint amountIn27 = 1e27;
     uint amountIn18 = 1e18;
     assertEq(tester.to18Decimals(amountIn27, 27), amountIn18);
+    assertEq(tester.to18DecimalsRoundUp(amountIn27, 27), amountIn18);
+
     assertEq(tester.from18Decimals(amountIn18, 27), amountIn27);
+  }
+
+  function testRoundingTo18Decimals() public {
+    uint amountIn27 = 5;
+    // not rounded (trailing digits discarded)
+    assertEq(tester.to18Decimals(amountIn27, 27), 0);
+    // roundedup (trailing digits discarded)
+    assertEq(tester.to18DecimalsRoundUp(amountIn27, 27), 1);
   }
 
   function testFuzzMultiplyDecimal(uint x, uint y) public {
