@@ -133,7 +133,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(0xdead));
 
     // start an auction on Alice's account
-    vm.expectRevert(DutchAuction.DA_NotRiskManager.selector);
+    vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
     dutchAuction.startAuction(aliceAcc);
   }
 }
