@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "../libraries/DecimalMath.sol";
+import "../libraries/ConvertDecimals.sol";
 import "../libraries/FixedPointMathLib.sol";
 
 /**
@@ -11,7 +11,7 @@ import "../libraries/FixedPointMathLib.sol";
  * @notice Contract that implements the logic for calculating the borrow rate
  */
 contract InterestRateModel {
-  using DecimalMath for uint;
+  using ConvertDecimals for uint;
   using SafeCast for uint;
 
   /////////////////////
@@ -68,7 +68,7 @@ contract InterestRateModel {
    */
   function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure returns (uint) {
     if (elapsedTime == 0) revert IRM_NoElapsedTime(elapsedTime);
-    return FixedPointMathLib.exp((elapsedTime * borrowRate / 365 days).toInt256()) - DecimalMath.UNIT;
+    return FixedPointMathLib.exp((elapsedTime * borrowRate / 365 days).toInt256()) - ConvertDecimals.UNIT;
   }
 
   /**

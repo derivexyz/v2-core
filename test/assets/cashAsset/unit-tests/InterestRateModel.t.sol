@@ -8,7 +8,7 @@ import "../../../../src/assets/InterestRateModel.sol";
  * @dev Simple testing for the InterestRateModel
  */
 contract UNIT_InterestRateModel is Test {
-  using DecimalMath for uint;
+  using ConvertDecimals for uint;
   using SafeCast for uint;
 
   InterestRateModel rateModel;
@@ -61,7 +61,7 @@ contract UNIT_InterestRateModel is Test {
     uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
 
     // Should equal e^(time*borrowRate/365 days) - 1
-    uint calculatedRate = 3073205794798734; 
+    uint calculatedRate = 3073205794798734;
 
     assertEq(interestFactor, calculatedRate);
   }
@@ -119,7 +119,7 @@ contract UNIT_InterestRateModel is Test {
 
     uint borrowRate = rateModel.getBorrowRate(supply, borrows);
     uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
-    uint calculatedRate = FixedPointMathLib.exp((time * borrowRate / (365 days)).toInt256()) - DecimalMath.UNIT;
+    uint calculatedRate = FixedPointMathLib.exp((time * borrowRate / (365 days)).toInt256()) - ConvertDecimals.UNIT;
 
     assertEq(interestFactor, calculatedRate);
   }
