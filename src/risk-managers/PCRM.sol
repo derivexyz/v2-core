@@ -52,7 +52,7 @@ contract PCRM is IManager, Owned {
     int forwards;
   }
 
-  struct SpotShocks {
+  struct Shocks {
     /// high spot value used for initial margin
     uint spotUpInitial;
     /// low spot value used for initial margin
@@ -61,11 +61,23 @@ contract PCRM is IManager, Owned {
     uint spotUpMaintenance;
     /// low spot value used for maintenance margin
     uint spotDownMaintenance;
+    /// volatility shock
+    uint vol;
+    /// risk-free-rate shock
+    uint rfr;
+  }
+
+  struct Discounts {
+    /// maintenance discount applied to whole expiry 
+    uint maintenanceStaticDiscount;
+    /// initial discount applied to whole expiry 
+    uint initialStaticDiscount;
   }
 
   ///////////////
   // Variables //
   ///////////////
+  int constant SECONDS_PER_YEAR = 365 days;
 
   /// @dev asset used in all settlements and denominates margin
   IAccounts public immutable account;
@@ -88,7 +100,9 @@ contract PCRM is IManager, Owned {
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 16;
 
-  SpotShocks public spotShocks;
+  Shocks public shocks;
+
+  Discounts public discounts;
 
   ////////////
   // Events //
@@ -151,18 +165,29 @@ contract PCRM is IManager, Owned {
   // Admin //
   ///////////
 
-  function setSpotShocks(
+  function setParams(
     uint _spotUpInitial, 
     uint _spotDownInitial, 
     uint _spotUpMaintenance, 
-    uint _spotDownMaintenance
+    uint _spotDownMaintenance,
+    uint _volShock,
+    uint _rfrShock,
+    uint _initialStaticDiscount,
+    uint _maintenanceStaticDiscount
   ) external onlyOwner {
     // todo [Josh]: add bounds
-    spotShocks = SpotShocks({
+    shocks = Shocks({
       spotUpInitial: _spotUpInitial,
       spotDownInitial: _spotDownInitial,
       spotUpMaintenance: _spotUpMaintenance,
-      spotDownMaintenance: _spotDownMaintenance
+      spotDownMaintenance: _spotDownMaintenance,
+      vol: _volShock,
+      rfr: _rfrShock
+    });
+
+    discounts = Discounts({
+      initialStaticDiscount: _initialStaticDiscount,
+      maintenanceStaticDiscount: _maintenanceStaticDiscount
     });
   }
 
@@ -222,30 +247,39 @@ contract PCRM is IManager, Owned {
     // get shock amounts
     uint spotUp;
     uint spotDown;
+    int staticDiscount;
     if (marginType == MarginType.INITIAL) {
-      spotUp = spotShocks.spotUpInitial;
-      spotDown = spotShocks.spotDownInitial;
+      spotUp = shocks.spotUpInitial;
+      spotDown = shocks.spotDownInitial;
+      staticDiscount = SafeCast.toInt256(discounts.initialStaticDiscount);
     } else {
-      spotUp = spotShocks.spotUpMaintenance;
-      spotDown = spotShocks.spotDownMaintenance;
+      spotUp = shocks.spotUpMaintenance;
+      spotDown = shocks.spotDownMaintenance;
+      staticDiscount = SafeCast.toInt256(discounts.maintenanceStaticDiscount);
     }
     // todo [Josh]: add actual vol shocks
 
 
     // apply discounts to options
     for (uint i; i < expiries.length; i++) {
+      int expiryMargin;
       ExpiryHolding memory expiry = expiries[i];
-      if (expiry.expiry > block.timestamp) {
-        margin += _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
+      int timeToExpiry = SafeCast.toInt256(expiry.expiry - block.timestamp);
+      if (timeToExpiry > 0) {
+        expiryMargin = _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
+        expiryMargin = (expiryMargin > 0)
+          ? expiryMargin * _getExpiryDiscount(staticDiscount, timeToExpiry)
+          : expiryMargin;
       } else {
-        margin += _calcSettledExpiryValue(expiry);
+        expiryMargin += _calcSettledExpiryValue(expiry);
       }
+
+      // apply discount per expiry
+      margin += expiryMargin;
     }
 
     // add cash
     margin += cashAmount;
-
-    // add global discount
   }
 
   /**
@@ -328,7 +362,7 @@ contract PCRM is IManager, Owned {
     uint shockedVol,
     uint timeToExpiry
   ) internal pure returns (int strikeValue) {
-    // calculate both up and down values
+    // calculate both spot up and down payoffs 
     int markedDownCallValue = spotDown - SafeCast.toInt256(strikeHoldings.strike);
     int markedDownPutValue = SafeCast.toInt256(strikeHoldings.strike) - spotUp;
 
@@ -357,6 +391,20 @@ contract PCRM is IManager, Owned {
     strikeValue += (strikeHoldings.puts >= 0) 
       ? strikeHoldings.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikeHoldings.puts.multiplyDecimal(SafeCast.toInt256(putValue));
+  }
+
+  function _getExpiryDiscount(
+    int staticDiscount, 
+    int timeToExpiry
+  ) internal view returns (
+    int expiryDiscount
+  ) {
+    int tau = timeToExpiry * 10e18 / SECONDS_PER_YEAR;
+    int exponent = SafeCast.toInt256(FixedPointMathLib.exp(
+      -tau.multiplyDecimal(SafeCast.toInt256(shocks.rfr))
+    ));
+
+    return (staticDiscount * exponent);
   }
 
   //////////
