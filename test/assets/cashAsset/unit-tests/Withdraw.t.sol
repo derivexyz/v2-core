@@ -90,3 +90,53 @@ contract UNIT_CashAssetWithdraw is Test {
     assertEq(accBalance, -(int(amountToBorrow)));
   }
 }
+
+/**
+ * @dev tests with mocked stable ERC20 with 20 decimals
+ */
+contract UNIT_CashAssetWithdrawLargeDecimals is Test {
+  CashAsset cashAsset;
+  MockERC20 usdc;
+  MockManager manager;
+  Accounts accounts;
+
+  uint accountId;
+
+  function setUp() public {
+    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+
+    manager = new MockManager(address(accounts));
+
+    usdc = new MockERC20("USDC", "USDC");
+
+    // usdc as 20 decimals
+    usdc.setDecimals(20);
+
+    cashAsset = new CashAsset(accounts, usdc);
+
+    cashAsset.setWhitelistManager(address(manager), true);
+
+    // 10000 USDC with 20 decimals
+    uint depositAmount = 10000 * 1e20;
+    usdc.mint(address(this), depositAmount);
+    usdc.approve(address(cashAsset), type(uint).max);
+
+    accountId = accounts.createAccount(address(this), manager);
+
+    cashAsset.deposit(accountId, depositAmount);
+  }
+
+  function testWithdrawDustWillUpdateAccountBalance() public {
+    // amount (7 * 1e-20) should be round up to (1 * 1e-18) in our account
+    uint amountToWithdraw = 7;
+
+    int cashBalanceBefore = accounts.getBalance(accountId, cashAsset, 0);
+
+    cashAsset.withdraw(accountId, amountToWithdraw, address(this));
+
+    int cashBalanceAfter = accounts.getBalance(accountId, cashAsset, 0);
+
+    // cash balance in account is deducted by 1 wei
+    assertEq(cashBalanceBefore - cashBalanceAfter, 1);
+  }
+}

@@ -119,7 +119,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
     stableAsset.safeTransfer(recipient, amount);
 
-    uint cashAmount = amount.to18Decimals(stableDecimals);
+    // if amount pass in is in higher decimals than 18, round up the trailing amount
+    // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
+    uint cashAmount = amount.to18DecimalsRoundUp(stableDecimals);
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
