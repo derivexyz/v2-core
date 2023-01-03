@@ -71,6 +71,6 @@ contract DutchAuctionBase is Test {
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = new DutchAuction(feed, address(manager));
+    dutchAuction = new DutchAuction(address(manager));
   }
 }

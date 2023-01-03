@@ -78,7 +78,7 @@ contract UNIT_DutchAuctionView is Test {
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = new DutchAuction(feed, address(manager));
+    dutchAuction = new DutchAuction(address(manager));
   }
 
   function mintAndDeposit(
@@ -122,11 +122,6 @@ contract UNIT_DutchAuctionView is Test {
   }
 
   function testGetRiskManager() public {
-    console.log("dutchAuction.riskManager():", address(dutchAuction.riskManager()));
     assertEq(address(dutchAuction.riskManager()), address(manager));
-  }
-
-  function testGetSpotFeed() public {
-    assertEq(address(dutchAuction.spotFeed()), address(feed));
   }
 }
