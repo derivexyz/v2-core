@@ -2,11 +2,11 @@
 pragma solidity ^0.8.13;
 
 /**
- * @title DecimalMath
+ * @title ConvertDecimal
  * @author Lyra
  * @notice util functions for converting decimals
  */
-library DecimalMath {
+library ConvertDecimals {
   // The number representing 1.0
   uint public constant UNIT = 1e18;
 

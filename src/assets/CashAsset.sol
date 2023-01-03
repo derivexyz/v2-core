@@ -9,7 +9,7 @@ import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
-import "../libraries/DecimalMath.sol";
+import "../libraries/ConvertDecimals.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
@@ -19,7 +19,7 @@ import "../libraries/DecimalMath.sol";
  */
 contract CashAsset is ICashAsset, Owned, IAsset {
   using SafeERC20 for IERC20Metadata;
-  using DecimalMath for uint;
+  using ConvertDecimals for uint;
   using SafeCast for uint;
   using SafeCast for int;
 
