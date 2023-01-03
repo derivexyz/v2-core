@@ -70,7 +70,7 @@ contract UNIT_InterestRateModel is Test {
     uint borrows = 500 ether;
 
     uint borrowRate = rateModel.getBorrowRate(supply, borrows);
-    
+
     vm.expectRevert(abi.encodeWithSelector(InterestRateModel.IRM_NoElapsedTime.selector, time));
     rateModel.getBorrowInterestFactor(time, borrowRate);
   }
