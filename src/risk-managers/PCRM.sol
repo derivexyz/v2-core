@@ -213,46 +213,106 @@ contract PCRM is IManager, Owned {
    * @return margin Amount by which account is over or under the required margin.
    */
   function _calcMargin(ExpiryHolding[] memory expiries, MarginType marginType) internal view returns (int margin) {
+    uint spotUp = (marginType == MarginType.INITIAL) 
+      ? spotShocks.spotUpInitial
+      : spotShocks.spotUpMaintenance;
+    uint spotDown = (marginType == MarginType.INITIAL) 
+      ? spotShocks.spotDownInitial
+      : spotShocks.spotDownMaintenance;
+
     for (uint i; i < expiries.length; i++) {
-      margin += _calcExpiryValue(expiries[i], marginType);
+      ExpiryHolding memory expiry = expiries[i];
+      if (expiry.expiry > block.timestamp) {
+        // todo [Josh]: add actual vol shocks
+        margin += _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
+      } else {
+        margin += _calcSettledExpiryValue(expiry);
+      }
     }
 
     margin += _calcCashValue(marginType);
   }
 
   /**
-   * @notice Calculate the discounted value of option holdings in a specific expiry.
+   * @notice Calculate the settled value of option holdings in a specific expiry.
    * @param expiry All option holdings within an expiry.
-   * @param marginType Initial or maintenance margin.
-   * @return expiryValue Value of assets or debt of options in a given expiry.
+   * @return expiryValue Value of assets or debt of settled options.
    */
-  function _calcExpiryValue(ExpiryHolding memory expiry, MarginType marginType) internal view returns (int expiryValue) {
-    expiryValue;
+  function _calcSettledExpiryValue(ExpiryHolding memory expiry) internal pure returns (int expiryValue) {
+    uint settlementPrice = 0; // todo: [Josh] integrate settlement feed
     for (uint i; i < expiry.strikes.length; i++) {
-      expiryValue += _calcStrikeValue(expiry.strikes[i], marginType);
+      StrikeHolding memory strike = expiry.strikes[i];
+      int pnl = SafeCast.toInt256(settlementPrice) - SafeCast.toInt256(strike.strike);
+
+      // calculate proceeds for forwards / calls / puts
+      expiryValue += strike.calls.multiplyDecimal(SignedMath.max(pnl, 0));
+      expiryValue += strike.puts.multiplyDecimal(SignedMath.min(-pnl, 0));
+      expiryValue += strike.forwards.multiplyDecimal(pnl);
     }
   }
 
-  function _calcSettledStrikeValue(
-    StrikeHolding memory strikeHoldings, 
-    uint settlementPrice
+  /**
+   * @notice Calculate the discounted value of live option holdings in a specific expiry.
+   * @param expiry All option holdings within an expiry.
+   * @param spotUp Spot shocked up based on initial or maintenance margin params.
+   * @param spotDown Spot shocked down based on initial or maintenance margin params.
+   * @param shockedVol Vol shocked up based on initial or maintenance margin params.
+   * @return expiryValue Value of assets or debt of options in a given expiry.
+   */
+  function _calcLiveExpiryValue(
+    ExpiryHolding memory expiry, 
+    uint spotUp, 
+    uint spotDown,
+    uint shockedVol
   ) internal view returns (int expiryValue) {
-    int pnl = SafeCast.toInt256(settlementPrice) - SafeCast.toInt256(strikeHoldings.strike);
+    int spotUpValue;
+    int spotDownValue;
 
-    // calculate proceeds for forwards / calls / puts
-    expiryValue += strikeHoldings.calls.multiplyDecimal(SignedMath.max(pnl, 0));
-    expiryValue += strikeHoldings.puts.multiplyDecimal(SignedMath.min(-pnl, 0));
-    expiryValue += strikeHoldings.forwards.multiplyDecimal(pnl);
+    uint timeToExpiry = expiry.expiry - block.timestamp;
+ 
+    for (uint i; i < expiry.strikes.length; i++) {
+      spotUpValue += _calcLiveStrikeValue(
+        expiry.strikes[i], 
+        true,
+        SafeCast.toInt256(spotUp),
+        SafeCast.toInt256(spotDown),
+        shockedVol,
+        timeToExpiry
+      );
+
+      spotDownValue += _calcLiveStrikeValue(
+        expiry.strikes[i], 
+        false,
+        SafeCast.toInt256(spotUp),
+        SafeCast.toInt256(spotDown),
+        shockedVol,
+        timeToExpiry
+      );
+    }
+
+    // return the worst of two scenarios
+    return SignedMath.min(spotUpValue, spotDownValue);
   }
 
-  function _calcStrikeValue(
+  /**
+   * @notice Calculate the discounted value of live option holdings in a specific strike.
+   * @param strikeHoldings All option holdings of the same strike.
+   * @param isCurrentScenarioUp Whether the current scenario is spot up or down.
+   * @param spotUp Spot shocked up based on initial or maintenance margin params.
+   * @param spotDown Spot shocked down based on initial or maintenance margin params.
+   * @param shockedVol Vol shocked up based on initial or maintenance margin params.
+   * @param timeToExpiry Seconds till expiry.
+   * @return strikeValue Value of assets or debt of options of a given strike.
+   */
+
+  function _calcLiveStrikeValue(
     StrikeHolding memory strikeHoldings, 
     bool isCurrentScenarioUp,
     int spotUp,
     int spotDown,
     uint shockedVol,
     uint timeToExpiry
-  ) internal view returns (int strikeValue) {
+  ) internal pure returns (int strikeValue) {
     // calculate both up and down values
     int markedDownCallValue = spotDown - SafeCast.toInt256(strikeHoldings.strike);
     int markedDownPutValue = SafeCast.toInt256(strikeHoldings.strike) - spotUp;
@@ -262,7 +322,7 @@ contract PCRM is IManager, Owned {
        ? strikeHoldings.forwards.multiplyDecimal(-markedDownPutValue)
        : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
 
-    // Get BlackSchole price
+    // Get BlackSchole price.
     (uint callValue, uint putValue) = BlackScholesV2.prices(
       BlackScholesV2.BlackScholesInputs({
         timeToExpirySec: timeToExpiry,
@@ -284,19 +344,6 @@ contract PCRM is IManager, Owned {
       : strikeHoldings.puts.multiplyDecimal(SafeCast.toInt256(putValue));
   }
 
-  /**
-   * @notice Calculate the discounted value of option holdings in a specific strike.
-   * @param strikeHoldings All option holdings of the same strike.
-   * @param marginType Initial or maintenance margin.
-   * @return strikeValue Value of assets or debt of options of a given strike.
-   */
-  function _calcStrikeValue(StrikeHolding memory strikeHoldings, MarginType marginType)
-    internal
-    view
-    returns (int strikeValue)
-  {
-    // todo [Josh]: get call, put, forward values
-  }
 
   /**
    * @notice Calculate the discounted value of cash in account.
