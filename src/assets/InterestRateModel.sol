@@ -42,10 +42,10 @@ contract InterestRateModel {
    * @param _optimalUtil The utilization point at which the highRateMultipler is applied
    */
   constructor(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil) {
-    if (_minRate > 1e18) revert ParameterMustBeLessThanOne(_minRate);
-    if (_rateMultipler > 1e18) revert ParameterMustBeLessThanOne(_rateMultipler);
-    if (_highRateMultipler > 1e18) revert ParameterMustBeLessThanOne(_highRateMultipler);
-    if (_optimalUtil > 1e18) revert ParameterMustBeLessThanOne(_optimalUtil);
+    if (_minRate > 1e18) revert IRM_ParameterMustBeLessThanOne(_minRate);
+    if (_rateMultipler > 1e18) revert IRM_ParameterMustBeLessThanOne(_rateMultipler);
+    if (_highRateMultipler > 1e18) revert IRM_ParameterMustBeLessThanOne(_highRateMultipler);
+    if (_optimalUtil > 1e18) revert IRM_ParameterMustBeLessThanOne(_optimalUtil);
     minRate = _minRate;
     rateMultipler = _rateMultipler;
     highRateMultipler = _highRateMultipler;
@@ -67,7 +67,7 @@ contract InterestRateModel {
    * @return Compounded interest rate: e^(rt) - 1
    */
   function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure returns (uint) {
-    if (elapsedTime == 0) revert NoElapsedTime(elapsedTime);
+    if (elapsedTime == 0) revert IRM_NoElapsedTime(elapsedTime);
     return FixedPointMathLib.exp((elapsedTime * borrowRate / 365 days).toInt256()) - DecimalMath.UNIT;
   }
 
@@ -116,6 +116,6 @@ contract InterestRateModel {
   ////////////
 
   ///@dev Revert when the parameter set is greater than 1e18
-  error ParameterMustBeLessThanOne(uint param);
-  error NoElapsedTime(uint elapsedTime);
+  error IRM_ParameterMustBeLessThanOne(uint param);
+  error IRM_NoElapsedTime(uint elapsedTime);
 }
