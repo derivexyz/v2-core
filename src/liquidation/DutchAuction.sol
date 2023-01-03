@@ -41,7 +41,7 @@ contract DutchAuction is IDutchAuction, Owned {
     /// The endTime of the auction
     uint endTime;
     /// The change in value of the portfolio per step in dollars
-    uint dv; 
+    uint dv;
   }
 
   struct DutchAuctionParameters {

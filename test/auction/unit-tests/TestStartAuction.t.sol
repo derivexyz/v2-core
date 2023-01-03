@@ -16,7 +16,6 @@ import "../../shared/mocks/MockFeed.sol";
 contract UNIT_TestStartAuction is Test {
   address alice;
   address bob;
-
   uint aliceAcc;
   uint bobAcc;
   Account account;
@@ -53,7 +52,6 @@ contract UNIT_TestStartAuction is Test {
     // usdc asset: deposit with usdc, cannot be negative
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
     usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
-
 
     /* Risk Manager */
     manager = new MockManager(address(account));
@@ -102,7 +100,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.auction.accountId, aliceAcc);
 
     // getting the current bid price
-    int  currentBidPrice = dutchAuction.getCurrentBidPrice(auctionId);
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(auctionId);
     assertEq(currentBidPrice, 0);
   }
 
