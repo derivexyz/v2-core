@@ -48,6 +48,7 @@ contract PCRMGroupingGas is Script {
     vm.stopBroadcast();
   }
 
+
   function _gasSingleOption() public {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -60,11 +61,12 @@ contract PCRMGroupingGas is Script {
     account.submitTransfer(transfer, "");
 
     // estimate tx cost
-    uint initGas = gasleft();
-    pcrm.getGroupedHoldings(aliceAcc);
-    uint endGas = gasleft();
+    uint initGas = gasleft(); 
+    
+    pcrm.getGroupedOptions(aliceAcc);
+    
 
-    console.log("gas:singleAsset:", initGas - endGas);
+    console.log("gas:singleAsset:", initGas - gasleft());
   }
 
   function _gasMaxAssets() public {
@@ -83,9 +85,8 @@ contract PCRMGroupingGas is Script {
 
     // estimate gas for grouping + getting balances
     initGas = gasleft();
-    pcrm.getGroupedHoldings(aliceAcc);
-    endGas = gasleft();
-    console.log("gas: grouping 128 assets in PCRM:", initGas - endGas);
+    pcrm.getGroupedOptions(aliceAcc);
+    console.log("gas: grouping 128 assets in PCRM:", initGas - gasleft());
   }
 
   function _setup() public {

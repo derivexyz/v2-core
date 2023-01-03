@@ -85,7 +85,7 @@ contract UNIT_TestPCRM is Test {
     PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
     expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getInitialMargin(expiries);
+    manager.getInitialMargin(expiries, 0);
 
     // todo: actually test
   }
@@ -97,7 +97,7 @@ contract UNIT_TestPCRM is Test {
     PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
     expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getMaintenanceMargin(expiries);
+    manager.getMaintenanceMargin(expiries, 0);
 
     // todo: actually test
   }
@@ -134,6 +134,19 @@ contract UNIT_TestPCRM is Test {
   //////////
 
   function testGetGroupedHoldings() public {
+    _openDefaultOptions();
+
+    (PCRM.ExpiryHolding[] memory holdings) = manager.getGroupedOptions(aliceAcc);
+    assertEq(holdings[0].strikes[0].strike, 1000e18);
+    assertEq(holdings[0].strikes[0].calls, 0);
+    assertEq(holdings[0].strikes[0].puts, -9e18);
+    assertEq(holdings[0].strikes[0].forwards, 1e18);
+
+    assertEq(holdings[1].strikes[0].strike, 10e18);
+    assertEq(holdings[1].strikes[0].puts, 5e18);
+  }
+
+  function _openDefaultOptions() internal {
     vm.startPrank(address(alice));
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
@@ -170,14 +183,5 @@ contract UNIT_TestPCRM is Test {
     account.submitTransfer(longtermTransfer, "");
 
     vm.stopPrank();
-
-    PCRM.ExpiryHolding[] memory holdings = manager.getGroupedHoldings(aliceAcc);
-    assertEq(holdings[0].strikes[0].strike, 1000e18);
-    assertEq(holdings[0].strikes[0].calls, 0);
-    assertEq(holdings[0].strikes[0].puts, -9e18);
-    assertEq(holdings[0].strikes[0].forwards, 1e18);
-
-    assertEq(holdings[1].strikes[0].strike, 10e18);
-    assertEq(holdings[1].strikes[0].puts, 5e18);
   }
 }

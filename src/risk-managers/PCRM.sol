@@ -133,8 +133,9 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    ExpiryHolding[] memory expiries = _groupHoldings(account.getAccountBalances(accountId));
-    _calcMargin(expiries, MarginType.INITIAL);
+    ExpiryHolding[] memory expiries = _groupOptions(account.getAccountBalances(accountId));
+    int cashAmount = _getCashAmount(accountId);
+    _calcMargin(expiries, cashAmount, MarginType.INITIAL);
   }
 
   /**
@@ -212,25 +213,39 @@ contract PCRM is IManager, Owned {
    * @param marginType Initial or maintenance margin.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(ExpiryHolding[] memory expiries, MarginType marginType) internal view returns (int margin) {
-    uint spotUp = (marginType == MarginType.INITIAL) 
-      ? spotShocks.spotUpInitial
-      : spotShocks.spotUpMaintenance;
-    uint spotDown = (marginType == MarginType.INITIAL) 
-      ? spotShocks.spotDownInitial
-      : spotShocks.spotDownMaintenance;
 
+   // todo [Josh]: add RV related add-ons
+  function _calcMargin(
+    ExpiryHolding[] memory expiries, int cashAmount, MarginType marginType
+  ) internal view returns (int margin) {
+
+    // get shock amounts
+    uint spotUp;
+    uint spotDown;
+    if (marginType == MarginType.INITIAL) {
+      spotUp = spotShocks.spotUpInitial;
+      spotDown = spotShocks.spotDownInitial;
+    } else {
+      spotUp = spotShocks.spotUpMaintenance;
+      spotDown = spotShocks.spotDownMaintenance;
+    }
+    // todo [Josh]: add actual vol shocks
+
+
+    // apply discounts to options
     for (uint i; i < expiries.length; i++) {
       ExpiryHolding memory expiry = expiries[i];
       if (expiry.expiry > block.timestamp) {
-        // todo [Josh]: add actual vol shocks
         margin += _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
       } else {
         margin += _calcSettledExpiryValue(expiry);
       }
     }
 
-    margin += _calcCashValue(marginType);
+    // add cash
+    margin += cashAmount;
+
+    // add global discount
   }
 
   /**
@@ -344,16 +359,6 @@ contract PCRM is IManager, Owned {
       : strikeHoldings.puts.multiplyDecimal(SafeCast.toInt256(putValue));
   }
 
-
-  /**
-   * @notice Calculate the discounted value of cash in account.
-   * @param marginType Initial or maintenance margin.
-   * @return cashValue Discounted value of cash held in account.
-   */
-  function _calcCashValue(MarginType marginType) internal view returns (int cashValue) {
-    // todo [Josh]: apply interest rate shock
-  }
-
   //////////
   // Util //
   //////////
@@ -365,7 +370,7 @@ contract PCRM is IManager, Owned {
    * @return expiryHoldings Grouped array of option holdings.
    */
 
-  function _groupHoldings(AccountStructs.AssetBalance[] memory assets)
+  function _groupOptions(AccountStructs.AssetBalance[] memory assets)
     internal
     view
     returns (ExpiryHolding[] memory expiryHoldings)
@@ -411,6 +416,10 @@ contract PCRM is IManager, Owned {
     }
   }
 
+  function _getCashAmount(uint accountId) internal view returns (int cashAmount) {
+    return account.getBalance(accountId, IAsset(address(lending)), 0);
+  }
+
   //////////
   // View //
   //////////
@@ -421,9 +430,12 @@ contract PCRM is IManager, Owned {
    * @param accountId ID of account to sort.
    * @return expiryHoldings Grouped array of option holdings.
    */
-  function getGroupedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
-    return _groupHoldings(account.getAccountBalances(accountId));
+  function getGroupedOptions(uint accountId) external view returns (
+    ExpiryHolding[] memory expiryHoldings
+  ) {
+    return _groupOptions(account.getAccountBalances(accountId));
   }
+
 
   /**
    * @notice Calculate the initial margin of account.
@@ -432,8 +444,8 @@ contract PCRM is IManager, Owned {
    * @return margin Amount by which account is over or under the required margin.
    */
   // todo [Josh]: public view function to get margin values directly through accountId
-  function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
-    return _calcMargin(expiries, MarginType.INITIAL);
+  function getInitialMargin(ExpiryHolding[] memory expiries, int cashAmount) external view returns (int margin) {
+    return _calcMargin(expiries, cashAmount, MarginType.INITIAL);
   }
 
   /**
@@ -442,8 +454,8 @@ contract PCRM is IManager, Owned {
    * @param expiries Sorted array of option holdings.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getMaintenanceMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
-    return _calcMargin(expiries, MarginType.MAINTENANCE);
+  function getMaintenanceMargin(ExpiryHolding[] memory expiries, int cashAmount) external view returns (int margin) {
+    return _calcMargin(expiries, cashAmount, MarginType.MAINTENANCE);
   }
 
   ////////////
