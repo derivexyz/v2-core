@@ -61,7 +61,7 @@ contract UNIT_InterestRateModel is Test {
     uint interestFactor = rateModel.getBorrowInterestFactor(time, borrowRate);
 
     // Should equal e^(time*borrowRate/365 days) - 1
-    uint calculatedRate = 3073205794798734; 
+    uint calculatedRate = 3073205794798734;
 
     assertEq(interestFactor, calculatedRate);
   }
