@@ -50,10 +50,11 @@ contract DutchAuction is Owned {
     riskManager = IPCRM(_riskManager);
   }
 
-  /// @notice Sets the dutch Auction Parameters
-  /// @dev This function is used to set the parameters for the dutch auction
-  /// @param _parameters A struct that contains all the parameters for the dutch auction
-  /// @return Documents the parameters for the dutch auction that were just set.
+  /**  @notice Sets the dutch Auction Parameters
+  * @dev This function is used to set the parameters for the dutch auction
+  * @param _parameters A struct that contains all the parameters for the dutch auction
+  * @return Documents the parameters for the dutch auction that were just set.
+  */
   function setDutchAuctionParameters(DutchAuctionParameters memory _parameters)
     external
     onlyOwner
@@ -64,10 +65,11 @@ contract DutchAuction is Owned {
     return parameters;
   }
 
-  /// @notice Called by the riskManager to start an auction
-  /// @dev Can only be auctioned by a risk manager and will start an auction
-  /// @param accountId The id of the account being liquidated
-  /// @return bytes32 the id of the auction that was just started
+  /**  @notice Called by the riskManager to start an auction
+  * @dev Can only be auctioned by a risk manager and will start an auction
+  * @param accountId The id of the account being liquidated
+  * @return bytes32 the id of the auction that was just started
+  */
   function startAuction(uint accountId) external returns (bytes32) {
     if (address(riskManager) != msg.sender) {
       revert DA_NotRiskManager();
@@ -94,10 +96,11 @@ contract DutchAuction is Owned {
     return auctionId;
   }
 
-  /// @notice a user submits a bid for a particular auction
-  /// @dev Takes in the auction and returns the account id
-  /// @param auctionId the bytesId that corresponds to a particular auction
-  /// @return amount the amount as a percantage of the portfolio that the user is willing to purchase
+  /**  @notice a user submits a bid for a particular auction
+  * @dev Takes in the auction and returns the account id
+  * @param auctionId the bytesId that corresponds to a particular auction
+  * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
+  */
   function bid(bytes32 auctionId, int amount) external returns (uint) {
     // need to check if the timelimit for the auction has been ecplised
     // the position is thus insolvent otherwise
@@ -111,30 +114,34 @@ contract DutchAuction is Owned {
     // IPCRM.executeBid(accountId, msg.sender, amount, cashAmount); // not sure about the liquidator difference
   }
 
-  /// @notice returns the details of an ongoing auction
-  /// @param auctionId the id of the auction that is being queried
-  /// @return Auction returns the struct of the auction details
+  /**  @notice returns the details of an ongoing auction
+  * @param auctionId the id of the auction that is being queried
+  * @return Auction returns the struct of the auction details
+  */
   function getAuctionDetails(bytes32 auctionId) external view returns (Auction memory) {
     return auctions[auctionId];
   }
 
-  /// @notice Gets the maximum size of the portfolio that could be bought at the current price
-  /// @param accountId the id of the account being liquidated
-  /// @return uint the proportion of the portfolio that could be bought at the current price
+  /**  @notice Gets the maximum size of the portfolio that could be bought at the current price
+  * @param accountId the id of the account being liquidated
+  * @return uint the proportion of the portfolio that could be bought at the current price
+  */
   function getMaxProportion(uint accountId) external returns (uint) {}
 
-  /// @notice gets the upper bound for the liquidation price
-  /// @dev requires the accountId and the spot price to mark each asset at a particular value
-  /// @param accountId the accountId of the account that is being liquidated
-  /// @param spot the spot price of the asset,
+  /**  @notice gets the upper bound for the liquidation price
+  * @dev requires the accountId and the spot price to mark each asset at a particular value
+  * @param accountId the accountId of the account that is being liquidated
+  * @param spot the spot price of the asset,
+  */
   function getVMax(uint accountId, int spot) external view returns (int) {
     return _getVMax(accountId, spot);
   }
 
-  /// @notice gets the upper bound for the liquidation price
-  /// @dev requires the accountId and the spot price to mark each asset at a particular value
-  /// @param accountId the accountId of the account that is being liquidated
-  /// @param spot the spot price of the asset,
+  /**  @notice gets the upper bound for the liquidation price
+  * @dev requires the accountId and the spot price to mark each asset at a particular value
+  * @param accountId the accountId of the account that is being liquidated
+  * @param spot the spot price of the asset,
+  */
   function getVMin(uint accountId, int spot) external view returns (int) {
     return _getVMin(accountId, spot);
   }
@@ -143,11 +150,12 @@ contract DutchAuction is Owned {
   // internal //
   ///////////////
 
-  /// @notice gets the upper bound for the liquidation price
-  /// @dev requires the accountId and the spot price to mark each asset at a particular value
-  /// @param accountId the accountId of the account that is being liquidated
-  /// @param spot the spot price of the asset,
-  /// TODO: consider how this is going to work with options on different spot markets.
+  /**  @notice gets the upper bound for the liquidation price
+  * @dev requires the accountId and the spot price to mark each asset at a particular value
+  * @param accountId the accountId of the account that is being liquidated
+  * @param spot the spot price of the asset,
+  * TODO: consider how this is going to work with options on different spot markets.
+  */
   function _getVMax(uint accountId, int spot) internal view returns (int) {
     // (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
     int portfolioMargin = 0; // = cash
@@ -163,11 +171,12 @@ contract DutchAuction is Owned {
     return portfolioMargin;
   }
 
-  /// @notice gets the lower bound for the liquidation price
-  /// @dev requires the accountId and the spot price to mark each asset at a particular value
-  /// @param accountId the accountId of the account that is being liquidated
-  /// @param spot the spot price of the asset
-  /// TODO: consider how this is going to work with options on different spot markets.
+  /** @notice gets the lower bound for the liquidation price
+  * @dev requires the accountId and the spot price to mark each asset at a particular value
+  * @param accountId the accountId of the account that is being liquidated
+  * @param spot the spot price of the asset
+  *  TODO: consider how this is going to work with options on different spot markets.
+  */
   function _getVMin(uint accountId, int spot) internal view returns (int) {
     // TODO: need to do some more work on this.
     // vmin is going to be difficult to compute
@@ -186,10 +195,11 @@ contract DutchAuction is Owned {
     return portfolioMargin;
   }
 
-  /// @notice gets the current bid price for a particular auction at the current block
-  /// @dev returns the current bid price for a particular auction
-  /// @param auctionId the bytes32 id of an auctionId
-  /// @return int the current bid price for the auction
+  /**  @notice gets the current bid price for a particular auction at the current block
+  * @dev returns the current bid price for a particular auction
+  * @param auctionId the bytes32 id of an auctionId
+  * @return int the current bid price for the auction
+  */
   function getCurrentBidPrice(bytes32 auctionId) external view returns (int) {
     // need to check if the auction is still ongoing
     // if not then return the lower bound
