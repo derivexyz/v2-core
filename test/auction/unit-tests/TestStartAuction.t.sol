@@ -124,4 +124,12 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(auctionId);
     assertEq(auction.auction.accountId, aliceAcc);
   }
+
+  function testCannotStartWithNonManager() public {
+    vm.startPrank(address(0xdead));
+
+    // start an auction on Alice's account
+    vm.expectRevert(DutchAuction.DA_NotRiskManager.selector);
+    dutchAuction.startAuction(aliceAcc);
+  }
 }
