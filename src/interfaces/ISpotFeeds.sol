@@ -23,4 +23,5 @@ interface ISpotFeeds {
    * @return symbol Bytes that returns the trading pair (e.g. "ETH/USDC")
    */
   function getSymbol(uint feedId) external view returns (bytes32 symbol);
+
 }

@@ -25,4 +25,6 @@ interface IPCRM {
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     returns (int finalInitialMargin, ExpiryHolding[] memory, int cash);
+
+  function getSpot() external view returns (uint spot);
 }

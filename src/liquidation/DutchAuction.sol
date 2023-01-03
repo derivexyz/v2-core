@@ -1,11 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+// interfaces
 import "../interfaces/IPCRM.sol";
-import "../interfaces/ISpotFeeds.sol";
+
+// inherited
 import "synthetix/Owned.sol";
 
+/**  
+* @title Dutch Auction
+* @author Lyra
+* @notice Is used to liquidate an account that does not meet the margin requirements
+* 1. The auction is started by the risk Manager
+* 2. Bids are taken in a descending fashion until the matinance margin
+* 3. A scalar is applied to the assets of the portfolio and are transfered to the bidder
+* 4. This continues until matienance margin is met or until the portofolio is declared as insolvent
+* where the security module will step into to handle the risk 
+* @dev This contract has a 1 to 1 relationship with a particular risk manager.
+*/
 contract DutchAuction is Owned {
+
   struct AuctionDetails {
     uint accountId;
     int upperBound;
@@ -27,28 +41,26 @@ contract DutchAuction is Owned {
     address securityModule;
   }
 
-  IPCRM public riskManager;
   mapping(bytes32 => Auction) public auctions;
+  
+  IPCRM public riskManager;
   DutchAuctionParameters public parameters;
-  ISpotFeeds public spotFeed;
 
-  constructor(ISpotFeeds _spotFeed, address _riskManager) Owned() {
-    spotFeed = _spotFeed;
+  constructor(address _riskManager) Owned() {
     riskManager = IPCRM(_riskManager);
   }
 
   /// @notice Sets the dutch Auction Parameters
   /// @dev This function is used to set the parameters for the dutch auction
-  /// @param params A struct that contains all the parameters for the dutch auction
+  /// @param _parameters A struct that contains all the parameters for the dutch auction
   /// @return Documents the parameters for the dutch auction that were just set.
-  // TODO: needs to be rescrited to owner
-  function setDutchAuctionParameters(DutchAuctionParameters memory params)
+  function setDutchAuctionParameters(DutchAuctionParameters memory _parameters)
     external
-    onlyOwner()
+    onlyOwner
     returns (DutchAuctionParameters memory)
   {
     // set the parameters for the dutch auction
-    parameters = params;
+    parameters = _parameters;
     return parameters;
   }
 
@@ -64,9 +76,12 @@ contract DutchAuction is Owned {
     //TODO: finish this function
 
     bytes32 auctionId = keccak256(abi.encodePacked(accountId, block.timestamp));
-    uint price = spotFeed.getSpot(1);
-    (int upperBound) = getVMax(accountId, int(price));
-    (int lowerBound) = getVmin(accountId, int(price));
+    
+    // TODO: risk manager prelimary function will be more fleshed out later.
+    uint spot = riskManager.getSpot();
+
+    (int upperBound) = getVMax(accountId, int(spot));
+    (int lowerBound) = getVmin(accountId, int(spot));
 
     auctions[auctionId] = Auction({
       insolvent: false,
