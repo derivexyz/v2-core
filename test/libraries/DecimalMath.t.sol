@@ -20,6 +20,11 @@ contract DecimalMathTester {
     return res;
   }
 
+  function to18DecimalsRoundUp(uint amount, uint8 from) external pure returns (uint) {
+    uint res = DecimalMath.to18DecimalsRoundUp(amount, from);
+    return res;
+  }
+
   function from18Decimals(uint amount, uint8 to) external pure returns (uint) {
     uint res = DecimalMath.from18Decimals(amount, to);
     return res;
@@ -72,6 +77,8 @@ contract DecimalMathTest is Test {
   function testConversion18To18() public {
     uint amount = 1 ether;
     assertEq(tester.to18Decimals(amount, 18), amount);
+    assertEq(tester.to18DecimalsRoundUp(amount, 18), amount);
+
     assertEq(tester.from18Decimals(amount, 18), amount);
   }
 
@@ -79,6 +86,8 @@ contract DecimalMathTest is Test {
     uint amountIn6 = 1e6;
     uint amountIn18 = 1e18;
     assertEq(tester.to18Decimals(amountIn6, 6), amountIn18);
+    assertEq(tester.to18DecimalsRoundUp(amountIn6, 6), amountIn18);
+
     assertEq(tester.from18Decimals(amountIn18, 6), amountIn6);
   }
 
@@ -86,7 +95,17 @@ contract DecimalMathTest is Test {
     uint amountIn27 = 1e27;
     uint amountIn18 = 1e18;
     assertEq(tester.to18Decimals(amountIn27, 27), amountIn18);
+    assertEq(tester.to18DecimalsRoundUp(amountIn27, 27), amountIn18);
+
     assertEq(tester.from18Decimals(amountIn18, 27), amountIn27);
+  }
+
+  function testRoundingTo18Decimals() public {
+    uint amountIn27 = 5;
+    // not rounded (trailing digits discarded)
+    assertEq(tester.to18Decimals(amountIn27, 27), 0);
+    // roundedup (trailing digits discarded)
+    assertEq(tester.to18DecimalsRoundUp(amountIn27, 27), 1);
   }
 
   function testFuzzMultiplyDecimal(uint x, uint y) public {
