@@ -8,7 +8,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Account.sol";
+import "../../../../src/Accounts.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -18,21 +18,21 @@ contract UNIT_CashAssetWithdraw is Test {
   MockERC20 usdc;
   MockManager manager;
   MockManager badManager;
-  Account account;
+  Accounts account;
   address badActor = address(0x0fac);
 
   uint accountId;
   uint depositedAmount;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(account));
     badManager = new MockManager(address(account));
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -61,13 +61,13 @@ contract UNIT_CashAssetWithdraw is Test {
 
   function testCannotWithdrawFromOthersAccount() public {
     vm.prank(badActor);
-    vm.expectRevert(CashAsset.LA_OnlyAccountOwner.selector);
+    vm.expectRevert(ICashAsset.LA_OnlyAccountOwner.selector);
     cashAsset.withdraw(accountId, 100 ether, address(this));
   }
 
   function testCannotWithdrawFromAccountNotControlledByTrustedManager() public {
     uint badAccount = account.createAccount(address(this), badManager);
-    vm.expectRevert(CashAsset.LA_UnknownManager.selector);
+    vm.expectRevert(ICashAsset.LA_UnknownManager.selector);
     cashAsset.withdraw(badAccount, 100 ether, address(this));
   }
 

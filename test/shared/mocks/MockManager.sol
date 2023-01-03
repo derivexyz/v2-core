@@ -2,12 +2,12 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccount.sol";
+import "src/interfaces/IAccounts.sol";
 import "forge-std/console2.sol";
 import "forge-std/console.sol";
 
 contract MockManager is IManager {
-  IAccount account;
+  IAccounts account;
 
   bool revertHandleManager;
   bool revertHandleAdjustment;
@@ -22,7 +22,7 @@ contract MockManager is IManager {
   mapping(uint => mapping(address => mapping(uint96 => int))) public accAssetAdjustmentDelta;
 
   constructor(address account_) {
-    account = IAccount(account_);
+    account = IAccounts(account_);
   }
 
   function handleAdjustment(uint acc, address, AccountStructs.AssetDelta[] memory deltas, bytes memory) public virtual {

@@ -7,7 +7,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Account.sol";
+import "../../../../src/Accounts.sol";
 
 /**
  * @dev testing total supply and total borrow (& utilisation rate) before and after
@@ -19,20 +19,20 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
-  Account account;
+  Accounts account;
 
   uint accountId;
 
   uint depositedAmount = 10000 ether;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(account));
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
