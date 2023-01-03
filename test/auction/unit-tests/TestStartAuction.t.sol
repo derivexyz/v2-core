@@ -123,6 +123,10 @@ contract UNIT_TestStartAuction is Test {
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(auctionId);
     assertEq(auction.auction.accountId, aliceAcc);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(auctionId);
+    assertEq(currentBidPrice, 0);
   }
 
   function testCannotStartWithNonManager() public {
