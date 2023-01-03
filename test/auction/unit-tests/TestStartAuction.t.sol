@@ -119,5 +119,9 @@ contract UNIT_TestStartAuction is Test {
     // start an auction on Alice's account
     bytes32 auctionId = dutchAuction.startAuction(aliceAcc);
     assertEq(auctionId, keccak256(abi.encodePacked(aliceAcc, block.timestamp)));
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(auctionId);
+    assertEq(auction.auction.accountId, aliceAcc);
   }
 }

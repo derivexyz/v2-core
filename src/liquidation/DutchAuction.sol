@@ -114,7 +114,7 @@ contract DutchAuction is Owned {
   /// @notice returns the details of an ongoing auction
   /// @param auctionId the id of the auction that is being queried
   /// @return Auction returns the struct of the auction details
-  function auctionDetails(bytes32 auctionId) external view returns (Auction memory) {
+  function getAuctionDetails(bytes32 auctionId) external view returns (Auction memory) {
     return auctions[auctionId];
   }
 
