@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "./IAsset.sol";
 
-// For full documentation refer to src/Account.sol";
+// For full documentation refer to src/Accounts.sol";
 interface AccountStructs {
   /////////////////////
   // Storage Structs //
@@ -68,6 +68,22 @@ interface AccountStructs {
     int amount;
     // data passed into asset.handleAdjustment()
     bytes32 assetData;
+  }
+
+  struct PermitAllowance {
+    // who to approve
+    address delegate;
+    // nonce for each signer
+    uint nonce;
+    // access are granted on account bases. A signer can have multiple accounts and the signature cannot be
+    // applied to permit another account
+    uint accountId;
+    // deadline on the permit signature
+    uint deadline;
+    // array of "asset allowance" to set
+    AssetAllowance[] assetAllowances;
+    // array of "subid allowance" to set
+    SubIdAllowance[] subIdAllowances;
   }
 
   ////////////////

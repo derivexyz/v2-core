@@ -7,7 +7,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Account.sol";
+import "../../../../src/Accounts.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -17,19 +17,19 @@ contract UNIT_CashAssetDeposit is Test {
   MockERC20 usdc;
   MockManager manager;
   MockManager badManager;
-  Account account;
+  Accounts account;
 
   uint accountId;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(account));
     badManager = new MockManager(address(account));
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -43,7 +43,7 @@ contract UNIT_CashAssetDeposit is Test {
   function testCannotDepositIntoWeirdAccount() public {
     uint badAccount = account.createAccount(address(this), badManager);
 
-    vm.expectRevert(CashAsset.CA_UnknownManager.selector);
+    vm.expectRevert(ICashAsset.CA_UnknownManager.selector);
     cashAsset.deposit(badAccount, 100 ether);
   }
 
@@ -71,19 +71,19 @@ contract UNIT_CashAssetDeposit is Test {
 
 contract UNIT_LendingDeposit6Decimals is Test {
   CashAsset cashAsset;
-  Account account;
+  Accounts account;
 
   uint accountId;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
     MockManager manager = new MockManager(address(account));
     MockERC20 usdc = new MockERC20("USDC", "USDC");
 
     // set USDC to 6 decimals
     usdc.setDecimals(6);
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 6 decimals
@@ -107,19 +107,19 @@ contract UNIT_LendingDeposit6Decimals is Test {
 // test cases for asset > 18 decimals
 contract UNIT_LendingDeposit20Decimals is Test {
   CashAsset cashAsset;
-  Account account;
+  Accounts account;
 
   uint accountId;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
     MockManager manager = new MockManager(address(account));
     MockERC20 usdc = new MockERC20("USDC", "USDC");
 
     // set USDC to 20 decimals!
     usdc.setDecimals(20);
 
-    cashAsset = new CashAsset(address(account), usdc);
+    cashAsset = new CashAsset(account, usdc);
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 20 decimals

@@ -7,23 +7,24 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "../interfaces/IAsset.sol";
-import "../interfaces/IAccount.sol";
+import "../interfaces/IAccounts.sol";
+import "../interfaces/ICashAsset.sol";
 import "../libraries/DecimalMath.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into their account.
+ * @dev   Users can deposit USDC and credit this cash asset into their accounts.
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
-contract CashAsset is Owned, IAsset {
+contract CashAsset is ICashAsset, Owned, IAsset {
   using SafeERC20 for IERC20Metadata;
   using DecimalMath for uint;
   using SafeCast for uint;
   using SafeCast for int;
 
   ///@dev Account contract address
-  IAccount public immutable account;
+  IAccounts public immutable accounts;
 
   ///@dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
@@ -60,10 +61,10 @@ contract CashAsset is Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(address _account, IERC20Metadata _stableAsset) {
+  constructor(IAccounts _accounts, IERC20Metadata _stableAsset) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
-    account = IAccount(_account);
+    accounts = _accounts;
   }
 
   //////////////////////////////
@@ -92,7 +93,7 @@ contract CashAsset is Owned, IAsset {
     stableAsset.safeTransferFrom(msg.sender, address(this), amount);
     uint amountInAccount = amount.to18Decimals(stableDecimals);
 
-    account.assetAdjustment(
+    accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
@@ -120,7 +121,7 @@ contract CashAsset is Owned, IAsset {
 
     uint cashAmount = amount.to18Decimals(stableDecimals);
 
-    account.assetAdjustment(
+    accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
@@ -226,7 +227,7 @@ contract CashAsset is Owned, IAsset {
    * @dev get current account cash balance
    */
   // function _getStaleBalance(uint accountId) internal view returns (int balance) {
-  //   balance = account.getBalance(accountId, IAsset(address(this)), 0);
+  //   balance = accounts.getBalance(accountId, IAsset(address(this)), 0);
   // }
 
   ///////////////////
