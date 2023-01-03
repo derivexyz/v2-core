@@ -7,19 +7,18 @@ import "../interfaces/IPCRM.sol";
 // inherited
 import "synthetix/Owned.sol";
 
-/**  
-* @title Dutch Auction
-* @author Lyra
-* @notice Is used to liquidate an account that does not meet the margin requirements
-* 1. The auction is started by the risk Manager
-* 2. Bids are taken in a descending fashion until the matinance margin
-* 3. A scalar is applied to the assets of the portfolio and are transfered to the bidder
-* 4. This continues until matienance margin is met or until the portofolio is declared as insolvent
-* where the security module will step into to handle the risk 
-* @dev This contract has a 1 to 1 relationship with a particular risk manager.
-*/
+/**
+ * @title Dutch Auction
+ * @author Lyra
+ * @notice Is used to liquidate an account that does not meet the margin requirements
+ * 1. The auction is started by the risk Manager
+ * 2. Bids are taken in a descending fashion until the matinance margin
+ * 3. A scalar is applied to the assets of the portfolio and are transfered to the bidder
+ * 4. This continues until matienance margin is met or until the portofolio is declared as insolvent
+ * where the security module will step into to handle the risk
+ * @dev This contract has a 1 to 1 relationship with a particular risk manager.
+ */
 contract DutchAuction is Owned {
-
   struct AuctionDetails {
     uint accountId;
     int upperBound;
@@ -42,7 +41,7 @@ contract DutchAuction is Owned {
   }
 
   mapping(bytes32 => Auction) public auctions;
-  
+
   IPCRM public riskManager;
   DutchAuctionParameters public parameters;
 
@@ -76,7 +75,7 @@ contract DutchAuction is Owned {
     //TODO: finish this function
 
     bytes32 auctionId = keccak256(abi.encodePacked(accountId, block.timestamp));
-    
+
     // TODO: risk manager prelimary function will be more fleshed out later.
     uint spot = riskManager.getSpot();
 
