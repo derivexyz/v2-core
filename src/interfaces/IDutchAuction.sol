@@ -24,5 +24,5 @@ interface IDutchAuction {
 
   error DA_NotRiskManager();
 
-  function startAuction(uint accountId) external;
+  function startAuction(uint accountId) external returns (bytes32);
 }

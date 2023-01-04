@@ -34,9 +34,9 @@ contract Option is IAsset, Owned {
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
     int preBalance,
-    IManager manager,
-    address caller
-  ) external returns (int finalBalance, bool needAllowance) {
+    IManager /*manager*/,
+    address /*caller*/
+  ) external pure returns (int finalBalance, bool needAllowance) {
     // todo: check whitelist
 
     // todo: make sure valid subId
