@@ -243,7 +243,7 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: add actual vol shocks
 
 
-    // apply discounts to options
+    // discount option value
     for (uint i; i < expiries.length; i++) {
       int expiryMargin;
       ExpiryHolding memory expiry = expiries[i];
@@ -257,7 +257,7 @@ contract PCRM is IManager, Owned {
         expiryMargin += _calcSettledExpiryValue(expiry);
       }
 
-      // apply discount per expiry
+      // aggregate margin
       margin += expiryMargin;
     }
 
