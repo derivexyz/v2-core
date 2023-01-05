@@ -123,11 +123,9 @@ contract UNIT_DutchAuctionView is Test {
     assertEq(address(dutchAuction.riskManager()), address(manager));
   }
 
-  function testVMax() public {
-    assertEq(dutchAuction.getVMax(0, 0), 0);
-  }
-
-  function testVMin() public {
-    assertEq(dutchAuction.getVMin(0, 0), 0);
+  function testGetBounds() public {
+    (int max, int min) = dutchAuction.getBounds(1);
+    assertEq(max, 0);
+    assertEq(min, 0);
   }
 }

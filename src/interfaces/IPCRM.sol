@@ -21,7 +21,7 @@ interface IPCRM {
   }
 
   function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings, int cash);
-  
+
   function getGroupedHoldings(uint accountId) external view returns(ExpiryHolding[] memory expiryHoldings);
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)

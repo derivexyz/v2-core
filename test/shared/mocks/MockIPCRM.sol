@@ -29,6 +29,7 @@ contract MockIPCRM is IPCRM {
 
   function getSpot() external view virtual returns (uint spot) {
     // TODO: filler code
+    return 1000;
   }
 
   function getAccountValue(uint accountId) external view virtual returns(uint) {

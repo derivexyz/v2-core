@@ -111,9 +111,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
     uint spot = riskManager.getSpot();
 
-    // int upperBound = _getVMax(accountId, int(spot));
-    int upperBound = 10000;
-    int lowerBound = _getVMin(accountId, int(spot));
+    (int upperBound, int lowerBound) = _getBounds(accountId, int(spot));
 
     uint dv = _abs(upperBound) / parameters.lengthOfAuction; // as the auction starts in the positive
 
@@ -197,18 +195,8 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the accountId of the account that is being liquidated
    * @param spot the spot price of the asset,
    */
-  function getVMax(uint accountId, int spot) external view returns (int) {
-    return _getVMax(accountId, spot);
-  }
-
-  /**
-   * @notice gets the upper bound for the liquidation price
-   * @dev requires the accountId and the spot price to mark each asset at a particular value
-   * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset,
-   */
-  function getVMin(uint accountId, int spot) external view returns (int) {
-    return _getVMin(accountId, spot);
+  function getBounds(uint accountId, int spot) external view returns (int, int) {
+    return _getBounds(accountId, spot);
   }
 
   /**
@@ -225,6 +213,10 @@ contract DutchAuction is IDutchAuction, Owned {
     return parameters;
   }
 
+  function getBounds(uint accountId) external view returns(int, int) {
+    return _getBounds(accountId, int(riskManager.getSpot()));
+  }
+
   ///////////////
   // internal //
   ///////////////
@@ -236,17 +228,16 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param spot the spot price of the asset,
    * TODO: consider how this is going to work with options on different spot markets.
    */
-  function _getVMax(uint accountId, int spot) internal view returns (int portfolioMargin) {
-      IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
-      for (uint i = 0; i < expiryHoldings.length; i++) {
-        // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
-        
-        (int max, int min) = _markStrike(expiryHoldings[i].strikes, spot);
-        portfolioMargin += max; 
-      }
-    // // // need to discuss with mech how this is going to work
-    // return portfolioMargin;
-    return portfolioMargin;
+  function _getBounds(uint accountId, int spot) internal view returns (int maximum, int minimum) {
+    // TODO: include cash in this calculation
+    IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
+
+    for (uint i = 0; i < expiryHoldings.length; i++) {
+      // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
+      (int max, int min) = _markStrike(expiryHoldings[i].strikes, spot);
+      maximum += max;
+      minimum += min; 
+    }
   }
 
   function _markStrike(IPCRM.StrikeHolding[] memory strikes, int spot) internal pure returns (int max, int min) {
@@ -263,32 +254,6 @@ contract DutchAuction is IDutchAuction, Owned {
       }
     }
     return (max, min);
-  }
-
-
-  // TODO: consider if i need this. 
-  /**
-   * @notice gets the lower bound for the liquidation price
-   * @dev requires the accountId and the spot price to mark each asset at a particular value
-   * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset
-   *  TODO: consider how this is going to work with options on different spot markets.
-   */
-  function _getVMin(uint accountId, int spot) internal view returns (int) {
-    // TODO: need to do some more work on this.
-    // vmin is going to be difficult to compute
-    // (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
-    int portfolioMargin = 0; // = cash;
-    // for (uint i = 0; i < expiryHoldings.length; i++) {
-
-    //   // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
-    //   for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
-    //     portfolioMargin += expiryHoldings[i].strikes[j].puts * int64(expiryHoldings[i].strikes[j].strike);
-    //     portfolioMargin += expiryHoldings[i].strikes[j].calls * spot;
-    //   }
-    // }
-
-    return portfolioMargin;
   }
 
   /**
