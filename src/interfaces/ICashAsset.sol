@@ -2,6 +2,15 @@
 pragma solidity ^0.8.13;
 
 interface ICashAsset {
+  ////////////
+  // Events //
+  ////////////
+
+  /**
+   * @dev Emitted account created or split
+   */
+  event InterestAccrued(uint interestAccrued, uint borrowIndex, uint totalSupply, uint totalBorrow);
+
   ////////////////
   //   Errors   //
   ////////////////
