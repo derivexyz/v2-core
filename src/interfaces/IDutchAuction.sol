@@ -28,5 +28,10 @@ interface IDutchAuction {
   // ERRORS //
   ////////////
 
+  /// @dev emmited when a non-risk manager tries to start an auction
   error DA_NotRiskManager();
+
+  /// @dev emmited when a risk manager tries to start an insolvent auction when bidding
+  /// has not concluded.
+  error DA_AuctionNotStarted(bytes32 auctionId);
 }
