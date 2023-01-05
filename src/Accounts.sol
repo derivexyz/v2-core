@@ -193,6 +193,8 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     _permit(allowancePermit, signature);
   }
 
+  //todo: cancel nonce
+
   /**
    * @dev verify signature and update allowance mapping
    * @param allowancePermit struct specifying accountId, delegator and allowance detail
