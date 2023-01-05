@@ -5,7 +5,7 @@ import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
-import "src/Account.sol";
+import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
@@ -13,7 +13,7 @@ import "test/shared/mocks/MockManager.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract PCRMGroupingGas is Script {
-  Account account;
+  Accounts account;
   PCRM pcrm;
 
   ChainlinkSpotFeeds spotFeeds;
@@ -89,7 +89,7 @@ contract PCRMGroupingGas is Script {
   }
 
   function _setup() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     aggregator = new MockV3Aggregator(18, 1000e18);
     spotFeeds = new ChainlinkSpotFeeds();
@@ -134,4 +134,6 @@ contract PCRMGroupingGas is Script {
 
     return assetTransfers;
   }
+
+  function test() public {}
 }

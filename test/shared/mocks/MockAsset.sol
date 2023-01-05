@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccount.sol";
+import "src/interfaces/IAccounts.sol";
 
 /**
  * @title MockAsset is the easiest Asset wrapper that wraps ERC20 into account system.
@@ -12,7 +12,7 @@ import "src/interfaces/IAccount.sol";
  */
 contract MockAsset is IAsset {
   IERC20 token;
-  IAccount account;
+  IAccounts account;
   bool immutable allowNegativeBalance;
 
   // default: don't need positive allowance to increase someone's balance
@@ -30,7 +30,7 @@ contract MockAsset is IAsset {
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
 
-  constructor(IERC20 token_, IAccount account_, bool allowNegativeBalance_) {
+  constructor(IERC20 token_, IAccounts account_, bool allowNegativeBalance_) {
     token = token_;
     account = account_;
     allowNegativeBalance = allowNegativeBalance_;

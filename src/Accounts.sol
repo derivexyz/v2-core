@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "./interfaces/IAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
 
@@ -14,14 +15,14 @@ import "./libraries/AssetDeltaLib.sol";
 import "./libraries/PermitAllowanceLib.sol";
 
 /**
- * @title Account
+ * @title Accounts
  * @author Lyra
  * @notice Base layer that manages:
  *         1. balances for each (account, asset, subId)
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract Account is Allowances, ERC721, EIP712, AccountStructs {
+contract Accounts is Allowances, ERC721, EIP712, IAccounts {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;
@@ -44,26 +45,6 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
 
   /// @dev user nonce for permit
   mapping(address => uint) public nonce;
-
-  ////////////
-  // Events //
-  ////////////
-
-  /// @dev Emitted account created or split
-  event AccountCreated(address indexed owner, uint indexed accountId, address indexed manager);
-
-  /// @dev Emitted when account manager is updated
-  event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
-
-  /// @dev Emitted during any balance change event.
-  event BalanceAdjusted(
-    uint indexed accountId,
-    address indexed manager,
-    HeldAsset indexed assetAndSubId,
-    int delta,
-    int preBalance,
-    int postBalance
-  );
 
   ///////////////
   // Modifiers //
@@ -469,7 +450,6 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
       needAllowance = adjustment.amount < 0;
     }
 
-    /* for gas efficiency, order unchanged when asset removed */
     userBalanceAndOrder.balance = postBalance.toInt240();
     if (preBalance != 0 && postBalance == 0) {
       _removeHeldAsset(adjustment.acc, userBalanceAndOrder.order);
@@ -545,9 +525,10 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
    * @dev order used to gas efficiently remove assets from large accounts
    *      1. removes ~200k gas overhead for a 100 position portfolio
    *      2. for expiration with strikes, reduces gas overheada by ~150k
+   *      for gas efficiency, order field is not reset when an asset is removed
    */
   function _removeHeldAsset(uint accountId, uint16 order) internal {
-    /* swap order value if middle asset removed */
+    // swap order value if middle asset removed
     uint heldAssetLen = heldAssets[accountId].length;
 
     // if the entry is not the last one: move the last asset to index #order
@@ -635,27 +616,4 @@ contract Account is Allowances, ERC721, EIP712, AccountStructs {
     // check if caller is manager
     return address(manager[accountId]) == msg.sender;
   }
-
-  ////////////
-  // Errors //
-  ////////////
-
-  error AC_OnlyManager();
-
-  error AC_OnlyAsset();
-
-  error AC_TooManyTransfers();
-
-  error AC_InvalidPermitSignature();
-
-  error AC_SignatureExpired();
-
-  /// @dev nonce too low or already used
-  error AC_NonceTooLow();
-
-  error AC_NotOwnerOrERC721Approved(address spender, uint accountId, address owner, IManager manager, address approved);
-
-  error AC_CannotTransferAssetToOneself(address caller, uint accountId);
-
-  error AC_CannotChangeToSameManager(address caller, uint accountId);
 }

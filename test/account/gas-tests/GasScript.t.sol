@@ -17,7 +17,7 @@ import "../../shared/mocks/MockERC20.sol";
 
 contract AccountGasScript is Script {
   uint ownAcc;
-  Account account;
+  Accounts account;
   MockERC20 usdc;
   MockERC20 dai;
   MockAsset usdcAdapter;
@@ -231,16 +231,16 @@ contract AccountGasScript is Script {
   /// @dev deploy mock system
   function deployMockSystem() public {
     /* Base Layer */
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");
 
     // usdc asset: deposit with usdc, cannot be negative
-    usdcAdapter = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+    usdcAdapter = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
 
     // optionAsset: not allow deposit, can be negative
-    optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
+    optionAdapter = new MockAsset(IERC20(address(0)), IAccounts(address(account)), true);
 
     /* Risk Manager */
     manager = new DumbManager(address(account));

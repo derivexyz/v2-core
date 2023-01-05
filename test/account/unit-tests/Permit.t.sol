@@ -6,7 +6,7 @@ import "forge-std/console2.sol";
 
 import "openzeppelin/utils/cryptography/ECDSA.sol";
 
-import "../../../src/Account.sol";
+import "../../../src/Accounts.sol";
 import "../../../src/libraries/PermitAllowanceLib.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
@@ -63,7 +63,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
     bytes memory sig = _signPermit(privateKey, permit);
 
-    vm.expectRevert(Account.AC_SignatureExpired.selector);
+    vm.expectRevert(IAccounts.AC_SignatureExpired.selector);
     account.permit(permit, sig);
   }
 
@@ -82,7 +82,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     // use a bad private key to sign
     bytes memory sig = _signPermit(0x0fac, permit);
 
-    vm.expectRevert(Account.AC_InvalidPermitSignature.selector);
+    vm.expectRevert(IAccounts.AC_InvalidPermitSignature.selector);
     account.permit(permit, sig);
   }
 
@@ -151,7 +151,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     // first permit should pass
     account.permit(permit, sig);
 
-    vm.expectRevert(Account.AC_NonceTooLow.selector);
+    vm.expectRevert(IAccounts.AC_NonceTooLow.selector);
     account.permit(permit, sig);
   }
 
@@ -175,7 +175,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
     vm.chainId(31337);
 
-    vm.expectRevert(Account.AC_InvalidPermitSignature.selector);
+    vm.expectRevert(IAccounts.AC_InvalidPermitSignature.selector);
     account.permit(permit, sig);
   }
 

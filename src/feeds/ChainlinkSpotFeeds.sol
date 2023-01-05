@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/ISpotFeeds.sol";
-import "src/libraries/DecimalMath.sol";
+import "src/libraries/ConvertDecimals.sol";
 import "chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
@@ -91,7 +91,7 @@ contract ChainlinkSpotFeeds is ISpotFeeds {
     }
 
     // Convert to correct decimals and uint.
-    uint spotPrice = DecimalMath.convertDecimals(SafeCast.toUint256(answer), chainlinkAggregator.decimals, 18);
+    uint spotPrice = ConvertDecimals.convertDecimals(SafeCast.toUint256(answer), chainlinkAggregator.decimals, 18);
 
     return (spotPrice, updatedAt);
   }

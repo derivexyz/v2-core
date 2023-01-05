@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../../../src/Account.sol";
+import "../../../src/Accounts.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
@@ -23,7 +23,7 @@ contract AccountTestBase is Test {
   MockAsset usdcAsset;
   MockAsset coolAsset;
 
-  Account account;
+  Accounts account;
 
   uint tokenSubId = 1000;
 
@@ -31,14 +31,14 @@ contract AccountTestBase is Test {
     alice = address(0xaa);
     bob = address(0xbb);
 
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* mock tokens that can be deposited into accounts */
     usdc = new MockERC20("USDC", "USDC");
-    usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+    usdcAsset = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
 
     coolToken = new MockERC20("Cool", "COOL");
-    coolAsset = new MockAsset(IERC20(coolToken), IAccount(address(account)), false);
+    coolAsset = new MockAsset(IERC20(coolToken), IAccounts(address(account)), false);
 
     dumbManager = new MockManager(address(account));
 
