@@ -9,7 +9,7 @@ import "synthetix/DecimalMath.sol";
 import "forge-std/console2.sol";
 
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccount.sol";
+import "src/interfaces/IAccounts.sol";
 import "src/interfaces/AccountStructs.sol";
 
 import "./../assets/QuoteWrapper.sol";
@@ -28,7 +28,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     uint ivShock;
   }
 
-  IAccount account;
+  IAccounts account;
 
   ////
   // Allowed assets
@@ -49,7 +49,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
   address nextManager;
 
   constructor(
-    IAccount account_,
+    IAccounts account_,
     PriceFeeds priceFeed_,
     QuoteWrapper quoteAsset_,
     BaseWrapper baseAsset_,
