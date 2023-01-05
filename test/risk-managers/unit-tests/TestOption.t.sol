@@ -4,14 +4,14 @@ import "forge-std/Test.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
-import "src/Account.sol";
+import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 
 contract UNIT_TestOption is Test {
-  Account account;
+  Accounts account;
   MockManager manager;
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
@@ -24,7 +24,7 @@ contract UNIT_TestOption is Test {
   uint bobAcc;
 
   function setUp() public {
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     aggregator = new MockV3Aggregator(18, 1000e18);
     spotFeeds = new ChainlinkSpotFeeds();

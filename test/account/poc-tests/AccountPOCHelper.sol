@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/Account.sol";
+import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccount.sol";
+import "src/interfaces/IAccounts.sol";
 import "src/interfaces/AccountStructs.sol";
 
 import "forge-std/Test.sol";
@@ -19,7 +19,7 @@ import "../mocks/managers/PortfolioRiskPOCManager.sol";
 import "../../shared/mocks/MockERC20.sol";
 
 abstract contract AccountPOCHelper is Test {
-  Account account;
+  Accounts account;
   MockERC20 weth;
   MockERC20 usdc;
   MockERC20 dai;
@@ -45,7 +45,7 @@ abstract contract AccountPOCHelper is Test {
     vm.startPrank(owner);
 
     /* Base Layer */
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Feeds | Oracles | Vol Engine */
     priceFeeds = new TestPriceFeeds();
@@ -54,13 +54,13 @@ abstract contract AccountPOCHelper is Test {
     usdc = new MockERC20("usdc", "USDC");
     usdcAdapter = new QuoteWrapper(IERC20(usdc), account, priceFeeds, 0);
     weth = new MockERC20("wrapped eth", "wETH");
-    wethAdapter = new BaseWrapper(IERC20(weth), IAccount(address(account)), priceFeeds, 1);
+    wethAdapter = new BaseWrapper(IERC20(weth), IAccounts(address(account)), priceFeeds, 1);
 
     /* Lending */
     dai = new MockERC20("dai", "DAI");
     // starts at 5%, increases to 10% at 50% util, then grows by 2% for every 10% util increase
     interestRateModel = new ContinuousJumpRateModel(5e16, 1e17, 2e17, 5e17);
-    daiLending = new Lending(IERC20(dai), IAccount(address(account)), interestRateModel);
+    daiLending = new Lending(IERC20(dai), IAccounts(address(account)), interestRateModel);
 
     /* Options */
     settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
@@ -68,7 +68,7 @@ abstract contract AccountPOCHelper is Test {
 
     /* Risk Manager */
     rm =
-    new PortfolioRiskPOCManager(IAccount(address(account)), PriceFeeds(priceFeeds), usdcAdapter, wethAdapter, optionAdapter, daiLending);
+    new PortfolioRiskPOCManager(IAccounts(address(account)), PriceFeeds(priceFeeds), usdcAdapter, wethAdapter, optionAdapter, daiLending);
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);

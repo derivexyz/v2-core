@@ -127,7 +127,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param auctionId the bytesId that corresponds to the auction being marked as liquidatable
    * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
    */
-  function markAsInsolventLiquidation(bytes32 auctionId) external returns(bool) {
+  function markAsInsolventLiquidation(bytes32 auctionId) external returns (bool) {
     if (address(riskManager) != msg.sender) {
       revert DA_NotRiskManager();
     }
@@ -180,7 +180,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the accountId of the account that is being liquidated
    * @param spot the spot price of the asset,
    */
-  function getVMax(uint accountId, int spot) external view returns (int) {
+  function getVMax(uint accountId, int spot) external pure returns (int) {
     return _getVMax(accountId, spot);
   }
 
@@ -190,7 +190,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the accountId of the account that is being liquidated
    * @param spot the spot price of the asset,
    */
-  function getVMin(uint accountId, int spot) external view returns (int) {
+  function getVMin(uint accountId, int spot) external pure returns (int) {
     return _getVMin(accountId, spot);
   }
 
@@ -215,7 +215,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param spot the spot price of the asset,
    * TODO: consider how this is going to work with options on different spot markets.
    */
-  function _getVMax(uint accountId, int spot) internal view returns (int) {
+  function _getVMax(uint accountId, int spot) internal pure returns (int) {
     // (IPCRM.ExpiryHolding[] memory expiryHoldings, int cash) = IPCRM(msg.sender).getSortedHoldings(accountId);
     int portfolioMargin = 0; // = cash
     // for (uint i = 0; i < expiryHoldings.length; i++) {

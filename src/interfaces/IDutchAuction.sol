@@ -37,5 +37,4 @@ interface IDutchAuction {
 
   /// @dev emmited when a auction is going to be marked as insolvent with out the auction concluding
   error DA_InsolventNotZero();
-
 }

@@ -6,8 +6,10 @@ import "./IManager.sol";
 interface IAsset {
   /**
    * @notice triggered when an adjustment is triggered on the asset balance
+   * @param adjustment details about adjustment, containing account, subId, amount
+   * @param preBalance balance before adjustment
    * @param manager the manager contract that will verify the end state. Should verify if this is a trusted manager
-   * @param caller the msg.sender that initiate the transfer, can assume to be a address authorized by user
+   * @param caller the msg.sender that initiate the transfer. might not be the owner
    * @return finalBalance the final balance to be recorded in the account
    * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
    */
