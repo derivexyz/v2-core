@@ -124,7 +124,6 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
     // TODO: calc v_min and v_max
-
   }
 
   function testFailAuctionAlreadyStarted() public {

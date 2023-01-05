@@ -23,7 +23,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
 contract DutchAuction is IDutchAuction, Owned {
-
   uint UNIT = 1e18;
 
   struct AuctionDetails {
@@ -131,7 +130,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
    * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
    */
-  function markAsInsolventLiquidation(uint accountId) external returns(bool) {
+  function markAsInsolventLiquidation(uint accountId) external returns (bool) {
     if (address(riskManager) != msg.sender) {
       revert DA_NotRiskManager();
     }
@@ -141,7 +140,7 @@ contract DutchAuction is IDutchAuction, Owned {
     }
     auctions[accountId].insolvent = true;
     auctions[accountId].dv = _abs(auctions[accountId].auction.lowerBound) / parameters.lengthOfAuction;
-    
+
     return auctions[accountId].insolvent;
   }
 
@@ -211,11 +210,11 @@ contract DutchAuction is IDutchAuction, Owned {
     return _getCurrentBidPrice(accountId);
   }
 
-  function getParameters() external view returns(DutchAuctionParameters memory) {
+  function getParameters() external view returns (DutchAuctionParameters memory) {
     return parameters;
   }
 
-  function getBounds(uint accountId) external view returns(int, int) {
+  function getBounds(uint accountId) external view returns (int, int) {
     return _getBounds(accountId, int(riskManager.getSpot()));
   }
 
@@ -238,7 +237,7 @@ contract DutchAuction is IDutchAuction, Owned {
       // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
       (int max, int min) = _markStrike(expiryHoldings[i].strikes, spot);
       maximum += max;
-      minimum += min; 
+      minimum += min;
     }
   }
 
@@ -252,7 +251,7 @@ contract DutchAuction is IDutchAuction, Owned {
         // puts
         int numPuts = strikes[j].puts;
         max += SignedMath.max(numPuts, 0) * int64(strikes[j].strike);
-        min += SignedMath.min(numPuts, 0) * int64(strikes[j].strike);      
+        min += SignedMath.min(numPuts, 0) * int64(strikes[j].strike);
       }
     }
     return (max, min);
