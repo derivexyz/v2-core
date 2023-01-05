@@ -13,8 +13,11 @@ import "src/libraries/BlackScholesV2.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/Owned.sol";
-// import "synthetix/SignedDecimalMath.sol";
+import "synthetix/SignedDecimalMath.sol";
+import "synthetix/DecimalMath.sol";
 
+
+import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
  * @author Lyra
@@ -22,6 +25,7 @@ import "synthetix/Owned.sol";
  */
 contract PCRM is IManager, Owned {
   using SignedDecimalMath for int;
+  using DecimalMath for uint;
 
   /**
    * INITIAL: margin required for trade to pass
@@ -230,14 +234,15 @@ contract PCRM is IManager, Owned {
     // get shock amounts
     uint spotUp;
     uint spotDown;
+    uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
     int staticDiscount;
     if (marginType == MarginType.INITIAL) {
-      spotUp = shocks.spotUpInitial;
-      spotDown = shocks.spotDownInitial;
+      spotUp = spot.multiplyDecimal(shocks.spotUpInitial);
+      spotDown = spot.multiplyDecimal(shocks.spotDownInitial);
       staticDiscount = SafeCast.toInt256(discounts.initialStaticDiscount);
     } else {
-      spotUp = shocks.spotUpMaintenance;
-      spotDown = shocks.spotDownMaintenance;
+      spotUp = spot.multiplyDecimal(shocks.spotUpMaintenance);
+      spotDown = spot.multiplyDecimal(shocks.spotDownMaintenance);
       staticDiscount = SafeCast.toInt256(discounts.maintenanceStaticDiscount);
     }
     // todo [Josh]: add actual vol shocks
@@ -271,7 +276,7 @@ contract PCRM is IManager, Owned {
    * @return expiryValue Value of assets or debt of settled options.
    */
   function _calcSettledExpiryValue(ExpiryHolding memory expiry) internal pure returns (int expiryValue) {
-    uint settlementPrice = 0; // todo: [Josh] integrate settlement feed
+    uint settlementPrice = 1000e18; // todo: [Josh] integrate settlement feed
     for (uint i; i < expiry.strikes.length; i++) {
       StrikeHolding memory strike = expiry.strikes[i];
       int pnl = SafeCast.toInt256(settlementPrice) - SafeCast.toInt256(strike.strike);
@@ -355,13 +360,14 @@ contract PCRM is IManager, Owned {
        : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
 
     // Get BlackSchole price.
+
     (uint callValue, uint putValue) = BlackScholesV2.prices(
       BlackScholesV2.BlackScholesInputs({
         timeToExpirySec: timeToExpiry,
         volatilityDecimal: shockedVol,
         spotDecimal: (isCurrentScenarioUp) ? SafeCast.toUint256(spotUp) : SafeCast.toUint256(spotDown),
         strikePriceDecimal: strikeHoldings.strike,
-        rateDecimal: 0 // todo [Josh]: replace with proper RFR
+        rateDecimal: 1e16 // todo [Josh]: replace with proper RFR
       })
     );
 

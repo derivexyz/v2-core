@@ -15,7 +15,7 @@ interface ISpotFeeds {
    * @param feedId ID set for a given trading pair
    * @return spotPrice 18 decimal price of trading pair
    */
-  function getSpot(uint feedId) external returns (uint spotPrice);
+  function getSpot(uint feedId) external view returns (uint spotPrice);
 
   /**
    * @notice Returns the pair name for a given feedId

@@ -44,6 +44,21 @@ contract UNIT_TestPCRM is Test {
       address(auction)
     );
 
+    manager.setParams(
+      PCRM.Shocks({
+        spotUpInitial: 120e16,
+        spotDownInitial: 80e16,
+        spotUpMaintenance: 110e16,
+        spotDownMaintenance: 90e16,
+        vol: 300e16,
+        rfr: 10e16
+      }),
+      PCRM.Discounts({
+        maintenanceStaticDiscount: 90e16,
+        initialStaticDiscount: 80e16
+      })
+    );
+
     vm.startPrank(alice);
     aliceAcc = account.createAccount(alice, IManager(manager));
     bobAcc = account.createAccount(bob, IManager(manager));
@@ -133,7 +148,7 @@ contract UNIT_TestPCRM is Test {
   // View //
   //////////
 
-  function testGetGroupedHoldings() public {
+  function testGetGroupedOptions() public {
     _openDefaultOptions();
 
     (PCRM.ExpiryHolding[] memory holdings) = manager.getGroupedOptions(aliceAcc);
