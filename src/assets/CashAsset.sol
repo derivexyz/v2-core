@@ -10,6 +10,7 @@ import "../interfaces/IAsset.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../libraries/ConvertDecimals.sol";
+import "./InterestRateModel.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
@@ -28,6 +29,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
+
+  ///@dev InterestRateModel contract address
+  InterestRateModel public rateModel;
 
   ///@dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
@@ -61,6 +65,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
+  // TODO add interest rate model 
   constructor(IAccounts _accounts, IERC20Metadata _stableAsset) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
@@ -78,6 +83,14 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    */
   function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
     whitelistedManager[_manager] = _whitelisted;
+  }
+  
+  /**
+   * @notice Sets the InterestRateModel contract used for interest rate calculations
+   * @param _rateModel Interest rate model address
+   */
+  function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
+    rateModel = _rateModel;
   }
 
   ////////////////////////////
