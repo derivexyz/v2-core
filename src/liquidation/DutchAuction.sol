@@ -124,6 +124,24 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @notice a user submits a bid for a particular auction
    * @dev Takes in the auction and returns the account id
+   * @param auctionId the bytesId that corresponds to the auction being marked as liquidatable
+   * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
+   */
+  function markAsInsolventLiquidation(bytes32 auctionId) external returns(bool) {
+    if (address(riskManager) != msg.sender) {
+      revert DA_NotRiskManager();
+    }
+
+    if (_getCurrentBidPrice(auctionId) != 0) {
+      revert DA_InsolventNotZero();
+    }
+    auctions[auctionId].insolvent = true;
+    return auctions[auctionId].insolvent;
+  }
+
+  /**
+   * @notice a user submits a bid for a particular auction
+   * @dev Takes in the auction and returns the account id
    * @param auctionId the bytesId that corresponds to a particular auction
    * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
    */
@@ -174,6 +192,16 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   function getVMin(uint accountId, int spot) external pure returns (int) {
     return _getVMin(accountId, spot);
+  }
+
+  /**
+   * @notice gets the current bid price for a particular auction at the current block
+   * @dev returns the current bid price for a particular auction
+   * @param auctionId the bytes32 id of an auctionId
+   * @return int the current bid price for the auction
+   */
+  function getCurrentBidPrice(bytes32 auctionId) external view returns (int) {
+    return _getCurrentBidPrice(auctionId);
   }
 
   ///////////////
@@ -233,7 +261,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param auctionId the bytes32 id of an auctionId
    * @return int the current bid price for the auction
    */
-  function getCurrentBidPrice(bytes32 auctionId) external view returns (int) {
+  function _getCurrentBidPrice(bytes32 auctionId) internal view returns (int) {
     // need to check if the auction is still ongoing
     // if not then return the lower bound
     // otherwise return using dv

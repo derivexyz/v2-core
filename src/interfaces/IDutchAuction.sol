@@ -18,11 +18,16 @@ interface IDutchAuction {
   // emmited when an auction ends, either by insolvency or by the assets of an account being purchased.
   event AuctionEnded(bytes32 auctionId, uint accountId, uint amount);
 
+  function startAuction(uint accountId) external returns (bytes32);
+
   ////////////
   // ERRORS //
   ////////////
 
+  /// @dev emmited when a non-risk manager tries to start an auction
   error DA_NotRiskManager();
 
-  function startAuction(uint accountId) external returns (bytes32);
+  /// @dev emmited when a risk manager tries to start an insolvent auction when bidding
+  /// has not concluded.
+  error DA_AuctionNotStarted(bytes32 auctionId);
 }
