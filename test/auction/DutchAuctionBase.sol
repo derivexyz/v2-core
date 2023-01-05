@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 
-import "../../src/Account.sol";
+import "../../src/Accounts.sol";
 import "../shared/mocks/MockERC20.sol";
 import "../shared/mocks/MockAsset.sol";
 
@@ -17,7 +17,7 @@ import "../shared/mocks/MockIPCRM.sol";
 contract DutchAuctionBase is Test {
   uint ownAcc;
   uint expiry;
-  Account account;
+  Accounts account;
   MockERC20 usdc;
   MockERC20 dai;
   MockAsset usdcAdapter;
@@ -52,16 +52,16 @@ contract DutchAuctionBase is Test {
   /// @dev deploy mock system
   function deployMockSystem() public {
     /* Base Layer */
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");
 
     // usdc asset: deposit with usdc, cannot be negative
-    usdcAdapter = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+    usdcAdapter = new MockAsset(IERC20(usdc), account, false);
 
     // optionAsset: not allow deposit, can be negative
-    optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
+    optionAdapter = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
     manager = new MockIPCRM(address(account));

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccount.sol";
+import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
-import "src/assets/Lending.sol";
+import "src/interfaces/ICashAsset.sol";
 import "src/assets/Option.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
@@ -52,13 +52,13 @@ contract PCRM is IManager, Owned {
   ///////////////
 
   /// @dev asset used in all settlements and denominates margin
-  IAccount public immutable account;
+  IAccounts public immutable account;
 
   /// @dev spotFeeds that determine staleness and return prices
   ISpotFeeds public spotFeeds;
 
   /// @dev asset used in all settlements and denominates margin
-  Lending public immutable lending;
+  ICashAsset public immutable cashAsset;
 
   /// @dev reserved option asset
   Option public immutable option;
@@ -91,10 +91,10 @@ contract PCRM is IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address account_, address spotFeeds_, address lending_, address option_, address auction_) Owned() {
-    account = IAccount(account_);
+  constructor(address account_, address spotFeeds_, address cashAsset_, address option_, address auction_) Owned() {
+    account = IAccounts(account_);
     spotFeeds = ISpotFeeds(spotFeeds_);
-    lending = Lending(lending_);
+    cashAsset = ICashAsset(cashAsset_);
     option = Option(option_);
     dutchAuction = IDutchAuction(auction_);
   }

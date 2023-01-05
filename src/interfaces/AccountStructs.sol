@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "./IAsset.sol";
 
-// For full documentation refer to src/Account.sol";
+// For full documentation refer to src/Accounts.sol";
 interface AccountStructs {
   /////////////////////
   // Storage Structs //

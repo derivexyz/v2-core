@@ -7,8 +7,8 @@ import "./IAsset.sol";
 import "./IManager.sol";
 import "./AccountStructs.sol";
 
-// For full documentation refer to src/Account.sol";
-interface IAccount is IAllowances, IERC721 {
+// For full documentation refer to src/Accounts.sol";
+interface IAccounts is AccountStructs, IERC721 {
   ///////////////////
   // Account Admin //
   ///////////////////
@@ -52,8 +52,7 @@ interface IAccount is IAllowances, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(uint accountId, address delegate, AccountStructs.AssetAllowance[] memory allowances)
-    external;
+  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances) external;
 
   /**
    * @notice Sets bidirectional allowances for a specific subId.
@@ -62,8 +61,7 @@ interface IAccount is IAllowances, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each (asset, subId)
    */
-  function setSubIdAllowances(uint accountId, address delegate, AccountStructs.SubIdAllowance[] memory allowances)
-    external;
+  function setSubIdAllowances(uint accountId, address delegate, SubIdAllowance[] memory allowances) external;
 
   /////////////////////////
   // Balance Adjustments //
@@ -74,7 +72,7 @@ interface IAccount is IAllowances, IERC721 {
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to managers of both accounts
    */
-  function submitTransfer(AccountStructs.AssetTransfer memory assetTransfer, bytes memory managerData) external;
+  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external;
 
   /**
    * @notice Batch several transfers
@@ -83,7 +81,7 @@ interface IAccount is IAllowances, IERC721 {
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to every manager involved in trade
    */
-  function submitTransfers(AccountStructs.AssetTransfer[] memory assetTransfers, bytes memory managerData) external;
+  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external;
 
   /**
    * @notice Asymmetric balance adjustment reserved for assets
@@ -92,36 +90,52 @@ interface IAccount is IAllowances, IERC721 {
    * @param triggerAssetHook true if the adjustment need to be routed to Asset's custom hook
    * @param managerData data passed to manager of account
    */
-  function assetAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
-    bool triggerAssetHook,
-    bytes memory managerData
-  ) external returns (int postBalance);
+  function assetAdjustment(AssetAdjustment memory adjustment, bool triggerAssetHook, bytes memory managerData)
+    external
+    returns (int postBalance);
 
   /**
    * @notice Assymetric balance adjustment reserved for managers
    *         Must still pass both _assetHook()
    * @param adjustment assymetric adjustment of amount for (asset, subId)
    */
-  function managerAdjustment(AccountStructs.AssetAdjustment memory adjustment) external returns (int postBalance);
+  function managerAdjustment(AssetAdjustment memory adjustment) external returns (int postBalance);
 
   //////////
   // View //
   //////////
 
+  /**
+   * @dev return the manager address of the account
+   * @param accountId ID of account
+   */
   function manager(uint accountId) external view returns (IManager);
 
+  /**
+   * @dev return amount of asset in the account, and the order (index) of the asset in the asset array
+   * @param accountId ID of account
+   * @param asset IAsset of balance
+   * @param subId subId of balance
+   */
   function balanceAndOrder(uint accountId, IAsset asset, uint subId)
     external
     view
     returns (int240 balance, uint16 order);
 
+  /**
+   * @notice Gets an account's balance for an (asset, subId)
+   * @param accountId ID of account
+   * @param asset IAsset of balance
+   * @param subId subId of balance
+   */
   function getBalance(uint accountId, IAsset asset, uint subId) external view returns (int balance);
 
-  function getAccountBalances(uint accountId)
-    external
-    view
-    returns (AccountStructs.AssetBalance[] memory assetBalances);
+  /**
+   * @notice Gets a list of all asset balances of an account
+   * @dev can use balanceAndOrder() to get the index of a specific balance
+   * @param accountId ID of account
+   */
+  function getAccountBalances(uint accountId) external view returns (AssetBalance[] memory assetBalances);
 
   ////////////
   // Events //
@@ -153,7 +167,7 @@ interface IAccount is IAllowances, IERC721 {
   event BalanceAdjusted(
     uint indexed accountId,
     address indexed manager,
-    AccountStructs.HeldAsset indexed assetAndSubId,
+    HeldAsset indexed assetAndSubId,
     int amount,
     int preBalance,
     int postBalance
@@ -174,4 +188,11 @@ interface IAccount is IAllowances, IERC721 {
   error AC_CannotTransferAssetToOneself(address caller, uint accountId);
 
   error AC_CannotChangeToSameManager(address caller, uint accountId);
+
+  error AC_InvalidPermitSignature();
+
+  error AC_SignatureExpired();
+
+  /// @dev nonce too low or already used
+  error AC_NonceTooLow();
 }

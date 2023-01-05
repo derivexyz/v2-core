@@ -15,7 +15,7 @@ contract MockFeed is ISpotFeeds {
     return spot;
   }
 
-  function getSymbol(uint feedId) external pure returns (bytes32) {
+  function getSymbol(uint /*feedId*/ ) external pure returns (bytes32) {
     return bytes32("eth/usdc");
   }
 

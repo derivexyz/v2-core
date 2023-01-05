@@ -46,7 +46,7 @@ contract PCRMGroupingTester {
 
   function findOrAddStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint numStrikesHeld)
     external
-    view
+    pure
     returns (uint, uint)
   {
     (uint strikeIndex, uint newArrayLen) = PCRMGrouping.findOrAddStrike(strikeHoldings, newStrike, numStrikesHeld);

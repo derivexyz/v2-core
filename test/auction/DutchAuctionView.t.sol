@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "../../src/liquidation/DutchAuction.sol";
-import "../../src/Account.sol";
+import "../../src/Accounts.sol";
 import "../shared/mocks/MockERC20.sol";
 import "../shared/mocks/MockAsset.sol";
 
@@ -19,7 +19,7 @@ contract UNIT_DutchAuctionView is Test {
   uint aliceAcc;
   uint bobAcc;
   uint expiry;
-  Account account;
+  Accounts account;
   MockERC20 usdc;
   MockERC20 coolToken;
   MockAsset usdcAsset;
@@ -46,7 +46,7 @@ contract UNIT_DutchAuctionView is Test {
     bobAcc = account.createAccount(bob, manager);
 
     coolToken = new MockERC20("Cool", "COOL");
-    coolAsset = new MockAsset(IERC20(coolToken), IAccount(address(account)), false);
+    coolAsset = new MockAsset(IERC20(coolToken), account, false);
 
     // give Alice usdc, and give Bob coolToken
     mintAndDeposit(alice, aliceAcc, usdc, usdcAsset, 0, 10000000e18);
@@ -58,17 +58,17 @@ contract UNIT_DutchAuctionView is Test {
   /// @dev deploy mock system
   function deployMockSystem() public {
     /* Base Layer */
-    account = new Account("Lyra Margin Accounts", "LyraMarginNFTs");
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");
 
     // usdc asset: deposit with usdc, cannot be negative
-    usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
-    usdcAsset = new MockAsset(IERC20(usdc), IAccount(address(account)), false);
+    usdcAsset = new MockAsset(IERC20(usdc), account, false);
+    usdcAsset = new MockAsset(IERC20(usdc), account, false);
 
     // optionAsset: not allow deposit, can be negative
-    optionAdapter = new MockAsset(IERC20(address(0)), IAccount(address(account)), true);
+    optionAdapter = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
     manager = new MockManager(address(account));
