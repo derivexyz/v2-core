@@ -30,4 +30,20 @@ contract MockIPCRM is IPCRM {
   function getSpot() external view virtual returns (uint spot) {
     // TODO: filler code
   }
+
+  function getAccountValue(uint accountId) external view virtual returns(uint) {
+    // TODO: filler code
+  }
+
+  function getInitialMargin(uint accountId) external virtual returns(int) {
+    // TODO: filler code
+  }
+
+  function getMaintenanceMargin(uint accountId) external returns(uint) {
+    // TODO: filler code
+  }
+
+  function getGroupedHoldings(uint accountId) external view virtual returns(ExpiryHolding[] memory expiryHoldings) {
+    // TODO: filler code
+  }
 }

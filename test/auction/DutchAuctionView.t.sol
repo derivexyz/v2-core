@@ -102,10 +102,10 @@ contract UNIT_DutchAuctionView is Test {
   ///////////
 
   function testGetParams() public {
-    (uint stepInterval, uint lengthOfAuction, address securityModule) = dutchAuction.parameters();
-    assertEq(stepInterval, dutchAuctionParameters.stepInterval);
-    assertEq(lengthOfAuction, dutchAuctionParameters.lengthOfAuction);
-    assertEq(securityModule, dutchAuctionParameters.securityModule);
+    DutchAuction.DutchAuctionParameters memory retParams = dutchAuction.getParameters();
+    assertEq(retParams.stepInterval, dutchAuctionParameters.stepInterval);
+    assertEq(retParams.lengthOfAuction, dutchAuctionParameters.lengthOfAuction);
+    assertEq(retParams.securityModule, dutchAuctionParameters.securityModule);
 
     // change params
     dutchAuction.setDutchAuctionParameters(
@@ -113,10 +113,10 @@ contract UNIT_DutchAuctionView is Test {
     );
 
     // check if params changed
-    (stepInterval, lengthOfAuction, securityModule) = dutchAuction.parameters();
-    assertEq(stepInterval, 2);
-    assertEq(lengthOfAuction, 200);
-    assertEq(securityModule, address(1));
+    retParams = dutchAuction.getParameters();
+    assertEq(retParams.stepInterval, 2);
+    assertEq(retParams.lengthOfAuction, 200);
+    assertEq(retParams.securityModule, address(1));
   }
 
   function testGetRiskManager() public {

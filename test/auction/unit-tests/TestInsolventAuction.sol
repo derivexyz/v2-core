@@ -87,8 +87,8 @@ contract UNIT_TestInvolventAuction is Test {
   // Permissions Tests ////
   /////////////////////////
 
-  function testMarkingAuctionAsInvsolvent() {
+  function testMarkingAuctionAsInvsolvent() public {
     // TODO: add test here to be able to tell if an auction can be marked as insolvent.
-    
+
   }
 }

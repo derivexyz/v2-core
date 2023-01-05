@@ -92,15 +92,14 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // start an auction on Alice's account
-    bytes32 auctionId = dutchAuction.startAuction(aliceAcc);
-    assertEq(auctionId, keccak256(abi.encodePacked(aliceAcc, block.timestamp)));
+    dutchAuction.startAuction(aliceAcc);
 
     // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(auctionId);
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.auction.accountId, aliceAcc);
 
     // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(auctionId);
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, 0);
   }
 
@@ -109,6 +108,33 @@ contract UNIT_TestStartAuction is Test {
 
     // start an auction on Alice's account
     vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
+    dutchAuction.startAuction(aliceAcc);
+  }
+
+  function testStartAuctionAndCheckValues() public {
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+    // TODO: calc v_min and v_max
+
+  }
+
+  function testFailAuctionAlreadyStarted() public {
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // start an auction on Alice's account
+    vm.expectRevert(IDutchAuction.DA_AuctionAlreadyStarted.selector);
     dutchAuction.startAuction(aliceAcc);
   }
 }

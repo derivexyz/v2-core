@@ -21,10 +21,18 @@ interface IPCRM {
   }
 
   function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings, int cash);
+  
+  function getGroupedHoldings(uint accountId) external view returns(ExpiryHolding[] memory expiryHoldings);
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     returns (int finalInitialMargin, ExpiryHolding[] memory, int cash);
 
   function getSpot() external view returns (uint spot);
+
+  function getInitialMargin(uint accountId) external returns(int);
+
+  function getMaintenanceMargin(uint accountId) external returns(uint);
+
+  function getAccountValue(uint accountId) external returns(uint);
 }
