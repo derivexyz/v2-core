@@ -12,6 +12,7 @@ import "../interfaces/ICashAsset.sol";
 import "../libraries/ConvertDecimals.sol";
 import "./InterestRateModel.sol";
 
+import "forge-std/Test.sol";
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit USDC and credit this cash asset into their accounts.
@@ -57,9 +58,12 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
-
+  
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
+  
+  ///@dev AccountId to previously stored borrow index
+  mapping(uint => uint) public accountBorrowIndex;
 
   /////////////////////
   //   Constructor   //
@@ -87,9 +91,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   
   /**
    * @notice Sets the InterestRateModel contract used for interest rate calculations
+   * @dev Can only change InterestRateModel if interest has been accrued for the current timestamp
    * @param _rateModel Interest rate model address
    */
   function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
+    if (lastTimestamp != block.timestamp) revert CA_InterestAccrualStale(lastTimestamp, block.timestamp);
     rateModel = _rateModel;
   }
 
@@ -147,6 +153,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
+  }
+
+  /// @notice External function for calling _accrueInterest
+  function accrueInterest() external {
+    _accrueInterest();
   }
 
   //////////////////////////
@@ -212,10 +223,18 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev update interest rate
    */
   function _accrueInterest() internal {
-    //todo: actual interest updates
-    // uint util = borrowIndex / supplyIndex;
+    if (lastTimestamp == block.timestamp) return; 
+    uint elapsedTime = block.timestamp - lastTimestamp;
 
-    lastTimestamp = block.timestamp;
+    uint prevBorrow = totalBorrow;
+    uint prevSupply = totalSupply;
+    uint borrowRate = rateModel.getBorrowRate(prevSupply, prevBorrow);
+
+    // Compounded interest rate
+    uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
+    uint interestAccrued = prevBorrow.multiplyDecimal(borrowInterestFactor);
+    console.log("Borrow interest", borrowInterestFactor);
+    console.log("Interest accrud", interestAccrued);
   }
 
   /**
