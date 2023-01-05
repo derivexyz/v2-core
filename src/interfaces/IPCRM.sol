@@ -9,6 +9,7 @@ pragma solidity ^0.8.13;
 interface IPCRM {
   struct ExpiryHolding {
     uint expiry;
+    uint numStrikeHoldings;
     StrikeHolding[] strikes;
   }
 
@@ -24,4 +25,6 @@ interface IPCRM {
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     returns (int finalInitialMargin, ExpiryHolding[] memory, int cash);
+
+  function getSpot() external view returns (uint spot);
 }
