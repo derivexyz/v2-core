@@ -113,14 +113,14 @@ contract DutchAuction is IDutchAuction, Owned {
 
     (int upperBound, int lowerBound) = _getBounds(accountId, int(spot));
 
-    uint dv = _abs(upperBound) / parameters.lengthOfAuction; // as the auction starts in the positive
+    uint dv = _abs(upperBound) / parameters.lengthOfAuction; // as the auction starts in the positive, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
       insolvent: false,
       ongoing: true,
       startTime: block.timestamp,
       endTime: block.timestamp + parameters.lengthOfAuction,
-      dv: dv, // TODO: need to be able to calculate dv
+      dv: dv,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: lowerBound})
     });
   }
@@ -140,6 +140,8 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
     auctions[accountId].insolvent = true;
+    auctions[accountId].dv = _abs(auctions[accountId].auction.lowerBound) / parameters.lengthOfAuction;
+    
     return auctions[accountId].insolvent;
   }
 
