@@ -9,7 +9,7 @@ import "src/interfaces/ICashAsset.sol";
 import "src/assets/Option.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
-import "src/libraries/BlackScholesV2.sol";
+import "src/libraries/Black76.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/Owned.sol";
@@ -351,8 +351,8 @@ contract PCRM is IManager, Owned {
     // Get BlackSchole price.
     (uint callValue, uint putValue) = (0, 0);
     if (strikeHoldings.calls != 0 || strikeHoldings.puts != 0) {
-      (callValue, putValue) = BlackScholesV2.prices(
-        BlackScholesV2.BlackScholesInputs({
+      (callValue, putValue) = Black76.prices(
+        Black76.Black76Inputs({
           timeToExpirySec: timeToExpiry,
           volatilityDecimal: shockedVol,
           spotDecimal: (isCurrentScenarioUp) ? spotUp : spotDown,
