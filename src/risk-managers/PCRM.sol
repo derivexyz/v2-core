@@ -454,7 +454,7 @@ contract PCRM is IManager, Owned {
   }
 
   function _getCashAmount(uint accountId) internal view returns (int cashAmount) {
-    return account.getBalance(accountId, IAsset(address(lending)), 0);
+    return account.getBalance(accountId, IAsset(address(cashAsset)), 0);
   }
 
   //////////
