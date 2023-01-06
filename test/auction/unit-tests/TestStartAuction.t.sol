@@ -12,6 +12,7 @@ import "../../../src/liquidation/DutchAuction.sol";
 
 import "../../shared/mocks/MockManager.sol";
 import "../../shared/mocks/MockFeed.sol";
+import "../../shared/mocks/MockIPCRM.sol";
 
 contract UNIT_TestStartAuction is Test {
   address alice;
@@ -21,7 +22,7 @@ contract UNIT_TestStartAuction is Test {
   Accounts account;
   MockERC20 usdc;
   MockAsset usdcAsset;
-  MockManager manager;
+  MockIPCRM manager;
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
@@ -54,13 +55,15 @@ contract UNIT_TestStartAuction is Test {
     usdcAsset = new MockAsset(IERC20(usdc), account, false);
 
     /* Risk Manager */
-    manager = new MockManager(address(account));
+    manager = new MockIPCRM(address(account));
 
     dutchAuction = new DutchAuction(address(manager));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
     );
+
+    dutchAuctionParameters = DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
   }
 
   function mintAndDeposit(
@@ -87,7 +90,7 @@ contract UNIT_TestStartAuction is Test {
   // Start Auction Tests //
   /////////////////////////
 
-  function testStartAuction() public {
+  function testStartAuctionRead() public {
     // making call from Riskmanager of the dutch auction contract
     vm.startPrank(address(manager));
 
@@ -96,6 +99,16 @@ contract UNIT_TestStartAuction is Test {
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+
+    // log all the auction struct detials
+    assertEq(auction.insolvent, false);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, 1000);
+    assertEq(auction.auction.lowerBound, lowerBound);
+    assertEq(auction.auction.upperBound, upperBound);
+
     assertEq(auction.auction.accountId, aliceAcc);
 
     // getting the current bid price
@@ -123,7 +136,11 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
     // TODO: calc v_min and v_max
+    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, 1000);
+    assertEq(auction.auction.lowerBound, lowerBound);
+    assertEq(auction.auction.upperBound, upperBound);
   }
 
   function testFailAuctionAlreadyStarted() public {
@@ -136,4 +153,6 @@ contract UNIT_TestStartAuction is Test {
     vm.expectRevert(IDutchAuction.DA_AuctionAlreadyStarted.selector);
     dutchAuction.startAuction(aliceAcc);
   }
+
+
 }

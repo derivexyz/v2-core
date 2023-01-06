@@ -11,6 +11,8 @@ import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title Dutch Auction
  * @author Lyra
@@ -114,6 +116,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
     uint dv = _abs(upperBound) / parameters.lengthOfAuction; // as the auction starts in the positive, recalculate when insolvency occurs
 
+    console.log('length of auction', parameters.lengthOfAuction); 
     auctions[accountId] = Auction({
       insolvent: false,
       ongoing: true,
@@ -213,11 +216,7 @@ contract DutchAuction is IDutchAuction, Owned {
   function getParameters() external view returns (DutchAuctionParameters memory) {
     return parameters;
   }
-
-  function getBounds(uint accountId) external view returns (int, int) {
-    return _getBounds(accountId, int(riskManager.getSpot()));
-  }
-
+  
   ///////////////
   // internal //
   ///////////////
@@ -227,11 +226,12 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
    * @param spot the spot price of the asset,
-   * TODO: consider how this is going to work with options on different spot markets.
    */
   function _getBounds(uint accountId, int spot) internal view returns (int maximum, int minimum) {
-    // TODO: include cash in this calculation
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
+    int cash = riskManager.getCashAmount(accountId);
+    maximum += cash;
+    minimum += cash;
 
     for (uint i = 0; i < expiryHoldings.length; i++) {
       // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0

@@ -57,7 +57,9 @@ contract MockManager is IManager {
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
 
-  function getSpot() external pure returns (uint) {
+  function getSpot() external view returns (uint) {
+    console.log("MockManager.getSpot() called");
     return 1000; // hardcoded value not relevant to test
   }
+
 }

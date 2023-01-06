@@ -2,8 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "../../../src/interfaces/IPCRM.sol";
+import "../../../src/interfaces/IManager.sol";
+import "../../../src/interfaces/IAsset.sol";
+import "../../../src/interfaces/IAccounts.sol";
 
-contract MockIPCRM is IPCRM {
+contract MockIPCRM is IPCRM, IManager {
   address account;
 
   constructor(address _account) {
@@ -34,17 +37,56 @@ contract MockIPCRM is IPCRM {
 
   function getAccountValue(uint accountId) external view virtual returns (uint) {
     // TODO: filler code
+    return 0;
   }
 
   function getInitialMargin(uint accountId) external virtual returns (int) {
     // TODO: filler code
+    return 0;
   }
 
   function getMaintenanceMargin(uint accountId) external returns (uint) {
     // TODO: filler code
+    return 0;
   }
 
   function getGroupedHoldings(uint accountId) external view virtual returns (ExpiryHolding[] memory expiryHoldings) {
+    // TODO: filler code
+    if (accountId > 2) {
+      ExpiryHolding[] memory expiryHoldings = new ExpiryHolding[](1);
+      StrikeHolding[] memory strikeHoldings = new StrikeHolding[](4);
+
+      strikeHoldings[0] = StrikeHolding(1000, 1, 1, 1);
+      strikeHoldings[1] = StrikeHolding(2000, 3, -1, 1);
+      strikeHoldings[2] = StrikeHolding(3000, 4, -2, 1);
+      strikeHoldings[3] = StrikeHolding(4000, 5, 10, 1);
+
+      expiryHoldings[0] = ExpiryHolding(block.timestamp + 2 weeks, 4, strikeHoldings);
+      return expiryHoldings;
+    }
+
+    ExpiryHolding[] memory expiryHoldings = new ExpiryHolding[](0);
+    return expiryHoldings;
+  }
+
+  function getCashAmount(uint accountId) external view virtual returns(int) {
+    // TODO: filer coder
+    return 0;
+  }
+
+  function handleAdjustment(
+  uint accountId,
+  address caller,
+  AccountStructs.AssetDelta[] memory deltas,
+  bytes memory data
+  ) external virtual {
+    // TODO: filler code
+  }
+    /**
+    * @notice triggered when a user want to change to a new manager
+    * @dev    a manager should only allow migrating to another manager it trusts.
+    */
+  function handleManagerChange(uint accountId, IManager newManager) external {
     // TODO: filler code
   }
 }

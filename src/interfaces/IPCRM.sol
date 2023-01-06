@@ -35,4 +35,7 @@ interface IPCRM {
   function getMaintenanceMargin(uint accountId) external returns (uint);
 
   function getAccountValue(uint accountId) external returns (uint);
+
+  function getCashAmount(uint accountId) external view returns(int);
+
 }

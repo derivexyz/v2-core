@@ -11,6 +11,7 @@ import "../../src/liquidation/DutchAuction.sol";
 
 import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
+import "../shared/mocks/MockIPCRM.sol";
 
 contract UNIT_DutchAuctionView is Test {
   address alice;
@@ -25,7 +26,7 @@ contract UNIT_DutchAuctionView is Test {
   MockAsset usdcAsset;
   MockAsset optionAdapter;
   MockAsset coolAsset;
-  MockManager manager;
+  MockIPCRM manager;
   MockFeed feed;
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
@@ -71,7 +72,7 @@ contract UNIT_DutchAuctionView is Test {
     optionAdapter = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
-    manager = new MockManager(address(account));
+    manager = new MockIPCRM(address(account));
 
     /*
      Feed for Spot*/
@@ -124,7 +125,7 @@ contract UNIT_DutchAuctionView is Test {
   }
 
   function testGetBounds() public {
-    (int max, int min) = dutchAuction.getBounds(1);
+    (int max, int min) = dutchAuction.getBounds(1, 1000);
     assertEq(max, 0);
     assertEq(min, 0);
   }
