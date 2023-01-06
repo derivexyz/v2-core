@@ -146,6 +146,44 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     account.permit(permit2, sig2);
   }
 
+  function testCanInvalidSpecificNoncesInBatch() public {
+    uint nonce1 = 1;
+    uint nonce2 = 200;
+    uint nonce3 = 250;
+
+    uint mask = 1 << nonce1 | 1 << nonce2 | 1 << nonce3;
+    // all these 3 nonces belongs to the first 256-bit bit map. (< 256)
+    uint wordPos = 0;
+
+    // only invalidate these 3 nonces
+    vm.prank(pkOwner);
+    account.invalidateUnorderedNonces(wordPos, mask);
+
+    // first nonce is invalid
+    PermitAllowance memory permit = _getAssetPermitUSDC(accountId, alice, nonce1, positiveAmount, negativeAmount);
+    bytes memory sig = _signPermit(privateKey, permit);
+    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
+    account.permit(permit, sig);
+
+    // second nonce is invalid
+    permit = _getAssetPermitUSDC(accountId, alice, nonce2, positiveAmount, negativeAmount);
+    sig = _signPermit(privateKey, permit);
+    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
+    account.permit(permit, sig);
+
+    // third nonce is invalid
+    permit = _getAssetPermitUSDC(accountId, alice, nonce3, positiveAmount, negativeAmount);
+    sig = _signPermit(privateKey, permit);
+    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
+    account.permit(permit, sig);
+
+    // can use any other nonce
+    uint validNonce = 2;
+    permit = _getAssetPermitUSDC(accountId, bob, validNonce, positiveAmount, negativeAmount);
+    sig = _signPermit(privateKey, permit);
+    account.permit(permit, sig);
+  }
+
   function testCanInvalidUpTo256NoncesAtATime() public {
     // use 2^256 as mask, mark all 256 bits as "used"
     uint mask = type(uint).max;
@@ -317,7 +355,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     account.domainSeparator();
   }
 
-  function _getAssetPermitUSDC(uint accountId, address spender, uint nonce, uint _positiveAmount, uint _negativeAmount)
+  function _getAssetPermitUSDC(uint _accountId, address spender, uint nonce, uint _positiveAmount, uint _negativeAmount)
     internal
     view
     returns (PermitAllowance memory)
@@ -329,7 +367,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     PermitAllowance memory permit = PermitAllowance({
       delegate: spender,
       nonce: nonce,
-      accountId: accountId,
+      accountId: _accountId,
       deadline: block.timestamp + 1,
       assetAllowances: assetAllowances,
       subIdAllowances: subIdAllowances
