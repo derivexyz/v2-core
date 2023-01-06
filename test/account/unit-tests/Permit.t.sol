@@ -92,8 +92,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     assetAllowances[0] = AssetAllowance(usdcAsset, positiveAmount, negativeAmount);
     SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
 
-    PermitAllowance memory permit =
-      _getDefaultPermitUSDCAllowance(accountId, alice, nonce, positiveAmount, negativeAmount);
+    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
 
     bytes memory sig = _signPermit(privateKey, permit);
     account.permit(permit, sig);
@@ -128,8 +127,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
   function testCannotReuseSignature() public {
     uint96 subId = 0;
     uint nonce = 1;
-    PermitAllowance memory permit =
-      _getDefaultPermitUSDCAllowance(accountId, alice, nonce, positiveAmount, negativeAmount);
+    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
 
     bytes memory sig = _signPermit(privateKey, permit);
     // first permit should pass
@@ -141,19 +139,47 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
 
   function testCanUseNonceInArbitraryOrder() public {
     uint nonce1 = 20;
-    PermitAllowance memory permit =
-      _getDefaultPermitUSDCAllowance(accountId, alice, nonce1, positiveAmount, negativeAmount);
+    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce1, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
     account.permit(permit, sig);
 
     // the second permit: use a lower nonce for bob
     uint nonce2 = 1;
-    PermitAllowance memory permit2 =
-      _getDefaultPermitUSDCAllowance(accountId, bob, nonce2, positiveAmount, negativeAmount);
+    PermitAllowance memory permit2 = _getDefaultPermitUSDC(accountId, bob, nonce2, positiveAmount, negativeAmount);
     bytes memory sig2 = _signPermit(privateKey, permit2);
 
     // this should still pass
     account.permit(permit2, sig2);
+  }
+
+  function testCanInvalidUpTo256NoncesAtATime() public {
+    // use 2^256 as mask, mark all 256 bits as "used"
+    uint mask = type(uint).max;
+    // disable the first 256-bit bit map
+    uint wordPos = 0;
+
+    // only invalidate the first 256 nonces
+    vm.prank(pkOwner);
+    account.invalidateUnorderedNonces(wordPos, mask);
+
+    uint nonce = 0;
+    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
+    bytes memory sig = _signPermit(privateKey, permit);
+    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
+    account.permit(permit, sig);
+
+    uint nonce2 = 255;
+    PermitAllowance memory permit2 = _getDefaultPermitUSDC(accountId, bob, nonce2, positiveAmount, negativeAmount);
+    bytes memory sig2 = _signPermit(privateKey, permit2);
+
+    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
+    account.permit(permit2, sig2);
+
+    // can use nonce > 255
+    uint nonce3 = 256;
+    PermitAllowance memory permit3 = _getDefaultPermitUSDC(accountId, bob, nonce3, positiveAmount, negativeAmount);
+    bytes memory sig3 = _signPermit(privateKey, permit3);
+    account.permit(permit3, sig3);
   }
 
   function testCannotReplayAttack() public {
@@ -321,13 +347,10 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     account.domainSeparator();
   }
 
-  function _getDefaultPermitUSDCAllowance(
-    uint accountId,
-    address spender,
-    uint nonce,
-    uint positiveAmount,
-    uint negativeAmount
-  ) internal returns (PermitAllowance memory) {
+  function _getDefaultPermitUSDC(uint accountId, address spender, uint nonce, uint positiveAmount, uint negativeAmount)
+    internal
+    returns (PermitAllowance memory)
+  {
     AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
     SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
     assetAllowances[0] = AssetAllowance(usdcAsset, positiveAmount, negativeAmount);

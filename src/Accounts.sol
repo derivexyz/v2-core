@@ -193,7 +193,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     _permit(allowancePermit, signature);
   }
 
-  function invalidateUnorderedNonces(address spender, uint wordPos, uint mask) external {
+  function invalidateUnorderedNonces(uint wordPos, uint mask) external {
     nonceBitmap[msg.sender][wordPos] |= mask;
 
     emit UnorderedNonceInvalidated(msg.sender, wordPos, mask);
@@ -245,7 +245,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @notice Returns the index of the bitmap and the bit position within the bitmap. Used for unordered nonces
    * @dev The first 248 bits of the nonce value is the index of the desired bitmap
    * @dev The last 8 bits of the nonce value is the position of the bit in the bitmap
-   * 
+   *
    * @param nonce The nonce to get the associated word and bit positions
    * @return wordPos The word position or index into the nonceBitmap
    * @return bitPos The bit position
