@@ -193,6 +193,12 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     _permit(allowancePermit, signature);
   }
 
+  /**
+   * @notice Invalidates the bits specified in mask for the bitmap at the word position
+   * @dev The wordPos is maxed at type(uint248).max
+   * @param wordPos A number to index the nonceBitmap at
+   * @param mask A bitmap masked against msg.sender's current bitmap at the word position
+   */
   function invalidateUnorderedNonces(uint wordPos, uint mask) external {
     nonceBitmap[msg.sender][wordPos] |= mask;
 
