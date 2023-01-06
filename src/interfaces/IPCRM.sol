@@ -36,6 +36,5 @@ interface IPCRM {
 
   function getAccountValue(uint accountId) external returns (uint);
 
-  function getCashAmount(uint accountId) external view returns(int);
-
+  function getCashAmount(uint accountId) external view returns (int);
 }

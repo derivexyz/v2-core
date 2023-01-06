@@ -116,7 +116,6 @@ contract DutchAuction is IDutchAuction, Owned {
 
     uint dv = _abs(upperBound) / parameters.lengthOfAuction; // as the auction starts in the positive, recalculate when insolvency occurs
 
-    console.log('length of auction', parameters.lengthOfAuction); 
     auctions[accountId] = Auction({
       insolvent: false,
       ongoing: true,
@@ -213,10 +212,15 @@ contract DutchAuction is IDutchAuction, Owned {
     return _getCurrentBidPrice(accountId);
   }
 
+  /*
+    * @notice gets the parameters for the dutch auction
+    * @dev returns the parameters for the dutch auction
+    * @return DutchAuctionParameters the parameters for the dutch auction
+   */
   function getParameters() external view returns (DutchAuctionParameters memory) {
     return parameters;
   }
-  
+
   ///////////////
   // internal //
   ///////////////

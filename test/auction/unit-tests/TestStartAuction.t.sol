@@ -63,7 +63,8 @@ contract UNIT_TestStartAuction is Test {
       DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
     );
 
-    dutchAuctionParameters = DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
+    dutchAuctionParameters =
+      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
   }
 
   function mintAndDeposit(
@@ -153,6 +154,4 @@ contract UNIT_TestStartAuction is Test {
     vm.expectRevert(IDutchAuction.DA_AuctionAlreadyStarted.selector);
     dutchAuction.startAuction(aliceAcc);
   }
-
-
 }

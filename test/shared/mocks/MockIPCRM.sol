@@ -69,23 +69,23 @@ contract MockIPCRM is IPCRM, IManager {
     return expiryHoldings;
   }
 
-  function getCashAmount(uint accountId) external view virtual returns(int) {
+  function getCashAmount(uint accountId) external view virtual returns (int) {
     // TODO: filer coder
     return 0;
   }
 
   function handleAdjustment(
-  uint accountId,
-  address caller,
-  AccountStructs.AssetDelta[] memory deltas,
-  bytes memory data
+    uint accountId,
+    address caller,
+    AccountStructs.AssetDelta[] memory deltas,
+    bytes memory data
   ) external virtual {
     // TODO: filler code
   }
-    /**
-    * @notice triggered when a user want to change to a new manager
-    * @dev    a manager should only allow migrating to another manager it trusts.
-    */
+  /**
+   * @notice triggered when a user want to change to a new manager
+   * @dev    a manager should only allow migrating to another manager it trusts.
+   */
   function handleManagerChange(uint accountId, IManager newManager) external {
     // TODO: filler code
   }

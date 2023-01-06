@@ -61,5 +61,4 @@ contract MockManager is IManager {
     console.log("MockManager.getSpot() called");
     return 1000; // hardcoded value not relevant to test
   }
-
 }
