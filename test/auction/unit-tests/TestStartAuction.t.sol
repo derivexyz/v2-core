@@ -14,6 +14,8 @@ import "../../shared/mocks/MockManager.sol";
 import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockIPCRM.sol";
 
+// Math library... 
+
 contract UNIT_TestStartAuction is Test {
   address alice;
   address bob;
@@ -63,8 +65,7 @@ contract UNIT_TestStartAuction is Test {
       DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
     );
 
-    dutchAuctionParameters =
-      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
+    dutchAuctionParameters = DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
   }
 
   function mintAndDeposit(
@@ -153,5 +154,40 @@ contract UNIT_TestStartAuction is Test {
     // start an auction on Alice's account
     vm.expectRevert(IDutchAuction.DA_AuctionAlreadyStarted.selector);
     dutchAuction.startAuction(aliceAcc);
+  }
+
+  // test that an auction is correcttly marked as insolvent
+  function testInsolventAuction() public {
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.insolvent, false);
+  
+    // fast forward
+    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
+    // mark the auction as insolvent
+    dutchAuction.markAsInsolventLiquidation(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.insolvent, true);
+  }
+
+  function testFailingInsolventAuction() public {
+    // wrong mark as insolvent not called by risk manager
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // fastforward change address to 0xdead and then catch revert after calling mark insolvent
+    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
+    vm.startPrank(address(0xdead));
+    vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
+    dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 }
