@@ -364,19 +364,19 @@ contract PCRM is IManager, Owned {
        : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
 
     // Get BlackSchole price.
-
-    console2.log("pass 4");
-    (uint callValue, uint putValue) = BlackScholesV2.prices(
-      BlackScholesV2.BlackScholesInputs({
-        timeToExpirySec: timeToExpiry,
-        volatilityDecimal: shockedVol,
-        spotDecimal: (isCurrentScenarioUp) ? SafeCast.toUint256(spotUp) : SafeCast.toUint256(spotDown),
-        strikePriceDecimal: strikeHoldings.strike,
-        rateDecimal: 1e16 // todo [Josh]: replace with proper RFR
-      })
-    );
-    console2.log("pass 5");
-
+    (uint callValue, uint putValue) = (0, 0);
+    if (strikeHoldings.calls != 0 && strikeHoldings.puts != 0) {
+      (callValue, putValue) = BlackScholesV2.prices(
+        BlackScholesV2.BlackScholesInputs({
+          timeToExpirySec: timeToExpiry,
+          volatilityDecimal: shockedVol,
+          spotDecimal: (isCurrentScenarioUp) ? SafeCast.toUint256(spotUp) : SafeCast.toUint256(spotDown),
+          strikePriceDecimal: strikeHoldings.strike,
+          rateDecimal: 1e16 // todo [Josh]: replace with proper RFR
+        })
+      );
+    }
+    
     // Calculate call value.
     strikeValue += (strikeHoldings.calls >= 0) 
       ? strikeHoldings.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
