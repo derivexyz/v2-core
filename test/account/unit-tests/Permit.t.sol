@@ -88,12 +88,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
 
   function testPermitCanUpdateAssetAllowance() public {
     uint nonce = 1;
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance(usdcAsset, positiveAmount, negativeAmount);
-    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
-
-    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
-
+    PermitAllowance memory permit = _getAssetPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
     account.permit(permit, sig);
 
@@ -125,9 +120,8 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
   }
 
   function testCannotReuseSignature() public {
-    uint96 subId = 0;
     uint nonce = 1;
-    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
+    PermitAllowance memory permit = _getAssetPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
 
     bytes memory sig = _signPermit(privateKey, permit);
     // first permit should pass
@@ -139,13 +133,13 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
 
   function testCanUseNonceInArbitraryOrder() public {
     uint nonce1 = 20;
-    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce1, positiveAmount, negativeAmount);
+    PermitAllowance memory permit = _getAssetPermitUSDC(accountId, alice, nonce1, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
     account.permit(permit, sig);
 
     // the second permit: use a lower nonce for bob
     uint nonce2 = 1;
-    PermitAllowance memory permit2 = _getDefaultPermitUSDC(accountId, bob, nonce2, positiveAmount, negativeAmount);
+    PermitAllowance memory permit2 = _getAssetPermitUSDC(accountId, bob, nonce2, positiveAmount, negativeAmount);
     bytes memory sig2 = _signPermit(privateKey, permit2);
 
     // this should still pass
@@ -163,13 +157,13 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     account.invalidateUnorderedNonces(wordPos, mask);
 
     uint nonce = 0;
-    PermitAllowance memory permit = _getDefaultPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
+    PermitAllowance memory permit = _getAssetPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
     vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
     account.permit(permit, sig);
 
     uint nonce2 = 255;
-    PermitAllowance memory permit2 = _getDefaultPermitUSDC(accountId, bob, nonce2, positiveAmount, negativeAmount);
+    PermitAllowance memory permit2 = _getAssetPermitUSDC(accountId, bob, nonce2, positiveAmount, negativeAmount);
     bytes memory sig2 = _signPermit(privateKey, permit2);
 
     vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
@@ -177,31 +171,18 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
 
     // can use nonce > 255
     uint nonce3 = 256;
-    PermitAllowance memory permit3 = _getDefaultPermitUSDC(accountId, bob, nonce3, positiveAmount, negativeAmount);
+    PermitAllowance memory permit3 = _getAssetPermitUSDC(accountId, bob, nonce3, positiveAmount, negativeAmount);
     bytes memory sig3 = _signPermit(privateKey, permit3);
     account.permit(permit3, sig3);
   }
 
   function testCannotReplayAttack() public {
-    uint96 subId = 0;
     uint nonce = 1;
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](0);
-    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](1);
-    subIdAllowances[0] = SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
-
-    PermitAllowance memory permit = PermitAllowance({
-      delegate: alice,
-      nonce: nonce,
-      accountId: accountId,
-      deadline: block.timestamp + 1,
-      assetAllowances: assetAllowances,
-      subIdAllowances: subIdAllowances
-    });
-
+    
+    PermitAllowance memory permit = _getAssetPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
 
     vm.chainId(31337);
-
     vm.expectRevert(IAccounts.AC_InvalidPermitSignature.selector);
     account.permit(permit, sig);
   }
@@ -271,23 +252,12 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     address orderbook = address(0xb00c);
 
     // owner1:  sign to approve asset allowance for USDC
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance(usdcAsset, 0, tradeAmount);
-
-    permits[0] = PermitAllowance({
-      delegate: orderbook, // approve orderbook
-      nonce: 1,
-      accountId: accountId,
-      deadline: block.timestamp,
-      assetAllowances: assetAllowances,
-      subIdAllowances: new SubIdAllowance[](0)
-    });
+    permits[0] =_getAssetPermitUSDC(accountId, orderbook, 1, 0, tradeAmount);
     signatures[0] = _signPermit(privateKey, permits[0]);
 
     // owner2: sign to approve asset allowance for coolAsset
     AssetAllowance[] memory assetAllowances2 = new AssetAllowance[](1);
-    assetAllowances2[0] = AssetAllowance(coolAsset, tokenSubId, tradeAmount);
-
+    assetAllowances2[0] = AssetAllowance(coolAsset, 0, tradeAmount);
     permits[1] = PermitAllowance({
       delegate: orderbook, // approve orderbook
       nonce: 1,
@@ -347,13 +317,14 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     account.domainSeparator();
   }
 
-  function _getDefaultPermitUSDC(uint accountId, address spender, uint nonce, uint positiveAmount, uint negativeAmount)
+  function _getAssetPermitUSDC(uint accountId, address spender, uint nonce, uint _positiveAmount, uint _negativeAmount)
     internal
+    view
     returns (PermitAllowance memory)
   {
     AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
     SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
-    assetAllowances[0] = AssetAllowance(usdcAsset, positiveAmount, negativeAmount);
+    assetAllowances[0] = AssetAllowance(usdcAsset, _positiveAmount, _negativeAmount);
 
     PermitAllowance memory permit = PermitAllowance({
       delegate: spender,
