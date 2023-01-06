@@ -365,7 +365,7 @@ contract PCRM is IManager, Owned {
 
     // Get BlackSchole price.
     (uint callValue, uint putValue) = (0, 0);
-    if (strikeHoldings.calls != 0 && strikeHoldings.puts != 0) {
+    if (strikeHoldings.calls != 0 || strikeHoldings.puts != 0) {
       (callValue, putValue) = BlackScholesV2.prices(
         BlackScholesV2.BlackScholesInputs({
           timeToExpirySec: timeToExpiry,

@@ -69,6 +69,68 @@ contract UNIT_TestPCRM is Test {
     vm.stopPrank();
   }
 
+  ///////////
+  // Admin //
+  ///////////
+
+  function testSetParamsWithNonOwner() public {
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(AbstractOwned.OnlyOwner.selector, address(manager), alice, manager.owner())
+    );
+    manager.setParams(
+      PCRM.Shocks({
+        spotUpInitial: 120e16,
+        spotDownInitial: 80e16,
+        spotUpMaintenance: 110e16,
+        spotDownMaintenance: 90e16,
+        vol: 300e16,
+        rfr: 10e16
+      }),
+      PCRM.Discounts({
+        maintenanceStaticDiscount: 90e16,
+        initialStaticDiscount: 80e16
+      })
+    );
+    vm.stopPrank();
+  }
+
+    function testSetParamsWithOwner() public {
+
+    manager.setParams(
+      PCRM.Shocks({
+        spotUpInitial: 200e16,
+        spotDownInitial: 50e16,
+        spotUpMaintenance: 120e16,
+        spotDownMaintenance: 70e16,
+        vol: 400e16,
+        rfr: 20e16
+      }),
+      PCRM.Discounts({
+        maintenanceStaticDiscount: 85e16,
+        initialStaticDiscount: 75e16
+      })
+    );
+
+    (uint spotUpInitial,
+    uint spotDownInitial,
+    uint spotUpMaintenance, 
+    uint spotDownMaintenance, 
+    uint vol,
+    uint rfr) = manager.shocks();
+    assertEq(spotUpInitial, 200e16);
+    assertEq(spotDownInitial, 50e16);
+    assertEq(spotUpMaintenance, 120e16);
+    assertEq(spotDownMaintenance, 70e16);
+    assertEq(vol, 400e16);
+    assertEq(rfr, 20e16);
+
+    (uint maintenanceStaticDiscount,
+    uint initialStaticDiscount) = manager.discounts();
+    assertEq(maintenanceStaticDiscount, 85e16);
+    assertEq(initialStaticDiscount, 75e16);
+  }
+
   //////////////
   // Transfer //
   //////////////
@@ -118,11 +180,12 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testInitialMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
+    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](2);
     strikes[0] = PCRM.StrikeHolding({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = PCRM.StrikeHolding({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
     PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({expiry: block.timestamp + 1 days, numStrikesHeld: 1, strikes: strikes});
+    expiries[0] = PCRM.ExpiryHolding({expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
 
     manager.getInitialMargin(expiries, 0);
 
