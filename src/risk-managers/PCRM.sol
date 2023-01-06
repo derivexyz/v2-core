@@ -26,6 +26,7 @@ import "forge-std/console2.sol";
 contract PCRM is IManager, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
+  using SafeCast for uint;
 
   /**
    * INITIAL: margin required for trade to pass
@@ -171,8 +172,8 @@ contract PCRM is IManager, Owned {
 
   /**
    * @notice Governance determined shocks and discounts used in margin calculations.
-   * @param _shocks Spot / vol / risk-free-rate shocks
-   * @param _discounts Global discounting of assets.
+   * @param _shocks Spot / vol / risk-free-rate shocks for inputs into BS pricing / payoffs.
+   * @param _discounts discounting of portfolio value post BS pricing / payoffs.
    */
   function setParams(Shocks calldata _shocks, Discounts calldata _discounts) external onlyOwner {
     // todo [Josh]: add bounds
@@ -238,28 +239,24 @@ contract PCRM is IManager, Owned {
     uint spotUp;
     uint spotDown;
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
-    int staticDiscount;
-    console2.log("passed 1");
+    uint staticDiscount;
     if (marginType == MarginType.INITIAL) {
       spotUp = spot.multiplyDecimal(shocks.spotUpInitial);
       spotDown = spot.multiplyDecimal(shocks.spotDownInitial);
-      staticDiscount = SafeCast.toInt256(discounts.initialStaticDiscount);
+      staticDiscount = discounts.initialStaticDiscount;
     } else {
       spotUp = spot.multiplyDecimal(shocks.spotUpMaintenance);
       spotDown = spot.multiplyDecimal(shocks.spotDownMaintenance);
-      staticDiscount = SafeCast.toInt256(discounts.maintenanceStaticDiscount);
+      staticDiscount = discounts.maintenanceStaticDiscount;
     }
     // todo [Josh]: add actual vol shocks
-
-    console2.log("passed 2");
 
     // discount option value
     for (uint i; i < expiries.length; i++) {
       int expiryMargin;
       ExpiryHolding memory expiry = expiries[i];
-      int timeToExpiry = SafeCast.toInt256(expiry.expiry) - SafeCast.toInt256(block.timestamp);
+      int timeToExpiry = expiry.expiry.toInt256() - block.timestamp.toInt256();
       if (timeToExpiry > 0) {
-        console2.log("passed 2.1");
         expiryMargin = _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
         expiryMargin =
           (expiryMargin > 0) ? expiryMargin * _getExpiryDiscount(staticDiscount, timeToExpiry) : expiryMargin;
@@ -284,12 +281,14 @@ contract PCRM is IManager, Owned {
     uint settlementPrice = 1000e18; // todo: [Josh] integrate settlement feed
     for (uint i; i < expiry.strikes.length; i++) {
       StrikeHolding memory strike = expiry.strikes[i];
-      int pnl = SafeCast.toInt256(settlementPrice) - SafeCast.toInt256(strike.strike);
+      int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
 
       // calculate proceeds for forwards / calls / puts
-      expiryValue += strike.calls.multiplyDecimal(SignedMath.max(pnl, 0));
-      expiryValue += strike.puts.multiplyDecimal(SignedMath.min(-pnl, 0));
-      expiryValue += strike.forwards.multiplyDecimal(pnl);
+      if (pnl > 0) {
+        expiryValue += (strike.calls + strike.forwards).multiplyDecimal(pnl);
+      } else {
+        expiryValue += (strike.puts - strike.forwards).multiplyDecimal(-pnl);
+      }
     }
   }
 
@@ -312,14 +311,9 @@ contract PCRM is IManager, Owned {
     uint timeToExpiry = expiry.expiry - block.timestamp;
 
     for (uint i; i < expiry.strikes.length; i++) {
-      console2.log("passed 3");
-      spotUpValue += _calcLiveStrikeValue(
-        expiry.strikes[i], true, SafeCast.toInt256(spotUp), SafeCast.toInt256(spotDown), shockedVol, timeToExpiry
-      );
+      spotUpValue += _calcLiveStrikeValue(expiry.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
 
-      spotDownValue += _calcLiveStrikeValue(
-        expiry.strikes[i], false, SafeCast.toInt256(spotUp), SafeCast.toInt256(spotDown), shockedVol, timeToExpiry
-      );
+      spotDownValue += _calcLiveStrikeValue(expiry.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
     }
 
     // return the worst of two scenarios
@@ -340,16 +334,16 @@ contract PCRM is IManager, Owned {
   function _calcLiveStrikeValue(
     StrikeHolding memory strikeHoldings,
     bool isCurrentScenarioUp,
-    int spotUp,
-    int spotDown,
+    uint spotUp,
+    uint spotDown,
     uint shockedVol,
     uint timeToExpiry
-  ) internal view returns (int strikeValue) {
-    // calculate both spot up and down payoffs
-    int markedDownCallValue = spotDown - SafeCast.toInt256(strikeHoldings.strike);
-    int markedDownPutValue = SafeCast.toInt256(strikeHoldings.strike) - spotUp;
+  ) internal pure returns (int strikeValue) {
+    // Calculate both spot up and down payoffs.
+    int markedDownCallValue = spotDown.toInt256() - strikeHoldings.strike.toInt256();
+    int markedDownPutValue = strikeHoldings.strike.toInt256() - spotUp.toInt256();
 
-    // Calculate forward value.
+    // Add forward value.
     strikeValue += (isCurrentScenarioUp)
       ? strikeHoldings.forwards.multiplyDecimal(-markedDownPutValue)
       : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
@@ -361,29 +355,30 @@ contract PCRM is IManager, Owned {
         BlackScholesV2.BlackScholesInputs({
           timeToExpirySec: timeToExpiry,
           volatilityDecimal: shockedVol,
-          spotDecimal: (isCurrentScenarioUp) ? SafeCast.toUint256(spotUp) : SafeCast.toUint256(spotDown),
+          spotDecimal: (isCurrentScenarioUp) ? spotUp : spotDown,
           strikePriceDecimal: strikeHoldings.strike,
           rateDecimal: 1e16 // todo [Josh]: replace with proper RFR
         })
       );
     }
 
-    // Calculate call value.
+    // Add call value.
     strikeValue += (strikeHoldings.calls >= 0)
       ? strikeHoldings.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
-      : strikeHoldings.calls.multiplyDecimal(SafeCast.toInt256(callValue));
+      : strikeHoldings.calls.multiplyDecimal(callValue.toInt256());
 
-    // Calculate put value.
+    // Add put value.
     strikeValue += (strikeHoldings.puts >= 0)
       ? strikeHoldings.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
-      : strikeHoldings.puts.multiplyDecimal(SafeCast.toInt256(putValue));
+      : strikeHoldings.puts.multiplyDecimal(putValue.toInt256());
   }
 
-  function _getExpiryDiscount(int staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
+  function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
     int tau = timeToExpiry * 10e18 / SECONDS_PER_YEAR;
-    int exponent = SafeCast.toInt256(FixedPointMathLib.exp(-tau.multiplyDecimal(SafeCast.toInt256(shocks.rfr))));
+    int exponent = SafeCast.toInt256(FixedPointMathLib.exp(-tau.multiplyDecimal(shocks.rfr.toInt256())));
 
-    return (staticDiscount * exponent);
+    // no need for safecast as .setParams() bounds will ensure no overflow
+    return (int(staticDiscount) * exponent);
   }
 
   //////////
