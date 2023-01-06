@@ -93,7 +93,7 @@ contract UNIT_TestPCRM is Test {
   // Margin calculations //
   /////////////////////////
 
-  function testInitialMarginCalculation() public view {
+  function testEmptyInitialMarginCalculation() public view {
     PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
     strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 
@@ -105,7 +105,7 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
-  function testMaintenanceMarginCalculation() public view {
+  function testEmptyMaintenanceMarginCalculation() public view {
     PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
     strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 

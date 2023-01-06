@@ -236,6 +236,7 @@ contract PCRM is IManager, Owned {
     uint spotDown;
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
     int staticDiscount;
+    console2.log("passed 1");
     if (marginType == MarginType.INITIAL) {
       spotUp = spot.multiplyDecimal(shocks.spotUpInitial);
       spotDown = spot.multiplyDecimal(shocks.spotDownInitial);
@@ -247,13 +248,15 @@ contract PCRM is IManager, Owned {
     }
     // todo [Josh]: add actual vol shocks
 
+    console2.log("passed 2");
 
     // discount option value
     for (uint i; i < expiries.length; i++) {
       int expiryMargin;
       ExpiryHolding memory expiry = expiries[i];
-      int timeToExpiry = SafeCast.toInt256(expiry.expiry - block.timestamp);
+      int timeToExpiry = SafeCast.toInt256(expiry.expiry) - SafeCast.toInt256(block.timestamp);
       if (timeToExpiry > 0) {
+        console2.log("passed 2.1");
         expiryMargin = _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
         expiryMargin = (expiryMargin > 0)
           ? expiryMargin * _getExpiryDiscount(staticDiscount, timeToExpiry)
@@ -308,6 +311,7 @@ contract PCRM is IManager, Owned {
     uint timeToExpiry = expiry.expiry - block.timestamp;
  
     for (uint i; i < expiry.strikes.length; i++) {
+      console2.log("passed 3");
       spotUpValue += _calcLiveStrikeValue(
         expiry.strikes[i], 
         true,
@@ -349,7 +353,7 @@ contract PCRM is IManager, Owned {
     int spotDown,
     uint shockedVol,
     uint timeToExpiry
-  ) internal pure returns (int strikeValue) {
+  ) internal view returns (int strikeValue) {
     // calculate both spot up and down payoffs 
     int markedDownCallValue = spotDown - SafeCast.toInt256(strikeHoldings.strike);
     int markedDownPutValue = SafeCast.toInt256(strikeHoldings.strike) - spotUp;
@@ -361,6 +365,7 @@ contract PCRM is IManager, Owned {
 
     // Get BlackSchole price.
 
+    console2.log("pass 4");
     (uint callValue, uint putValue) = BlackScholesV2.prices(
       BlackScholesV2.BlackScholesInputs({
         timeToExpirySec: timeToExpiry,
@@ -370,6 +375,7 @@ contract PCRM is IManager, Owned {
         rateDecimal: 1e16 // todo [Josh]: replace with proper RFR
       })
     );
+    console2.log("pass 5");
 
     // Calculate call value.
     strikeValue += (strikeHoldings.calls >= 0) 
