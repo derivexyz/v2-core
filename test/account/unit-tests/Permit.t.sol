@@ -146,7 +146,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     account.permit(permit2, sig2);
   }
 
-  function testCanInvalidSpecificNoncesInBatch() public {
+  function testCanInvalidateSpecificNoncesInBatch() public {
     uint nonce1 = 1;
     uint nonce2 = 200;
     uint nonce3 = 250;
@@ -184,7 +184,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     account.permit(permit, sig);
   }
 
-  function testCanInvalidUpTo256NoncesAtATime() public {
+  function testCanInvalidateUpTo256NoncesAtATime() public {
     // use 2^256 as mask, mark all 256 bits as "used"
     uint mask = type(uint).max;
     // disable the first 256-bit bit map
