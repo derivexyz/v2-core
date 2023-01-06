@@ -14,7 +14,7 @@ import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 
-contract UNIT_AccountPermit is Test, AccountTestBase {
+contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
   uint private immutable privateKey;
   uint private immutable privateKey2;
   address private immutable pkOwner;
@@ -47,10 +47,10 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
   }
 
   function testPermitCannotPermitWithExpiredSignature() public {
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](0);
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](0);
+    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
 
-    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+    PermitAllowance memory permit = PermitAllowance({
       delegate: alice,
       nonce: 0,
       accountId: accountId,
@@ -68,9 +68,9 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
   }
 
   function testPermitCannotPermitWithFakeSignature() public {
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](0);
-    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](0);
+    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
+    PermitAllowance memory permit = PermitAllowance({
       delegate: alice,
       nonce: 0,
       accountId: accountId,
@@ -88,18 +88,12 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
   function testPermitCanUpdateAssetAllowance() public {
     uint nonce = 1;
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
-    assetAllowances[0] = AccountStructs.AssetAllowance(usdcAsset, positiveAmount, negativeAmount);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](0);
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
+    assetAllowances[0] = AssetAllowance(usdcAsset, positiveAmount, negativeAmount);
+    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
 
-    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
-      delegate: alice,
-      nonce: nonce,
-      accountId: accountId,
-      deadline: block.timestamp + 1,
-      assetAllowances: assetAllowances,
-      subIdAllowances: subIdAllowances
-    });
+    PermitAllowance memory permit =
+      _getDefaultPermitUSDCAllowance(accountId, alice, nonce, positiveAmount, negativeAmount);
 
     bytes memory sig = _signPermit(privateKey, permit);
     account.permit(permit, sig);
@@ -111,11 +105,11 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
   function testPermitCanUpdateSubIdAllowance() public {
     uint96 subId = 0;
     uint nonce = 1;
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](0);
+    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](1);
+    subIdAllowances[0] = SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
 
-    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+    PermitAllowance memory permit = PermitAllowance({
       delegate: alice,
       nonce: nonce,
       accountId: accountId,
@@ -134,35 +128,42 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
   function testCannotReuseSignature() public {
     uint96 subId = 0;
     uint nonce = 1;
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
-
-    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
-      delegate: alice,
-      nonce: nonce,
-      accountId: accountId,
-      deadline: block.timestamp + 1,
-      assetAllowances: assetAllowances,
-      subIdAllowances: subIdAllowances
-    });
+    PermitAllowance memory permit =
+      _getDefaultPermitUSDCAllowance(accountId, alice, nonce, positiveAmount, negativeAmount);
 
     bytes memory sig = _signPermit(privateKey, permit);
     // first permit should pass
     account.permit(permit, sig);
 
-    vm.expectRevert(IAccounts.AC_NonceTooLow.selector);
+    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
     account.permit(permit, sig);
+  }
+
+  function testCanUseNonceInArbitraryOrder() public {
+    uint nonce1 = 20;
+    PermitAllowance memory permit =
+      _getDefaultPermitUSDCAllowance(accountId, alice, nonce1, positiveAmount, negativeAmount);
+    bytes memory sig = _signPermit(privateKey, permit);
+    account.permit(permit, sig);
+
+    // the second permit: use a lower nonce for bob
+    uint nonce2 = 1;
+    PermitAllowance memory permit2 =
+      _getDefaultPermitUSDCAllowance(accountId, bob, nonce2, positiveAmount, negativeAmount);
+    bytes memory sig2 = _signPermit(privateKey, permit2);
+
+    // this should still pass
+    account.permit(permit2, sig2);
   }
 
   function testCannotReplayAttack() public {
     uint96 subId = 0;
     uint nonce = 1;
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](0);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](0);
+    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](1);
+    subIdAllowances[0] = SubIdAllowance(usdcAsset, subId, positiveAmount, negativeAmount);
 
-    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+    PermitAllowance memory permit = PermitAllowance({
       delegate: alice,
       nonce: nonce,
       accountId: accountId,
@@ -188,12 +189,12 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     uint allowanceAmount = 500e18;
 
     // sign signature to approve asset allowance + subId for 500 each
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
-    assetAllowances[0] = AccountStructs.AssetAllowance(usdcAsset, 0, allowanceAmount);
-    AccountStructs.SubIdAllowance[] memory subIdAllowances = new AccountStructs.SubIdAllowance[](1);
-    subIdAllowances[0] = AccountStructs.SubIdAllowance(usdcAsset, subId, 0, allowanceAmount);
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
+    assetAllowances[0] = AssetAllowance(usdcAsset, 0, allowanceAmount);
+    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](1);
+    subIdAllowances[0] = SubIdAllowance(usdcAsset, subId, 0, allowanceAmount);
 
-    AccountStructs.PermitAllowance memory permit = AccountStructs.PermitAllowance({
+    PermitAllowance memory permit = PermitAllowance({
       delegate: bob, //
       nonce: nonce,
       accountId: accountId,
@@ -205,7 +206,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     bytes memory sig = _signPermit(privateKey, permit);
 
     // bob send transfer to send money to himself!
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    AssetTransfer memory transfer = AssetTransfer({
       fromAcc: accountId,
       toAcc: bobAcc,
       asset: usdcAsset,
@@ -238,42 +239,42 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     mintAndDeposit(alice, accountId2, coolToken, coolAsset, tokenSubId, tradeAmount);
 
     // premits and signature arrays
-    AccountStructs.PermitAllowance[] memory permits = new AccountStructs.PermitAllowance[](2);
+    PermitAllowance[] memory permits = new PermitAllowance[](2);
     bytes[] memory signatures = new bytes[](2);
 
     address orderbook = address(0xb00c);
 
     // owner1:  sign to approve asset allowance for USDC
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](1);
-    assetAllowances[0] = AccountStructs.AssetAllowance(usdcAsset, 0, tradeAmount);
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
+    assetAllowances[0] = AssetAllowance(usdcAsset, 0, tradeAmount);
 
-    permits[0] = AccountStructs.PermitAllowance({
+    permits[0] = PermitAllowance({
       delegate: orderbook, // approve orderbook
       nonce: 1,
       accountId: accountId,
       deadline: block.timestamp,
       assetAllowances: assetAllowances,
-      subIdAllowances: new AccountStructs.SubIdAllowance[](0)
+      subIdAllowances: new SubIdAllowance[](0)
     });
     signatures[0] = _signPermit(privateKey, permits[0]);
 
     // owner2: sign to approve asset allowance for coolAsset
-    AccountStructs.AssetAllowance[] memory assetAllowances2 = new AccountStructs.AssetAllowance[](1);
-    assetAllowances2[0] = AccountStructs.AssetAllowance(coolAsset, tokenSubId, tradeAmount);
+    AssetAllowance[] memory assetAllowances2 = new AssetAllowance[](1);
+    assetAllowances2[0] = AssetAllowance(coolAsset, tokenSubId, tradeAmount);
 
-    permits[1] = AccountStructs.PermitAllowance({
+    permits[1] = PermitAllowance({
       delegate: orderbook, // approve orderbook
       nonce: 1,
       accountId: accountId2,
       deadline: block.timestamp,
       assetAllowances: assetAllowances2,
-      subIdAllowances: new AccountStructs.SubIdAllowance[](0)
+      subIdAllowances: new SubIdAllowance[](0)
     });
     signatures[1] = _signPermit(privateKey2, permits[1]);
 
     // orderbook will submit a trade to exchange USDC <> CoolToken
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    AssetTransfer[] memory transferBatch = new AssetTransfer[](2);
+    transferBatch[0] = AssetTransfer({
       fromAcc: accountId,
       toAcc: accountId2,
       asset: IAsset(usdcAsset),
@@ -281,7 +282,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
       amount: int(tradeAmount),
       assetData: bytes32(0)
     });
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = AssetTransfer({
       fromAcc: accountId2,
       toAcc: accountId,
       asset: IAsset(coolAsset),
@@ -320,7 +321,30 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     account.domainSeparator();
   }
 
-  function _signPermit(uint pk, AccountStructs.PermitAllowance memory permit) internal view returns (bytes memory) {
+  function _getDefaultPermitUSDCAllowance(
+    uint accountId,
+    address spender,
+    uint nonce,
+    uint positiveAmount,
+    uint negativeAmount
+  ) internal returns (PermitAllowance memory) {
+    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
+    SubIdAllowance[] memory subIdAllowances = new SubIdAllowance[](0);
+    assetAllowances[0] = AssetAllowance(usdcAsset, positiveAmount, negativeAmount);
+
+    PermitAllowance memory permit = PermitAllowance({
+      delegate: spender,
+      nonce: nonce,
+      accountId: accountId,
+      deadline: block.timestamp + 1,
+      assetAllowances: assetAllowances,
+      subIdAllowances: subIdAllowances
+    });
+
+    return permit;
+  }
+
+  function _signPermit(uint pk, PermitAllowance memory permit) internal view returns (bytes memory) {
     bytes32 structHash = PermitAllowanceLib.hash(permit);
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, ECDSA.toTypedDataHash(domainSeparator, structHash));
     return bytes.concat(r, s, bytes1(v));

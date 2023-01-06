@@ -43,8 +43,8 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
   /// @dev accountId to non-zero assets array
   mapping(uint => HeldAsset[]) public heldAssets;
 
-  /// @dev user nonce for permit
-  mapping(address => uint) public nonce;
+  /// @dev user nonce for permit. User => wordPosition => nonce bit map
+  mapping(address => mapping(uint => uint)) public nonceBitmap;
 
   ///////////////
   // Modifiers //
@@ -193,7 +193,11 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     _permit(allowancePermit, signature);
   }
 
-  //todo: cancel nonce
+  function invalidateUnorderedNonces(address spender, uint wordPos, uint mask) external {
+    nonceBitmap[msg.sender][wordPos] |= mask;
+
+    emit UnorderedNonceInvalidated(msg.sender, wordPos, mask);
+  }
 
   /**
    * @dev verify signature and update allowance mapping
@@ -214,15 +218,42 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     }
 
     // consume nonce
-    // todo [Anton]: update to un-ordered nonce system like Permit2?
-    if (allowancePermit.nonce <= nonce[owner]) revert AC_NonceTooLow();
-    nonce[owner] = allowancePermit.nonce;
+    _useUnorderedNonce(owner, allowancePermit.nonce);
 
     // update asset allowance
     _setAssetAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.assetAllowances);
 
     // update subId allowance
     _setSubIdAllowances(allowancePermit.accountId, owner, allowancePermit.delegate, allowancePermit.subIdAllowances);
+  }
+
+  /**
+   * @notice Checks whether a nonce is taken and sets the bit at the bit position in the bitmap at the word position
+   * @param from The address to use the nonce at
+   * @param nonce The nonce to spend
+   */
+  function _useUnorderedNonce(address from, uint nonce) internal {
+    (uint wordPos, uint bitPos) = _bitmapPositions(nonce);
+    uint bit = 1 << bitPos;
+    uint flipped = nonceBitmap[from][wordPos] ^= bit;
+
+    // if no bit flipped: the nonce is already marked as used before ^=
+    if (flipped & bit == 0) revert AC_InvalidNonce();
+  }
+
+  /**
+   * @notice Returns the index of the bitmap and the bit position within the bitmap. Used for unordered nonces
+   * @dev The first 248 bits of the nonce value is the index of the desired bitmap
+   * @dev The last 8 bits of the nonce value is the position of the bit in the bitmap
+   * 
+   * @param nonce The nonce to get the associated word and bit positions
+   * @return wordPos The word position or index into the nonceBitmap
+   * @return bitPos The bit position
+   *
+   */
+  function _bitmapPositions(uint nonce) private pure returns (uint wordPos, uint bitPos) {
+    wordPos = uint248(nonce >> 8);
+    bitPos = uint8(nonce);
   }
 
   /////////////////////////
