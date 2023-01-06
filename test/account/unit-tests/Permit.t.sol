@@ -178,7 +178,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
 
   function testCannotReplayAttack() public {
     uint nonce = 1;
-    
+
     PermitAllowance memory permit = _getAssetPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
 
@@ -252,7 +252,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase, AccountStructs {
     address orderbook = address(0xb00c);
 
     // owner1:  sign to approve asset allowance for USDC
-    permits[0] =_getAssetPermitUSDC(accountId, orderbook, 1, 0, tradeAmount);
+    permits[0] = _getAssetPermitUSDC(accountId, orderbook, 1, 0, tradeAmount);
     signatures[0] = _signPermit(privateKey, permits[0]);
 
     // owner2: sign to approve asset allowance for coolAsset
