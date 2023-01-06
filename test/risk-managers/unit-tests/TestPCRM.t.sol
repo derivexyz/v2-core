@@ -117,6 +117,18 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
+  function testInitialMarginCalculation() public view {
+    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
+    strikes[0] = PCRM.StrikeHolding({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+
+    PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
+    expiries[0] = PCRM.ExpiryHolding({expiry: block.timestamp + 1 days, numStrikesHeld: 1, strikes: strikes});
+
+    manager.getInitialMargin(expiries, 0);
+
+    // todo: actually test
+  }
+
   ////////////////////
   // Manager Change //
   ////////////////////
