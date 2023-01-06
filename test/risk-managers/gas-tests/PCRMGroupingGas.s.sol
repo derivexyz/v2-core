@@ -61,10 +61,10 @@ contract PCRMGroupingGas is Script {
 
     // estimate tx cost
     uint initGas = gasleft();
-    pcrm.getGroupedHoldings(aliceAcc);
-    uint endGas = gasleft();
 
-    console.log("gas:singleAsset:", initGas - endGas);
+    pcrm.getGroupedOptions(aliceAcc);
+
+    console.log("gas:singleAsset:", initGas - gasleft());
   }
 
   function _gasMaxAssets() public {
@@ -83,9 +83,8 @@ contract PCRMGroupingGas is Script {
 
     // estimate gas for grouping + getting balances
     initGas = gasleft();
-    pcrm.getGroupedHoldings(aliceAcc);
-    endGas = gasleft();
-    console.log("gas: grouping 128 assets in PCRM:", initGas - endGas);
+    pcrm.getGroupedOptions(aliceAcc);
+    console.log("gas: grouping 128 assets in PCRM:", initGas - gasleft());
   }
 
   function _setup() public {

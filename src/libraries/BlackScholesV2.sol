@@ -6,12 +6,14 @@ import "synthetix/SignedDecimalMath.sol";
 import "synthetix/DecimalMath.sol";
 import "./FixedPointMathLib.sol";
 
+import "forge-std/console2.sol";
 /**
  * @title BlackScholes
  * @author Lyra
  * @dev Contract to compute the black scholes price of options.
  * The default decimal matches the ethereum standard of 1e18 units of precision.
  */
+
 library BlackScholesV2 {
   using DecimalMath for uint;
   using SignedDecimalMath for int;
@@ -63,11 +65,17 @@ library BlackScholesV2 {
    */
   function prices(BlackScholesInputs memory bsInput) public pure returns (uint callPrice, uint putPrice) {
     uint tAnnualised = _annualise(bsInput.timeToExpirySec);
-    (int d1, int d2,,) = _d1d2kSqrtTau(
-      tAnnualised, bsInput.volatilityDecimal, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal
-    );
-    (callPrice, putPrice) =
-      _optionPrices(tAnnualised, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal, d1, d2);
+
+    if (bsInput.strikePriceDecimal != 0) {
+      (int d1, int d2,,) = _d1d2kSqrtTau(
+        tAnnualised, bsInput.volatilityDecimal, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal
+      );
+
+      (callPrice, putPrice) =
+        _optionPrices(tAnnualised, bsInput.spotDecimal, bsInput.strikePriceDecimal, bsInput.rateDecimal, d1, d2);
+    } else {
+      (callPrice, putPrice) = (0, 0);
+    }
   }
 
   /**

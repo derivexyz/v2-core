@@ -44,6 +44,18 @@ contract UNIT_TestPCRM is Test {
       address(auction)
     );
 
+    manager.setParams(
+      PCRM.Shocks({
+        spotUpInitial: 120e16,
+        spotDownInitial: 80e16,
+        spotUpMaintenance: 110e16,
+        spotDownMaintenance: 90e16,
+        vol: 300e16,
+        rfr: 10e16
+      }),
+      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+    );
+
     vm.startPrank(alice);
     aliceAcc = account.createAccount(alice, IManager(manager));
     bobAcc = account.createAccount(bob, IManager(manager));
@@ -52,6 +64,54 @@ contract UNIT_TestPCRM is Test {
     vm.startPrank(bob);
     account.approve(alice, bobAcc);
     vm.stopPrank();
+  }
+
+  ///////////
+  // Admin //
+  ///////////
+
+  function testSetParamsWithNonOwner() public {
+    vm.startPrank(alice);
+    vm.expectRevert(abi.encodeWithSelector(AbstractOwned.OnlyOwner.selector, address(manager), alice, manager.owner()));
+    manager.setParams(
+      PCRM.Shocks({
+        spotUpInitial: 120e16,
+        spotDownInitial: 80e16,
+        spotUpMaintenance: 110e16,
+        spotDownMaintenance: 90e16,
+        vol: 300e16,
+        rfr: 10e16
+      }),
+      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+    );
+    vm.stopPrank();
+  }
+
+  function testSetParamsWithOwner() public {
+    manager.setParams(
+      PCRM.Shocks({
+        spotUpInitial: 200e16,
+        spotDownInitial: 50e16,
+        spotUpMaintenance: 120e16,
+        spotDownMaintenance: 70e16,
+        vol: 400e16,
+        rfr: 20e16
+      }),
+      PCRM.Discounts({maintenanceStaticDiscount: 85e16, initialStaticDiscount: 75e16})
+    );
+
+    (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance, uint vol, uint rfr) =
+      manager.shocks();
+    assertEq(spotUpInitial, 200e16);
+    assertEq(spotDownInitial, 50e16);
+    assertEq(spotUpMaintenance, 120e16);
+    assertEq(spotDownMaintenance, 70e16);
+    assertEq(vol, 400e16);
+    assertEq(rfr, 20e16);
+
+    (uint maintenanceStaticDiscount, uint initialStaticDiscount) = manager.discounts();
+    assertEq(maintenanceStaticDiscount, 85e16);
+    assertEq(initialStaticDiscount, 75e16);
   }
 
   //////////////
@@ -78,26 +138,39 @@ contract UNIT_TestPCRM is Test {
   // Margin calculations //
   /////////////////////////
 
-  function testInitialMarginCalculation() public view {
+  function testEmptyInitialMarginCalculation() public view {
     PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
     strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 
     PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
     expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getInitialMargin(expiries);
+    manager.getInitialMargin(expiries, 0);
 
     // todo: actually test
   }
 
-  function testMaintenanceMarginCalculation() public view {
+  function testEmptyMaintenanceMarginCalculation() public view {
     PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
     strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
 
     PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
     expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getMaintenanceMargin(expiries);
+    manager.getMaintenanceMargin(expiries, 0);
+
+    // todo: actually test
+  }
+
+  function testInitialMarginCalculation() public view {
+    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](2);
+    strikes[0] = PCRM.StrikeHolding({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = PCRM.StrikeHolding({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+
+    PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
+    expiries[0] = PCRM.ExpiryHolding({expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
+
+    manager.getInitialMargin(expiries, 0);
 
     // todo: actually test
   }
@@ -133,7 +206,20 @@ contract UNIT_TestPCRM is Test {
   // View //
   //////////
 
-  function testGetGroupedHoldings() public {
+  function testGetGroupedOptions() public {
+    _openDefaultOptions();
+
+    (PCRM.ExpiryHolding[] memory holdings) = manager.getGroupedOptions(aliceAcc);
+    assertEq(holdings[0].strikes[0].strike, 1000e18);
+    assertEq(holdings[0].strikes[0].calls, 0);
+    assertEq(holdings[0].strikes[0].puts, -9e18);
+    assertEq(holdings[0].strikes[0].forwards, 1e18);
+
+    assertEq(holdings[1].strikes[0].strike, 10e18);
+    assertEq(holdings[1].strikes[0].puts, 5e18);
+  }
+
+  function _openDefaultOptions() internal {
     vm.startPrank(address(alice));
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
@@ -170,14 +256,5 @@ contract UNIT_TestPCRM is Test {
     account.submitTransfer(longtermTransfer, "");
 
     vm.stopPrank();
-
-    PCRM.ExpiryHolding[] memory holdings = manager.getGroupedHoldings(aliceAcc);
-    assertEq(holdings[0].strikes[0].strike, 1000e18);
-    assertEq(holdings[0].strikes[0].calls, 0);
-    assertEq(holdings[0].strikes[0].puts, -9e18);
-    assertEq(holdings[0].strikes[0].forwards, 1e18);
-
-    assertEq(holdings[1].strikes[0].strike, 10e18);
-    assertEq(holdings[1].strikes[0].puts, 5e18);
   }
 }

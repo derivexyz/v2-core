@@ -9,15 +9,25 @@ import "src/interfaces/ICashAsset.sol";
 import "src/assets/Option.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
+import "src/libraries/BlackScholesV2.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/Owned.sol";
+import "synthetix/SignedDecimalMath.sol";
+import "synthetix/DecimalMath.sol";
 
+import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
  * @author Lyra
  * @notice Risk Manager that controls transfer and margin requirements
  */
+
 contract PCRM is IManager, Owned {
+  using SignedDecimalMath for int;
+  using DecimalMath for uint;
+  using SafeCast for uint;
+
   /**
    * INITIAL: margin required for trade to pass
    * MAINTENANCE: margin required to prevent liquidation
@@ -47,9 +57,32 @@ contract PCRM is IManager, Owned {
     int forwards;
   }
 
+  struct Shocks {
+    /// high spot value used for initial margin
+    uint spotUpInitial;
+    /// low spot value used for initial margin
+    uint spotDownInitial;
+    /// high spot value used for maintenance margin
+    uint spotUpMaintenance;
+    /// low spot value used for maintenance margin
+    uint spotDownMaintenance;
+    /// volatility shock
+    uint vol;
+    /// risk-free-rate shock
+    uint rfr;
+  }
+
+  struct Discounts {
+    /// maintenance discount applied to whole expiry
+    uint maintenanceStaticDiscount;
+    /// initial discount applied to whole expiry
+    uint initialStaticDiscount;
+  }
+
   ///////////////
   // Variables //
   ///////////////
+  int constant SECONDS_PER_YEAR = 365 days;
 
   /// @dev asset used in all settlements and denominates margin
   IAccounts public immutable account;
@@ -71,6 +104,10 @@ contract PCRM is IManager, Owned {
 
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 16;
+
+  Shocks public shocks;
+
+  Discounts public discounts;
 
   ////////////
   // Events //
@@ -115,8 +152,9 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    ExpiryHolding[] memory expiries = _groupHoldings(account.getAccountBalances(accountId));
-    _calcMargin(expiries, MarginType.INITIAL);
+    ExpiryHolding[] memory expiries = _groupOptions(account.getAccountBalances(accountId));
+    int cashAmount = _getCashAmount(accountId);
+    _calcMargin(expiries, cashAmount, MarginType.INITIAL);
   }
 
   /**
@@ -126,6 +164,21 @@ contract PCRM is IManager, Owned {
    */
   function handleManagerChange(uint accountId, IManager newManager) external {
     // todo [Josh]: nextManager whitelist check
+  }
+
+  ///////////
+  // Admin //
+  ///////////
+
+  /**
+   * @notice Governance determined shocks and discounts used in margin calculations.
+   * @param _shocks Spot / vol / risk-free-rate shocks for inputs into BS pricing / payoffs.
+   * @param _discounts discounting of portfolio value post BS pricing / payoffs.
+   */
+  function setParams(Shocks calldata _shocks, Discounts calldata _discounts) external onlyOwner {
+    // todo [Josh]: add bounds
+    shocks = _shocks;
+    discounts = _discounts;
   }
 
   //////////////////
@@ -175,48 +228,157 @@ contract PCRM is IManager, Owned {
    * @param marginType Initial or maintenance margin.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(ExpiryHolding[] memory expiries, MarginType marginType) internal view returns (int margin) {
-    for (uint i; i < expiries.length; i++) {
-      margin += _calcExpiryValue(expiries[i], marginType);
-    }
 
-    margin += _calcCashValue(marginType);
-  }
-
-  /**
-   * @notice Calculate the discounted value of option holdings in a specific expiry.
-   * @param expiry All option holdings within an expiry.
-   * @param marginType Initial or maintenance margin.
-   * @return expiryValue Value of assets or debt of options in a given expiry.
-   */
-  function _calcExpiryValue(ExpiryHolding memory expiry, MarginType marginType) internal view returns (int expiryValue) {
-    expiryValue;
-    for (uint i; i < expiry.strikes.length; i++) {
-      expiryValue += _calcStrikeValue(expiry.strikes[i], marginType);
-    }
-  }
-
-  /**
-   * @notice Calculate the discounted value of option holdings in a specific strike.
-   * @param strikeHoldings All option holdings of the same strike.
-   * @param marginType Initial or maintenance margin.
-   * @return strikeValue Value of assets or debt of options of a given strike.
-   */
-  function _calcStrikeValue(StrikeHolding memory strikeHoldings, MarginType marginType)
+  // todo [Josh]: add RV related add-ons
+  function _calcMargin(ExpiryHolding[] memory expiries, int cashAmount, MarginType marginType)
     internal
     view
-    returns (int strikeValue)
+    returns (int margin)
   {
-    // todo [Josh]: get call, put, forward values
+    // get shock amounts
+    uint spotUp;
+    uint spotDown;
+    uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
+    uint staticDiscount;
+    if (marginType == MarginType.INITIAL) {
+      spotUp = spot.multiplyDecimal(shocks.spotUpInitial);
+      spotDown = spot.multiplyDecimal(shocks.spotDownInitial);
+      staticDiscount = discounts.initialStaticDiscount;
+    } else {
+      spotUp = spot.multiplyDecimal(shocks.spotUpMaintenance);
+      spotDown = spot.multiplyDecimal(shocks.spotDownMaintenance);
+      staticDiscount = discounts.maintenanceStaticDiscount;
+    }
+    // todo [Josh]: add actual vol shocks
+
+    // discount option value
+    for (uint i; i < expiries.length; i++) {
+      int expiryMargin;
+      ExpiryHolding memory expiry = expiries[i];
+      int timeToExpiry = expiry.expiry.toInt256() - block.timestamp.toInt256();
+      if (timeToExpiry > 0) {
+        expiryMargin = _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
+        expiryMargin =
+          (expiryMargin > 0) ? expiryMargin * _getExpiryDiscount(staticDiscount, timeToExpiry) : expiryMargin;
+      } else {
+        expiryMargin += _calcSettledExpiryValue(expiry);
+      }
+
+      // aggregate margin
+      margin += expiryMargin;
+    }
+
+    // add cash
+    margin += cashAmount;
   }
 
   /**
-   * @notice Calculate the discounted value of cash in account.
-   * @param marginType Initial or maintenance margin.
-   * @return cashValue Discounted value of cash held in account.
+   * @notice Calculate the settled value of option holdings in a specific expiry.
+   * @param expiry All option holdings within an expiry.
+   * @return expiryValue Value of assets or debt of settled options.
    */
-  function _calcCashValue(MarginType marginType) internal view returns (int cashValue) {
-    // todo [Josh]: apply interest rate shock
+  function _calcSettledExpiryValue(ExpiryHolding memory expiry) internal pure returns (int expiryValue) {
+    uint settlementPrice = 1000e18; // todo: [Josh] integrate settlement feed
+    for (uint i; i < expiry.strikes.length; i++) {
+      StrikeHolding memory strike = expiry.strikes[i];
+      int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
+
+      // calculate proceeds for forwards / calls / puts
+      if (pnl > 0) {
+        expiryValue += (strike.calls + strike.forwards).multiplyDecimal(pnl);
+      } else {
+        expiryValue += (strike.puts - strike.forwards).multiplyDecimal(-pnl);
+      }
+    }
+  }
+
+  /**
+   * @notice Calculate the discounted value of live option holdings in a specific expiry.
+   * @param expiry All option holdings within an expiry.
+   * @param spotUp Spot shocked up based on initial or maintenance margin params.
+   * @param spotDown Spot shocked down based on initial or maintenance margin params.
+   * @param shockedVol Vol shocked up based on initial or maintenance margin params.
+   * @return expiryValue Value of assets or debt of options in a given expiry.
+   */
+  function _calcLiveExpiryValue(ExpiryHolding memory expiry, uint spotUp, uint spotDown, uint shockedVol)
+    internal
+    view
+    returns (int expiryValue)
+  {
+    int spotUpValue;
+    int spotDownValue;
+
+    uint timeToExpiry = expiry.expiry - block.timestamp;
+
+    for (uint i; i < expiry.strikes.length; i++) {
+      spotUpValue += _calcLiveStrikeValue(expiry.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
+
+      spotDownValue += _calcLiveStrikeValue(expiry.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
+    }
+
+    // return the worst of two scenarios
+    return SignedMath.min(spotUpValue, spotDownValue);
+  }
+
+  /**
+   * @notice Calculate the discounted value of live option holdings in a specific strike.
+   * @param strikeHoldings All option holdings of the same strike.
+   * @param isCurrentScenarioUp Whether the current scenario is spot up or down.
+   * @param spotUp Spot shocked up based on initial or maintenance margin params.
+   * @param spotDown Spot shocked down based on initial or maintenance margin params.
+   * @param shockedVol Vol shocked up based on initial or maintenance margin params.
+   * @param timeToExpiry Seconds till expiry.
+   * @return strikeValue Value of assets or debt of options of a given strike.
+   */
+
+  function _calcLiveStrikeValue(
+    StrikeHolding memory strikeHoldings,
+    bool isCurrentScenarioUp,
+    uint spotUp,
+    uint spotDown,
+    uint shockedVol,
+    uint timeToExpiry
+  ) internal pure returns (int strikeValue) {
+    // Calculate both spot up and down payoffs.
+    int markedDownCallValue = spotDown.toInt256() - strikeHoldings.strike.toInt256();
+    int markedDownPutValue = strikeHoldings.strike.toInt256() - spotUp.toInt256();
+
+    // Add forward value.
+    strikeValue += (isCurrentScenarioUp)
+      ? strikeHoldings.forwards.multiplyDecimal(-markedDownPutValue)
+      : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
+
+    // Get BlackSchole price.
+    (uint callValue, uint putValue) = (0, 0);
+    if (strikeHoldings.calls != 0 || strikeHoldings.puts != 0) {
+      (callValue, putValue) = BlackScholesV2.prices(
+        BlackScholesV2.BlackScholesInputs({
+          timeToExpirySec: timeToExpiry,
+          volatilityDecimal: shockedVol,
+          spotDecimal: (isCurrentScenarioUp) ? spotUp : spotDown,
+          strikePriceDecimal: strikeHoldings.strike,
+          rateDecimal: 1e16 // todo [Josh]: replace with proper RFR
+        })
+      );
+    }
+
+    // Add call value.
+    strikeValue += (strikeHoldings.calls >= 0)
+      ? strikeHoldings.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
+      : strikeHoldings.calls.multiplyDecimal(callValue.toInt256());
+
+    // Add put value.
+    strikeValue += (strikeHoldings.puts >= 0)
+      ? strikeHoldings.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
+      : strikeHoldings.puts.multiplyDecimal(putValue.toInt256());
+  }
+
+  function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
+    int tau = timeToExpiry * 10e18 / SECONDS_PER_YEAR;
+    int exponent = SafeCast.toInt256(FixedPointMathLib.exp(-tau.multiplyDecimal(shocks.rfr.toInt256())));
+
+    // no need for safecast as .setParams() bounds will ensure no overflow
+    return (int(staticDiscount) * exponent);
   }
 
   //////////
@@ -230,7 +392,7 @@ contract PCRM is IManager, Owned {
    * @return expiryHoldings Grouped array of option holdings.
    */
 
-  function _groupHoldings(AccountStructs.AssetBalance[] memory assets)
+  function _groupOptions(AccountStructs.AssetBalance[] memory assets)
     internal
     view
     returns (ExpiryHolding[] memory expiryHoldings)
@@ -276,6 +438,17 @@ contract PCRM is IManager, Owned {
     }
   }
 
+  /**
+   * @notice Returns the cash amount in account.
+   *         Meant to be called before getInitial/MaintenanceMargin()
+   * @dev Separated getter for cash to reduce stack-too-deep errors / bloating margin logic
+   * @param accountId accountId of user.
+   * @return cashAmount Positive or negative amount of cash in given account.
+   */
+  function _getCashAmount(uint accountId) internal view returns (int cashAmount) {
+    return account.getBalance(accountId, IAsset(address(cashAsset)), 0);
+  }
+
   //////////
   // View //
   //////////
@@ -286,8 +459,8 @@ contract PCRM is IManager, Owned {
    * @param accountId ID of account to sort.
    * @return expiryHoldings Grouped array of option holdings.
    */
-  function getGroupedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
-    return _groupHoldings(account.getAccountBalances(accountId));
+  function getGroupedOptions(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
+    return _groupOptions(account.getAccountBalances(accountId));
   }
 
   /**
@@ -297,8 +470,8 @@ contract PCRM is IManager, Owned {
    * @return margin Amount by which account is over or under the required margin.
    */
   // todo [Josh]: public view function to get margin values directly through accountId
-  function getInitialMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
-    return _calcMargin(expiries, MarginType.INITIAL);
+  function getInitialMargin(ExpiryHolding[] memory expiries, int cashAmount) external view returns (int margin) {
+    return _calcMargin(expiries, cashAmount, MarginType.INITIAL);
   }
 
   /**
@@ -307,8 +480,8 @@ contract PCRM is IManager, Owned {
    * @param expiries Sorted array of option holdings.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getMaintenanceMargin(ExpiryHolding[] memory expiries) external view returns (int margin) {
-    return _calcMargin(expiries, MarginType.MAINTENANCE);
+  function getMaintenanceMargin(ExpiryHolding[] memory expiries, int cashAmount) external view returns (int margin) {
+    return _calcMargin(expiries, cashAmount, MarginType.MAINTENANCE);
   }
 
   ////////////
