@@ -249,6 +249,13 @@ contract DutchAuction is IDutchAuction, Owned {
     }
   }
 
+
+  /**
+    * @notice calculates the maximum and minimum value of a strike at a particular price
+    * @param strikes the strikes that are being marked
+    * @param spot the spot price of the asset
+    * @dev returns the minimum and maximum value of a strike at a particular price 
+   */
   function _markStrike(IPCRM.StrikeHolding[] memory strikes, int spot) internal pure returns (int max, int min) {
     for (uint j = 0; j < strikes.length; j++) {
       // calls
