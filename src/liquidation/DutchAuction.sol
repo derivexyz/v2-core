@@ -159,10 +159,7 @@ contract DutchAuction is IDutchAuction, Owned {
     // if so then revert
 
     // send/ take money from the user if depending on the current priec
-    
-    
-    
-    
+
     // if the user has less margin then the amount they are bidding then get it from the security module
 
     // add bid
@@ -249,12 +246,11 @@ contract DutchAuction is IDutchAuction, Owned {
     }
   }
 
-
   /**
-    * @notice calculates the maximum and minimum value of a strike at a particular price
-    * @param strikes the strikes that are being marked
-    * @param spot the spot price of the asset
-    * @dev returns the minimum and maximum value of a strike at a particular price 
+   * @notice calculates the maximum and minimum value of a strike at a particular price
+   * @param strikes the strikes that are being marked
+   * @param spot the spot price of the asset
+   * @dev returns the minimum and maximum value of a strike at a particular price
    */
   function _markStrike(IPCRM.StrikeHolding[] memory strikes, int spot) internal pure returns (int max, int min) {
     for (uint j = 0; j < strikes.length; j++) {

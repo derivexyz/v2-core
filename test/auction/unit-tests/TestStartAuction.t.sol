@@ -14,7 +14,7 @@ import "../../shared/mocks/MockManager.sol";
 import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockIPCRM.sol";
 
-// Math library... 
+// Math library...
 
 contract UNIT_TestStartAuction is Test {
   address alice;
@@ -65,7 +65,8 @@ contract UNIT_TestStartAuction is Test {
       DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
     );
 
-    dutchAuctionParameters = DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
+    dutchAuctionParameters =
+      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
   }
 
   function mintAndDeposit(
@@ -166,7 +167,7 @@ contract UNIT_TestStartAuction is Test {
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.insolvent, false);
-  
+
     // fast forward
     vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
     // mark the auction as insolvent
