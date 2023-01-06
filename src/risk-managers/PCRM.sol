@@ -16,13 +16,13 @@ import "synthetix/Owned.sol";
 import "synthetix/SignedDecimalMath.sol";
 import "synthetix/DecimalMath.sol";
 
-
 import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
  * @author Lyra
  * @notice Risk Manager that controls transfer and margin requirements
  */
+
 contract PCRM is IManager, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
@@ -72,9 +72,9 @@ contract PCRM is IManager, Owned {
   }
 
   struct Discounts {
-    /// maintenance discount applied to whole expiry 
+    /// maintenance discount applied to whole expiry
     uint maintenanceStaticDiscount;
-    /// initial discount applied to whole expiry 
+    /// initial discount applied to whole expiry
     uint initialStaticDiscount;
   }
 
@@ -169,10 +169,12 @@ contract PCRM is IManager, Owned {
   // Admin //
   ///////////
 
-  function setParams(
-    Shocks calldata _shocks,
-    Discounts calldata _discounts
-  ) external onlyOwner {
+  /**
+   * @notice Governance determined shocks and discounts used in margin calculations.
+   * @param _shocks Spot / vol / risk-free-rate shocks
+   * @param _discounts Global discounting of assets.
+   */
+  function setParams(Shocks calldata _shocks, Discounts calldata _discounts) external onlyOwner {
     // todo [Josh]: add bounds
     shocks = _shocks;
     discounts = _discounts;
@@ -226,11 +228,12 @@ contract PCRM is IManager, Owned {
    * @return margin Amount by which account is over or under the required margin.
    */
 
-   // todo [Josh]: add RV related add-ons
-  function _calcMargin(
-    ExpiryHolding[] memory expiries, int cashAmount, MarginType marginType
-  ) internal view returns (int margin) {
-
+  // todo [Josh]: add RV related add-ons
+  function _calcMargin(ExpiryHolding[] memory expiries, int cashAmount, MarginType marginType)
+    internal
+    view
+    returns (int margin)
+  {
     // get shock amounts
     uint spotUp;
     uint spotDown;
@@ -258,9 +261,8 @@ contract PCRM is IManager, Owned {
       if (timeToExpiry > 0) {
         console2.log("passed 2.1");
         expiryMargin = _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
-        expiryMargin = (expiryMargin > 0)
-          ? expiryMargin * _getExpiryDiscount(staticDiscount, timeToExpiry)
-          : expiryMargin;
+        expiryMargin =
+          (expiryMargin > 0) ? expiryMargin * _getExpiryDiscount(staticDiscount, timeToExpiry) : expiryMargin;
       } else {
         expiryMargin += _calcSettledExpiryValue(expiry);
       }
@@ -299,35 +301,24 @@ contract PCRM is IManager, Owned {
    * @param shockedVol Vol shocked up based on initial or maintenance margin params.
    * @return expiryValue Value of assets or debt of options in a given expiry.
    */
-  function _calcLiveExpiryValue(
-    ExpiryHolding memory expiry, 
-    uint spotUp, 
-    uint spotDown,
-    uint shockedVol
-  ) internal view returns (int expiryValue) {
+  function _calcLiveExpiryValue(ExpiryHolding memory expiry, uint spotUp, uint spotDown, uint shockedVol)
+    internal
+    view
+    returns (int expiryValue)
+  {
     int spotUpValue;
     int spotDownValue;
 
     uint timeToExpiry = expiry.expiry - block.timestamp;
- 
+
     for (uint i; i < expiry.strikes.length; i++) {
       console2.log("passed 3");
       spotUpValue += _calcLiveStrikeValue(
-        expiry.strikes[i], 
-        true,
-        SafeCast.toInt256(spotUp),
-        SafeCast.toInt256(spotDown),
-        shockedVol,
-        timeToExpiry
+        expiry.strikes[i], true, SafeCast.toInt256(spotUp), SafeCast.toInt256(spotDown), shockedVol, timeToExpiry
       );
 
       spotDownValue += _calcLiveStrikeValue(
-        expiry.strikes[i], 
-        false,
-        SafeCast.toInt256(spotUp),
-        SafeCast.toInt256(spotDown),
-        shockedVol,
-        timeToExpiry
+        expiry.strikes[i], false, SafeCast.toInt256(spotUp), SafeCast.toInt256(spotDown), shockedVol, timeToExpiry
       );
     }
 
@@ -347,21 +338,21 @@ contract PCRM is IManager, Owned {
    */
 
   function _calcLiveStrikeValue(
-    StrikeHolding memory strikeHoldings, 
+    StrikeHolding memory strikeHoldings,
     bool isCurrentScenarioUp,
     int spotUp,
     int spotDown,
     uint shockedVol,
     uint timeToExpiry
   ) internal view returns (int strikeValue) {
-    // calculate both spot up and down payoffs 
+    // calculate both spot up and down payoffs
     int markedDownCallValue = spotDown - SafeCast.toInt256(strikeHoldings.strike);
     int markedDownPutValue = SafeCast.toInt256(strikeHoldings.strike) - spotUp;
 
     // Calculate forward value.
-    strikeValue += (isCurrentScenarioUp) 
-       ? strikeHoldings.forwards.multiplyDecimal(-markedDownPutValue)
-       : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
+    strikeValue += (isCurrentScenarioUp)
+      ? strikeHoldings.forwards.multiplyDecimal(-markedDownPutValue)
+      : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
 
     // Get BlackSchole price.
     (uint callValue, uint putValue) = (0, 0);
@@ -376,28 +367,21 @@ contract PCRM is IManager, Owned {
         })
       );
     }
-    
+
     // Calculate call value.
-    strikeValue += (strikeHoldings.calls >= 0) 
+    strikeValue += (strikeHoldings.calls >= 0)
       ? strikeHoldings.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
       : strikeHoldings.calls.multiplyDecimal(SafeCast.toInt256(callValue));
 
     // Calculate put value.
-    strikeValue += (strikeHoldings.puts >= 0) 
+    strikeValue += (strikeHoldings.puts >= 0)
       ? strikeHoldings.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikeHoldings.puts.multiplyDecimal(SafeCast.toInt256(putValue));
   }
 
-  function _getExpiryDiscount(
-    int staticDiscount, 
-    int timeToExpiry
-  ) internal view returns (
-    int expiryDiscount
-  ) {
+  function _getExpiryDiscount(int staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
     int tau = timeToExpiry * 10e18 / SECONDS_PER_YEAR;
-    int exponent = SafeCast.toInt256(FixedPointMathLib.exp(
-      -tau.multiplyDecimal(SafeCast.toInt256(shocks.rfr))
-    ));
+    int exponent = SafeCast.toInt256(FixedPointMathLib.exp(-tau.multiplyDecimal(SafeCast.toInt256(shocks.rfr))));
 
     return (staticDiscount * exponent);
   }
@@ -459,6 +443,13 @@ contract PCRM is IManager, Owned {
     }
   }
 
+  /**
+   * @notice Returns the cash amount in account. 
+   *         Meant to be called before getInitial/MaintenanceMargin()
+   * @dev Separated getter for cash to reduce stack-too-deep errors / bloating margin logic
+   * @param accountId accountId of user.
+   * @return cashAmount Positive or negative amount of cash in given account.
+   */
   function _getCashAmount(uint accountId) internal view returns (int cashAmount) {
     return account.getBalance(accountId, IAsset(address(cashAsset)), 0);
   }
@@ -473,12 +464,9 @@ contract PCRM is IManager, Owned {
    * @param accountId ID of account to sort.
    * @return expiryHoldings Grouped array of option holdings.
    */
-  function getGroupedOptions(uint accountId) external view returns (
-    ExpiryHolding[] memory expiryHoldings
-  ) {
+  function getGroupedOptions(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
     return _groupOptions(account.getAccountBalances(accountId));
   }
-
 
   /**
    * @notice Calculate the initial margin of account.

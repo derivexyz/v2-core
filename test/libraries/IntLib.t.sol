@@ -52,7 +52,6 @@ contract IntLibTest is Test {
     assertEq(tester.abs(minValue), expected);
   }
 
-
   function testAbsConstraint() public {
     int minInt = type(int).min;
     vm.expectRevert();

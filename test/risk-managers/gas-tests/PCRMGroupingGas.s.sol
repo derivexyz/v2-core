@@ -48,7 +48,6 @@ contract PCRMGroupingGas is Script {
     vm.stopBroadcast();
   }
 
-
   function _gasSingleOption() public {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -61,10 +60,9 @@ contract PCRMGroupingGas is Script {
     account.submitTransfer(transfer, "");
 
     // estimate tx cost
-    uint initGas = gasleft(); 
-    
+    uint initGas = gasleft();
+
     pcrm.getGroupedOptions(aliceAcc);
-    
 
     console.log("gas:singleAsset:", initGas - gasleft());
   }

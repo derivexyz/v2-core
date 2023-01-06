@@ -53,10 +53,7 @@ contract UNIT_TestPCRM is Test {
         vol: 300e16,
         rfr: 10e16
       }),
-      PCRM.Discounts({
-        maintenanceStaticDiscount: 90e16,
-        initialStaticDiscount: 80e16
-      })
+      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
     );
 
     vm.startPrank(alice);
@@ -75,9 +72,7 @@ contract UNIT_TestPCRM is Test {
 
   function testSetParamsWithNonOwner() public {
     vm.startPrank(alice);
-    vm.expectRevert(
-      abi.encodeWithSelector(AbstractOwned.OnlyOwner.selector, address(manager), alice, manager.owner())
-    );
+    vm.expectRevert(abi.encodeWithSelector(AbstractOwned.OnlyOwner.selector, address(manager), alice, manager.owner()));
     manager.setParams(
       PCRM.Shocks({
         spotUpInitial: 120e16,
@@ -87,16 +82,12 @@ contract UNIT_TestPCRM is Test {
         vol: 300e16,
         rfr: 10e16
       }),
-      PCRM.Discounts({
-        maintenanceStaticDiscount: 90e16,
-        initialStaticDiscount: 80e16
-      })
+      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
     );
     vm.stopPrank();
   }
 
-    function testSetParamsWithOwner() public {
-
+  function testSetParamsWithOwner() public {
     manager.setParams(
       PCRM.Shocks({
         spotUpInitial: 200e16,
@@ -106,18 +97,11 @@ contract UNIT_TestPCRM is Test {
         vol: 400e16,
         rfr: 20e16
       }),
-      PCRM.Discounts({
-        maintenanceStaticDiscount: 85e16,
-        initialStaticDiscount: 75e16
-      })
+      PCRM.Discounts({maintenanceStaticDiscount: 85e16, initialStaticDiscount: 75e16})
     );
 
-    (uint spotUpInitial,
-    uint spotDownInitial,
-    uint spotUpMaintenance, 
-    uint spotDownMaintenance, 
-    uint vol,
-    uint rfr) = manager.shocks();
+    (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance, uint vol, uint rfr) =
+      manager.shocks();
     assertEq(spotUpInitial, 200e16);
     assertEq(spotDownInitial, 50e16);
     assertEq(spotUpMaintenance, 120e16);
@@ -125,8 +109,7 @@ contract UNIT_TestPCRM is Test {
     assertEq(vol, 400e16);
     assertEq(rfr, 20e16);
 
-    (uint maintenanceStaticDiscount,
-    uint initialStaticDiscount) = manager.discounts();
+    (uint maintenanceStaticDiscount, uint initialStaticDiscount) = manager.discounts();
     assertEq(maintenanceStaticDiscount, 85e16);
     assertEq(initialStaticDiscount, 75e16);
   }
