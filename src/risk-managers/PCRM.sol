@@ -444,7 +444,7 @@ contract PCRM is IManager, Owned {
   }
 
   /**
-   * @notice Returns the cash amount in account. 
+   * @notice Returns the cash amount in account.
    *         Meant to be called before getInitial/MaintenanceMargin()
    * @dev Separated getter for cash to reduce stack-too-deep errors / bloating margin logic
    * @param accountId accountId of user.
