@@ -19,6 +19,7 @@ import "forge-std/Test.sol";
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
+
 contract CashAsset is ICashAsset, Owned, IAsset {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
@@ -58,10 +59,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
-  
+
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
-  
+
   ///@dev AccountId to previously stored borrow index
   mapping(uint => uint) public accountBorrowIndex;
 
@@ -69,11 +70,15 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  // TODO add interest rate model 
+  // TODO add interest rate model
   constructor(IAccounts _accounts, IERC20Metadata _stableAsset) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     accounts = _accounts;
+
+    lastTimestamp = block.timestamp;
+    borrowIndex = ConvertDecimals.UNIT;
+    supplyIndex = ConvertDecimals.UNIT;
   }
 
   //////////////////////////////
@@ -88,14 +93,14 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
     whitelistedManager[_manager] = _whitelisted;
   }
-  
+
   /**
    * @notice Sets the InterestRateModel contract used for interest rate calculations
    * @dev Can only change InterestRateModel if interest has been accrued for the current timestamp
    * @param _rateModel Interest rate model address
    */
   function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
-    if (lastTimestamp != block.timestamp) revert CA_InterestAccrualStale(lastTimestamp, block.timestamp);
+    // if (lastTimestamp != block.timestamp) revert CA_InterestAccrualStale(lastTimestamp, block.timestamp);
     rateModel = _rateModel;
   }
 
@@ -109,8 +114,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external {
+    console.log("Inside deposit");
     stableAsset.safeTransferFrom(msg.sender, address(this), amount);
+    console.log("After safe transfer");
     uint amountInAccount = amount.to18Decimals(stableDecimals);
+    console.log("Amount in account", amountInAccount);
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -123,6 +131,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
+    console.log("After asset adjustment");
 
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
@@ -179,6 +188,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+    console.log("handleAdjustment CashAsset");
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
@@ -220,21 +230,49 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @dev update interest rate
+   * @notice Updates totalSupply and totalBorrow with the accrued interest since last timestamp.
+   * @dev Calculates interest accrued using the rate model and updates relevant state. A users balance
+   * will be adjusted in the hook based off these new values.
    */
   function _accrueInterest() internal {
-    if (lastTimestamp == block.timestamp) return; 
-    uint elapsedTime = block.timestamp - lastTimestamp;
+    console.log("--------- ACCRUE INTEREST ---------");
+    if (lastTimestamp == block.timestamp) return;
 
+    // Update timestamp of interest accrual
+    lastTimestamp = block.timestamp;
+
+    if (totalBorrow == 0) return;
+
+    uint elapsedTime = block.timestamp - lastTimestamp;
+    uint borrowRate = rateModel.getBorrowRate(totalSupply, totalBorrow);
+    console.log("TotalSupply", totalSupply);
+    console.log("TotalBorrow", totalBorrow);
+
+    // Calculated interest since last timestamp using compounded interest rate
+    uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
+    uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
+    console.log("Borrow interest", borrowInterestFactor);
+    console.log("Interest accrud", interestAccrued / 1e18);
+
+    // Update total supply and borrow
     uint prevBorrow = totalBorrow;
     uint prevSupply = totalSupply;
-    uint borrowRate = rateModel.getBorrowRate(prevSupply, prevBorrow);
+    totalSupply += interestAccrued;
+    totalBorrow += interestAccrued;
 
-    // Compounded interest rate
-    uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
-    uint interestAccrued = prevBorrow.multiplyDecimal(borrowInterestFactor);
-    console.log("Borrow interest", borrowInterestFactor);
-    console.log("Interest accrud", interestAccrued);
+    // Update borrow/supply index by calculating the % change of total * current borrow index
+    console.log("Prev index", borrowIndex);
+    console.log("Prev index", supplyIndex);
+    borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
+    supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex);
+    console.log("Newr index", borrowIndex);
+    console.log("Newr index", supplyIndex);
+
+    // Update last timestamp of interest accrual and emit event
+    lastTimestamp = block.timestamp;
+
+    emit InterestAccrued(interestAccrued, borrowIndex, totalSupply, totalBorrow);
+    console.log("------- -------- --------- --------");
   }
 
   /**
