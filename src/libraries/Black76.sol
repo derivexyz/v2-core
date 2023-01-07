@@ -68,13 +68,12 @@ library Black76 {
       uint totalVol = uint(b76Input.volatilityDecimal) * uint(FixedPointMathLib.sqrt(tAnnualised)) / 1e18;
       uint fwd = uint(b76Input.fwdDecimal);
       uint fwdDiscounted = fwd * uint(b76Input.discountDecimal) / 1e18;
-      if (b76Input.strikePriceDecimal == 0)
-      {
+      if (b76Input.strikePriceDecimal == 0) {
         return (fwdDiscounted, uint(0));
       }
       uint moneyness = uint(b76Input.strikePriceDecimal) * 1e18 / fwd;
       (callPrice, putPrice) = _standardPrices(moneyness, totalVol);
-      
+
       // these below cannot overflow:
       // fwdDiscounted is a product of 128 bit fwd and 64 bit discount over 1e18
       // fwdDiscounted at most takes 128 + 64 - log2(1e18) = 128 + 64 - 59 = 133 bits
