@@ -157,6 +157,11 @@ interface IAccounts is AccountStructs, IERC721 {
   event AccountManagerChanged(uint indexed accountId, address indexed oldManager, address indexed newManager);
 
   /**
+   * @dev Emitted when user invalidate set of nonces
+   */
+  event UnorderedNonceInvalidated(address owner, uint wordPos, uint mask);
+
+  /**
    * @dev Emitted during any balance change event. This includes:
    *      1. single transfer
    *      2. batch transfer
@@ -193,6 +198,6 @@ interface IAccounts is AccountStructs, IERC721 {
 
   error AC_SignatureExpired();
 
-  /// @dev nonce too low or already used
-  error AC_NonceTooLow();
+  /// @dev nonce already used.
+  error AC_InvalidNonce();
 }
