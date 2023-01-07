@@ -236,17 +236,17 @@ contract PCRM is IManager, Owned {
     returns (int margin)
   {
     // get shock amounts
-    uint spotUp;
-    uint spotDown;
+    uint128 spotUp;
+    uint128 spotDown;
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
     uint staticDiscount;
     if (marginType == MarginType.INITIAL) {
-      spotUp = spot.multiplyDecimal(shocks.spotUpInitial);
-      spotDown = spot.multiplyDecimal(shocks.spotDownInitial);
+      spotUp = spot.multiplyDecimal(shocks.spotUpInitial).toUint128();
+      spotDown = spot.multiplyDecimal(shocks.spotDownInitial).toUint128();
       staticDiscount = discounts.initialStaticDiscount;
     } else {
-      spotUp = spot.multiplyDecimal(shocks.spotUpMaintenance);
-      spotDown = spot.multiplyDecimal(shocks.spotDownMaintenance);
+      spotUp = spot.multiplyDecimal(shocks.spotUpMaintenance).toUint128();
+      spotDown = spot.multiplyDecimal(shocks.spotDownMaintenance).toUint128();
       staticDiscount = discounts.maintenanceStaticDiscount;
     }
     // todo [Josh]: add actual vol shocks
@@ -300,7 +300,7 @@ contract PCRM is IManager, Owned {
    * @param shockedVol Vol shocked up based on initial or maintenance margin params.
    * @return expiryValue Value of assets or debt of options in a given expiry.
    */
-  function _calcLiveExpiryValue(ExpiryHolding memory expiry, uint spotUp, uint spotDown, uint shockedVol)
+  function _calcLiveExpiryValue(ExpiryHolding memory expiry, uint128 spotUp, uint128 spotDown, uint128 shockedVol)
     internal
     view
     returns (int expiryValue)
@@ -308,7 +308,7 @@ contract PCRM is IManager, Owned {
     int spotUpValue;
     int spotDownValue;
 
-    uint timeToExpiry = expiry.expiry - block.timestamp;
+    uint64 timeToExpiry = (expiry.expiry - block.timestamp).toUint64();
 
     for (uint i; i < expiry.strikes.length; i++) {
       spotUpValue += _calcLiveStrikeValue(expiry.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
@@ -334,14 +334,14 @@ contract PCRM is IManager, Owned {
   function _calcLiveStrikeValue(
     StrikeHolding memory strikeHoldings,
     bool isCurrentScenarioUp,
-    uint spotUp,
-    uint spotDown,
-    uint shockedVol,
-    uint timeToExpiry
+    uint128 spotUp,
+    uint128 spotDown,
+    uint128 shockedVol,
+    uint64 timeToExpiry
   ) internal pure returns (int strikeValue) {
     // Calculate both spot up and down payoffs.
-    int markedDownCallValue = spotDown.toInt256() - strikeHoldings.strike.toInt256();
-    int markedDownPutValue = strikeHoldings.strike.toInt256() - spotUp.toInt256();
+    int markedDownCallValue = uint(spotDown).toInt256() - strikeHoldings.strike.toInt256();
+    int markedDownPutValue = strikeHoldings.strike.toInt256() - uint(spotUp).toInt256();
 
     // Add forward value.
     strikeValue += (isCurrentScenarioUp)
@@ -355,9 +355,9 @@ contract PCRM is IManager, Owned {
         Black76.Black76Inputs({
           timeToExpirySec: timeToExpiry,
           volatilityDecimal: shockedVol,
-          spotDecimal: (isCurrentScenarioUp) ? spotUp : spotDown,
-          strikePriceDecimal: strikeHoldings.strike,
-          rateDecimal: 1e16 // todo [Josh]: replace with proper RFR
+          fwdDecimal: (isCurrentScenarioUp) ? spotUp : spotDown,
+          strikePriceDecimal: strikeHoldings.strike.toUint128(),
+          discountDecimal: uint64(1e18)
         })
       );
     }
@@ -374,7 +374,7 @@ contract PCRM is IManager, Owned {
   }
 
   function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
-    int tau = timeToExpiry * 10e18 / SECONDS_PER_YEAR;
+    int tau = timeToExpiry * 1e18 / SECONDS_PER_YEAR;
     int exponent = SafeCast.toInt256(FixedPointMathLib.exp(-tau.multiplyDecimal(shocks.rfr.toInt256())));
 
     // no need for safecast as .setParams() bounds will ensure no overflow

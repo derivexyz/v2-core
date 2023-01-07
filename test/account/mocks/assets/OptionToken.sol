@@ -119,11 +119,11 @@ contract OptionToken is IAsset, Owned {
     }
 
     (uint callPrice, uint putPrice) = Black76.Black76Inputs({
-      timeToExpirySec: listing.expiry,
-      volatilityDecimal: iv,
-      spotDecimal: spotPrice,
-      strikePriceDecimal: listing.strikePrice,
-      rateDecimal: 5e16
+      timeToExpirySec: SafeCast.toUint64(listing.expiry),
+      volatilityDecimal: SafeCast.toUint128(iv),
+      fwdDecimal: SafeCast.toUint128(spotPrice),
+      strikePriceDecimal: SafeCast.toUint128(listing.strikePrice),
+      discountDecimal: SafeCast.toUint64(1e18)
     }).prices();
 
     value = (listing.isCall) ? balance.multiplyDecimal(int(callPrice)) : balance.multiplyDecimal(int(putPrice));
