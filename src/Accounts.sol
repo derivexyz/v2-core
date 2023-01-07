@@ -195,6 +195,8 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
 
   /**
    * @notice Invalidates the bits specified in mask for the bitmap at the word position
+   * @dev Copied from Uniswap's Permit2 nonce system
+   *      https://github.com/Uniswap/permit2/blob/ca6b6ff2b47afc2942f3c67b0d929ca4f0b32631/src/SignatureTransfer.sol#L130
    * @dev The wordPos is maxed at type(uint248).max
    * @param wordPos A number to index the nonceBitmap at
    * @param mask A bitmap masked against msg.sender's current bitmap at the word position
@@ -235,6 +237,8 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
 
   /**
    * @notice Checks whether a nonce is taken and sets the bit at the bit position in the bitmap at the word position
+   * @dev Copied from Uniswap's Permit2 nonce system
+   *      https://github.com/Uniswap/permit2/blob/ca6b6ff2b47afc2942f3c67b0d929ca4f0b32631/src/SignatureTransfer.sol#L150
    * @param from The address to use the nonce at
    * @param nonce The nonce to spend
    */
@@ -249,6 +253,8 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
 
   /**
    * @notice Returns the index of the bitmap and the bit position within the bitmap. Used for unordered nonces
+   * @dev Copied from Uniswap's Permit2 nonce system
+   *      https://github.com/Uniswap/permit2/blob/ca6b6ff2b47afc2942f3c67b0d929ca4f0b32631/src/SignatureTransfer.sol#L142
    * @dev The first 248 bits of the nonce value is the index of the desired bitmap
    * @dev The last 8 bits of the nonce value is the position of the bit in the bitmap
    *
