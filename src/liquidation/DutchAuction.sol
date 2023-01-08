@@ -213,7 +213,7 @@ contract DutchAuction is IDutchAuction, Owned {
     return _getCurrentBidPrice(accountId);
   }
 
-  /*
+  /**
     * @notice gets the parameters for the dutch auction
     * @dev returns the parameters for the dutch auction
     * @return DutchAuctionParameters the parameters for the dutch auction
@@ -265,7 +265,6 @@ contract DutchAuction is IDutchAuction, Owned {
         min += SignedMath.min(numPuts, 0) * int64(strikes[j].strike);
       }
     }
-    return (max, min);
   }
 
   /**

@@ -52,7 +52,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   function getGroupedHoldings(uint accountId) external view virtual returns (ExpiryHolding[] memory expiryHoldings) {
     // TODO: filler code
-    if (accountId > 2) {
+    if (accountId > 1) {
       ExpiryHolding[] memory expiryHoldings = new ExpiryHolding[](1);
       StrikeHolding[] memory strikeHoldings = new StrikeHolding[](4);
 

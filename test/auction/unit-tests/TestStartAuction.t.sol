@@ -191,4 +191,19 @@ contract UNIT_TestStartAuction is Test {
     vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
+
+  // test account with accoiunt id greater than 2
+  function testStartAuctionWithAccountGreaterThan2() public {
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc + 1);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc + 1);
+    assertEq(auction.auction.accountId, aliceAcc + 1);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+  }
 }
