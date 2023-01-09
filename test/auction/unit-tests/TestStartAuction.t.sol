@@ -204,7 +204,7 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
-  function testFailingInsolventAuctionNotInsolvent() public {
+  function testStartAuctionFailingOnGoingAuction() public {
     // wrong mark as insolvent not called by risk manager
     vm.startPrank(address(manager));
 
@@ -212,8 +212,8 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.startAuction(aliceAcc);
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, 0);
-    vm.expectRevert(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector);
-    dutchAuction.markAsInsolventLiquidation(aliceAcc);
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
+    dutchAuction.startAuction(aliceAcc);
 
     assertEq(dutchAuction.getAuctionDetails(aliceAcc).insolvent, false);
   }
@@ -233,8 +233,12 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
   }
 
-  function testStartAuctionFailingOnGoingAuction() public {
+  function testFailingInsolventAuctionNotInsolvent() public {
+
     vm.startPrank(address(manager));
+
+    // give assets
+    manager.giveAssets(aliceAcc);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -245,10 +249,11 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
+    
+    assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
     // start an auction on Alice's account
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
-    dutchAuction.startAuction(aliceAcc);
+    vm.expectRevert("DA_AuctionNotEnteredInsolvency");
+    dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
   function testGetMaxProportion() public {
