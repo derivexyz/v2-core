@@ -102,4 +102,6 @@ contract MockIPCRM is IPCRM, IManager {
   function giveAssets(uint accountId) external {
     accHasAssets[accountId] = true;
   }
+
+  function test() public {}
 }
