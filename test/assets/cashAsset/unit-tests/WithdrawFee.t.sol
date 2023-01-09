@@ -17,20 +17,20 @@ contract UNIT_CashAssetWithdrawFee is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
-  Accounts account;
+  Accounts accounts;
   address liquidationModule = address(0xf00d);
 
   uint accountId;
   uint depositedAmount;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(account));
+    manager = new MockManager(address(accounts));
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, usdc, liquidationModule);
+    cashAsset = new CashAsset(accounts, usdc, liquidationModule);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -38,9 +38,11 @@ contract UNIT_CashAssetWithdrawFee is Test {
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(cashAsset), type(uint).max);
 
-    accountId = account.createAccount(address(this), manager);
+    accountId = accounts.createAccount(address(this), manager);
 
     cashAsset.deposit(accountId, depositedAmount);
+
+    assertEq(cashAsset.getCashToStableExchangeRate(), 1e18);
   }
 
   function testCannotTriggerInsolvencyFromAnyone() public {
@@ -56,7 +58,26 @@ contract UNIT_CashAssetWithdrawFee is Test {
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
 
     // now 1 cash asset = 0.5 stable (USDC)
-    assertEq(cashAsset.toStableExchangeRate(), 0.5e18);
+    assertEq(cashAsset.getCashToStableExchangeRate(), 0.5e18);
+  }
+
+  function testFeeIsAppliedToWithdrawAfterEnables() public {
+    vm.startPrank(liquidationModule);
+    // loss is 25% of the pool
+    // meaning 1 cash is worth only 0.8% USDC after solcializing the loss
+    cashAsset.reportLoss(depositedAmount / 4, accountId);
+    vm.stopPrank();
+
+    assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
+    assertEq(cashAsset.getCashToStableExchangeRate(), 0.8e18);
+
+    uint amountUSDCToWithdraw = 100e18;
+    int cashBalanceBefore = accounts.getBalance(accountId, cashAsset, 0);
+    cashAsset.withdraw(accountId, amountUSDCToWithdraw, address(this));
+    int cashBalanceAfter = accounts.getBalance(accountId, cashAsset, 0);
+
+    // needs to burn 125 cash to get 100 USDC outf
+    assertEq(cashBalanceBefore - cashBalanceAfter, 125e18);
   }
 
   function testCanDisableWithdrawFeeAfterSystemRecovers() public {

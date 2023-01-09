@@ -64,9 +64,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ///     In which case we turn on the withdraw fee to prevent bankrun
   bool public temporaryWithdrawFeeEnabled;
 
-  ///@dev If withdraw fee is enabled, this rate will be applied to convert cash to stable asset amount
-  uint64 public toStableExchangeRate = 1e18;
-
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
 
@@ -131,8 +128,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function withdraw(uint accountId, uint amount, address recipient) external {
     if (msg.sender != accounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
 
-    stableAsset.safeTransfer(recipient, amount);
-
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
     uint cashAmount = amount.to18DecimalsRoundUp(stableDecimals);
@@ -140,9 +135,13 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     // if the cash asset is insolvent,
     // each cash balance can only take out <100% amount of stable asset
     if (temporaryWithdrawFeeEnabled) {
-      // if toStableExchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
-      cashAmount = cashAmount.divideDecimalRound(toStableExchangeRate);
+      // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
+      uint exchangeRate = _getExchangeRate();
+      cashAmount = cashAmount.divideDecimalRound(exchangeRate);
     }
+
+    // tranfer the asset out after potentially needing to calculate exchange rate
+    stableAsset.safeTransfer(recipient, amount);
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -164,7 +163,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     uint exchangeRate = _getExchangeRate();
     if (exchangeRate >= 1e18 && temporaryWithdrawFeeEnabled) {
       temporaryWithdrawFeeEnabled = false;
-      toStableExchangeRate = 1e18;
     }
   }
 
@@ -242,8 +240,15 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     uint exchangeRate = _getExchangeRate();
     if (exchangeRate < 1e18) {
       temporaryWithdrawFeeEnabled = true;
-      toStableExchangeRate = exchangeRate.toUint64();
     }
+  }
+
+  /**
+   * @dev Returns the exchange rate from cash asset to stable asset
+   *      this should always be higher than 1, unless we have an insolvency
+   */
+  function getCashToStableExchangeRate() external view returns (uint) {
+    return _getExchangeRate();
   }
 
   ////////////////////////////
