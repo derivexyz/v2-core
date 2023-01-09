@@ -140,7 +140,7 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_NotRiskManager();
     }
 
-    if (_getCurrentBidPrice(accountId) != 0) {
+    if (_getCurrentBidPrice(accountId) > 0) {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
 
