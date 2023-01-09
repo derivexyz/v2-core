@@ -178,18 +178,32 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.insolvent, true);
   }
 
-  function testFailingInsolventAuction() public {
+  function testFailingInsolventAuctionNotRiskManager() public {
     // wrong mark as insolvent not called by risk manager
     vm.startPrank(address(manager));
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
-
+    vm.stopPrank();
     // fastforward change address to 0xdead and then catch revert after calling mark insolvent
     vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
     vm.startPrank(address(0xdead));
-    vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
+    vm.expectRevert("DA_NotRiskManager");
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
+  }
+
+  function testFailingInsolventAuctionNotInsolvent() public {
+    // wrong mark as insolvent not called by risk manager
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertGt(currentBidPrice, 0);
+    vm.expectRevert(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector);
+    dutchAuction.markAsInsolventLiquidation(aliceAcc);
+
+    assertEq(dutchAuction.getAuctionDetails(aliceAcc).insolvent, false);
   }
 
   // test account with accoiunt id greater than 2
@@ -206,4 +220,44 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
   }
+
+  function testStartAuctionFailingOnGoingAuction() public {
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // start an auction on Alice's account
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
+    dutchAuction.startAuction(aliceAcc);
+  }
+
+  // function testGetMaxProportion() public {
+  //   vm.startPrank(address(manager));
+
+  //   // start an auction on Alice's account
+  //   dutchAuction.startAuction(aliceAcc);
+
+  //   // testing that the view returns the correct auction.
+  //   DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+  //   assertEq(auction.auction.accountId, aliceAcc);
+  //   assertEq(auction.ongoing, true);
+  //   assertEq(auction.startTime, block.timestamp);
+  //   assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+  //   // getting the current bid price
+  //   int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+  //   assertGt(currentBidPrice, 0);
+
+  //   // getting the max proportion
+  //   uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+  //   assertEq(maxProportion, 100);
+  // }
 }
