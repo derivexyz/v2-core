@@ -94,8 +94,7 @@ contract MockIPCRM is IPCRM, IManager {
     // TODO: filler code
   }
 
-
-  function depositMargin(uint accountId, int amount) external returns(int) {
+  function depositMargin(uint accountId, int amount) external returns (int) {
     accMargin[accountId] += amount;
     return accMargin[accountId];
   }

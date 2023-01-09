@@ -30,7 +30,6 @@ contract UNIT_TestStartAuction is Test {
 
   uint UNIT = 1e18;
 
-
   uint tokenSubId = 1000;
 
   function setUp() public {
@@ -65,11 +64,18 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction = new DutchAuction(address(manager));
 
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({stepInterval: 2 * UNIT, lengthOfAuction: 200 * UNIT, securityModule: address(1)})
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2 * UNIT,
+        lengthOfAuction: 200 * UNIT,
+        securityModule: address(1)
+      })
     );
 
-    dutchAuctionParameters =
-      DutchAuction.DutchAuctionParameters({stepInterval: 2 * UNIT, lengthOfAuction: 200 * UNIT, securityModule: address(1)});
+    dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
+      stepInterval: 2 * UNIT,
+      lengthOfAuction: 200 * UNIT,
+      securityModule: address(1)
+    });
   }
 
   function mintAndDeposit(
@@ -111,7 +117,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-    
+
     uint spot = manager.getSpot();
     (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
     assertEq(auction.auction.lowerBound, lowerBound);
@@ -269,7 +275,6 @@ contract UNIT_TestStartAuction is Test {
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
   }
-
 
   function testGetMaxProportionWithAssets() public {
     vm.startPrank(address(manager));

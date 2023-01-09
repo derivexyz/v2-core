@@ -7,9 +7,8 @@ import "forge-std/console2.sol";
 import "forge-std/console.sol";
 
 contract MockManager is IManager {
-
   uint UNIT = 1e18;
-  
+
   IAccounts account;
 
   bool revertHandleManager;

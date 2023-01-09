@@ -26,8 +26,8 @@ import "forge-std/Test.sol";
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
 contract DutchAuction is IDutchAuction, Owned {
-  
   using DecimalMath for uint;
+
   uint UNIT = 1e18;
 
   struct AuctionDetails {
@@ -66,7 +66,7 @@ contract DutchAuction is IDutchAuction, Owned {
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint => Auction) public auctions;
 
-  /// @dev accountId => auctionOwner 
+  /// @dev accountId => auctionOwner
   mapping(uint => address) public auctionOwner;
 
   /// @dev The risk manager that is the parent of the dutch auction contract
@@ -189,7 +189,7 @@ contract DutchAuction is IDutchAuction, Owned {
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
     // denominator could be negative here.
-    int fMax = initialMargin / (initialMargin - currentBidPrice) * 1e18; // needs to return big number, how to do this with ints. 
+    int fMax = initialMargin / (initialMargin - currentBidPrice) * 1e18; // needs to return big number, how to do this with ints.
     if (fMax > 1e18) {
       return UNIT;
     } else if (currentBidPrice <= 0) {
