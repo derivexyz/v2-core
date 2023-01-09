@@ -28,6 +28,9 @@ contract UNIT_TestStartAuction is Test {
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
+  uint UNIT = 1e18;
+
+
   uint tokenSubId = 1000;
 
   function setUp() public {
@@ -62,11 +65,11 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction = new DutchAuction(address(manager));
 
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
+      DutchAuction.DutchAuctionParameters({stepInterval: 2 * UNIT, lengthOfAuction: 200 * UNIT, securityModule: address(1)})
     );
 
     dutchAuctionParameters =
-      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)});
+      DutchAuction.DutchAuctionParameters({stepInterval: 2 * UNIT, lengthOfAuction: 200 * UNIT, securityModule: address(1)});
   }
 
   function mintAndDeposit(
@@ -108,7 +111,9 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, 1000);
+    
+    uint spot = manager.getSpot();
+    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
 
@@ -141,7 +146,8 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
     // TODO: calc v_min and v_max
-    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, 1000);
+    uint spot = manager.getSpot();
+    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
   }
@@ -199,7 +205,7 @@ contract UNIT_TestStartAuction is Test {
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertGt(currentBidPrice, 0);
+    assertEq(currentBidPrice, 0);
     vm.expectRevert(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector);
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
 
@@ -239,25 +245,57 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.startAuction(aliceAcc);
   }
 
-  // function testGetMaxProportion() public {
-  //   vm.startPrank(address(manager));
+  function testGetMaxProportion() public {
+    vm.startPrank(address(manager));
 
-  //   // start an auction on Alice's account
-  //   dutchAuction.startAuction(aliceAcc);
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
 
-  //   // testing that the view returns the correct auction.
-  //   DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-  //   assertEq(auction.auction.accountId, aliceAcc);
-  //   assertEq(auction.ongoing, true);
-  //   assertEq(auction.startTime, block.timestamp);
-  //   assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
-  //   // getting the current bid price
-  //   int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-  //   assertGt(currentBidPrice, 0);
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, 0);
 
-  //   // getting the max proportion
-  //   uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-  //   assertEq(maxProportion, 100);
-  // }
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, 1000 * 1e18);
+
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
+  }
+
+
+  function testGetMaxProportionWithAssets() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, 1000 * 1e18);
+
+    // deposit assets to the account
+    manager.giveAssets(aliceAcc);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertGt(currentBidPrice, 0);
+
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
+  }
 }

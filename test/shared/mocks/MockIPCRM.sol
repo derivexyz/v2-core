@@ -9,6 +9,9 @@ import "../../../src/interfaces/IAccounts.sol";
 contract MockIPCRM is IPCRM, IManager {
   address account;
 
+  mapping(uint => int) public accMargin;
+  mapping(uint => bool) public accHasAssets;
+
   constructor(address _account) {
     account = _account;
   }
@@ -42,7 +45,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   function getInitialMargin(uint accountId) external virtual returns (int) {
     // TODO: filler code
-    return 0;
+    return accMargin[accountId];
   }
 
   function getMaintenanceMargin(uint accountId) external returns (uint) {
@@ -52,7 +55,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   function getGroupedHoldings(uint accountId) external view virtual returns (ExpiryHolding[] memory expiryHoldings) {
     // TODO: filler code
-    if (accountId > 1) {
+    if (accHasAssets[accountId]) {
       ExpiryHolding[] memory expiryHoldings = new ExpiryHolding[](1);
       StrikeHolding[] memory strikeHoldings = new StrikeHolding[](4);
 
@@ -82,11 +85,22 @@ contract MockIPCRM is IPCRM, IManager {
   ) external virtual {
     // TODO: filler code
   }
+
   /**
    * @notice triggered when a user want to change to a new manager
    * @dev    a manager should only allow migrating to another manager it trusts.
    */
   function handleManagerChange(uint accountId, IManager newManager) external {
     // TODO: filler code
+  }
+
+
+  function depositMargin(uint accountId, int amount) external returns(int) {
+    accMargin[accountId] += amount;
+    return accMargin[accountId];
+  }
+
+  function giveAssets(uint accountId) external {
+    accHasAssets[accountId] = true;
   }
 }

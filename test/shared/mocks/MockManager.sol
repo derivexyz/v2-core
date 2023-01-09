@@ -7,6 +7,9 @@ import "forge-std/console2.sol";
 import "forge-std/console.sol";
 
 contract MockManager is IManager {
+
+  uint UNIT = 1e18;
+  
   IAccounts account;
 
   bool revertHandleManager;
@@ -59,6 +62,6 @@ contract MockManager is IManager {
 
   function getSpot() external view returns (uint) {
     console.log("MockManager.getSpot() called");
-    return 1000; // hardcoded value not relevant to test
+    return 1000 * UNIT; // hardcoded value not relevant to test
   }
 }
