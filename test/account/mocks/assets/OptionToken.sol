@@ -22,6 +22,7 @@ contract OptionToken is IAsset, Owned {
   using SignedDecimalMath for int;
   using Black76 for Black76.Black76Inputs;
   using DecimalMath for uint;
+  using SafeCast for uint;
 
   struct Listing {
     uint strikePrice;
@@ -119,11 +120,11 @@ contract OptionToken is IAsset, Owned {
     }
 
     (uint callPrice, uint putPrice) = Black76.Black76Inputs({
-      timeToExpirySec: SafeCast.toUint64(listing.expiry),
-      volatilityDecimal: SafeCast.toUint128(iv),
-      fwdDecimal: SafeCast.toUint128(spotPrice),
-      strikePriceDecimal: SafeCast.toUint128(listing.strikePrice),
-      discountDecimal: SafeCast.toUint64(1e18)
+      timeToExpirySec: listing.expiry.toUint64(),
+      volatility: iv.toUint128(),
+      fwdPrice: spotPrice.toUint128(),
+      strikePrice: listing.strikePrice.toUint128(),
+      discount: uint64(1e18)
     }).prices();
 
     value = (listing.isCall) ? balance.multiplyDecimal(int(callPrice)) : balance.multiplyDecimal(int(putPrice));

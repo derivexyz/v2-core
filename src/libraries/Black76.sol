@@ -14,25 +14,23 @@ import "./FixedPointMathLib.sol";
 library Black76 {
   using DecimalMath for uint;
   using SignedDecimalMath for int;
-
-  /**
-   * @param timeToExpirySec Number of seconds to the expiry of the option
-   * @param volatilityDecimal Implied volatility over the period til expiry as a percentage
-   * @param fwdDecimal The forward price of the base asset
-   * @param strikePriceDecimal The strikePrice price of the option
-   * @param discountDecimal The percentage risk free rate
-   */
+  using FixedPointMathLib for uint;
+  using FixedPointMathLib for int;
 
   struct Black76Inputs {
+    // Number of seconds to the expiry of the option
     uint64 timeToExpirySec;
-    uint128 volatilityDecimal;
-    uint128 fwdDecimal;
-    uint128 strikePriceDecimal;
-    uint64 discountDecimal;
+    // Implied volatility over the period til expiry as a percentage
+    uint128 volatility;
+    // The forward price of the base asset
+    uint128 fwdPrice;
+    // The strikePrice price of the option
+    uint128 strikePrice;
+    // The discount factor
+    uint64 discount;
   }
 
-  uint private constant SECONDS_PER_YEAR = 31536000;
-  uint private constant SQRT_TWOPI = 2506628274631000502;
+  uint private constant SECONDS_PER_YEAR = 365 days;
 
   /**
    * @dev max sigma * sqrt(tau), above this standard call price converges to 1.0
@@ -58,20 +56,20 @@ library Black76 {
   /**
    * @notice Returns call/put prices for options with given parameters.
    * @param b76Input Input to Black76 pricing.
-   * @return callPrice call price for given Black76 parameters (18-decimal precision)
-   * @return putPrice put price for given Black76 parameters (18-decimal precision)
+   * @return callPrice Call price for given Black76 parameters (18-decimal precision).
+   * @return putPrice Put price for given Black76 parameters (18-decimal precision).
    */
   function prices(Black76Inputs memory b76Input) public pure returns (uint callPrice, uint putPrice) {
     unchecked {
       uint tAnnualised = _annualise(b76Input.timeToExpirySec);
       // products of <128 bit numbers, cannot overflow here when caseted to 256
-      uint totalVol = uint(b76Input.volatilityDecimal) * uint(FixedPointMathLib.sqrt(tAnnualised)) / 1e18;
-      uint fwd = uint(b76Input.fwdDecimal);
-      uint fwdDiscounted = fwd * uint(b76Input.discountDecimal) / 1e18;
-      if (b76Input.strikePriceDecimal == 0) {
+      uint totalVol = uint(b76Input.volatility) * uint(FixedPointMathLib.sqrt(tAnnualised)) / 1e18;
+      uint fwd = uint(b76Input.fwdPrice);
+      uint fwdDiscounted = fwd * uint(b76Input.discount) / 1e18;
+      if (b76Input.strikePrice == 0) {
         return (fwdDiscounted, uint(0));
       }
-      uint moneyness = uint(b76Input.strikePriceDecimal) * 1e18 / fwd;
+      uint moneyness = uint(b76Input.strikePrice) * 1e18 / fwd;
       (callPrice, putPrice) = _standardPrices(moneyness, totalVol);
 
       // these below cannot overflow:
@@ -86,12 +84,17 @@ library Black76 {
 
       // cap the theo prices to resolve any potential rounding errors with super small/big spots/strikes
       callPrice = callPrice > fwdDiscounted ? fwdDiscounted : callPrice;
-      uint strikeDiscounted = uint(b76Input.strikePriceDecimal) * uint(b76Input.discountDecimal) / 1e18;
+      uint strikeDiscounted = uint(b76Input.strikePrice) * uint(b76Input.discount) / 1e18;
       putPrice = putPrice > strikeDiscounted ? strikeDiscounted : putPrice;
     }
   }
 
+  ///////////////////////////////////////
+  // Option Pricing internal functions //
+  ///////////////////////////////////////
+
   /**
+   * @notice Calculates "standard" call price (i.e. with forward = discount = 1)
    * @dev MAX_TOTAL_VOL is checked and 1.0 is returned if it is exceeded (see MAX_TOTAL_VOL)
    *      As for moneyness = (K/F), no checks are needed as long as K and F are proper uint128
    *      Proof:
@@ -102,14 +105,14 @@ library Black76 {
    *      N(d2) is at most 1e18, so the product is at most log2((2**128-1) * 1e18 * 1e18) = 248 bits
    * @param moneyness K/F decimal ratio (strike over forward)
    * @param totalVol sigma * sqrt(time to expiry)
-   * @return stdCallPrice standard call price (i.e. assuming forward F = 1 and without discounting)
+   * @return stdCallPrice Call price, standardized to forward = discount = 1.0
    */
   function _standardCall(uint moneyness, uint totalVol) internal pure returns (uint stdCallPrice) {
     unchecked {
       if (totalVol >= MAX_TOTAL_VOL) return 1e18;
       totalVol = (totalVol == 0) ? 1 : totalVol;
       moneyness = (moneyness == 0) ? 1 : moneyness;
-      int k = FixedPointMathLib.ln(int(moneyness));
+      int k = int(moneyness).ln();
       int halfV2t = int((totalVol >> 1) * totalVol / 1e18);
       int d1 = (halfV2t - k) * 1e18 / int(totalVol);
       int d2 = d1 - int(totalVol);
@@ -121,9 +124,10 @@ library Black76 {
   }
 
   /**
+   * @notice Calculates "standard" put price (i.e. with forward = discount = 1) from call price & moneyness
    * @param moneyness K/F decimal ratio (strike over forward)
-   * @param stdCallPrice standard call price
-   * @return stdPutPrice standard put price (i.e. assuming forward F = 1 and without discounting)
+   * @param stdCallPrice Call price, standardized to forward = discount = 1.0
+   * @return stdPutPrice Put price, standardized to forward = discount = 1.0
    */
   function _standardPutFromCall(uint moneyness, uint stdCallPrice) internal pure returns (uint stdPutPrice) {
     unchecked {
@@ -133,10 +137,11 @@ library Black76 {
   }
 
   /**
+   * @notice Calculates "standard" call/put prices (i.e. with forward = discount = 1)
    * @param moneyness K/F decimal ratio (strike over forward)
    * @param totalVol sigma * sqrt(time to expiry)
-   * @return stdCallPrice standard call price (i.e. assuming forward F = 1 and without discounting)
-   * @return stdPutPrice standard put price (i.e. assuming forward F = 1 and without discounting)
+   * @return stdCallPrice Call price, standardized to forward = discount = 1.0
+   * @return stdPutPrice Put price, standardized to forward = discount = 1.0
    */
   function _standardPrices(uint moneyness, uint totalVol) internal pure returns (uint stdCallPrice, uint stdPutPrice) {
     unchecked {
@@ -146,9 +151,9 @@ library Black76 {
   }
 
   /**
-   * @dev Converts an integer number of seconds to a fractional number of years.
-   * @param secs # of seconds (usually from block.timestamp till option expiry)
-   * @return yearFraction an 18-decimal year fraction
+   * @notice Converts an integer number of seconds to a fractional number of years.
+   * @param secs # of seconds (usually from block.timestamp till option expiry).
+   * @return yearFraction An 18-decimal year fraction.
    */
   function _annualise(uint64 secs) internal pure returns (uint yearFraction) {
     unchecked {

@@ -354,10 +354,10 @@ contract PCRM is IManager, Owned {
       (callValue, putValue) = Black76.prices(
         Black76.Black76Inputs({
           timeToExpirySec: timeToExpiry,
-          volatilityDecimal: shockedVol,
-          fwdDecimal: (isCurrentScenarioUp) ? spotUp : spotDown,
-          strikePriceDecimal: strikeHoldings.strike.toUint128(),
-          discountDecimal: uint64(1e18)
+          volatility: shockedVol,
+          fwdPrice: (isCurrentScenarioUp) ? spotUp : spotDown,
+          strikePrice: strikeHoldings.strike.toUint128(),
+          discount: uint64(1e18)
         })
       );
     }
