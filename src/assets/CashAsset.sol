@@ -32,6 +32,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ///@dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
 
+  ///@dev The address of liqudation module, which can trigger call of insolvency
+  address public immutable liquidationModule;
+
   ///@dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
 
@@ -71,10 +74,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  constructor(IAccounts _accounts, IERC20Metadata _stableAsset) {
+  constructor(IAccounts _accounts, IERC20Metadata _stableAsset, address _liquidationModule) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     accounts = _accounts;
+    liquidationModule = _liquidationModule;
   }
 
   //////////////////////////////
@@ -132,6 +136,13 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
     uint cashAmount = amount.to18DecimalsRoundUp(stableDecimals);
+
+    // if the cash asset is insolvent,
+    // each cash balance can only take out <100% amount of stable asset
+    if (temporaryWithdrawFeeEnabled) {
+      // if toStableExchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
+      cashAmount = cashAmount.divideDecimalRound(toStableExchangeRate);
+    }
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -213,7 +224,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev
    * @param lossAmountInCash total amount of cash loss
    */
-  function reportLoss(uint lossAmountInCash, uint accountToReceive) external onlyManager {
+  function reportLoss(uint lossAmountInCash, uint accountToReceive) external onlyLiquidation {
     // mint this amount in accountToReceive the account
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -223,7 +234,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
         amount: lossAmountInCash.toInt256(),
         assetData: bytes32(0)
       }),
-      false, // do not trigger callback
+      true, // trigger the hook to update total supply and balance
       ""
     );
 
@@ -303,8 +314,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     _;
   }
 
-  modifier onlyManager() {
-    if (!whitelistedManager[msg.sender]) revert CA_NotManager();
+  ///@dev revert if caller is not liquidation module
+  modifier onlyLiquidation() {
+    if (msg.sender != liquidationModule) revert CA_NotLiquidationModule();
     _;
   }
 }
