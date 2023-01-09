@@ -210,11 +210,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   /**
    * @notice manager can report loss when there is insolvent triggered by liquidation
-   * @dev 
+   * @dev
    * @param lossAmountInCash total amount of cash loss
    */
   function reportLoss(uint lossAmountInCash, uint accountToReceive) external onlyManager {
-
     // mint this amount in accountToReceive the account
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -262,7 +261,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev get exchange rate from cash asset to stable coin amount
    * @dev this value should be 1 unless there's an insolvency reported by manager
    */
-  function _getExchangeRate() internal view returns (uint256 exchangeRate) {
+  function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply - totalBorrow;
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimalRound(totalCash);
