@@ -26,7 +26,9 @@ contract SpotJumpOracle {
     // sec until value is considered stale
     uint32 staleLimit;
     // sec to reference spot used to calculate jump
-    uint32 secToReference;
+    uint32 minSecToReference;
+    // sec to reference spot used to calculate jump
+    uint32 maxSecToReference;
     // last timestamp of update
     uint32 lastUpdatedAt;
   }
@@ -50,6 +52,8 @@ contract SpotJumpOracle {
     // - querying from Chainlink using roundId?
     // - or using previous liveSpots
     // - may need to use .getSpotAndUpdatedAt to get exact time of update
+    // - probably looking at about a 1hr update time
+    // - should add some sort of spot staleness param too
   }
 
   function getMaxJump() external view returns (uint32 jump) {
