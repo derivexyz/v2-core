@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/DecimalMath.sol";
 import "synthetix/Owned.sol";
-import "src/libraries/BlackScholesV2.sol";
+import "src/libraries/Black76.sol";
 import "forge-std/console2.sol";
 
 import "src/Accounts.sol";
@@ -20,8 +20,9 @@ import "../feeds/PriceFeeds.sol";
 contract OptionToken is IAsset, Owned {
   using IntLib for int;
   using SignedDecimalMath for int;
-  using BlackScholesV2 for BlackScholesV2.BlackScholesInputs;
+  using Black76 for Black76.Black76Inputs;
   using DecimalMath for uint;
+  using SafeCast for uint;
 
   struct Listing {
     uint strikePrice;
@@ -118,12 +119,12 @@ contract OptionToken is IAsset, Owned {
       return _getSettlementValue(listing, balance, settlementDetails.price != 0 ? settlementDetails.price : spotPrice);
     }
 
-    (uint callPrice, uint putPrice) = BlackScholesV2.BlackScholesInputs({
-      timeToExpirySec: listing.expiry,
-      volatilityDecimal: iv,
-      spotDecimal: spotPrice,
-      strikePriceDecimal: listing.strikePrice,
-      rateDecimal: 5e16
+    (uint callPrice, uint putPrice) = Black76.Black76Inputs({
+      timeToExpirySec: listing.expiry.toUint64(),
+      volatility: iv.toUint128(),
+      fwdPrice: spotPrice.toUint128(),
+      strikePrice: listing.strikePrice.toUint128(),
+      discount: uint64(1e18)
     }).prices();
 
     value = (listing.isCall) ? balance.multiplyDecimal(int(callPrice)) : balance.multiplyDecimal(int(putPrice));
