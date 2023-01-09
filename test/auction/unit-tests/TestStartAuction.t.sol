@@ -234,7 +234,6 @@ contract UNIT_TestStartAuction is Test {
   }
 
   function testFailingInsolventAuctionNotInsolvent() public {
-
     vm.startPrank(address(manager));
 
     // give assets
@@ -249,7 +248,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-    
+
     assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
     // start an auction on Alice's account
     vm.expectRevert("DA_AuctionNotEnteredInsolvency");
