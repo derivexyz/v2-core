@@ -156,13 +156,28 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the bytesId that corresponds to a particular auction
    * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
    */
-  function bid(uint accountId, int amount) external returns (uint) {
+  function bid(uint accountId, uint amount) external returns (uint) {
     // need to check if the timelimit for the auction has been ecplised
-    // the position is thus insolvent otherwise
+    if(block.timestamp < auctions[accountId].endTime) {
+      revert DA_AuctionEnded(accountId);
+    }
+  
+    if (auctions[accountId].ongoing == false) {
+      revert DA_AuctionNotOngoing(accountId);
+    }
+
     // need to check if this amount would put the portfolio over is matience marign
     // if so then revert
 
+    // get f_max
+    uint f_max = _getMaxProportion(accountId);
+
+    if (amount > f_max) {
+      amount = f_max;
+    }
     // send/ take money from the user if depending on the current priec
+
+
 
     // if the user has less margin then the amount they are bidding then get it from the security module
 
@@ -184,7 +199,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function getMaxProportion(uint accountId) external returns (uint) {
+  function _getMaxProportion(uint accountId) internal returns (uint) {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
@@ -197,6 +212,15 @@ contract DutchAuction is IDutchAuction, Owned {
     } else {
       return SafeCast.toUint256(fMax);
     }
+  }
+
+  /**
+   * @notice External view to get the maximum size of the portfolio that could be bought at the current price
+   * @param accountId the id of the account being liquidated
+   * @return uint the proportion of the portfolio that could be bought at the current price
+   */
+  function getMaxProportion(uint accountId) external returns(uint) {
+    return _getMaxProportion(accountId);
   }
 
   /**

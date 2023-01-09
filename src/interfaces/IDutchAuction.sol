@@ -37,4 +37,11 @@ interface IDutchAuction {
 
   /// @dev emmited when a risk manager tries to start an auction that has already been started
   error DA_AuctionAlreadyStarted(uint accountId);
+
+  /// @dev emmited when a bid is submitted on a closed/ended auction
+  error DA_AuctionEnded(uint accountId);
+
+  /// @dev emmmited when an auction is settled
+  error DA_AuctionNotOngoing(uint accountId);
+
 }
