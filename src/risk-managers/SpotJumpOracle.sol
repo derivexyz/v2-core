@@ -17,12 +17,6 @@ contract SpotJumpOracle {
   using DecimalMath for uint;
   using IntLib for int;
 
-  ISpotFeeds public spotFeeds;
-  uint public feedId;
-
-  uint32[16] jumps;
-  JumpParams public params;
-
   struct JumpParams {
     // 500 bps would imply the first bucket is 5% -> 5% + width 
     uint32 start;
@@ -42,6 +36,28 @@ contract SpotJumpOracle {
     uint256 referencePrice;
   }
 
+  ///////////////
+  // Variables //
+  ///////////////
+
+  /// @dev address of ISpotFeed for price
+  ISpotFeeds public spotFeeds;
+  /// @dev id of feed used when querying price from spotFeeds
+  uint public feedId;
+  
+  /// @dev each slot stores timestamp at which jump was stored
+  uint32[16] public jumps;
+  /// @dev stores all parameters required to store the jump
+  JumpParams public params;
+
+  ////////////
+  // Events //
+  ////////////
+
+  ////////////////////////
+  //    Constructor     //
+  ////////////////////////
+
   constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps) {
     spotFeeds = ISpotFeeds(_spotFeeds);
     feedId = _feedId;
@@ -54,7 +70,16 @@ contract SpotJumpOracle {
     }
   }
 
-  function recordJump() external {
+  //////////////
+  // External //
+  //////////////
+
+  /**
+   * @notice Updates the jump buckets if livePrice deviates far enough from the referencePrice.
+   * @dev The time gap between the livePrice and referencePrice is always < params.secToReferenceStale.
+          However, this means the time gap is not always.
+   */
+  function updateJumps() external {
     JumpParams memory memParams = params;
     uint32 currentTime = uint32(block.timestamp);
     uint liveSpot = spotFeeds.getSpot(feedId);
@@ -74,23 +99,45 @@ contract SpotJumpOracle {
     params = memParams;
   }
 
+  /**
+   * @notice Returns the max jump that is not stale.
+   *         If there is no jump that is > params.start, 0 is returned.
+   * @return jump The largest jump amount denominated in basis points.
+   */
   function getMaxJump() external view returns (uint32 jump) {
     JumpParams memory memParams = params;
     uint32 currentTime = uint32(block.timestamp);
+
+    // revert if oracle has not been updated within 'secToJumpStale'
     if (currentTime - memParams.jumpUpdatedAt > memParams.secToJumpStale) {
       revert SJO_OracleIsStale(currentTime, memParams.jumpUpdatedAt, memParams.secToJumpStale);
     }
 
+    // traverse jumps in descending order, finding the first non-stale jump
     uint32[16] memory memJumps = jumps;
     uint length = memJumps.length;
     uint32 i = uint32(length) - 1;
-    while (i != 0 || jump != 0) {
-      if (memJumps[i] > currentTime - memParams.duration) {
-        jump = memParams.width * (i + 1);
+    while (i > 0 && jump == 0) {
+      if (memJumps[i] + memParams.duration > currentTime) {
+        // if jump value not stale, return
+        jump = memParams.start + memParams.width * (i + 1);
       }
       i--;
-    } 
+    }
   }
+
+
+  /////////////
+  // Helpers //
+  /////////////
+
+  /**
+   * @notice Finds the percentage difference between two prices and converts to basis points.
+   * @dev Values are always rounded down.
+   * @param liveSpot Current price taken from spotFeeds
+   * @param referencePrice Price recoreded in previous updates but < params.secToReferenceStale
+   * @return jump Difference between two prices in basis points
+   */
 
   function _calcSpotJump(uint liveSpot, uint referencePrice) internal pure returns (uint32 jump) {
     // get percent jump relative to reference
@@ -101,6 +148,13 @@ contract SpotJumpOracle {
     jump = (jumpDecimal.multiplyDecimal(100) / DecimalMath.UNIT).toUint32();
   }
 
+  /**
+   * @notice Stores the timestamp at which jump was recorded if jump > params.start.
+   * @param start Jump amount of the first bucket in basis points
+   * @param width Size of bucket in basis points
+   * @param jump Current price jump in basis points
+   * @param timestamp Timestamp at which jump was calculated
+   */
   function _maybeStoreJump(
     uint32 start, 
     uint32 width, 
@@ -119,6 +173,10 @@ contract SpotJumpOracle {
       jumps[(jump - start) / width] = timestamp;
     }
   }
+
+  ////////////
+  // Errors //
+  ////////////
 
   error SJO_OracleIsStale(uint32 currentTime, uint32 lastUpdatedAt, uint32 staleLimit);
 
