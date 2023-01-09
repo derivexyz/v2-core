@@ -233,7 +233,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
   }
 
-  function testFailingInsolventAuctionNotInsolvent() public {
+  function testCannotMarkInsolventIfAuctionNotInsolvent() public {
     vm.startPrank(address(manager));
 
     // give assets
