@@ -215,9 +215,9 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
-    * @notice gets the parameters for the dutch auction
-    * @dev returns the parameters for the dutch auction
-    * @return DutchAuctionParameters the parameters for the dutch auction
+   * @notice gets the parameters for the dutch auction
+   * @dev returns the parameters for the dutch auction
+   * @return DutchAuctionParameters the parameters for the dutch auction
    */
   function getParameters() external view returns (DutchAuctionParameters memory) {
     return parameters;
