@@ -9,6 +9,9 @@ interface ICashAsset {
   /// @dev caller is not account
   error CA_NotAccount();
 
+  /// @dev caller is not a whitelisted manager
+  error CA_NotManager();
+
   /// @dev revert when user trying to upgrade to a unknown manager
   error CA_UnknownManager();
 

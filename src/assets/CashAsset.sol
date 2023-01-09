@@ -6,6 +6,7 @@ import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
+import "synthetix/DecimalMath.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
@@ -23,6 +24,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   using ConvertDecimals for uint;
   using SafeCast for uint;
   using SafeCast for int;
+  using DecimalMath for uint;
 
   ///@dev Account contract address
   IAccounts public immutable accounts;
@@ -54,6 +56,13 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
+
+  ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
+  ///     In which case we turn on the withdraw fee to prevent bankrun
+  bool public temporaryWithdrawFeeEnabled;
+
+  ///@dev If withdraw fee is enabled, this rate will be applied to convert cash to stable asset amount
+  uint64 public toStableExchangeRate = 1e18;
 
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
@@ -137,6 +146,17 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     );
   }
 
+  /**
+   * @notice disable withdraw fee when the cash asset is back to being solvent
+   */
+  function disableWithdrawFee() external {
+    uint exchangeRate = _getExchangeRate();
+    if (exchangeRate >= 1e18 && temporaryWithdrawFeeEnabled) {
+      temporaryWithdrawFeeEnabled = false;
+      toStableExchangeRate = 1e18;
+    }
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -184,6 +204,38 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     _checkManager(address(newManager));
   }
 
+  ////////////////////////////////
+  //   Manager-only Functions   //
+  ////////////////////////////////
+
+  /**
+   * @notice manager can report loss when there is insolvent triggered by liquidation
+   * @dev 
+   * @param lossAmountInCash total amount of cash loss
+   */
+  function reportLoss(uint lossAmountInCash, uint accountToReceive) external onlyManager {
+
+    // mint this amount in accountToReceive the account
+    accounts.assetAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: accountToReceive,
+        asset: IAsset(address(this)),
+        subId: 0,
+        amount: lossAmountInCash.toInt256(),
+        assetData: bytes32(0)
+      }),
+      false, // do not trigger callback
+      ""
+    );
+
+    // check if cash asset itself is insolvent
+    uint exchangeRate = _getExchangeRate();
+    if (exchangeRate < 1e18) {
+      temporaryWithdrawFeeEnabled = true;
+      toStableExchangeRate = exchangeRate.toUint64();
+    }
+  }
+
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
@@ -204,6 +256,16 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     // uint util = borrowIndex / supplyIndex;
 
     lastTimestamp = block.timestamp;
+  }
+
+  /**
+   * @dev get exchange rate from cash asset to stable coin amount
+   * @dev this value should be 1 unless there's an insolvency reported by manager
+   */
+  function _getExchangeRate() internal view returns (uint256 exchangeRate) {
+    uint totalCash = totalSupply - totalBorrow;
+    uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
+    exchangeRate = stableBalance.divideDecimalRound(totalCash);
   }
 
   /**
@@ -239,6 +301,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   modifier onlyAccount() {
     if (msg.sender != address(accounts)) revert CA_NotAccount();
+    _;
+  }
+
+  modifier onlyManager() {
+    if (!whitelistedManager[msg.sender]) revert CA_NotManager();
     _;
   }
 }
