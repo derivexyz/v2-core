@@ -251,7 +251,7 @@ contract UNIT_TestStartAuction is Test {
 
     assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
     // start an auction on Alice's account
-    vm.expectRevert(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector);
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector, aliceAcc));
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
