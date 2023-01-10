@@ -22,6 +22,10 @@ contract SpotJumpOracleTester is SpotJumpOracle {
   function maybeStoreJump(uint32 start, uint32 width, uint32 jump, uint32 timestamp) external {
     return _maybeStoreJump(start, width, jump, timestamp);
   }
+
+  function overrideJumps(uint32[16] memory _initialJumps) external {
+    jumps = _initialJumps;
+  }
 }
 
 contract UNIT_TestSpotJumpOracle is Test {
@@ -211,6 +215,43 @@ contract UNIT_TestSpotJumpOracle is Test {
     assertEq(oracle.jumps(0), time_3);
   }
 
+
+  //////////////////////
+  // Getting Max Jump //
+  //////////////////////
+
+  function testGetMaxJump() public {
+    skip(31 days);
+    oracle = _setupDefaultOracle(); 
+    uint32[16] memory initialJumps = _getDefaultJumps();
+    oracle.overrideJumps(initialJumps);
+
+    // finds 7th bucket
+    uint32 maxJump = oracle.getMaxJump();
+    assertEq(maxJump, 1700);
+
+    // override 7th bucket, should find 5th bucket
+    initialJumps[7] = uint32(block.timestamp) - 11 days;
+    oracle.overrideJumps(initialJumps);
+
+    maxJump = oracle.getMaxJump();
+    assertEq(maxJump, 1300);
+  }
+
+  function testJumpsStale() public {
+    skip(31 days);
+    oracle = _setupDefaultOracle(); 
+    uint32[16] memory initialJumps = _getDefaultJumps();
+    oracle.overrideJumps(initialJumps);
+
+    // make jump oracle stale
+    skip(31 minutes);
+    vm.expectRevert(abi.encodeWithSelector(
+      SpotJumpOracle.SJO_OracleIsStale.selector, 2680261, 2678401, 1800)
+    );
+    oracle.getMaxJump();
+  }
+
   /////////////
   // Helpers //
   /////////////
@@ -232,5 +273,20 @@ contract UNIT_TestSpotJumpOracle is Test {
       secToReferenceStale: uint32(2 hours),
       referencePrice: referencePrice
     });
+  }
+
+  function _getDefaultJumps() internal returns (uint32[16] memory jumps) {
+    // make sure to jump atleast 30 days ahead.
+    uint32 currentTime = uint32(block.timestamp);
+    jumps[0] = 0;
+    jumps[1] = currentTime - 30 days;
+    jumps[2] = 0;
+    jumps[3] = currentTime - 1 hours;
+    jumps[4] = 0;
+    jumps[5] = currentTime - 3 hours;
+    jumps[6] = 0;
+    jumps[7] = currentTime - 5 hours;
+    jumps[8] = 0;
+    jumps[9] = currentTime - 11 days;
   }
 }
