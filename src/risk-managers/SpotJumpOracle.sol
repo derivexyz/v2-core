@@ -153,7 +153,7 @@ contract SpotJumpOracle {
    * @return jump Difference between two prices in basis points
    */
 
-  function _calcSpotJump(uint liveSpot, uint referencePrice) internal view returns (uint32 jump) {
+  function _calcSpotJump(uint liveSpot, uint referencePrice) internal pure returns (uint32 jump) {
     // get percent jump as decimal
     uint jumpDecimal = IntLib.abs(
       (liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256()
@@ -179,8 +179,9 @@ contract SpotJumpOracle {
     uint numBuckets = jumps.length;
 
     // if jump is greater than the last bucket, store in the last bucket
-    if (jump > start + (width * jumps.length)) {
+    if (jump >= start + (width * jumps.length)) {
       jumps[numBuckets - 1] = timestamp;
+      return;
     }
 
     // otherwise, find bucket for jump
