@@ -183,11 +183,13 @@ contract DutchAuction is IDutchAuction, Owned {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
+    if(currentBidPrice <= 0) {
+      return DecimalMath.UNIT;
+    }
+    
     // denominator could be negative here.
     int fMax = initialMargin / (initialMargin - currentBidPrice) * 1e18; // needs to return big number, how to do this with ints.
     if (fMax > 1e18) {
-      return DecimalMath.UNIT;
-    } else if (currentBidPrice <= 0) {
       return DecimalMath.UNIT;
     } else {
       return SafeCast.toUint256(fMax);
@@ -280,7 +282,7 @@ contract DutchAuction is IDutchAuction, Owned {
     // otherwise return using dv
     Auction memory auction = auctions[accountId];
     int upperBound = auction.auction.upperBound;
-    uint numSteps = block.timestamp / parameters.stepInterval; // will round down to whole number.
+    uint numSteps = (block.timestamp - auction.startTime) / parameters.stepInterval; // will round down to whole number.
 
     // dv = (Vmax - Vmin) * numSteps
     return upperBound - SafeCast.toInt256(auction.dv.multiplyDecimal(numSteps));
