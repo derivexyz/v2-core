@@ -55,6 +55,9 @@ contract SpotJumpOracle {
   /// @dev stores all parameters required to store the jump
   JumpParams public params;
 
+  /// @dev maximum value of a uint32 used to prevent overflows
+  uint public constant UINT32_MAX = 0xFFFFFFFF;
+
   ////////////
   // Events //
   ////////////
@@ -72,7 +75,7 @@ contract SpotJumpOracle {
     jumps = _initialJumps;
 
     // ensure multiplication in recordJump() does not overflow
-    if (uint(_initialJumps.length) * uint(_params.width) > type(uint32).max) {
+    if (uint(_initialJumps.length) * uint(_params.width) > UINT32_MAX) {
       revert SJO_MaxJumpExceedsLimit();
     }
   }
@@ -152,7 +155,9 @@ contract SpotJumpOracle {
     // get percent jump relative to reference
     uint jumpDecimal = IntLib.abs((liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256());
     // convert to uint32 basis points
-    jump = (jumpDecimal.multiplyDecimal(100) / DecimalMath.UNIT).toUint32();
+    jump = (jumpDecimal < UINT32_MAX) 
+      ? (jumpDecimal.multiplyDecimal(100) / DecimalMath.UNIT).toUint32()
+      : uint32(UINT32_MAX); // gracefully handle huge spot jump
   }
 
   /**
