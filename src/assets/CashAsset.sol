@@ -137,7 +137,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     if (temporaryWithdrawFeeEnabled) {
       // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
       uint exchangeRate = _getExchangeRate();
-      cashAmount = cashAmount.divideDecimalRound(exchangeRate);
+      // todo: rename decideDecimal in ConvertDecimals to avoid collision
+      cashAmount = DecimalMath.divideDecimal(cashAmount, exchangeRate);
     }
 
     // tranfer the asset out after potentially needing to calculate exchange rate
@@ -213,17 +214,19 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     _checkManager(address(newManager));
   }
 
-  ////////////////////////////////
-  //   Manager-only Functions   //
-  ////////////////////////////////
+  ///////////////////////////
+  //   Guarded Functions   //
+  ///////////////////////////
 
   /**
-   * @notice manager can report loss when there is insolvent triggered by liquidation
-   * @dev
-   * @param lossAmountInCash total amount of cash loss
+   * @notice Liquidation module can report loss when there is insolvent.
+   *         This function will also payout the amount of cash to the target account
+   *         and enable withdraw fee if CashAsset also become insolvent
+   * @param lossAmountInCash Total amount of cash loss
+   * @param accountToReceive Account to receive the new printed amount
    */
   function reportLoss(uint lossAmountInCash, uint accountToReceive) external onlyLiquidation {
-    // mint this amount in accountToReceive the account
+    // mint this amount in target amount
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountToReceive,
@@ -236,7 +239,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       ""
     );
 
-    // check if cash asset itself is insolvent
+    // check if cash asset is insolvent
     uint exchangeRate = _getExchangeRate();
     if (exchangeRate < 1e18) {
       temporaryWithdrawFeeEnabled = true;
@@ -280,7 +283,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply - totalBorrow;
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
-    exchangeRate = stableBalance.divideDecimalRound(totalCash);
+    // todo: rename decideDecimal in ConvertDecimals to avoid collision
+    exchangeRate = DecimalMath.divideDecimal(stableBalance, totalCash);
   }
 
   /**

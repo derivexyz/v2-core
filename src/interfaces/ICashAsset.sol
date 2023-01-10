@@ -2,6 +2,15 @@
 pragma solidity ^0.8.13;
 
 interface ICashAsset {
+  /**
+   * @notice Liquidation module can report loss when there is insolvent.
+   *         This function will also payout the amount of cash to the target account
+   *         and enable withdraw fee if CashAsset also become insolvent
+   * @param lossAmountInCash Total amount of cash loss
+   * @param accountToReceive Account to receive the new printed amount
+   */
+  function reportLoss(uint lossAmountInCash, uint accountToReceive) external;
+
   ////////////////
   //   Errors   //
   ////////////////
