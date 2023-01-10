@@ -11,8 +11,7 @@ import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/DecimalMath.sol";
-
-import "forge-std/Test.sol";
+import "../libraries/IntLib.sol";
 
 /**
  * @title Dutch Auction
@@ -26,9 +25,9 @@ import "forge-std/Test.sol";
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
 contract DutchAuction is IDutchAuction, Owned {
+  using SafeCast for int;
+  using SafeCast for uint;
   using DecimalMath for uint;
-
-  uint UNIT = 1e18;
 
   struct AuctionDetails {
     /// the accountId that is being liquidated
@@ -65,9 +64,6 @@ contract DutchAuction is IDutchAuction, Owned {
 
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint => Auction) public auctions;
-
-  /// @dev accountId => auctionOwner
-  mapping(uint => address) public auctionOwner;
 
   /// @dev The risk manager that is the parent of the dutch auction contract
   IPCRM public immutable riskManager;
@@ -117,7 +113,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
     (int upperBound, int lowerBound) = _getBounds(accountId, spot);
 
-    uint dv = _abs(upperBound).divideDecimal(parameters.lengthOfAuction); // as the auction starts in the positive, recalculate when insolvency occurs
+    uint dv = IntLib.abs(upperBound).divideDecimal(parameters.lengthOfAuction); // as the auction starts in the positive, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
       insolvent: false,
@@ -145,7 +141,8 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     auctions[accountId].insolvent = true;
-    auctions[accountId].dv = _abs(auctions[accountId].auction.lowerBound).divideDecimal(parameters.lengthOfAuction);
+    auctions[accountId].dv =
+      IntLib.abs(auctions[accountId].auction.lowerBound).divideDecimal(parameters.lengthOfAuction);
 
     return auctions[accountId].insolvent;
   }
@@ -203,14 +200,16 @@ contract DutchAuction is IDutchAuction, Owned {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
+    if (currentBidPrice <= 0) {
+      return DecimalMath.UNIT;
+    }
+
     // denominator could be negative here.
     int fMax = initialMargin / (initialMargin - currentBidPrice) * 1e18; // needs to return big number, how to do this with ints.
     if (fMax > 1e18) {
-      return UNIT;
-    } else if (currentBidPrice <= 0) {
-      return UNIT;
+      return DecimalMath.UNIT;
     } else {
-      return SafeCast.toUint256(fMax);
+      return fMax.toUint256();
     }
   }
 
@@ -265,8 +264,8 @@ contract DutchAuction is IDutchAuction, Owned {
   function _getBounds(uint accountId, uint spot) internal view returns (int maximum, int minimum) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     int cash = riskManager.getCashAmount(accountId);
-    maximum += cash;
-    minimum += cash;
+    maximum = cash;
+    minimum = cash;
 
     for (uint i = 0; i < expiryHoldings.length; i++) {
       // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
@@ -277,18 +276,18 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
-   * @notice calculates the maximum and minimum value of a strike at a particular price
+   * @notice calculates the maximum and minimum aggregated value of all strike at a particular price
    * @param strikes the strikes that are being marked
    * @param spot the spot price of the asset
-   * @dev returns the minimum and maximum value of a strike at a particular price
+   * @dev returns the minimum and maximum aggregated value of all strike at a particular price
    */
   function _markStrike(IPCRM.StrikeHolding[] memory strikes, uint spot) internal pure returns (int max, int min) {
     for (uint j = 0; j < strikes.length; j++) {
       // calls
       {
         int numCalls = strikes[j].calls;
-        max += SignedMath.max(numCalls, 0) * SafeCast.toInt256(spot);
-        min += SignedMath.min(numCalls, 0) * SafeCast.toInt256(spot);
+        max += SignedMath.max(numCalls, 0) * spot.toInt256();
+        min += SignedMath.min(numCalls, 0) * spot.toInt256();
         // puts
         int numPuts = strikes[j].puts;
         max += SignedMath.max(numPuts, 0) * int64(strikes[j].strike);
@@ -309,22 +308,9 @@ contract DutchAuction is IDutchAuction, Owned {
     // otherwise return using dv
     Auction memory auction = auctions[accountId];
     int upperBound = auction.auction.upperBound;
-    uint numSteps = block.timestamp / parameters.stepInterval; // will round down to whole number.
+    uint numSteps = (block.timestamp - auction.startTime) / parameters.stepInterval; // will round down to whole number.
 
     // dv = (Vmax - Vmin) * numSteps
-    return upperBound - SafeCast.toInt256(auction.dv.multiplyDecimal(numSteps));
-  }
-
-  //////////////
-  // Helpers ///
-  //////////////
-
-  /**
-   * @dev Compute the absolute value of `val`.
-   *
-   * @param val The number to absolute value.
-   */
-  function _abs(int val) internal pure returns (uint) {
-    return uint(val < 0 ? -val : val);
+    return upperBound - auction.dv.multiplyDecimal(numSteps).toInt256();
   }
 }

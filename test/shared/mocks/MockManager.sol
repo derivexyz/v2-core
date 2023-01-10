@@ -6,9 +6,9 @@ import "src/interfaces/IAccounts.sol";
 import "forge-std/console2.sol";
 import "forge-std/console.sol";
 
-contract MockManager is IManager {
-  uint UNIT = 1e18;
+import "synthetix/DecimalMath.sol";
 
+contract MockManager is IManager {
   IAccounts account;
 
   bool revertHandleManager;
@@ -60,7 +60,6 @@ contract MockManager is IManager {
   function test() public {}
 
   function getSpot() external view returns (uint) {
-    console.log("MockManager.getSpot() called");
-    return 1000 * UNIT; // hardcoded value not relevant to test
+    return 1000 * DecimalMath.UNIT; // hardcoded value not relevant to test
   }
 }
