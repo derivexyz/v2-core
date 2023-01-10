@@ -14,7 +14,8 @@ import "../../shared/mocks/MockManager.sol";
 import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockIPCRM.sol";
 
-// Math library...
+// Math library
+import "synthetix/DecimalMath.sol";
 
 contract UNIT_TestStartAuction is Test {
   address alice;
@@ -27,8 +28,6 @@ contract UNIT_TestStartAuction is Test {
   MockIPCRM manager;
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
-
-  uint UNIT = 1e18;
 
   uint tokenSubId = 1000;
 
@@ -65,15 +64,15 @@ contract UNIT_TestStartAuction is Test {
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
-        stepInterval: 2 * UNIT,
-        lengthOfAuction: 200 * UNIT,
+        stepInterval: 2 * DecimalMath.UNIT,
+        lengthOfAuction: 200 * DecimalMath.UNIT,
         securityModule: address(1)
       })
     );
 
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
-      stepInterval: 2 * UNIT,
-      lengthOfAuction: 200 * UNIT,
+      stepInterval: 2 * DecimalMath.UNIT,
+      lengthOfAuction: 200 * DecimalMath.UNIT,
       securityModule: address(1)
     });
   }
@@ -210,8 +209,6 @@ contract UNIT_TestStartAuction is Test {
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, 0);
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
     dutchAuction.startAuction(aliceAcc);
 

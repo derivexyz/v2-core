@@ -28,8 +28,6 @@ import "forge-std/Test.sol";
 contract DutchAuction is IDutchAuction, Owned {
   using DecimalMath for uint;
 
-  uint UNIT = 1e18;
-
   struct AuctionDetails {
     /// the accountId that is being liquidated
     uint accountId;
@@ -65,9 +63,6 @@ contract DutchAuction is IDutchAuction, Owned {
 
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint => Auction) public auctions;
-
-  /// @dev accountId => auctionOwner
-  mapping(uint => address) public auctionOwner;
 
   /// @dev The risk manager that is the parent of the dutch auction contract
   IPCRM public immutable riskManager;
@@ -191,9 +186,9 @@ contract DutchAuction is IDutchAuction, Owned {
     // denominator could be negative here.
     int fMax = initialMargin / (initialMargin - currentBidPrice) * 1e18; // needs to return big number, how to do this with ints.
     if (fMax > 1e18) {
-      return UNIT;
+      return DecimalMath.UNIT;
     } else if (currentBidPrice <= 0) {
-      return UNIT;
+      return DecimalMath.UNIT;
     } else {
       return SafeCast.toUint256(fMax);
     }
@@ -241,8 +236,8 @@ contract DutchAuction is IDutchAuction, Owned {
   function _getBounds(uint accountId, uint spot) internal view returns (int maximum, int minimum) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     int cash = riskManager.getCashAmount(accountId);
-    maximum += cash;
-    minimum += cash;
+    maximum = cash;
+    minimum = cash;
 
     for (uint i = 0; i < expiryHoldings.length; i++) {
       // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
