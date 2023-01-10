@@ -183,10 +183,10 @@ contract DutchAuction is IDutchAuction, Owned {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
-    if(currentBidPrice <= 0) {
+    if (currentBidPrice <= 0) {
       return DecimalMath.UNIT;
     }
-    
+
     // denominator could be negative here.
     int fMax = initialMargin / (initialMargin - currentBidPrice) * 1e18; // needs to return big number, how to do this with ints.
     if (fMax > 1e18) {

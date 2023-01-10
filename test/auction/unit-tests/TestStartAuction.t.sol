@@ -118,6 +118,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
     uint spot = manager.getSpot();
+    // TODO: expand testing with hard mech backed values.
     (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
@@ -157,14 +158,14 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.auction.upperBound, upperBound);
   }
 
-  function testFailAuctionAlreadyStarted() public {
+  function testCannotStartAuctionAlreadyStarted() public {
     vm.startPrank(address(manager));
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
     // start an auction on Alice's account
-    vm.expectRevert(IDutchAuction.DA_AuctionAlreadyStarted.selector);
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
     dutchAuction.startAuction(aliceAcc);
   }
 
@@ -189,7 +190,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.insolvent, true);
   }
 
-  function testFailingInsolventAuctionNotRiskManager() public {
+  function testCannotMarkAsInsolventAuctionNotRiskManager() public {
     // wrong mark as insolvent not called by risk manager
     vm.startPrank(address(manager));
 
@@ -199,7 +200,7 @@ contract UNIT_TestStartAuction is Test {
     // fastforward change address to 0xdead and then catch revert after calling mark insolvent
     vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
     vm.startPrank(address(0xdead));
-    vm.expectRevert("DA_NotRiskManager");
+    vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
