@@ -10,11 +10,25 @@ import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
+contract SpotJumpOracleTester is SpotJumpOracle {
+  constructor(
+    address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps
+  ) SpotJumpOracle(_spotFeeds, _feedId, _params, _initialJumps) {}
+
+  function calcSpotJump(uint liveSpot, uint referencePrice) external pure returns (uint32 jump) {
+    return _calcSpotJump(liveSpot, referencePrice);
+  }
+
+  function maybeStoreJump(uint32 start, uint32 width, uint32 jump, uint32 timestamp) external {
+    return _maybeStoreJump(start, width, jump, timestamp);
+  }
+}
+
 contract UNIT_TestSpotJumpOracle is Test {
   Accounts account;
   ChainlinkSpotFeeds spotFeeds; 
   MockV3Aggregator aggregator;
-  SpotJumpOracle oracle;
+  SpotJumpOracleTester oracle;
   
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -36,7 +50,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   function testCreateContractAndSetEmptyJumps() public {
     SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracle(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
   }
 
   function testRevertIfMaxJumpTooHigh() public {
@@ -46,18 +60,30 @@ contract UNIT_TestSpotJumpOracle is Test {
     // make large so that width * 16 > type(uint32).max
     params.width = 300_000_000;
     vm.expectRevert(SpotJumpOracle.SJO_MaxJumpExceedsLimit.selector);
-    oracle = new SpotJumpOracle(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
   }
 
   ///////////////
   // Jump Math //
   ///////////////
 
-  // todo [Josh]: finish testing
+  function testCalcSpotJump() public {
+    oracle = _setupDefaultOracle(); 
+
+    // 0bp change
+    uint32 jump = oracle.calcSpotJump(100, 100);
+    assertEq(jump, 0);
+  }
 
   /////////////
   // Helpers //
   /////////////
+
+  function _setupDefaultOracle() internal returns (SpotJumpOracleTester) {
+    SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
+    uint32[16] memory initialJumps;
+    return new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
+  }
 
   function _defaultJumpParams(uint referencePrice) internal view returns (SpotJumpOracle.JumpParams memory params) {
     params = SpotJumpOracle.JumpParams({
