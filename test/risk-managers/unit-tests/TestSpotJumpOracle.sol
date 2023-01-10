@@ -149,6 +149,68 @@ contract UNIT_TestSpotJumpOracle is Test {
     assertEq(oracle.jumps(4), 135);
   }
 
+  //////////////////////////
+  // Updating Jump Oracle //
+  //////////////////////////
+
+  function testUpdateJump() public {
+    oracle = _setupDefaultOracle(); 
+
+    // time 1
+    uint32 time_1 = uint32(block.timestamp);
+    int spotPrice = 1111e18;
+    aggregator.updateRoundData(1, spotPrice, time_1, time_1, 1);
+
+    oracle.updateJumps();
+    assertEq(oracle.jumps(5), time_1);
+
+    // time 2
+    skip(10 minutes);
+    uint32 time_2 = uint32(block.timestamp);
+    spotPrice = 1120e18;
+    aggregator.updateRoundData(2, spotPrice, time_2, time_2, 2);
+
+    oracle.updateJumps();
+    assertEq(oracle.jumps(5), time_2);
+  }
+
+  function testUpdateReferenceJump() public {
+    oracle = _setupDefaultOracle(); 
+
+    // time 1
+    uint32 time_1 = uint32(block.timestamp);
+    int spotPrice = 1111e18;
+    aggregator.updateRoundData(1, spotPrice, time_1, time_1, 1);
+
+    oracle.updateJumps();
+    assertEq(oracle.jumps(5), time_1);
+
+    // time 2
+    skip(3 hours);
+    uint32 time_2 = uint32(block.timestamp);
+    spotPrice = 3000e18;
+    aggregator.updateRoundData(2, spotPrice, time_2, time_2, 2);
+
+    // does not record jump
+    oracle.updateJumps();
+    assertEq(oracle.jumps(15), 0);
+
+    // updates reference
+    (,,,, uint32 jumpUpdatedAt, uint32 referenceUpdatedAt, , uint referencePrice) = oracle.params();
+    assertEq(jumpUpdatedAt, time_2);
+    assertEq(referenceUpdatedAt, time_2);
+    assertEq(referencePrice, 3000e18);
+
+    // uses new reference
+    skip(1 hours);
+    uint32 time_3 = uint32(block.timestamp);
+    spotPrice = 3040e18;
+    aggregator.updateRoundData(3, spotPrice, time_3, time_3, 2);
+
+    oracle.updateJumps();
+    assertEq(oracle.jumps(0), time_3);
+  }
+
   /////////////
   // Helpers //
   /////////////
@@ -162,7 +224,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   function _defaultJumpParams(uint referencePrice) internal view returns (SpotJumpOracle.JumpParams memory params) {
     params = SpotJumpOracle.JumpParams({
       start: 100,
-      width: 50,
+      width: 200,
       duration: uint32(10 days),
       secToJumpStale: uint32(30 minutes),
       jumpUpdatedAt: uint32(block.timestamp),
