@@ -68,7 +68,7 @@ contract PCRMSpotJumpOracleGas is Script {
     // record new jump as the very last bucket to be read
     aggregator.updateRoundData(10, 1030e18, block.timestamp, block.timestamp, 10);
     oracle.updateJumps();
-    
+
     uint initGas = gasleft();
 
     oracle.getMaxJump();
@@ -119,5 +119,4 @@ contract PCRMSpotJumpOracleGas is Script {
     uint32[16] memory initialJumps;
     oracle = new SpotJumpOracle(address(spotFeeds), 1, params, initialJumps);
   }
-
 }
