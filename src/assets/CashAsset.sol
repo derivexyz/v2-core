@@ -200,28 +200,22 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     _accrueInterest();
     console.log("After  accruing interest");
 
-    // todo: accrue interest on prebalance
-
-    // if (finalBalance )
     if (accountBorrowIndex[adjustment.acc] == 0) {
       accountBorrowIndex[adjustment.acc] = borrowIndex;
     } 
-    console.log("Account borrow index", accountBorrowIndex[adjustment.acc]);
-    bool isNegative = false;
-    if (preBalance < 1) {
-      preBalance = -preBalance;
-      isNegative = true;
-    }
 
-    uint balanceWithInterest = borrowIndex.divideDecimal(accountBorrowIndex[adjustment.acc]).multiplyDecimal(preBalance.toUint256());
-    if (isNegative) {
-      preBalance = -balanceWithInterest.toInt256();
-    } else {
-      preBalance = balanceWithInterest.toInt256();
-    }
+    console.log("Account borrow index", accountBorrowIndex[adjustment.acc]);
+   
+    // todo: accrue interest on prebalance
+    // Apply interest to pre balance
+    preBalance = _interestOnBalance(preBalance, adjustment.acc);
 
     // finalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
+
+    // TODO update borrow and supply indexes
+    // merge borrow and supply into one mapping? 
+    accountBorrowIndex[adjustment.acc] = borrowIndex;
 
     // need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
@@ -258,6 +252,26 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function _setInterestRateModel(InterestRateModel _rateModel) internal {
     if (lastTimestamp != block.timestamp) revert CA_InterestAccrualStale(lastTimestamp, block.timestamp);
     rateModel = _rateModel;
+  }
+
+  /**
+   * @notice Accrues interest onto the balance provided 
+   * @param preBalance the balance which the interest is going to be applied to 
+   */
+  function _interestOnBalance(int preBalance, uint accountId) internal view returns (int interestBalance) {
+    // TODO cleaner way to do negative division
+    bool isNegative = false;
+    if (preBalance < 1) {
+      preBalance = -preBalance;
+      isNegative = true;
+    }
+
+    uint balanceWithInterest = borrowIndex.divideDecimal(accountBorrowIndex[accountId]).multiplyDecimal(preBalance.toUint256());
+    if (isNegative) {
+      interestBalance = -balanceWithInterest.toInt256();
+    } else {
+      interestBalance = balanceWithInterest.toInt256();
+    }
   }
 
   /**

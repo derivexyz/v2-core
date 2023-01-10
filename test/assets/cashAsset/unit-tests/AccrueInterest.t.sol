@@ -87,7 +87,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertGt(cashAsset.supplyIndex(), 1e18);
   }
 
-  function testAccrueInterestBalance() public {
+  function testAccrueInterestDebtBalance() public {
     uint amountToBorrow = 2000e18;
     uint newAccount = account.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
@@ -115,6 +115,44 @@ contract UNIT_CashAssetAccrueInterest is Test {
     cashAsset.withdraw(newAccount, amountToBorrow, address(this));
 
     bal = account.getBalance(newAccount, cashAsset, 0);
+    console.log("acc bal", uint(-bal));
+    // Borrow amount should be > because bal now includes accrued interest
+    assertGt(-int(amountToBorrow) * 2, bal);
+  }
+
+   function testAccrueInterestPositiveBalance() public {
+    uint amountToBorrow = 2000e18;
+    
+    uint posAccount = account.createAccount(address(this), manager);
+    uint debtAccount = account.createAccount(address(this), manager);
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    // 
+    cashAsset.deposit(posAccount, amountToBorrow);
+
+    // Create debt for account
+    cashAsset.withdraw(debtAccount, amountToBorrow, address(this));
+
+    totalBorrow = cashAsset.totalBorrow();
+    uint totalSupply = cashAsset.totalSupply();
+    console.log("TotalBorrow", totalBorrow / 1e18);
+    console.log("TotalSupply", totalSupply / 1e18);
+
+    console.log("borrowIndex", cashAsset.borrowIndex());
+    console.log("supplyIndex", cashAsset.supplyIndex());
+    // Should increase borrow and supply indexes
+    // cashAsset.accrueInterest();
+    console.log("borrowIndex", cashAsset.borrowIndex());
+    console.log("supplyIndex", cashAsset.supplyIndex());
+    int bal = account.getBalance(debtAccount, cashAsset, 0);
+    console.log("acc bal", uint(-bal));
+    assertEq(-int(amountToBorrow), bal);
+
+    vm.warp(block.timestamp + 30 days);
+    cashAsset.withdraw(debtAccount, amountToBorrow, address(this));
+
+    bal = account.getBalance(debtAccount, cashAsset, 0);
     console.log("acc bal", uint(-bal));
     // Borrow amount should be > because bal now includes accrued interest
     assertGt(-int(amountToBorrow) * 2, bal);
