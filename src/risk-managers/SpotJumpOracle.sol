@@ -9,7 +9,12 @@ import "openzeppelin/utils/math/SafeCast.sol";
 /**
  * @title SpotJumpOracle
  * @author Lyra
- * @notice Can be used to find spot jumps in the last X days as a proxy for Realized Volatility
+ * @notice Stores and finds max jump in the spot price during the last X days using a rolling "referencePrice"
+ * @dev The "jumps" value stores timestamps of all recorded jumps:
+ *      bucket bounds:       [     100-125bp    ][     125-150bp    ][     150-175bp    ]...[    300bp-inf    ]
+ *      actual value stored: [ 04:12:35, Jan 10 ][ 10:01:43, Dec 11 ][ 12:00:15, May 21 ]...[ 6:03:01, Feb 05 ]
+ *      
+ *      When finding the "max jump", traverses the buckets in reverse order until the first non-stale jump is found
  */
 
 contract SpotJumpOracle {
