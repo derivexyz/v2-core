@@ -156,7 +156,7 @@ contract PCRM is IManager, Owned {
     ExpiryHolding[] memory expiries = _groupOptions(account.getAccountBalances(accountId));
     int cashAmount = _getCashAmount(accountId);
 
-    // todo [Josh]: might make more semantic case to not incldue "cashAmount" in here. 
+    // todo [Josh]: might make more semantic case to not incldue "cashAmount" in here.
     _calcMargin(expiries, cashAmount, MarginType.INITIAL);
   }
 

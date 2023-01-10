@@ -18,7 +18,7 @@ contract SpotJumpOracle {
   using IntLib for int;
 
   struct JumpParams {
-    // 500 bps would imply the first bucket is 5% -> 5% + width 
+    // 500 bps would imply the first bucket is 5% -> 5% + width
     uint32 start;
     // 150 bps would imply [0-1.5%, 1.5-3.0%, ...]
     uint32 width;
@@ -33,7 +33,7 @@ contract SpotJumpOracle {
     // sec until reference price is considered stale
     uint32 secToReferenceStale;
     // price at last update
-    uint256 referencePrice;
+    uint referencePrice;
   }
 
   ///////////////
@@ -44,7 +44,7 @@ contract SpotJumpOracle {
   ISpotFeeds public spotFeeds;
   /// @dev id of feed used when querying price from spotFeeds
   uint public feedId;
-  
+
   /// @dev each slot stores timestamp at which jump was stored
   uint32[16] public jumps;
   /// @dev stores all parameters required to store the jump
@@ -79,7 +79,7 @@ contract SpotJumpOracle {
   /**
    * @notice Updates the jump buckets if livePrice deviates far enough from the referencePrice.
    * @dev The time gap between the livePrice and referencePrice is always < params.secToReferenceStale.
-          However, this means the time gap is not always.
+   *         However, this means the time gap is not always.
    */
   function updateJumps() external {
     JumpParams memory memParams = params;
@@ -131,7 +131,6 @@ contract SpotJumpOracle {
     }
   }
 
-
   /////////////
   // Helpers //
   /////////////
@@ -146,9 +145,7 @@ contract SpotJumpOracle {
 
   function _calcSpotJump(uint liveSpot, uint referencePrice) internal pure returns (uint32 jump) {
     // get percent jump relative to reference
-    uint jumpDecimal = IntLib.abs(
-      (liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256()
-    );
+    uint jumpDecimal = IntLib.abs((liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256());
     // convert to uint32 basis points
     jump = (jumpDecimal.multiplyDecimal(100) / DecimalMath.UNIT).toUint32();
   }
@@ -160,12 +157,7 @@ contract SpotJumpOracle {
    * @param jump Current price jump in basis points
    * @param timestamp Timestamp at which jump was calculated
    */
-  function _maybeStoreJump(
-    uint32 start, 
-    uint32 width, 
-    uint32 jump,
-    uint32 timestamp
-  ) internal {
+  function _maybeStoreJump(uint32 start, uint32 width, uint32 jump, uint32 timestamp) internal {
     uint numBuckets = jumps.length;
 
     // if jump is greater than the last bucket, store in the last bucket
@@ -186,5 +178,4 @@ contract SpotJumpOracle {
   error SJO_OracleIsStale(uint32 currentTime, uint32 lastUpdatedAt, uint32 staleLimit);
 
   error SJO_MaxJumpExceedsLimit();
-
 }
