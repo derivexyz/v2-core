@@ -4,5 +4,5 @@ pragma solidity ^0.8.13;
 import "src/interfaces/IDutchAuction.sol";
 
 contract MockDutchAuction is IDutchAuction {
-  function startAuction(uint accountId) external returns (bytes32) {}
+  function startAuction(uint accountId) external {}
 }

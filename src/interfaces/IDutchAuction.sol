@@ -7,7 +7,7 @@ pragma solidity ^0.8.13;
  * @notice Auction contract for conducting liquidations of PCRM accounts
  */
 interface IDutchAuction {
-  function startAuction(uint accountId) external returns (bytes32);
+  function startAuction(uint accountId) external;
   ////////////
   // EVENTS //
   ////////////
@@ -33,8 +33,8 @@ interface IDutchAuction {
 
   /// @dev emmited when a risk manager tries to start an insolvent auction when bidding
   /// has not concluded.
-  error DA_AuctionNotStarted(bytes32 auctionId);
+  error DA_AuctionNotEnteredInsolvency(uint accountId);
 
-  /// @dev emmited when a auction is going to be marked as insolvent with out the auction concluding
-  error DA_InsolventNotZero();
+  /// @dev emmited when a risk manager tries to start an auction that has already been started
+  error DA_AuctionAlreadyStarted(uint accountId);
 }
