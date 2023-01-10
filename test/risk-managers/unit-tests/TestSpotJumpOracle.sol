@@ -11,9 +11,9 @@ import "test/shared/mocks/MockManager.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
 contract SpotJumpOracleTester is SpotJumpOracle {
-  constructor(
-    address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps
-  ) SpotJumpOracle(_spotFeeds, _feedId, _params, _initialJumps) {}
+  constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps)
+    SpotJumpOracle(_spotFeeds, _feedId, _params, _initialJumps)
+  {}
 
   function calcSpotJump(uint liveSpot, uint referencePrice) external pure returns (uint32 jump) {
     return _calcSpotJump(liveSpot, referencePrice);
@@ -30,10 +30,10 @@ contract SpotJumpOracleTester is SpotJumpOracle {
 
 contract UNIT_TestSpotJumpOracle is Test {
   Accounts account;
-  ChainlinkSpotFeeds spotFeeds; 
+  ChainlinkSpotFeeds spotFeeds;
   MockV3Aggregator aggregator;
   SpotJumpOracleTester oracle;
-  
+
   address alice = address(0xaa);
   address bob = address(0xbb);
   uint aliceAcc;
@@ -72,7 +72,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   ///////////////
 
   function testCalcSpotJump() public {
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
 
     // 0bp change
     uint32 jump = oracle.calcSpotJump(100, 100);
@@ -104,7 +104,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   }
 
   function testStoreJumpTimestamp() public {
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
 
     uint32 timestamp = uint32(block.timestamp);
     oracle.maybeStoreJump(100, 200, 202, timestamp);
@@ -114,7 +114,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   }
 
   function testDoesNotStoreLowJump() public {
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
 
     oracle.maybeStoreJump(100, 200, 99, uint32(block.timestamp));
     for (uint i; i < 16; i++) {
@@ -127,7 +127,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   }
 
   function testRoundsDownJumpWhenStoring() public {
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
 
     oracle.maybeStoreJump(50, 200, 251, 1234);
     assertEq(oracle.jumps(1), 1234);
@@ -138,7 +138,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     // overwrites existing entries
     oracle.maybeStoreJump(50, 200, 249, 9876);
     assertEq(oracle.jumps(0), 9876);
- 
+
     // right on the limit of the last bin
     oracle.maybeStoreJump(50, 100, 1650, 1357);
     assertEq(oracle.jumps(15), 1357);
@@ -158,7 +158,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   //////////////////////////
 
   function testUpdateJump() public {
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
 
     // time 1
     uint32 time_1 = uint32(block.timestamp);
@@ -179,7 +179,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   }
 
   function testUpdateReferenceJump() public {
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
 
     // time 1
     uint32 time_1 = uint32(block.timestamp);
@@ -200,7 +200,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     assertEq(oracle.jumps(15), 0);
 
     // updates reference
-    (,,,, uint32 jumpUpdatedAt, uint32 referenceUpdatedAt, , uint referencePrice) = oracle.params();
+    (,,,, uint32 jumpUpdatedAt, uint32 referenceUpdatedAt,, uint referencePrice) = oracle.params();
     assertEq(jumpUpdatedAt, time_2);
     assertEq(referenceUpdatedAt, time_2);
     assertEq(referencePrice, 3000e18);
@@ -215,14 +215,13 @@ contract UNIT_TestSpotJumpOracle is Test {
     assertEq(oracle.jumps(0), time_3);
   }
 
-
   //////////////////////
   // Getting Max Jump //
   //////////////////////
 
   function testGetMaxJump() public {
     skip(31 days);
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
     uint32[16] memory initialJumps = _getDefaultJumps();
     oracle.overrideJumps(initialJumps);
 
@@ -240,15 +239,13 @@ contract UNIT_TestSpotJumpOracle is Test {
 
   function testJumpsStale() public {
     skip(31 days);
-    oracle = _setupDefaultOracle(); 
+    oracle = _setupDefaultOracle();
     uint32[16] memory initialJumps = _getDefaultJumps();
     oracle.overrideJumps(initialJumps);
 
     // make jump oracle stale
     skip(31 minutes);
-    vm.expectRevert(abi.encodeWithSelector(
-      SpotJumpOracle.SJO_OracleIsStale.selector, 2680261, 2678401, 1800)
-    );
+    vm.expectRevert(abi.encodeWithSelector(SpotJumpOracle.SJO_OracleIsStale.selector, 2680261, 2678401, 1800));
     oracle.getMaxJump();
   }
 

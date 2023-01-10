@@ -15,7 +15,7 @@ import "forge-std/console2.sol";
  * @dev The "jumps" value stores timestamps of all recorded jumps:
  *      bucket bounds:       [     100-125bp    ][     125-150bp    ][     150-175bp    ]...[    300bp-inf    ]
  *      actual value stored: [ 04:12:35, Jan 10 ][ 10:01:43, Dec 11 ][ 12:00:15, May 21 ]...[ 6:03:01, Feb 05 ]
- *      
+ *
  *      When finding the "max jump", traverses the buckets in reverse order until the first non-stale jump is found
  */
 
@@ -155,17 +155,13 @@ contract SpotJumpOracle {
 
   function _calcSpotJump(uint liveSpot, uint referencePrice) internal pure returns (uint32 jump) {
     // get percent jump as decimal
-    uint jumpDecimal = IntLib.abs(
-      (liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256()
-    );
+    uint jumpDecimal = IntLib.abs((liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256());
 
     // convert to basis points with 0 decimals
     uint jumpBasisPoints = jumpDecimal * 10000 / DecimalMath.UNIT;
 
     // gracefully handle huge spot jump
-    return (jumpBasisPoints < UINT32_MAX) 
-      ? (jumpBasisPoints).toUint32()
-      : uint32(UINT32_MAX); 
+    return (jumpBasisPoints < UINT32_MAX) ? (jumpBasisPoints).toUint32() : uint32(UINT32_MAX);
   }
 
   /**
