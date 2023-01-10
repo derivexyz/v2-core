@@ -18,6 +18,7 @@ contract UNIT_CashAssetDeposit is Test {
   MockManager manager;
   MockManager badManager;
   Accounts account;
+  InterestRateModel rateModel;
 
   uint accountId;
 
@@ -29,7 +30,8 @@ contract UNIT_CashAssetDeposit is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, usdc);
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -43,7 +45,7 @@ contract UNIT_CashAssetDeposit is Test {
   function testCannotDepositIntoWeirdAccount() public {
     uint badAccount = account.createAccount(address(this), badManager);
 
-    vm.expectRevert(CashAsset.LA_UnknownManager.selector);
+    vm.expectRevert(ICashAsset.CA_UnknownManager.selector);
     cashAsset.deposit(badAccount, 100 ether);
   }
 
@@ -72,6 +74,7 @@ contract UNIT_CashAssetDeposit is Test {
 contract UNIT_LendingDeposit6Decimals is Test {
   CashAsset cashAsset;
   Accounts account;
+  InterestRateModel rateModel;
 
   uint accountId;
 
@@ -83,7 +86,8 @@ contract UNIT_LendingDeposit6Decimals is Test {
     // set USDC to 6 decimals
     usdc.setDecimals(6);
 
-    cashAsset = new CashAsset(account, usdc);
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel);
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 6 decimals
@@ -108,6 +112,7 @@ contract UNIT_LendingDeposit6Decimals is Test {
 contract UNIT_LendingDeposit20Decimals is Test {
   CashAsset cashAsset;
   Accounts account;
+  InterestRateModel rateModel;
 
   uint accountId;
 
@@ -119,7 +124,8 @@ contract UNIT_LendingDeposit20Decimals is Test {
     // set USDC to 20 decimals!
     usdc.setDecimals(20);
 
-    cashAsset = new CashAsset(account, usdc);
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel);
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 20 decimals

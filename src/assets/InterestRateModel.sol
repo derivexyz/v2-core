@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "../libraries/ConvertDecimals.sol";
 import "../libraries/FixedPointMathLib.sol";
-
+import "forge-std/Test.sol";
 /**
  * @title Interest Rate Model
  * @author Lyra
@@ -95,11 +95,15 @@ contract InterestRateModel {
    * @param borrows The amount of borrows for the asset
    * @return The utilization rate as a mantissa between
    */
-  function getUtilRate(uint supply, uint borrows) public pure returns (uint) {
+  // function getUtilRate(uint supply, uint borrows) public pure returns (uint) {
+  function getUtilRate(uint supply, uint borrows) public view returns (uint) {
     // Utilization rate is 0 when there are no borrows
     if (borrows == 0) {
       return 0;
     }
+    console.log("borrows", borrows);
+    console.log("supply", supply);
+    console.log("dividing ", borrows.divideDecimal(supply));
 
     return borrows.divideDecimal(supply);
   }

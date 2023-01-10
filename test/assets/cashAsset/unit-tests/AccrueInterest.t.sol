@@ -37,56 +37,86 @@ contract UNIT_CashAssetAccrueInterest is Test {
     uint highRateMultipler = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
     rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
-    cashAsset = new CashAsset(account, usdc);
-
+    cashAsset = new CashAsset(account, usdc, rateModel);
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
 
-    // 10000 USDC with 18 decimals
-    depositedAmount = 10000 ether;
+    // 100000 USDC with 18 decimals
+    depositedAmount = 100000e18;
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(cashAsset), type(uint).max);
 
     accountId = account.createAccount(address(this), manager);
 
     cashAsset.deposit(accountId, depositedAmount);
+    console.log("Here 4");
     vm.warp(block.timestamp + 1 weeks);
   }
 
+  function testNoAccrueInterest() public {   
+    // Total borrow 0 so accrueInterest doesn't do anything
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    // Indexes should start at 1
+    assertEq(cashAsset.borrowIndex(), 1e18);
+    assertEq(cashAsset.supplyIndex(), 1e18);
+
+    // After accrueInterest, borrow and supply indexes should stay same
+    cashAsset.accrueInterest();
+    assertEq(cashAsset.borrowIndex(), 1e18);
+    assertEq(cashAsset.supplyIndex(), 1e18);
+  }
+
   function testSimpleAccrueInterest() public {
-    uint amountToBorrow = 2000 ether;
+    uint amountToBorrow = 2000e18;
     uint newAccount = account.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
-    console.log("BalanceOf", usdc.balanceOf(address(cashAsset)));
-    console.log("Equal s-b", cashAsset.totalSupply() - cashAsset.totalBorrow());
-
-    uint usdcBefore = usdc.balanceOf(address(this));
+    // Increase total borrow amount
     cashAsset.withdraw(newAccount, amountToBorrow, address(this));
-    uint usdcAfter = usdc.balanceOf(address(this));
+
+    // Indexes should start at 1
+    assertEq(cashAsset.borrowIndex(), 1e18);
+    assertEq(cashAsset.supplyIndex(), 1e18);
+
+    // After accrueInterest, should increase borrow and supply indexes
+    cashAsset.accrueInterest();
+    assertGt(cashAsset.borrowIndex(), 1e18);
+    assertGt(cashAsset.supplyIndex(), 1e18);
+  }
+
+  function testAccrueInterestBalance() public {
+    uint amountToBorrow = 2000e18;
+    uint newAccount = account.createAccount(address(this), manager);
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    // Increase total borrow amount
+    cashAsset.withdraw(newAccount, amountToBorrow, address(this));
 
     totalBorrow = cashAsset.totalBorrow();
+    uint totalSupply = cashAsset.totalSupply();
     console.log("TotalBorrow", totalBorrow / 1e18);
+    console.log("TotalSupply", totalSupply / 1e18);
 
-    uint util = rateModel.getUtilRate(cashAsset.totalSupply(), cashAsset.totalBorrow());
-    console.log("Util is", util / 1e18);
-    cashAsset.accrueInterest();
+    console.log("borrowIndex", cashAsset.borrowIndex());
+    console.log("supplyIndex", cashAsset.supplyIndex());
+    // Should increase borrow and supply indexes
+    // cashAsset.accrueInterest();
+    console.log("borrowIndex", cashAsset.borrowIndex());
+    console.log("supplyIndex", cashAsset.supplyIndex());
+    int bal = account.getBalance(newAccount, cashAsset, 0);
+    console.log("acc bal", uint(-bal));
+    assertEq(-int(amountToBorrow), bal);
 
-    console.log("wrap ahead one year");
     vm.warp(block.timestamp + 30 days);
-    cashAsset.accrueInterest();
-    // Check that the interest is what are expecting
-    // Manually calculate the interest rate
-    assertEq(usdcAfter - usdcBefore, amountToBorrow);
-    assertEq(totalBorrow, amountToBorrow);
+    cashAsset.withdraw(newAccount, amountToBorrow, address(this));
 
-    uint balanceOf = usdc.balanceOf(address(cashAsset));
-    uint totalBorrow1 = cashAsset.totalBorrow();
-    uint totalSupply1 = cashAsset.totalSupply();
-    console.log("BalanceOf", balanceOf);
-    console.log("Shouldsam", totalSupply1 - totalBorrow1);
-    console.log("TotalSupp", totalSupply1);
-    console.log("TotalBorr", totalBorrow1);
+    bal = account.getBalance(newAccount, cashAsset, 0);
+    console.log("acc bal", uint(-bal));
+    // Borrow amount should be > because bal now includes accrued interest
+    assertGt(-int(amountToBorrow) * 2, bal);
   }
 }
