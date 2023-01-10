@@ -15,7 +15,7 @@ contract SpotJumpOracleTester is SpotJumpOracle {
     address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps
   ) SpotJumpOracle(_spotFeeds, _feedId, _params, _initialJumps) {}
 
-  function calcSpotJump(uint liveSpot, uint referencePrice) external pure returns (uint32 jump) {
+  function calcSpotJump(uint liveSpot, uint referencePrice) external view returns (uint32 jump) {
     return _calcSpotJump(liveSpot, referencePrice);
   }
 
@@ -73,6 +73,23 @@ contract UNIT_TestSpotJumpOracle is Test {
     // 0bp change
     uint32 jump = oracle.calcSpotJump(100, 100);
     assertEq(jump, 0);
+
+    // 10bp change
+    jump = oracle.calcSpotJump(1001e18, 1000e18);
+    assertEq(jump, 10);
+
+    // 9bp change due to rounding
+    jump = oracle.calcSpotJump(1000e18, 1001e18);
+    assertEq(jump, 9);
+
+    // 50bp change
+
+    // 100bp change
+
+    // 100_000bp change
+
+    // 100_000_000bp change floored to uint32.max
+
   }
 
   /////////////

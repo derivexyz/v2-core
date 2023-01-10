@@ -6,6 +6,8 @@ import "src/libraries/IntLib.sol";
 import "synthetix/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title SpotJumpOracle
  * @author Lyra
@@ -151,13 +153,19 @@ contract SpotJumpOracle {
    * @return jump Difference between two prices in basis points
    */
 
-  function _calcSpotJump(uint liveSpot, uint referencePrice) internal pure returns (uint32 jump) {
-    // get percent jump relative to reference
-    uint jumpDecimal = IntLib.abs((liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256());
-    // convert to uint32 basis points
-    jump = (jumpDecimal < UINT32_MAX) 
-      ? (jumpDecimal.multiplyDecimal(100) / DecimalMath.UNIT).toUint32()
-      : uint32(UINT32_MAX); // gracefully handle huge spot jump
+  function _calcSpotJump(uint liveSpot, uint referencePrice) internal view returns (uint32 jump) {
+    // get percent jump as decimal
+    uint jumpDecimal = IntLib.abs(
+      (liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256()
+    );
+
+    // convert to basis points with 0 decimals
+    uint jumpBasisPoints = jumpDecimal * 10000 / DecimalMath.UNIT;
+
+    // gracefully handle huge spot jump
+    return (jumpBasisPoints < UINT32_MAX) 
+      ? (jumpBasisPoints).toUint32()
+      : uint32(UINT32_MAX); 
   }
 
   /**
