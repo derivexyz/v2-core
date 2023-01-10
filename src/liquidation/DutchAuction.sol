@@ -155,10 +155,10 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   function bid(uint accountId, uint amount) external returns (uint) {
     // need to check if the timelimit for the auction has been ecplised
-    if(block.timestamp < auctions[accountId].endTime) {
+    if (block.timestamp < auctions[accountId].endTime) {
       revert DA_AuctionEnded(accountId);
     }
-  
+
     if (auctions[accountId].ongoing == false) {
       revert DA_AuctionNotOngoing(accountId);
     }
@@ -216,7 +216,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function getMaxProportion(uint accountId) external returns(uint) {
+  function getMaxProportion(uint accountId) external returns (uint) {
     return _getMaxProportion(accountId);
   }
 

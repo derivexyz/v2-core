@@ -43,5 +43,4 @@ interface IDutchAuction {
 
   /// @dev emmmited when an auction is settled
   error DA_AuctionNotOngoing(uint accountId);
-
 }
