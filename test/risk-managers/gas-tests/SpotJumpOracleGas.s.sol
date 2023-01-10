@@ -42,7 +42,7 @@ contract PCRMSpotJumpOracleGas is Script {
   function _gasSingleUpdate() public {
     aggregator.updateRoundData(1, 1200e18, block.timestamp, block.timestamp, 1);
 
-    // estimate tx cost
+    // estimate tx cost of updating one field in jump buckets
     uint initGas = gasleft();
 
     oracle.updateJumps();
