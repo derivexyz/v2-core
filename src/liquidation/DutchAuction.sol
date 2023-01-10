@@ -174,8 +174,6 @@ contract DutchAuction is IDutchAuction, Owned {
     }
     // send/ take money from the user if depending on the current priec
 
-
-
     // if the user has less margin then the amount they are bidding then get it from the security module
 
     // add bid
