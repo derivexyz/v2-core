@@ -54,6 +54,8 @@ contract SpotJumpOracle {
   // Events //
   ////////////
 
+  event JumpUpdated(uint32 jump, uint livePrice, uint referencePrice);
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -82,21 +84,24 @@ contract SpotJumpOracle {
   function updateJumps() external {
     JumpParams memory memParams = params;
     uint32 currentTime = uint32(block.timestamp);
-    uint liveSpot = spotFeeds.getSpot(feedId);
+    uint livePrice = spotFeeds.getSpot(feedId);
 
+    uint32 jump;
     if (memParams.referenceUpdatedAt + memParams.secToReferenceStale < currentTime) {
       // update reference price if stale
-      memParams.referencePrice = liveSpot;
+      memParams.referencePrice = livePrice;
       memParams.referenceUpdatedAt = currentTime;
     } else {
       // calculate jump amount and store
-      uint32 jump = _calcSpotJump(liveSpot, memParams.referencePrice);
+      jump = _calcSpotJump(livePrice, memParams.referencePrice);
       _maybeStoreJump(memParams.start, memParams.width, jump, currentTime);
     }
 
     // update jump params
     memParams.jumpUpdatedAt = currentTime;
     params = memParams;
+
+    emit JumpUpdated(jump, livePrice, memParams.referencePrice);
   }
 
   /**
