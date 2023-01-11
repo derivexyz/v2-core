@@ -23,6 +23,9 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   using SafeERC20 for IERC20Metadata;
 
   ///@dev Cash Asset contract address
+  // IAccounts public immutable accounts;
+
+  ///@dev Cash Asset contract address
   ICashAsset public immutable cashAsset;
 
   ///@dev The token address for stable coin
@@ -31,10 +34,14 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   ///@dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
 
+  ///@dev The account id security module is holding
+  uint immutable accountId;
+
   ///@dev Mapping of (address => isWhitelistedModule)
   mapping(address => bool) isWhitelisted;
 
   constructor(ICashAsset _cashAsset, IERC20Metadata _stableAsset) ERC20("Lyra USDC Security Module Share", "lsUSD") {
+    // accounts = _account;
     stableAsset = _stableAsset;
     cashAsset = _cashAsset;
     stableDecimals = _stableAsset.decimals();
