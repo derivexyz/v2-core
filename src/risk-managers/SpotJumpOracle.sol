@@ -96,19 +96,19 @@ contract SpotJumpOracle {
     uint32 currentTime = uint32(block.timestamp);
     uint livePrice = spotFeeds.getSpot(feedId);
 
-    uint32 jump;
+    // calculate jump basis points and store
+    // stale reference price is used for safety
+    uint32 jump = _calcSpotJump(livePrice, memParams.referencePrice);
+    _maybeStoreJump(memParams.start, memParams.width, jump, currentTime);
+    memParams.jumpUpdatedAt = currentTime;
+
+    // update reference price if stale
     if (memParams.referenceUpdatedAt + memParams.secToReferenceStale < currentTime) {
-      // update reference price if stale
       memParams.referencePrice = livePrice;
       memParams.referenceUpdatedAt = currentTime;
-    } else {
-      // calculate jump amount and store
-      jump = _calcSpotJump(livePrice, memParams.referencePrice);
-      _maybeStoreJump(memParams.start, memParams.width, jump, currentTime);
     }
 
     // update jump params
-    memParams.jumpUpdatedAt = currentTime;
     params = memParams;
 
     emit JumpUpdated(jump, livePrice, memParams.referencePrice);

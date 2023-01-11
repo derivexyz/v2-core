@@ -195,9 +195,9 @@ contract UNIT_TestSpotJumpOracle is Test {
     spotPrice = 3000e18;
     aggregator.updateRoundData(2, spotPrice, time_2, time_2, 2);
 
-    // does not record jump
+    // still records jump based on last spot price
     oracle.updateJumps();
-    assertEq(oracle.jumps(15), 0);
+    assertEq(oracle.jumps(15), time_2);
 
     // updates reference
     (,,,, uint32 jumpUpdatedAt, uint32 referenceUpdatedAt,, uint referencePrice) = oracle.params();
@@ -272,7 +272,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     });
   }
 
-  function _getDefaultJumps() internal returns (uint32[16] memory jumps) {
+  function _getDefaultJumps() internal view returns (uint32[16] memory jumps) {
     // make sure to jump atleast 30 days ahead.
     uint32 currentTime = uint32(block.timestamp);
     jumps[0] = 0;
