@@ -157,13 +157,24 @@ contract DutchAuction is IDutchAuction, Owned {
    * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
    */
   function bid(uint accountId, uint amount) external returns (uint) {
-    // need to check if the timelimit for the auction has been ecplised
-    if (block.timestamp < auctions[accountId].endTime) {
-      revert DA_AuctionEnded(accountId);
+    
+    // TODO: check with mechanism that there is no malicious attack where you could
+    // get transfered the money and not take on the risk by putting in some one else's
+    // accountId.
+    // TODO: should this be restricted to make sure that only the person who owns the account can bid on it??
+    if (amount > DecimalMath.UNIT) {
+      revert DA_AmountTooLarge(accountId, amount);
+    } else if (amount == 0) {
+      revert DA_AmountInvalid(accountId, amount);
     }
 
     if (auctions[accountId].ongoing == false) {
       revert DA_AuctionNotOngoing(accountId);
+    }
+
+    // need to check if the timelimit for the auction has been ecplised
+    if (block.timestamp > auctions[accountId].endTime) {
+      revert DA_AuctionEnded(accountId);
     }
 
     // need to check if this amount would put the portfolio over is matience marign
@@ -175,12 +186,38 @@ contract DutchAuction is IDutchAuction, Owned {
     if (amount > f_max) {
       amount = f_max;
     }
-    // send/ take money from the user if depending on the current priec
+    // send/ take money from the user if depending on the current price
 
-    // if the user has less margin then the amount they are bidding then get it from the security module
+    // TODO: need cover the case where the auction is insolvent
+    if (auctions[accountId].insolvent) { 
+      // This case someone is getting payed to take on the risk
+    } else {
+      // this case someone is paying to take on the risk
+      uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount);
 
+      // IPCRM.executeBid(accountId, msg.sender, amount, cashAmount);
+      // not sure about the liquidator difference
+
+      // get the cash asset from someone
+      // TODO: the person needs to approve this contract to transfer USDC on their behalf
+      // execute bid and transfer it to their account      
+    }
+
+    // TODO: if the margin requirements are met then end the auction
+    // if the margin requirements are not met then recalculate all the values, vupper, vlower, margin and spot?? etc...
+    Auction storage auction = auctions[accountId];
+    (int upperBound, int lowerBound) = _getBounds(accountId, riskManager.getSpot());
+    auction.auction.upperBound = upperBound;
+    auction.auction.lowerBound = lowerBound;
+    
+    // // TODO: needs to be in the current step.
+    // if (auction.insolvent) {
+    //   auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp).divideDecimal(parameters.stepInterval);
+    // } else {
+    //   auction.dv = IntLib.abs(auction.auction.upperBound).divideDecimal(auction.startTime - block.timestamp).divideDecimal(parameters.stepInterval);
+    // }
+    
     // add bid
-    // IPCRM.executeBid(accountId, msg.sender, amount, cashAmount); // not sure about the liquidator difference
   }
 
   /**

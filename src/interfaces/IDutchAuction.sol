@@ -43,4 +43,10 @@ interface IDutchAuction {
 
   /// @dev emmmited when an auction is settled
   error DA_AuctionNotOngoing(uint accountId);
+
+  /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
+  error DA_AmountTooLarge(uint accountId, uint amount);
+
+  /// @dev emitted when a bid is submitted for 0% of the portfolio
+  error DA_AmountInvalid(uint accountId, uint amount);
 }
