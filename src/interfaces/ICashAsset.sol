@@ -2,6 +2,25 @@
 pragma solidity ^0.8.13;
 
 interface ICashAsset {
+  ///////////////////
+  //   Functions   //
+  //////////////////
+
+  /**
+   * @dev deposit USDC and increase account balance
+   * @param recipientAccount account id to receive the cash asset
+   * @param amount amount of USDC to deposit
+   */
+  function deposit(uint recipientAccount, uint amount) external;
+
+  /**
+   * @notice withdraw USDC from a Lyra account
+   * @param accountId account id to withdraw
+   * @param amount amount of stable asset in its native decimals
+   * @param recipient USDC recipient
+   */
+  function withdraw(uint accountId, uint amount, address recipient) external;
+
   ////////////////
   //   Errors   //
   ////////////////
