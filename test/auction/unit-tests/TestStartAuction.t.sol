@@ -296,7 +296,6 @@ contract UNIT_TestStartAuction is Test {
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, auction.auction.upperBound);
 
-
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
@@ -336,5 +335,4 @@ contract UNIT_TestStartAuction is Test {
   function percentageHelper(uint bigNumberPercantage) public pure returns (uint) {
     return bigNumberPercantage * 100 / 1e16;
   }
-
 }

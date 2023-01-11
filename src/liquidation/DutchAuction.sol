@@ -157,7 +157,6 @@ contract DutchAuction is IDutchAuction, Owned {
    * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
    */
   function bid(uint accountId, uint amount) external returns (uint) {
-    
     // TODO: check with mechanism that there is no malicious attack where you could
     // get transfered the money and not take on the risk by putting in some one else's
     // accountId.
@@ -189,7 +188,7 @@ contract DutchAuction is IDutchAuction, Owned {
     // send/ take money from the user if depending on the current price
 
     // TODO: need cover the case where the auction is insolvent
-    if (auctions[accountId].insolvent) { 
+    if (auctions[accountId].insolvent) {
       // This case someone is getting payed to take on the risk
     } else {
       // this case someone is paying to take on the risk
@@ -200,7 +199,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
       // get the cash asset from someone
       // TODO: the person needs to approve this contract to transfer USDC on their behalf
-      // execute bid and transfer it to their account      
+      // execute bid and transfer it to their account
     }
 
     // TODO: if the margin requirements are met then end the auction
@@ -209,14 +208,14 @@ contract DutchAuction is IDutchAuction, Owned {
     (int upperBound, int lowerBound) = _getBounds(accountId, riskManager.getSpot());
     auction.auction.upperBound = upperBound;
     auction.auction.lowerBound = lowerBound;
-    
+
     // // TODO: needs to be in the current step.
     // if (auction.insolvent) {
     //   auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp).divideDecimal(parameters.stepInterval);
     // } else {
     //   auction.dv = IntLib.abs(auction.auction.upperBound).divideDecimal(auction.startTime - block.timestamp).divideDecimal(parameters.stepInterval);
     // }
-    
+
     // add bid
   }
 
@@ -239,21 +238,21 @@ contract DutchAuction is IDutchAuction, Owned {
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
     if (currentBidPrice <= 0) {
-      console.log('current bid is zero there for returning max UNit');
+      console.log("current bid is zero there for returning max UNit");
       return DecimalMath.UNIT;
     }
 
-    // IM is always negative under the margining system. 
+    // IM is always negative under the margining system.
     int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
 
-    console.log('current Bid Price');    
+    console.log("current Bid Price");
     console.logInt(currentBidPrice);
-    console.log('initial margin');
+    console.log("initial margin");
     console.logInt(initialMargin);
     // print out all the values in teh function
-    console.log('fmax');
+    console.log("fmax");
     console.logInt(fMax);
-    console.log('IM - CBP');
+    console.log("IM - CBP");
     console.logInt(initialMargin - currentBidPrice);
 
     if (fMax > 1e18) {

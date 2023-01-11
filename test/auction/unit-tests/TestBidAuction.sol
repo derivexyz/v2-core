@@ -17,10 +17,7 @@ import "../../shared/mocks/MockIPCRM.sol";
 // Math library
 import "synthetix/DecimalMath.sol";
 
-
 contract UNIT_BidAuction is Test {
-
-
   address alice;
   address bob;
   uint aliceAcc;
@@ -115,8 +112,6 @@ contract UNIT_BidAuction is Test {
     dutchAuction.startAuction(aliceAcc);
     uint endTime = dutchAuction.getAuctionDetails(aliceAcc).endTime;
     vm.warp(endTime + 10);
-    console.log('block time stamp', block.timestamp);
-    console.log('end time', endTime);
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionEnded.selector, aliceAcc));
     dutchAuction.bid(aliceAcc, 50 * 1e16);
   }

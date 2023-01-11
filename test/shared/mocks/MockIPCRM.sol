@@ -108,12 +108,12 @@ contract MockIPCRM is IPCRM, IManager {
 
   function givePortfolio(uint accountId, ExpiryHolding[] memory expiryHoldings) external {
     accHasAssets[accountId] = true;
-    
+
     // copy expiryHoldings into userAcc
-    for(uint i = 0; i < expiryHoldings.length; i++) {
+    for (uint i = 0; i < expiryHoldings.length; i++) {
       userAcc[i].expiry = expiryHoldings[i].expiry;
       userAcc[i].numStrikeHoldings = expiryHoldings[i].numStrikeHoldings;
-      for(uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
+      for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
         userAcc[i].strikes[j].strike = expiryHoldings[i].strikes[j].strike;
         userAcc[i].strikes[j].calls = expiryHoldings[i].strikes[j].calls;
         userAcc[i].strikes[j].puts = expiryHoldings[i].strikes[j].puts;
