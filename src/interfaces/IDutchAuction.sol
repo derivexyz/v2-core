@@ -49,4 +49,7 @@ interface IDutchAuction {
 
   /// @dev emitted when a bid is submitted for 0% of the portfolio
   error DA_AmountInvalid(uint accountId, uint amount);
+
+  /// @dev emitted when a user tries to increment the step for an insovlent auction
+  error DA_AuctionNotInsolventCannotStep(uint accountId);
 }

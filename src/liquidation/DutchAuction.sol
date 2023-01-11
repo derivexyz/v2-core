@@ -54,6 +54,8 @@ contract DutchAuction is IDutchAuction, Owned {
     uint endTime;
     /// The change in value of the portfolio per step in dollars when not insolvent
     uint dv;
+    /// The current step if the auction is insolvent
+    uint stepInsolvent;
   }
 
   struct DutchAuctionParameters {
@@ -124,6 +126,7 @@ contract DutchAuction is IDutchAuction, Owned {
       startTime: block.timestamp,
       endTime: block.timestamp + parameters.lengthOfAuction,
       dv: dv,
+      stepInsolvent: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: lowerBound})
     });
   }
@@ -244,6 +247,21 @@ contract DutchAuction is IDutchAuction, Owned {
     }
   }
 
+  function incrementInsolventAuction(uint accountId) external returns (uint) {
+    if (address(riskManager) != msg.sender) {
+      revert DA_NotRiskManager();
+    }
+
+    Auction storage auction = auctions[accountId];
+    if (auction.insolvent) {
+      revert DA_AuctionNotInsolventCannotStep(accountId);
+    }
+
+    auction.stepInsolvent++;
+
+    return auction.stepInsolvent;
+  }
+
   /**
    * @notice External view to get the maximum size of the portfolio that could be bought at the current price
    * @param accountId the id of the account being liquidated
@@ -315,6 +333,7 @@ contract DutchAuction is IDutchAuction, Owned {
   function _markStrike(IPCRM.StrikeHolding[] memory strikes, uint spot) internal pure returns (int max, int min) {
     for (uint j = 0; j < strikes.length; j++) {
       // calls
+      // TODO: add vol shocks here.
       {
         int numCalls = strikes[j].calls;
         max += SignedMath.max(numCalls, 0) * spot.toInt256();
@@ -339,9 +358,16 @@ contract DutchAuction is IDutchAuction, Owned {
     // otherwise return using dv
     Auction memory auction = auctions[accountId];
     int upperBound = auction.auction.upperBound;
-    uint numSteps = (block.timestamp - auction.startTime) / parameters.stepInterval; // will round down to whole number.
+    uint numSteps;
+    if (auction.insolvent) {
+      numSteps = auction.stepInsolvent;
+    } else {
+      uint numSteps = (block.timestamp - auction.startTime) / parameters.stepInterval; // will round down to whole number.
+    }
 
     // dv = (Vmax - Vmin) * numSteps
+    // TODO: check if this is correct for the case where we recalculate the bid for
+    // for the insolvent auction.
     return upperBound - auction.dv.multiplyDecimal(numSteps).toInt256();
   }
 }
