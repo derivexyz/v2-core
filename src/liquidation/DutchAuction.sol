@@ -247,6 +247,12 @@ contract DutchAuction is IDutchAuction, Owned {
     }
   }
 
+  /**
+   * @notice This function can only be used for when the auction is insolvent
+   * @dev This is to prevent an auction falling all the way through if a provider or the network goes down
+   * @param accountId the accountId that relates to the auction that is being stepped
+   * @return uint the step that the auction is on
+   */
   function incrementInsolventAuction(uint accountId) external returns (uint) {
     if (address(riskManager) != msg.sender) {
       revert DA_NotRiskManager();
@@ -349,25 +355,20 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @notice gets the current bid price for a particular auction at the current block
    * @dev returns the current bid price for a particular auction
-   * @param accountId the bytes32 id of an auctionId
+   * @param accountId the uint id related to the auction
    * @return int the current bid price for the auction
    */
   function _getCurrentBidPrice(uint accountId) internal view returns (int) {
-    // need to check if the auction is still ongoing
-    // if not then return the lower bound
-    // otherwise return using dv
     Auction memory auction = auctions[accountId];
     int upperBound = auction.auction.upperBound;
     uint numSteps;
     if (auction.insolvent) {
       numSteps = auction.stepInsolvent;
+      return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
     } else {
-      uint numSteps = (block.timestamp - auction.startTime) / parameters.stepInterval; // will round down to whole number.
+      return upperBound
+        - auction.dv.multiplyDecimal((block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval))
+          .toInt256();
     }
-
-    // dv = (Vmax - Vmin) * numSteps
-    // TODO: check if this is correct for the case where we recalculate the bid for
-    // for the insolvent auction.
-    return upperBound - auction.dv.multiplyDecimal(numSteps).toInt256();
   }
 }
