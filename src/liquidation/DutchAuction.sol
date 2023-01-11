@@ -13,6 +13,9 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/DecimalMath.sol";
 import "../libraries/IntLib.sol";
 
+// TODO: remove forge test before merging
+import "forge-std/Test.sol";
+
 /**
  * @title Dutch Auction
  * @author Lyra
@@ -199,14 +202,28 @@ contract DutchAuction is IDutchAuction, Owned {
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
     if (currentBidPrice <= 0) {
+      console.log('current bid is zero there for returning max UNit');
       return DecimalMath.UNIT;
     }
 
-    // denominator could be negative here.
-    int fMax = initialMargin / (initialMargin - currentBidPrice) * 1e18; // needs to return big number, how to do this with ints.
+    // IM is always negative under the margining system. 
+    int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
+
+    console.log('current Bid Price');    
+    console.logInt(currentBidPrice);
+    console.log('initial margin');
+    console.logInt(initialMargin);
+    // print out all the values in teh function
+    console.log('fmax');
+    console.logInt(fMax);
+    console.log('IM - CBP');
+    console.logInt(initialMargin - currentBidPrice);
+
     if (fMax > 1e18) {
+      console.log("221 entered and returned max UNit");
       return DecimalMath.UNIT;
     } else {
+      console.log("fmax is %s", fMax.toUint256());
       return fMax.toUint256();
     }
   }

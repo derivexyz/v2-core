@@ -253,8 +253,10 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
-  function testGetMaxProportion() public {
+  function testGetMaxProportionNegativeMargin() public {
     vm.startPrank(address(manager));
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, -1000 * 1e18);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -268,10 +270,32 @@ contract UNIT_TestStartAuction is Test {
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, 0);
+    assertEq(currentBidPrice, auction.auction.upperBound);
 
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
+  }
+
+  function testGetMaxProportionPositiveMargin() public {
+    vm.startPrank(address(manager));
     // deposit marign to the account
     manager.depositMargin(aliceAcc, 1000 * 1e18);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
+
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
@@ -282,7 +306,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, 1000 * 1e18);
+    manager.depositMargin(aliceAcc, -1000 * 1e18);
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
@@ -299,6 +323,7 @@ contract UNIT_TestStartAuction is Test {
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
     assertGt(currentBidPrice, 0);
 
     // getting the max proportion
