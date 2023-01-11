@@ -248,7 +248,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   /**
    * @dev Returns the exchange rate from cash asset to stable asset
-   *      this should always be higher than 1, unless we have an insolvency
+   *      this should always be equal to 1, unless we have an insolvency
    */
   function getCashToStableExchangeRate() external view returns (uint) {
     return _getExchangeRate();
@@ -278,7 +278,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   /**
    * @dev get exchange rate from cash asset to stable coin amount
-   * @dev this value should be 1 unless there's an insolvency reported by manager
+   * @dev this value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply - totalBorrow;
