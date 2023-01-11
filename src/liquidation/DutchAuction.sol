@@ -160,6 +160,8 @@ contract DutchAuction is IDutchAuction, Owned {
     // TODO: check with mechanism that there is no malicious attack where you could
     // get transfered the money and not take on the risk by putting in some one else's
     // accountId.
+    // TODO: need to investiage this big problem where some one could call this
+    // and someone else could end up with the risk
     // TODO: should this be restricted to make sure that only the person who owns the account can bid on it??
     if (amount > DecimalMath.UNIT) {
       revert DA_AmountTooLarge(accountId, amount);
@@ -179,12 +181,10 @@ contract DutchAuction is IDutchAuction, Owned {
     // need to check if this amount would put the portfolio over is matience marign
     // if so then revert
 
-    // get f_max
+    // get compares max and the f_max amount
     uint f_max = _getMaxProportion(accountId);
+    amount = amount > f_max ? f_max : amount;
 
-    if (amount > f_max) {
-      amount = f_max;
-    }
     // send/ take money from the user if depending on the current price
 
     // TODO: need cover the case where the auction is insolvent
@@ -194,12 +194,8 @@ contract DutchAuction is IDutchAuction, Owned {
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount);
 
-      // IPCRM.executeBid(accountId, msg.sender, amount, cashAmount);
-      // not sure about the liquidator difference
-
-      // get the cash asset from someone
-      // TODO: the person needs to approve this contract to transfer USDC on their behalf
-      // execute bid and transfer it to their account
+      // need to be able to resolve the accountId from the address
+      // riskManager.executeBid(accountId, , amount, cashAmount);
     }
 
     // TODO: if the margin requirements are met then end the auction
@@ -207,16 +203,14 @@ contract DutchAuction is IDutchAuction, Owned {
     Auction storage auction = auctions[accountId];
     (int upperBound, int lowerBound) = _getBounds(accountId, riskManager.getSpot());
     auction.auction.upperBound = upperBound;
-    auction.auction.lowerBound = lowerBound;
 
-    // // TODO: needs to be in the current step.
-    // if (auction.insolvent) {
-    //   auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp).divideDecimal(parameters.stepInterval);
-    // } else {
-    //   auction.dv = IntLib.abs(auction.auction.upperBound).divideDecimal(auction.startTime - block.timestamp).divideDecimal(parameters.stepInterval);
-    // }
+    // DV only changes for the insolvent auction
+    if (auction.insolvent) {
+      auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp)
+        .divideDecimal(parameters.stepInterval);
+    }
 
-    // add bid
+    return amount;
   }
 
   /**
@@ -238,28 +232,14 @@ contract DutchAuction is IDutchAuction, Owned {
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
     if (currentBidPrice <= 0) {
-      console.log("current bid is zero there for returning max UNit");
       return DecimalMath.UNIT;
     }
 
     // IM is always negative under the margining system.
     int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-
-    console.log("current Bid Price");
-    console.logInt(currentBidPrice);
-    console.log("initial margin");
-    console.logInt(initialMargin);
-    // print out all the values in teh function
-    console.log("fmax");
-    console.logInt(fMax);
-    console.log("IM - CBP");
-    console.logInt(initialMargin - currentBidPrice);
-
     if (fMax > 1e18) {
-      console.log("221 entered and returned max UNit");
       return DecimalMath.UNIT;
     } else {
-      console.log("fmax is %s", fMax.toUint256());
       return fMax.toUint256();
     }
   }
