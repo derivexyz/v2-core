@@ -14,6 +14,9 @@ import "../../../src/Accounts.sol";
  * @dev we use the real Accounts contract in these tests to simplify verification process
  */
 contract UNIT_SecurityModule is Test {
+  // OFAC is the bad guy
+  address constant public badGuy = address(0x0fac);
+
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
@@ -56,7 +59,32 @@ contract UNIT_SecurityModule is Test {
     assertEq(cashBalance, 1000e18);
   }
 
-  function testCanWithdrawFromSecurityModule() public {}
+  function testWithdrawFromSecurityModule() public {
+    uint depositAmount = 1000e6;
+    securityModule.deposit(depositAmount);
 
-  function testCanAddWhitelistedModule() public {}
+    uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
+
+    uint usdcBefore = usdc.balanceOf(address(this));
+    securityModule.withdraw(sharesToWithdraw, address(this));
+    uint sharesLeft = securityModule.balanceOf(address(this));
+    assertEq(sharesLeft, sharesToWithdraw); // 50% shares remaining
+
+    uint usdcAfter = usdc.balanceOf(address(this));
+    assertEq(usdcAfter - usdcBefore, depositAmount / 2);
+  }
+
+  function testCannotAddWhitelistedModuleFromNonOwner() public {
+    vm.prank(badGuy);
+
+    vm.expectRevert();
+    securityModule.setWhitelistModule(badGuy, true);
+  }
+
+  function NonWhitelisteModuleCannotRequestPayout() public {
+    vm.prank(badGuy);
+
+    vm.expectRevert(ISecurityModule.SM_NotWhitelisted.selector);
+    securityModule.requestPayout(accountId, 1000e18);
+  }
 }
