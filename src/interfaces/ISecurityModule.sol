@@ -25,7 +25,7 @@ interface ISecurityModule {
   /**
    * @dev Emitted when there is a pay out from the security module
    */
-  event SecurityModulePaidOut(uint accountId, uint cashAmount);
+  event SecurityModulePaidOut(uint accountId, uint cashAmountNeeded, uint cashAmountPaid);
 
   ////////////
   // Errors //
