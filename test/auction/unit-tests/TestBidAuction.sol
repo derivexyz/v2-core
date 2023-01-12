@@ -129,6 +129,6 @@ contract UNIT_BidAuction is Test {
     vm.prank(address(manager));
     dutchAuction.startAuction(aliceAcc);
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountInvalid.selector, aliceAcc, 0));
-    dutchAuction.bid(aliceAcc, bobAcc,  0);
+    dutchAuction.bid(aliceAcc, bobAcc, 0);
   }
 }

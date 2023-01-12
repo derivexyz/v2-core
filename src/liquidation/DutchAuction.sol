@@ -75,7 +75,7 @@ contract DutchAuction is IDutchAuction, Owned {
   IPCRM public immutable riskManager;
 
   /// @dev The accounts contract for resolving address to accountIds
-  Accounts public immutable accounts; 
+  Accounts public immutable accounts;
 
   /// @dev The parameters for the dutch auction
   DutchAuctionParameters private parameters;
@@ -131,11 +131,10 @@ contract DutchAuction is IDutchAuction, Owned {
     emit AuctionStarted(accountId, upperBound, lowerBound, block.timestamp);
   }
 
-  
   /**
    * @notice Function used to begin insolvency logic for an auction that started as solvent
    * @dev Takes in the auction and returns the account id
-   * @param accountId the bytesId that corresponds to the auction being marked as liquidatable 
+   * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
    * @return bool The state of the marked insolvent auction, should be true or should revert
    */
   function markAsInsolventLiquidation(uint accountId) external returns (bool) {
@@ -150,7 +149,6 @@ contract DutchAuction is IDutchAuction, Owned {
     uint spot = riskManager.getSpot();
     (, int lowerBound) = _getBounds(accountId, spot);
     _startInsolventAuction(lowerBound, accountId);
-
 
     return auctions[accountId].insolvent;
   }
@@ -195,7 +193,7 @@ contract DutchAuction is IDutchAuction, Owned {
     amount = amount > f_max ? f_max : amount;
 
     if (auctions[accountId].insolvent) {
-      // TODO: Anton 
+      // TODO: Anton
       // This case someone is getting payed to take on the risk
     } else {
       // this case someone is paying to take on the risk
@@ -210,7 +208,6 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // TODO: if the margin requirements are met then end the auction
     // if the margin requirements are not met then recalculate all the values, vupper, vlower, margin and spot?? etc...
-    
 
     // DV only changes for the insolvent auction
     // if (auction.insolvent) {
@@ -315,12 +312,12 @@ contract DutchAuction is IDutchAuction, Owned {
     }
   }
 
-  /**  
-  * @notice Starts an auction that starts with a positive upper bound
-  * @dev Function is here to break up the logic for insolvent and solvent auctions
-  * @param upperBound The upper bound of the auction that must be greater than zero
-  * @param accountId The id of the account being liquidated
-  */
+  /**
+   * @notice Starts an auction that starts with a positive upper bound
+   * @dev Function is here to break up the logic for insolvent and solvent auctions
+   * @param upperBound The upper bound of the auction that must be greater than zero
+   * @param accountId The id of the account being liquidated
+   */
   function _startSolventAuction(int upperBound, uint accountId) internal {
     uint dv = IntLib.abs(upperBound).divideDecimal(parameters.lengthOfAuction); // as the auction starts in the positive, recalculate when insolvency occurs
 
@@ -335,15 +332,16 @@ contract DutchAuction is IDutchAuction, Owned {
     });
   }
 
-  /**  @notice Explain to an end user what this does
-  * @dev Explain to a developer any extra details
-  * @param lowerBound The lowerBound, the minimum acceptable bid for an insolvency
-  * @param accountId the id of the account that is being liquidated
-  */
+  /**
+   * @notice Explain to an end user what this does
+   * @dev Explain to a developer any extra details
+   * @param lowerBound The lowerBound, the minimum acceptable bid for an insolvency
+   * @param accountId the id of the account that is being liquidated
+   */
   function _startInsolventAuction(int lowerBound, uint accountId) internal {
-    uint dv = IntLib.abs(lowerBound).divideDecimal(parameters.lengthOfAuction); 
+    uint dv = IntLib.abs(lowerBound).divideDecimal(parameters.lengthOfAuction);
     // as the auction starts in the negative, recalculate when insolvency occurs
-    
+
     auctions[accountId] = Auction({
       insolvent: true,
       ongoing: true,
@@ -354,7 +352,7 @@ contract DutchAuction is IDutchAuction, Owned {
       auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
     });
     emit Insolvent(accountId);
-  } 
+  }
 
   /**
    * @notice gets the upper bound for the liquidation price
