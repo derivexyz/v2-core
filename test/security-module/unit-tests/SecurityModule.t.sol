@@ -38,15 +38,9 @@ contract UNIT_SecurityModule is Test {
     accountId = account.createAccount(address(this), manager);
   }
 
-  function testCanDepositIntoSecurityModule() public {
-    
-  }
+  function testCanDepositIntoSecurityModule() public {}
 
-  function testCanWithdrawFromSecurityModule() public {
-    
-  }
+  function testCanWithdrawFromSecurityModule() public {}
 
-  function testCanAddWhitelistedModule() public {
-    
-  }
+  function testCanAddWhitelistedModule() public {}
 }
