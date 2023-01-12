@@ -97,6 +97,7 @@ contract PCRMGroupingGasScript is Script {
     aggregator = new MockV3Aggregator(18, 1000e18);
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    aggregator.updateRoundData(1, 1000e18, block.timestamp, block.timestamp, 1);
   }
 
   function _setupBaseLayer() public {
@@ -114,6 +115,21 @@ contract PCRMGroupingGasScript is Script {
       address(cash),
       address(option),
       address(auction)
+    );
+
+    pcrm.setParams(
+      PCRM.Shocks({
+        spotUpInitial: 120e16,
+        spotDownInitial: 80e16,
+        spotUpMaintenance: 110e16,
+        spotDownMaintenance: 90e16,
+        vol: 300e16,
+        rfr: 10e16
+      }),
+      PCRM.Discounts({
+        maintenanceStaticDiscount: 90e16, 
+        initialStaticDiscount: 80e16
+      })
     );
   }
 

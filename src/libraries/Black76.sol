@@ -60,6 +60,8 @@ library Black76 {
    * @return putPrice Put price for given Black76 parameters (18-decimal precision).
    */
   function prices(Black76Inputs memory b76Input) public pure returns (uint callPrice, uint putPrice) {
+    // todo [Vlad]: fix case where spot == 0 && strike != 0
+    
     unchecked {
       uint tAnnualised = _annualise(b76Input.timeToExpirySec);
       // products of <128 bit numbers, cannot overflow here when caseted to 256
