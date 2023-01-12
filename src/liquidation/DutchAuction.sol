@@ -105,6 +105,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev Can only be auctioned by a risk manager and will start an auction
    * @param accountId The id of the account being liquidated
    */
+   // TODO: split this up into two auction functions one for insovlent start and one for solvent start
   function startAuction(uint accountId) external {
     if (address(riskManager) != msg.sender) {
       revert DA_NotRiskManager();
@@ -157,7 +158,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice a user submits a bid for a particular auction
    * @dev Takes in the auction and returns the account id
    * @param accountId the bytesId that corresponds to a particular auction
-   * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
+   * @return amount the amount as a percentage of the portfolio that the user is willing to purchase
    */
   function bid(uint accountId, uint amount) external returns (uint) {
     // TODO: check with mechanism that there is no malicious attack where you could
@@ -190,7 +191,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // send/ take money from the user if depending on the current price
 
-    // TODO: need cover the case where the auction is insolvent
+    // TODO: Need to be able to figure out how to get the accountId of a msg.sender.
     if (auctions[accountId].insolvent) {
       // This case someone is getting payed to take on the risk
     } else {
