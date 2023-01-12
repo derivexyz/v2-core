@@ -23,7 +23,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   using SafeERC20 for IERC20Metadata;
 
   ///@dev Cash Asset contract address
-  // IAccounts public immutable accounts;
+  IAccounts public immutable accounts;
 
   ///@dev Cash Asset contract address
   ICashAsset public immutable cashAsset;
@@ -35,16 +35,18 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   uint8 private immutable stableDecimals;
 
   ///@dev The account id security module is holding
-  uint immutable accountId;
+  uint public immutable accountId;
 
   ///@dev Mapping of (address => isWhitelistedModule)
   mapping(address => bool) isWhitelisted;
 
-  constructor(ICashAsset _cashAsset, IERC20Metadata _stableAsset) ERC20("Lyra USDC Security Module Share", "lsUSD") {
-    // accounts = _account;
+  constructor(IAccounts _accounts, ICashAsset _cashAsset, IERC20Metadata _stableAsset, IManager _manager) ERC20("Lyra USDC Security Module Share", "lsUSD") {
+    accounts = _accounts;
     stableAsset = _stableAsset;
     cashAsset = _cashAsset;
     stableDecimals = _stableAsset.decimals();
+
+    accountId = IAccounts(_accounts).createAccount(address(this), _manager);
   }
 
   /**
