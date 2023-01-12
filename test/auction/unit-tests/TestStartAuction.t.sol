@@ -60,11 +60,11 @@ contract UNIT_TestStartAuction is Test {
     /* Risk Manager */
     manager = new MockIPCRM(address(account));
 
-    dutchAuction = new DutchAuction(address(manager));
+    dutchAuction = new DutchAuction(address(manager), address(account));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
-        stepInterval: 2 * DecimalMath.UNIT,
+        stepInterval: 1 * DecimalMath.UNIT,
         lengthOfAuction: 200 * DecimalMath.UNIT,
         securityModule: address(1)
       })
@@ -112,7 +112,7 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
 
     // log all the auction struct detials
-    assertEq(auction.insolvent, false);
+    assertEq(auction.insolvent, true); // this would be flagged as an insolvent auction
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
@@ -172,16 +172,17 @@ contract UNIT_TestStartAuction is Test {
   // test that an auction is correcttly marked as insolvent
   function testInsolventAuction() public {
     vm.startPrank(address(manager));
-
+    manager.giveAssets(aliceAcc);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.insolvent, false);
-
     // fast forward
-    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
+    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 1);
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
+
     // mark the auction as insolvent
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
 
@@ -213,7 +214,7 @@ contract UNIT_TestStartAuction is Test {
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
     dutchAuction.startAuction(aliceAcc);
 
-    assertEq(dutchAuction.getAuctionDetails(aliceAcc).insolvent, false);
+    assertEq(dutchAuction.getAuctionDetails(aliceAcc).insolvent, true); // auction will start as insolvent
   }
 
   // test account with accoiunt id greater than 2

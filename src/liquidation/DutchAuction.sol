@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 // interfaces
 import "../interfaces/IPCRM.sol";
 import "../interfaces/IDutchAuction.sol";
+import "../Accounts.sol";
 
 // inherited
 import "synthetix/Owned.sol";
@@ -73,6 +74,9 @@ contract DutchAuction is IDutchAuction, Owned {
   /// @dev The risk manager that is the parent of the dutch auction contract
   IPCRM public immutable riskManager;
 
+  /// @dev The accounts contract for resolving address to accountIds
+  Accounts public immutable accounts; 
+
   /// @dev The parameters for the dutch auction
   DutchAuctionParameters private parameters;
 
@@ -80,8 +84,9 @@ contract DutchAuction is IDutchAuction, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address _riskManager) Owned() {
+  constructor(address _riskManager, address _accounts) Owned() {
     riskManager = IPCRM(_riskManager);
+    accounts = Accounts(_accounts);
   }
 
   /**
@@ -116,27 +121,21 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     uint spot = riskManager.getSpot();
-
     (int upperBound, int lowerBound) = _getBounds(accountId, spot);
-
-    uint dv = IntLib.abs(upperBound).divideDecimal(parameters.lengthOfAuction); // as the auction starts in the positive, recalculate when insolvency occurs
-
-    auctions[accountId] = Auction({
-      insolvent: false,
-      ongoing: true,
-      startTime: block.timestamp,
-      endTime: block.timestamp + parameters.lengthOfAuction,
-      dv: dv,
-      stepInsolvent: 0,
-      auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: lowerBound})
-    });
+    // covers the case where an auction could start as insolvent, upperbound < 0
+    if (upperBound > 0) {
+      _startSolventAuction(upperBound, accountId);
+    } else {
+      _startInsolventAuction(lowerBound, accountId);
+    }
   }
 
+  
   /**
-   * @notice a user submits a bid for a particular auction
+   * @notice Function used to begin insolvency logic for an auction that started as solvent
    * @dev Takes in the auction and returns the account id
-   * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
-   * @return amount the amount as a percantage of the portfolio that the user is willing to purchase
+   * @param accountId the bytesId that corresponds to the auction being marked as liquidatable 
+   * @return bool The state of the marked insolvent auction, should be true or should revert
    */
   function markAsInsolventLiquidation(uint accountId) external returns (bool) {
     if (address(riskManager) != msg.sender) {
@@ -147,9 +146,10 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
 
-    auctions[accountId].insolvent = true;
-    auctions[accountId].dv =
-      IntLib.abs(auctions[accountId].auction.lowerBound).divideDecimal(parameters.lengthOfAuction);
+    uint spot = riskManager.getSpot();
+    (, int lowerBound) = _getBounds(accountId, spot);
+    _startInsolventAuction(lowerBound, accountId);
+
 
     return auctions[accountId].insolvent;
   }
@@ -193,10 +193,18 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // TODO: Need to be able to figure out how to get the accountId of a msg.sender.
     if (auctions[accountId].insolvent) {
+      // TODO: Anton 
       // This case someone is getting payed to take on the risk
     } else {
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount);
+
+      // transfer the money to the account being liquidated
+      
+      // transfer the person the scalar of the assets
+
+
+
 
       // need to be able to resolve the accountId from the address
       // riskManager.executeBid(accountId, , amount, cashAmount);
@@ -209,10 +217,10 @@ contract DutchAuction is IDutchAuction, Owned {
     auction.auction.upperBound = upperBound;
 
     // DV only changes for the insolvent auction
-    if (auction.insolvent) {
-      auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp)
-        .divideDecimal(parameters.stepInterval);
-    }
+    // if (auction.insolvent) {
+    //   auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp)
+    //     .divideDecimal(parameters.stepInterval);
+    // }
 
     return amount;
   }
@@ -224,28 +232,6 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   function getAuctionDetails(uint accountId) external view returns (Auction memory) {
     return auctions[accountId];
-  }
-
-  /**
-   * @notice Gets the maximum size of the portfolio that could be bought at the current price
-   * @param accountId the id of the account being liquidated
-   * @return uint the proportion of the portfolio that could be bought at the current price
-   */
-  function _getMaxProportion(uint accountId) internal returns (uint) {
-    int initialMargin = riskManager.getInitialMargin(accountId);
-    int currentBidPrice = _getCurrentBidPrice(accountId);
-
-    if (currentBidPrice <= 0) {
-      return DecimalMath.UNIT;
-    }
-
-    // IM is always negative under the margining system.
-    int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-    if (fMax > 1e18) {
-      return DecimalMath.UNIT;
-    } else {
-      return fMax.toUint256();
-    }
   }
 
   /**
@@ -312,6 +298,68 @@ contract DutchAuction is IDutchAuction, Owned {
   ///////////////
 
   /**
+   * @notice Gets the maximum size of the portfolio that could be bought at the current price
+   * @param accountId the id of the account being liquidated
+   * @return uint the proportion of the portfolio that could be bought at the current price
+   */
+  function _getMaxProportion(uint accountId) internal returns (uint) {
+    int initialMargin = riskManager.getInitialMargin(accountId);
+    int currentBidPrice = _getCurrentBidPrice(accountId);
+
+    if (currentBidPrice <= 0) {
+      return DecimalMath.UNIT;
+    }
+
+    // IM is always negative under the margining system.
+    int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
+    if (fMax > 1e18) {
+      return DecimalMath.UNIT;
+    } else {
+      return fMax.toUint256();
+    }
+  }
+
+  /**  
+  * @notice Starts an auction that starts with a positive upper bound
+  * @dev Function is here to break up the logic for insolvent and solvent auctions
+  * @param upperBound The upper bound of the auction that must be greater than zero
+  * @param accountId The id of the account being liquidated
+  */
+  function _startSolventAuction(int upperBound, uint accountId) internal {
+    uint dv = IntLib.abs(upperBound).divideDecimal(parameters.lengthOfAuction); // as the auction starts in the positive, recalculate when insolvency occurs
+
+    auctions[accountId] = Auction({
+      insolvent: false,
+      ongoing: true,
+      startTime: block.timestamp,
+      endTime: block.timestamp + parameters.lengthOfAuction, // half the auction length as 50% of the auction should be spent on each side
+      dv: dv,
+      stepInsolvent: 0,
+      auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: 0})
+    });
+  }
+
+  /**  @notice Explain to an end user what this does
+  * @dev Explain to a developer any extra details
+  * @param lowerBound The lowerBound, the minimum acceptable bid for an insolvency
+  * @param accountId the id of the account that is being liquidated
+  */
+  function _startInsolventAuction(int lowerBound, uint accountId) internal {
+    uint dv = IntLib.abs(lowerBound).divideDecimal(parameters.lengthOfAuction); 
+    // as the auction starts in the negative, recalculate when insolvency occurs
+    
+    auctions[accountId] = Auction({
+      insolvent: true,
+      ongoing: true,
+      startTime: block.timestamp,
+      endTime: block.timestamp + parameters.lengthOfAuction, // half the length of the auction as 50% of the auction should be spent on each side
+      dv: dv,
+      stepInsolvent: 0,
+      auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
+    });
+  } 
+
+  /**
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
@@ -367,9 +415,15 @@ contract DutchAuction is IDutchAuction, Owned {
       numSteps = auction.stepInsolvent;
       return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
     } else {
-      return upperBound
+      int bid = upperBound
         - auction.dv.multiplyDecimal((block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval))
           .toInt256();
+      // have to call markAsInsolvent before bid can be negative
+      if (bid < 0) {
+        return 0;
+      } else {
+        return bid;
+      }
     }
   }
 }

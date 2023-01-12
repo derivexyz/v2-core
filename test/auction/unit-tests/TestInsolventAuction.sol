@@ -56,7 +56,7 @@ contract UNIT_TestInvolventAuction is Test {
     /* Risk Manager */
     manager = new MockManager(address(account));
 
-    dutchAuction = new DutchAuction(address(manager));
+    dutchAuction = new DutchAuction(address(manager), address(account));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})

@@ -60,7 +60,7 @@ contract UNIT_BidAuction is Test {
     /* Risk Manager */
     manager = new MockIPCRM(address(account));
 
-    dutchAuction = new DutchAuction(address(manager));
+    dutchAuction = new DutchAuction(address(manager), address(account));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
