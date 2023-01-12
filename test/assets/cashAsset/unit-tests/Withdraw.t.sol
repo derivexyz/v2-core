@@ -32,7 +32,7 @@ contract UNIT_CashAssetWithdraw is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, usdc);
+    cashAsset = new CashAsset(account, usdc, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -112,7 +112,7 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
     // usdc as 20 decimals
     usdc.setDecimals(20);
 
-    cashAsset = new CashAsset(accounts, usdc);
+    cashAsset = new CashAsset(accounts, usdc, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
