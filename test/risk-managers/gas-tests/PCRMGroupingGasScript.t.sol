@@ -5,14 +5,16 @@ import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
+import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
+import "test/shared/mocks/MockERC20.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
-contract PCRMGroupingGas is Script {
+contract PCRMGroupingGasScript is Script {
   Accounts account;
   PCRM pcrm;
 
@@ -20,6 +22,7 @@ contract PCRMGroupingGas is Script {
   MockV3Aggregator aggregator;
   Option option;
   MockDutchAuction auction;
+  CashAsset cash;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -27,10 +30,12 @@ contract PCRMGroupingGas is Script {
   uint bobAcc;
 
   function run() external {
+    vm.startBroadcast();
+    _setupFeeds();
+    _setupBaseLayer();
+    vm.stopBroadcast();
+
     vm.startBroadcast(alice);
-
-    _setup();
-
     aliceAcc = account.createAccount(alice, IManager(pcrm));
     bobAcc = account.createAccount(bob, IManager(pcrm));
     vm.stopBroadcast();
@@ -87,20 +92,25 @@ contract PCRMGroupingGas is Script {
     console.log("gas: grouping 128 assets in PCRM:", initGas - gasleft());
   }
 
-  function _setup() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
-
+  function _setupFeeds() public {
     aggregator = new MockV3Aggregator(18, 1000e18);
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+  }
+
+  function _setupBaseLayer() public {
+    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     auction = new MockDutchAuction();
 
     option = new Option();
+    MockERC20 stable = new MockERC20("mock", "MOCK");
+    cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)));
+
     pcrm = new PCRM(
       address(account),
       address(spotFeeds),
-      address(0), // lending
+      address(cash),
       address(option),
       address(auction)
     );

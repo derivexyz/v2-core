@@ -28,6 +28,8 @@ contract PCRM is IManager, Owned {
   using DecimalMath for uint;
   using SafeCast for uint;
 
+  // todo [Josh]: move to interface
+
   /**
    * INITIAL: margin required for trade to pass
    * MAINTENANCE: margin required to prevent liquidation
@@ -154,6 +156,8 @@ contract PCRM is IManager, Owned {
     // PCRM calculations
     ExpiryHolding[] memory expiries = _groupOptions(account.getAccountBalances(accountId));
     int cashAmount = _getCashAmount(accountId);
+
+    // todo [Josh]: might make more semantic case to not incldue "cashAmount" in here.
     _calcMargin(expiries, cashAmount, MarginType.INITIAL);
   }
 
@@ -284,6 +288,7 @@ contract PCRM is IManager, Owned {
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
 
       // calculate proceeds for forwards / calls / puts
+      // todo [Josh]: need to figure out the order of settlement as this may affect cash supply / borrow
       if (pnl > 0) {
         expiryValue += (strike.calls + strike.forwards).multiplyDecimal(pnl);
       } else {
