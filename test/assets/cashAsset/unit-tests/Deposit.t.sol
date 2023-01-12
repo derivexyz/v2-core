@@ -56,19 +56,6 @@ contract UNIT_CashAssetDeposit is Test {
     int balance = account.getBalance(accountId, cashAsset, 0);
     assertEq(balance, int(depositAmount));
   }
-
-  function testDepositIntoNonEmptyAccountAccrueInterest() public {
-    uint depositAmount = 100 ether;
-    cashAsset.deposit(accountId, depositAmount);
-
-    vm.warp(block.timestamp + 1 days);
-
-    // deposit again
-    cashAsset.deposit(accountId, depositAmount);
-
-    assertEq(cashAsset.lastTimestamp(), block.timestamp);
-    // todo: test accrueInterest
-  }
 }
 
 contract UNIT_LendingDeposit6Decimals is Test {

@@ -6,6 +6,8 @@ import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
+import "synthetix/SignedDecimalMath.sol";
+import "synthetix/DecimalMath.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
@@ -25,6 +27,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   using ConvertDecimals for uint;
   using SafeCast for uint;
   using SafeCast for int;
+  using SignedDecimalMath for int;
 
   ///@dev Account contract address
   IAccounts public immutable accounts;
@@ -63,8 +66,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
 
-  ///@dev AccountId to previously stored borrow index
-  mapping(uint => uint) public accountBorrowIndex;
+  ///@dev AccountId to previously stored borrow/supply index depending on a positive or debt position.
+  mapping(uint => uint) public accountIdIndex;
 
   /////////////////////
   //   Constructor   //
@@ -87,7 +90,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //////////////////////////////
 
   /**
-   * @notice whitelist or un-whitelist a manager
+   * @notice Whitelist or un-whitelist a manager
    * @param _manager manager address
    * @param _whitelisted true to whitelist
    */
@@ -110,16 +113,13 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ////////////////////////////
 
   /**
-   * @dev deposit USDC and increase account balance
+   * @dev Deposit USDC and increase account balance
    * @param recipientAccount account id to receive the cash asset
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external {
-    console.log("Inside deposit");
     stableAsset.safeTransferFrom(msg.sender, address(this), amount);
-    console.log("After safe transfer");
     uint amountInAccount = amount.to18Decimals(stableDecimals);
-    console.log("Amount in account", amountInAccount);
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -132,13 +132,12 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
-    console.log("After asset adjustment");
 
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
   }
 
   /**
-   * @notice withdraw USDC from a Lyra account
+   * @notice Withdraw USDC from a Lyra account
    * @param accountId account id to withdraw
    * @param amount amount of stable asset in its native decimals
    * @param recipient USDC recipient
@@ -170,6 +169,15 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     _accrueInterest();
   }
 
+  /**
+   * @notice Returns latest balance without updating accounts but will update indexes
+   * @dev can be used by manager for risk assessments
+   */
+  function getBalance(uint accountId) external returns (int balance) {
+    _accrueInterest();
+    return _updateBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -189,38 +197,36 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    console.log("handleAdjustment CashAsset");
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
     }
 
-    console.log("Before accruing interest");
-    // accrue interest rate
+    // Accrue interest and update indexes
     _accrueInterest();
-    console.log("After  accruing interest");
 
-    if (accountBorrowIndex[adjustment.acc] == 0) {
-      accountBorrowIndex[adjustment.acc] = borrowIndex;
-    } 
+    // Initialize accoundId index to 1
+    if (accountIdIndex[adjustment.acc] == 0) {
+      accountIdIndex[adjustment.acc] = DecimalMath.UNIT;
+    }
 
-    console.log("Account borrow index", accountBorrowIndex[adjustment.acc]);
-   
-    // todo: accrue interest on prebalance
     // Apply interest to pre balance
-    preBalance = _interestOnBalance(preBalance, adjustment.acc);
+    preBalance = _updateBalanceWithInterest(preBalance, adjustment.acc);
 
-    // finalBalance can go positive or negative
+    // FinalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
 
-    // TODO update borrow and supply indexes
-    // merge borrow and supply into one mapping? 
-    accountBorrowIndex[adjustment.acc] = borrowIndex;
+    // Update borrow and supply indexes depending on if the accountId is net positive or negative
+    if (finalBalance < 0) {
+      accountIdIndex[adjustment.acc] = borrowIndex;
+    } else if (finalBalance > 0) {
+      accountIdIndex[adjustment.acc] = supplyIndex;
+    }
 
-    // need allowance if trying to deduct balance
+    // Need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    // update totalSupply and totalBorrow amounts
+    // Update totalSupply and totalBorrow amounts
     _updateSupplyAndBorrow(preBalance, finalBalance);
   }
 
@@ -255,23 +261,48 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @notice Accrues interest onto the balance provided 
-   * @param preBalance the balance which the interest is going to be applied to 
+   * @notice Accrues interest onto the balance provided
+   * @param preBalance the balance which the interest is going to be applied to
+   * @param accountId the accountId which the balance belongs to
    */
-  function _interestOnBalance(int preBalance, uint accountId) internal view returns (int interestBalance) {
+  function _updateBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
     // TODO cleaner way to do negative division
+    console.log("--------- update balance with interest ---------");
     bool isNegative = false;
     if (preBalance < 1) {
       preBalance = -preBalance;
       isNegative = true;
     }
 
-    uint balanceWithInterest = borrowIndex.divideDecimal(accountBorrowIndex[accountId]).multiplyDecimal(preBalance.toUint256());
+    uint balanceWithInterest =
+      borrowIndex.divideDecimal(accountIdIndex[accountId]).multiplyDecimal(preBalance.toUint256());
+    console.log("balance with interest", balanceWithInterest);
+    console.log(borrowIndex.divideDecimal(accountIdIndex[accountId]));
+    int old;
     if (isNegative) {
       interestBalance = -balanceWithInterest.toInt256();
     } else {
       interestBalance = balanceWithInterest.toInt256();
     }
+
+    // console.logInt(preBalance);
+    // uint uintIs = borrowIndex.divideDecimal(accountIdIndex[accountId]);
+    // console.logInt(old);
+    // console.log(uintIs);
+    // interestBalance = (borrowIndex.divideDecimal(accountIdIndex[accountId])).toInt256();
+    // // console.logInt("Int  is", interestBalance);
+    // console.logInt(interestBalance);
+    // console.logInt(preBalance);
+
+    // // TODO 1 * 0 = 1 ??
+    // interestBalance.multiplyDecimal(preBalance);
+
+    // int testing = (interestBalance * preBalance) / 1e18;
+    // console.logInt(testing);
+    // console.logInt(
+    // console.logInt(interestBalance);
+
+    console.log("--------- --------- ---------- ---------");
   }
 
   /**
@@ -280,22 +311,17 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * will be adjusted in the hook based off these new values.
    */
   function _accrueInterest() internal {
-    console.log("--------- ACCRUE INTEREST ---------");
     if (lastTimestamp == block.timestamp) return;
+
+    // Update timestamp even if there are no borrows // todo is this logic sound
+    uint elapsedTime = block.timestamp - lastTimestamp;
+    lastTimestamp = block.timestamp;
     if (totalBorrow == 0) return;
 
-    console.log("now is ", block.timestamp);
-    console.log("last is", lastTimestamp);
+    // Calculate interest since last timestamp using compounded interest rate
     uint borrowRate = rateModel.getBorrowRate(totalSupply, totalBorrow);
-    // console.log("TotalSupply", totalSupply);
-    // console.log("TotalBorrow", totalBorrow);
-
-    // Calculated interest since last timestamp using compounded interest rate
-    uint elapsedTime = block.timestamp - lastTimestamp;
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
-    // console.log("Borrow interest", borrowInterestFactor);
-    // console.log("Interest accrud", interestAccrued / 1e18);
 
     // Update total supply and borrow
     uint prevBorrow = totalBorrow;
@@ -304,18 +330,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     totalBorrow += interestAccrued;
 
     // Update borrow/supply index by calculating the % change of total * current borrow index
-    // console.log("Prev index", borrowIndex);
-    // console.log("Prev index", supplyIndex);
     borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
     supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex);
-    // console.log("Newr index", borrowIndex);
-    // console.log("Newr index", supplyIndex);
-
-    // Update last timestamp of interest accrual and emit event
-    lastTimestamp = block.timestamp;
 
     emit InterestAccrued(interestAccrued, borrowIndex, totalSupply, totalBorrow);
-    console.log("------- -------- --------- --------");
   }
 
   /**
