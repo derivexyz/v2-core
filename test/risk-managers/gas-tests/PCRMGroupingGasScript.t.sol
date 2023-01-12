@@ -77,6 +77,7 @@ contract PCRMGroupingGasScript is Script {
 
     // create account
     for (uint i; i < assetTransfers.length; i++) {
+      // todo [Vlad]: crashes somewhere here
       account.submitTransfer(assetTransfers[i], "");
     }
 
