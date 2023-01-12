@@ -125,10 +125,10 @@ contract UNIT_SecurityModule is Test {
     securityModule.setWhitelistModule(liquidation, true);
 
     vm.startPrank(liquidation);
-    uint amountPaid = securityModule.requestPayout(receiverAcc, 2000e18);
+    uint amountCashPaid = securityModule.requestPayout(receiverAcc, 2000e18);
     vm.stopPrank();
 
-    assertEq(amountPaid, depositAmount);
+    assertEq(amountCashPaid, 1000e18);
 
     int cashLeftInSecurity = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
     assertEq(cashLeftInSecurity, 0);
