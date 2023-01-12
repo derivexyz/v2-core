@@ -15,7 +15,9 @@ import "../../../src/Accounts.sol";
  */
 contract UNIT_SecurityModule is Test {
   // OFAC is the bad guy
-  address constant public badGuy = address(0x0fac);
+  address public constant badGuy = address(0x0fac);
+
+  address public constant liquidation = address(0xdead);
 
   CashAsset cashAsset;
   MockERC20 usdc;
@@ -41,7 +43,7 @@ contract UNIT_SecurityModule is Test {
     securityModule = new SecurityModule(accounts, cashAsset, usdc, manager);
 
     // 10000 USDC with 6 decimals
-    usdc.mint(address(this), 10000e6);
+    usdc.mint(address(this), 20_000_000e6);
     usdc.approve(address(securityModule), type(uint).max);
 
     accountId = accounts.createAccount(address(this), manager);
@@ -81,10 +83,57 @@ contract UNIT_SecurityModule is Test {
     securityModule.setWhitelistModule(badGuy, true);
   }
 
+  function testCanWhitelistModule() public {
+    securityModule.setWhitelistModule(liquidation, true);
+    assertEq(securityModule.isWhitelisted(liquidation), true);
+  }
+
   function NonWhitelisteModuleCannotRequestPayout() public {
     vm.prank(badGuy);
 
     vm.expectRevert(ISecurityModule.SM_NotWhitelisted.selector);
     securityModule.requestPayout(accountId, 1000e18);
+  }
+
+  function testCanRequestPayoutFromWhitelistedModule() public {
+    // someone deposit 1 million first
+    uint depositAmount = 1000_000e6;
+    securityModule.deposit(depositAmount);
+
+    // create acc to get paid
+    uint receiverAcc = accounts.createAccount(address(this), manager);
+    securityModule.setWhitelistModule(liquidation, true);
+
+    vm.startPrank(liquidation);
+    securityModule.requestPayout(receiverAcc, 1000e18);
+    vm.stopPrank();
+
+    int cashLeftInSecurity = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
+    assertEq(cashLeftInSecurity, 999_000e18);
+
+    int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(cashAsset)), 0);
+    assertEq(cashForReceiver, 1000e18);
+  }
+
+  function testPayoutAmountIsCapped() public {
+    // someone deposit 1000 first
+    uint depositAmount = 1_000e6;
+    securityModule.deposit(depositAmount);
+
+    // create acc to get paid
+    uint receiverAcc = accounts.createAccount(address(this), manager);
+    securityModule.setWhitelistModule(liquidation, true);
+
+    vm.startPrank(liquidation);
+    uint amountPaid = securityModule.requestPayout(receiverAcc, 2000e18);
+    vm.stopPrank();
+
+    assertEq(amountPaid, depositAmount);
+
+    int cashLeftInSecurity = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
+    assertEq(cashLeftInSecurity, 0);
+
+    int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(cashAsset)), 0);
+    assertEq(cashForReceiver, 1000e18);
   }
 }

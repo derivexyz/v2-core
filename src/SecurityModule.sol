@@ -42,7 +42,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   uint public immutable accountId;
 
   ///@dev Mapping of (address => isWhitelistedModule)
-  mapping(address => bool) isWhitelisted;
+  mapping(address => bool) public isWhitelisted;
 
   constructor(IAccounts _accounts, ICashAsset _cashAsset, IERC20Metadata _stableAsset, IManager _manager)
     ERC20("Lyra USDC Security Module Share", "lsUSD")
