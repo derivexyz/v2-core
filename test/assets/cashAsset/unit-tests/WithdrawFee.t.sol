@@ -46,12 +46,12 @@ contract UNIT_CashAssetWithdrawFee is Test {
 
   function testCannotTriggerInsolvencyFromAnyone() public {
     vm.expectRevert(ICashAsset.CA_NotLiquidationModule.selector);
-    cashAsset.reportLoss(depositedAmount, accountId);
+    cashAsset.socializeLoss(depositedAmount, accountId);
   }
 
   function testCanTriggerInsolvency() public {
     vm.startPrank(liquidationModule);
-    cashAsset.reportLoss(depositedAmount, accountId);
+    cashAsset.socializeLoss(depositedAmount, accountId);
     vm.stopPrank();
 
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
@@ -64,7 +64,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     vm.startPrank(liquidationModule);
     // loss is 25% of the pool
     // meaning 1 cash is worth only 0.8% USDC after solcializing the loss
-    cashAsset.reportLoss(depositedAmount / 4, accountId);
+    cashAsset.socializeLoss(depositedAmount / 4, accountId);
     vm.stopPrank();
 
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
@@ -82,7 +82,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
   function testCanDisableWithdrawFeeAfterSystemRecovers() public {
     // trigger insolvency
     vm.prank(liquidationModule);
-    cashAsset.reportLoss(depositedAmount, accountId);
+    cashAsset.socializeLoss(depositedAmount, accountId);
 
     // some people donate USDC to the cashAsset contract
     usdc.mint(address(cashAsset), depositedAmount);
