@@ -167,6 +167,4 @@ contract UNIT_CashAssetAccrueInterest is Test {
     // AccountId should have grow in balance (supply only)
     assertGt(uint(cashAsset.getBalance(accountId)), depositedAmount);
   }
-
 }
-

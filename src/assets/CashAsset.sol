@@ -73,7 +73,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //   Constructor   //
   /////////////////////
 
-  // TODO add interest rate model
   constructor(IAccounts _accounts, IERC20Metadata _stableAsset, InterestRateModel _rateModel) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
@@ -164,14 +163,14 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     );
   }
 
-  /// @notice External function for calling _accrueInterest
+  /// @notice External function for updating totalSupply and totalBorrow with the accrued interest since last timestamp.
   function accrueInterest() external {
     _accrueInterest();
   }
 
   /**
    * @notice Returns latest balance without updating accounts but will update indexes
-   * @dev can be used by manager for risk assessments
+   * @param accountId The account to check
    */
   function getBalance(uint accountId) external returns (int balance) {
     _accrueInterest();
@@ -210,13 +209,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       accountIdIndex[adjustment.acc] = DecimalMath.UNIT;
     }
 
-    // Apply interest to pre balance
+    // Apply interest to preBalance
     preBalance = _updateBalanceWithInterest(preBalance, adjustment.acc);
-
-    // FinalBalance can go positive or negative
     finalBalance = preBalance + adjustment.amount;
 
-    // Update borrow and supply indexes depending on if the accountId is net positive or negative
+    // Update borrow and supply indexes depending on if the accountId balance is net positive or negative
     if (finalBalance < 0) {
       accountIdIndex[adjustment.acc] = borrowIndex;
     } else if (finalBalance > 0) {
@@ -266,43 +263,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param accountId the accountId which the balance belongs to
    */
   function _updateBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
-    // TODO cleaner way to do negative division
-    console.log("--------- update balance with interest ---------");
-    bool isNegative = false;
-    if (preBalance < 1) {
-      preBalance = -preBalance;
-      isNegative = true;
-    }
-
-    uint balanceWithInterest =
-      borrowIndex.divideDecimal(accountIdIndex[accountId]).multiplyDecimal(preBalance.toUint256());
-    console.log("balance with interest", balanceWithInterest);
-    console.log(borrowIndex.divideDecimal(accountIdIndex[accountId]));
-    int old;
-    if (isNegative) {
-      interestBalance = -balanceWithInterest.toInt256();
-    } else {
-      interestBalance = balanceWithInterest.toInt256();
-    }
-
-    // console.logInt(preBalance);
-    // uint uintIs = borrowIndex.divideDecimal(accountIdIndex[accountId]);
-    // console.logInt(old);
-    // console.log(uintIs);
-    // interestBalance = (borrowIndex.divideDecimal(accountIdIndex[accountId])).toInt256();
-    // // console.logInt("Int  is", interestBalance);
-    // console.logInt(interestBalance);
-    // console.logInt(preBalance);
-
-    // // TODO 1 * 0 = 1 ??
-    // interestBalance.multiplyDecimal(preBalance);
-
-    // int testing = (interestBalance * preBalance) / 1e18;
-    // console.logInt(testing);
-    // console.logInt(
-    // console.logInt(interestBalance);
-
-    console.log("--------- --------- ---------- ---------");
+    uint indexChange = borrowIndex.divideDecimal(accountIdIndex[accountId]);
+    interestBalance = indexChange.toInt256().multiplyDecimal(preBalance);
   }
 
   /**
@@ -313,7 +275,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function _accrueInterest() internal {
     if (lastTimestamp == block.timestamp) return;
 
-    // Update timestamp even if there are no borrows // todo is this logic sound
+    // Update timestamp even if there are no borrows // todo is this logic sound?
     uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = block.timestamp;
     if (totalBorrow == 0) return;
@@ -329,7 +291,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     totalSupply += interestAccrued;
     totalBorrow += interestAccrued;
 
-    // Update borrow/supply index by calculating the % change of total * current borrow index
+    // Update borrow/supply index by calculating the % change of total * current borrow/supply index
     borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
     supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex);
 
