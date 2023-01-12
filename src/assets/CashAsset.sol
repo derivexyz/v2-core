@@ -98,11 +98,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   /**
    * @dev deposit USDC and increase account balance
    * @param recipientAccount account id to receive the cash asset
-   * @param amount amount of USDC to deposit
+   * @param stableAmount amount of stable coins to deposit
    */
-  function deposit(uint recipientAccount, uint amount) external {
-    stableAsset.safeTransferFrom(msg.sender, address(this), amount);
-    uint amountInAccount = amount.to18Decimals(stableDecimals);
+  function deposit(uint recipientAccount, uint stableAmount) external {
+    stableAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
+    uint amountInAccount = stableAmount.to18Decimals(stableDecimals);
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -117,20 +117,22 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     );
 
     // invoke handleAdjustment hook so the manager is checked, and interest is applied.
+
+    emit Deposit(recipientAccount, msg.sender, amountInAccount, stableAmount);
   }
 
   /**
    * @notice withdraw USDC from a Lyra account
    * @param accountId account id to withdraw
-   * @param amount amount of stable asset in its native decimals
+   * @param stableAmount amount of stable asset in its native decimals
    * @param recipient USDC recipient
    */
-  function withdraw(uint accountId, uint amount, address recipient) external {
+  function withdraw(uint accountId, uint stableAmount, address recipient) external {
     if (msg.sender != accounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
 
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
-    uint cashAmount = amount.to18DecimalsRoundUp(stableDecimals);
+    uint cashAmount = stableAmount.to18DecimalsRoundUp(stableDecimals);
 
     // if the cash asset is insolvent,
     // each cash balance can only take out <100% amount of stable asset
@@ -141,7 +143,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     }
 
     // transfer the asset out after potentially needing to calculate exchange rate
-    stableAsset.safeTransfer(recipient, amount);
+    stableAsset.safeTransfer(recipient, stableAmount);
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -154,6 +156,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
+
+    emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
   }
 
   /**

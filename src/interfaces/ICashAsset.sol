@@ -16,6 +16,14 @@ interface ICashAsset {
   //   Events   //
   ////////////////
 
+  /// @dev emitted when a user deposits to an account
+  event Deposit(uint accountId, address from, uint amountCashMinted, uint stableAssetDeposited);
+
+  /// @dev emitted when a user withdraws from an account
+  event Withdraw(uint accountId, address recipient, uint amountCashBurn, uint stableAssetWidrawn);
+
+  /// @dev emitted when withdraw fee is enabled
+  ///      this would imply there is an insolvency and loss is applied to all cash holders
   event WithdrawFeeEnabled(uint exchangeRate);
 
   ////////////////
