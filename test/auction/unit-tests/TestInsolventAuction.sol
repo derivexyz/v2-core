@@ -59,7 +59,10 @@ contract UNIT_TestInvolventAuction is Test {
     dutchAuction = new DutchAuction(address(manager), address(account));
 
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
+      DutchAuction.DutchAuctionParameters({stepInterval: 2, 
+      lengthOfAuction: 200,
+      securityModule: address(1),
+      spotShock: 11 * 1e17})
     );
   }
 

@@ -60,12 +60,14 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   struct DutchAuctionParameters {
-    /// Length of each step in seconds
+    /// Big number, Length of each step in seconds
     uint stepInterval;
-    /// Total length of an auction in seconds
+    /// Big number: Total length of an auction in seconds
     uint lengthOfAuction;
-    /// The address of the security module
+    /// Big number: The address of the security module
     address securityModule;
+    // Big Number: spot shock
+    uint spotShock;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -160,12 +162,6 @@ contract DutchAuction is IDutchAuction, Owned {
    * @return amount the amount as a percentage of the portfolio that the user is willing to purchase
    */
   function bid(uint accountId, uint bidderId, uint amount) external returns (uint) {
-    // TODO: check with mechanism that there is no malicious attack where you could
-    // get transfered the money and not take on the risk by putting in some one else's
-    // accountId.
-    // TODO: need to investiage this big problem where some one could call this
-    // and someone else could end up with the risk
-    // TODO: should this be restricted to make sure that only the person who owns the account can bid on it??
     if (amount > DecimalMath.UNIT) {
       revert DA_AmountTooLarge(accountId, amount);
     } else if (amount == 0) {
@@ -185,9 +181,7 @@ contract DutchAuction is IDutchAuction, Owned {
     if (accounts.ownerOf(bidderId) != msg.sender) {
       revert DA_BidderNotOwner(bidderId, msg.sender);
     }
-    // need to check if this amount would put the portfolio over is matience marign
-    // if so then revert
-
+ 
     // get compares max and the f_max amount
     uint f_max = _getMaxProportion(accountId);
     amount = amount > f_max ? f_max : amount;
@@ -195,27 +189,36 @@ contract DutchAuction is IDutchAuction, Owned {
     if (auctions[accountId].insolvent) {
       // TODO: Anton
       // This case someone is getting payed to take on the risk
+      
     } else {
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount); // bid * f_max
       riskManager.executeBid(accountId, bidderId, amount, cashAmount);
-      Auction storage auction = auctions[accountId];
-
       // need to check if the bounds are calculated after a bid
       // (int upperBound, int lowerBound) = _getBounds(accountId, riskManager.getSpot());
       // auction.auction.upperBound = upperBound;
     }
 
-    // TODO: if the margin requirements are met then end the auction
-    // if the margin requirements are not met then recalculate all the values, vupper, vlower, margin and spot?? etc...
-
-    // DV only changes for the insolvent auction
-    // if (auction.insolvent) {
-    //   auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp)
-    //     .divideDecimal(parameters.stepInterval);
-    // }
     emit Bid(accountId, bidderId, block.timestamp);
+    
+    // terminating the auction if the initial margin is positive
+    // This has to be checked after the scailing 
+    if (riskManager.getInitialMargin(accountId) >= 0) {
+      _terminateAuction(accountId);
+    }
+    
     return amount;
+  }
+
+  /**  @notice Internal function to terminate an auction
+  * @dev Changes the value of an auction and flags that it can no longer be bid on
+  * @param accountId The accountId of account that is being liquidated
+  */
+  function _terminateAuction(uint accountId) internal {
+    Auction storage auction = auctions[accountId];
+    auction.ongoing = false;
+    auction.endTime = block.timestamp;
+    emit AuctionEnded(accountId, block.timestamp);
   }
 
   /**
@@ -380,14 +383,13 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param spot the spot price of the asset
    * @dev returns the minimum and maximum aggregated value of all strike at a particular price
    */
-  function _markStrike(IPCRM.StrikeHolding[] memory strikes, uint spot) internal pure returns (int max, int min) {
+  function _markStrike(IPCRM.StrikeHolding[] memory strikes, uint spot) internal view returns (int max, int min) {
     for (uint j = 0; j < strikes.length; j++) {
       // calls
-      // TODO: add vol shocks here.
       {
         int numCalls = strikes[j].calls;
-        max += SignedMath.max(numCalls, 0) * spot.toInt256();
-        min += SignedMath.min(numCalls, 0) * spot.toInt256();
+        max += SignedMath.max(numCalls, 0) * spot.toInt256() * parameters.spotShock.toInt256();
+        min += SignedMath.min(numCalls, 0) * spot.toInt256() * parameters.spotShock.toInt256();
         // puts
         int numPuts = strikes[j].puts;
         max += SignedMath.max(numPuts, 0) * int64(strikes[j].strike);

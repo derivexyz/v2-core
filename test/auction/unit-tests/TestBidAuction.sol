@@ -66,14 +66,16 @@ contract UNIT_BidAuction is Test {
       DutchAuction.DutchAuctionParameters({
         stepInterval: 2 * DecimalMath.UNIT,
         lengthOfAuction: 200 * DecimalMath.UNIT,
-        securityModule: address(1)
+        securityModule: address(1),
+        spotShock: 11 * 1e17
       })
     );
 
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
       stepInterval: 2 * DecimalMath.UNIT,
       lengthOfAuction: 200 * DecimalMath.UNIT,
-      securityModule: address(1)
+      securityModule: address(1),
+      spotShock: 11 * 1e17
     });
   }
 

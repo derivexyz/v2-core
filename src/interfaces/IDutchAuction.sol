@@ -22,7 +22,7 @@ interface IDutchAuction {
   event Insolvent(uint accountId);
 
   // emmited when an auction ends, either by insolvency or by the assets of an account being purchased.
-  event AuctionEnded(uint accountId, uint amount);
+  event AuctionEnded(uint accountId, uint endTime);
 
   ////////////
   // ERRORS //
