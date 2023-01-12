@@ -13,16 +13,16 @@ interface IDutchAuction {
   ////////////
 
   // emmited when an auction starts
-  event AuctionStarted(bytes32 auctionId, uint accountId, uint upperBound, uint lowerBound);
+  event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime);
 
   // emmited when a bid is placed
-  event Bid(bytes32 auctionId, address bidder, uint amount);
+  event Bid(uint accountId, uint bidderId, uint amount);
 
   // emmited when an auction results in insolvency
-  event Insolvent(bytes32 auctionId, uint accountId);
+  event Insolvent(uint accountId);
 
   // emmited when an auction ends, either by insolvency or by the assets of an account being purchased.
-  event AuctionEnded(bytes32 auctionId, uint accountId, uint amount);
+  event AuctionEnded(uint accountId, uint amount);
 
   ////////////
   // ERRORS //
@@ -52,4 +52,7 @@ interface IDutchAuction {
 
   /// @dev emitted when a user tries to increment the step for an insovlent auction
   error DA_AuctionNotInsolventCannotStep(uint accountId);
+
+  /// @dev emitted when a user doesn't own the account that they are trying to bid on
+  error DA_BidderNotOwner(uint accountId, address bidder);
 }

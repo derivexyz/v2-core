@@ -104,7 +104,9 @@ contract UNIT_BidAuction is Test {
   function testCannotBidOnAuctionThatHasNotStarted() public {
     vm.prank(address(manager));
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotOngoing.selector, aliceAcc));
-    dutchAuction.bid(aliceAcc, 50 * 1e16);
+    vm.stopPrank();
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
 
   function testCannotBidOnAuctionThatHasEnded() public {
@@ -113,20 +115,20 @@ contract UNIT_BidAuction is Test {
     uint endTime = dutchAuction.getAuctionDetails(aliceAcc).endTime;
     vm.warp(endTime + 10);
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionEnded.selector, aliceAcc));
-    dutchAuction.bid(aliceAcc, 50 * 1e16);
+    dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
 
   function testCannotBidForGreaterThanOneHundredPercent() public {
     vm.prank(address(manager));
     dutchAuction.startAuction(aliceAcc);
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountTooLarge.selector, aliceAcc, 101 * 1e16));
-    dutchAuction.bid(aliceAcc, 101 * 1e16);
+    dutchAuction.bid(aliceAcc, bobAcc, 101 * 1e16);
   }
 
   function testCannotBid0() public {
     vm.prank(address(manager));
     dutchAuction.startAuction(aliceAcc);
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountInvalid.selector, aliceAcc, 0));
-    dutchAuction.bid(aliceAcc, 0);
+    dutchAuction.bid(aliceAcc, bobAcc,  0);
   }
 }

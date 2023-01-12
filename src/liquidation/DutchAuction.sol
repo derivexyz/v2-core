@@ -110,7 +110,6 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev Can only be auctioned by a risk manager and will start an auction
    * @param accountId The id of the account being liquidated
    */
-   // TODO: split this up into two auction functions one for insovlent start and one for solvent start
   function startAuction(uint accountId) external {
     if (address(riskManager) != msg.sender) {
       revert DA_NotRiskManager();
@@ -128,6 +127,8 @@ contract DutchAuction is IDutchAuction, Owned {
     } else {
       _startInsolventAuction(lowerBound, accountId);
     }
+
+    emit AuctionStarted(accountId, upperBound, lowerBound, block.timestamp);
   }
 
   
@@ -160,7 +161,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the bytesId that corresponds to a particular auction
    * @return amount the amount as a percentage of the portfolio that the user is willing to purchase
    */
-  function bid(uint accountId, uint amount) external returns (uint) {
+  function bid(uint accountId, uint bidderId, uint amount) external returns (uint) {
     // TODO: check with mechanism that there is no malicious attack where you could
     // get transfered the money and not take on the risk by putting in some one else's
     // accountId.
@@ -182,6 +183,10 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_AuctionEnded(accountId);
     }
 
+    // get bidder address and make sure that they own the account
+    if (accounts.ownerOf(bidderId) != msg.sender) {
+      revert DA_BidderNotOwner(bidderId, msg.sender);
+    }
     // need to check if this amount would put the portfolio over is matience marign
     // if so then revert
 
@@ -189,39 +194,30 @@ contract DutchAuction is IDutchAuction, Owned {
     uint f_max = _getMaxProportion(accountId);
     amount = amount > f_max ? f_max : amount;
 
-    // send/ take money from the user if depending on the current price
-
-    // TODO: Need to be able to figure out how to get the accountId of a msg.sender.
     if (auctions[accountId].insolvent) {
       // TODO: Anton 
       // This case someone is getting payed to take on the risk
     } else {
       // this case someone is paying to take on the risk
-      uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount);
+      uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount); // bid * f_max
+      riskManager.executeBid(accountId, bidderId, amount, cashAmount);
+      Auction storage auction = auctions[accountId];
 
-      // transfer the money to the account being liquidated
-      
-      // transfer the person the scalar of the assets
-
-
-
-
-      // need to be able to resolve the accountId from the address
-      // riskManager.executeBid(accountId, , amount, cashAmount);
+      // need to check if the bounds are calculated after a bid
+      // (int upperBound, int lowerBound) = _getBounds(accountId, riskManager.getSpot());
+      // auction.auction.upperBound = upperBound;
     }
 
     // TODO: if the margin requirements are met then end the auction
     // if the margin requirements are not met then recalculate all the values, vupper, vlower, margin and spot?? etc...
-    Auction storage auction = auctions[accountId];
-    (int upperBound, int lowerBound) = _getBounds(accountId, riskManager.getSpot());
-    auction.auction.upperBound = upperBound;
+    
 
     // DV only changes for the insolvent auction
     // if (auction.insolvent) {
     //   auction.dv = IntLib.abs(auction.auction.lowerBound).divideDecimal(auction.startTime - block.timestamp)
     //     .divideDecimal(parameters.stepInterval);
     // }
-
+    emit Bid(accountId, bidderId, block.timestamp);
     return amount;
   }
 
@@ -357,6 +353,7 @@ contract DutchAuction is IDutchAuction, Owned {
       stepInsolvent: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
     });
+    emit Insolvent(accountId);
   } 
 
   /**
