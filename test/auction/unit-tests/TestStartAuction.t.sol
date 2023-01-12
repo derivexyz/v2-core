@@ -259,7 +259,7 @@ contract UNIT_TestStartAuction is Test {
   function testGetMaxProportionNegativeMargin() public {
     vm.startPrank(address(manager));
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -1000 * 1e18);
+    manager.depositMargin(aliceAcc, -100_000 * 1e18);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
