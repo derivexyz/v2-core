@@ -56,4 +56,8 @@ contract MockManager is IManager {
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
+
+  function getSpot() external pure returns (uint) {
+    return 1000; // hardcoded value not relevant to test
+  }
 }
