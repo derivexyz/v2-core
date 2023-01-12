@@ -53,7 +53,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
     stableDecimals = _stableAsset.decimals();
 
     accountId = IAccounts(_accounts).createAccount(address(this), _manager);
-    _stableAsset.approve(address(_cashAsset), type(uint).max);
+    _stableAsset.safeApprove(address(_cashAsset), type(uint).max);
   }
 
   /**
