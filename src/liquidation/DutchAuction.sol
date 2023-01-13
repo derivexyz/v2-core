@@ -237,10 +237,6 @@ contract DutchAuction is IDutchAuction, Owned {
    * @return uint the step that the auction is on
    */
   function incrementInsolventAuction(uint accountId) external returns (uint) {
-    if (address(riskManager) != msg.sender) {
-      revert DA_NotRiskManager();
-    }
-
     Auction storage auction = auctions[accountId];
     if (!auction.insolvent) {
       revert DA_AuctionNotInsolventCannotStep(accountId);
