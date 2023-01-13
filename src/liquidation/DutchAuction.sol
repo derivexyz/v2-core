@@ -181,7 +181,7 @@ contract DutchAuction is IDutchAuction, Owned {
     if (accounts.ownerOf(bidderId) != msg.sender) {
       revert DA_BidderNotOwner(bidderId, msg.sender);
     }
- 
+
     // get compares max and the f_max amount
     uint f_max = _getMaxProportion(accountId);
     amount = amount > f_max ? f_max : amount;
@@ -189,7 +189,6 @@ contract DutchAuction is IDutchAuction, Owned {
     if (auctions[accountId].insolvent) {
       // TODO: Anton
       // This case someone is getting payed to take on the risk
-      
     } else {
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount); // bid * f_max
@@ -200,20 +199,21 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     emit Bid(accountId, bidderId, block.timestamp);
-    
+
     // terminating the auction if the initial margin is positive
-    // This has to be checked after the scailing 
+    // This has to be checked after the scailing
     if (riskManager.getInitialMargin(accountId) >= 0) {
       _terminateAuction(accountId);
     }
-    
+
     return amount;
   }
 
-  /**  @notice Internal function to terminate an auction
-  * @dev Changes the value of an auction and flags that it can no longer be bid on
-  * @param accountId The accountId of account that is being liquidated
-  */
+  /**
+   * @notice Internal function to terminate an auction
+   * @dev Changes the value of an auction and flags that it can no longer be bid on
+   * @param accountId The accountId of account that is being liquidated
+   */
   function _terminateAuction(uint accountId) internal {
     Auction storage auction = auctions[accountId];
     auction.ongoing = false;
@@ -305,7 +305,7 @@ contract DutchAuction is IDutchAuction, Owned {
     if (currentBidPrice <= 0) {
       return DecimalMath.UNIT;
     }
-    console.log('entered max proportion');
+    console.log("entered max proportion");
     console.logInt(initialMargin);
     console.logInt(currentBidPrice);
 
@@ -417,25 +417,27 @@ contract DutchAuction is IDutchAuction, Owned {
       return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
     } else {
       console.logInt(upperBound);
-      console.log('dv', auction.dv);
-      console.log('block.timestamp', block.timestamp);
-      console.log('auction.startTime', auction.startTime);
-      console.log('parameters.stepInterval', parameters.stepInterval);
-      console.log('block.timestamp - auction.startTime', block.timestamp - auction.startTime);
-      console.log('(block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval)',
-       (block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval));
+      console.log("dv", auction.dv);
+      console.log("block.timestamp", block.timestamp);
+      console.log("auction.startTime", auction.startTime);
+      console.log("parameters.stepInterval", parameters.stepInterval);
+      console.log("block.timestamp - auction.startTime", block.timestamp - auction.startTime);
+      console.log(
+        "(block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval)",
+        (block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval)
+      );
       console.logInt(upperBound);
-      
+
       int bid = upperBound
         - auction.dv.multiplyDecimal((block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval))
           .toInt256();
       // have to call markAsInsolvent before bid can be negative
       if (bid <= 0) {
-        console.log('bid <= 0');
+        console.log("bid <= 0");
         console.logInt(bid);
         return 0;
       } else {
-        console.log('bid > 0');
+        console.log("bid > 0");
         console.logInt(bid);
         return bid;
       }

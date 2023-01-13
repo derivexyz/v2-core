@@ -110,7 +110,12 @@ contract UNIT_DutchAuctionView is Test {
 
     // change params
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1), spotShock: 11 * 1e17})
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        securityModule: address(1),
+        spotShock: 11 * 1e17
+      })
     );
 
     // check if params changed

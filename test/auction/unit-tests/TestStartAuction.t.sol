@@ -330,7 +330,7 @@ contract UNIT_TestStartAuction is Test {
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-    assertEq(percentageHelper(maxProportion), 653); 
+    assertEq(percentageHelper(maxProportion), 653);
     // TODO: check this value in the sim
     // about 7% should be liquidateable according to sim.
   }
