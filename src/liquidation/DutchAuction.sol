@@ -14,9 +14,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/DecimalMath.sol";
 import "../libraries/IntLib.sol";
 
-// TODO: remove forge test before merging
-import "forge-std/Test.sol";
-
 /**
  * @title Dutch Auction
  * @author Lyra
@@ -193,9 +190,6 @@ contract DutchAuction is IDutchAuction, Owned {
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount); // bid * f_max
       riskManager.executeBid(accountId, bidderId, amount, cashAmount);
-      // need to check if the bounds are calculated after a bid
-      // (int upperBound, int lowerBound) = _getBounds(accountId, riskManager.getSpot());
-      // auction.auction.upperBound = upperBound;
     }
 
     emit Bid(accountId, bidderId, block.timestamp);
@@ -318,12 +312,12 @@ contract DutchAuction is IDutchAuction, Owned {
     // IM is always negative under the margining system.
     int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
     // TODO: uncomment out when case is hit, didn't have test for it when pushing
-    // if (fMax > 1e18) {
-    //   return DecimalMath.UNIT;
-    // } else {
-    //   return fMax.toUint256();
-    // }
-    return fMax.toUint256();
+    if (fMax > 1e18) {
+      return DecimalMath.UNIT;
+    } else {
+      return fMax.toUint256();
+    }
+    // return fMax.toUint256();
   }
 
   /**

@@ -120,7 +120,6 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
     uint spot = manager.getSpot();
-    // TODO: expand testing with hard mech backed values.
     (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
