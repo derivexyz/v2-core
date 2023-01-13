@@ -335,11 +335,41 @@ contract UNIT_TestStartAuction is Test {
     // about 7% should be liquidateable according to sim.
   }
 
+  // TODO: need to improve the manager for this test
   function testStartInsolventAuctionAndIncrement() public {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
     manager.depositMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, 0); // starts at 0 as insolvent
+    // mark as insolvent
+    dutchAuction.markAsInsolventLiquidation(aliceAcc);
+
+    // increment the insolvent auction
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    // get the current step
+    uint currentStep = dutchAuction.getAuctionDetails(aliceAcc).stepInsolvent;
+    assertEq(currentStep, 2);
+  }
+
+  function testCannotStepNonInsolventAuction() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
@@ -360,10 +390,8 @@ contract UNIT_TestStartAuction is Test {
     assertGt(currentBidPrice, 0);
 
     // increment the insolvent auction
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotInsolventCannotStep.selector, aliceAcc));
     dutchAuction.incrementInsolventAuction(aliceAcc);
-    // get the current step
-    uint currentStep = dutchAuction.getAuctionDetails(aliceAcc).stepInsolvent;
-    assertEq(currentStep, 2);
   }
 
   /// Helper
