@@ -18,6 +18,7 @@ contract UNIT_CashAssetDeposit is Test {
   MockManager manager;
   MockManager badManager;
   Accounts account;
+  InterestRateModel rateModel;
 
   uint accountId;
 
@@ -29,7 +30,8 @@ contract UNIT_CashAssetDeposit is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, usdc, address(0));
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -54,24 +56,12 @@ contract UNIT_CashAssetDeposit is Test {
     int balance = account.getBalance(accountId, cashAsset, 0);
     assertEq(balance, int(depositAmount));
   }
-
-  function testDepositIntoNonEmptyAccountAccrueInterest() public {
-    uint depositAmount = 100 ether;
-    cashAsset.deposit(accountId, depositAmount);
-
-    vm.warp(block.timestamp + 1 days);
-
-    // deposit again
-    cashAsset.deposit(accountId, depositAmount);
-
-    assertEq(cashAsset.lastTimestamp(), block.timestamp);
-    // todo: test accrueInterest
-  }
 }
 
 contract UNIT_LendingDeposit6Decimals is Test {
   CashAsset cashAsset;
   Accounts account;
+  InterestRateModel rateModel;
 
   uint accountId;
 
@@ -83,7 +73,8 @@ contract UNIT_LendingDeposit6Decimals is Test {
     // set USDC to 6 decimals
     usdc.setDecimals(6);
 
-    cashAsset = new CashAsset(account, usdc, address(0));
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 6 decimals
@@ -108,6 +99,7 @@ contract UNIT_LendingDeposit6Decimals is Test {
 contract UNIT_LendingDeposit20Decimals is Test {
   CashAsset cashAsset;
   Accounts account;
+  InterestRateModel rateModel;
 
   uint accountId;
 
@@ -119,7 +111,8 @@ contract UNIT_LendingDeposit20Decimals is Test {
     // set USDC to 20 decimals!
     usdc.setDecimals(20);
 
-    cashAsset = new CashAsset(account, usdc, address(0));
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
 
     // 10000 USDC with 20 decimals

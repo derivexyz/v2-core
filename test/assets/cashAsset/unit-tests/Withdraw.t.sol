@@ -19,6 +19,7 @@ contract UNIT_CashAssetWithdraw is Test {
   MockManager manager;
   MockManager badManager;
   Accounts account;
+  InterestRateModel rateModel;
   address badActor = address(0x0fac);
 
   uint accountId;
@@ -32,7 +33,8 @@ contract UNIT_CashAssetWithdraw is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, usdc, address(0));
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -99,6 +101,7 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
   MockERC20 usdc;
   MockManager manager;
   Accounts accounts;
+  InterestRateModel rateModel;
 
   uint accountId;
 
@@ -112,7 +115,8 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
     // usdc as 20 decimals
     usdc.setDecimals(20);
 
-    cashAsset = new CashAsset(accounts, usdc, address(0));
+    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    cashAsset = new CashAsset(accounts, usdc, rateModel, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 

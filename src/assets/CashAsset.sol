@@ -6,12 +6,13 @@ import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
+import "synthetix/SignedDecimalMath.sol";
 import "synthetix/DecimalMath.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../libraries/ConvertDecimals.sol";
-import "forge-std/Test.sol";
+import "./InterestRateModel.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
@@ -19,11 +20,13 @@ import "forge-std/Test.sol";
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
+
 contract CashAsset is ICashAsset, Owned, IAsset {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
   using SafeCast for int;
+  using SignedDecimalMath for int;
   using DecimalMath for uint;
 
   ///@dev Account contract address
@@ -31,6 +34,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
+
+  ///@dev InterestRateModel contract address
+  InterestRateModel public rateModel;
 
   ///@dev The address of liqudation module, which can trigger call of insolvency
   address public immutable liquidationModule;
@@ -52,10 +58,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   uint public accruedFees;
 
   ///@dev Represents the growth of $1 of debt since deploy
-  uint public borrowIndex;
+  uint public borrowIndex = DecimalMath.UNIT;
 
   ///@dev Represents the growth of $1 of positive balance since deploy
-  uint public supplyIndex;
+  uint public supplyIndex = DecimalMath.UNIT;
 
   ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
@@ -67,14 +73,25 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
 
+  ///@dev AccountId to previously stored borrow/supply index depending on a positive or debt position.
+  mapping(uint => uint) public accountIdIndex;
+
   /////////////////////
   //   Constructor   //
   /////////////////////
 
-  constructor(IAccounts _accounts, IERC20Metadata _stableAsset, address _liquidationModule) {
+  constructor(
+    IAccounts _accounts,
+    IERC20Metadata _stableAsset,
+    InterestRateModel _rateModel,
+    address _liquidationModule
+  ) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     accounts = _accounts;
+
+    lastTimestamp = block.timestamp;
+    rateModel = _rateModel;
     liquidationModule = _liquidationModule;
   }
 
@@ -83,7 +100,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   //////////////////////////////
 
   /**
-   * @notice whitelist or un-whitelist a manager
+   * @notice Whitelist or un-whitelist a manager
    * @param _manager manager address
    * @param _whitelisted true to whitelist
    */
@@ -91,12 +108,22 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     whitelistedManager[_manager] = _whitelisted;
   }
 
+  /**
+   * @notice Allows owner to set InterestRateModel contract
+   * @dev Accures interest to make sure indexes are up to date before changing the model
+   * @param _rateModel Interest rate model address
+   */
+  function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
+    _accrueInterest();
+    rateModel = _rateModel;
+  }
+
   ////////////////////////////
   //   External Functions   //
   ////////////////////////////
 
   /**
-   * @dev deposit USDC and increase account balance
+   * @dev Deposit USDC and increase account balance
    * @param recipientAccount account id to receive the cash asset
    * @param stableAmount amount of stable coins to deposit
    */
@@ -122,7 +149,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @notice withdraw USDC from a Lyra account
+   * @notice Withdraw USDC from a Lyra account
    * @param accountId account id to withdraw
    * @param stableAmount amount of stable asset in its native decimals
    * @param recipient USDC recipient
@@ -170,6 +197,20 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     }
   }
 
+  /// @notice External function for updating totalSupply and totalBorrow with the accrued interest since last timestamp.
+  function accrueInterest() external {
+    _accrueInterest();
+  }
+
+  /**
+   * @notice Returns latest balance without updating accounts but will update indexes
+   * @param accountId The accountId to check
+   */
+  function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
+    _accrueInterest();
+    return _calculateBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -194,18 +235,24 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       return (0, false);
     }
 
-    // accrue interest rate
+    // Accrue interest and update indexes
     _accrueInterest();
 
-    // todo: accrue interest on prebalance
-
-    // finalBalance can go positive or negative
+    // Apply interest to preBalance
+    preBalance = _calculateBalanceWithInterest(preBalance, adjustment.acc);
     finalBalance = preBalance + adjustment.amount;
 
-    // need allowance if trying to deduct balance
+    // Update borrow and supply indexes depending on if the accountId balance is net positive or negative
+    if (finalBalance < 0) {
+      accountIdIndex[adjustment.acc] = borrowIndex;
+    } else if (finalBalance > 0) {
+      accountIdIndex[adjustment.acc] = supplyIndex;
+    }
+
+    // Need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    // update totalSupply and totalBorrow amounts
+    // Update totalSupply and totalBorrow amounts
     _updateSupplyAndBorrow(preBalance, finalBalance);
   }
 
@@ -273,13 +320,52 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @dev update interest rate
+   * @notice Accrues interest onto the balance provided
+   * @param preBalance the balance which the interest is going to be applied to
+   * @param accountId the accountId which the balance belongs to
+   */
+  function _calculateBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
+    uint accountIndex = accountIdIndex[accountId];
+    uint indexToUse = accountIndex == 0 ? DecimalMath.UNIT : accountIndex;
+
+    uint indexChange;
+    if (preBalance < 0) {
+      indexChange = borrowIndex.divideDecimal(indexToUse);
+    } else if (preBalance > 0) {
+      indexChange = supplyIndex.divideDecimal(indexToUse);
+    }
+    interestBalance = indexChange.toInt256().multiplyDecimal(preBalance);
+  }
+
+  /**
+   * @notice Updates totalSupply and totalBorrow with the accrued interest since last timestamp.
+   * @dev Calculates interest accrued using the rate model and updates relevant state. A users balance
+   * will be adjusted in the hook based off these new values.
    */
   function _accrueInterest() internal {
-    //todo: actual interest updates
-    // uint util = borrowIndex / supplyIndex;
+    if (lastTimestamp == block.timestamp) return;
 
+    // Update timestamp even if there are no borrows // todo is this logic sound?
+    uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = block.timestamp;
+    if (totalBorrow == 0) return;
+
+    // Calculate interest since last timestamp using compounded interest rate
+    uint borrowRate = rateModel.getBorrowRate(totalSupply, totalBorrow);
+    uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
+    uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
+
+    // Update total supply and borrow
+    uint prevBorrow = totalBorrow;
+    uint prevSupply = totalSupply;
+    totalSupply += interestAccrued;
+    totalBorrow += interestAccrued;
+
+    // Update borrow/supply index by calculating the % change of total * current borrow/supply index
+    borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
+    supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex);
+
+    emit InterestAccrued(interestAccrued, borrowIndex, totalSupply, totalBorrow);
   }
 
   /**
