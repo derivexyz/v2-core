@@ -127,6 +127,70 @@ contract UNIT_BidAuction is Test {
     dutchAuction.bid(aliceAcc, bobAcc, 101 * 1e16);
   }
 
+  function testCannotMakeBidUnlessOwner() public {
+    vm.startPrank(address(manager));
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
+
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
+
+    // bidding
+    vm.stopPrank();
+    vm.startPrank(bob);
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_BidderNotOwner.selector, aliceAcc, bob));
+    dutchAuction.bid(aliceAcc, aliceAcc, 1e18);
+  }
+
+  function testBidOnSolventAuction() public {
+    vm.startPrank(address(manager));
+
+    manager.giveAssets(aliceAcc);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    // assertEq(auction.startTime, block.timestamp);
+    // assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
+
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertLt(maxProportion, 5e17); // should be less than half
+
+    // bidding
+    vm.stopPrank();
+    vm.startPrank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    vm.stopPrank();
+
+    // testing that the auction has been updated correctly
+    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, false);
+  }
+
   function testCannotBid0() public {
     vm.prank(address(manager));
     dutchAuction.startAuction(aliceAcc);
