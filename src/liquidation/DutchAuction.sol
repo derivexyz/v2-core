@@ -311,13 +311,11 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // IM is always negative under the margining system.
     int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-    // TODO: uncomment out when case is hit, didn't have test for it when pushing
     if (fMax > 1e18) {
       return DecimalMath.UNIT;
     } else {
       return fMax.toUint256();
     }
-    // return fMax.toUint256();
   }
 
   /**
