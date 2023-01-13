@@ -14,7 +14,6 @@ import "../interfaces/ICashAsset.sol";
 import "../libraries/ConvertDecimals.sol";
 import "./InterestRateModel.sol";
 
-import "forge-std/Test.sol";
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit USDC and credit this cash asset into their accounts.

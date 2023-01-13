@@ -72,10 +72,10 @@ contract UNIT_CashAssetAccrueInterest is Test {
     // Indexes should start at 1
     assertEq(cashAsset.borrowIndex(), 1e18);
     assertEq(cashAsset.supplyIndex(), 1e18);
-    
+
     vm.warp(block.timestamp + 1);
     InterestRateModel newModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
-    
+
     // Setting new rate model should update indexes
     cashAsset.setInterestRateModel(newModel);
 
