@@ -389,6 +389,7 @@ contract PCRM is IManager, Owned {
    * @return portfolio Grouped array of option holdings.
    */
 
+  // todo [Josh]: rename this
   function _groupOptions(AccountStructs.AssetBalance[] memory assets)
     internal
     view
