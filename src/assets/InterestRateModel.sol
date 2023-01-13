@@ -11,6 +11,7 @@ import "synthetix/DecimalMath.sol";
  * @author Lyra
  * @notice Contract that implements the logic for calculating the borrow rate
  */
+
 contract InterestRateModel {
   using ConvertDecimals for uint;
   using SafeCast for uint;
