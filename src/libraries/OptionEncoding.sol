@@ -30,6 +30,8 @@ library OptionEncoding {
       revert OE_ExpiryTooLarge(expiry);
     }
 
+    // todo [Josh]: block expiry = 0
+
     // can support strike granularity down to 8 decimal points
     if (strike % 1e10 > 0) {
       revert OE_StrikeTooGranular(strike);

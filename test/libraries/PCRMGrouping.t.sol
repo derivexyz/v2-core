@@ -12,36 +12,8 @@ contract PCRMGroupingTester {
     return strikeHolding;
   }
 
-  function updateForwards(PCRM.ExpiryHolding[] memory expiryHoldings)
-    external
-    pure
-    returns (PCRM.ExpiryHolding[] memory)
-  {
-    PCRMGrouping.updateForwards(expiryHoldings);
-    return expiryHoldings;
-  }
-
   function findForwards(int calls, int puts) external pure returns (int newForwards) {
     newForwards = PCRMGrouping.findForwards(calls, puts);
-  }
-
-  function findOrAddExpiry(PCRM.ExpiryHolding[] memory expiryHoldings, uint newExpiry, uint arrayLen, uint maxStrikes)
-    external
-    pure
-    returns (uint, uint)
-  {
-    (uint expiryIndex, uint newArrayLen) = PCRMGrouping.findOrAddExpiry(expiryHoldings, newExpiry, arrayLen, maxStrikes);
-
-    // had to inline error checks here since array modified via reference and getting stack overflow errors
-    if (expiryHoldings[expiryIndex].expiry != newExpiry) {
-      revert("invalid expiry entry");
-    }
-
-    if (newArrayLen > arrayLen && expiryIndex != arrayLen) {
-      revert("invalid expiry index");
-    }
-
-    return (expiryIndex, newArrayLen);
   }
 
   function findOrAddStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint numStrikesHeld)
@@ -100,65 +72,36 @@ contract PCRMGroupingTest is Test {
   }
 
   function testUpdateForwardsForStrike() public {
-    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
+    PCRM.ExpiryHolding memory holdings = _getDefaultHoldings();
 
     // check corrected filtering
-    PCRM.StrikeHolding memory strike_0 = tester.updateForwards(holdings[0].strikes[0]);
+    PCRM.StrikeHolding memory strike_0 = tester.updateForwards(holdings.strikes[0]);
     assertEq(strike_0.calls, 0);
     assertEq(strike_0.puts, 0);
     assertEq(strike_0.forwards, 11);
 
-    PCRM.StrikeHolding memory strike_1 = tester.updateForwards(holdings[0].strikes[1]);
+    PCRM.StrikeHolding memory strike_1 = tester.updateForwards(holdings.strikes[1]);
     assertEq(strike_1.calls, 0);
     assertEq(strike_1.puts, -10);
     assertEq(strike_1.forwards, 5);
-  }
-
-  function testUpdateForwardsForAllHoldings() public {
-    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-
-    // check corrected filtering
-    holdings = tester.updateForwards(holdings);
-    assertEq(holdings[0].strikes[0].calls, 0);
-    assertEq(holdings[0].strikes[0].puts, 0);
-    assertEq(holdings[0].strikes[0].forwards, 11);
-    assertEq(holdings[0].strikes[1].calls, 0);
-    assertEq(holdings[0].strikes[1].puts, -10);
-    assertEq(holdings[0].strikes[1].forwards, 5);
   }
 
   //////////////////////////////
   // Unique Elements in Array //
   //////////////////////////////
 
-  function testFindOrAddExpiry() public {
-    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint expiryIndex, uint newArrayLen) =
-      tester.findOrAddExpiry(holdings, block.timestamp + 30 days, 2, pcrm.MAX_STRIKES());
-
-    assertEq(expiryIndex, 2);
-    assertEq(newArrayLen, 3);
-  }
-
-  function testAddExistingExpiry() public {
-    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint expiryIndex, uint newArrayLen) = tester.findOrAddExpiry(holdings, holdings[0].expiry, 2, pcrm.MAX_STRIKES());
-
-    assertEq(expiryIndex, 0);
-    assertEq(newArrayLen, 2);
-  }
 
   function testFindOrAddStrike() public {
-    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings[0].strikes, 1250e18, 2);
+    PCRM.ExpiryHolding memory holdings = _getDefaultHoldings();
+    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings.strikes, 1250e18, 2);
 
     assertEq(strikeIndex, 2);
     assertEq(newArrayLen, 3);
   }
 
   function testAddExistingStrike() public {
-    PCRM.ExpiryHolding[] memory holdings = _getDefaultHoldings();
-    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings[0].strikes, 10e18, 2);
+    PCRM.ExpiryHolding memory holdings = _getDefaultHoldings();
+    (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(holdings.strikes, 10e18, 2);
 
     assertEq(strikeIndex, 0);
     assertEq(newArrayLen, 2);
@@ -167,20 +110,20 @@ contract PCRMGroupingTest is Test {
   //////////
   // Util //
   //////////
-  function _getDefaultHoldings() public view returns (PCRM.ExpiryHolding[] memory) {
-    // expiry 1
-    PCRM.StrikeHolding[] memory strikeHoldings_1 = new PCRM.StrikeHolding[](pcrm.MAX_STRIKES());
-    strikeHoldings_1[0] = PCRM.StrikeHolding({strike: 10e18, calls: 10, puts: -10, forwards: 1});
-    strikeHoldings_1[1] = PCRM.StrikeHolding({strike: 15e18, calls: 0, puts: -10, forwards: 5});
-
-    // expiry 2
-    PCRM.StrikeHolding[] memory strikeHoldings_2 = new PCRM.StrikeHolding[](pcrm.MAX_STRIKES());
-    strikeHoldings_2[0] = PCRM.StrikeHolding({strike: 20e18, calls: -3, puts: 5, forwards: 10});
+  function _getDefaultHoldings() public view returns (PCRM.ExpiryHolding memory) {
+    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](pcrm.MAX_STRIKES());
+    // strike 1
+    strikes[0] = PCRM.StrikeHolding({strike: 10e18, calls: 10, puts: -10, forwards: 1});
+    
+    // strike 2
+    strikes[1] = PCRM.StrikeHolding({strike: 15e18, calls: 0, puts: -10, forwards: 5});
 
     // all expiries
-    PCRM.ExpiryHolding[] memory holdings = new PCRM.ExpiryHolding[](pcrm.MAX_EXPIRIES());
-    holdings[0] = PCRM.ExpiryHolding({expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikeHoldings_1});
-    holdings[1] = PCRM.ExpiryHolding({expiry: block.timestamp + 7 days, numStrikesHeld: 1, strikes: strikeHoldings_2});
+    PCRM.ExpiryHolding memory holdings = PCRM.ExpiryHolding({
+      expiry: block.timestamp + 7 days,
+      numStrikesHeld: 2,
+      strikes: strikes
+    });
 
     return holdings;
   }

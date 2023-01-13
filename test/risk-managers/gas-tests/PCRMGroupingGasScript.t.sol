@@ -136,26 +136,21 @@ contract PCRMGroupingGasScript is Script {
   function _composeMaxTransfers() public view returns (AccountStructs.AssetTransfer[] memory assetTransfers) {
     //
     uint max_strikes = pcrm.MAX_STRIKES();
-    uint max_expiries = pcrm.MAX_EXPIRIES();
-
-    uint max_unique_options = max_strikes * max_expiries;
-    assetTransfers = new AccountStructs.AssetTransfer[](max_unique_options);
+    assetTransfers = new AccountStructs.AssetTransfer[](max_strikes);
 
     //
     uint baseExpiry = block.timestamp;
     uint baseStrike = 0;
-    for (uint i; i < max_expiries; i++) {
-      for (uint j; j < max_strikes; j++) {
-        uint newSubId = OptionEncoding.toSubId(baseExpiry + i, baseStrike + j * 10e18, true);
-        assetTransfers[i * max_strikes + j] = AccountStructs.AssetTransfer({
-          fromAcc: aliceAcc,
-          toAcc: bobAcc,
-          asset: IAsset(option),
-          subId: newSubId,
-          amount: 1e18,
-          assetData: ""
-        });
-      }
+    for (uint i; i < max_strikes; i++) {
+      uint newSubId = OptionEncoding.toSubId(baseExpiry, baseStrike + i * 10e18, true);
+      assetTransfers[max_strikes + i] = AccountStructs.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: IAsset(option),
+        subId: newSubId,
+        amount: 1e18,
+        assetData: ""
+      });
     }
 
     return assetTransfers;
