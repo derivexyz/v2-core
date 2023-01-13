@@ -335,8 +335,14 @@ contract UNIT_TestStartAuction is Test {
     // about 7% should be liquidateable according to sim.
   }
 
-  function testCannotMakeBidUnlessOwner() public {
+  function testStartInsolventAuctionAndIncrement() public {
     vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
+
+    // deposit assets to the account
+    manager.giveAssets(aliceAcc);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -351,16 +357,13 @@ contract UNIT_TestStartAuction is Test {
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, auction.auction.upperBound);
+    assertGt(currentBidPrice, 0);
 
-    // getting the max proportion
-    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
-
-    // bidding
-    vm.stopPrank();
-    vm.startPrank(bob);
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_BidderNotOwner.selector, aliceAcc, bob));
-    dutchAuction.bid(aliceAcc, aliceAcc, 1e18);
+    // increment the insolvent auction
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    // get the current step
+    uint currentStep = dutchAuction.getAuctionDetails(aliceAcc).stepInsolvent;
+    assertEq(currentStep, 2);
   }
 
   /// Helper

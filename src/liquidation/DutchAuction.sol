@@ -334,7 +334,7 @@ contract DutchAuction is IDutchAuction, Owned {
       startTime: block.timestamp,
       endTime: block.timestamp + parameters.lengthOfAuction, // half the auction length as 50% of the auction should be spent on each side
       dv: dv,
-      stepInsolvent: 0,
+      stepInsolvent: 1,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: 0})
     });
   }
