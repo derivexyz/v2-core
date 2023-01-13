@@ -394,6 +394,68 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.incrementInsolventAuction(aliceAcc);
   }
 
+  // manager successfully terminates an auction
+  function testManagerTerminatesAuction() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
+
+    // deposit assets to the account
+    manager.giveAssets(aliceAcc);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
+    assertGt(currentBidPrice, 0);
+
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+    // check that the auction is terminated
+    assertEq(dutchAuction.getAuctionDetails(aliceAcc).ongoing, false);
+  }
+
+  // nonmanager cannot terminate an auction
+  function testNonManagerCannotTerminateAuction() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
+
+    // deposit assets to the account
+    manager.giveAssets(aliceAcc);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
+    assertGt(currentBidPrice, 0);
+    vm.stopPrank();
+    vm.startPrank(bob);
+    // terminate the auction
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_NotRiskManager.selector));
+    dutchAuction.terminateAuction(aliceAcc);
+  }
+
   /// Helper
   // will round off the percentages at 2dp
   function percentageHelper(uint bigNumberPercantage) public pure returns (uint) {

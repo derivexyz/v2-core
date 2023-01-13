@@ -248,6 +248,19 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
+   * @notice This function can only be used by the risk manager to end an auction early
+   * @dev This is to allow the riskmanager to cancel the auction if the user adds more collateral
+   * @param accountId the accountId that relates to the auction that is being stepped
+   */
+  function terminateAuction(uint accountId) external {
+    if (address(riskManager) != msg.sender) {
+      revert DA_NotRiskManager();
+    }
+
+    _terminateAuction(accountId);
+  }
+
+  /**
    * @notice External view to get the maximum size of the portfolio that could be bought at the current price
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
@@ -304,6 +317,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // IM is always negative under the margining system.
     int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
+    // TODO: uncomment out when case is hit, didn't have test for it when pushing
     // if (fMax > 1e18) {
     //   return DecimalMath.UNIT;
     // } else {
