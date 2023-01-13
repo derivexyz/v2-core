@@ -170,7 +170,6 @@ contract UNIT_BidAuction is Test {
     // assertEq(auction.startTime, block.timestamp);
     // assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
-
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, auction.auction.upperBound);
