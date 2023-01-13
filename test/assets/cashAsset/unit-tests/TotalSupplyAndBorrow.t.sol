@@ -34,7 +34,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     usdc = new MockERC20("USDC", "USDC");
 
     rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
-    cashAsset = new CashAsset(account, usdc, rateModel);
+    cashAsset = new CashAsset(account, usdc, rateModel, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 

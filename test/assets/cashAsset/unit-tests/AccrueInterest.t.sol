@@ -39,7 +39,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     uint highRateMultipler = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
     rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
-    cashAsset = new CashAsset(account, usdc, rateModel);
+    cashAsset = new CashAsset(account, usdc, rateModel, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
 
