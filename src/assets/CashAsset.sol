@@ -58,10 +58,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   uint public accruedFees;
 
   ///@dev Represents the growth of $1 of debt since deploy
-  uint public borrowIndex;
+  uint public borrowIndex = DecimalMath.UNIT;
 
   ///@dev Represents the growth of $1 of positive balance since deploy
-  uint public supplyIndex;
+  uint public supplyIndex = DecimalMath.UNIT;
 
   ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
@@ -90,10 +90,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     stableDecimals = _stableAsset.decimals();
     accounts = _accounts;
 
-    borrowIndex = ConvertDecimals.UNIT;
-    supplyIndex = ConvertDecimals.UNIT;
     lastTimestamp = block.timestamp;
-    _setInterestRateModel(_rateModel);
+    rateModel = _rateModel;
     liquidationModule = _liquidationModule;
   }
 
@@ -117,7 +115,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    */
   function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
     _accrueInterest();
-    _setInterestRateModel(_rateModel);
+    rateModel = _rateModel;
   }
 
   ////////////////////////////
@@ -185,6 +183,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
+
+    emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
   }
 
   /**
@@ -204,11 +204,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   /**
    * @notice Returns latest balance without updating accounts but will update indexes
-   * @param accountId The account to check
+   * @param accountId The accountId to check
    */
-  function getBalance(uint accountId) external returns (int balance) {
+  function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
     _accrueInterest();
-    return _updateBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
+    return _calculatePreBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
   }
 
   //////////////////////////
@@ -238,13 +238,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     // Accrue interest and update indexes
     _accrueInterest();
 
-    // Initialize accoundId index to 1
-    if (accountIdIndex[adjustment.acc] == 0) {
-      accountIdIndex[adjustment.acc] = DecimalMath.UNIT;
-    }
-
     // Apply interest to preBalance
-    preBalance = _updateBalanceWithInterest(preBalance, adjustment.acc);
+    preBalance = _calculatePreBalanceWithInterest(preBalance, adjustment.acc);
     finalBalance = preBalance + adjustment.amount;
 
     // Update borrow and supply indexes depending on if the accountId balance is net positive or negative
@@ -325,21 +320,20 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @notice Sets the InterestRateModel contract used for interest rate calculations
-   * @dev Can only change InterestRateModel if interest has been accrued for the current timestamp
-   * @param _rateModel Interest rate model address
-   */
-  function _setInterestRateModel(InterestRateModel _rateModel) internal {
-    rateModel = _rateModel;
-  }
-
-  /**
    * @notice Accrues interest onto the balance provided
    * @param preBalance the balance which the interest is going to be applied to
    * @param accountId the accountId which the balance belongs to
    */
-  function _updateBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
-    uint indexChange = borrowIndex.divideDecimal(accountIdIndex[accountId]);
+  function _calculatePreBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
+    uint accountIndex = accountIdIndex[accountId];
+    uint indexToUse = accountIndex == 0 ? DecimalMath.UNIT : accountIndex;
+
+    uint indexChange;
+    if (preBalance < 0) {
+      indexChange = borrowIndex.divideDecimal(indexToUse);
+    } else if (preBalance > 0) {
+      indexChange = supplyIndex.divideDecimal(indexToUse);
+    }
     interestBalance = indexChange.toInt256().multiplyDecimal(preBalance);
   }
 

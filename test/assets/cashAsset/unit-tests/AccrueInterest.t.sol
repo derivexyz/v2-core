@@ -84,6 +84,19 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertEq(cashAsset.rateModel().minRate(), 0.8 * 1e18);
   }
 
+  function testDepositUpdatesInterestTimestamp() public {
+    uint depositAmount = 100 ether;
+    usdc.mint(address(this), depositAmount * 2);
+    cashAsset.deposit(accountId, depositAmount);
+
+    vm.warp(block.timestamp + 1 days);
+
+    // deposit again
+    cashAsset.deposit(accountId, depositAmount);
+
+    assertEq(cashAsset.lastTimestamp(), block.timestamp);
+  }
+
   function testNoAccrueInterest() public {
     // Total borrow 0 so accrueInterest doesn't do anything
     uint totalBorrow = cashAsset.totalBorrow();
@@ -94,7 +107,9 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertEq(cashAsset.supplyIndex(), 1e18);
 
     // After accrueInterest, borrow and supply indexes should stay same
+    vm.warp(block.timestamp + 1);
     cashAsset.accrueInterest();
+
     assertEq(cashAsset.borrowIndex(), 1e18);
     assertEq(cashAsset.supplyIndex(), 1e18);
   }
@@ -138,6 +153,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
     // Borrow amount should be > because bal now includes accrued interest
     bal = account.getBalance(debtAccount, cashAsset, 0);
+    console.logInt(bal);
     assertGt(-int(amountToBorrow) * 2, bal);
   }
 
@@ -185,8 +201,8 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertGt(cashAsset.borrowIndex(), 1e18);
     assertGt(cashAsset.supplyIndex(), 1e18);
 
-    int account1Debt = -cashAsset.getBalance(account1);
-    int account2Debt = -cashAsset.getBalance(account2);
+    int account1Debt = -cashAsset.calculateBalanceWithInterest(account1);
+    int account2Debt = -cashAsset.calculateBalanceWithInterest(account2);
     account1Debt -= int(amountToBorrow1);
     account2Debt -= int(amountToBorrow2);
 
@@ -194,6 +210,6 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertGt(account2Debt, account1Debt);
 
     // AccountId should have grow in balance (supply only)
-    assertGt(uint(cashAsset.getBalance(accountId)), depositedAmount);
+    assertGt(uint(cashAsset.calculateBalanceWithInterest(accountId)), depositedAmount);
   }
 }
