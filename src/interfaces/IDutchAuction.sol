@@ -13,7 +13,7 @@ interface IDutchAuction {
   ////////////
 
   // emmited when an auction starts
-  event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime);
+  event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime, bool insolvent);
 
   // emmited when a bid is placed
   event Bid(uint accountId, uint bidderId, uint amount);

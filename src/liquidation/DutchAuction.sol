@@ -130,7 +130,7 @@ contract DutchAuction is IDutchAuction, Owned {
       _startInsolventAuction(lowerBound, accountId);
     }
 
-    emit AuctionStarted(accountId, upperBound, lowerBound, block.timestamp);
+    emit AuctionStarted(accountId, upperBound, lowerBound, block.timestamp, auctions[accountId].insolvent);
   }
 
   /**
@@ -305,9 +305,13 @@ contract DutchAuction is IDutchAuction, Owned {
     if (currentBidPrice <= 0) {
       return DecimalMath.UNIT;
     }
+    console.log('entered max proportion');
+    console.logInt(initialMargin);
+    console.logInt(currentBidPrice);
 
     // IM is always negative under the margining system.
     int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
+    console.logInt(fMax);
     if (fMax > 1e18) {
       return DecimalMath.UNIT;
     } else {
@@ -388,8 +392,8 @@ contract DutchAuction is IDutchAuction, Owned {
       // calls
       {
         int numCalls = strikes[j].calls;
-        max += SignedMath.max(numCalls, 0) * spot.toInt256() * parameters.spotShock.toInt256();
-        min += SignedMath.min(numCalls, 0) * spot.toInt256() * parameters.spotShock.toInt256();
+        max += SignedMath.max(numCalls, 0) * spot.multiplyDecimal(parameters.spotShock).toInt256();
+        min += SignedMath.min(numCalls, 0) * spot.multiplyDecimal(parameters.spotShock).toInt256();
         // puts
         int numPuts = strikes[j].puts;
         max += SignedMath.max(numPuts, 0) * int64(strikes[j].strike);
@@ -412,13 +416,27 @@ contract DutchAuction is IDutchAuction, Owned {
       numSteps = auction.stepInsolvent;
       return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
     } else {
+      console.logInt(upperBound);
+      console.log('dv', auction.dv);
+      console.log('block.timestamp', block.timestamp);
+      console.log('auction.startTime', auction.startTime);
+      console.log('parameters.stepInterval', parameters.stepInterval);
+      console.log('block.timestamp - auction.startTime', block.timestamp - auction.startTime);
+      console.log('(block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval)',
+       (block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval));
+      console.logInt(upperBound);
+      
       int bid = upperBound
         - auction.dv.multiplyDecimal((block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval))
           .toInt256();
       // have to call markAsInsolvent before bid can be negative
-      if (bid < 0) {
+      if (bid <= 0) {
+        console.log('bid <= 0');
+        console.logInt(bid);
         return 0;
       } else {
+        console.log('bid > 0');
+        console.logInt(bid);
         return bid;
       }
     }
