@@ -78,4 +78,6 @@ contract MockInterestRateModel {
 
     return borrows.divideDecimal(supply);
   }
+
+  function test() public {}
 }
