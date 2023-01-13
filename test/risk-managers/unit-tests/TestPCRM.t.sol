@@ -139,35 +139,35 @@ contract UNIT_TestPCRM is Test {
   /////////////////////////
 
   function testEmptyInitialMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
-    strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](1);
+    strikes[0] = PCRM.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding memory expiry = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    PCRM.Portfolio memory expiry = PCRM.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getInitialMargin(expiry, 0);
+    manager.getInitialMargin(expiry);
 
     // todo: actually test
   }
 
   function testEmptyMaintenanceMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
-    strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](1);
+    strikes[0] = PCRM.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding memory expiry = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    PCRM.Portfolio memory expiry = PCRM.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getMaintenanceMargin(expiry, 0);
+    manager.getMaintenanceMargin(expiry);
 
     // todo: actually test
   }
 
   function testInitialMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](2);
-    strikes[0] = PCRM.StrikeHolding({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-    strikes[1] = PCRM.StrikeHolding({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](2);
+    strikes[0] = PCRM.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = PCRM.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding memory expiry = PCRM.ExpiryHolding({expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
+    PCRM.Portfolio memory expiry = PCRM.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
 
-    manager.getInitialMargin(expiry, 0);
+    manager.getInitialMargin(expiry);
 
     // todo: actually test
   }
@@ -206,7 +206,7 @@ contract UNIT_TestPCRM is Test {
   function testGetGroupedOptions() public {
     _openDefaultOptions();
 
-    (PCRM.ExpiryHolding memory holding) = manager.getGroupedOptions(aliceAcc);
+    (PCRM.Portfolio memory holding) = manager.getGroupedOptions(aliceAcc);
     assertEq(holding.strikes[0].strike, 1000e18);
     assertEq(holding.strikes[0].calls, 0);
     assertEq(holding.strikes[0].puts, -9e18);

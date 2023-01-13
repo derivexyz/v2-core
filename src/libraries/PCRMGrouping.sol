@@ -20,9 +20,9 @@ library PCRMGrouping {
   /**
    * @notice Take in a strike holding and update holding in-place with forwards
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
-   * @param strike PCRM.StrikeHolding struct containing all holdings for a particular strike
+   * @param strike PCRM.Strike struct containing all holdings for a particular strike
    */
-  function updateForwards(PCRM.StrikeHolding memory strike) internal pure {
+  function updateForwards(PCRM.Strike memory strike) internal pure {
     int additionalFwds = PCRMGrouping.findForwards(strike.calls, strike.puts);
     if (additionalFwds != 0) {
       strike.calls -= additionalFwds;
@@ -54,44 +54,44 @@ library PCRMGrouping {
 
   /**
    * @notice Adds new strike struct if not present in holdings
-   * @param strikeHoldings All holdings for a given expiry. Refer to PCRM.sol
+   * @param strikes All holdings for a given expiry. Refer to PCRM.sol
    * @param newStrike strike price
    * @param arrayLen # of strikes already active
    * @return strikeIndex index of existing or added strike struct
    * @return newArrayLen new # of strikes post addition
    */
-  function findOrAddStrike(PCRM.StrikeHolding[] memory strikeHoldings, uint newStrike, uint arrayLen)
+  function findOrAddStrike(PCRM.Strike[] memory strikes, uint newStrike, uint arrayLen)
     internal
     pure
     returns (uint, uint)
   {
     // check if strike exists
-    (uint strikeIndex, bool found) = findInArray(strikeHoldings, newStrike, arrayLen);
+    (uint strikeIndex, bool found) = findInArray(strikes, newStrike, arrayLen);
 
     // return index if found or add new entry
     if (found == false) {
       strikeIndex = arrayLen++;
-      strikeHoldings[strikeIndex] = PCRM.StrikeHolding({strike: newStrike, calls: 0, puts: 0, forwards: 0});
+      strikes[strikeIndex] = PCRM.Strike({strike: newStrike, calls: 0, puts: 0, forwards: 0});
     }
     return (strikeIndex, arrayLen);
   }
 
   /**
    * @dev return if an expiry exists in an array of expiry holdings
-   * @param strikeHoldings All holdings for a given expiry. Refer to PCRM.sol
+   * @param strikes All holdings for a given expiry. Refer to PCRM.sol
    * @param strikeToFind  strike to find
    * @param arrayLen # of strikes already active
    * @return index index of the found element. 0 if not found
    * @return found true if found
    */
-  function findInArray(PCRM.StrikeHolding[] memory strikeHoldings, uint strikeToFind, uint arrayLen)
+  function findInArray(PCRM.Strike[] memory strikes, uint strikeToFind, uint arrayLen)
     internal
     pure
     returns (uint index, bool found)
   {
     unchecked {
       for (uint i; i < arrayLen; ++i) {
-        if (strikeHoldings[i].strike == strikeToFind) {
+        if (strikes[i].strike == strikeToFind) {
           return (i, true);
         }
       }
