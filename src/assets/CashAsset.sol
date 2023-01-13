@@ -253,7 +253,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param _rateModel Interest rate model address
    */
   function _setInterestRateModel(InterestRateModel _rateModel) internal {
-    if (lastTimestamp != block.timestamp) revert CA_InterestAccrualStale(lastTimestamp, block.timestamp);
     rateModel = _rateModel;
   }
 

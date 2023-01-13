@@ -96,15 +96,12 @@ contract InterestRateModel {
    * @param borrows The amount of borrows for the asset
    * @return The utilization rate as a mantissa between
    */
-  function getUtilRate(uint supply, uint borrows) public view returns (uint) {
-    // function getUtilRate(uint supply, uint borrows) public pure returns (uint) {
+    function getUtilRate(uint supply, uint borrows) public pure returns (uint) {
     // Utilization rate is 0 when there are no borrows
     if (borrows == 0) {
       return 0;
     }
-    console.log("borrows", borrows);
-    console.log("supply", supply);
-    // console.log("borrowRate", borrows.divideDecimal(supply) );
+
     return borrows.divideDecimal(supply);
   }
 

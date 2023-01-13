@@ -51,8 +51,37 @@ contract UNIT_CashAssetAccrueInterest is Test {
     accountId = account.createAccount(address(this), manager);
 
     cashAsset.deposit(accountId, depositedAmount);
-    console.log("Here 4");
     vm.warp(block.timestamp + 1 weeks);
+  }
+
+  function testSetNewInterestRateModel() public {
+    uint minRate = 0.8 * 1e18;
+    uint rateMultipler = 0.8 * 1e18;
+    uint highRateMultipler = 0.8 * 1e18;
+    uint optimalUtil = 0.8 * 1e18;
+
+    // Make sure when setting new rateModel indexes are updated
+    uint amountToBorrow = 2000e18;
+    uint newAccount = account.createAccount(address(this), manager);
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    // Increase total borrow amount
+    cashAsset.withdraw(newAccount, amountToBorrow, address(this));
+
+    // Indexes should start at 1
+    assertEq(cashAsset.borrowIndex(), 1e18);
+    assertEq(cashAsset.supplyIndex(), 1e18);
+    
+    vm.warp(block.timestamp + 1);
+    InterestRateModel newModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    
+    // Setting new rate model should update indexes
+    cashAsset.setInterestRateModel(newModel);
+
+    assertGt(cashAsset.borrowIndex(), 1e18);
+    assertGt(cashAsset.supplyIndex(), 1e18);
+    assertEq(cashAsset.rateModel().minRate(), 0.8 * 1e18);
   }
 
   function testNoAccrueInterest() public {
