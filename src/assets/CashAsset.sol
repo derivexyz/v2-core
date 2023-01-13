@@ -208,7 +208,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    */
   function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
     _accrueInterest();
-    return _calculatePreBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
+    return _calculateBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
   }
 
   //////////////////////////
@@ -239,7 +239,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     _accrueInterest();
 
     // Apply interest to preBalance
-    preBalance = _calculatePreBalanceWithInterest(preBalance, adjustment.acc);
+    preBalance = _calculateBalanceWithInterest(preBalance, adjustment.acc);
     finalBalance = preBalance + adjustment.amount;
 
     // Update borrow and supply indexes depending on if the accountId balance is net positive or negative
@@ -324,7 +324,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param preBalance the balance which the interest is going to be applied to
    * @param accountId the accountId which the balance belongs to
    */
-  function _calculatePreBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
+  function _calculateBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
     uint accountIndex = accountIdIndex[accountId];
     uint indexToUse = accountIndex == 0 ? DecimalMath.UNIT : accountIndex;
 
