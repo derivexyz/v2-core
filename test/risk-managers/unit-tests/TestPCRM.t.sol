@@ -5,16 +5,20 @@ import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
+import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
+import "test/shared/mocks/MockERC20.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestPCRM is Test {
   Accounts account;
   PCRM manager;
+  CashAsset cash;
+  MockERC20 usdc;
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
   MockV3Aggregator aggregator;
@@ -32,18 +36,21 @@ contract UNIT_TestPCRM is Test {
     aggregator = new MockV3Aggregator(18, 1000e18);
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    usdc = new MockERC20("USDC", "USDC");
 
     auction = new MockDutchAuction();
 
     option = new Option();
+    cash = new CashAsset(IAccounts(address(account)), usdc);
     manager = new PCRM(
       address(account),
       address(spotFeeds),
-      address(0), // lending
+      address(cash),
       address(option),
       address(auction)
     );
 
+    cash.setWhitelistManager(address(manager), true);
     manager.setParams(
       PCRM.Shocks({
         spotUpInitial: 120e16,
@@ -204,6 +211,22 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
+  function testNegativePnLSettledExpiryCalculation() public {
+    skip(30 days);
+
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](2);
+    strikes[0] = PCRM.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = PCRM.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+
+    aggregator.updateRoundData(2, 100e18, block.timestamp, block.timestamp, 2);
+    PCRM.Portfolio memory expiry =
+      PCRM.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
+
+    manager.getInitialMargin(expiry);
+
+    // todo: actually test, added for coverage
+  }
+
   ////////////////////
   // Manager Change //
   ////////////////////
@@ -238,11 +261,27 @@ contract UNIT_TestPCRM is Test {
   function testGetPortfolio() public {
     _openDefaultOptions();
 
+    _transferCash();
+
     (PCRM.Portfolio memory holding) = manager.getPortfolio(aliceAcc);
     assertEq(holding.strikes[0].strike, 1000e18);
     assertEq(holding.strikes[0].calls, 0);
     assertEq(holding.strikes[0].puts, -9e18);
     assertEq(holding.strikes[0].forwards, 1e18);
+  }
+
+  function _transferCash() internal {
+    vm.startPrank(address(alice));
+    AccountStructs.AssetTransfer memory cashTransfer = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(address(cash)),
+      subId: 1,
+      amount: 1000e18,
+      assetData: ""
+    });
+    account.submitTransfer(cashTransfer, "");
+    vm.stopPrank();
   }
 
   function _openDefaultOptions() internal {
