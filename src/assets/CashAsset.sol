@@ -187,7 +187,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     _checkManager(address(newManager));
   }
 
-  
   function getCashToStableExchangeRate() external pure returns (uint) {
     // todo: only to comply with interface now: will accept incoming code from CashAsset
     return ConvertDecimals.UNIT;

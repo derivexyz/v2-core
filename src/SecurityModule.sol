@@ -164,16 +164,15 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
     } else {
       stableAmount = _getTotalStable() * share / shareSupply;
     }
-    
   }
 
   /**
-   * @dev Returns the total amount of stable asset controlled by this contract 
+   * @dev Returns the total amount of stable asset controlled by this contract
    * @return totalStable Total stable asset (USDC) in its native decimals
    */
   function _getTotalStable() internal returns (uint totalStable) {
     // expect revert if our balance is somehow negative
-    uint cashBalance = cashAsset.calculateBalanceWithInterest(accountId).toUint256(); 
+    uint cashBalance = cashAsset.calculateBalanceWithInterest(accountId).toUint256();
 
     // if toStableRate is 0.5, 1 cash asset can only take out 0.5 stable asset (USDC)
     uint toStableRate = cashAsset.getCashToStableExchangeRate();

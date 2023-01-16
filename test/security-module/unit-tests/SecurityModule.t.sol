@@ -55,18 +55,13 @@ contract UNIT_SecurityModule is Test {
   function testDepositIntoSecurityModule() public {
     uint depositAmount = 1000e6;
 
-    vm.mockCall(
-        address(0),
-        abi.encodeWithSelector(CashAsset.deposit.selector, address(1)),
-        abi.encode(10)
-    );
+    vm.mockCall(address(0), abi.encodeWithSelector(CashAsset.deposit.selector, address(1)), abi.encode(10));
 
     securityModule.deposit(depositAmount);
 
     // first deposit get equivelant share of USDC <> seuciry module share
     uint shares = securityModule.balanceOf(address(this));
     assertEq(shares, depositAmount);
-
   }
 
   function testWithdrawFromSecurityModule() public {

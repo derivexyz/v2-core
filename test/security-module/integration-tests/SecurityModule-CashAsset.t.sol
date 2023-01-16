@@ -87,5 +87,4 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
   // test the numbers when we have withdraw fee enabled on cash asset
   function testWithdawFromSMWhenFeeSwitchIsOn() public {}
-
 }
