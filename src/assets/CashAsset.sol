@@ -135,6 +135,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     smFeePercentage = _smFee;
   }
 
+  /// @notice Allows owner to transfer accrued SM fees to the SM
   function transferSmFees() external onlyOwner {
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -147,6 +148,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
+
+    accruedSmFees = 0;
   }
 
   ////////////////////////////
