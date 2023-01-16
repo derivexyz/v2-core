@@ -67,7 +67,7 @@ contract PCRMGroupingGasScript is Script {
     // estimate tx cost
     uint initGas = gasleft();
 
-    pcrm.getGroupedOptions(aliceAcc);
+    pcrm.getPortfolio(aliceAcc);
 
     console.log("gas:singleAsset:", initGas - gasleft());
   }
@@ -89,7 +89,7 @@ contract PCRMGroupingGasScript is Script {
 
     // estimate gas for grouping + getting balances
     initGas = gasleft();
-    pcrm.getGroupedOptions(aliceAcc);
+    pcrm.getPortfolio(aliceAcc);
     console.log("gas: grouping 128 assets in PCRM:", initGas - gasleft());
   }
 

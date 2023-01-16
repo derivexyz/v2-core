@@ -118,6 +118,39 @@ contract UNIT_TestPCRM is Test {
   // Transfer //
   //////////////
 
+
+  function testBlockTradeIfMultipleExpiries() public {
+    // prepare trades
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
+    uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
+    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: longtermSubId,
+      amount: 5e18,
+      assetData: ""
+    });
+
+    // open first expiry option
+    vm.startPrank(address(alice));
+    account.submitTransfer(callTransfer, "");
+
+    // fail when adding an option with a new expiry
+    vm.expectRevert(PCRM.PCRM_SingleExpiryPerAccount.selector);
+    account.submitTransfer(longtermTransfer, "");
+    vm.stopPrank();
+
+  }
+
   function testHandleAdjustment() public {
     vm.startPrank(alice);
     AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
@@ -203,10 +236,10 @@ contract UNIT_TestPCRM is Test {
   // View //
   //////////
 
-  function testGetGroupedOptions() public {
+  function testGetPortfolio() public {
     _openDefaultOptions();
 
-    (PCRM.Portfolio memory holding) = manager.getGroupedOptions(aliceAcc);
+    (PCRM.Portfolio memory holding) = manager.getPortfolio(aliceAcc);
     assertEq(holding.strikes[0].strike, 1000e18);
     assertEq(holding.strikes[0].calls, 0);
     assertEq(holding.strikes[0].puts, -9e18);
@@ -218,8 +251,6 @@ contract UNIT_TestPCRM is Test {
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
     uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
-
-    uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
 
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -237,18 +268,8 @@ contract UNIT_TestPCRM is Test {
       amount: -10e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
-      fromAcc: bobAcc,
-      toAcc: aliceAcc,
-      asset: IAsset(option),
-      subId: longtermSubId,
-      amount: 5e18,
-      assetData: ""
-    });
     account.submitTransfer(callTransfer, "");
     account.submitTransfer(putTransfer, "");
-    account.submitTransfer(longtermTransfer, "");
-
     vm.stopPrank();
   }
 }

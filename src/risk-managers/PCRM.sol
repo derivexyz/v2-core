@@ -153,9 +153,8 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    Portfolio memory portfolio = _groupOptions(account.getAccountBalances(accountId));
+    Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
 
-    // todo [Josh]: might make more semantic case to not incldue "cashAmount" in here.
     _calcMargin(portfolio, MarginType.INITIAL);
   }
 
@@ -383,36 +382,38 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Group all option holdings into an array of
-   *         [expiries][strikes][calls / puts / forwards].
+   * @notice Arrange portfolio into cash + arranged 
+   *         array of [strikes][calls / puts / forwards].
    * @param assets Array of balances for given asset and subId.
-   * @return portfolio Grouped array of option holdings.
+   * @return portfolio Cash + option holdings.
    */
 
   // todo [Josh]: rename this
-  function _groupOptions(AccountStructs.AssetBalance[] memory assets)
+  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
     internal
     view
     returns (Portfolio memory portfolio)
   {
-    uint strikeIndex;
     portfolio.strikes = new PCRM.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
     Strike memory currentStrike;
     AccountStructs.AssetBalance memory currentAsset;
-    // create sorted [expiries][strikes] 2D array
+    uint strikeIndex;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         // decode subId
         (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
 
+        // assume expiry = 0 means this is the first strike.
         if (portfolio.expiry == 0) {
           portfolio.expiry = expiry;
-        } else if (portfolio.expiry != expiry) {
-          revert(""); // todo: add error
+        }
+        
+        if (portfolio.expiry != expiry) {
+          revert PCRM_SingleExpiryPerAccount();
         }
 
         (strikeIndex, portfolio.numStrikesHeld) =
@@ -443,19 +444,19 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Group all option holdings of an account into an array of
-   *         [strikes][calls / puts / forwards].
-   * @param accountId ID of account to sort.
-   * @return portfolio Grouped array of option holdings.
+   * @notice Get account portfolio, consisting of cash + arranged
+   *         array of [strikes][calls / puts / forwards].
+   * @param accountId ID of account to retrieve.
+   * @return portfolio Cash + arranged option holdings.
    */
-  function getGroupedOptions(uint accountId) external view returns (Portfolio memory portfolio) {
-    return _groupOptions(account.getAccountBalances(accountId));
+  function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio) {
+    return _arrangePortfolio(account.getAccountBalances(accountId));
   }
 
   /**
    * @notice Calculate the initial margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Sorted array of option holdings.
+   * @param portfolio Cash + arranged option holdings.
    * @return margin Amount by which account is over or under the required margin.
    */
   // todo [Josh]: public view function to get margin values directly through accountId
@@ -466,7 +467,7 @@ contract PCRM is IManager, Owned {
   /**
    * @notice Calculate the maintenance margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Sorted array of option holdings.
+   * @param portfolio Cash + arranged option holdings.
    * @return margin Amount by which account is over or under the required margin.
    */
   function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int margin) {
@@ -478,4 +479,6 @@ contract PCRM is IManager, Owned {
   ////////////
 
   error PCRM_OnlyAuction(address sender, address auction);
+
+  error PCRM_SingleExpiryPerAccount();
 }
