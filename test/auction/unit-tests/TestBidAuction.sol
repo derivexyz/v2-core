@@ -105,7 +105,7 @@ contract UNIT_BidAuction is Test {
 
   function testCannotBidOnAuctionThatHasNotStarted() public {
     vm.prank(address(manager));
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotOngoing.selector, aliceAcc));
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionEnded.selector, aliceAcc));
     vm.stopPrank();
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
