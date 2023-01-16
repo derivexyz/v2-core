@@ -423,10 +423,9 @@ contract PCRM is IManager, Owned {
           currentStrike.puts += currentAsset.balance;
         }
 
-        // if both calls / puts present, pair-off into forwards
-        if (currentStrike.calls != 0 && currentStrike.puts != 0) {
-          PCRMGrouping.updateForwards(currentStrike);
-        }
+        // if possible, combine calls and puts into forwards
+        PCRMGrouping.updateForwards(currentStrike);
+        
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       }
