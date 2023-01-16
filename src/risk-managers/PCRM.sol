@@ -104,7 +104,7 @@ contract PCRM is IManager, Owned {
   IDutchAuction public immutable dutchAuction;
 
   /// @dev max number of strikes per expiry allowed to be held in one account
-  uint public constant MAX_STRIKES = 128;
+  uint public constant MAX_STRIKES = 64;
 
   Shocks public shocks;
 

@@ -85,12 +85,12 @@ contract PCRMGroupingGasScript is Script {
     uint initGas = gasleft();
     account.getAccountBalances(aliceAcc);
     uint endGas = gasleft();
-    console.log("gas: getting 128 asset balances from account:", initGas - endGas);
+    console.log("gas: getting 64 asset balances from account:", initGas - endGas);
 
     // estimate gas for grouping + getting balances
     initGas = gasleft();
     pcrm.getPortfolio(aliceAcc);
-    console.log("gas: grouping 128 assets in PCRM:", initGas - gasleft());
+    console.log("gas: grouping 64 assets in PCRM:", initGas - gasleft());
   }
 
   function _setupFeeds() public {
@@ -143,7 +143,7 @@ contract PCRMGroupingGasScript is Script {
     uint baseStrike = 0;
     for (uint i; i < max_strikes; i++) {
       uint newSubId = OptionEncoding.toSubId(baseExpiry, baseStrike + i * 10e18, true);
-      assetTransfers[max_strikes + i] = AccountStructs.AssetTransfer({
+      assetTransfers[i] = AccountStructs.AssetTransfer({
         fromAcc: aliceAcc,
         toAcc: bobAcc,
         asset: IAsset(option),
