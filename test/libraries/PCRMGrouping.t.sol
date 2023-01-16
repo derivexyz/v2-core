@@ -90,7 +90,6 @@ contract PCRMGroupingTest is Test {
   // Unique Elements in Array //
   //////////////////////////////
 
-
   function testFindOrAddStrike() public {
     PCRM.Portfolio memory portfolio = _getDefaultHoldings();
     (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(portfolio.strikes, 1250e18, 2);
@@ -114,17 +113,13 @@ contract PCRMGroupingTest is Test {
     PCRM.Strike[] memory strikes = new PCRM.Strike[](pcrm.MAX_STRIKES());
     // strike 1
     strikes[0] = PCRM.Strike({strike: 10e18, calls: 10, puts: -10, forwards: 1});
-    
+
     // strike 2
     strikes[1] = PCRM.Strike({strike: 15e18, calls: 0, puts: -10, forwards: 5});
 
     // all expiries
-    PCRM.Portfolio memory portfolio = PCRM.Portfolio({
-      cash: 0,
-      expiry: block.timestamp + 7 days,
-      numStrikesHeld: 2,
-      strikes: strikes
-    });
+    PCRM.Portfolio memory portfolio =
+      PCRM.Portfolio({cash: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
 
     return portfolio;
   }

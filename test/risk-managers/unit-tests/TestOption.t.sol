@@ -21,7 +21,6 @@ contract UNIT_TestOption is Test {
   Option option;
   OptionEncodingTester tester;
 
-
   address alice = address(0xaa);
   address bob = address(0xbb);
   uint aliceAcc;

@@ -231,11 +231,7 @@ contract PCRM is IManager, Owned {
    */
 
   // todo [Josh]: add RV related add-ons
-  function _calcMargin(Portfolio memory portfolio, MarginType marginType)
-    internal
-    view
-    returns (int margin)
-  {
+  function _calcMargin(Portfolio memory portfolio, MarginType marginType) internal view returns (int margin) {
     // get shock amounts
     uint128 spotUp;
     uint128 spotDown;
@@ -382,7 +378,7 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Arrange portfolio into cash + arranged 
+   * @notice Arrange portfolio into cash + arranged
    *         array of [strikes][calls / puts / forwards].
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
@@ -411,7 +407,7 @@ contract PCRM is IManager, Owned {
         if (portfolio.expiry == 0) {
           portfolio.expiry = expiry;
         }
-        
+
         if (portfolio.expiry != expiry) {
           revert PCRM_SingleExpiryPerAccount();
         }

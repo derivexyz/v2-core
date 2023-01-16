@@ -118,7 +118,6 @@ contract UNIT_TestPCRM is Test {
   // Transfer //
   //////////////
 
-
   function testBlockTradeIfMultipleExpiries() public {
     // prepare trades
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
@@ -148,7 +147,6 @@ contract UNIT_TestPCRM is Test {
     vm.expectRevert(PCRM.PCRM_SingleExpiryPerAccount.selector);
     account.submitTransfer(longtermTransfer, "");
     vm.stopPrank();
-
   }
 
   function testHandleAdjustment() public {
@@ -198,7 +196,8 @@ contract UNIT_TestPCRM is Test {
     strikes[0] = PCRM.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     strikes[1] = PCRM.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
-    PCRM.Portfolio memory expiry = PCRM.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
+    PCRM.Portfolio memory expiry =
+      PCRM.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 

@@ -71,7 +71,7 @@ library OptionEncoding {
   ////////////
 
   error OE_ExpiryTooLarge(uint expiry);
-  error OE_ZeroExpiry(); 
+  error OE_ZeroExpiry();
   error OE_StrikeTooLarge(uint strike);
   error OE_StrikeTooGranular(uint strike);
 }
