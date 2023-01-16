@@ -69,12 +69,12 @@ library Black76 {
       if (b76Input.strikePrice == 0) {
         return (fwdDiscounted, uint(0));
       }
-      
+
       uint strikeDiscounted = uint(b76Input.strikePrice) * uint(b76Input.discount) / 1e18;
       if (fwd == 0) {
         return (uint(0), strikeDiscounted);
       }
-      
+
       uint moneyness = uint(b76Input.strikePrice) * 1e18 / fwd;
       (callPrice, putPrice) = _standardPrices(moneyness, totalVol);
 
