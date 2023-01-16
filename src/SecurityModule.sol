@@ -61,8 +61,9 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
    */
   function deposit(uint stableAmount) external {
     // todo[Anton]: update share calculation when share to stable is no longer 1:1
-    uint shareAmount = stableAmount;
-    _mint(msg.sender, shareAmount);
+    uint shares = _stableToShare(stableAmount);
+
+    _mint(msg.sender, shares);
 
     stableAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
 
@@ -72,11 +73,11 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   /**
    * @dev Withdraw stable asset from the module
    */
-  function withdraw(uint shareAmount, address recipient) external {
-    _burn(msg.sender, shareAmount);
+  function withdraw(uint shares, address recipient) external {
+    _burn(msg.sender, shares);
 
     // todo[Anton]: exchange rate when USDC is paid out and stable amount is no longer 1:1
-    uint stableAmount = shareAmount;
+    uint stableAmount = _shareToStable(shares);
 
     cashAsset.withdraw(accountId, stableAmount, recipient);
   }
@@ -129,6 +130,55 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
     accounts.submitTransfer(transfer, "");
 
     emit SecurityModulePaidOut(accountId, cashAmountNeeded, cashAmountPaid);
+  }
+
+  //////////////////////////
+  //  Internal Functions  //
+  //////////////////////////
+
+  /**
+   * @notice Convert stalbe coin amounts to share amount
+   * @dev This should be called before pulling token in
+   * @param stableAmount amount of stable coin in its native decimals
+   */
+  function _stableToShare(uint stableAmount) internal returns (uint shares) {
+    // new stable amount / new share = total stable / total supply
+    uint shareSupply = totalSupply();
+    if (shareSupply == 0) {
+      shares = stableAmount;
+    } else {
+      shares = shareSupply * stableAmount / _getTotalStable();
+    }
+  }
+
+  /**
+   * @dev Convert share amount to amount of stable to take out
+   * @dev this should be called before minting new shares
+   * @param share amount of shares
+   * @return stableAmount amount of stables to take out
+   */
+  function _shareToStable(uint share) internal returns (uint stableAmount) {
+    uint shareSupply = totalSupply();
+    if (shareSupply == 0) {
+      stableAmount = share;
+    } else {
+      stableAmount = _getTotalStable() * share / shareSupply;
+    }
+    
+  }
+
+  /**
+   * @dev Returns the total amount of stable asset controlled by this contract 
+   * @return totalStable Total stable asset (USDC) in its native decimals
+   */
+  function _getTotalStable() internal returns (uint totalStable) {
+    // expect revert if our balance is somehow negative
+    uint cashBalance = cashAsset.calculateBalanceWithInterest(accountId).toUint256(); 
+
+    // if toStableRate is 0.5, 1 cash asset can only take out 0.5 stable asset (USDC)
+    uint toStableRate = cashAsset.getCashToStableExchangeRate();
+
+    totalStable = cashBalance.multiplyDecimal(toStableRate).from18Decimals(stableDecimals);
   }
 
   /////////////////

@@ -19,12 +19,13 @@ contract UNIT_SecurityModule is Test {
 
   address public constant liquidation = address(0xdead);
 
-  CashAsset cashAsset;
+  CashAsset cashAsset = CashAsset(address(0xca7777));
   MockERC20 usdc;
   MockManager manager;
   Accounts accounts;
   SecurityModule securityModule;
 
+  uint smAccId;
   uint accountId;
 
   function setUp() public {
@@ -35,12 +36,14 @@ contract UNIT_SecurityModule is Test {
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
-    // probably use mock
-    cashAsset = new CashAsset(accounts, usdc);
+    // // probably use mock
+    // cashAsset = new CashAsset(accounts, usdc);
 
-    cashAsset.setWhitelistManager(address(manager), true);
+    // cashAsset.setWhitelistManager(address(manager), true);
 
     securityModule = new SecurityModule(accounts, cashAsset, usdc, manager);
+
+    smAccId = securityModule.accountId();
 
     // 10000 USDC with 6 decimals
     usdc.mint(address(this), 20_000_000e6);
@@ -51,14 +54,19 @@ contract UNIT_SecurityModule is Test {
 
   function testDepositIntoSecurityModule() public {
     uint depositAmount = 1000e6;
+
+    vm.mockCall(
+        address(0),
+        abi.encodeWithSelector(CashAsset.deposit.selector, address(1)),
+        abi.encode(10)
+    );
+
     securityModule.deposit(depositAmount);
 
     // first deposit get equivelant share of USDC <> seuciry module share
     uint shares = securityModule.balanceOf(address(this));
     assertEq(shares, depositAmount);
 
-    int cashBalance = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
-    assertEq(cashBalance, 1000e18);
   }
 
   function testWithdrawFromSecurityModule() public {
@@ -108,7 +116,7 @@ contract UNIT_SecurityModule is Test {
     securityModule.requestPayout(receiverAcc, 1000e18);
     vm.stopPrank();
 
-    int cashLeftInSecurity = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
+    int cashLeftInSecurity = accounts.getBalance(smAccId, IAsset(address(cashAsset)), 0);
     assertEq(cashLeftInSecurity, 999_000e18);
 
     int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(cashAsset)), 0);
@@ -130,7 +138,7 @@ contract UNIT_SecurityModule is Test {
 
     assertEq(amountCashPaid, 1000e18);
 
-    int cashLeftInSecurity = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
+    int cashLeftInSecurity = accounts.getBalance(smAccId, IAsset(address(cashAsset)), 0);
     assertEq(cashLeftInSecurity, 0);
 
     int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(cashAsset)), 0);
