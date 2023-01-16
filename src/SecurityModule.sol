@@ -60,7 +60,6 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
    * @dev Deposit stable asset into the module
    */
   function deposit(uint stableAmount) external {
-    // todo[Anton]: update share calculation when share to stable is no longer 1:1
     uint shares = _stableToShare(stableAmount);
 
     _mint(msg.sender, shares);
@@ -74,10 +73,9 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
    * @dev Withdraw stable asset from the module
    */
   function withdraw(uint shares, address recipient) external {
-    _burn(msg.sender, shares);
-
-    // todo[Anton]: exchange rate when USDC is paid out and stable amount is no longer 1:1
     uint stableAmount = _shareToStable(shares);
+
+    _burn(msg.sender, shares);
 
     cashAsset.withdraw(accountId, stableAmount, recipient);
   }

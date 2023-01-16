@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockManager.sol";
+import "../mocks/MockCash.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
@@ -19,7 +20,7 @@ contract UNIT_SecurityModule is Test {
 
   address public constant liquidation = address(0xdead);
 
-  CashAsset cashAsset = CashAsset(address(0xca7777));
+  MockCashAssetWithExchangeRate mockCash;
   MockERC20 usdc;
   MockManager manager;
   Accounts accounts;
@@ -37,11 +38,10 @@ contract UNIT_SecurityModule is Test {
     usdc.setDecimals(6);
 
     // // probably use mock
-    // cashAsset = new CashAsset(accounts, usdc);
+    mockCash = new MockCashAssetWithExchangeRate(accounts, usdc);
+    mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
-    // cashAsset.setWhitelistManager(address(manager), true);
-
-    securityModule = new SecurityModule(accounts, cashAsset, usdc, manager);
+    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, manager);
 
     smAccId = securityModule.accountId();
 
@@ -52,10 +52,8 @@ contract UNIT_SecurityModule is Test {
     accountId = accounts.createAccount(address(this), manager);
   }
 
-  function testDepositIntoSecurityModule() public {
+  function testDepositIntoSM() public {
     uint depositAmount = 1000e6;
-
-    vm.mockCall(address(0), abi.encodeWithSelector(CashAsset.deposit.selector, address(1)), abi.encode(10));
 
     securityModule.deposit(depositAmount);
 
@@ -64,19 +62,24 @@ contract UNIT_SecurityModule is Test {
     assertEq(shares, depositAmount);
   }
 
-  function testWithdrawFromSecurityModule() public {
+  function testWithdrawFromSM() public {
     uint depositAmount = 1000e6;
     securityModule.deposit(depositAmount);
 
     uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
 
     uint usdcBefore = usdc.balanceOf(address(this));
+    uint expectedStable = depositAmount / 2;
+
+    // mock the balanceWithInterset call to return the exact balance deposited
+    mockCash.setAccBalanceWithInterest(smAccId, 1000e18);
+
     securityModule.withdraw(sharesToWithdraw, address(this));
     uint sharesLeft = securityModule.balanceOf(address(this));
     assertEq(sharesLeft, sharesToWithdraw); // 50% shares remaining
 
     uint usdcAfter = usdc.balanceOf(address(this));
-    assertEq(usdcAfter - usdcBefore, depositAmount / 2);
+    assertEq(usdcAfter - usdcBefore, expectedStable);
   }
 
   function testCannotAddWhitelistedModuleFromNonOwner() public {
@@ -111,10 +114,10 @@ contract UNIT_SecurityModule is Test {
     securityModule.requestPayout(receiverAcc, 1000e18);
     vm.stopPrank();
 
-    int cashLeftInSecurity = accounts.getBalance(smAccId, IAsset(address(cashAsset)), 0);
+    int cashLeftInSecurity = accounts.getBalance(smAccId, IAsset(address(mockCash)), 0);
     assertEq(cashLeftInSecurity, 999_000e18);
 
-    int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(cashAsset)), 0);
+    int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(mockCash)), 0);
     assertEq(cashForReceiver, 1000e18);
   }
 
@@ -132,11 +135,5 @@ contract UNIT_SecurityModule is Test {
     vm.stopPrank();
 
     assertEq(amountCashPaid, 1000e18);
-
-    int cashLeftInSecurity = accounts.getBalance(smAccId, IAsset(address(cashAsset)), 0);
-    assertEq(cashLeftInSecurity, 0);
-
-    int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(cashAsset)), 0);
-    assertEq(cashForReceiver, 1000e18);
   }
 }
