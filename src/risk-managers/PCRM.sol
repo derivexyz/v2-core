@@ -425,7 +425,6 @@ contract PCRM is IManager, Owned {
 
         // if possible, combine calls and puts into forwards
         PCRMGrouping.updateForwards(currentStrike);
-        
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       }
