@@ -60,8 +60,6 @@ library Black76 {
    * @return putPrice Put price for given Black76 parameters (18-decimal precision).
    */
   function prices(Black76Inputs memory b76Input) public pure returns (uint callPrice, uint putPrice) {
-    // todo [Vlad]: fix case where spot == 0 && strike != 0
-
     unchecked {
       uint tAnnualised = _annualise(b76Input.timeToExpirySec);
       // products of <128 bit numbers, cannot overflow here when caseted to 256
@@ -71,6 +69,12 @@ library Black76 {
       if (b76Input.strikePrice == 0) {
         return (fwdDiscounted, uint(0));
       }
+      
+      uint strikeDiscounted = uint(b76Input.strikePrice) * uint(b76Input.discount) / 1e18;
+      if (fwd == 0) {
+        return (uint(0), strikeDiscounted);
+      }
+      
       uint moneyness = uint(b76Input.strikePrice) * 1e18 / fwd;
       (callPrice, putPrice) = _standardPrices(moneyness, totalVol);
 
@@ -86,7 +90,7 @@ library Black76 {
 
       // cap the theo prices to resolve any potential rounding errors with super small/big spots/strikes
       callPrice = callPrice > fwdDiscounted ? fwdDiscounted : callPrice;
-      uint strikeDiscounted = uint(b76Input.strikePrice) * uint(b76Input.discount) / 1e18;
+      //// REMOVE fwdDiscounted CALCULATION FROM HERE
       putPrice = putPrice > strikeDiscounted ? strikeDiscounted : putPrice;
     }
   }
