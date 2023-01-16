@@ -62,6 +62,34 @@ contract UNIT_SecurityModule is Test {
     assertEq(shares, depositAmount);
   }
 
+  function testShareCalculationAfterFirstDeposit() public {
+    uint depositAmount = 1000e6;
+
+    securityModule.deposit(depositAmount);
+
+    mockCash.setAccBalanceWithInterest(smAccId, 1000e18);
+
+    // deposit from Alice
+    address alice = address(0xac);
+    uint aliceAmount = depositAmount * 2;
+    usdc.mint(alice, aliceAmount);
+    vm.startPrank(alice);
+    usdc.approve(address(securityModule), type(uint).max);
+    securityModule.deposit(aliceAmount);
+
+    vm.stopPrank();
+    uint shares = securityModule.balanceOf(alice);
+    assertEq(shares, aliceAmount);
+  }
+
+  function testWithdrawWithNoShare() public {
+    // cover the line where total supply is 0
+    // _shareToStable should not revert. only revert when actually burning
+    uint shares = 1000e6;
+    vm.expectRevert("ERC20: burn amount exceeds balance");
+    securityModule.withdraw(shares, address(this));
+  }
+
   function testWithdrawFromSM() public {
     uint depositAmount = 1000e6;
     securityModule.deposit(depositAmount);
