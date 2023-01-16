@@ -41,6 +41,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ///@dev The address of liqudation module, which can trigger call of insolvency
   address public immutable liquidationModule;
 
+  ///@dev The security module accountId used for collecting a portion of fees
+  uint public immutable smId;
+
   ///@dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
 
@@ -54,8 +57,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ///@dev Total amount of negative balances
   uint public totalBorrow;
 
-  ///@dev Total accrued fees from interest
-  uint public accruedFees;
+  ///@dev Total accrued fees for the security module
+  uint public accruedSmFees;
 
   ///@dev Represents the growth of $1 of debt since deploy
   uint public borrowIndex = DecimalMath.UNIT;
@@ -65,6 +68,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev Last timestamp that the interest was accrued
   uint public lastTimestamp;
+
+  ///@dev The security module fee represented as a mantissa (0-1e18)
+  uint public smFeePercentage;
 
   ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
   ///     In which case we turn on the withdraw fee to prevent bankrun
@@ -84,11 +90,13 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     IAccounts _accounts,
     IERC20Metadata _stableAsset,
     InterestRateModel _rateModel,
+    uint _smId,
     address _liquidationModule
   ) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     accounts = _accounts;
+    smId = _smId;
 
     lastTimestamp = block.timestamp;
     rateModel = _rateModel;
@@ -116,6 +124,29 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
     _accrueInterest();
     rateModel = _rateModel;
+  }
+
+  /**
+   * @notice Allows owner to set the security module fee cut
+   * @param _smFee Interest rate model address
+   */
+  function setSmFee(uint _smFee) external onlyOwner {
+    if (_smFee > DecimalMath.UNIT) revert CA_SmFeeInvalid(_smFee);
+    smFeePercentage = _smFee;
+  }
+
+  function transferSmFees() external onlyOwner {
+    accounts.assetAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: smId,
+        asset: IAsset(address(this)),
+        subId: 0,
+        amount: int(accruedSmFees),
+        assetData: bytes32(0)
+      }),
+      true, // do trigger callback on handleAdjustment so we apply interest
+      ""
+    );
   }
 
   ////////////////////////////
@@ -345,7 +376,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function _accrueInterest() internal {
     if (lastTimestamp == block.timestamp) return;
 
-    // Update timestamp even if there are no borrows // todo is this logic sound?
+    // Update timestamp even if there are no borrows
     uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = block.timestamp;
     if (totalBorrow == 0) return;
@@ -354,6 +385,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     uint borrowRate = rateModel.getBorrowRate(totalSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
+
+    // Take security module fee cut from total interest accrued
+    uint smFeeCut = interestAccrued.multiplyDecimal(smFeePercentage);
+    interestAccrued -= smFeeCut;
+    accruedSmFees += smFeeCut;
 
     // Update total supply and borrow
     uint prevBorrow = totalBorrow;

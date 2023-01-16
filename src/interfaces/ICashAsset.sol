@@ -53,4 +53,7 @@ interface ICashAsset {
 
   /// @dev accrued interest is stale
   error CA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
+
+  /// @dev Security module fee cut greater than 100%
+  error CA_SmFeeInvalid(uint fee);
 }
