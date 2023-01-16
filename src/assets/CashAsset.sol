@@ -114,6 +114,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    */
   function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
     whitelistedManager[_manager] = _whitelisted;
+
+    emit WhitelistManagerSet(_manager, _whitelisted);
   }
 
   /**
@@ -124,6 +126,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
     _accrueInterest();
     rateModel = _rateModel;
+
+    emit InterestRateModelSet(rateModel);
   }
 
   /**
@@ -133,23 +137,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function setSmFee(uint _smFee) external onlyOwner {
     if (_smFee > DecimalMath.UNIT) revert CA_SmFeeInvalid(_smFee);
     smFeePercentage = _smFee;
-  }
 
-  /// @notice Allows owner to transfer accrued SM fees to the SM
-  function transferSmFees() external onlyOwner {
-    accounts.assetAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: smId,
-        asset: IAsset(address(this)),
-        subId: 0,
-        amount: int(accruedSmFees),
-        assetData: bytes32(0)
-      }),
-      true, // do trigger callback on handleAdjustment so we apply interest
-      ""
-    );
-
-    accruedSmFees = 0;
+    emit SmFeeSet(_smFee);
   }
 
   ////////////////////////////
@@ -243,6 +232,24 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
     _accrueInterest();
     return _calculateBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
+  }
+
+  /// @notice Allows anyone to transfer accrued SM fees to the SM
+  function transferSmFees() external {
+    int amountToSend = accruedSmFees.toInt256();
+    accruedSmFees = 0;
+
+    accounts.assetAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: smId,
+        asset: IAsset(address(this)),
+        subId: 0,
+        amount: amountToSend,
+        assetData: bytes32(0)
+      }),
+      true, // do trigger callback on handleAdjustment so we apply interest
+      ""
+    );
   }
 
   //////////////////////////
