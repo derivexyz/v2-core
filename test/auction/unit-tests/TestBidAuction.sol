@@ -144,7 +144,7 @@ contract UNIT_BidAuction is Test {
     manager.giveAssets(aliceAcc);
 
     dutchAuction.startAuction(aliceAcc);
-    
+
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertLt(maxProportion, 5e17); // should be less than half

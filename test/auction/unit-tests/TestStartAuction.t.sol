@@ -192,7 +192,6 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.insolvent, true);
   }
 
-
   function testStartAuctionFailingOnGoingAuction() public {
     // wrong mark as insolvent not called by risk manager
     vm.startPrank(address(manager));
