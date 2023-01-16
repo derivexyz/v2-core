@@ -29,8 +29,6 @@ contract UNIT_BidAuction is Test {
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
-  uint tokenSubId = 1000;
-
   function setUp() public {
     deployMockSystem();
     setupAccounts();
