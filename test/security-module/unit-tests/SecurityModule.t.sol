@@ -95,9 +95,9 @@ contract UNIT_SecurityModule is Test {
     securityModule.deposit(depositAmount);
 
     uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
+    uint expectedStable = depositAmount / 2;
 
     uint usdcBefore = usdc.balanceOf(address(this));
-    uint expectedStable = depositAmount / 2;
 
     // mock the balanceWithInterset call to return the exact balance deposited
     mockCash.setAccBalanceWithInterest(smAccId, 1000e18);
@@ -108,6 +108,23 @@ contract UNIT_SecurityModule is Test {
 
     uint usdcAfter = usdc.balanceOf(address(this));
     assertEq(usdcAfter - usdcBefore, expectedStable);
+  }
+
+  function testWithdrawMoreAfterInterestIsApplied() public {
+    uint depositAmount = 1000e6;
+    securityModule.deposit(depositAmount);
+
+    uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
+    uint proportionalStable = depositAmount / 2;
+
+    uint usdcBefore = usdc.balanceOf(address(this));
+    // someone transferred to the account or interest is accrued: 0.5%
+    mockCash.setAccBalanceWithInterest(smAccId, 1005e18);
+
+    securityModule.withdraw(sharesToWithdraw, address(this));
+
+    uint usdcAfter = usdc.balanceOf(address(this));
+    assertGt(usdcAfter - usdcBefore, proportionalStable);
   }
 
   function testCannotAddWhitelistedModuleFromNonOwner() public {
