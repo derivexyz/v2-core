@@ -13,6 +13,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   mapping(uint => int) public accMargin;
   mapping(uint => bool) public accHasAssets;
+  mapping(uint => int) public portMargin;
   ExpiryHolding[] public userAcc; // just a result that can be set to be returned when testing
 
   constructor(address _account) {
@@ -46,7 +47,7 @@ contract MockIPCRM is IPCRM, IManager {
     return 0;
   }
 
-  function getInitialMargin(uint accountId) external virtual returns (int) {
+  function getInitialMargin(uint accountId) external view virtual returns (int) {
     // TODO: filler code
     return accMargin[accountId];
   }
@@ -120,6 +121,14 @@ contract MockIPCRM is IPCRM, IManager {
         userAcc[i].strikes[j].forwards = expiryHoldings[i].strikes[j].forwards;
       }
     }
+  }
+
+  function setMarginForPortfolio(uint accountId, int margin) external {
+    portMargin[accountId] = margin;
+  }
+
+  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings, uint accountId) external view returns (int) {
+    return portMargin[accountId];
   }
 
   function test() public {}

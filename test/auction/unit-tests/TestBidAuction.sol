@@ -65,7 +65,8 @@ contract UNIT_BidAuction is Test {
         stepInterval: 2 * DecimalMath.UNIT,
         lengthOfAuction: 200 * DecimalMath.UNIT,
         securityModule: address(1),
-        spotShock: 11 * 1e17
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18
       })
     );
 
@@ -73,7 +74,8 @@ contract UNIT_BidAuction is Test {
       stepInterval: 2 * DecimalMath.UNIT,
       lengthOfAuction: 200 * DecimalMath.UNIT,
       securityModule: address(1),
-      spotShock: 11 * 1e17
+      portfolioModifier: 1e18,
+      inversePortfolioModifier: 1e18
     });
   }
 
@@ -140,6 +142,9 @@ contract UNIT_BidAuction is Test {
     vm.startPrank(address(manager));
 
     manager.giveAssets(aliceAcc);
+
+    // set the initialMargin result for the portfolio
+    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
 
     dutchAuction.startAuction(aliceAcc);
 

@@ -30,11 +30,14 @@ interface IPCRM {
 
   function getSpot() external view returns (uint spot);
 
-  function getInitialMargin(uint accountId) external returns (int);
+  function getInitialMargin(uint accountId) external view returns (int);
 
   function getMaintenanceMargin(uint accountId) external returns (uint);
 
   function getAccountValue(uint accountId) external returns (uint);
 
   function getCashAmount(uint accountId) external view returns (int);
+
+  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings, uint accountId) external view returns (int);
+
 }

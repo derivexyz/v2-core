@@ -67,7 +67,8 @@ contract UNIT_TestStartAuction is Test {
         stepInterval: 1,
         lengthOfAuction: 200 * DecimalMath.UNIT,
         securityModule: address(1),
-        spotShock: 11 * 1e17
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18
       })
     );
 
@@ -75,7 +76,8 @@ contract UNIT_TestStartAuction is Test {
       stepInterval: 1,
       lengthOfAuction: 200 * DecimalMath.UNIT,
       securityModule: address(1),
-      spotShock: 11 * 1e17
+      portfolioModifier: 1e18,
+      inversePortfolioModifier: 1e18
     });
   }
 
@@ -173,7 +175,9 @@ contract UNIT_TestStartAuction is Test {
   // test that an auction is correcttly marked as insolvent
   function testInsolventAuction() public {
     vm.startPrank(address(manager));
+    manager.depositMargin(aliceAcc, 1000 * 1e18);
     manager.giveAssets(aliceAcc);
+    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
@@ -224,7 +228,7 @@ contract UNIT_TestStartAuction is Test {
 
     // give assets
     manager.giveAssets(aliceAcc);
-
+    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
@@ -258,6 +262,10 @@ contract UNIT_TestStartAuction is Test {
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    console.log('current bid price');
+    console.logInt(currentBidPrice);
+    console.log('auction upperbound');
+    console.logInt(auction.auction.upperBound);
     assertEq(currentBidPrice, auction.auction.upperBound);
 
     // getting the max proportion
@@ -297,7 +305,7 @@ contract UNIT_TestStartAuction is Test {
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
-
+    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
@@ -347,7 +355,7 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.incrementInsolventAuction(aliceAcc);
     // get the current step
     uint currentStep = dutchAuction.getAuctionDetails(aliceAcc).stepInsolvent;
-    assertEq(currentStep, 2);
+    assertEq(currentStep, 1);
   }
 
   function testCannotStepNonInsolventAuction() public {
@@ -358,6 +366,8 @@ contract UNIT_TestStartAuction is Test {
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
+
+    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -384,8 +394,8 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
-
+    manager.depositMargin(aliceAcc, -10000 * 1e18); // 1 thousand bucks
+    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
 
@@ -404,6 +414,8 @@ contract UNIT_TestStartAuction is Test {
     assertEq(currentBidPrice, auction.auction.upperBound);
     assertGt(currentBidPrice, 0);
 
+    // deposit margin
+    manager.depositMargin(aliceAcc, 15_000 * 1e18); // 1 thousand bucks
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
