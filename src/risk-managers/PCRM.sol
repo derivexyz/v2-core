@@ -28,6 +28,8 @@ contract PCRM is IManager, Owned {
   using DecimalMath for uint;
   using SafeCast for uint;
 
+  // todo [Josh]: move to interface
+
   /**
    * INITIAL: margin required for trade to pass
    * MAINTENANCE: margin required to prevent liquidation
@@ -37,16 +39,18 @@ contract PCRM is IManager, Owned {
     MAINTENANCE
   }
 
-  struct ExpiryHolding {
+  struct Portfolio {
+    /// cash amount or debt
+    int cash;
     /// timestamp of expiry for all strike holdings
     uint expiry;
     /// # of strikes with active balances
     uint numStrikesHeld;
     /// array of strike holding details
-    StrikeHolding[] strikes;
+    Strike[] strikes;
   }
 
-  struct StrikeHolding {
+  struct Strike {
     /// strike price of held options
     uint strike;
     /// number of calls held
@@ -99,11 +103,8 @@ contract PCRM is IManager, Owned {
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
-  /// @dev max number of expiries allowed to be held in one account
-  uint public constant MAX_EXPIRIES = 8;
-
   /// @dev max number of strikes per expiry allowed to be held in one account
-  uint public constant MAX_STRIKES = 16;
+  uint public constant MAX_STRIKES = 64;
 
   Shocks public shocks;
 
@@ -152,9 +153,9 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    ExpiryHolding[] memory expiries = _groupOptions(account.getAccountBalances(accountId));
-    int cashAmount = _getCashAmount(accountId);
-    _calcMargin(expiries, cashAmount, MarginType.INITIAL);
+    Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
+
+    _calcMargin(portfolio, MarginType.INITIAL);
   }
 
   /**
@@ -206,13 +207,13 @@ contract PCRM is IManager, Owned {
    * @param portion Portion of account that is requested to be liquidated.
    * @param cashAmount Cash amount liquidator is offering for portion of account.
    * @return postExecutionInitialMargin InitialMargin of account after portion is liquidated.
-   * @return expiryHoldings Sorted array of option holdings used to recompute new auction bounds
+   * @return Portfolio Sorted array of option holdings used to recompute new auction bounds
    * @return cash Amount of cash held or borrowed in account
    */
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     onlyAuction
-    returns (int postExecutionInitialMargin, ExpiryHolding[] memory, int cash)
+    returns (int postExecutionInitialMargin, Portfolio[] memory, int cash)
   {
     // todo [Cameron / Dom]: this would be only dutch auction contract
   }
@@ -224,17 +225,13 @@ contract PCRM is IManager, Owned {
   /**
    * @notice Calculate the initial or maintenance margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param expiries Sorted array of option holdings.
+   * @param portfolio Account holdings.
    * @param marginType Initial or maintenance margin.
    * @return margin Amount by which account is over or under the required margin.
    */
 
   // todo [Josh]: add RV related add-ons
-  function _calcMargin(ExpiryHolding[] memory expiries, int cashAmount, MarginType marginType)
-    internal
-    view
-    returns (int margin)
-  {
+  function _calcMargin(Portfolio memory portfolio, MarginType marginType) internal view returns (int margin) {
     // get shock amounts
     uint128 spotUp;
     uint128 spotDown;
@@ -252,24 +249,18 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: add actual vol shocks
 
     // discount option value
-    for (uint i; i < expiries.length; i++) {
-      int expiryMargin;
-      ExpiryHolding memory expiry = expiries[i];
-      int timeToExpiry = expiry.expiry.toInt256() - block.timestamp.toInt256();
-      if (timeToExpiry > 0) {
-        expiryMargin = _calcLiveExpiryValue(expiry, spotUp, spotDown, 1e18);
-        expiryMargin =
-          (expiryMargin > 0) ? expiryMargin * _getExpiryDiscount(staticDiscount, timeToExpiry) : expiryMargin;
-      } else {
-        expiryMargin += _calcSettledExpiryValue(expiry);
+    int timeToExpiry = portfolio.expiry.toInt256() - block.timestamp.toInt256();
+    if (timeToExpiry > 0) {
+      margin = _calcLiveExpiryValue(portfolio, spotUp, spotDown, 1e18);
+      if (margin > 0) {
+        margin.multiplyDecimal(_getExpiryDiscount(staticDiscount, timeToExpiry));
       }
-
-      // aggregate margin
-      margin += expiryMargin;
+    } else {
+      margin = _calcSettledExpiryValue(portfolio);
     }
 
     // add cash
-    margin += cashAmount;
+    margin += portfolio.cash;
   }
 
   /**
@@ -277,13 +268,14 @@ contract PCRM is IManager, Owned {
    * @param expiry All option holdings within an expiry.
    * @return expiryValue Value of assets or debt of settled options.
    */
-  function _calcSettledExpiryValue(ExpiryHolding memory expiry) internal pure returns (int expiryValue) {
+  function _calcSettledExpiryValue(Portfolio memory expiry) internal pure returns (int expiryValue) {
     uint settlementPrice = 1000e18; // todo: [Josh] integrate settlement feed
     for (uint i; i < expiry.strikes.length; i++) {
-      StrikeHolding memory strike = expiry.strikes[i];
+      Strike memory strike = expiry.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
 
       // calculate proceeds for forwards / calls / puts
+      // todo [Josh]: need to figure out the order of settlement as this may affect cash supply / borrow
       if (pnl > 0) {
         expiryValue += (strike.calls + strike.forwards).multiplyDecimal(pnl);
       } else {
@@ -300,7 +292,7 @@ contract PCRM is IManager, Owned {
    * @param shockedVol Vol shocked up based on initial or maintenance margin params.
    * @return expiryValue Value of assets or debt of options in a given expiry.
    */
-  function _calcLiveExpiryValue(ExpiryHolding memory expiry, uint128 spotUp, uint128 spotDown, uint128 shockedVol)
+  function _calcLiveExpiryValue(Portfolio memory expiry, uint128 spotUp, uint128 spotDown, uint128 shockedVol)
     internal
     view
     returns (int expiryValue)
@@ -322,7 +314,7 @@ contract PCRM is IManager, Owned {
 
   /**
    * @notice Calculate the discounted value of live option holdings in a specific strike.
-   * @param strikeHoldings All option holdings of the same strike.
+   * @param strikes All option holdings of the same strike.
    * @param isCurrentScenarioUp Whether the current scenario is spot up or down.
    * @param spotUp Spot shocked up based on initial or maintenance margin params.
    * @param spotDown Spot shocked down based on initial or maintenance margin params.
@@ -332,7 +324,7 @@ contract PCRM is IManager, Owned {
    */
 
   function _calcLiveStrikeValue(
-    StrikeHolding memory strikeHoldings,
+    Strike memory strikes,
     bool isCurrentScenarioUp,
     uint128 spotUp,
     uint128 spotDown,
@@ -340,37 +332,37 @@ contract PCRM is IManager, Owned {
     uint64 timeToExpiry
   ) internal pure returns (int strikeValue) {
     // Calculate both spot up and down payoffs.
-    int markedDownCallValue = uint(spotDown).toInt256() - strikeHoldings.strike.toInt256();
-    int markedDownPutValue = strikeHoldings.strike.toInt256() - uint(spotUp).toInt256();
+    int markedDownCallValue = uint(spotDown).toInt256() - strikes.strike.toInt256();
+    int markedDownPutValue = strikes.strike.toInt256() - uint(spotUp).toInt256();
 
     // Add forward value.
     strikeValue += (isCurrentScenarioUp)
-      ? strikeHoldings.forwards.multiplyDecimal(-markedDownPutValue)
-      : strikeHoldings.forwards.multiplyDecimal(markedDownCallValue);
+      ? strikes.forwards.multiplyDecimal(-markedDownPutValue)
+      : strikes.forwards.multiplyDecimal(markedDownCallValue);
 
     // Get BlackSchole price.
     (uint callValue, uint putValue) = (0, 0);
-    if (strikeHoldings.calls != 0 || strikeHoldings.puts != 0) {
+    if (strikes.calls != 0 || strikes.puts != 0) {
       (callValue, putValue) = Black76.prices(
         Black76.Black76Inputs({
           timeToExpirySec: timeToExpiry,
           volatility: shockedVol,
           fwdPrice: (isCurrentScenarioUp) ? spotUp : spotDown,
-          strikePrice: strikeHoldings.strike.toUint128(),
+          strikePrice: strikes.strike.toUint128(),
           discount: uint64(1e18)
         })
       );
     }
 
     // Add call value.
-    strikeValue += (strikeHoldings.calls >= 0)
-      ? strikeHoldings.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
-      : strikeHoldings.calls.multiplyDecimal(callValue.toInt256());
+    strikeValue += (strikes.calls >= 0)
+      ? strikes.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
+      : strikes.calls.multiplyDecimal(callValue.toInt256());
 
     // Add put value.
-    strikeValue += (strikeHoldings.puts >= 0)
-      ? strikeHoldings.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
-      : strikeHoldings.puts.multiplyDecimal(putValue.toInt256());
+    strikeValue += (strikes.puts >= 0)
+      ? strikes.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
+      : strikes.puts.multiplyDecimal(putValue.toInt256());
   }
 
   function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
@@ -386,67 +378,59 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Group all option holdings into an array of
-   *         [expiries][strikes][calls / puts / forwards].
+   * @notice Arrange portfolio into cash + arranged
+   *         array of [strikes][calls / puts / forwards].
    * @param assets Array of balances for given asset and subId.
-   * @return expiryHoldings Grouped array of option holdings.
+   * @return portfolio Cash + option holdings.
    */
 
-  function _groupOptions(AccountStructs.AssetBalance[] memory assets)
+  // todo [Josh]: rename this
+  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
     internal
     view
-    returns (ExpiryHolding[] memory expiryHoldings)
+    returns (Portfolio memory portfolio)
   {
-    uint numExpiriesHeld;
-    uint expiryIndex;
-    uint strikeIndex;
-    expiryHoldings = new PCRM.ExpiryHolding[](
-      MAX_EXPIRIES > assets.length ? assets.length : MAX_EXPIRIES
+    portfolio.strikes = new PCRM.Strike[](
+      MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
-    ExpiryHolding memory currentExpiry;
-    StrikeHolding memory currentStrike;
+    Strike memory currentStrike;
     AccountStructs.AssetBalance memory currentAsset;
-    // create sorted [expiries][strikes] 2D array
+    uint strikeIndex;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         // decode subId
-        (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
+        (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
 
-        // add new expiry or strike to holdings if unique
-        (expiryIndex, numExpiriesHeld) =
-          PCRMGrouping.findOrAddExpiry(expiryHoldings, expiry, numExpiriesHeld, MAX_STRIKES);
-        currentExpiry = expiryHoldings[expiryIndex];
+        // assume expiry = 0 means this is the first strike.
+        if (portfolio.expiry == 0) {
+          portfolio.expiry = expiry;
+        }
 
-        (strikeIndex, currentExpiry.numStrikesHeld) =
-          PCRMGrouping.findOrAddStrike(currentExpiry.strikes, strike, currentExpiry.numStrikesHeld);
+        if (portfolio.expiry != expiry) {
+          revert PCRM_SingleExpiryPerAccount();
+        }
+
+        (strikeIndex, portfolio.numStrikesHeld) =
+          PCRMGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
 
         // add call or put balance
-        currentStrike = currentExpiry.strikes[strikeIndex];
+        currentStrike = portfolio.strikes[strikeIndex];
         if (isCall) {
           currentStrike.calls += currentAsset.balance;
         } else {
           currentStrike.puts += currentAsset.balance;
         }
 
-        // if both calls / puts present, pair-off into forwards
-        if (currentStrike.calls != 0 && currentStrike.puts != 0) {
-          PCRMGrouping.updateForwards(currentStrike);
-        }
+        // if possible, combine calls and puts into forwards
+        PCRMGrouping.updateForwards(currentStrike);
+      } else if (address(currentAsset.asset) == address(cashAsset)) {
+        portfolio.cash = currentAsset.balance;
       }
-    }
-  }
 
-  /**
-   * @notice Returns the cash amount in account.
-   *         Meant to be called before getInitial/MaintenanceMargin()
-   * @dev Separated getter for cash to reduce stack-too-deep errors / bloating margin logic
-   * @param accountId accountId of user.
-   * @return cashAmount Positive or negative amount of cash in given account.
-   */
-  function _getCashAmount(uint accountId) internal view returns (int cashAmount) {
-    return account.getBalance(accountId, IAsset(address(cashAsset)), 0);
+      // todo [Josh]: should we block any other stray assets?
+    }
   }
 
   //////////
@@ -454,34 +438,34 @@ contract PCRM is IManager, Owned {
   //////////
 
   /**
-   * @notice Group all option holdings of an account into an array of
-   *         [expiries][strikes][calls / puts / forwards].
-   * @param accountId ID of account to sort.
-   * @return expiryHoldings Grouped array of option holdings.
+   * @notice Get account portfolio, consisting of cash + arranged
+   *         array of [strikes][calls / puts / forwards].
+   * @param accountId ID of account to retrieve.
+   * @return portfolio Cash + arranged option holdings.
    */
-  function getGroupedOptions(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings) {
-    return _groupOptions(account.getAccountBalances(accountId));
+  function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio) {
+    return _arrangePortfolio(account.getAccountBalances(accountId));
   }
 
   /**
    * @notice Calculate the initial margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param expiries Sorted array of option holdings.
+   * @param portfolio Cash + arranged option holdings.
    * @return margin Amount by which account is over or under the required margin.
    */
   // todo [Josh]: public view function to get margin values directly through accountId
-  function getInitialMargin(ExpiryHolding[] memory expiries, int cashAmount) external view returns (int margin) {
-    return _calcMargin(expiries, cashAmount, MarginType.INITIAL);
+  function getInitialMargin(Portfolio memory portfolio) external view returns (int margin) {
+    return _calcMargin(portfolio, MarginType.INITIAL);
   }
 
   /**
    * @notice Calculate the maintenance margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param expiries Sorted array of option holdings.
+   * @param portfolio Cash + arranged option holdings.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getMaintenanceMargin(ExpiryHolding[] memory expiries, int cashAmount) external view returns (int margin) {
-    return _calcMargin(expiries, cashAmount, MarginType.MAINTENANCE);
+  function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int margin) {
+    return _calcMargin(portfolio, MarginType.MAINTENANCE);
   }
 
   ////////////
@@ -489,4 +473,6 @@ contract PCRM is IManager, Owned {
   ////////////
 
   error PCRM_OnlyAuction(address sender, address auction);
+
+  error PCRM_SingleExpiryPerAccount();
 }

@@ -30,6 +30,11 @@ library OptionEncoding {
       revert OE_ExpiryTooLarge(expiry);
     }
 
+    // zero expiry guaranteed to not be possible
+    if (expiry == 0) {
+      revert OE_ZeroExpiry();
+    }
+
     // can support strike granularity down to 8 decimal points
     if (strike % 1e10 > 0) {
       revert OE_StrikeTooGranular(strike);
@@ -66,6 +71,7 @@ library OptionEncoding {
   ////////////
 
   error OE_ExpiryTooLarge(uint expiry);
+  error OE_ZeroExpiry();
   error OE_StrikeTooLarge(uint strike);
   error OE_StrikeTooGranular(uint strike);
 }

@@ -56,6 +56,7 @@ contract OptionEncodingTest is Test {
 
   function testFuzzEncoding(uint expiry, uint strike, bool isCall) public {
     vm.assume(expiry < (2 ** 32) - 1);
+    vm.assume(expiry != 0);
     vm.assume(strike < (2 ** 63) - 1);
     vm.assume(strike % 1e10 == 0);
 
@@ -66,6 +67,12 @@ contract OptionEncodingTest is Test {
   function testExpiryTooLarge() public {
     uint expiry = 7288361592000; // epoch time for Year 2200
     vm.expectRevert(abi.encodeWithSelector(OptionEncoding.OE_ExpiryTooLarge.selector, expiry));
+    tester.toSubId(expiry, 1e18, true);
+  }
+
+  function testZeroExpiry() public {
+    uint expiry = 0; // epoch time for Year 2200
+    vm.expectRevert(abi.encodeWithSelector(OptionEncoding.OE_ZeroExpiry.selector));
     tester.toSubId(expiry, 1e18, true);
   }
 

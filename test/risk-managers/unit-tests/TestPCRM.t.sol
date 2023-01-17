@@ -5,16 +5,20 @@ import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
+import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
+import "test/shared/mocks/MockERC20.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestPCRM is Test {
   Accounts account;
   PCRM manager;
+  CashAsset cash;
+  MockERC20 usdc;
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
   MockV3Aggregator aggregator;
@@ -32,18 +36,21 @@ contract UNIT_TestPCRM is Test {
     aggregator = new MockV3Aggregator(18, 1000e18);
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    usdc = new MockERC20("USDC", "USDC");
 
     auction = new MockDutchAuction();
 
     option = new Option();
+    cash = new CashAsset(IAccounts(address(account)), usdc);
     manager = new PCRM(
       address(account),
       address(spotFeeds),
-      address(0), // lending
+      address(cash),
       address(option),
       address(auction)
     );
 
+    cash.setWhitelistManager(address(manager), true);
     manager.setParams(
       PCRM.Shocks({
         spotUpInitial: 120e16,
@@ -118,6 +125,37 @@ contract UNIT_TestPCRM is Test {
   // Transfer //
   //////////////
 
+  function testBlockTradeIfMultipleExpiries() public {
+    // prepare trades
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
+    uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
+    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: longtermSubId,
+      amount: 5e18,
+      assetData: ""
+    });
+
+    // open first expiry option
+    vm.startPrank(address(alice));
+    account.submitTransfer(callTransfer, "");
+
+    // fail when adding an option with a new expiry
+    vm.expectRevert(PCRM.PCRM_SingleExpiryPerAccount.selector);
+    account.submitTransfer(longtermTransfer, "");
+    vm.stopPrank();
+  }
+
   function testHandleAdjustment() public {
     vm.startPrank(alice);
     AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
@@ -139,40 +177,54 @@ contract UNIT_TestPCRM is Test {
   /////////////////////////
 
   function testEmptyInitialMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
-    strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](1);
+    strikes[0] = PCRM.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    PCRM.Portfolio memory expiry = PCRM.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getInitialMargin(expiries, 0);
+    manager.getInitialMargin(expiry);
 
     // todo: actually test
   }
 
   function testEmptyMaintenanceMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](1);
-    strikes[0] = PCRM.StrikeHolding({strike: 0, calls: 0, puts: 0, forwards: 0});
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](1);
+    strikes[0] = PCRM.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    PCRM.Portfolio memory expiry = PCRM.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getMaintenanceMargin(expiries, 0);
+    manager.getMaintenanceMargin(expiry);
 
     // todo: actually test
   }
 
   function testInitialMarginCalculation() public view {
-    PCRM.StrikeHolding[] memory strikes = new PCRM.StrikeHolding[](2);
-    strikes[0] = PCRM.StrikeHolding({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-    strikes[1] = PCRM.StrikeHolding({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](2);
+    strikes[0] = PCRM.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = PCRM.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
-    PCRM.ExpiryHolding[] memory expiries = new PCRM.ExpiryHolding[](1);
-    expiries[0] = PCRM.ExpiryHolding({expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
+    PCRM.Portfolio memory expiry =
+      PCRM.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
 
-    manager.getInitialMargin(expiries, 0);
+    manager.getInitialMargin(expiry);
 
     // todo: actually test
+  }
+
+  function testNegativePnLSettledExpiryCalculation() public {
+    skip(30 days);
+
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](2);
+    strikes[0] = PCRM.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = PCRM.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+
+    aggregator.updateRoundData(2, 100e18, block.timestamp, block.timestamp, 2);
+    PCRM.Portfolio memory expiry =
+      PCRM.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
+
+    manager.getInitialMargin(expiry);
+
+    // todo: actually test, added for coverage
   }
 
   ////////////////////
@@ -206,17 +258,30 @@ contract UNIT_TestPCRM is Test {
   // View //
   //////////
 
-  function testGetGroupedOptions() public {
+  function testGetPortfolio() public {
     _openDefaultOptions();
 
-    (PCRM.ExpiryHolding[] memory holdings) = manager.getGroupedOptions(aliceAcc);
-    assertEq(holdings[0].strikes[0].strike, 1000e18);
-    assertEq(holdings[0].strikes[0].calls, 0);
-    assertEq(holdings[0].strikes[0].puts, -9e18);
-    assertEq(holdings[0].strikes[0].forwards, 1e18);
+    _transferCash();
 
-    assertEq(holdings[1].strikes[0].strike, 10e18);
-    assertEq(holdings[1].strikes[0].puts, 5e18);
+    (PCRM.Portfolio memory holding) = manager.getPortfolio(aliceAcc);
+    assertEq(holding.strikes[0].strike, 1000e18);
+    assertEq(holding.strikes[0].calls, 0);
+    assertEq(holding.strikes[0].puts, -9e18);
+    assertEq(holding.strikes[0].forwards, 1e18);
+  }
+
+  function _transferCash() internal {
+    vm.startPrank(address(alice));
+    AccountStructs.AssetTransfer memory cashTransfer = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(address(cash)),
+      subId: 1,
+      amount: 1000e18,
+      assetData: ""
+    });
+    account.submitTransfer(cashTransfer, "");
+    vm.stopPrank();
   }
 
   function _openDefaultOptions() internal {
@@ -224,8 +289,6 @@ contract UNIT_TestPCRM is Test {
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
     uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
-
-    uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
 
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -243,18 +306,8 @@ contract UNIT_TestPCRM is Test {
       amount: -10e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
-      fromAcc: bobAcc,
-      toAcc: aliceAcc,
-      asset: IAsset(option),
-      subId: longtermSubId,
-      amount: 5e18,
-      assetData: ""
-    });
     account.submitTransfer(callTransfer, "");
     account.submitTransfer(putTransfer, "");
-    account.submitTransfer(longtermTransfer, "");
-
     vm.stopPrank();
   }
 }

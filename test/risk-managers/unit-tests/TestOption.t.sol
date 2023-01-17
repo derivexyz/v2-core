@@ -10,6 +10,8 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 
+import "test/libraries/OptionEncoding.t.sol";
+
 contract UNIT_TestOption is Test {
   Accounts account;
   MockManager manager;
@@ -17,6 +19,7 @@ contract UNIT_TestOption is Test {
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
   MockV3Aggregator aggregator;
   Option option;
+  OptionEncodingTester tester;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -31,6 +34,7 @@ contract UNIT_TestOption is Test {
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
 
     option = new Option();
+    tester = new OptionEncodingTester();
     manager = new MockManager(address(account));
 
     vm.startPrank(alice);
@@ -106,13 +110,26 @@ contract UNIT_TestOption is Test {
   // Utils //
   ///////////
 
-  function testDecodeSubId() public view {
-    // todo: do actual decode
-    option.getOptionDetails(0);
+  function testDecodeSubId() public {
+    uint expiry = block.timestamp + 3 days;
+    uint strike = 1234e18;
+    bool isCall = false;
+    uint96 trueSubId = tester.toSubId(expiry, strike, isCall);
+
+    (uint rExpiry, uint rStrike, bool rIsCall) = option.getOptionDetails(trueSubId);
+    assertEq(expiry, rExpiry);
+    assertEq(strike, rStrike);
+    assertEq(isCall, rIsCall);
   }
 
-  function testEncodeSubId() public view {
-    // todo: do actual encode
-    option.getSubId(0, 0, true);
+  function testEncodeSubId() public {
+    // 1 mo, $10k strike, call
+    uint expiry = block.timestamp + 30 days;
+    uint strike = 10_000e18;
+    bool isCall = true;
+    uint96 trueSubId = tester.toSubId(expiry, strike, isCall);
+    uint96 returnedSubId = option.getSubId(expiry, strike, true);
+
+    assertEq(trueSubId, returnedSubId);
   }
 }

@@ -28,7 +28,7 @@ contract Black76Test is Test {
   function testPrices() public {
     uint accuracy = uint(1e18 * 1e-12);
 
-    Black76.Black76Inputs[] memory b76TestInputs = new Black76.Black76Inputs[](8);
+    Black76.Black76Inputs[] memory b76TestInputs = new Black76.Black76Inputs[](9);
     // just a normal ATM call/put
     b76TestInputs[0] = Black76.Black76Inputs({
       timeToExpirySec: 60 * 60 * 24 * 7,
@@ -94,6 +94,15 @@ contract Black76Test is Test {
       discount: 0.99 * 1e18
     });
 
+    // non-zero strike & foward price = 0
+    b76TestInputs[8] = Black76.Black76Inputs({
+      timeToExpirySec: 60 * 60 * 24 * 365,
+      volatility: 4 * 1e18,
+      fwdPrice: 0,
+      strikePrice: 1000e18,
+      discount: 0.99 * 1e18
+    });
+
     // array of (call, put) benchmarks computed in python
     int[2][] memory benchmarkResults = new int[2][](b76TestInputs.length);
     benchmarkResults[0] = [int(82.805080668634559515 * 1e18), int(82.805080668634559515 * 1e18)];
@@ -104,6 +113,7 @@ contract Black76Test is Test {
     benchmarkResults[5] = [int(0), int(uint(type(uint128).max))];
     benchmarkResults[6] = [int(uint(type(uint128).max)), int(0)];
     benchmarkResults[7] = [int(990 * 1e18), int(0)];
+    benchmarkResults[8] = [int(0), int(990e18)];
 
     assert(b76TestInputs.length == benchmarkResults.length);
 
