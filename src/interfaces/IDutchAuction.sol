@@ -13,16 +13,16 @@ interface IDutchAuction {
   ////////////
 
   // emmited when an auction starts
-  event AuctionStarted(bytes32 auctionId, uint accountId, uint upperBound, uint lowerBound);
+  event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime, bool insolvent);
 
   // emmited when a bid is placed
-  event Bid(bytes32 auctionId, address bidder, uint amount);
+  event Bid(uint accountId, uint bidderId, uint amount);
 
   // emmited when an auction results in insolvency
-  event Insolvent(bytes32 auctionId, uint accountId);
+  event Insolvent(uint accountId);
 
   // emmited when an auction ends, either by insolvency or by the assets of an account being purchased.
-  event AuctionEnded(bytes32 auctionId, uint accountId, uint amount);
+  event AuctionEnded(uint accountId, uint endTime);
 
   ////////////
   // ERRORS //
@@ -37,4 +37,22 @@ interface IDutchAuction {
 
   /// @dev emmited when a risk manager tries to start an auction that has already been started
   error DA_AuctionAlreadyStarted(uint accountId);
+
+  /// @dev emmited when a bid is submitted on a closed/ended auction
+  error DA_AuctionEnded(uint accountId);
+
+  /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
+  error DA_AmountTooLarge(uint accountId, uint amount);
+
+  /// @dev emitted when a bid is submitted for 0% of the portfolio
+  error DA_AmountInvalid(uint accountId, uint amount);
+
+  /// @dev emitted when a user tries to increment the step for an insovlent auction
+  error DA_SolventAuctionCannotIncrement(uint accountId);
+
+  /// @dev emitted when a user doesn't own the account that they are trying to bid on
+  error DA_BidderNotOwner(uint accountId, address bidder);
+
+  /// @dev emitted when a user tries to terminate an insolvent Auction
+  error DA_AuctionCannotTerminate(uint accountId);
 }
