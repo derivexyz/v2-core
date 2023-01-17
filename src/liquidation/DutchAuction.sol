@@ -134,13 +134,8 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice Function used to begin insolvency logic for an auction that started as solvent
    * @dev Takes in the auction and returns the account id
    * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
-   * @return bool The state of the marked insolvent auction, should be true or should revert
    */
-  function markAsInsolventLiquidation(uint accountId) external returns (bool) {
-    if (address(riskManager) != msg.sender) {
-      revert DA_NotRiskManager();
-    }
-
+  function markAsInsolventLiquidation(uint accountId) external {
     if (_getCurrentBidPrice(accountId) > 0) {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
@@ -148,25 +143,23 @@ contract DutchAuction is IDutchAuction, Owned {
     uint spot = riskManager.getSpot();
     (, int lowerBound) = _getBounds(accountId, spot);
     _startInsolventAuction(lowerBound, accountId);
-
-    return auctions[accountId].insolvent;
   }
 
   /**
    * @notice a user submits a bid for a particular auction
    * @dev Takes in the auction and returns the account id
    * @param accountId the bytesId that corresponds to a particular auction
-   * @return amount the amount as a percentage of the portfolio that the user is willing to purchase
+   * @return percentOfAccount the percentOfAccount as a percentage of the portfolio that the user is willing to purchase
    */
-  function bid(uint accountId, uint bidderId, uint amount) external returns (uint) {
-    if (amount > DecimalMath.UNIT) {
-      revert DA_AmountTooLarge(accountId, amount);
-    } else if (amount == 0) {
-      revert DA_AmountInvalid(accountId, amount);
+  function bid(uint accountId, uint bidderId, uint percentOfAccount) external returns (uint) {
+    if (percentOfAccount > DecimalMath.UNIT) {
+      revert DA_AmountTooLarge(accountId, percentOfAccount);
+    } else if (percentOfAccount == 0) {
+      revert DA_AmountInvalid(accountId, percentOfAccount);
     }
 
     if (auctions[accountId].ongoing == false) {
-      revert DA_AuctionNotOngoing(accountId);
+      revert DA_AuctionEnded(accountId);
     }
 
     // need to check if the timelimit for the auction has been ecplised
@@ -179,17 +172,16 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_BidderNotOwner(bidderId, msg.sender);
     }
 
-    // get compares max and the f_max amount
-    uint f_max = _getMaxProportion(accountId);
-    amount = amount > f_max ? f_max : amount;
-
     if (auctions[accountId].insolvent) {
       // TODO: Anton
       // This case someone is getting payed to take on the risk
+      // whole portfolio can be liquidated thus amount can be any value
     } else {
+      uint p_max = _getMaxProportion(accountId);
+      percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
       // this case someone is paying to take on the risk
-      uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(amount); // bid * f_max
-      riskManager.executeBid(accountId, bidderId, amount, cashAmount);
+      uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
+      riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmount);
     }
 
     emit Bid(accountId, bidderId, block.timestamp);
@@ -200,7 +192,8 @@ contract DutchAuction is IDutchAuction, Owned {
       _terminateAuction(accountId);
     }
 
-    return amount;
+    // TODO: change so that it returns the cash amount.
+    return percentOfAccount;
   }
 
   /**
@@ -225,7 +218,9 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
-   * @notice This function can only be used for when the auction is insolvent
+   * @notice This function can only be used for when the auction is insolvent and is a safety mechanism for
+   * if the network is down for rpc provider is unable to submit requests to sequencer, potentially resulting
+   * massive insolvency due to bids failling to v_lower.
    * @dev This is to prevent an auction falling all the way through if a provider or the network goes down
    * @param accountId the accountId that relates to the auction that is being stepped
    * @return uint the step that the auction is on
@@ -233,12 +228,10 @@ contract DutchAuction is IDutchAuction, Owned {
   function incrementInsolventAuction(uint accountId) external returns (uint) {
     Auction storage auction = auctions[accountId];
     if (!auction.insolvent) {
-      revert DA_AuctionNotInsolventCannotStep(accountId);
+      revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    auction.stepInsolvent++;
-
-    return auction.stepInsolvent;
+    return ++auction.stepInsolvent;
   }
 
   /**
@@ -247,8 +240,8 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the accountId that relates to the auction that is being stepped
    */
   function terminateAuction(uint accountId) external {
-    if (address(riskManager) != msg.sender) {
-      revert DA_NotRiskManager();
+    if (riskManager.getInitialMargin(accountId) < 0) {
+      revert DA_AuctionCannotTerminate(accountId);
     }
 
     _terminateAuction(accountId);
@@ -310,11 +303,11 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     // IM is always negative under the margining system.
-    int fMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-    if (fMax > 1e18) {
+    int pMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
+    if (pMax > 1e18) {
       return DecimalMath.UNIT;
     } else {
-      return fMax.toUint256();
+      return pMax.toUint256();
     }
   }
 

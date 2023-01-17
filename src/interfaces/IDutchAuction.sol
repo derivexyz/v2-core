@@ -41,9 +41,6 @@ interface IDutchAuction {
   /// @dev emmited when a bid is submitted on a closed/ended auction
   error DA_AuctionEnded(uint accountId);
 
-  /// @dev emmmited when an auction is settled
-  error DA_AuctionNotOngoing(uint accountId);
-
   /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
   error DA_AmountTooLarge(uint accountId, uint amount);
 
@@ -51,8 +48,11 @@ interface IDutchAuction {
   error DA_AmountInvalid(uint accountId, uint amount);
 
   /// @dev emitted when a user tries to increment the step for an insovlent auction
-  error DA_AuctionNotInsolventCannotStep(uint accountId);
+  error DA_SolventAuctionCannotIncrement(uint accountId);
 
   /// @dev emitted when a user doesn't own the account that they are trying to bid on
   error DA_BidderNotOwner(uint accountId, address bidder);
+
+  /// @dev emitted when a user tries to terminate an insolvent Auction
+  error DA_AuctionCannotTerminate(uint accountId);
 }

@@ -29,8 +29,6 @@ contract UNIT_BidAuction is Test {
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
-  uint tokenSubId = 1000;
-
   function setUp() public {
     deployMockSystem();
     setupAccounts();
@@ -104,9 +102,7 @@ contract UNIT_BidAuction is Test {
   /////////////////////////
 
   function testCannotBidOnAuctionThatHasNotStarted() public {
-    vm.prank(address(manager));
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotOngoing.selector, aliceAcc));
-    vm.stopPrank();
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionEnded.selector, aliceAcc));
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
@@ -127,26 +123,11 @@ contract UNIT_BidAuction is Test {
     dutchAuction.bid(aliceAcc, bobAcc, 101 * 1e16);
   }
 
-  function testCannotMakeBidUnlessOwner() public {
+  function testCannotMakeBidUnlessOwnerOfBidder() public {
     vm.startPrank(address(manager));
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
-
-    // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
-    // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, auction.auction.upperBound);
-
-    // getting the max proportion
-    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
 
     // bidding
     vm.stopPrank();
@@ -160,19 +141,7 @@ contract UNIT_BidAuction is Test {
 
     manager.giveAssets(aliceAcc);
 
-    // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
-
-    // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    // assertEq(auction.startTime, block.timestamp);
-    // assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
-    // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, auction.auction.upperBound);
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
@@ -182,10 +151,9 @@ contract UNIT_BidAuction is Test {
     vm.stopPrank();
     vm.startPrank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
-    vm.stopPrank();
 
     // testing that the auction has been updated correctly
-    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.auction.accountId, aliceAcc);
     assertEq(auction.ongoing, false);
   }

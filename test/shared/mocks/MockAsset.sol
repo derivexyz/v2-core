@@ -4,13 +4,16 @@ pragma solidity ^0.8.13;
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccounts.sol";
-
+import "lib/synthetix/DecimalMath.sol";
 /**
  * @title MockAsset is the easiest Asset wrapper that wraps ERC20 into account system.
  * @dev   deployer can set MockAsset to not allow balance go negative.
  *        if set to "allowNegativeBalance = false", token must be deposited before using
  */
+
 contract MockAsset is IAsset {
+  using DecimalMath for uint;
+
   IERC20 token;
   IAccounts account;
   bool immutable allowNegativeBalance;
@@ -27,6 +30,8 @@ contract MockAsset is IAsset {
   bool recordMangerChangeCalls;
   uint public handleManagerCalled;
 
+  uint tokenToCashRate = 1e18;
+
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
 
@@ -42,7 +47,23 @@ contract MockAsset is IAsset {
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: subId,
-        amount: int(amount),
+        amount: int(amount.multiplyDecimal(tokenToCashRate)),
+        assetData: bytes32(0)
+      }),
+      false,
+      ""
+    );
+    token.transferFrom(msg.sender, address(this), amount);
+  }
+
+  // subid = 0
+  function deposit(uint recipientAccount, uint amount) external {
+    account.assetAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: recipientAccount,
+        asset: IAsset(address(this)),
+        subId: 0,
+        amount: int(amount.multiplyDecimal(tokenToCashRate)),
         assetData: bytes32(0)
       }),
       false,
@@ -57,7 +78,7 @@ contract MockAsset is IAsset {
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
-        amount: -int(amount),
+        amount: -int(amount.divideDecimal(tokenToCashRate)),
         assetData: bytes32(0)
       }),
       false,
@@ -102,6 +123,10 @@ contract MockAsset is IAsset {
 
   function setRecordManagerChangeCalls(bool _record) external {
     recordMangerChangeCalls = _record;
+  }
+
+  function setTokenToCashRate(uint rate) external {
+    tokenToCashRate = rate;
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
