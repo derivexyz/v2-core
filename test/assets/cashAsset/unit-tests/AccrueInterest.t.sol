@@ -25,6 +25,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
   uint accountId;
   uint depositedAmount;
+  uint smAccount;
 
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
@@ -33,13 +34,14 @@ contract UNIT_CashAssetAccrueInterest is Test {
     badManager = new MockManager(address(account));
 
     usdc = new MockERC20("USDC", "USDC");
+    smAccount = account.createAccount(address(this), manager);
 
     uint minRate = 0.06 * 1e18;
     uint rateMultipler = 0.2 * 1e18;
     uint highRateMultipler = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
     rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
-    cashAsset = new CashAsset(account, usdc, rateModel, address(0));
+    cashAsset = new CashAsset(account, usdc, rateModel, smAccount, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
 
@@ -133,6 +135,45 @@ contract UNIT_CashAssetAccrueInterest is Test {
     cashAsset.accrueInterest();
     assertGt(cashAsset.borrowIndex(), 1e18);
     assertGt(cashAsset.supplyIndex(), 1e18);
+  }
+
+  function testSetInvalidSmFeeCut() public {
+    uint badFee = 1.1 * 1e18;
+    vm.expectRevert(abi.encodeWithSelector(ICashAsset.CA_SmFeeInvalid.selector, badFee));
+    cashAsset.setSmFee(badFee); // 10% cut
+  }
+
+  function testSmFeeCutFromInterest() public {
+    uint amountToBorrow = 2000e18;
+    uint newAccount = account.createAccount(address(this), manager);
+
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    // Increase total borrow amount
+    cashAsset.withdraw(newAccount, amountToBorrow, address(this));
+
+    // Indexes should start at 1
+    assertEq(cashAsset.borrowIndex(), 1e18);
+    assertEq(cashAsset.supplyIndex(), 1e18);
+
+    vm.warp(block.timestamp + 2 weeks);
+
+    // After accrueInterest, should increase borrow and supply indexes
+    cashAsset.accrueInterest();
+    assertGt(cashAsset.borrowIndex(), 1e18);
+    assertGt(cashAsset.supplyIndex(), 1e18);
+
+    assertEq(cashAsset.accruedSmFees(), 0);
+    cashAsset.setSmFee(1e17); // 10% cut
+
+    vm.warp(block.timestamp + 200 weeks);
+    cashAsset.accrueInterest();
+    assertGt(cashAsset.accruedSmFees(), 0);
+
+    assertEq(account.getBalance(smAccount, cashAsset, 0), 0);
+    cashAsset.transferSmFees();
+    assertGt(account.getBalance(smAccount, cashAsset, 0), 0);
   }
 
   function testAccrueInterestDebtBalance() public {
