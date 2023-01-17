@@ -50,7 +50,7 @@ contract PCRMSpotJumpOracleGas is Script {
     console.log("gas:SingleUpdate:", initGas - gasleft());
   }
 
-  function _gasGetFirstJump() public {
+  function _gasGetFirstJump() public view {
     // estimate tx cost when max jump is the first value to be read from the array
     uint initGas = gasleft();
 

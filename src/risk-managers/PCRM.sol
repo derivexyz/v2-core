@@ -152,12 +152,10 @@ contract PCRM is IManager, Owned {
   {
     // todo [Josh]: whitelist check
 
-    // PCRM calculations
-    ExpiryHolding[] memory expiries = _groupOptions(account.getAccountBalances(accountId));
-    int cashAmount = _getCashAmount(accountId);
+     // PCRM calculations
+     Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
 
-    // todo [Josh]: might make more semantic case to not incldue "cashAmount" in here.
-    _calcMargin(expiries, cashAmount, MarginType.INITIAL);
+     _calcMargin(portfolio, MarginType.INITIAL);
   }
 
   /**
