@@ -178,7 +178,7 @@ contract DutchAuction is IDutchAuction, Owned {
       // whole portfolio can be liquidated thus amount can be any value
     } else {
       uint f_max = _getMaxProportion(accountId);
-      amount = amount > f_max ? f_max : amount;
+      percentOfAccount = percentOfAccount > f_max ? f_max : percentOfAccount;
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
       riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmount);
@@ -297,7 +297,11 @@ contract DutchAuction is IDutchAuction, Owned {
   function _getMaxProportion(uint accountId) internal returns (uint) {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
-    
+
+    if (currentBidPrice >= 0) {
+      return DecimalMath.UNIT;
+    }
+
     // IM is always negative under the margining system.
     int pMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
     if (pMax > 1e18) {
@@ -356,8 +360,6 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param spot the spot price of the asset,
    */
   function _getBounds(uint accountId, uint spot) internal view returns (int maximum, int minimum) {
-    // TODO: Margin for current being the lower bound
-    // TODO: Margin for the inverted portfolio being the upper bound
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     int cash = riskManager.getCashAmount(accountId);
     maximum = cash;
@@ -371,7 +373,7 @@ contract DutchAuction is IDutchAuction, Owned {
     }
   }
 
-   /**
+  /**
    * @notice calculates the maximum and minimum aggregated value of all strike at a particular price
    * @param strikes the strikes that are being marked
    * @param spot the spot price of the asset
