@@ -136,6 +136,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     );
   }
 
+  function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
+    // todo: only to comply with interface now: will accept incoming code from CashAsset
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -181,6 +185,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    */
   function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
     _checkManager(address(newManager));
+  }
+
+  function getCashToStableExchangeRate() external pure returns (uint) {
+    // todo: only to comply with interface now: will accept incoming code from CashAsset
+    return ConvertDecimals.UNIT;
   }
 
   ////////////////////////////
