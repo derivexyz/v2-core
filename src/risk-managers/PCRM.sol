@@ -152,10 +152,10 @@ contract PCRM is IManager, Owned {
   {
     // todo [Josh]: whitelist check
 
-     // PCRM calculations
-     Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
+    // PCRM calculations
+    Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
 
-     _calcMargin(portfolio, MarginType.INITIAL);
+    _calcMargin(portfolio, MarginType.INITIAL);
   }
 
   /**
