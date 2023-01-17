@@ -1,15 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "../assets/InterestRateModel.sol";
+
 interface ICashAsset {
   ////////////
   // Events //
   ////////////
 
-  /**
-   * @dev Emitted account created or split
-   */
+  /// @dev Emitted when interest related state variables are updated
   event InterestAccrued(uint interestAccrued, uint borrowIndex, uint totalSupply, uint totalBorrow);
+
+  /// @dev Emitted when the security module fee is set
+  event SmFeeSet(uint fee);
+
+  /// @dev Emitted when a new interest rate model is set
+  event InterestRateModelSet(InterestRateModel rateModel);
+
+  /// @dev Emitted when a manager address is whitelisted or unwhitelisted
+  event WhitelistManagerSet(address manager, bool whitelisted);
 
   /**
    * @notice Liquidation module can report loss when there is insolvency.
@@ -53,4 +62,7 @@ interface ICashAsset {
 
   /// @dev accrued interest is stale
   error CA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
+
+  /// @dev Security module fee cut greater than 100%
+  error CA_SmFeeInvalid(uint fee);
 }
