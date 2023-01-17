@@ -371,18 +371,25 @@ contract DutchAuction is IDutchAuction, Owned {
     }
   }
 
-  /// @notice Function to inverse a portfolio, this is required for finding the upper bound
-  /// @dev Takes in an abirtary portfolio and inverts it, meaning that all Long calls are turned to short calls and vice versa
-  /// @param Expiries The portfolio that is being inverted
-  /// @return ExpiryHoldings The inverted portfolio
-  function _inversePortfolio(IPCRM.ExpiryHoldings[] memory expiries) internal returns(IPCRM.ExpiryHoldings[] memory) {
-    for (uint i = 0; i < expiries.length; i++) {
-      for (uint j = 0; j < expiries[i].strikes.length; j++) {
-        expiries[i].strikes[j].calls = expiries[i].strikes[j].calls * -1;
-        expiries[i].strikes[j].puts = expiries[i].strikes[j].puts * -1;
+   /**
+   * @notice calculates the maximum and minimum aggregated value of all strike at a particular price
+   * @param strikes the strikes that are being marked
+   * @param spot the spot price of the asset
+   * @dev returns the minimum and maximum aggregated value of all strike at a particular price
+   */
+  function _markStrike(IPCRM.StrikeHolding[] memory strikes, uint spot) internal pure returns (int max, int min) {
+    for (uint j = 0; j < strikes.length; j++) {
+      // calls
+      {
+        int numCalls = strikes[j].calls;
+        max += SignedMath.max(numCalls, 0) * spot.toInt256();
+        min += SignedMath.min(numCalls, 0) * spot.toInt256();
+        // puts
+        int numPuts = strikes[j].puts;
+        max += SignedMath.max(numPuts, 0) * int64(strikes[j].strike);
+        min += SignedMath.min(numPuts, 0) * int64(strikes[j].strike);
       }
     }
-    return expiries;
   }
 
   /**
