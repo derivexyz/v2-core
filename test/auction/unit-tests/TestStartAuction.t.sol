@@ -60,20 +60,22 @@ contract UNIT_TestStartAuction is Test {
     /* Risk Manager */
     manager = new MockIPCRM(address(account));
 
-    dutchAuction = new DutchAuction(address(manager));
+    dutchAuction = new DutchAuction(address(manager), address(account));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
-        stepInterval: 2 * DecimalMath.UNIT,
+        stepInterval: 1,
         lengthOfAuction: 200 * DecimalMath.UNIT,
-        securityModule: address(1)
+        securityModule: address(1),
+        spotShock: 11 * 1e17
       })
     );
 
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
-      stepInterval: 2 * DecimalMath.UNIT,
+      stepInterval: 1,
       lengthOfAuction: 200 * DecimalMath.UNIT,
-      securityModule: address(1)
+      securityModule: address(1),
+      spotShock: 11 * 1e17
     });
   }
 
@@ -112,13 +114,12 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
 
     // log all the auction struct detials
-    assertEq(auction.insolvent, false);
+    assertEq(auction.insolvent, true); // this would be flagged as an insolvent auction
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
     uint spot = manager.getSpot();
-    // TODO: expand testing with hard mech backed values.
     (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
@@ -172,36 +173,23 @@ contract UNIT_TestStartAuction is Test {
   // test that an auction is correcttly marked as insolvent
   function testInsolventAuction() public {
     vm.startPrank(address(manager));
-
+    manager.giveAssets(aliceAcc);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.insolvent, false);
-
     // fast forward
-    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
+    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 1);
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
+
     // mark the auction as insolvent
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
 
     // testing that the view returns the correct auction.
     auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.insolvent, true);
-  }
-
-  function testCannotMarkAsInsolventAuctionNotRiskManager() public {
-    // wrong mark as insolvent not called by risk manager
-    vm.startPrank(address(manager));
-
-    // start an auction on Alice's account
-    dutchAuction.startAuction(aliceAcc);
-    vm.stopPrank();
-    // fastforward change address to 0xdead and then catch revert after calling mark insolvent
-    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction / 2);
-    vm.startPrank(address(0xdead));
-    vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
-    dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
   function testStartAuctionFailingOnGoingAuction() public {
@@ -213,7 +201,7 @@ contract UNIT_TestStartAuction is Test {
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
     dutchAuction.startAuction(aliceAcc);
 
-    assertEq(dutchAuction.getAuctionDetails(aliceAcc).insolvent, false);
+    assertEq(dutchAuction.getAuctionDetails(aliceAcc).insolvent, true); // auction will start as insolvent
   }
 
   // test account with accoiunt id greater than 2
@@ -253,8 +241,10 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
-  function testGetMaxProportion() public {
+  function testGetMaxProportionNegativeMargin() public {
     vm.startPrank(address(manager));
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, -100_000 * 1e18);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -268,10 +258,31 @@ contract UNIT_TestStartAuction is Test {
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, 0);
+    assertEq(currentBidPrice, auction.auction.upperBound);
 
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
+  }
+
+  function testGetMaxProportionPositiveMargin() public {
+    vm.startPrank(address(manager));
     // deposit marign to the account
     manager.depositMargin(aliceAcc, 1000 * 1e18);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
@@ -282,7 +293,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, 1000 * 1e18);
+    manager.depositMargin(aliceAcc, -1000 * 1e18);
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
@@ -299,10 +310,128 @@ contract UNIT_TestStartAuction is Test {
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
     assertGt(currentBidPrice, 0);
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
+    assertEq(percentageHelper(maxProportion), 714);
+    // TODO: check this value in the sim
+    // about 7% should be liquidateable according to sim.
+  }
+
+  // TODO: need to improve the manager for this test
+  function testStartInsolventAuctionAndIncrement() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, 0); // starts at 0 as insolvent
+    // mark as insolvent
+    dutchAuction.markAsInsolventLiquidation(aliceAcc);
+
+    // increment the insolvent auction
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    // get the current step
+    uint currentStep = dutchAuction.getAuctionDetails(aliceAcc).stepInsolvent;
+    assertEq(currentStep, 2);
+  }
+
+  function testCannotStepNonInsolventAuction() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
+
+    // deposit assets to the account
+    manager.giveAssets(aliceAcc);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
+    assertGt(currentBidPrice, 0);
+
+    // increment the insolvent auction
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_SolventAuctionCannotIncrement.selector, aliceAcc));
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+  }
+
+  // manager successfully terminates an auction
+  function testManagerTerminatesAuction() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
+
+    // deposit assets to the account
+    manager.giveAssets(aliceAcc);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.startTime, block.timestamp);
+    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+
+    // getting the current bid price
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, auction.auction.upperBound);
+    assertGt(currentBidPrice, 0);
+
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+    // check that the auction is terminated
+    assertEq(dutchAuction.getAuctionDetails(aliceAcc).ongoing, false);
+  }
+
+  // nonmanager cannot terminate an auction
+  function testNonManagerCannotTerminateInsolventAuction() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, -10000 * 1e18); // 1 million bucks
+
+    // deposit assets to the account
+    manager.giveAssets(aliceAcc);
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+
+    assertLt(manager.getInitialMargin(aliceAcc), 0);
+    // terminate the auction
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionCannotTerminate.selector, aliceAcc));
+    dutchAuction.terminateAuction(aliceAcc);
+  }
+
+  /// Helper
+  // will round off the percentages at 2dp
+  function percentageHelper(uint bigNumberPercantage) public pure returns (uint) {
+    return bigNumberPercantage * 100 / 1e16;
   }
 }

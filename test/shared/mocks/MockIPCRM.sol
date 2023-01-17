@@ -6,11 +6,14 @@ import "../../../src/interfaces/IManager.sol";
 import "../../../src/interfaces/IAsset.sol";
 import "../../../src/interfaces/IAccounts.sol";
 
+import "synthetix/DecimalMath.sol";
+
 contract MockIPCRM is IPCRM, IManager {
   address account;
 
   mapping(uint => int) public accMargin;
   mapping(uint => bool) public accHasAssets;
+  ExpiryHolding[] public userAcc; // just a result that can be set to be returned when testing
 
   constructor(address _account) {
     account = _account;
@@ -35,7 +38,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   function getSpot() external view virtual returns (uint spot) {
     // TODO: filler code
-    return 1000;
+    return 1000 * DecimalMath.UNIT;
   }
 
   function getAccountValue(uint accountId) external view virtual returns (uint) {
@@ -101,6 +104,22 @@ contract MockIPCRM is IPCRM, IManager {
 
   function giveAssets(uint accountId) external {
     accHasAssets[accountId] = true;
+  }
+
+  function givePortfolio(uint accountId, ExpiryHolding[] memory expiryHoldings) external {
+    accHasAssets[accountId] = true;
+
+    // copy expiryHoldings into userAcc
+    for (uint i = 0; i < expiryHoldings.length; i++) {
+      userAcc[i].expiry = expiryHoldings[i].expiry;
+      userAcc[i].numStrikeHoldings = expiryHoldings[i].numStrikeHoldings;
+      for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
+        userAcc[i].strikes[j].strike = expiryHoldings[i].strikes[j].strike;
+        userAcc[i].strikes[j].calls = expiryHoldings[i].strikes[j].calls;
+        userAcc[i].strikes[j].puts = expiryHoldings[i].strikes[j].puts;
+        userAcc[i].strikes[j].forwards = expiryHoldings[i].strikes[j].forwards;
+      }
+    }
   }
 
   function test() public {}

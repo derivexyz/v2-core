@@ -79,7 +79,7 @@ contract UNIT_DutchAuctionView is Test {
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = new DutchAuction(address(manager));
+    dutchAuction = new DutchAuction(address(manager), address(account));
   }
 
   function mintAndDeposit(
@@ -110,7 +110,12 @@ contract UNIT_DutchAuctionView is Test {
 
     // change params
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        securityModule: address(1),
+        spotShock: 11 * 1e17
+      })
     );
 
     // check if params changed
