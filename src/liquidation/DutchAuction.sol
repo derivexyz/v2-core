@@ -179,7 +179,7 @@ contract DutchAuction is IDutchAuction, Owned {
     if (auctions[accountId].insolvent) {
       // TODO: Anton
       // This case someone is getting payed to take on the risk
-      // add TODO: for anton to update auction time. 
+      // add TODO: for anton to update auction time.
     } else {
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
