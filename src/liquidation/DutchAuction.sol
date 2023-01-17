@@ -177,8 +177,8 @@ contract DutchAuction is IDutchAuction, Owned {
       // This case someone is getting payed to take on the risk
       // whole portfolio can be liquidated thus amount can be any value
     } else {
-      uint f_max = _getMaxProportion(accountId);
-      percentOfAccount = percentOfAccount > f_max ? f_max : percentOfAccount;
+      uint p_max = _getMaxProportion(accountId);
+      percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
       riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmount);
@@ -298,7 +298,7 @@ contract DutchAuction is IDutchAuction, Owned {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
-    if (currentBidPrice >= 0) {
+    if (currentBidPrice <= 0) {
       return DecimalMath.UNIT;
     }
 
