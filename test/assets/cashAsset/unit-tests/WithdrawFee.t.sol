@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
-
+import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/Accounts.sol";
 
@@ -17,7 +17,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
   MockERC20 usdc;
   MockManager manager;
   Accounts accounts;
-  InterestRateModel rateModel;
+  IInterestRateModel rateModel;
   address liquidationModule = address(0xf00d);
 
   uint accountId;
@@ -30,7 +30,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(accounts, usdc, rateModel, 0, liquidationModule);
 
     cashAsset.setWhitelistManager(address(manager), true);

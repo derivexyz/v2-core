@@ -42,4 +42,3 @@ interface IInterestRateModel {
   error IRM_ParameterMustBeLessThanOne(uint param);
   error IRM_NoElapsedTime(uint elapsedTime);
 }
-
