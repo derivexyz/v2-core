@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
+import "../mocks/MockInterestRateModel.sol";
 
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/Accounts.sol";
@@ -18,7 +19,7 @@ contract UNIT_CashAssetDeposit is Test {
   MockManager manager;
   MockManager badManager;
   Accounts account;
-  InterestRateModel rateModel;
+  IInterestRateModel rateModel;
 
   uint accountId;
 
@@ -30,7 +31,7 @@ contract UNIT_CashAssetDeposit is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(account, usdc, rateModel, 0, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
@@ -61,7 +62,7 @@ contract UNIT_CashAssetDeposit is Test {
 contract UNIT_LendingDeposit6Decimals is Test {
   CashAsset cashAsset;
   Accounts account;
-  InterestRateModel rateModel;
+  IInterestRateModel rateModel;
 
   uint accountId;
 
@@ -73,7 +74,7 @@ contract UNIT_LendingDeposit6Decimals is Test {
     // set USDC to 6 decimals
     usdc.setDecimals(6);
 
-    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(account, usdc, rateModel, 0, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -99,7 +100,7 @@ contract UNIT_LendingDeposit6Decimals is Test {
 contract UNIT_LendingDeposit20Decimals is Test {
   CashAsset cashAsset;
   Accounts account;
-  InterestRateModel rateModel;
+  IInterestRateModel rateModel;
 
   uint accountId;
 
@@ -111,7 +112,7 @@ contract UNIT_LendingDeposit20Decimals is Test {
     // set USDC to 20 decimals!
     usdc.setDecimals(20);
 
-    rateModel = new InterestRateModel(1e18, 1e18, 1e18, 1e18);
+    rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(account, usdc, rateModel, 0, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
 

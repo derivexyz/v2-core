@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
+import "../mocks/MockInterestRateModel.sol";
 
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/assets/InterestRateModel.sol";
@@ -21,7 +22,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
   MockManager manager;
   MockManager badManager;
   Accounts account;
-  InterestRateModel rateModel;
+  IInterestRateModel rateModel;
 
   uint accountId;
   uint depositedAmount;
@@ -36,11 +37,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     usdc = new MockERC20("USDC", "USDC");
     smAccount = account.createAccount(address(this), manager);
 
-    uint minRate = 0.06 * 1e18;
-    uint rateMultipler = 0.2 * 1e18;
-    uint highRateMultipler = 0.4 * 1e18;
-    uint optimalUtil = 0.6 * 1e18;
-    rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    rateModel = new MockInterestRateModel(0.5 * 1e18);
     cashAsset = new CashAsset(account, usdc, rateModel, smAccount, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
@@ -83,7 +80,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
     assertGt(cashAsset.borrowIndex(), 1e18);
     assertGt(cashAsset.supplyIndex(), 1e18);
-    assertEq(cashAsset.rateModel().minRate(), 0.8 * 1e18);
+    assertEq(newModel.minRate(), 0.8 * 1e18);
   }
 
   function testDepositUpdatesInterestTimestamp() public {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../assets/InterestRateModel.sol";
+import "./IInterestRateModel.sol";
 
 interface ICashAsset {
   ////////////
@@ -15,7 +15,7 @@ interface ICashAsset {
   event SmFeeSet(uint fee);
 
   /// @dev Emitted when a new interest rate model is set
-  event InterestRateModelSet(InterestRateModel rateModel);
+  event InterestRateModelSet(IInterestRateModel rateModel);
 
   /// @dev Emitted when a manager address is whitelisted or unwhitelisted
   event WhitelistManagerSet(address manager, bool whitelisted);
