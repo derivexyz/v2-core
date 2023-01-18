@@ -442,8 +442,7 @@ contract DutchAuction is IDutchAuction, Owned {
       return 0 - (auction.dv * numSteps).toInt256();
     } else {
       int upperBound = auction.auction.upperBound;
-      int bid = upperBound
-        - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
+      int bid = upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
       // have to call markAsInsolvent before bid can be negative
       if (bid <= 0) {
         return 0;

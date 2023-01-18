@@ -40,7 +40,6 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
   // TESTS //
   ///////////
 
-
   function testStartInsolventAuction() public {
     vm.startPrank(address(manager));
 
@@ -57,9 +56,8 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     // increment the insolvent auction
     dutchAuction.incrementInsolventAuction(aliceAcc);
     dutchAuction.incrementInsolventAuction(aliceAcc);
-    
+
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertGt(0, currentBidPrice);
-    
   }
 }

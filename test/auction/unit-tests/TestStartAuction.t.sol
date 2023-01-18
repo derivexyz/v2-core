@@ -293,7 +293,6 @@ contract UNIT_TestStartAuction is Test {
     // about 7% should be liquidateable according to sim.
   }
 
-  
   function testStartInsolventAuctionAndIncrement() public {
     vm.startPrank(address(manager));
 
