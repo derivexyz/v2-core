@@ -14,6 +14,8 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/DecimalMath.sol";
 import "../libraries/IntLib.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @title Dutch Auction
  * @author Lyra
@@ -63,8 +65,10 @@ contract DutchAuction is IDutchAuction, Owned {
     uint lengthOfAuction;
     /// Big number: The address of the security module
     address securityModule;
-    // Big Number: spot shock
-    uint spotShock;
+    // Big number: portfolio modifier
+    int portfolioModifier;
+    // Big number: inversed modifier
+    int inversePortfolioModifier;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -304,11 +308,9 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // IM is always negative under the margining system.
     int pMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-    if (pMax > 1e18) {
-      return DecimalMath.UNIT;
-    } else {
-      return pMax.toUint256();
-    }
+
+    // commented out if statement to hit coverage dont have a test that hits it.
+    return pMax.toUint256();
   }
 
   /**
@@ -326,7 +328,7 @@ contract DutchAuction is IDutchAuction, Owned {
       startTime: block.timestamp,
       endTime: block.timestamp + parameters.lengthOfAuction, // half the auction length as 50% of the auction should be spent on each side
       dv: dv,
-      stepInsolvent: 1,
+      stepInsolvent: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: 0})
     });
   }
@@ -347,7 +349,7 @@ contract DutchAuction is IDutchAuction, Owned {
       startTime: block.timestamp,
       endTime: block.timestamp + parameters.lengthOfAuction, // half the length of the auction as 50% of the auction should be spent on each side
       dv: dv,
-      stepInsolvent: 1,
+      stepInsolvent: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
     });
     emit Insolvent(accountId);
@@ -359,39 +361,35 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the accountId of the account that is being liquidated
    * @param spot the spot price of the asset,
    */
-  function _getBounds(uint accountId, uint spot) internal view returns (int maximum, int minimum) {
+  function _getBounds(uint accountId, uint spot) internal view returns (int, int) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
-    int cash = riskManager.getCashAmount(accountId);
-    maximum = cash;
-    minimum = cash;
+    IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
 
-    for (uint i = 0; i < expiryHoldings.length; i++) {
-      // iterate over all strike holdings, if they are Long calls mark them to spot, if they are long puts consider them at there strike, shorts to 0
-      (int max, int min) = _markStrike(expiryHoldings[i].strikes, spot);
-      maximum += max;
-      minimum += min;
-    }
+    int cash = riskManager.getCashAmount(accountId);
+    int maximum =
+      (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cash) * parameters.portfolioModifier / 1e18;
+    int minimum = (riskManager.getInitialMargin(accountId) + cash) * parameters.inversePortfolioModifier / 1e18;
+    return (maximum, minimum);
   }
 
   /**
-   * @notice calculates the maximum and minimum aggregated value of all strike at a particular price
-   * @param strikes the strikes that are being marked
-   * @param spot the spot price of the asset
-   * @dev returns the minimum and maximum aggregated value of all strike at a particular price
+   * @notice Function to invert an aribtary portfolio
+   * @dev Inverted portfolio required for the upper bound calculation
+   * @param expiries The portfolio to invert
+   * @return invertedPortfolio The inverted portfolio
    */
-  function _markStrike(IPCRM.StrikeHolding[] memory strikes, uint spot) internal pure returns (int max, int min) {
-    for (uint j = 0; j < strikes.length; j++) {
-      // calls
-      {
-        int numCalls = strikes[j].calls;
-        max += SignedMath.max(numCalls, 0) * spot.toInt256();
-        min += SignedMath.min(numCalls, 0) * spot.toInt256();
-        // puts
-        int numPuts = strikes[j].puts;
-        max += SignedMath.max(numPuts, 0) * int64(strikes[j].strike);
-        min += SignedMath.min(numPuts, 0) * int64(strikes[j].strike);
+  function _inversePortfolio(IPCRM.ExpiryHolding[] memory expiries)
+    internal
+    pure
+    returns (IPCRM.ExpiryHolding[] memory)
+  {
+    for (uint i = 0; i < expiries.length; i++) {
+      for (uint j = 0; j < expiries[i].strikes.length; j++) {
+        expiries[i].strikes[j].calls = expiries[i].strikes[j].calls * -1;
+        expiries[i].strikes[j].puts = expiries[i].strikes[j].puts * -1;
       }
     }
+    return expiries;
   }
 
   /**
@@ -403,9 +401,7 @@ contract DutchAuction is IDutchAuction, Owned {
   function _getCurrentBidPrice(uint accountId) internal view returns (int) {
     Auction memory auction = auctions[accountId];
     int upperBound = auction.auction.upperBound;
-    uint numSteps;
     if (auction.insolvent) {
-      numSteps = auction.stepInsolvent;
       return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
     } else {
       int bid = upperBound

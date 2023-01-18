@@ -22,6 +22,21 @@ interface ICashAsset is IAsset {
   event WhitelistManagerSet(address manager, bool whitelisted);
 
   /**
+   * @dev Deposit USDC and increase account balance
+   * @param recipientAccount account id to receive the cash asset
+   * @param amount amount of USDC to deposit
+   */
+  function deposit(uint recipientAccount, uint amount) external;
+
+  /**
+   * @notice Withdraw USDC from a Lyra account
+   * @param accountId account id to withdraw
+   * @param amount amount of stable asset in its native decimals
+   * @param recipient USDC recipient
+   */
+  function withdraw(uint accountId, uint amount, address recipient) external;
+
+  /**
    * @notice Liquidation module can report loss when there is insolvency.
    *         This function will "print" the amount of cash to the target account
    *         and socilize the loss to everyone in the system
@@ -30,6 +45,18 @@ interface ICashAsset is IAsset {
    * @param accountToReceive Account to receive the new printed amount
    */
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external;
+
+  /**
+   * @notice Returns latest balance without updating accounts but will update indexes
+   * @param accountId The accountId to check
+   */
+  function calculateBalanceWithInterest(uint accountId) external returns (int balance);
+
+  /**
+   * @dev Returns the exchange rate from cash asset to stable asset
+   *      this should always be equal to 1, unless we have an insolvency
+   */
+  function getCashToStableExchangeRate() external view returns (uint);
 
   ////////////////
   //   Events   //
