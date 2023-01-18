@@ -64,4 +64,7 @@ interface IDutchAuction {
 
   /// @dev emmited when a increase the step for an insolvent auction that has already reach its steps
   error DA_MaxStepReachedInsolventAuction();
+
+  /// @dev emmited when IncremenetInsolventAuction is spammed
+  error DA_CannotStepBeforeCoolDownEnds(uint blockTimeStamp, uint coolDownEnds);
 }

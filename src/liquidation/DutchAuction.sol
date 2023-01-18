@@ -58,6 +58,8 @@ contract DutchAuction is IDutchAuction, Owned {
     uint dv;
     /// The current step if the auction is insolvent
     uint stepInsolvent;
+    // last step
+    uint lastStep;
   }
 
   struct DutchAuctionParameters {
@@ -71,6 +73,8 @@ contract DutchAuction is IDutchAuction, Owned {
     int portfolioModifier;
     // Big number: inversed modifier
     int inversePortfolioModifier;
+    // Number, Amount of time between steps when the auction is insolvent
+    uint stepIntervalInsolvent;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -222,7 +226,6 @@ contract DutchAuction is IDutchAuction, Owned {
       _terminateAuction(accountId);
     }
 
-    // TODO: change so that it returns the cash amount.
     return percentOfAccount;
   }
 
@@ -261,10 +264,11 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    // todo: logic to prevnet spamming based on time
+    if (auction.lastStep < block.timestamp) {
+      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.stepIntervalInsolvent);
+    }
 
     uint newStep = ++auction.stepInsolvent;
-
     if (newStep > parameters.lengthOfAuction) {
       revert DA_MaxStepReachedInsolventAuction();
     }

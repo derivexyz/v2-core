@@ -98,11 +98,7 @@ contract UNIT_BidAuction is Test {
     assetWrapper.deposit(accountId, subId, amount);
     vm.stopPrank();
   }
-
-  ///////////
-  // TESTS //
-  ///////////
-
+  
   /////////////////////////
   // Start Auction Tests //
   /////////////////////////
@@ -151,14 +147,13 @@ contract UNIT_BidAuction is Test {
     manager.setMarginForPortfolio(10_000 * 1e18);
 
     dutchAuction.startAuction(aliceAcc);
+    vm.stopPrank();
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertLt(maxProportion, 5e17); // should be less than half
 
     // bidding
-    vm.stopPrank();
-
     vm.startPrank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
@@ -203,7 +198,7 @@ contract UNIT_BidAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
-    // // bid for the remaing amount of the account should close end the auction
+    // bid for the remaing amount of the account should close end the auction
     manager.setNextIsEndingBid(); // mock the account to return
 
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
