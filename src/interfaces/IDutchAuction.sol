@@ -31,9 +31,15 @@ interface IDutchAuction {
   /// @dev emmited when a non-risk manager tries to start an auction
   error DA_NotRiskManager();
 
-  /// @dev emmited when a risk manager tries to start an insolvent auction when bidding
+  /// @dev emmited when someone tries to start an insolvent auction when bidding
   /// has not concluded.
   error DA_AuctionNotEnteredInsolvency(uint accountId);
+
+  /// @dev emmited when someone tries mark an insolvent aunction again
+  error DA_AuctionAlreadyInInsolvencyMode(uint accountId);
+
+  /// @dev emmited when someone tries to start an auction that has already been started
+  error DA_AuctionNotStarted(uint accountId);
 
   /// @dev emmited when a risk manager tries to start an auction that has already been started
   error DA_AuctionAlreadyStarted(uint accountId);

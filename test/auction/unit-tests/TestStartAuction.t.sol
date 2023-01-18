@@ -101,6 +101,11 @@ contract UNIT_TestStartAuction is Test {
   // TESTS //
   ///////////
 
+  function testCannotGetBidPriceOnNormalAccount() public {
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotStarted.selector, aliceAcc));
+    dutchAuction.getCurrentBidPrice(aliceAcc);
+  }
+
   /////////////////////////
   // Start Auction Tests //
   /////////////////////////
@@ -188,6 +193,10 @@ contract UNIT_TestStartAuction is Test {
     // testing that the view returns the correct auction.
     auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.insolvent, true);
+
+    // cannot mark twice
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyInInsolvencyMode.selector, aliceAcc));
+    dutchAuction.markAsInsolventLiquidation(aliceAcc);
   }
 
   function testStartAuctionFailingOnGoingAuction() public {
@@ -300,8 +309,6 @@ contract UNIT_TestStartAuction is Test {
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, 0); // starts at 0 as insolvent
-    // mark as insolvent
-    dutchAuction.markAsInsolventLiquidation(aliceAcc);
 
     // increment the insolvent auction
     dutchAuction.incrementInsolventAuction(aliceAcc);

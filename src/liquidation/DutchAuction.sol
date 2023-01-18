@@ -136,15 +136,20 @@ contract DutchAuction is IDutchAuction, Owned {
 
   /**
    * @notice Function used to begin insolvency logic for an auction that started as solvent
-   * @dev Takes in the auction and returns the account id
+   * @dev This function can only be called on auctions that has already started as solvent
    * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
    */
   function markAsInsolventLiquidation(uint accountId) external {
+    // getCurentBidPrice will revert if there is no auction for accountId going on
     if (_getCurrentBidPrice(accountId) > 0) {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
-
+    if (auctions[accountId].insolvent) {
+      revert DA_AuctionAlreadyInInsolvencyMode(accountId);
+    }
     uint spot = riskManager.getSpot();
+
+    // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
     (, int lowerBound) = _getBounds(accountId, spot);
     _startInsolventAuction(lowerBound, accountId);
   }
@@ -239,8 +244,8 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
-   * @notice This function can only be used by the risk manager to end an auction early
-   * @dev This is to allow the riskmanager to cancel the auction if the user adds more collateral
+   * @notice This function can used by anyone to end an auction early
+   * @dev This is to allow account owner to cancel the auction after adding more collateral
    * @param accountId the accountId that relates to the auction that is being stepped
    */
   function terminateAuction(uint accountId) external {
@@ -400,6 +405,9 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   function _getCurrentBidPrice(uint accountId) internal view returns (int) {
     Auction memory auction = auctions[accountId];
+    if (!auction.ongoing) {
+      revert DA_AuctionNotStarted(accountId);
+    }
     int upperBound = auction.auction.upperBound;
     if (auction.insolvent) {
       return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
