@@ -7,8 +7,15 @@ import "../../../src/interfaces/IAsset.sol";
 import "../../../src/interfaces/IAccounts.sol";
 
 import "synthetix/DecimalMath.sol";
+import "openzeppelin/utils/math/SafeMath.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 
 contract MockIPCRM is IPCRM, IManager {
+  using SafeCast for int;
+  using SafeCast for uint;
+  using DecimalMath for uint;
+
   address account;
 
   mapping(uint => int) public accMargin;
@@ -29,12 +36,19 @@ contract MockIPCRM is IPCRM, IManager {
     // TODO: filler code
   }
 
+  // TODO: needs to be expanded upon next sprint to make sure that 
+  // it can handle the insolvency case properly
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     virtual
     returns (int finalInitialMargin, ExpiryHolding[] memory, int cash)
   {
-    // TODO: filler code
+
+    if (cashAmount > 0) {
+      accMargin[accountId] += cashAmount.toInt256();
+    } 
+
+    portMargin[accountId] = (portMargin[accountId] * portion.toInt256()) / 1e18;
   }
 
   function getSpot() external view virtual returns (uint spot) {

@@ -14,10 +14,15 @@ import "../../shared/mocks/MockManager.sol";
 import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockIPCRM.sol";
 
+
 // Math library
 import "synthetix/DecimalMath.sol";
 
 contract UNIT_BidAuction is Test {
+  using SafeCast for int;
+  using SafeCast for uint;
+  using DecimalMath for uint;
+
   address alice;
   address bob;
   uint aliceAcc;
@@ -38,7 +43,6 @@ contract UNIT_BidAuction is Test {
     alice = address(0xaa);
     bob = address(0xbb);
     usdc.approve(address(usdcAsset), type(uint).max);
-    // usdcAsset.deposit(ownAcc, 0, 100_000_000e18);
     aliceAcc = account.createAccount(alice, manager);
     bobAcc = account.createAccount(bob, manager);
   }
@@ -169,4 +173,55 @@ contract UNIT_BidAuction is Test {
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountInvalid.selector, aliceAcc, 0));
     dutchAuction.bid(aliceAcc, bobAcc, 0);
   }
-}
+
+  // Bid a few times whilst the auction is solvent and check if it correctly recalcs bounds
+  // and terminates.
+  function testBidTillSolventThenClose() public {
+    createAuctionOnUser(aliceAcc, -10_000 * 1e18, 5_000 * 1e18);
+
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    uint p_max = dutchAuction.getMaxProportion(aliceAcc);
+
+    // bid for half and make sure the auction doesn't terminate
+    vm.startPrank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, p_max.divideDecimal(2 * 1e18));
+
+    // checks bounds have not changed 
+    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.insolvent, false);
+
+    vm.warp(block.timestamp + auction.endTime / 2);
+    assertLt(block.timestamp, auction.endTime);
+    p_max = dutchAuction.getMaxProportion(aliceAcc);
+    console.log("p_max: ", p_max);
+    dutchAuction.bid(aliceAcc, bobAcc, p_max.divideDecimal(2 * 1e18));
+
+
+    // checks bounds have not changed
+    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.insolvent, false);
+
+    // bid for the remaing amount of the account
+    dutchAuction.bid(aliceAcc, bobAcc, p_max);
+    assertEq(auction.ongoing, false);
+    assertEq(auction.insolvent, false);
+  }
+
+  /////////////
+  // helpers //
+  /////////////
+
+  function createAuctionOnUser(uint accountId, int margin, int invMargin) public {
+    vm.startPrank(address(manager));
+    manager.giveAssets(accountId);
+    manager.depositMargin(accountId, margin);
+    manager.setMarginForPortfolio(accountId, invMargin);
+    dutchAuction.startAuction(accountId);
+    vm.stopPrank();
+  }
+} 

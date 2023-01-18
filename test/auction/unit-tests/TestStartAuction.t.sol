@@ -320,8 +320,9 @@ contract UNIT_TestStartAuction is Test {
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, auction.auction.upperBound);
     assertGt(currentBidPrice, 0);
-
-    // getting the max proportion
+    
+    
+    // getting the max proportion 
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertEq(percentageHelper(maxProportion), 653);
     // TODO: check this value in the sim
