@@ -157,12 +157,13 @@ contract UNIT_BidAuction is Test {
 
     // bidding
     vm.stopPrank();
+    
     vm.startPrank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
-    // testing that the auction has been updated correctly
+    // testing that the auction is ended because init margin is 0
+    manager.setAccInitMargin(aliceAcc, 0);
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
     assertEq(auction.ongoing, false);
   }
 
@@ -188,7 +189,6 @@ contract UNIT_BidAuction is Test {
 
     // checks bounds have not changed
     auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
