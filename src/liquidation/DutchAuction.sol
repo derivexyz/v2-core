@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 // interfaces
 import "../interfaces/IPCRM.sol";
+import "../interfaces/ISecurityModule.sol";
+import "../interfaces/ICashAsset.sol";
 import "../interfaces/IDutchAuction.sol";
 import "../Accounts.sol";
 
@@ -77,6 +79,12 @@ contract DutchAuction is IDutchAuction, Owned {
   /// @dev The risk manager that is the parent of the dutch auction contract
   IPCRM public immutable riskManager;
 
+  /// @dev The security module that will help pay out for insolvent auctinos
+  ISecurityModule public immutable securityModule;
+
+  /// @dev The cash asset address, will be used to socialize losses when there's systematic insolvency
+  ICashAsset public immutable cash;
+
   /// @dev The accounts contract for resolving address to accountIds
   Accounts public immutable accounts;
 
@@ -87,9 +95,11 @@ contract DutchAuction is IDutchAuction, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address _riskManager, address _accounts) Owned() {
-    riskManager = IPCRM(_riskManager);
-    accounts = Accounts(_accounts);
+  constructor(IPCRM _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Owned() {
+    riskManager = _riskManager;
+    accounts = _accounts;
+    securityModule = _securityModule;
+    cash = _cash;
   }
 
   /**
@@ -182,9 +192,20 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     if (auctions[accountId].insolvent) {
-      // TODO: Anton
       // This case someone is getting payed to take on the risk
-      // whole portfolio can be liquidated thus amount can be any value
+      uint amountToPay = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(percentOfAccount);
+      // we first ask the security module to compensate the bidder
+      uint amountPaid = securityModule.requestPayout(bidderId, amountToPay);
+
+      // if amount paid is less than we requested: we trigger socialize losses on cash asset
+      // which print cash to the bidder
+      if (amountToPay > amountPaid) {
+        uint loss = amountToPay - amountPaid;
+        cash.socializeLoss(loss, bidderId);
+      }
+
+      // ask the risk manager to exchange hands
+      riskManager.executeBid(accountId, bidderId, percentOfAccount, 0);
     } else {
       uint p_max = _getMaxProportion(accountId);
       percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
@@ -240,7 +261,15 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    return ++auction.stepInsolvent;
+    // todo: logic to prevnet spamming based on time
+
+    uint newStep = ++auction.stepInsolvent;
+
+    if (newStep > parameters.lengthOfAuction) {
+      revert DA_MaxStepReachedInsolventAuction(accountId);
+    }
+
+    return newStep;
   }
 
   /**
@@ -408,10 +437,11 @@ contract DutchAuction is IDutchAuction, Owned {
     if (!auction.ongoing) {
       revert DA_AuctionNotStarted(accountId);
     }
-    int upperBound = auction.auction.upperBound;
     if (auction.insolvent) {
-      return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
+      uint numSteps = auction.stepInsolvent;
+      return 0 - auction.dv.multiplyDecimal(numSteps).toInt256();
     } else {
+      int upperBound = auction.auction.upperBound;
       int bid = upperBound
         - auction.dv.multiplyDecimal((block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval))
           .toInt256();

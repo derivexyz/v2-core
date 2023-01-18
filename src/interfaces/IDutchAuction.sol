@@ -61,4 +61,7 @@ interface IDutchAuction {
 
   /// @dev emitted when a user tries to terminate an insolvent Auction
   error DA_AuctionCannotTerminate(uint accountId);
+
+  /// @dev emmited when a increase the step for an insolvent auction that has already reach its steps
+  error DA_MaxStepReachedInsolventAuction(uint accountId);
 }

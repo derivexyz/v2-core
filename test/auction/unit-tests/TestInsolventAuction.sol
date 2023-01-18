@@ -7,6 +7,7 @@ import "../../../src/liquidation/DutchAuction.sol";
 import "../../../src/Accounts.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
+import "../../shared/mocks/MockSM.sol";
 
 import "../../../src/liquidation/DutchAuction.sol";
 
@@ -22,6 +23,7 @@ contract UNIT_TestInvolventAuction is Test {
   MockERC20 usdc;
   MockAsset usdcAsset;
   MockManager manager;
+  MockSM sm;
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
@@ -51,12 +53,14 @@ contract UNIT_TestInvolventAuction is Test {
 
     // usdc asset: deposit with usdc, cannot be negative
     usdcAsset = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
-    usdcAsset = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
 
     /* Risk Manager */
     manager = new MockManager(address(account));
 
-    dutchAuction = new DutchAuction(address(manager), address(account));
+    // mock cash
+    sm = new MockSM(account, usdcAsset);
+
+    dutchAuction = new DutchAuction(IPCRM(address(manager)), account, sm, ICashAsset(address(usdcAsset)));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
