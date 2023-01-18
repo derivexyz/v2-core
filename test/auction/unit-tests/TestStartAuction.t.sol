@@ -69,7 +69,8 @@ contract UNIT_TestStartAuction is Test {
         lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18
+        inversePortfolioModifier: 1e18,
+        stepIntervalInsolvent: 0
       })
     );
 
@@ -78,7 +79,8 @@ contract UNIT_TestStartAuction is Test {
       lengthOfAuction: 200,
       securityModule: address(1),
       portfolioModifier: 1e18,
-      inversePortfolioModifier: 1e18
+      inversePortfolioModifier: 1e18,
+      stepIntervalInsolvent: 0
     });
   }
 

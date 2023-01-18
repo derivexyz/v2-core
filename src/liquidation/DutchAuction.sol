@@ -264,7 +264,7 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    if (auction.lastStep < block.timestamp) {
+    if (auction.lastStep < block.timestamp + parameters.stepIntervalInsolvent && auction.lastStep != 0) {
       revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.stepIntervalInsolvent);
     }
 
@@ -272,6 +272,8 @@ contract DutchAuction is IDutchAuction, Owned {
     if (newStep > parameters.lengthOfAuction) {
       revert DA_MaxStepReachedInsolventAuction();
     }
+
+    auction.lastStep = block.timestamp;
 
     return newStep;
   }
@@ -367,6 +369,7 @@ contract DutchAuction is IDutchAuction, Owned {
       endTime: block.timestamp + parameters.lengthOfAuction, // half the auction length as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
+      lastStep: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: 0})
     });
   }
@@ -388,6 +391,7 @@ contract DutchAuction is IDutchAuction, Owned {
       endTime: block.timestamp + parameters.lengthOfAuction, // half the length of the auction as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
+      lastStep: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
     });
     emit Insolvent(accountId);
