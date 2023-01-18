@@ -8,7 +8,7 @@ import "../../src/Accounts.sol";
 import "../shared/mocks/MockERC20.sol";
 import "../shared/mocks/MockAsset.sol";
 import "../shared/mocks/MockSM.sol";
-
+import "./mocks/MockCashAsset.sol";
 import "../../src/liquidation/DutchAuction.sol";
 
 import "../shared/mocks/MockManager.sol";
@@ -24,7 +24,7 @@ contract DutchAuctionBase is Test {
   Accounts account;
   MockSM sm;
   MockERC20 usdc;
-  MockAsset usdcAsset;
+  MockCash usdcAsset;
   MockAsset optionAsset;
   MockIPCRM manager;
   MockFeed feed;
@@ -39,7 +39,7 @@ contract DutchAuctionBase is Test {
     usdc = new MockERC20("usdc", "USDC");
 
     // usdc asset: deposit with usdc, cannot be negative
-    usdcAsset = new MockAsset(IERC20(usdc), account, false);
+    usdcAsset = new MockCash(IERC20(usdc), account);
 
     // optionAsset: not allow deposit, can be negative
     optionAsset = new MockAsset(IERC20(address(0)), account, true);
@@ -49,13 +49,14 @@ contract DutchAuctionBase is Test {
 
     // mock cash
     sm = new MockSM(account, usdcAsset);
+    sm.createAccountForSM(manager);
 
     /*
      Feed for Spot*/
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = dutchAuction = new DutchAuction(manager, account, sm, ICashAsset(address(0)));
+    dutchAuction = dutchAuction = new DutchAuction(manager, account, sm, usdcAsset);
   }
 
   function mintAndDeposit(

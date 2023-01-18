@@ -41,7 +41,7 @@ contract MockAsset is IAsset {
     allowNegativeBalance = allowNegativeBalance_;
   }
 
-  function deposit(uint recipientAccount, uint subId, uint amount) external {
+  function deposit(uint recipientAccount, uint subId, uint amount) external virtual {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
@@ -57,7 +57,7 @@ contract MockAsset is IAsset {
   }
 
   // subid = 0
-  function deposit(uint recipientAccount, uint amount) external {
+  function deposit(uint recipientAccount, uint amount) external virtual {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
@@ -72,7 +72,7 @@ contract MockAsset is IAsset {
     token.transferFrom(msg.sender, address(this), amount);
   }
 
-  function withdraw(uint accountId, uint amount, address recipientAccount) external {
+  function withdraw(uint accountId, uint amount, address recipientAccount) external virtual {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,
