@@ -11,6 +11,9 @@ import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 
+// forge testing
+import "forge-std/Test.sol";
+
 contract MockIPCRM is IPCRM, IManager {
   using SafeCast for int;
   using SafeCast for uint;
@@ -36,17 +39,18 @@ contract MockIPCRM is IPCRM, IManager {
     // TODO: filler code
   }
 
-  // TODO: needs to be expanded upon next sprint to make sure that 
+  // TODO: needs to be expanded upon next sprint to make sure that
   // it can handle the insolvency case properly
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     virtual
     returns (int finalInitialMargin, ExpiryHolding[] memory, int cash)
   {
-
     if (cashAmount > 0) {
       accMargin[accountId] += cashAmount.toInt256();
-    } 
+    } else {
+      console.log("cash amount was negative");
+    }
 
     portMargin[accountId] = (portMargin[accountId] * portion.toInt256()) / 1e18;
   }
@@ -141,7 +145,11 @@ contract MockIPCRM is IPCRM, IManager {
     portMargin[accountId] = margin;
   }
 
-  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings, uint accountId) external view returns (int) {
+  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings, uint accountId)
+    external
+    view
+    returns (int)
+  {
     return portMargin[accountId];
   }
 

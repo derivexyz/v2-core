@@ -38,6 +38,8 @@ interface IPCRM {
 
   function getCashAmount(uint accountId) external view returns (int);
 
-  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings, uint accountId) external view returns (int);
-
+  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings, uint accountId)
+    external
+    view
+    returns (int);
 }

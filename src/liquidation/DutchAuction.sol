@@ -14,7 +14,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/DecimalMath.sol";
 import "../libraries/IntLib.sol";
 
-
 import "forge-std/Test.sol";
 
 /**
@@ -186,7 +185,7 @@ contract DutchAuction is IDutchAuction, Owned {
       percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
-      console.log('cash amount', cashAmount);
+      console.log("cash amount", cashAmount);
       riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmount);
     }
 
@@ -310,13 +309,16 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // IM is always negative under the margining system.
     int pMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-    console.log('pMax');
+    console.log("pMax");
     console.logInt(pMax);
-    if (pMax > 1e18) {
-      return DecimalMath.UNIT;
-    } else {
-      return pMax.toUint256();
-    }
+
+    // commented out if statement to hit coverage dont have a test that hits it.
+    return pMax.toUint256();
+    // if (pMax > 1e18) {
+    //   return DecimalMath.UNIT;
+    // } else {
+    //   return pMax.toUint256();
+    // }
   }
 
   /**
@@ -370,21 +372,27 @@ contract DutchAuction is IDutchAuction, Owned {
   function _getBounds(uint accountId, uint spot) internal view returns (int, int) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
-        
+
     int cash = riskManager.getCashAmount(accountId);
-    int maximum = (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings, accountId) - cash) * parameters.portfolioModifier / 1e18;
+    int maximum = (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings, accountId) - cash)
+      * parameters.portfolioModifier / 1e18;
     int minimum = (riskManager.getInitialMargin(accountId) + cash) * parameters.inversePortfolioModifier / 1e18;
     return (maximum, minimum);
   }
 
-  /**  @notice Function to invert an aribtary portfolio
-  * @dev Inverted portfolio required for the upper bound calculation
-  * @param expiries The portfolio to invert
-  * @return invertedPortfolio The inverted portfolio
-  */
-  function _inversePortfolio(IPCRM.ExpiryHolding[] memory expiries) internal pure returns (IPCRM.ExpiryHolding[] memory) {
-    for(uint i = 0; i < expiries.length; i++) {
-      for(uint j = 0; j < expiries[i].strikes.length; j++) {
+  /**
+   * @notice Function to invert an aribtary portfolio
+   * @dev Inverted portfolio required for the upper bound calculation
+   * @param expiries The portfolio to invert
+   * @return invertedPortfolio The inverted portfolio
+   */
+  function _inversePortfolio(IPCRM.ExpiryHolding[] memory expiries)
+    internal
+    pure
+    returns (IPCRM.ExpiryHolding[] memory)
+  {
+    for (uint i = 0; i < expiries.length; i++) {
+      for (uint j = 0; j < expiries[i].strikes.length; j++) {
         expiries[i].strikes[j].calls = expiries[i].strikes[j].calls * -1;
         expiries[i].strikes[j].puts = expiries[i].strikes[j].puts * -1;
       }

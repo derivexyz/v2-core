@@ -5,9 +5,5 @@ import "forge-std/Test.sol";
 
 // TODO: all mech tests.
 contract UNIT_TestMech is Test {
-
-
-  // have a look at the other files in this folder for examples
-  
-
+// have a look at the other files in this folder for examples
 }
