@@ -97,6 +97,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     int cashAfter = account.getBalance(bobAcc, usdcAsset, 0);
 
     assertEq(cashAfter - cashBefore, expectedTotalPayoutFromSM * 2 / 10);
+    assertEq(usdcAsset.isSocialized(), false);
   }
 
   function testBidForInsolventAuctionMakesSMInsolvent() public {
