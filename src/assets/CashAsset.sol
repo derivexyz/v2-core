@@ -294,12 +294,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     needAllowance = adjustment.amount < 0;
 
     // Update totalSupply and totalBorrow amounts only if the call is not from manager
-    // If the call is from manager, the call is triggered from managerAdjustment hook 
-    // from manager during settlement. 
+    // If the call is from manager, the call is triggered from managerAdjustment hook
+    // from manager during settlement.
     if (caller != address(manager)) {
       _updateSupplyAndBorrow(preBalance, finalBalance);
     }
-    
   }
 
   /**
