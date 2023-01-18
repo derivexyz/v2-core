@@ -29,12 +29,12 @@ contract SpotJumpOracle {
     uint32 start;
     // 150 bps would imply [0-1.5%, 1.5-3.0%, ...]
     uint32 width;
-    // sec until jump is discarded
-    uint32 duration;
-    // sec until value is considered stale
+    // amount of sec that jump is considered in .getMaxJump()
     uint32 secToJumpStale;
     // last timestamp of update
-    uint32 jumpUpdatedAt;
+    uint32 oracleUpdatedAt;
+    // sec until oracle considered unusable and .getMaxJump() reverts
+    uint32 secToOracleStale;
     // last timestamp of reference price update
     uint32 referenceUpdatedAt;
     // sec until reference price is considered stale
@@ -100,7 +100,7 @@ contract SpotJumpOracle {
     // stale reference price is used for safety
     uint32 jump = _calcSpotJump(livePrice, memParams.referencePrice);
     _maybeStoreJump(memParams.start, memParams.width, jump, currentTime);
-    memParams.jumpUpdatedAt = currentTime;
+    memParams.oracleUpdatedAt = currentTime;
 
     // update reference price if stale
     if (memParams.referenceUpdatedAt + memParams.secToReferenceStale < currentTime) {
@@ -123,9 +123,9 @@ contract SpotJumpOracle {
     JumpParams memory memParams = params;
     uint32 currentTime = uint32(block.timestamp);
 
-    // revert if oracle has not been updated within 'secToJumpStale'
-    if (currentTime - memParams.jumpUpdatedAt > memParams.secToJumpStale) {
-      revert SJO_OracleIsStale(currentTime, memParams.jumpUpdatedAt, memParams.secToJumpStale);
+    // revert if oracle has not been updated within 'secToOracleStale'
+    if (currentTime - memParams.oracleUpdatedAt > memParams.secToOracleStale) {
+      revert SJO_OracleIsStale(currentTime, memParams.oracleUpdatedAt, memParams.secToOracleStale);
     }
 
     // traverse jumps in descending order, finding the first non-stale jump
@@ -133,7 +133,7 @@ contract SpotJumpOracle {
     uint length = memJumps.length;
     uint32 i = uint32(length) - 1;
     while (i > 0 && jump == 0) {
-      if (memJumps[i] + memParams.duration > currentTime) {
+      if (memJumps[i] + memParams.secToJumpStale > currentTime) {
         // if jump value not stale, return
         jump = memParams.start + memParams.width * (i + 1);
       }

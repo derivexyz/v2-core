@@ -108,9 +108,9 @@ contract PCRMSpotJumpOracleGas is Script {
     SpotJumpOracle.JumpParams memory params = SpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
-      duration: uint32(10 days),
-      secToJumpStale: uint32(30 minutes),
-      jumpUpdatedAt: uint32(block.timestamp),
+      secToJumpStale: uint32(10 days),
+      secToOracleStale: uint32(30 minutes),
+      oracleUpdatedAt: uint32(block.timestamp),
       referenceUpdatedAt: uint32(block.timestamp),
       secToReferenceStale: uint32(2 hours),
       referencePrice: 1000e18
