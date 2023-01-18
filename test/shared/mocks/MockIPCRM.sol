@@ -23,7 +23,9 @@ contract MockIPCRM is IPCRM, IManager {
 
   mapping(uint => int) public accMargin;
   mapping(uint => bool) public accHasAssets;
-  mapping(uint => int) public portMargin;
+
+  // next init margin that should be returned when calling getInitialMarginForPortfolio
+  int public portMargin;
   ExpiryHolding[] public userAcc; // just a result that can be set to be returned when testing
 
   constructor(address _account) {
@@ -52,7 +54,7 @@ contract MockIPCRM is IPCRM, IManager {
       console.log("cash amount was negative");
     }
 
-    portMargin[accountId] = (portMargin[accountId] * portion.toInt256()) / 1e18;
+    // portMargin[accountId] = (portMargin[accountId] * portion.toInt256()) / 1e18;
   }
 
   function getSpot() external view virtual returns (uint spot) {
@@ -141,16 +143,12 @@ contract MockIPCRM is IPCRM, IManager {
     }
   }
 
-  function setMarginForPortfolio(uint accountId, int margin) external {
-    portMargin[accountId] = margin;
+  function setMarginForPortfolio(int margin) external {
+    portMargin = margin;
   }
 
-  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings, uint accountId)
-    external
-    view
-    returns (int)
-  {
-    return portMargin[accountId];
+  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory) external view returns (int) {
+    return portMargin;
   }
 
   function test() public {}

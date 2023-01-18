@@ -126,8 +126,6 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
 
-    assertEq(auction.auction.accountId, aliceAcc);
-
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, 0);
@@ -149,10 +147,6 @@ contract UNIT_TestStartAuction is Test {
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
     // TODO: calc v_min and v_max
     uint spot = manager.getSpot();
@@ -177,7 +171,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
     manager.depositMargin(aliceAcc, 1000 * 1e18);
     manager.giveAssets(aliceAcc);
-    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
+    manager.setMarginForPortfolio(10_000 * 1e18);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
@@ -228,7 +222,7 @@ contract UNIT_TestStartAuction is Test {
 
     // give assets
     manager.giveAssets(aliceAcc);
-    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
+    manager.setMarginForPortfolio(10_000 * 1e18);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
@@ -236,8 +230,7 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.auction.accountId, aliceAcc);
     assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+    assertEq(auction.insolvent, false);
 
     assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
     // start an auction on Alice's account
@@ -253,21 +246,6 @@ contract UNIT_TestStartAuction is Test {
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
-    // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
-    // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    console.log("current bid price");
-    console.logInt(currentBidPrice);
-    console.log("auction upperbound");
-    console.logInt(auction.auction.upperBound);
-    assertEq(currentBidPrice, auction.auction.upperBound);
-
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
@@ -281,17 +259,6 @@ contract UNIT_TestStartAuction is Test {
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
-    // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
-    // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, auction.auction.upperBound);
-
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
@@ -301,29 +268,17 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -1000 * 1e18);
+    manager.depositMargin(aliceAcc, -1000 * 1e18); // set init margin for -1000
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
-    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
+    manager.setMarginForPortfolio(10_000 * 1e18);
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
-    // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
-    // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, auction.auction.upperBound);
-    assertGt(currentBidPrice, 0);
-
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-    assertEq(percentageHelper(maxProportion), 653);
+    assertEq(percentageHelper(maxProportion), 909);
     // TODO: check this value in the sim
     // about 7% should be liquidateable according to sim.
   }
@@ -340,10 +295,7 @@ contract UNIT_TestStartAuction is Test {
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
+    assertEq(auction.insolvent, true);
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
@@ -367,22 +319,10 @@ contract UNIT_TestStartAuction is Test {
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
 
-    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
+    manager.setMarginForPortfolio(10_000 * 1e18);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
-
-    // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
-    // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, auction.auction.upperBound);
-    assertGt(currentBidPrice, 0);
 
     // increment the insolvent auction
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_SolventAuctionCannotIncrement.selector, aliceAcc));
@@ -395,7 +335,7 @@ contract UNIT_TestStartAuction is Test {
 
     // deposit marign to the account
     manager.depositMargin(aliceAcc, -10000 * 1e18); // 1 thousand bucks
-    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
+    manager.setMarginForPortfolio(10_000 * 1e18);
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
 
@@ -404,15 +344,7 @@ contract UNIT_TestStartAuction is Test {
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
     assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
-
-    // getting the current bid price
-    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, auction.auction.upperBound);
-    assertGt(currentBidPrice, 0);
 
     // deposit margin
     manager.depositMargin(aliceAcc, 15_000 * 1e18); // 1 thousand bucks

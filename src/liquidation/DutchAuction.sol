@@ -374,8 +374,8 @@ contract DutchAuction is IDutchAuction, Owned {
     IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
 
     int cash = riskManager.getCashAmount(accountId);
-    int maximum = (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings, accountId) - cash)
-      * parameters.portfolioModifier / 1e18;
+    int maximum =
+      (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cash) * parameters.portfolioModifier / 1e18;
     int minimum = (riskManager.getInitialMargin(accountId) + cash) * parameters.inversePortfolioModifier / 1e18;
     return (maximum, minimum);
   }

@@ -147,7 +147,7 @@ contract UNIT_BidAuction is Test {
     manager.giveAssets(aliceAcc);
 
     // set the initialMargin result for the portfolio
-    manager.setMarginForPortfolio(aliceAcc, 10_000 * 1e18);
+    manager.setMarginForPortfolio(10_000 * 1e18);
 
     dutchAuction.startAuction(aliceAcc);
 
@@ -219,7 +219,7 @@ contract UNIT_BidAuction is Test {
     vm.startPrank(address(manager));
     manager.giveAssets(accountId);
     manager.depositMargin(accountId, margin);
-    manager.setMarginForPortfolio(accountId, invMargin);
+    manager.setMarginForPortfolio(invMargin);
     dutchAuction.startAuction(accountId);
     vm.stopPrank();
   }
