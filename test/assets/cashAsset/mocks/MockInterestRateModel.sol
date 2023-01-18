@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/DecimalMath.sol";
+import "../../../../src/interfaces/IInterestRateModel.sol";
 
 /**
  * @title Interest Rate Model
@@ -10,16 +11,13 @@ import "synthetix/DecimalMath.sol";
  * @notice Contract that implements the logic for calculating the borrow rate
  */
 
-contract MockInterestRateModel {
+contract MockInterestRateModel is IInterestRateModel {
   using SafeCast for uint;
   using DecimalMath for uint;
 
   /////////////////////
   // State Variables //
   /////////////////////
-
-  ///@dev MOCKED static value
-  uint public borrowInterestFactor;
 
   ///@dev MOCKED static value
   uint public borrowRate;
@@ -30,11 +28,9 @@ contract MockInterestRateModel {
 
   /**
    * @notice Construct an interest rate model
-   * @param _borrowInterestFactor The mocked borrow interest factor
    * @param _borrowRate The mocled borrow rate The rate of increase in interest rate wrt utilization
    */
-  constructor(uint _borrowInterestFactor, uint _borrowRate) {
-    borrowInterestFactor = _borrowInterestFactor;
+  constructor(uint _borrowRate) {
     borrowRate = _borrowRate;
   }
 
@@ -50,8 +46,8 @@ contract MockInterestRateModel {
    * @param borrowRate The current borrow rate for the asset
    * @return Compounded interest rate: e^(rt) - 1
    */
-  function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external view returns (uint) {
-    return borrowInterestFactor;
+  function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure override returns (uint) {
+    return 0.5 * 1e18; // must be pure function
   }
 
   /**

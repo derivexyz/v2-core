@@ -11,8 +11,8 @@ import "synthetix/DecimalMath.sol";
 import "../interfaces/IAsset.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
+import "../interfaces/IInterestRateModel.sol";
 import "../libraries/ConvertDecimals.sol";
-import "./InterestRateModel.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
@@ -36,7 +36,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   IERC20Metadata public immutable stableAsset;
 
   ///@dev InterestRateModel contract address
-  InterestRateModel public rateModel;
+  IInterestRateModel public rateModel;
 
   ///@dev The address of liqudation module, which can trigger call of insolvency
   address public immutable liquidationModule;
@@ -89,7 +89,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   constructor(
     IAccounts _accounts,
     IERC20Metadata _stableAsset,
-    InterestRateModel _rateModel,
+    IInterestRateModel _rateModel,
     uint _smId,
     address _liquidationModule
   ) {
@@ -123,7 +123,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev Accures interest to make sure indexes are up to date before changing the model
    * @param _rateModel Interest rate model address
    */
-  function setInterestRateModel(InterestRateModel _rateModel) external onlyOwner {
+  function setInterestRateModel(IInterestRateModel _rateModel) external onlyOwner {
     _accrueInterest();
     rateModel = _rateModel;
 
