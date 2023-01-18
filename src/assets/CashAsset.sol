@@ -70,7 +70,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev The security module fee represented as a mantissa (0-1e18)
   uint public smFeePercentage;
-  
+
   ///@dev The stored security module fee to return to after an insolvency event
   uint public previousSmFeePercentage;
 

@@ -98,6 +98,5 @@ contract UNIT_CashAssetWithdrawFee is Test {
 
     assertEq(cashAsset.smFeePercentage(), smFeeCut);
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), false);
-
   }
 }

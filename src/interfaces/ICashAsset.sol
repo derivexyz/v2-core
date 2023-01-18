@@ -43,7 +43,7 @@ interface ICashAsset {
   /// @dev emitted when withdraw fee is enabled
   ///      this would imply there is an insolvency and loss is applied to all cash holders
   event WithdrawFeeEnabled(uint exchangeRate);
-  
+
   /// @dev emitted when withdraw fee is disabled
   ///      this can only occur if the cash asset is solvent again
   event WithdrawFeeDisabled(uint exchangeRate);
