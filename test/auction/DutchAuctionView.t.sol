@@ -114,7 +114,8 @@ contract UNIT_DutchAuctionView is Test {
         stepInterval: 2,
         lengthOfAuction: 200,
         securityModule: address(1),
-        spotShock: 11 * 1e17
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18
       })
     );
 

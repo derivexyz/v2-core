@@ -7,13 +7,29 @@ import "../../../src/interfaces/IAsset.sol";
 import "../../../src/interfaces/IAccounts.sol";
 
 import "synthetix/DecimalMath.sol";
+import "openzeppelin/utils/math/SafeMath.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
+
+// forge testing
+import "forge-std/Test.sol";
 
 contract MockIPCRM is IPCRM, IManager {
+  using SafeCast for int;
+  using SafeCast for uint;
+  using DecimalMath for uint;
+
   address account;
 
-  mapping(uint => int) public accMargin;
+  mapping(uint => int) public initMargin;
   mapping(uint => bool) public accHasAssets;
+
+  // next init margin that should be returned when calling getInitialMarginForPortfolio
+  int public portMargin;
   ExpiryHolding[] public userAcc; // just a result that can be set to be returned when testing
+
+  // if set to true, assume next executeBid will bring init margin to 0
+  bool nextIsEndingBid = false;
 
   constructor(address _account) {
     account = _account;
@@ -28,12 +44,29 @@ contract MockIPCRM is IPCRM, IManager {
     // TODO: filler code
   }
 
+  // TODO: needs to be expanded upon next sprint to make sure that
+  // it can handle the insolvency case properly
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     virtual
     returns (int finalInitialMargin, ExpiryHolding[] memory, int cash)
   {
-    // TODO: filler code
+    if (cashAmount > 0) {
+      initMargin[accountId] += cashAmount.toInt256();
+    } else {
+      console.log("cash amount was negative");
+    }
+
+    if (nextIsEndingBid) {
+      nextIsEndingBid = false;
+      initMargin[accountId] = 0;
+    }
+
+    // portMargin[accountId] = (portMargin[accountId] * portion.toInt256()) / 1e18;
+  }
+
+  function setNextIsEndingBid() external {
+    nextIsEndingBid = true;
   }
 
   function getSpot() external view virtual returns (uint spot) {
@@ -46,9 +79,9 @@ contract MockIPCRM is IPCRM, IManager {
     return 0;
   }
 
-  function getInitialMargin(uint accountId) external virtual returns (int) {
+  function getInitialMargin(uint accountId) external view virtual returns (int) {
     // TODO: filler code
-    return accMargin[accountId];
+    return initMargin[accountId];
   }
 
   function getMaintenanceMargin(uint accountId) external returns (uint) {
@@ -97,9 +130,8 @@ contract MockIPCRM is IPCRM, IManager {
     // TODO: filler code
   }
 
-  function depositMargin(uint accountId, int amount) external returns (int) {
-    accMargin[accountId] += amount;
-    return accMargin[accountId];
+  function setAccInitMargin(uint accountId, int amount) external {
+    initMargin[accountId] = amount;
   }
 
   function giveAssets(uint accountId) external {
@@ -120,6 +152,14 @@ contract MockIPCRM is IPCRM, IManager {
         userAcc[i].strikes[j].forwards = expiryHoldings[i].strikes[j].forwards;
       }
     }
+  }
+
+  function setMarginForPortfolio(int margin) external {
+    portMargin = margin;
+  }
+
+  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory) external view returns (int) {
+    return portMargin;
   }
 
   function test() public {}
