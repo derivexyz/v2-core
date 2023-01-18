@@ -126,4 +126,26 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
 
     assertEq(usdcAsset.isSocialized(), true);
   }
+
+  function testIncraseStepMax() public {
+    int initMargin = -1000_000 * 1e18;
+    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
+
+    dutchAuction.setDutchAuctionParameters(
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 1,
+        securityModule: address(1),
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18
+      })
+    );
+    vm.prank(address(manager));
+    dutchAuction.startAuction(aliceAcc);
+
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+
+    vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+  }
 }

@@ -266,7 +266,7 @@ contract DutchAuction is IDutchAuction, Owned {
     uint newStep = ++auction.stepInsolvent;
 
     if (newStep > parameters.lengthOfAuction) {
-      revert DA_MaxStepReachedInsolventAuction(accountId);
+      revert DA_MaxStepReachedInsolventAuction();
     }
 
     return newStep;
