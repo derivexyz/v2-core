@@ -354,7 +354,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId The id of the account being liquidated
    */
   function _startSolventAuction(int upperBound, uint accountId) internal {
-    uint dv = IntLib.abs(upperBound).divideDecimal(parameters.lengthOfAuction); // as the auction starts in the positive, recalculate when insolvency occurs
+    uint dv = IntLib.abs(upperBound) / parameters.lengthOfAuction; // as the auction starts in the positive, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
       insolvent: false,
@@ -374,7 +374,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account that is being liquidated
    */
   function _startInsolventAuction(int lowerBound, uint accountId) internal {
-    uint dv = IntLib.abs(lowerBound).divideDecimal(parameters.lengthOfAuction);
+    uint dv = IntLib.abs(lowerBound) / parameters.lengthOfAuction;
     // as the auction starts in the negative, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
@@ -439,12 +439,11 @@ contract DutchAuction is IDutchAuction, Owned {
     }
     if (auction.insolvent) {
       uint numSteps = auction.stepInsolvent;
-      return 0 - auction.dv.multiplyDecimal(numSteps).toInt256();
+      return 0 - (auction.dv * numSteps).toInt256();
     } else {
       int upperBound = auction.auction.upperBound;
       int bid = upperBound
-        - auction.dv.multiplyDecimal((block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval))
-          .toInt256();
+        - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
       // have to call markAsInsolvent before bid can be negative
       if (bid <= 0) {
         return 0;

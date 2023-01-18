@@ -13,18 +13,10 @@ import "../../../src/liquidation/DutchAuction.sol";
 
 import "../../shared/mocks/MockManager.sol";
 import "../../shared/mocks/MockFeed.sol";
+import "../DutchAuctionBase.sol";
+import "forge-std/console2.sol";
 
-contract UNIT_TestInvolventAuction is Test {
-  address alice;
-  address bob;
-  uint aliceAcc;
-  uint bobAcc;
-  Accounts account;
-  MockERC20 usdc;
-  MockAsset usdcAsset;
-  MockManager manager;
-  MockSM sm;
-  DutchAuction dutchAuction;
+contract UNIT_TestInvolventAuction is DutchAuctionBase {
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
   uint tokenSubId = 1000;
@@ -32,35 +24,6 @@ contract UNIT_TestInvolventAuction is Test {
   function setUp() public {
     deployMockSystem();
     setupAccounts();
-  }
-
-  function setupAccounts() public {
-    alice = address(0xaa);
-    bob = address(0xbb);
-    usdc.approve(address(usdcAsset), type(uint).max);
-    // usdcAsset.deposit(ownAcc, 0, 100_000_000e18);
-    aliceAcc = account.createAccount(alice, manager);
-    bobAcc = account.createAccount(bob, manager);
-  }
-
-  /// @dev deploy mock system
-  function deployMockSystem() public {
-    /* Base Layer */
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
-
-    /* Wrappers */
-    usdc = new MockERC20("usdc", "USDC");
-
-    // usdc asset: deposit with usdc, cannot be negative
-    usdcAsset = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
-
-    /* Risk Manager */
-    manager = new MockManager(address(account));
-
-    // mock cash
-    sm = new MockSM(account, usdcAsset);
-
-    dutchAuction = new DutchAuction(IPCRM(address(manager)), account, sm, ICashAsset(address(usdcAsset)));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
@@ -73,31 +36,30 @@ contract UNIT_TestInvolventAuction is Test {
     );
   }
 
-  function mintAndDeposit(
-    address user,
-    uint accountId,
-    MockERC20 token,
-    MockAsset assetWrapper,
-    uint subId,
-    uint amount
-  ) public {
-    token.mint(user, amount);
-
-    vm.startPrank(user);
-    token.approve(address(assetWrapper), type(uint).max);
-    assetWrapper.deposit(accountId, subId, amount);
-    vm.stopPrank();
-  }
-
   ///////////
   // TESTS //
   ///////////
 
-  /////////////////////////
-  // Permissions Tests ////
-  /////////////////////////
 
-  function testMarkingAuctionAsInvsolvent() public {
-    // TODO: add test here to be able to tell if an auction can be marked as insolvent.
+  function testStartInsolventAuction() public {
+    vm.startPrank(address(manager));
+
+    // deposit marign to the account
+    manager.depositMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.insolvent, true); // start as insolvent from the very beginning
+
+    console2.log(auction.dv);
+
+    // increment the insolvent auction
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertGt(0, currentBidPrice);
+    
   }
 }

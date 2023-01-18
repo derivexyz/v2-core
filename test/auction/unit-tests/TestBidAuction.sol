@@ -66,8 +66,8 @@ contract UNIT_BidAuction is Test {
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
-        stepInterval: 2 * DecimalMath.UNIT,
-        lengthOfAuction: 200 * DecimalMath.UNIT,
+        stepInterval: 2,
+        lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18
@@ -75,8 +75,8 @@ contract UNIT_BidAuction is Test {
     );
 
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
-      stepInterval: 2 * DecimalMath.UNIT,
-      lengthOfAuction: 200 * DecimalMath.UNIT,
+      stepInterval: 2,
+      lengthOfAuction: 200,
       securityModule: address(1),
       portfolioModifier: 1e18,
       inversePortfolioModifier: 1e18

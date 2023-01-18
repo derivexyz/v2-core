@@ -66,7 +66,7 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
         stepInterval: 1,
-        lengthOfAuction: 200 * DecimalMath.UNIT,
+        lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18
@@ -75,7 +75,7 @@ contract UNIT_TestStartAuction is Test {
 
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
       stepInterval: 1,
-      lengthOfAuction: 200 * DecimalMath.UNIT,
+      lengthOfAuction: 200,
       securityModule: address(1),
       portfolioModifier: 1e18,
       inversePortfolioModifier: 1e18
@@ -185,7 +185,7 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.insolvent, false);
     // fast forward
-    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 1);
+    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 100);
     assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
 
     // mark the auction as insolvent
@@ -293,7 +293,7 @@ contract UNIT_TestStartAuction is Test {
     // about 7% should be liquidateable according to sim.
   }
 
-  // TODO: need to improve the manager for this test
+  
   function testStartInsolventAuctionAndIncrement() public {
     vm.startPrank(address(manager));
 
