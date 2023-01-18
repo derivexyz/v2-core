@@ -44,7 +44,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
+    manager.setAccInitMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
