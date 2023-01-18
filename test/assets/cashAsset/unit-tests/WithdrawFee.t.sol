@@ -82,16 +82,21 @@ contract UNIT_CashAssetWithdrawFee is Test {
   }
 
   function testCanDisableWithdrawFeeAfterSystemRecovers() public {
+    uint smFeeCut = 0.5 * 1e18;
+    cashAsset.setSmFee(smFeeCut);
     // trigger insolvency
     vm.prank(liquidationModule);
     cashAsset.socializeLoss(depositedAmount, accountId);
 
+    // SM fee set to 100%
+    assertEq(cashAsset.smFeePercentage(), DecimalMath.UNIT);
     // some people donate USDC to the cashAsset contract
     usdc.mint(address(cashAsset), depositedAmount);
 
     // disable withdraw fee
     cashAsset.disableWithdrawFee();
 
+    assertEq(cashAsset.smFeePercentage(), smFeeCut);
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), false);
   }
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
@@ -71,6 +70,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   ///@dev The security module fee represented as a mantissa (0-1e18)
   uint public smFeePercentage;
+
+  ///@dev The stored security module fee to return to after an insolvency event
+  uint public previousSmFeePercentage;
 
   ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
   ///     In which case we turn on the withdraw fee to prevent bankrun
@@ -211,13 +213,16 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @notice disable withdraw fee when the cash asset is back to being solvent
+   * @notice Disable withdraw fee when the cash asset is back to being solvent
    */
   function disableWithdrawFee() external {
     uint exchangeRate = _getExchangeRate();
     if (exchangeRate >= 1e18 && temporaryWithdrawFeeEnabled) {
       temporaryWithdrawFeeEnabled = false;
+      smFeePercentage = previousSmFeePercentage;
     }
+
+    emit WithdrawFeeDisabled(exchangeRate);
   }
 
   /// @notice External function for updating totalSupply and totalBorrow with the accrued interest since last timestamp.
@@ -302,7 +307,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @notice triggered when a user wants to migrate an account to a new manager
+   * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
   function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
@@ -315,8 +320,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
   /**
    * @notice Liquidation module can report loss when there is insolvency.
-   *         This function will "print" the amount of cash to the target account
-   *         and socilize the loss to everyone in the system
+   *         This function will "print" the amount of cash to the target account if the SM is empty
+   *         and socialize the loss to everyone in the system
    *         this will result in turning on withdraw fee if the contract is indeed insolvent
    * @param lossAmountInCash Total amount of cash loss
    * @param accountToReceive Account to receive the new printed amount
@@ -339,6 +344,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     uint exchangeRate = _getExchangeRate();
     if (exchangeRate < 1e18) {
       temporaryWithdrawFeeEnabled = true;
+      previousSmFeePercentage = smFeePercentage;
+      smFeePercentage = DecimalMath.UNIT;
 
       emit WithdrawFeeEnabled(exchangeRate);
     }
@@ -357,7 +364,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   ////////////////////////////
 
   /**
-   * @dev revert if manager address is not whitelisted by this contract
+   * @dev Revert if manager address is not whitelisted by this contract
    * @param manager manager address
    */
   function _checkManager(address manager) internal view {
@@ -419,8 +426,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
   }
 
   /**
-   * @dev get exchange rate from cash asset to stable coin amount
-   * @dev this value should be 1 unless there's an insolvency
+   * @dev Get exchange rate from cash asset to stable coin amount
+   * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply - totalBorrow;
