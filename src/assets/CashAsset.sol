@@ -269,7 +269,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     AccountStructs.AssetAdjustment memory adjustment,
     int preBalance,
     IManager manager,
-    address /*caller*/
+    address caller
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
@@ -293,8 +293,12 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     // Need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    // Update totalSupply and totalBorrow amounts
-    _updateSupplyAndBorrow(preBalance, finalBalance);
+    // Update totalSupply and totalBorrow amounts only if the call is not from manager
+    // If the call is from manager, the call is triggered from managerAdjustment hook
+    // from manager during settlement.
+    if (caller != address(manager)) {
+      _updateSupplyAndBorrow(preBalance, finalBalance);
+    }
   }
 
   /**
