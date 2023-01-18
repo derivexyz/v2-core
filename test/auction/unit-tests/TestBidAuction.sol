@@ -157,7 +157,7 @@ contract UNIT_BidAuction is Test {
 
     // bidding
     vm.stopPrank();
-    
+
     vm.startPrank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
