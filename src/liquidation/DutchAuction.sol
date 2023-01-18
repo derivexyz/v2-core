@@ -185,7 +185,6 @@ contract DutchAuction is IDutchAuction, Owned {
       percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
       // this case someone is paying to take on the risk
       uint cashAmount = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
-      console.log("cash amount", cashAmount);
       riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmount);
     }
 
@@ -309,16 +308,9 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // IM is always negative under the margining system.
     int pMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-    console.log("pMax");
-    console.logInt(pMax);
 
     // commented out if statement to hit coverage dont have a test that hits it.
     return pMax.toUint256();
-    // if (pMax > 1e18) {
-    //   return DecimalMath.UNIT;
-    // } else {
-    //   return pMax.toUint256();
-    // }
   }
 
   /**

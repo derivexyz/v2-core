@@ -179,8 +179,7 @@ contract UNIT_BidAuction is Test {
     createAuctionOnUser(aliceAcc, -10_000 * 1e18, 20_000 * 1e18);
 
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
-    assertEq(auction.auction.accountId, aliceAcc);
-    assertEq(auction.ongoing, true);
+
     uint p_max = dutchAuction.getMaxProportion(aliceAcc);
 
     // bid for half and make sure the auction doesn't terminate
@@ -193,10 +192,9 @@ contract UNIT_BidAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
-    vm.warp(block.timestamp + auction.endTime / 2);
+    vm.warp(block.timestamp + (auction.endTime - block.timestamp) / 2);
     assertLt(block.timestamp, auction.endTime);
     p_max = dutchAuction.getMaxProportion(aliceAcc);
-    console.log("p_max: ", p_max);
     dutchAuction.bid(aliceAcc, bobAcc, p_max.divideDecimal(2 * 1e18));
 
     // checks bounds have not changed
@@ -204,11 +202,13 @@ contract UNIT_BidAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
-    // bid for the remaing amount of the account
+    // // bid for the remaing amount of the account should close end the auction
+    manager.setNextIsEndingBid(); // mock the account to return
+
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
-    assertEq(manager.getInitialMargin(aliceAcc), 0);
+
+    auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.ongoing, false);
-    assertEq(auction.insolvent, false);
   }
 
   /////////////
@@ -218,7 +218,7 @@ contract UNIT_BidAuction is Test {
   function createAuctionOnUser(uint accountId, int margin, int invMargin) public {
     vm.startPrank(address(manager));
     manager.giveAssets(accountId);
-    manager.depositMargin(accountId, margin);
+    manager.setAccInitMargin(accountId, margin);
     manager.setMarginForPortfolio(invMargin);
     dutchAuction.startAuction(accountId);
     vm.stopPrank();

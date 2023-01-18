@@ -169,7 +169,7 @@ contract UNIT_TestStartAuction is Test {
   // test that an auction is correcttly marked as insolvent
   function testInsolventAuction() public {
     vm.startPrank(address(manager));
-    manager.depositMargin(aliceAcc, 1000 * 1e18);
+    manager.setAccInitMargin(aliceAcc, 1000 * 1e18);
     manager.giveAssets(aliceAcc);
     manager.setMarginForPortfolio(10_000 * 1e18);
     // start an auction on Alice's account
@@ -241,7 +241,7 @@ contract UNIT_TestStartAuction is Test {
   function testGetMaxProportionNegativeMargin() public {
     vm.startPrank(address(manager));
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -100_000 * 1e18);
+    manager.setAccInitMargin(aliceAcc, -100_000 * 1e18);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -254,7 +254,7 @@ contract UNIT_TestStartAuction is Test {
   function testGetMaxProportionPositiveMargin() public {
     vm.startPrank(address(manager));
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, 1000 * 1e18);
+    manager.setAccInitMargin(aliceAcc, 1000 * 1e18);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -268,7 +268,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -1000 * 1e18); // set init margin for -1000
+    manager.setAccInitMargin(aliceAcc, -1000 * 1e18); // set init margin for -1000
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
@@ -288,7 +288,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
+    manager.setAccInitMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -314,7 +314,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
+    manager.setAccInitMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
@@ -334,7 +334,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -10000 * 1e18); // 1 thousand bucks
+    manager.setAccInitMargin(aliceAcc, -10000 * 1e18); // 1 thousand bucks
     manager.setMarginForPortfolio(10_000 * 1e18);
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
@@ -347,7 +347,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
 
     // deposit margin
-    manager.depositMargin(aliceAcc, 15_000 * 1e18); // 1 thousand bucks
+    manager.setAccInitMargin(aliceAcc, 15_000 * 1e18); // 1 thousand bucks
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
@@ -359,7 +359,7 @@ contract UNIT_TestStartAuction is Test {
     vm.startPrank(address(manager));
 
     // deposit marign to the account
-    manager.depositMargin(aliceAcc, -10000 * 1e18); // 1 million bucks
+    manager.setAccInitMargin(aliceAcc, -10000 * 1e18); // 1 million bucks
 
     // deposit assets to the account
     manager.giveAssets(aliceAcc);
