@@ -136,8 +136,7 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_AuctionAlreadyStarted(accountId);
     }
 
-    uint spot = riskManager.getSpot();
-    (int upperBound, int lowerBound) = _getBounds(accountId, spot);
+    (int upperBound, int lowerBound) = _getBounds(accountId);
     // covers the case where an auction could start as insolvent, upperbound < 0
     if (upperBound > 0) {
       _startSolventAuction(upperBound, accountId);
@@ -161,10 +160,9 @@ contract DutchAuction is IDutchAuction, Owned {
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode(accountId);
     }
-    uint spot = riskManager.getSpot();
 
     // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
-    (, int lowerBound) = _getBounds(accountId, spot);
+    (, int lowerBound) = _getBounds(accountId);
     _startInsolventAuction(lowerBound, accountId);
   }
 
@@ -304,10 +302,9 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset,
    */
-  function getBounds(uint accountId, uint spot) external view returns (int, int) {
-    return _getBounds(accountId, spot);
+  function getBounds(uint accountId) external view returns (int, int) {
+    return _getBounds(accountId);
   }
 
   /**
@@ -401,16 +398,15 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset,
    */
-  function _getBounds(uint accountId, uint spot) internal view returns (int, int) {
+  function _getBounds(uint accountId) internal view returns (int, int) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
 
-    int cash = riskManager.getCashAmount(accountId);
-    int maximum =
-      (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cash) * parameters.portfolioModifier / 1e18;
-    int minimum = (riskManager.getInitialMargin(accountId) + cash) * parameters.inversePortfolioModifier / 1e18;
+    int cashMargin = riskManager.getCashAmount(accountId);
+    int maximum = (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cashMargin)
+      * parameters.portfolioModifier / 1e18;
+    int minimum = (riskManager.getInitialMargin(accountId) + cashMargin) * parameters.inversePortfolioModifier / 1e18;
     return (maximum, minimum);
   }
 

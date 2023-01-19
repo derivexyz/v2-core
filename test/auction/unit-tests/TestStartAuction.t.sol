@@ -129,8 +129,7 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.startTime, block.timestamp);
     assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
-    uint spot = manager.getSpot();
-    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
+    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc);
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
 
@@ -156,9 +155,7 @@ contract UNIT_TestStartAuction is Test {
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
 
-    // TODO: calc v_min and v_max
-    uint spot = manager.getSpot();
-    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc, spot);
+    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc);
     assertEq(auction.auction.lowerBound, lowerBound);
     assertEq(auction.auction.upperBound, upperBound);
   }
