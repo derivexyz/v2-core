@@ -445,6 +445,7 @@ contract DutchAuction is IDutchAuction, Owned {
     if (!auction.ongoing) {
       revert DA_AuctionNotStarted(accountId);
     }
+    
     if (auction.insolvent) {
       uint numSteps = auction.stepInsolvent;
       return 0 - (auction.dv * numSteps).toInt256();
