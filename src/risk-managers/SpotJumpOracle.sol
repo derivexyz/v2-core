@@ -51,9 +51,10 @@ contract SpotJumpOracle {
   ISpotFeeds public spotFeeds;
   /// @dev id of feed used when querying price from spotFeeds
   uint public feedId;
-
+  /// @dev number of distinct jump buckets 
+  uint constant internal NUM_BUCKETS = 16;
   /// @dev each slot stores timestamp at which jump was stored
-  uint32[16] public jumps;
+  uint32[NUM_BUCKETS] public jumps;
   /// @dev stores all parameters required to store the jump
   JumpParams public params;
 
@@ -73,14 +74,14 @@ contract SpotJumpOracle {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps) {
+  constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[NUM_BUCKETS] memory _initialJumps) {
     spotFeeds = ISpotFeeds(_spotFeeds);
     feedId = _feedId;
     params = _params;
     jumps = _initialJumps;
 
     // ensure multiplication in _maybeStoreJump() does not overflow
-    if (uint(_initialJumps.length) * uint(_params.width) > UINT32_MAX) {
+    if (uint(NUM_BUCKETS) * uint(_params.width) > UINT32_MAX) {
       revert SJO_MaxJumpExceedsLimit();
     }
   }
@@ -132,9 +133,8 @@ contract SpotJumpOracle {
     }
 
     // traverse jumps in descending order, finding the first non-stale jump
-    uint32[16] memory memJumps = jumps;
-    uint32 length = uint32(memJumps.length);
-    for (uint32 i = length - 1; i > 0; i--) {
+    uint32[NUM_BUCKETS] memory memJumps = jumps;
+    for (uint32 i = uint32(NUM_BUCKETS) - 1; i > 0; i--) {
       if (memJumps[i] + memParams.secToJumpStale > currentTime) {
         // return largest jump that's not stale
         return memParams.start + memParams.width * (i + 1);
@@ -178,11 +178,9 @@ contract SpotJumpOracle {
    * @param timestamp Timestamp at which jump was calculated
    */
   function _maybeStoreJump(uint32 start, uint32 width, uint32 jump, uint32 timestamp) internal {
-    uint numBuckets = jumps.length;
-
     // if jump is greater than the last bucket, store in the last bucket
-    if (jump >= start + (width * numBuckets)) {
-      jumps[numBuckets - 1] = timestamp;
+    if (jump >= start + (width * NUM_BUCKETS)) {
+      jumps[NUM_BUCKETS - 1] = timestamp;
       return;
     }
 
