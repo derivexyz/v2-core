@@ -74,7 +74,7 @@ contract DutchAuction is IDutchAuction, Owned {
     // Big number: inversed modifier
     int inversePortfolioModifier;
     // Number, Amount of time between steps when the auction is insolvent
-    uint stepIntervalInsolvent;
+    uint secBetweenSteps;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -163,6 +163,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
     (, int lowerBound) = _getBounds(accountId);
+    auctions[accountId].lastStep = block.timestamp;
     _startInsolventAuction(lowerBound, accountId);
   }
 
@@ -262,8 +263,8 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    if (auction.lastStep < block.timestamp + parameters.stepIntervalInsolvent && auction.lastStep != 0) {
-      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.stepIntervalInsolvent);
+    if (block.timestamp < auction.lastStep + parameters.secBetweenSteps && auction.lastStep != 0) {
+      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.secBetweenSteps);
     }
 
     uint newStep = ++auction.stepInsolvent;
@@ -399,6 +400,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
    */
+   // TODO: investigate gas consumption after merge
   function _getBounds(uint accountId) internal view returns (int, int) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
@@ -425,6 +427,7 @@ contract DutchAuction is IDutchAuction, Owned {
       for (uint j = 0; j < expiries[i].strikes.length; j++) {
         expiries[i].strikes[j].calls = expiries[i].strikes[j].calls * -1;
         expiries[i].strikes[j].puts = expiries[i].strikes[j].puts * -1;
+        expiries[i].strikes[j].forwards = expiries[i].strikes[j].forwards * -1;
       }
     }
     return expiries;

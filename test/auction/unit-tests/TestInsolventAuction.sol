@@ -32,7 +32,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         securityModule: address(1),
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
-        stepIntervalInsolvent: 0
+        secBetweenSteps: 0
       })
     );
 
@@ -140,7 +140,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         securityModule: address(1),
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
-        stepIntervalInsolvent: 0
+        secBetweenSteps: 0
       })
     );
     vm.prank(address(manager));
@@ -163,7 +163,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         securityModule: address(1),
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
-        stepIntervalInsolvent: 100
+        secBetweenSteps: 100
       })
     );
     vm.prank(address(manager));
@@ -175,7 +175,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
       abi.encodeWithSelector(
         IDutchAuction.DA_CannotStepBeforeCoolDownEnds.selector,
         block.timestamp,
-        block.timestamp + dutchAuction.getParameters().stepIntervalInsolvent
+        block.timestamp + dutchAuction.getParameters().secBetweenSteps
       )
     );
     dutchAuction.incrementInsolventAuction(aliceAcc);
