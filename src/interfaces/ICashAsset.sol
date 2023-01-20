@@ -36,6 +36,8 @@ interface ICashAsset is IAsset {
    */
   function withdraw(uint accountId, uint amount, address recipient) external;
 
+  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external;
+
   /**
    * @notice Liquidation module can report loss when there is insolvency.
    *         This function will "print" the amount of cash to the target account

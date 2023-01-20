@@ -7,22 +7,16 @@ import "../../../src/liquidation/DutchAuction.sol";
 import "../../../src/Accounts.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
+import "../../shared/mocks/MockSM.sol";
 
 import "../../../src/liquidation/DutchAuction.sol";
 
 import "../../shared/mocks/MockManager.sol";
 import "../../shared/mocks/MockFeed.sol";
+import "../DutchAuctionBase.sol";
+import "forge-std/console2.sol";
 
-contract UNIT_TestInvolventAuction is Test {
-  address alice;
-  address bob;
-  uint aliceAcc;
-  uint bobAcc;
-  Accounts account;
-  MockERC20 usdc;
-  MockAsset usdcAsset;
-  MockManager manager;
-  DutchAuction dutchAuction;
+contract UNIT_TestInvolventAuction is DutchAuctionBase {
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
   uint tokenSubId = 1000;
@@ -30,33 +24,6 @@ contract UNIT_TestInvolventAuction is Test {
   function setUp() public {
     deployMockSystem();
     setupAccounts();
-  }
-
-  function setupAccounts() public {
-    alice = address(0xaa);
-    bob = address(0xbb);
-    usdc.approve(address(usdcAsset), type(uint).max);
-    // usdcAsset.deposit(ownAcc, 0, 100_000_000e18);
-    aliceAcc = account.createAccount(alice, manager);
-    bobAcc = account.createAccount(bob, manager);
-  }
-
-  /// @dev deploy mock system
-  function deployMockSystem() public {
-    /* Base Layer */
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
-
-    /* Wrappers */
-    usdc = new MockERC20("usdc", "USDC");
-
-    // usdc asset: deposit with usdc, cannot be negative
-    usdcAsset = new MockAsset(IERC20(usdc), account, false);
-    usdcAsset = new MockAsset(IERC20(usdc), account, false);
-
-    /* Risk Manager */
-    manager = new MockManager(address(account));
-
-    dutchAuction = new DutchAuction(address(manager), address(account));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
@@ -64,37 +31,155 @@ contract UNIT_TestInvolventAuction is Test {
         lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0
       })
     );
-  }
 
-  function mintAndDeposit(
-    address user,
-    uint accountId,
-    MockERC20 token,
-    MockAsset assetWrapper,
-    uint subId,
-    uint amount
-  ) public {
-    token.mint(user, amount);
-
-    vm.startPrank(user);
-    token.approve(address(assetWrapper), type(uint).max);
-    assetWrapper.deposit(accountId, subId, amount);
-    vm.stopPrank();
+    usdc.mint(address(this), 1000_000_000e18);
+    usdc.approve(address(usdcAsset), type(uint).max);
   }
 
   ///////////
   // TESTS //
   ///////////
 
-  /////////////////////////
-  // Permissions Tests ////
-  /////////////////////////
+  function testStartInsolventAuction() public {
+    vm.startPrank(address(manager));
 
-  function testMarkingAuctionAsInvsolvent() public {
-    // TODO: add test here to be able to tell if an auction can be marked as insolvent.
-    
+    int initMargin = -1000_000 * 1e18;
+
+    // deposit marign to the account
+    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
+
+    // start an auction on Alice's account
+    dutchAuction.startAuction(aliceAcc);
+    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    assertEq(auction.insolvent, true); // start as insolvent from the very beginning
+    assertEq(auction.auction.lowerBound, initMargin);
+
+    // starts with 0 bid
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
+
+    // increment the insolvent auction
+    // 1 of 200 steps
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -5000e18);
+
+    // 2 of 200 steps
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -10_000e18);
+  }
+
+  function testBidForInsolventAuctionFromSM() public {
+    int initMargin = -1000_000 * 1e18;
+    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
+
+    vm.prank(address(manager));
+    dutchAuction.startAuction(aliceAcc);
+
+    // 2 of 200 steps
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+
+    int expectedTotalPayoutFromSM = 10_000e18;
+
+    // if sm has enough balance
+    sm.mockBalance(expectedTotalPayoutFromSM);
+    usdcAsset.deposit(sm.smAccountId(), uint(expectedTotalPayoutFromSM));
+
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -expectedTotalPayoutFromSM);
+
+    int cashBefore = account.getBalance(bobAcc, usdcAsset, 0);
+
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 0.2e18); // bid for 20%
+
+    int cashAfter = account.getBalance(bobAcc, usdcAsset, 0);
+
+    assertEq(cashAfter - cashBefore, expectedTotalPayoutFromSM * 2 / 10);
+    assertEq(usdcAsset.isSocialized(), false);
+  }
+
+  function testBidForInsolventAuctionMakesSMInsolvent() public {
+    int initMargin = -1000_000 * 1e18;
+    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
+
+    vm.prank(address(manager));
+    dutchAuction.startAuction(aliceAcc);
+
+    // 2 of 200 steps
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+
+    // usdc asset: deposit with usdc, cannot be negative
+    usdcAsset = new MockAsset(IERC20(usdc), account, false);
+    int expectedTotalPayoutFromSM = 10_000e18;
+
+    // if sm doesn't have enough balance
+    sm.mockBalance(1000e18);
+    usdcAsset.deposit(sm.smAccountId(), uint(1000e18));
+
+    int cashBefore = account.getBalance(bobAcc, usdcAsset, 0);
+
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18); // bid for 100%
+
+    int cashAfter = account.getBalance(bobAcc, usdcAsset, 0);
+    assertEq(cashAfter - cashBefore, expectedTotalPayoutFromSM);
+
+    assertEq(usdcAsset.isSocialized(), true);
+  }
+
+  function testIncreaseStepMax() public {
+    int initMargin = -1000_000 * 1e18;
+    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
+
+    dutchAuction.setDutchAuctionParameters(
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 2,
+        securityModule: address(1),
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0 // cool down is 0
+      })
+    );
+    vm.prank(address(manager));
+    dutchAuction.startAuction(aliceAcc);
+
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+
+    vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+  }
+
+  function testCannotSpamIncrementStep() public {
+    int initMargin = -1000_000 * 1e18;
+    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
+    // change parameters to add cool down
+    dutchAuction.setDutchAuctionParameters(
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        securityModule: address(1),
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 100
+      })
+    );
+    vm.prank(address(manager));
+    dutchAuction.startAuction(aliceAcc);
+
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IDutchAuction.DA_CannotStepBeforeCoolDownEnds.selector,
+        block.timestamp,
+        block.timestamp + dutchAuction.getParameters().secBetweenSteps
+      )
+    );
+    dutchAuction.incrementInsolventAuction(aliceAcc);
   }
 }
