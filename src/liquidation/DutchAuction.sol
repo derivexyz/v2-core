@@ -162,7 +162,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
     (, int lowerBound) = _getBounds(accountId);
-    
+
     auctions[accountId].lastStepUpdate = block.timestamp;
     _startInsolventAuction(lowerBound, accountId);
   }
