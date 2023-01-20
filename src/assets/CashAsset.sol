@@ -327,6 +327,14 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param accountToReceive Account to receive the new printed amount
    */
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external onlyLiquidation {
+    // accruedSmFees cover as much of the insolvency as possible
+    // totalSupply/Borrow will be updated in the following adjustment
+    if (lossAmountInCash <= accruedSmFees) {
+      accruedSmFees -= lossAmountInCash;
+    } else {
+      accruedSmFees = 0;
+    }
+
     // mint this amount in target account
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -339,15 +347,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // trigger the hook to update total supply and balance
       ""
     );
-
-    // accruedSmFees cover as much of the insolvency as possible
-    if (lossAmountInCash <= accruedSmFees) {
-      _updateSupplyAndBorrow(accruedSmFees.toInt256(), (accruedSmFees - lossAmountInCash).toInt256());
-      accruedSmFees -= lossAmountInCash;
-    } else {
-      _updateSupplyAndBorrow(accruedSmFees.toInt256(), 0);
-      accruedSmFees = 0;
-    }
 
     // check if cash asset is insolvent
     uint exchangeRate = _getExchangeRate();
@@ -441,7 +440,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
-    uint totalCash = totalSupply - totalBorrow + accruedSmFees;
+    uint totalCash = totalSupply + accruedSmFees - totalBorrow;
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
   }

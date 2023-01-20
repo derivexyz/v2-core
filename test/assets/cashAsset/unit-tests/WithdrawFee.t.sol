@@ -103,7 +103,6 @@ contract UNIT_CashAssetWithdrawFee is Test {
   function testSmFeeCanCoverInsolvency() public {
     uint smFeeCut = 1e18;
     cashAsset.setSmFee(smFeeCut);
-
     uint newAccount = accounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
@@ -111,9 +110,10 @@ contract UNIT_CashAssetWithdrawFee is Test {
     // Increase total borrow amount
     uint requiredAmount = 1000 * 1e18;
     cashAsset.withdraw(newAccount, requiredAmount, address(this));
-
+    
     vm.warp(block.timestamp + 1 weeks);
     cashAsset.accrueInterest();
+    assertEq(_checkGoldenRule(), true);
 
     // Assert for sm fees
     assertEq(cashAsset.accruedSmFees(), requiredAmount / 2);
@@ -125,6 +125,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     // All SM fees are enough to cover insolvency
     assertEq(cashAsset.accruedSmFees(), 0);
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), false);
+    assertEq(_checkGoldenRule(), true);
   }
 
   function testSmFeeCanCoverSomeInsolvency() public {
@@ -152,5 +153,13 @@ contract UNIT_CashAssetWithdrawFee is Test {
     // All SM fees not enough to cover insolvency and insolvency still occurs
     assertEq(cashAsset.accruedSmFees(), 0);
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
+    assertEq(_checkGoldenRule(), false);
+  }
+
+  function _checkGoldenRule() internal view returns (bool) {
+    if ((cashAsset.totalSupply() + cashAsset.accruedSmFees() - cashAsset.totalBorrow()) == usdc.balanceOf(address(cashAsset))) {
+      return true;
+    }
+    return false;
   }
 }
