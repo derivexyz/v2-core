@@ -31,11 +31,11 @@ contract SpotJumpOracle {
     uint32 width;
     // amount of sec that jump is considered in .updateAndGetMaxJump()
     uint32 secToJumpStale;
-    // last timestamp of reference price update
+    // update timestamp of the spotFeed price used as reference
     uint32 referenceUpdatedAt;
     // sec until reference price is considered stale
     uint32 secToReferenceStale;
-    // price at last update
+    // reference price used when calculating jump bp
     uint referencePrice;
   }
 
@@ -47,9 +47,9 @@ contract SpotJumpOracle {
   ISpotFeeds public spotFeeds;
   /// @dev id of feed used when querying price from spotFeeds
   uint public feedId;
-  /// @dev number of distinct jump buckets 
-  uint constant internal NUM_BUCKETS = 16;
-  /// @dev each slot stores timestamp at which jump was stored
+  /// @dev number of distinct jump buckets
+  uint internal constant NUM_BUCKETS = 16;
+  /// @dev stores update timestamp of the spotFeed price for which jump was calculated
   uint32[NUM_BUCKETS] public jumps;
   /// @dev stores all parameters required to store the jump
   JumpParams public params;
@@ -88,7 +88,7 @@ contract SpotJumpOracle {
 
   /**
    * @notice Updates the jump buckets if livePrice deviates far enough from the referencePrice.
-   * @dev The time gap between the livePrice and referencePrice fluctuates, 
+   * @dev The time gap between the livePrice and referencePrice fluctuates,
    *      but is always < params.secToReferenceStale.
    */
   function updateJumps() public {
@@ -147,9 +147,8 @@ contract SpotJumpOracle {
 
   function _calcSpotJump(uint liveSpot, uint referencePrice) internal pure returns (uint32 jump) {
     // get ratio
-    uint ratio = liveSpot > referencePrice 
-      ? liveSpot.divideDecimal(referencePrice) 
-      : referencePrice.divideDecimal(liveSpot);
+    uint ratio =
+      liveSpot > referencePrice ? liveSpot.divideDecimal(referencePrice) : referencePrice.divideDecimal(liveSpot);
 
     // get percent
     uint jumpDecimal = IntLib.abs(ratio.toInt256() - DecimalMath.UNIT.toInt256());
