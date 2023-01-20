@@ -21,6 +21,8 @@ interface ICashAsset {
    */
   function withdraw(uint accountId, uint amount, address recipient) external;
 
+  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external;
+
   /**
    * @notice Returns latest balance without updating accounts but will update indexes
    * @param accountId The accountId to check

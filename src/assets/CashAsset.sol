@@ -140,6 +140,10 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     // todo: only to comply with interface now: will accept incoming code from CashAsset
   }
 
+  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
+    // todo: only to comply with interface now: will accept incoming code from CashAsset
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////

@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 // interfaces
 import "../interfaces/IPCRM.sol";
+import "../interfaces/ISecurityModule.sol";
+import "../interfaces/ICashAsset.sol";
 import "../interfaces/IDutchAuction.sol";
 import "../Accounts.sol";
 
@@ -13,8 +15,6 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/DecimalMath.sol";
 import "../libraries/IntLib.sol";
-
-import "forge-std/Test.sol";
 
 /**
  * @title Dutch Auction
@@ -27,6 +27,7 @@ import "forge-std/Test.sol";
  * where the security module will step into to handle the risk
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
+
 contract DutchAuction is IDutchAuction, Owned {
   using SafeCast for int;
   using SafeCast for uint;
@@ -50,12 +51,12 @@ contract DutchAuction is IDutchAuction, Owned {
     bool ongoing;
     /// The startTime of the auction
     uint startTime;
-    /// The endTime of the auction
-    uint endTime;
     /// The change in value of the portfolio per step in dollars when not insolvent
     uint dv;
     /// The current step if the auction is insolvent
     uint stepInsolvent;
+    /// The timestamp of the last increase of steps for insolvent auction
+    uint lastStepUpdate;
   }
 
   struct DutchAuctionParameters {
@@ -69,6 +70,8 @@ contract DutchAuction is IDutchAuction, Owned {
     int portfolioModifier;
     // Big number: inversed modifier
     int inversePortfolioModifier;
+    // Number, Amount of time between steps when the auction is insolvent
+    uint secBetweenSteps;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -76,6 +79,12 @@ contract DutchAuction is IDutchAuction, Owned {
 
   /// @dev The risk manager that is the parent of the dutch auction contract
   IPCRM public immutable riskManager;
+
+  /// @dev The security module that will help pay out for insolvent auctinos
+  ISecurityModule public immutable securityModule;
+
+  /// @dev The cash asset address, will be used to socialize losses when there's systematic insolvency
+  ICashAsset public immutable cash;
 
   /// @dev The accounts contract for resolving address to accountIds
   Accounts public immutable accounts;
@@ -87,9 +96,11 @@ contract DutchAuction is IDutchAuction, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address _riskManager, address _accounts) Owned() {
-    riskManager = IPCRM(_riskManager);
-    accounts = Accounts(_accounts);
+  constructor(IPCRM _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Owned() {
+    riskManager = _riskManager;
+    accounts = _accounts;
+    securityModule = _securityModule;
+    cash = _cash;
   }
 
   /**
@@ -122,8 +133,7 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_AuctionAlreadyStarted(accountId);
     }
 
-    uint spot = riskManager.getSpot();
-    (int upperBound, int lowerBound) = _getBounds(accountId, spot);
+    (int upperBound, int lowerBound) = _getBounds(accountId);
     // covers the case where an auction could start as insolvent, upperbound < 0
     if (upperBound > 0) {
       _startSolventAuction(upperBound, accountId);
@@ -136,16 +146,22 @@ contract DutchAuction is IDutchAuction, Owned {
 
   /**
    * @notice Function used to begin insolvency logic for an auction that started as solvent
-   * @dev Takes in the auction and returns the account id
+   * @dev This function can only be called on auctions that has already started as solvent
    * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
    */
   function markAsInsolventLiquidation(uint accountId) external {
+    // getCurentBidPrice will revert if there is no auction for accountId going on
     if (_getCurrentBidPrice(accountId) > 0) {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
+    if (auctions[accountId].insolvent) {
+      revert DA_AuctionAlreadyInInsolvencyMode(accountId);
+    }
 
-    uint spot = riskManager.getSpot();
-    (, int lowerBound) = _getBounds(accountId, spot);
+    // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
+    (, int lowerBound) = _getBounds(accountId);
+
+    auctions[accountId].lastStepUpdate = block.timestamp;
     _startInsolventAuction(lowerBound, accountId);
   }
 
@@ -163,12 +179,7 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     if (auctions[accountId].ongoing == false) {
-      revert DA_AuctionEnded(accountId);
-    }
-
-    // need to check if the timelimit for the auction has been ecplised
-    if (block.timestamp > auctions[accountId].endTime) {
-      revert DA_AuctionEnded(accountId);
+      revert DA_AuctionNotActive();
     }
 
     // get bidder address and make sure that they own the account
@@ -177,9 +188,20 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     if (auctions[accountId].insolvent) {
-      // TODO: Anton
       // This case someone is getting payed to take on the risk
-      // whole portfolio can be liquidated thus amount can be any value
+      uint amountToPay = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(percentOfAccount);
+      // we first ask the security module to compensate the bidder
+      uint amountPaid = securityModule.requestPayout(bidderId, amountToPay);
+
+      // if amount paid is less than we requested: we trigger socialize losses on cash asset
+      // which print cash to the bidder
+      if (amountToPay > amountPaid) {
+        uint loss = amountToPay - amountPaid;
+        cash.socializeLoss(loss, bidderId);
+      }
+
+      // ask the risk manager to exchange hands
+      riskManager.executeBid(accountId, bidderId, percentOfAccount, 0);
     } else {
       uint p_max = _getMaxProportion(accountId);
       percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
@@ -196,7 +218,6 @@ contract DutchAuction is IDutchAuction, Owned {
       _terminateAuction(accountId);
     }
 
-    // TODO: change so that it returns the cash amount.
     return percentOfAccount;
   }
 
@@ -208,7 +229,6 @@ contract DutchAuction is IDutchAuction, Owned {
   function _terminateAuction(uint accountId) internal {
     Auction storage auction = auctions[accountId];
     auction.ongoing = false;
-    auction.endTime = block.timestamp;
     emit AuctionEnded(accountId, block.timestamp);
   }
 
@@ -235,12 +255,24 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    return ++auction.stepInsolvent;
+    uint lastIncrement = auction.lastStepUpdate;
+    if (block.timestamp < lastIncrement + parameters.secBetweenSteps && lastIncrement != 0) {
+      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.secBetweenSteps);
+    }
+
+    uint newStep = ++auction.stepInsolvent;
+    if (newStep * parameters.stepInterval > parameters.lengthOfAuction) {
+      revert DA_MaxStepReachedInsolventAuction();
+    }
+
+    auction.lastStepUpdate = block.timestamp;
+
+    return newStep;
   }
 
   /**
-   * @notice This function can only be used by the risk manager to end an auction early
-   * @dev This is to allow the riskmanager to cancel the auction if the user adds more collateral
+   * @notice This function can used by anyone to end an auction early
+   * @dev This is to allow account owner to cancel the auction after adding more collateral
    * @param accountId the accountId that relates to the auction that is being stepped
    */
   function terminateAuction(uint accountId) external {
@@ -264,10 +296,9 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset,
    */
-  function getBounds(uint accountId, uint spot) external view returns (int, int) {
-    return _getBounds(accountId, spot);
+  function getBounds(uint accountId) external view returns (int, int) {
+    return _getBounds(accountId);
   }
 
   /**
@@ -320,15 +351,15 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId The id of the account being liquidated
    */
   function _startSolventAuction(int upperBound, uint accountId) internal {
-    uint dv = IntLib.abs(upperBound).divideDecimal(parameters.lengthOfAuction); // as the auction starts in the positive, recalculate when insolvency occurs
+    uint dv = IntLib.abs(upperBound) / parameters.lengthOfAuction; // as the auction starts in the positive, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
       insolvent: false,
       ongoing: true,
       startTime: block.timestamp,
-      endTime: block.timestamp + parameters.lengthOfAuction, // half the auction length as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
+      lastStepUpdate: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: 0})
     });
   }
@@ -340,16 +371,16 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account that is being liquidated
    */
   function _startInsolventAuction(int lowerBound, uint accountId) internal {
-    uint dv = IntLib.abs(lowerBound).divideDecimal(parameters.lengthOfAuction);
+    uint dv = IntLib.abs(lowerBound) / parameters.lengthOfAuction;
     // as the auction starts in the negative, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
       insolvent: true,
       ongoing: true,
       startTime: block.timestamp,
-      endTime: block.timestamp + parameters.lengthOfAuction, // half the length of the auction as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
+      lastStepUpdate: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
     });
     emit Insolvent(accountId);
@@ -359,16 +390,16 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset,
    */
-  function _getBounds(uint accountId, uint spot) internal view returns (int, int) {
+  // TODO: investigate gas consumption after merge
+  function _getBounds(uint accountId) internal view returns (int, int) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
 
-    int cash = riskManager.getCashAmount(accountId);
-    int maximum =
-      (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cash) * parameters.portfolioModifier / 1e18;
-    int minimum = (riskManager.getInitialMargin(accountId) + cash) * parameters.inversePortfolioModifier / 1e18;
+    int cashMargin = riskManager.getCashAmount(accountId);
+    int maximum = (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cashMargin)
+      * parameters.portfolioModifier / 1e18;
+    int minimum = (riskManager.getInitialMargin(accountId) + cashMargin) * parameters.inversePortfolioModifier / 1e18;
     return (maximum, minimum);
   }
 
@@ -387,6 +418,7 @@ contract DutchAuction is IDutchAuction, Owned {
       for (uint j = 0; j < expiries[i].strikes.length; j++) {
         expiries[i].strikes[j].calls = expiries[i].strikes[j].calls * -1;
         expiries[i].strikes[j].puts = expiries[i].strikes[j].puts * -1;
+        expiries[i].strikes[j].forwards = expiries[i].strikes[j].forwards * -1;
       }
     }
     return expiries;
@@ -400,13 +432,20 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   function _getCurrentBidPrice(uint accountId) internal view returns (int) {
     Auction memory auction = auctions[accountId];
-    int upperBound = auction.auction.upperBound;
+    if (!auction.ongoing) {
+      revert DA_AuctionNotStarted(accountId);
+    }
+
     if (auction.insolvent) {
-      return 0 - auction.dv.multiplyDecimal(auction.stepInsolvent).toInt256();
+      uint numSteps = auction.stepInsolvent;
+      return 0 - (auction.dv * numSteps).toInt256();
     } else {
-      int bid = upperBound
-        - auction.dv.multiplyDecimal((block.timestamp - auction.startTime).divideDecimal(parameters.stepInterval))
-          .toInt256();
+      if (block.timestamp > auction.startTime + parameters.lengthOfAuction) {
+        revert DA_AuctionEnded();
+      }
+
+      int upperBound = auction.auction.upperBound;
+      int bid = upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
       // have to call markAsInsolvent before bid can be negative
       if (bid <= 0) {
         return 0;

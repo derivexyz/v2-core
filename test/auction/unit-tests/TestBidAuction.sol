@@ -61,24 +61,27 @@ contract UNIT_BidAuction is Test {
     /* Risk Manager */
     manager = new MockIPCRM(address(account));
 
-    dutchAuction = new DutchAuction(address(manager), address(account));
+    dutchAuction =
+      dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
 
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
-        stepInterval: 2 * DecimalMath.UNIT,
-        lengthOfAuction: 200 * DecimalMath.UNIT,
+        stepInterval: 2,
+        lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0
       })
     );
 
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
-      stepInterval: 2 * DecimalMath.UNIT,
-      lengthOfAuction: 200 * DecimalMath.UNIT,
+      stepInterval: 2,
+      lengthOfAuction: 200,
       securityModule: address(1),
       portfolioModifier: 1e18,
-      inversePortfolioModifier: 1e18
+      inversePortfolioModifier: 1e18,
+      secBetweenSteps: 0
     });
   }
 
@@ -98,26 +101,28 @@ contract UNIT_BidAuction is Test {
     vm.stopPrank();
   }
 
-  ///////////
-  // TESTS //
-  ///////////
-
   /////////////////////////
   // Start Auction Tests //
   /////////////////////////
 
   function testCannotBidOnAuctionThatHasNotStarted() public {
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionEnded.selector, aliceAcc));
+    vm.expectRevert(IDutchAuction.DA_AuctionNotActive.selector);
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
 
   function testCannotBidOnAuctionThatHasEnded() public {
+    manager.setMarginForPortfolio(10_000 * 1e18); // positive v_max
+
     vm.prank(address(manager));
     dutchAuction.startAuction(aliceAcc);
-    uint endTime = dutchAuction.getAuctionDetails(aliceAcc).endTime;
-    vm.warp(endTime + 10);
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionEnded.selector, aliceAcc));
+
+    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 5);
+    vm.expectRevert(IDutchAuction.DA_AuctionEnded.selector);
+    dutchAuction.getCurrentBidPrice(aliceAcc);
+
+    vm.expectRevert(IDutchAuction.DA_AuctionEnded.selector);
+    vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
 
@@ -150,14 +155,13 @@ contract UNIT_BidAuction is Test {
     manager.setMarginForPortfolio(10_000 * 1e18);
 
     dutchAuction.startAuction(aliceAcc);
+    vm.stopPrank();
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
     assertLt(maxProportion, 5e17); // should be less than half
 
     // bidding
-    vm.stopPrank();
-
     vm.startPrank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
@@ -192,8 +196,7 @@ contract UNIT_BidAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
-    vm.warp(block.timestamp + (auction.endTime - block.timestamp) / 2);
-    assertLt(block.timestamp, auction.endTime);
+    vm.warp(block.timestamp + (dutchAuctionParameters.lengthOfAuction) / 2);
     p_max = dutchAuction.getMaxProportion(aliceAcc);
     dutchAuction.bid(aliceAcc, bobAcc, p_max.divideDecimal(2 * 1e18));
 
@@ -202,7 +205,7 @@ contract UNIT_BidAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
-    // // bid for the remaing amount of the account should close end the auction
+    // bid for the remaing amount of the account should close end the auction
     manager.setNextIsEndingBid(); // mock the account to return
 
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);

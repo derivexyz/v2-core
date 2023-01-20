@@ -79,7 +79,8 @@ contract UNIT_DutchAuctionView is Test {
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = new DutchAuction(address(manager), address(account));
+    dutchAuction =
+      dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
   }
 
   function mintAndDeposit(
@@ -115,7 +116,8 @@ contract UNIT_DutchAuctionView is Test {
         lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0
       })
     );
 
@@ -131,7 +133,7 @@ contract UNIT_DutchAuctionView is Test {
   }
 
   function testGetBounds() public {
-    (int max, int min) = dutchAuction.getBounds(1, 1000);
+    (int max, int min) = dutchAuction.getBounds(1);
     assertEq(max, 0);
     assertEq(min, 0);
   }

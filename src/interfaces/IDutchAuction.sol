@@ -31,15 +31,24 @@ interface IDutchAuction {
   /// @dev emmited when a non-risk manager tries to start an auction
   error DA_NotRiskManager();
 
-  /// @dev emmited when a risk manager tries to start an insolvent auction when bidding
+  /// @dev emmited when someone tries to start an insolvent auction when bidding
   /// has not concluded.
   error DA_AuctionNotEnteredInsolvency(uint accountId);
+
+  /// @dev emmited when someone tries mark an insolvent aunction again
+  error DA_AuctionAlreadyInInsolvencyMode(uint accountId);
+
+  /// @dev emmited when someone tries to start an auction that has already been started
+  error DA_AuctionNotStarted(uint accountId);
 
   /// @dev emmited when a risk manager tries to start an auction that has already been started
   error DA_AuctionAlreadyStarted(uint accountId);
 
   /// @dev emmited when a bid is submitted on a closed/ended auction
-  error DA_AuctionEnded(uint accountId);
+  error DA_AuctionEnded();
+
+  /// @dev emmited when a bid is submitted on a closed or non-existant auction.
+  error DA_AuctionNotActive();
 
   /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
   error DA_AmountTooLarge(uint accountId, uint amount);
@@ -55,4 +64,10 @@ interface IDutchAuction {
 
   /// @dev emitted when a user tries to terminate an insolvent Auction
   error DA_AuctionCannotTerminate(uint accountId);
+
+  /// @dev emmited when a increase the step for an insolvent auction that has already reach its steps
+  error DA_MaxStepReachedInsolventAuction();
+
+  /// @dev emmited when IncremenetInsolventAuction is spammed
+  error DA_CannotStepBeforeCoolDownEnds(uint blockTimeStamp, uint coolDownEnds);
 }
