@@ -178,16 +178,16 @@ contract SpotJumpOracle {
    * @param timestamp Timestamp at which jump was calculated
    */
   function _maybeStoreJump(uint32 start, uint32 width, uint32 jump, uint32 timestamp) internal {
-    // if jump is greater than the last bucket, store in the last bucket
-    if (jump >= start + (width * NUM_BUCKETS)) {
-      jumps[NUM_BUCKETS - 1] = timestamp;
-      return;
-    }
+    // return zero if below threshold
+    if (jump < start) return;
 
-    // otherwise, find bucket for jump
-    if (jump > start) {
-      jumps[(jump - start) / width] = timestamp;
+    uint idx = (jump - start) / width;
+
+    // if jump is greater than the last bucket, store in the last bucket
+    if (idx >= NUM_BUCKETS) {
+      idx = NUM_BUCKETS - 1;
     }
+    jumps[idx] = timestamp;
   }
 
   ////////////

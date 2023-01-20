@@ -121,9 +121,9 @@ contract UNIT_TestSpotJumpOracle is Test {
       assertEq(oracle.jumps(i), 0);
     }
 
-    // does not store if on the limit
+    // stores if on the limit
     oracle.maybeStoreJump(50, 200, 50, 9876);
-    assertEq(oracle.jumps(0), 0);
+    assertEq(oracle.jumps(0), 9876);
   }
 
   function testRoundsDownJumpWhenStoring() public {
