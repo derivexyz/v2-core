@@ -133,14 +133,12 @@ contract SpotJumpOracle {
 
     // traverse jumps in descending order, finding the first non-stale jump
     uint32[16] memory memJumps = jumps;
-    uint length = memJumps.length;
-    uint32 i = uint32(length) - 1;
-    while (i > 0 && jump == 0) {
+    uint32 length = uint32(memJumps.length);
+    for (uint32 i = length - 1; i > 0; i--) {
       if (memJumps[i] + memParams.secToJumpStale > currentTime) {
-        // if jump value not stale, return
-        jump = memParams.start + memParams.width * (i + 1);
+        // return largest jump that's not stale
+        return memParams.start + memParams.width * (i + 1);
       }
-      i--;
     }
   }
 
@@ -183,7 +181,7 @@ contract SpotJumpOracle {
     uint numBuckets = jumps.length;
 
     // if jump is greater than the last bucket, store in the last bucket
-    if (jump >= start + (width * jumps.length)) {
+    if (jump >= start + (width * numBuckets)) {
       jumps[numBuckets - 1] = timestamp;
       return;
     }
