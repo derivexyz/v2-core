@@ -29,12 +29,8 @@ contract SpotJumpOracle {
     uint32 start;
     // 150 bps would imply [0-1.5%, 1.5-3.0%, ...]
     uint32 width;
-    // amount of sec that jump is considered in .getMaxJump()
+    // amount of sec that jump is considered in .updateAndGetMaxJump()
     uint32 secToJumpStale;
-    // last timestamp of update
-    uint32 oracleUpdatedAt;
-    // sec until oracle considered unusable and .getMaxJump() reverts
-    uint32 secToOracleStale;
     // last timestamp of reference price update
     uint32 referenceUpdatedAt;
     // sec until reference price is considered stale
@@ -95,21 +91,20 @@ contract SpotJumpOracle {
    * @dev The time gap between the livePrice and referencePrice fluctuates, 
    *      but is always < params.secToReferenceStale.
    */
-  function updateJumps() external {
+  function updateJumps() public {
     JumpParams memory memParams = params;
-    uint32 currentTime = uint32(block.timestamp);
-    uint livePrice = spotFeeds.getSpot(feedId);
+    (uint livePrice, uint updatedAt) = spotFeeds.getSpotAndUpdatedAt(feedId);
+    uint32 spotUpdatedAt = uint32(updatedAt);
 
     // calculate jump basis points and store
     // stale reference price is used for safety
     uint32 jump = _calcSpotJump(livePrice, memParams.referencePrice);
-    _maybeStoreJump(memParams.start, memParams.width, jump, currentTime);
-    memParams.oracleUpdatedAt = currentTime;
+    _maybeStoreJump(memParams.start, memParams.width, jump, spotUpdatedAt);
 
     // update reference price if stale
-    if (memParams.referenceUpdatedAt + memParams.secToReferenceStale < currentTime) {
+    if (memParams.referenceUpdatedAt + memParams.secToReferenceStale < spotUpdatedAt) {
       memParams.referencePrice = livePrice;
-      memParams.referenceUpdatedAt = currentTime;
+      memParams.referenceUpdatedAt = spotUpdatedAt;
     }
 
     // update jump params
@@ -123,14 +118,10 @@ contract SpotJumpOracle {
    *         If there is no jump that is > params.start, 0 is returned.
    * @return jump The largest jump amount denominated in basis points.
    */
-  function getMaxJump() external view returns (uint32 jump) {
+  function updateAndGetMaxJump() external returns (uint32 jump) {
+    updateJumps();
     JumpParams memory memParams = params;
     uint32 currentTime = uint32(block.timestamp);
-
-    // revert if oracle has not been updated within 'secToOracleStale'
-    if (currentTime - memParams.oracleUpdatedAt > memParams.secToOracleStale) {
-      revert SJO_OracleIsStale(currentTime, memParams.oracleUpdatedAt, memParams.secToOracleStale);
-    }
 
     // traverse jumps in descending order, finding the first non-stale jump
     uint32[NUM_BUCKETS] memory memJumps = jumps;
@@ -193,8 +184,6 @@ contract SpotJumpOracle {
   ////////////
   // Errors //
   ////////////
-
-  error SJO_OracleIsStale(uint32 currentTime, uint32 lastUpdatedAt, uint32 staleLimit);
 
   error SJO_MaxJumpExceedsLimit();
 }

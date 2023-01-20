@@ -200,8 +200,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     assertEq(oracle.jumps(15), time_2);
 
     // updates reference
-    (,,, uint32 oracleUpdatedAt,, uint32 referenceUpdatedAt,, uint referencePrice) = oracle.params();
-    assertEq(oracleUpdatedAt, time_2);
+    (,,, uint32 referenceUpdatedAt,, uint referencePrice) = oracle.params();
     assertEq(referenceUpdatedAt, time_2);
     assertEq(referencePrice, 3000e18);
 
@@ -209,7 +208,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     skip(1 hours);
     uint32 time_3 = uint32(block.timestamp);
     spotPrice = 3040e18;
-    aggregator.updateRoundData(3, spotPrice, time_3, time_3, 2);
+    aggregator.updateRoundData(3, spotPrice, time_3, time_3, 3);
 
     oracle.updateJumps();
     assertEq(oracle.jumps(0), time_3);
@@ -226,27 +225,16 @@ contract UNIT_TestSpotJumpOracle is Test {
     oracle.overrideJumps(initialJumps);
 
     // finds 7th bucket
-    uint32 maxJump = oracle.getMaxJump();
+    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    uint32 maxJump = oracle.updateAndGetMaxJump();
     assertEq(maxJump, 1700);
 
     // override 7th bucket, should find 5th bucket
     initialJumps[7] = uint32(block.timestamp) - 11 days;
     oracle.overrideJumps(initialJumps);
 
-    maxJump = oracle.getMaxJump();
+    maxJump = oracle.updateAndGetMaxJump();
     assertEq(maxJump, 1300);
-  }
-
-  function testJumpsStale() public {
-    skip(31 days);
-    oracle = _setupDefaultOracle();
-    uint32[16] memory initialJumps = _getDefaultJumps();
-    oracle.overrideJumps(initialJumps);
-
-    // make jump oracle stale
-    skip(31 minutes);
-    vm.expectRevert(abi.encodeWithSelector(SpotJumpOracle.SJO_OracleIsStale.selector, 2680261, 2678401, 1800));
-    oracle.getMaxJump();
   }
 
   /////////////
@@ -264,8 +252,6 @@ contract UNIT_TestSpotJumpOracle is Test {
       start: 100,
       width: 200,
       secToJumpStale: uint32(10 days),
-      secToOracleStale: uint32(30 minutes),
-      oracleUpdatedAt: uint32(block.timestamp),
       referenceUpdatedAt: uint32(block.timestamp),
       secToReferenceStale: uint32(2 hours),
       referencePrice: referencePrice

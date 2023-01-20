@@ -50,13 +50,13 @@ contract PCRMSpotJumpOracleGas is Script {
     console.log("gas:SingleUpdate:", initGas - gasleft());
   }
 
-  function _gasGetFirstJump() public view {
+  function _gasGetFirstJump() public {
     // estimate tx cost when max jump is the first value to be read from the array
     uint initGas = gasleft();
 
-    oracle.getMaxJump();
+    oracle.updateAndGetMaxJump();
 
-    console.log("gas:GetFirstJump:", initGas - gasleft());
+    console.log("gas:updateAndGetFirstJump:", initGas - gasleft());
   }
 
   function _gasGetLastJump() public {
@@ -71,9 +71,9 @@ contract PCRMSpotJumpOracleGas is Script {
 
     uint initGas = gasleft();
 
-    oracle.getMaxJump();
+    oracle.updateAndGetMaxJump();
 
-    console.log("gas:GetLastJump:", initGas - gasleft());
+    console.log("gas:updateAndGetLastJump:", initGas - gasleft());
   }
 
   function _updateAllJumps() public {
@@ -109,8 +109,6 @@ contract PCRMSpotJumpOracleGas is Script {
       start: 100,
       width: 200,
       secToJumpStale: uint32(10 days),
-      secToOracleStale: uint32(30 minutes),
-      oracleUpdatedAt: uint32(block.timestamp),
       referenceUpdatedAt: uint32(block.timestamp),
       secToReferenceStale: uint32(2 hours),
       referencePrice: 1000e18
