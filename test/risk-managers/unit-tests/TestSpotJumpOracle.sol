@@ -200,7 +200,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     assertEq(oracle.jumps(15), time_2);
 
     // updates reference
-    (,,, uint32 referenceUpdatedAt,, uint referencePrice) = oracle.params();
+    (,, uint32 referenceUpdatedAt,, uint referencePrice) = oracle.params();
     assertEq(referenceUpdatedAt, time_2);
     assertEq(referencePrice, 3000e18);
 
@@ -226,15 +226,30 @@ contract UNIT_TestSpotJumpOracle is Test {
 
     // finds 7th bucket
     aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
-    uint32 maxJump = oracle.updateAndGetMaxJump();
+    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
     assertEq(maxJump, 1700);
 
     // override 7th bucket, should find 5th bucket
     initialJumps[7] = uint32(block.timestamp) - 11 days;
     oracle.overrideJumps(initialJumps);
 
-    maxJump = oracle.updateAndGetMaxJump();
+    maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
     assertEq(maxJump, 1300);
+  }
+
+  function testGetsMaxJumpForDifferentSecToStale() public {
+    skip(31 days);
+    oracle = _setupDefaultOracle();
+    uint32[16] memory initialJumps = _getDefaultJumps();
+    oracle.overrideJumps(initialJumps);
+
+    // ignores all entries if secToJumpStale = 30 minutes
+    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 0);
+
+    // finds the first jump that's < 2hours old
+    maxJump = oracle.updateAndGetMaxJump(uint32(2 hours));
+    assertEq(maxJump, 900);
   }
 
   /////////////
@@ -251,7 +266,6 @@ contract UNIT_TestSpotJumpOracle is Test {
     params = SpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
-      secToJumpStale: uint32(10 days),
       referenceUpdatedAt: uint32(block.timestamp),
       secToReferenceStale: uint32(2 hours),
       referencePrice: referencePrice

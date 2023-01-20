@@ -29,8 +29,6 @@ contract SpotJumpOracle {
     uint32 start;
     // 150 bps would imply [0-1.5%, 1.5-3.0%, ...]
     uint32 width;
-    // amount of sec that jump is considered in .updateAndGetMaxJump()
-    uint32 secToJumpStale;
     // update timestamp of the spotFeed price used as reference
     uint32 referenceUpdatedAt;
     // sec until reference price is considered stale
@@ -116,9 +114,10 @@ contract SpotJumpOracle {
   /**
    * @notice Returns the max jump that is not stale.
    *         If there is no jump that is > params.start, 0 is returned.
+   * @param secToJumpStale sec that jump is considered as valid
    * @return jump The largest jump amount denominated in basis points.
    */
-  function updateAndGetMaxJump() external returns (uint32 jump) {
+  function updateAndGetMaxJump(uint32 secToJumpStale) external returns (uint32 jump) {
     updateJumps();
     JumpParams memory memParams = params;
     uint32 currentTime = uint32(block.timestamp);
@@ -126,7 +125,7 @@ contract SpotJumpOracle {
     // traverse jumps in descending order, finding the first non-stale jump
     uint32[NUM_BUCKETS] memory memJumps = jumps;
     for (uint32 i = uint32(NUM_BUCKETS) - 1; i > 0; i--) {
-      if (memJumps[i] + memParams.secToJumpStale > currentTime) {
+      if (memJumps[i] + secToJumpStale > currentTime) {
         // return largest jump that's not stale
         return memParams.start + memParams.width * (i + 1);
       }
