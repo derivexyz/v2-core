@@ -400,7 +400,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
    */
-   // TODO: investigate gas consumption after merge
+  // TODO: investigate gas consumption after merge
   function _getBounds(uint accountId) internal view returns (int, int) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
