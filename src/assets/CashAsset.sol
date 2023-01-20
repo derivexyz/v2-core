@@ -12,7 +12,7 @@ import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
 import "../libraries/ConvertDecimals.sol";
-import "forge-std/Test.sol";
+
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit USDC and credit this cash asset into their accounts.
@@ -342,11 +342,9 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
     // accruedSmFees cover as much of the insolvency as possible
     if (lossAmountInCash <= accruedSmFees) {
-      console.log("loss amount <= sm fees");
       _updateSupplyAndBorrow(accruedSmFees.toInt256(), (accruedSmFees - lossAmountInCash).toInt256());
       accruedSmFees -= lossAmountInCash;
     } else {
-      console.log("loss amount > sm fees");
       _updateSupplyAndBorrow(accruedSmFees.toInt256(), 0);
       accruedSmFees = 0;
     }
@@ -418,16 +416,18 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
 
+    // Update totalBorrow with interestAccrued
+    uint prevBorrow = totalBorrow;
+    totalBorrow += interestAccrued;
+
     // Take security module fee cut from total interest accrued
     uint smFeeCut = interestAccrued.multiplyDecimal(smFeePercentage);
     interestAccrued -= smFeeCut;
     accruedSmFees += smFeeCut;
 
-    // Update total supply and borrow
-    uint prevBorrow = totalBorrow;
+    // Update total supply with interestAccrued - smFeeCut
     uint prevSupply = totalSupply;
     totalSupply += interestAccrued;
-    totalBorrow += interestAccrued;
 
     // Update borrow/supply index by calculating the % change of total * current borrow/supply index
     borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
@@ -441,7 +441,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
-    uint totalCash = totalSupply - totalBorrow;
+    uint totalCash = totalSupply - totalBorrow + accruedSmFees;
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
   }
@@ -452,8 +452,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    console.log("TOTALSUPPLY", totalSupply);
-    console.log("TOTALBORROW", totalBorrow);
     if (preBalance <= 0 && finalBalance <= 0) {
       totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
     } else if (preBalance >= 0 && finalBalance >= 0) {
@@ -466,8 +464,6 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       totalBorrow += (-finalBalance).toUint256();
       totalSupply -= preBalance.toUint256();
     }
-    console.log("TOTALSUPPLY", totalSupply);
-    console.log("TOTALBORROW", totalBorrow);
   }
 
   /**

@@ -119,15 +119,8 @@ contract UNIT_CashAssetWithdrawFee is Test {
     assertEq(cashAsset.accruedSmFees(), requiredAmount / 2);
 
     // trigger insolvency
-    int preBalance = accounts.getBalance(accountId, cashAsset, 0);
-    console.log(" --- Pre balance is --- ");
-    console.logInt(preBalance);
-    console.log(requiredAmount / 2);
     vm.prank(liquidationModule);
     cashAsset.socializeLoss(requiredAmount / 2, accountId);
-    preBalance = accounts.getBalance(accountId, cashAsset, 0);
-    console.logInt(preBalance);
-    console.log(" --- --- --- --- --- --- ");
 
     // All SM fees used to cover insolvency
     assertEq(cashAsset.accruedSmFees(), 0);
@@ -135,7 +128,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
   }
 
   function testSmFeeCanCoverSomeInsolvency() public {
-    uint smFeeCut = 0.8 * 1e18;
+    uint smFeeCut = 0.1 * 1e18;
     cashAsset.setSmFee(smFeeCut);
 
     uint newAccount = accounts.createAccount(address(this), manager);
@@ -151,10 +144,6 @@ contract UNIT_CashAssetWithdrawFee is Test {
 
     // Assert for sm fees
     assertGt(cashAsset.accruedSmFees(), 0);
-    console.log("------------------------------");
-    console.log("SM fees are", cashAsset.accruedSmFees());
-    console.log("RequiredAmt", requiredAmount /2);
-    console.log("------------------------------");
 
     // trigger insolvency
     vm.prank(liquidationModule);
