@@ -96,7 +96,7 @@ contract SpotJumpOracle {
 
     // calculate jump basis points and store
     // stale reference price is used for safety
-    uint32 jump = _calcSpotJump(livePrice, uint256(memParams.referencePrice));
+    uint32 jump = _calcSpotJump(livePrice, uint(memParams.referencePrice));
     _maybeStoreJump(memParams.start, memParams.width, jump, spotUpdatedAt);
 
     // update reference price if stale
