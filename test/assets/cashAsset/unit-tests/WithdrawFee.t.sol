@@ -99,4 +99,69 @@ contract UNIT_CashAssetWithdrawFee is Test {
     assertEq(cashAsset.smFeePercentage(), smFeeCut);
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), false);
   }
+
+  function testSmFeeCanCoverInsolvency() public {
+    uint smFeeCut = 1e18;
+    cashAsset.setSmFee(smFeeCut);
+
+    uint newAccount = accounts.createAccount(address(this), manager);
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    // Increase total borrow amount
+    uint requiredAmount = 1000 * 1e18;
+    cashAsset.withdraw(newAccount, requiredAmount, address(this));
+
+    vm.warp(block.timestamp + 1 weeks);
+    cashAsset.accrueInterest();
+
+    // Assert for sm fees
+    assertEq(cashAsset.accruedSmFees(), requiredAmount / 2);
+
+    // trigger insolvency
+    int preBalance = accounts.getBalance(accountId, cashAsset, 0);
+    console.log(" --- Pre balance is --- ");
+    console.logInt(preBalance);
+    console.log(requiredAmount / 2);
+    vm.prank(liquidationModule);
+    cashAsset.socializeLoss(requiredAmount / 2, accountId);
+    preBalance = accounts.getBalance(accountId, cashAsset, 0);
+    console.logInt(preBalance);
+    console.log(" --- --- --- --- --- --- ");
+
+    // All SM fees used to cover insolvency
+    assertEq(cashAsset.accruedSmFees(), 0);
+    assertEq(cashAsset.temporaryWithdrawFeeEnabled(), false);
+  }
+
+  function testSmFeeCanCoverSomeInsolvency() public {
+    uint smFeeCut = 0.8 * 1e18;
+    cashAsset.setSmFee(smFeeCut);
+
+    uint newAccount = accounts.createAccount(address(this), manager);
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
+
+    // Increase total borrow amount
+    uint requiredAmount = 1000 * 1e18;
+    cashAsset.withdraw(newAccount, requiredAmount, address(this));
+
+    vm.warp(block.timestamp + 1 weeks);
+    cashAsset.accrueInterest();
+
+    // Assert for sm fees
+    assertGt(cashAsset.accruedSmFees(), 0);
+    console.log("------------------------------");
+    console.log("SM fees are", cashAsset.accruedSmFees());
+    console.log("RequiredAmt", requiredAmount /2);
+    console.log("------------------------------");
+
+    // trigger insolvency
+    vm.prank(liquidationModule);
+    cashAsset.socializeLoss(requiredAmount / 2, accountId);
+
+    // Some SM fees used to cover insolvency and insolvency still occurs
+    assertEq(cashAsset.accruedSmFees(), 0);
+    assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
+  }
 }

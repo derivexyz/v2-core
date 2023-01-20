@@ -12,7 +12,7 @@ import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
 import "../libraries/ConvertDecimals.sol";
-
+import "forge-std/Test.sol";
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit USDC and credit this cash asset into their accounts.
@@ -327,7 +327,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param accountToReceive Account to receive the new printed amount
    */
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external onlyLiquidation {
-    // mint this amount in target amount
+    // mint this amount in target account
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountToReceive,
@@ -339,6 +339,17 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       true, // trigger the hook to update total supply and balance
       ""
     );
+
+    // accruedSmFees cover as much of the insolvency as possible
+    if (lossAmountInCash <= accruedSmFees) {
+      console.log("loss amount <= sm fees");
+      _updateSupplyAndBorrow(accruedSmFees.toInt256(), (accruedSmFees - lossAmountInCash).toInt256());
+      accruedSmFees -= lossAmountInCash;
+    } else {
+      console.log("loss amount > sm fees");
+      _updateSupplyAndBorrow(accruedSmFees.toInt256(), 0);
+      accruedSmFees = 0;
+    }
 
     // check if cash asset is insolvent
     uint exchangeRate = _getExchangeRate();
@@ -441,6 +452,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
+    console.log("TOTALSUPPLY", totalSupply);
+    console.log("TOTALBORROW", totalBorrow);
     if (preBalance <= 0 && finalBalance <= 0) {
       totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
     } else if (preBalance >= 0 && finalBalance >= 0) {
@@ -453,6 +466,8 @@ contract CashAsset is ICashAsset, Owned, IAsset {
       totalBorrow += (-finalBalance).toUint256();
       totalSupply -= preBalance.toUint256();
     }
+    console.log("TOTALSUPPLY", totalSupply);
+    console.log("TOTALBORROW", totalBorrow);
   }
 
   /**
