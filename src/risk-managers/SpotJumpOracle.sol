@@ -60,6 +60,9 @@ contract SpotJumpOracle {
   /// @dev maximum value of a uint32 used to prevent overflows
   uint public constant UINT32_MAX = 0xFFFFFFFF;
 
+  /// @dev conversion constant from percent decimal to bp.
+  uint public constant BASIS_POINT_DECIMALS = 10000;
+
   ////////////
   // Events //
   ////////////
@@ -76,7 +79,7 @@ contract SpotJumpOracle {
     params = _params;
     jumps = _initialJumps;
 
-    // ensure multiplication in recordJump() does not overflow
+    // ensure multiplication in _maybeStoreJump() does not overflow
     if (uint(_initialJumps.length) * uint(_params.width) > UINT32_MAX) {
       revert SJO_MaxJumpExceedsLimit();
     }
@@ -88,8 +91,8 @@ contract SpotJumpOracle {
 
   /**
    * @notice Updates the jump buckets if livePrice deviates far enough from the referencePrice.
-   * @dev The time gap between the livePrice and referencePrice is always < params.secToReferenceStale.
-   *         However, this means the time gap is not always.
+   * @dev The time gap between the livePrice and referencePrice fluctuates, 
+   *      but is always < params.secToReferenceStale.
    */
   function updateJumps() external {
     JumpParams memory memParams = params;
@@ -158,7 +161,7 @@ contract SpotJumpOracle {
     uint jumpDecimal = IntLib.abs((liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256());
 
     // convert to basis points with 0 decimals
-    uint jumpBasisPoints = jumpDecimal * 10000 / DecimalMath.UNIT;
+    uint jumpBasisPoints = jumpDecimal * BASIS_POINT_DECIMALS / DecimalMath.UNIT;
 
     // gracefully handle huge spot jump
     return (jumpBasisPoints < UINT32_MAX) ? (jumpBasisPoints).toUint32() : uint32(UINT32_MAX);
