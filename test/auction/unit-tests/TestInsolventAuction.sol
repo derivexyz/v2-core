@@ -136,11 +136,11 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
         stepInterval: 2,
-        lengthOfAuction: 1,
+        lengthOfAuction: 2,
         securityModule: address(1),
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
-        secBetweenSteps: 0
+        secBetweenSteps: 0 // cool down is 0
       })
     );
     vm.prank(address(manager));

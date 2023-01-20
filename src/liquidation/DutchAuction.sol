@@ -57,8 +57,8 @@ contract DutchAuction is IDutchAuction, Owned {
     uint dv;
     /// The current step if the auction is insolvent
     uint stepInsolvent;
-    // last step
-    uint lastStep;
+    /// The timestamp of the last increase of steps for insolvent auction
+    uint lastStepUpdate;
   }
 
   struct DutchAuctionParameters {
@@ -162,7 +162,8 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
     (, int lowerBound) = _getBounds(accountId);
-    auctions[accountId].lastStep = block.timestamp;
+    
+    auctions[accountId].lastStepUpdate = block.timestamp;
     _startInsolventAuction(lowerBound, accountId);
   }
 
@@ -256,16 +257,17 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    if (block.timestamp < auction.lastStep + parameters.secBetweenSteps && auction.lastStep != 0) {
+    uint lastIncrement = auction.lastStepUpdate;
+    if (block.timestamp < lastIncrement + parameters.secBetweenSteps && lastIncrement != 0) {
       revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.secBetweenSteps);
     }
 
     uint newStep = ++auction.stepInsolvent;
-    if (newStep > parameters.lengthOfAuction) {
+    if (newStep * parameters.stepInterval > parameters.lengthOfAuction) {
       revert DA_MaxStepReachedInsolventAuction();
     }
 
-    auction.lastStep = block.timestamp;
+    auction.lastStepUpdate = block.timestamp;
 
     return newStep;
   }
@@ -359,7 +361,7 @@ contract DutchAuction is IDutchAuction, Owned {
       startTime: block.timestamp,
       dv: dv,
       stepInsolvent: 0,
-      lastStep: 0,
+      lastStepUpdate: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: 0})
     });
   }
@@ -380,7 +382,7 @@ contract DutchAuction is IDutchAuction, Owned {
       startTime: block.timestamp,
       dv: dv,
       stepInsolvent: 0,
-      lastStep: 0,
+      lastStepUpdate: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
     });
     emit Insolvent(accountId);
