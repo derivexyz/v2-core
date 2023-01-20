@@ -327,7 +327,15 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @param accountToReceive Account to receive the new printed amount
    */
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external onlyLiquidation {
-    // mint this amount in target amount
+    // accruedSmFees cover as much of the insolvency as possible
+    // totalSupply/Borrow will be updated in the following adjustment
+    if (lossAmountInCash <= accruedSmFees) {
+      accruedSmFees -= lossAmountInCash;
+    } else {
+      accruedSmFees = 0;
+    }
+
+    // mint this amount in target account
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountToReceive,
@@ -407,16 +415,18 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
 
+    // Update totalBorrow with interestAccrued
+    uint prevBorrow = totalBorrow;
+    totalBorrow += interestAccrued;
+
     // Take security module fee cut from total interest accrued
     uint smFeeCut = interestAccrued.multiplyDecimal(smFeePercentage);
     interestAccrued -= smFeeCut;
     accruedSmFees += smFeeCut;
 
-    // Update total supply and borrow
-    uint prevBorrow = totalBorrow;
+    // Update total supply with interestAccrued - smFeeCut
     uint prevSupply = totalSupply;
     totalSupply += interestAccrued;
-    totalBorrow += interestAccrued;
 
     // Update borrow/supply index by calculating the % change of total * current borrow/supply index
     borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
@@ -430,7 +440,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
-    uint totalCash = totalSupply - totalBorrow;
+    uint totalCash = totalSupply + accruedSmFees - totalBorrow;
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
   }
