@@ -16,8 +16,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "synthetix/DecimalMath.sol";
 import "../libraries/IntLib.sol";
 
-import "forge-std/Test.sol";
-import "forge-std/console2.sol";
 /**
  * @title Dutch Auction
  * @author Lyra
