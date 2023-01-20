@@ -45,7 +45,10 @@ interface IDutchAuction {
   error DA_AuctionAlreadyStarted(uint accountId);
 
   /// @dev emmited when a bid is submitted on a closed/ended auction
-  error DA_AuctionEnded(uint accountId);
+  error DA_AuctionEnded();
+
+  /// @dev emmited when a bid is submitted on a closed or non-existant auction.
+  error DA_AuctionNotActive();
 
   /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
   error DA_AmountTooLarge(uint accountId, uint amount);

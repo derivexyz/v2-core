@@ -17,7 +17,7 @@ import "synthetix/DecimalMath.sol";
 import "../libraries/IntLib.sol";
 
 import "forge-std/Test.sol";
-
+import "forge-std/console2.sol";
 /**
  * @title Dutch Auction
  * @author Lyra
@@ -29,6 +29,7 @@ import "forge-std/Test.sol";
  * where the security module will step into to handle the risk
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
+
 contract DutchAuction is IDutchAuction, Owned {
   using SafeCast for int;
   using SafeCast for uint;
@@ -52,8 +53,6 @@ contract DutchAuction is IDutchAuction, Owned {
     bool ongoing;
     /// The startTime of the auction
     uint startTime;
-    /// The endTime of the auction
-    uint endTime;
     /// The change in value of the portfolio per step in dollars when not insolvent
     uint dv;
     /// The current step if the auction is insolvent
@@ -181,12 +180,7 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     if (auctions[accountId].ongoing == false) {
-      revert DA_AuctionEnded(accountId);
-    }
-
-    // need to check if the timelimit for the auction has been ecplised
-    if (block.timestamp > auctions[accountId].endTime) {
-      revert DA_AuctionEnded(accountId);
+      revert DA_AuctionNotActive();
     }
 
     // get bidder address and make sure that they own the account
@@ -236,7 +230,6 @@ contract DutchAuction is IDutchAuction, Owned {
   function _terminateAuction(uint accountId) internal {
     Auction storage auction = auctions[accountId];
     auction.ongoing = false;
-    auction.endTime = block.timestamp;
     emit AuctionEnded(accountId, block.timestamp);
   }
 
@@ -364,7 +357,6 @@ contract DutchAuction is IDutchAuction, Owned {
       insolvent: false,
       ongoing: true,
       startTime: block.timestamp,
-      endTime: block.timestamp + parameters.lengthOfAuction, // half the auction length as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
       lastStep: 0,
@@ -386,7 +378,6 @@ contract DutchAuction is IDutchAuction, Owned {
       insolvent: true,
       ongoing: true,
       startTime: block.timestamp,
-      endTime: block.timestamp + parameters.lengthOfAuction, // half the length of the auction as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
       lastStep: 0,
@@ -449,6 +440,10 @@ contract DutchAuction is IDutchAuction, Owned {
       uint numSteps = auction.stepInsolvent;
       return 0 - (auction.dv * numSteps).toInt256();
     } else {
+      if (block.timestamp > auction.startTime + parameters.lengthOfAuction) {
+        revert DA_AuctionEnded();
+      }
+
       int upperBound = auction.auction.upperBound;
       int bid = upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
       // have to call markAsInsolvent before bid can be negative

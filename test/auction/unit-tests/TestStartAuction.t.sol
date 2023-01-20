@@ -127,7 +127,6 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.insolvent, true); // this would be flagged as an insolvent auction
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
 
     (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc);
     assertEq(auction.auction.lowerBound, lowerBound);
@@ -184,7 +183,7 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
     assertEq(auction.insolvent, false);
     // fast forward
-    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 100);
+    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction);
     assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
 
     // mark the auction as insolvent
@@ -223,7 +222,6 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.auction.accountId, aliceAcc + 1);
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
-    assertEq(auction.endTime, block.timestamp + dutchAuctionParameters.lengthOfAuction);
   }
 
   function testCannotMarkInsolventIfAuctionNotInsolvent() public {

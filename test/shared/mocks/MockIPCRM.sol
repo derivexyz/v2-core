@@ -53,10 +53,7 @@ contract MockIPCRM is IPCRM, IManager {
   {
     if (cashAmount > 0) {
       initMargin[accountId] += cashAmount.toInt256();
-    } else {
-      console.log("cash amount was negative");
     }
-
     if (nextIsEndingBid) {
       nextIsEndingBid = false;
       initMargin[accountId] = 0;
