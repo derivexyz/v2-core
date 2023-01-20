@@ -58,6 +58,8 @@ contract DutchAuction is IDutchAuction, Owned {
     uint dv;
     /// The current step if the auction is insolvent
     uint stepInsolvent;
+    // last step
+    uint lastStep;
   }
 
   struct DutchAuctionParameters {
@@ -71,6 +73,8 @@ contract DutchAuction is IDutchAuction, Owned {
     int portfolioModifier;
     // Big number: inversed modifier
     int inversePortfolioModifier;
+    // Number, Amount of time between steps when the auction is insolvent
+    uint secBetweenSteps;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -132,8 +136,7 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_AuctionAlreadyStarted(accountId);
     }
 
-    uint spot = riskManager.getSpot();
-    (int upperBound, int lowerBound) = _getBounds(accountId, spot);
+    (int upperBound, int lowerBound) = _getBounds(accountId);
     // covers the case where an auction could start as insolvent, upperbound < 0
     if (upperBound > 0) {
       _startSolventAuction(upperBound, accountId);
@@ -157,10 +160,10 @@ contract DutchAuction is IDutchAuction, Owned {
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode(accountId);
     }
-    uint spot = riskManager.getSpot();
 
     // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
-    (, int lowerBound) = _getBounds(accountId, spot);
+    (, int lowerBound) = _getBounds(accountId);
+    auctions[accountId].lastStep = block.timestamp;
     _startInsolventAuction(lowerBound, accountId);
   }
 
@@ -222,7 +225,6 @@ contract DutchAuction is IDutchAuction, Owned {
       _terminateAuction(accountId);
     }
 
-    // TODO: change so that it returns the cash amount.
     return percentOfAccount;
   }
 
@@ -261,13 +263,16 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_SolventAuctionCannotIncrement(accountId);
     }
 
-    // todo: logic to prevnet spamming based on time
+    if (block.timestamp < auction.lastStep + parameters.secBetweenSteps && auction.lastStep != 0) {
+      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.secBetweenSteps);
+    }
 
     uint newStep = ++auction.stepInsolvent;
-
     if (newStep > parameters.lengthOfAuction) {
       revert DA_MaxStepReachedInsolventAuction();
     }
+
+    auction.lastStep = block.timestamp;
 
     return newStep;
   }
@@ -298,10 +303,9 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset,
    */
-  function getBounds(uint accountId, uint spot) external view returns (int, int) {
-    return _getBounds(accountId, spot);
+  function getBounds(uint accountId) external view returns (int, int) {
+    return _getBounds(accountId);
   }
 
   /**
@@ -363,6 +367,7 @@ contract DutchAuction is IDutchAuction, Owned {
       endTime: block.timestamp + parameters.lengthOfAuction, // half the auction length as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
+      lastStep: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: upperBound, lowerBound: 0})
     });
   }
@@ -384,6 +389,7 @@ contract DutchAuction is IDutchAuction, Owned {
       endTime: block.timestamp + parameters.lengthOfAuction, // half the length of the auction as 50% of the auction should be spent on each side
       dv: dv,
       stepInsolvent: 0,
+      lastStep: 0,
       auction: AuctionDetails({accountId: accountId, upperBound: 0, lowerBound: lowerBound})
     });
     emit Insolvent(accountId);
@@ -393,16 +399,16 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
-   * @param spot the spot price of the asset,
    */
-  function _getBounds(uint accountId, uint spot) internal view returns (int, int) {
+  // TODO: investigate gas consumption after merge
+  function _getBounds(uint accountId) internal view returns (int, int) {
     IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
     IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
 
-    int cash = riskManager.getCashAmount(accountId);
-    int maximum =
-      (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cash) * parameters.portfolioModifier / 1e18;
-    int minimum = (riskManager.getInitialMargin(accountId) + cash) * parameters.inversePortfolioModifier / 1e18;
+    int cashMargin = riskManager.getCashAmount(accountId);
+    int maximum = (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cashMargin)
+      * parameters.portfolioModifier / 1e18;
+    int minimum = (riskManager.getInitialMargin(accountId) + cashMargin) * parameters.inversePortfolioModifier / 1e18;
     return (maximum, minimum);
   }
 
@@ -421,6 +427,7 @@ contract DutchAuction is IDutchAuction, Owned {
       for (uint j = 0; j < expiries[i].strikes.length; j++) {
         expiries[i].strikes[j].calls = expiries[i].strikes[j].calls * -1;
         expiries[i].strikes[j].puts = expiries[i].strikes[j].puts * -1;
+        expiries[i].strikes[j].forwards = expiries[i].strikes[j].forwards * -1;
       }
     }
     return expiries;
@@ -437,6 +444,7 @@ contract DutchAuction is IDutchAuction, Owned {
     if (!auction.ongoing) {
       revert DA_AuctionNotStarted(accountId);
     }
+
     if (auction.insolvent) {
       uint numSteps = auction.stepInsolvent;
       return 0 - (auction.dv * numSteps).toInt256();

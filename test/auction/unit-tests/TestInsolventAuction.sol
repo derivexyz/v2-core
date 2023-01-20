@@ -31,7 +31,8 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0
       })
     );
 
@@ -128,7 +129,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     assertEq(usdcAsset.isSocialized(), true);
   }
 
-  function testIncraseStepMax() public {
+  function testIncreaseStepMax() public {
     int initMargin = -1000_000 * 1e18;
     manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
 
@@ -138,7 +139,8 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         lengthOfAuction: 1,
         securityModule: address(1),
         portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0
       })
     );
     vm.prank(address(manager));
@@ -147,6 +149,35 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     dutchAuction.incrementInsolventAuction(aliceAcc);
 
     vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+  }
+
+  function testCannotSpamIncrementStep() public {
+    int initMargin = -1000_000 * 1e18;
+    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
+    // change parameters to add cool down
+    dutchAuction.setDutchAuctionParameters(
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        securityModule: address(1),
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 100
+      })
+    );
+    vm.prank(address(manager));
+    dutchAuction.startAuction(aliceAcc);
+
+    dutchAuction.incrementInsolventAuction(aliceAcc);
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IDutchAuction.DA_CannotStepBeforeCoolDownEnds.selector,
+        block.timestamp,
+        block.timestamp + dutchAuction.getParameters().secBetweenSteps
+      )
+    );
     dutchAuction.incrementInsolventAuction(aliceAcc);
   }
 }

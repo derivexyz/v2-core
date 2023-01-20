@@ -116,7 +116,8 @@ contract UNIT_DutchAuctionView is Test {
         lengthOfAuction: 200,
         securityModule: address(1),
         portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0
       })
     );
 
@@ -132,7 +133,7 @@ contract UNIT_DutchAuctionView is Test {
   }
 
   function testGetBounds() public {
-    (int max, int min) = dutchAuction.getBounds(1, 1000);
+    (int max, int min) = dutchAuction.getBounds(1);
     assertEq(max, 0);
     assertEq(min, 0);
   }
