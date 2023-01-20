@@ -110,7 +110,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     // Increase total borrow amount
     uint requiredAmount = 1000 * 1e18;
     cashAsset.withdraw(newAccount, requiredAmount, address(this));
-    
+
     vm.warp(block.timestamp + 1 weeks);
     cashAsset.accrueInterest();
     assertEq(_checkGoldenRule(), true);
@@ -157,7 +157,10 @@ contract UNIT_CashAssetWithdrawFee is Test {
   }
 
   function _checkGoldenRule() internal view returns (bool) {
-    if ((cashAsset.totalSupply() + cashAsset.accruedSmFees() - cashAsset.totalBorrow()) == usdc.balanceOf(address(cashAsset))) {
+    if (
+      (cashAsset.totalSupply() + cashAsset.accruedSmFees() - cashAsset.totalBorrow())
+        == usdc.balanceOf(address(cashAsset))
+    ) {
       return true;
     }
     return false;
