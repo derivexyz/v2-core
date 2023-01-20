@@ -110,7 +110,7 @@ contract PCRMSpotJumpOracleGas is Script {
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),
       secToReferenceStale: uint32(2 hours),
-      referencePrice: 1000e18
+      referencePrice: uint128(1000e18)
     });
 
     uint32[16] memory initialJumps;

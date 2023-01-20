@@ -268,7 +268,7 @@ contract UNIT_TestSpotJumpOracle is Test {
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),
       secToReferenceStale: uint32(2 hours),
-      referencePrice: referencePrice
+      referencePrice: uint128(referencePrice)
     });
   }
 
