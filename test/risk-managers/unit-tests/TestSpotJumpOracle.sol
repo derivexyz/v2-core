@@ -78,25 +78,25 @@ contract UNIT_TestSpotJumpOracle is Test {
     uint32 jump = oracle.calcSpotJump(100, 100);
     assertEq(jump, 0);
 
-    // 10bp change
+    // up 10bp
     jump = oracle.calcSpotJump(1001e18, 1000e18);
     assertEq(jump, 10);
 
-    // 9bp change due to rounding
+    // down 10bp
     jump = oracle.calcSpotJump(1000e18, 1001e18);
-    assertEq(jump, 9);
+    assertEq(jump, 10);
 
-    // 500bp change
+    // up 500bp
     jump = oracle.calcSpotJump(15750e16, 15000e16);
     assertEq(jump, 500);
 
-    // 10x up
+    // up 10x
     jump = oracle.calcSpotJump(1000e18, 100e18);
     assertEq(jump, 90_000);
 
-    // -10x down
+    // down 10x
     jump = oracle.calcSpotJump(100e18, 1000e18);
-    assertEq(jump, 9_000);
+    assertEq(jump, 90_000);
 
     // 10,000x increase floored
     jump = oracle.calcSpotJump(100_000_000_000e18, 1e18);

@@ -157,8 +157,13 @@ contract SpotJumpOracle {
    */
 
   function _calcSpotJump(uint liveSpot, uint referencePrice) internal pure returns (uint32 jump) {
-    // get percent jump as decimal
-    uint jumpDecimal = IntLib.abs((liveSpot.divideDecimal(referencePrice)).toInt256() - DecimalMath.UNIT.toInt256());
+    // get ratio
+    uint ratio = liveSpot > referencePrice 
+      ? liveSpot.divideDecimal(referencePrice) 
+      : referencePrice.divideDecimal(liveSpot);
+
+    // get percent
+    uint jumpDecimal = IntLib.abs(ratio.toInt256() - DecimalMath.UNIT.toInt256());
 
     // convert to basis points with 0 decimals
     uint jumpBasisPoints = jumpDecimal * BASIS_POINT_DECIMALS / DecimalMath.UNIT;
