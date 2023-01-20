@@ -122,7 +122,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     vm.prank(liquidationModule);
     cashAsset.socializeLoss(requiredAmount / 2, accountId);
 
-    // All SM fees used to cover insolvency
+    // All SM fees are enough to cover insolvency
     assertEq(cashAsset.accruedSmFees(), 0);
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), false);
   }
@@ -149,7 +149,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     vm.prank(liquidationModule);
     cashAsset.socializeLoss(requiredAmount / 2, accountId);
 
-    // Some SM fees used to cover insolvency and insolvency still occurs
+    // All SM fees not enough to cover insolvency and insolvency still occurs
     assertEq(cashAsset.accruedSmFees(), 0);
     assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
   }
