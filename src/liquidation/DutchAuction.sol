@@ -393,12 +393,16 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   // TODO: investigate gas consumption after merge
   function _getBounds(uint accountId) internal view returns (int, int) {
-    IPCRM.ExpiryHolding[] memory expiryHoldings = riskManager.getGroupedHoldings(accountId);
-    IPCRM.ExpiryHolding[] memory invertedExpiryHoldings = _inversePortfolio(expiryHoldings);
+    IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
+
+    // update the portfolio in-memory
+    _inversePortfolio(portfolio);
 
     int cashMargin = riskManager.getCashAmount(accountId);
-    int maximum = (riskManager.getInitialMarginForPortfolio(invertedExpiryHoldings) - cashMargin)
-      * parameters.portfolioModifier / 1e18;
+
+    // get the initial margin for the inversed portfolio
+    int maximum =
+      (riskManager.getInitialMarginForPortfolio(portfolio) - cashMargin) * parameters.portfolioModifier / 1e18;
     int minimum = (riskManager.getInitialMargin(accountId) + cashMargin) * parameters.inversePortfolioModifier / 1e18;
     return (maximum, minimum);
   }
@@ -406,22 +410,14 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @notice Function to invert an aribtary portfolio
    * @dev Inverted portfolio required for the upper bound calculation
-   * @param expiries The portfolio to invert
-   * @return invertedPortfolio The inverted portfolio
+   * @param portfolio The portfolio to invert
    */
-  function _inversePortfolio(IPCRM.ExpiryHolding[] memory expiries)
-    internal
-    pure
-    returns (IPCRM.ExpiryHolding[] memory)
-  {
-    for (uint i = 0; i < expiries.length; i++) {
-      for (uint j = 0; j < expiries[i].strikes.length; j++) {
-        expiries[i].strikes[j].calls = expiries[i].strikes[j].calls * -1;
-        expiries[i].strikes[j].puts = expiries[i].strikes[j].puts * -1;
-        expiries[i].strikes[j].forwards = expiries[i].strikes[j].forwards * -1;
-      }
+  function _inversePortfolio(IPCRM.Portfolio memory portfolio) internal pure {
+    for (uint i; i < portfolio.strikes.length; ++i) {
+      portfolio.strikes[i].calls = portfolio.strikes[i].calls * -1;
+      portfolio.strikes[i].puts = portfolio.strikes[i].puts * -1;
+      portfolio.strikes[i].forwards = portfolio.strikes[i].forwards * -1;
     }
-    return expiries;
   }
 
   /**
