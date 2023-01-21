@@ -26,7 +26,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   // next init margin that should be returned when calling getInitialMarginForPortfolio
   int public portMargin;
-  ExpiryHolding[] public userAcc; // just a result that can be set to be returned when testing
+  Portfolio public userAcc; // just a result that can be set to be returned when testing
 
   // if set to true, assume next executeBid will bring init margin to 0
   bool nextIsEndingBid = false;
@@ -35,21 +35,12 @@ contract MockIPCRM is IPCRM, IManager {
     account = _account;
   }
 
-  function getSortedHoldings(uint accountId)
-    external
-    view
-    virtual
-    returns (ExpiryHolding[] memory expiryHoldings, int cash)
-  {
-    // TODO: filler code
-  }
-
   // TODO: needs to be expanded upon next sprint to make sure that
   // it can handle the insolvency case properly
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
     virtual
-    returns (int finalInitialMargin, ExpiryHolding[] memory, int cash)
+    returns (int finalInitialMargin, Portfolio[] memory, int cash)
   {
     if (cashAmount > 0) {
       initMargin[accountId] += cashAmount.toInt256();
@@ -86,10 +77,9 @@ contract MockIPCRM is IPCRM, IManager {
     return 0;
   }
 
-  function getGroupedHoldings(uint accountId) external view virtual returns (ExpiryHolding[] memory expiryHoldings) {
+  function getPortfolio(uint accountId) external view virtual returns (Portfolio memory portfolio) {
     // TODO: filler code
     if (accHasAssets[accountId]) {
-      ExpiryHolding[] memory expiryHoldings = new ExpiryHolding[](1);
       Strike[] memory strikeHoldings = new Strike[](4);
 
       strikeHoldings[0] = Strike(1000, 1, 1, 1);
@@ -97,12 +87,8 @@ contract MockIPCRM is IPCRM, IManager {
       strikeHoldings[2] = Strike(3000, 4, -2, 1);
       strikeHoldings[3] = Strike(4000, 5, 10, 1);
 
-      expiryHoldings[0] = ExpiryHolding(block.timestamp + 2 weeks, 4, strikeHoldings);
-      return expiryHoldings;
+      portfolio = Portfolio(0, block.timestamp + 2 weeks, 4, strikeHoldings);
     }
-
-    ExpiryHolding[] memory expiryHoldings = new ExpiryHolding[](0);
-    return expiryHoldings;
   }
 
   function getCashAmount(uint accountId) external view virtual returns (int) {
@@ -135,19 +121,16 @@ contract MockIPCRM is IPCRM, IManager {
     accHasAssets[accountId] = true;
   }
 
-  function givePortfolio(uint accountId, ExpiryHolding[] memory expiryHoldings) external {
+  function givePortfolio(uint accountId, Portfolio memory portfolio) external {
     accHasAssets[accountId] = true;
 
-    // copy expiryHoldings into userAcc
-    for (uint i = 0; i < expiryHoldings.length; i++) {
-      userAcc[i].expiry = expiryHoldings[i].expiry;
-      userAcc[i].numStrikeHoldings = expiryHoldings[i].numStrikeHoldings;
-      for (uint j = 0; j < expiryHoldings[i].strikes.length; j++) {
-        userAcc[i].strikes[j].strike = expiryHoldings[i].strikes[j].strike;
-        userAcc[i].strikes[j].calls = expiryHoldings[i].strikes[j].calls;
-        userAcc[i].strikes[j].puts = expiryHoldings[i].strikes[j].puts;
-        userAcc[i].strikes[j].forwards = expiryHoldings[i].strikes[j].forwards;
-      }
+    userAcc.expiry = portfolio.expiry;
+    userAcc.numStrikesHeld = portfolio.numStrikesHeld;
+    for (uint i = 0; i < portfolio.strikes.length; i++) {
+      userAcc.strikes[i].strike = portfolio.strikes[i].strike;
+      userAcc.strikes[i].calls = portfolio.strikes[i].calls;
+      userAcc.strikes[i].puts = portfolio.strikes[i].puts;
+      userAcc.strikes[i].forwards = portfolio.strikes[i].forwards;
     }
   }
 
@@ -155,7 +138,7 @@ contract MockIPCRM is IPCRM, IManager {
     portMargin = margin;
   }
 
-  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory) external view returns (int) {
+  function getInitialMarginForPortfolio(IPCRM.Portfolio memory) external view returns (int) {
     return portMargin;
   }
 

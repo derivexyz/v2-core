@@ -7,9 +7,14 @@ pragma solidity ^0.8.13;
  * @notice Risk Manager that controls transfer and margin requirements
  */
 interface IPCRM {
-  struct ExpiryHolding {
+  struct Portfolio {
+    /// cash amount or debt
+    int cash;
+    /// timestamp of expiry for all strike holdings
     uint expiry;
-    uint numStrikes;
+    /// # of strikes with active balances
+    uint numStrikesHeld;
+    /// array of strike holding details
     Strike[] strikes;
   }
 
@@ -20,13 +25,11 @@ interface IPCRM {
     int64 forwards;
   }
 
-  function getSortedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings, int cash);
-
-  function getGroupedHoldings(uint accountId) external view returns (ExpiryHolding[] memory expiryHoldings);
+  function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio);
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
     external
-    returns (int finalInitialMargin, ExpiryHolding[] memory, int cash);
+    returns (int finalInitialMargin, Portfolio[] memory, int cash);
 
   function getSpot() external view returns (uint spot);
 
@@ -38,8 +41,5 @@ interface IPCRM {
 
   function getCashAmount(uint accountId) external view returns (int);
 
-  function getInitialMarginForPortfolio(IPCRM.ExpiryHolding[] memory invertedExpiryHoldings)
-    external
-    view
-    returns (int);
+  function getInitialMarginForPortfolio(Portfolio memory portfolio) external view returns (int);
 }
