@@ -7,7 +7,6 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "synthetix/Owned.sol";
 import "synthetix/SignedDecimalMath.sol";
 import "synthetix/DecimalMath.sol";
-import "../interfaces/IAsset.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
@@ -20,7 +19,7 @@ import "../libraries/ConvertDecimals.sol";
  * @author Lyra
  */
 
-contract CashAsset is ICashAsset, Owned, IAsset {
+contract CashAsset is ICashAsset, Owned {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
@@ -159,7 +158,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
-        asset: IAsset(address(this)),
+        asset: ICashAsset(address(this)),
         subId: 0,
         amount: int(amountInAccount),
         assetData: bytes32(0)
@@ -190,8 +189,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     // each cash balance can only take out <100% amount of stable asset
     if (temporaryWithdrawFeeEnabled) {
       // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
-      uint exchangeRate = _getExchangeRate();
-      cashAmount = cashAmount.divideDecimal(exchangeRate);
+      cashAmount = cashAmount.divideDecimal(_getExchangeRate());
     }
 
     // transfer the asset out after potentially needing to calculate exchange rate
@@ -200,7 +198,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,
-        asset: IAsset(address(this)),
+        asset: ICashAsset(address(this)),
         subId: 0,
         amount: -int(cashAmount),
         assetData: bytes32(0)
@@ -236,7 +234,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    */
   function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
     _accrueInterest();
-    return _calculateBalanceWithInterest(accounts.getBalance(accountId, IAsset(address(this)), 0), accountId);
+    return _calculateBalanceWithInterest(accounts.getBalance(accountId, ICashAsset(address(this)), 0), accountId);
   }
 
   /// @notice Allows anyone to transfer accrued SM fees to the SM
@@ -247,7 +245,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: smId,
-        asset: IAsset(address(this)),
+        asset: ICashAsset(address(this)),
         subId: 0,
         amount: amountToSend,
         assetData: bytes32(0)
@@ -339,7 +337,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountToReceive,
-        asset: IAsset(address(this)),
+        asset: ICashAsset(address(this)),
         subId: 0,
         amount: lossAmountInCash.toInt256(),
         assetData: bytes32(0)
@@ -386,13 +384,13 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    */
   function _calculateBalanceWithInterest(int preBalance, uint accountId) internal view returns (int interestBalance) {
     uint accountIndex = accountIdIndex[accountId];
-    uint indexToUse = accountIndex == 0 ? DecimalMath.UNIT : accountIndex;
+    if (accountIndex == 0) return preBalance;
 
     uint indexChange;
     if (preBalance < 0) {
-      indexChange = borrowIndex.divideDecimal(indexToUse);
+      indexChange = borrowIndex.divideDecimal(accountIndex);
     } else if (preBalance > 0) {
-      indexChange = supplyIndex.divideDecimal(indexToUse);
+      indexChange = supplyIndex.divideDecimal(accountIndex);
     }
     interestBalance = indexChange.toInt256().multiplyDecimal(preBalance);
   }
@@ -421,12 +419,11 @@ contract CashAsset is ICashAsset, Owned, IAsset {
 
     // Take security module fee cut from total interest accrued
     uint smFeeCut = interestAccrued.multiplyDecimal(smFeePercentage);
-    interestAccrued -= smFeeCut;
     accruedSmFees += smFeeCut;
 
     // Update total supply with interestAccrued - smFeeCut
     uint prevSupply = totalSupply;
-    totalSupply += interestAccrued;
+    totalSupply += (interestAccrued - smFeeCut);
 
     // Update borrow/supply index by calculating the % change of total * current borrow/supply index
     borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
@@ -469,7 +466,7 @@ contract CashAsset is ICashAsset, Owned, IAsset {
    * @dev get current account cash balance
    */
   // function _getStaleBalance(uint accountId) internal view returns (int balance) {
-  //   balance = accounts.getBalance(accountId, IAsset(address(this)), 0);
+  //   balance = accounts.getBalance(accountId, ICashAsset(address(this)), 0);
   // }
 
   ///////////////////

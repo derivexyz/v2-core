@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "./IAsset.sol";
 import "./IInterestRateModel.sol";
 
-interface ICashAsset {
+interface ICashAsset is IAsset {
   ////////////
   // Events //
   ////////////
