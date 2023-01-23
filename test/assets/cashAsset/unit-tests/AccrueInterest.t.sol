@@ -20,7 +20,6 @@ contract UNIT_CashAssetAccrueInterest is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
-  MockManager badManager;
   Accounts account;
   IInterestRateModel rateModel;
 
@@ -32,7 +31,6 @@ contract UNIT_CashAssetAccrueInterest is Test {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(account));
-    badManager = new MockManager(address(account));
 
     usdc = new MockERC20("USDC", "USDC");
     smAccount = account.createAccount(address(this), manager);
@@ -191,7 +189,6 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
     // Borrow amount should be > because bal now includes accrued interest
     bal = account.getBalance(debtAccount, cashAsset, 0);
-    console.logInt(bal);
     assertGt(-int(amountToBorrow) * 2, bal);
   }
 
