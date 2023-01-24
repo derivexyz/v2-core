@@ -80,7 +80,7 @@ contract DecimalMathTest is Test {
     assertEq(tester.preciseDecimalToDecimal(0.5e27), 0.5e18);
 
     assertEq(tester.preciseDecimalToDecimal(1e27 + 1), 1e18);
-    assertEq(tester.preciseDecimalToDecimal(1e27 + 5e9), 1e18 + 5);
+    assertEq(tester.preciseDecimalToDecimal(1e27 + 0.5e9), 1e18 + 1);
   }
 
   function testMul() public {
