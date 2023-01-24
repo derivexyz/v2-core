@@ -50,7 +50,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     // need to predict this
     uint smAccountId;
 
-    // security 
+    // security
     cashAsset = new CashAsset(accounts, usdc, rateModel, smAccountId, liquidation);
 
     cashAsset.setWhitelistManager(address(manager), true);
