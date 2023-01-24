@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
-
+import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/Accounts.sol";
 
@@ -20,6 +20,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
   MockERC20 usdc;
   MockManager manager;
   Accounts account;
+  IInterestRateModel rateModel;
 
   uint accountId;
 
@@ -32,7 +33,8 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(account, usdc);
+    rateModel = new MockInterestRateModel(1e18);
+    cashAsset = new CashAsset(account, usdc, rateModel, 0, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -246,6 +248,30 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     // total borrow is repaid to 0
     assertEq(totalBorrowAfter, 0);
+  }
+
+  function testAdjustmentFromManagerDoesntChangeTotalSupplyOrBorrow() public {
+    int settlementAmount = 1000e6;
+
+    uint totalSupplyBefore = cashAsset.totalSupply();
+    uint totalBorrowBefore = cashAsset.totalBorrow();
+
+    // mock call from manager
+    vm.prank(address(manager));
+    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(
+      accountId,
+      cashAsset,
+      0, // subid
+      settlementAmount,
+      0x00
+    );
+    account.managerAdjustment(adjustment);
+
+    uint totalSupplyAfter = cashAsset.totalSupply();
+    uint totalBorrowAfter = cashAsset.totalBorrow();
+
+    assertEq(totalSupplyBefore, totalSupplyAfter);
+    assertEq(totalBorrowBefore, totalBorrowAfter);
   }
 
   /* ------------------- *

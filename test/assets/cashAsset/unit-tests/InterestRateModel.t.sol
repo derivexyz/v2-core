@@ -3,13 +3,15 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "../../../../src/assets/InterestRateModel.sol";
-
+import "synthetix/DecimalMath.sol";
 /**
  * @dev Simple testing for the InterestRateModel
  */
+
 contract UNIT_InterestRateModel is Test {
   using ConvertDecimals for uint;
   using SafeCast for uint;
+  using DecimalMath for uint;
 
   InterestRateModel rateModel;
 
@@ -73,7 +75,7 @@ contract UNIT_InterestRateModel is Test {
 
     uint borrowRate = rateModel.getBorrowRate(supply, borrows);
 
-    vm.expectRevert(abi.encodeWithSelector(InterestRateModel.IRM_NoElapsedTime.selector, time));
+    vm.expectRevert(abi.encodeWithSelector(IInterestRateModel.IRM_NoElapsedTime.selector, time));
     rateModel.getBorrowInterestFactor(time, borrowRate);
   }
 

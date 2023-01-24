@@ -12,12 +12,13 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
+import "test/shared/mocks/MockAsset.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestPCRM is Test {
   Accounts account;
   PCRM manager;
-  CashAsset cash;
+  MockAsset cash;
   MockERC20 usdc;
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
@@ -41,7 +42,7 @@ contract UNIT_TestPCRM is Test {
     auction = new MockDutchAuction();
 
     option = new Option();
-    cash = new CashAsset(IAccounts(address(account)), usdc);
+    cash = new MockAsset(usdc, account, true);
     manager = new PCRM(
       address(account),
       address(spotFeeds),
@@ -50,7 +51,7 @@ contract UNIT_TestPCRM is Test {
       address(auction)
     );
 
-    cash.setWhitelistManager(address(manager), true);
+    // cash.setWhitfelistManager(address(manager), true);
     manager.setParams(
       PCRM.Shocks({
         spotUpInitial: 120e16,

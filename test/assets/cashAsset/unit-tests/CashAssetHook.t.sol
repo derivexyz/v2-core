@@ -9,11 +9,13 @@ import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/interfaces/IAccounts.sol";
+import "../mocks/MockInterestRateModel.sol";
 
 contract UNIT_CashAssetHook is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
+  IInterestRateModel rateModel;
   address account;
 
   function setUp() public {
@@ -22,7 +24,8 @@ contract UNIT_CashAssetHook is Test {
     manager = new MockManager(account);
     usdc = new MockERC20("USDC", "USDC");
 
-    cashAsset = new CashAsset(IAccounts(account), usdc);
+    rateModel = new MockInterestRateModel(0.5 * 1e18);
+    cashAsset = new CashAsset(IAccounts(account), usdc, rateModel, 0, address(0));
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {

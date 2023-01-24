@@ -4,15 +4,19 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "../libraries/ConvertDecimals.sol";
 import "../libraries/FixedPointMathLib.sol";
+import "synthetix/DecimalMath.sol";
+import "../interfaces/IInterestRateModel.sol";
 
 /**
  * @title Interest Rate Model
  * @author Lyra
  * @notice Contract that implements the logic for calculating the borrow rate
  */
-contract InterestRateModel {
+
+contract InterestRateModel is IInterestRateModel {
   using ConvertDecimals for uint;
   using SafeCast for uint;
+  using DecimalMath for uint;
 
   /////////////////////
   // State Variables //
@@ -78,7 +82,7 @@ contract InterestRateModel {
    * @return The borrow rate percentage as a mantissa
    */
   function getBorrowRate(uint supply, uint borrows) external view returns (uint) {
-    uint util = getUtilRate(supply, borrows);
+    uint util = _getUtilRate(supply, borrows);
 
     if (util <= optimalUtil) {
       return util.multiplyDecimal(rateMultipler) + minRate;
@@ -95,7 +99,11 @@ contract InterestRateModel {
    * @param borrows The amount of borrows for the asset
    * @return The utilization rate as a mantissa between
    */
-  function getUtilRate(uint supply, uint borrows) public pure returns (uint) {
+  function getUtilRate(uint supply, uint borrows) external pure returns (uint) {
+    return _getUtilRate(supply, borrows);
+  }
+
+  function _getUtilRate(uint supply, uint borrows) internal pure returns (uint) {
     // Utilization rate is 0 when there are no borrows
     if (borrows == 0) {
       return 0;
@@ -103,19 +111,4 @@ contract InterestRateModel {
 
     return borrows.divideDecimal(supply);
   }
-
-  ////////////
-  // Events //
-  ////////////
-
-  ///@dev Emitted when interest rate parameters are set
-  event InterestRateParamsSet(uint minRate, uint rateMultipler, uint highRateMultipler, uint optimalUtil);
-
-  ////////////
-  // Errors //
-  ////////////
-
-  ///@dev Revert when the parameter set is greater than 1e18
-  error IRM_ParameterMustBeLessThanOne(uint param);
-  error IRM_NoElapsedTime(uint elapsedTime);
 }

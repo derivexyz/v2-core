@@ -6,6 +6,7 @@ import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
+import "src/assets/InterestRateModel.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
@@ -107,7 +108,15 @@ contract PCRMGroupingGasScript is Script {
 
     option = new Option();
     MockERC20 stable = new MockERC20("mock", "MOCK");
-    cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)));
+
+    // interest rate model
+    uint minRate = 0.06 * 1e18;
+    uint rateMultipler = 0.2 * 1e18;
+    uint highRateMultipler = 0.4 * 1e18;
+    uint optimalUtil = 0.6 * 1e18;
+    InterestRateModel rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+
+    cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)), rateModel, 0, address(auction));
 
     pcrm = new PCRM(
       address(account),
