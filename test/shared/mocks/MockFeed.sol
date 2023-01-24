@@ -19,5 +19,9 @@ contract MockFeed is ISpotFeeds {
     return bytes32("eth/usdc");
   }
 
+  function getSpotAndUpdatedAt(uint /*feedId*/ ) external view returns (uint, uint) {
+    return (spot, block.timestamp);
+  }
+
   function test() public {}
 }

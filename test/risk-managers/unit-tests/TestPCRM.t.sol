@@ -213,7 +213,6 @@ contract UNIT_TestPCRM is Test {
 
   function testNegativePnLSettledExpiryCalculation() public {
     skip(30 days);
-
     PCRM.Strike[] memory strikes = new PCRM.Strike[](2);
     strikes[0] = PCRM.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     strikes[1] = PCRM.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});

@@ -23,4 +23,12 @@ interface ISpotFeeds {
    * @return symbol Bytes that returns the trading pair (e.g. "ETH/USDC")
    */
   function getSymbol(uint feedId) external view returns (bytes32 symbol);
+
+  /**
+   * @notice Get the spot and the timestamp at which it was updated
+   * @param feedId ID of the feed
+   * @return spotPrice 18 decimal price of trading pair
+   * @return updatedAt timestamp at which spot was updated
+   */
+  function getSpotAndUpdatedAt(uint feedId) external view returns (uint spotPrice, uint updatedAt);
 }
