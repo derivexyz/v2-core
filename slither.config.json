@@ -5,7 +5,6 @@
   "solc_remaps": [
     "openzeppelin/=lib/openzeppelin-contracts/contracts/",
     "forge-std/=lib/forge-std/src/",
-    "synthetix/=lib/synthetix/",
     "forge-std/=lib/forge-std/src/"
   ]
 }

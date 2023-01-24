@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "synthetix/Owned.sol";
+import "src/libraries/Owned.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ICashAsset.sol";

@@ -6,7 +6,7 @@ import "src/interfaces/IAccounts.sol";
 import "forge-std/console2.sol";
 import "forge-std/console.sol";
 
-import "synthetix/DecimalMath.sol";
+import "src/libraries/DecimalMath.sol";
 
 contract MockManager is IManager {
   IAccounts account;

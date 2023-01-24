@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "../libraries/ConvertDecimals.sol";
 import "../libraries/FixedPointMathLib.sol";
-import "synthetix/DecimalMath.sol";
+import "../libraries/DecimalMath.sol";
 import "../interfaces/IInterestRateModel.sol";
 
 /**

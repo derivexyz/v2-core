@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "synthetix/DecimalMath.sol";
-import "synthetix/Owned.sol";
+import "src/libraries/DecimalMath.sol";
+import "src/libraries/Owned.sol";
 import "src/libraries/Black76.sol";
 import "forge-std/console2.sol";
 

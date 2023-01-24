@@ -15,7 +15,7 @@ import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockIPCRM.sol";
 
 // Math library
-import "synthetix/DecimalMath.sol";
+import "src/libraries/DecimalMath.sol";
 
 contract UNIT_TestStartAuction is Test {
   address alice;

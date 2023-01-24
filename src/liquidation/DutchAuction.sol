@@ -9,11 +9,11 @@ import "../interfaces/IDutchAuction.sol";
 import "../Accounts.sol";
 
 // inherited
-import "synthetix/Owned.sol";
 import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
-import "synthetix/DecimalMath.sol";
+import "../libraries/DecimalMath.sol";
+import "../libraries/Owned.sol";
 import "../libraries/IntLib.sol";
 
 /**

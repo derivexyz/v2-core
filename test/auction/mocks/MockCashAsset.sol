@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IAccounts.sol";
 import "../../shared/mocks/MockAsset.sol";
-import "lib/synthetix/DecimalMath.sol";
+import "src/libraries/DecimalMath.sol";
 /**
  * @title MockCash
  */
