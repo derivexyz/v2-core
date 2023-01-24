@@ -80,7 +80,7 @@ contract UNIT_TestPCRM is Test {
 
   function testSetParamsWithNonOwner() public {
     vm.startPrank(alice);
-    vm.expectRevert(abi.encodeWithSelector(AbstractOwned.OnlyOwner.selector, address(manager), alice, manager.owner()));
+    vm.expectRevert(AbstractOwned.OnlyOwner.selector);
     manager.setParams(
       PCRM.Shocks({
         spotUpInitial: 120e16,
