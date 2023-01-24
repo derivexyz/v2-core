@@ -5,22 +5,6 @@ import "./IAsset.sol";
 import "./IInterestRateModel.sol";
 
 interface ICashAsset is IAsset {
-  ////////////
-  // Events //
-  ////////////
-
-  /// @dev Emitted when interest related state variables are updated
-  event InterestAccrued(uint interestAccrued, uint borrowIndex, uint totalSupply, uint totalBorrow);
-
-  /// @dev Emitted when the security module fee is set
-  event SmFeeSet(uint fee);
-
-  /// @dev Emitted when a new interest rate model is set
-  event InterestRateModelSet(IInterestRateModel rateModel);
-
-  /// @dev Emitted when a manager address is whitelisted or unwhitelisted
-  event WhitelistManagerSet(address manager, bool whitelisted);
-
   /**
    * @dev Deposit USDC and increase account balance
    * @param recipientAccount account id to receive the cash asset
@@ -35,8 +19,6 @@ interface ICashAsset is IAsset {
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint amount, address recipient) external;
-
-  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external;
 
   /**
    * @notice Liquidation module can report loss when there is insolvency.
@@ -63,6 +45,18 @@ interface ICashAsset is IAsset {
   ////////////////
   //   Events   //
   ////////////////
+
+  /// @dev Emitted when interest related state variables are updated
+  event InterestAccrued(uint interestAccrued, uint borrowIndex, uint totalSupply, uint totalBorrow);
+
+  /// @dev Emitted when the security module fee is set
+  event SmFeeSet(uint fee);
+
+  /// @dev Emitted when a new interest rate model is set
+  event InterestRateModelSet(IInterestRateModel rateModel);
+
+  /// @dev Emitted when a manager address is whitelisted or unwhitelisted
+  event WhitelistManagerSet(address manager, bool whitelisted);
 
   /// @dev emitted when a user deposits to an account
   event Deposit(uint accountId, address from, uint amountCashMinted, uint stableAssetDeposited);

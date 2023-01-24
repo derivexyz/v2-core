@@ -7,6 +7,7 @@ import "openzeppelin/token/ERC20/ERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
 import "synthetix/Owned.sol";
+import "synthetix/DecimalMath.sol";
 
 import "./interfaces/IAsset.sol";
 import "./interfaces/IAccounts.sol";
@@ -25,6 +26,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   using SafeCast for int;
   using ConvertDecimals for uint;
   using SafeERC20 for IERC20Metadata;
+  using DecimalMath for uint;
 
   ///@dev Cash Asset contract address
   IAccounts public immutable accounts;

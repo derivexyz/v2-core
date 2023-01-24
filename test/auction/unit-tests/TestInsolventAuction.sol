@@ -6,8 +6,8 @@ import "forge-std/Test.sol";
 import "../../../src/liquidation/DutchAuction.sol";
 import "../../../src/Accounts.sol";
 import "../../shared/mocks/MockERC20.sol";
-import "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockSM.sol";
+import "../mocks/MockCashAsset.sol";
 
 import "../../../src/liquidation/DutchAuction.sol";
 
@@ -112,8 +112,6 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     dutchAuction.incrementInsolventAuction(aliceAcc);
     dutchAuction.incrementInsolventAuction(aliceAcc);
 
-    // usdc asset: deposit with usdc, cannot be negative
-    usdcAsset = new MockAsset(IERC20(usdc), account, false);
     int expectedTotalPayoutFromSM = 10_000e18;
 
     // if sm doesn't have enough balance

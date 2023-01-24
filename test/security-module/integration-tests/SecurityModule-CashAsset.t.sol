@@ -8,6 +8,7 @@ import "../../shared/mocks/MockManager.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
+import "../../../src/assets/InterestRateModel.sol";
 import "../../../src/Accounts.sol";
 
 /**
@@ -26,6 +27,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
   MockManager manager;
   Accounts accounts;
   SecurityModule securityModule;
+  InterestRateModel rateModel;
 
   uint smAccId;
   uint accountId;
@@ -38,7 +40,18 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
-    cashAsset = new CashAsset(accounts, usdc);
+    // todo: cleanup
+    uint minRate = 0.06 * 1e18;
+    uint rateMultipler = 0.2 * 1e18;
+    uint highRateMultipler = 0.4 * 1e18;
+    uint optimalUtil = 0.6 * 1e18;
+    rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+
+    // need to predict this
+    uint smAccountId;
+
+    // security 
+    cashAsset = new CashAsset(accounts, usdc, rateModel, smAccountId, liquidation);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
