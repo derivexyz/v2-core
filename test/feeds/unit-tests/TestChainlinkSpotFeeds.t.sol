@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 
-contract TestChainlinkSpotFeeds is Test {
+contract UNIT_TestChainlinkSpotFeeds is Test {
   ChainlinkSpotFeeds spotFeeds;
   MockV3Aggregator aggregator1;
   MockV3Aggregator aggregator2;
