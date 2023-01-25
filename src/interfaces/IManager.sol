@@ -9,6 +9,7 @@ interface IManager {
    * @dev a manager should properly check the final stateo of an account
    */
   function handleAdjustment(
+    // todo: + tradeId
     uint accountId,
     address caller,
     AccountStructs.AssetDelta[] memory deltas,
