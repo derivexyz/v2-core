@@ -21,10 +21,10 @@ import "../libraries/IntLib.sol";
  * @author Lyra
  * @notice Is used to liquidate an account that does not meet the margin requirements
  * 1. The auction is started by the risk Manager
- * 2. Bids are taken in a descending fashion until the matinance margin
+ * 2. Bids are taken in a descending fashion until the maintenance margin
  * 3. A scalar is applied to the assets of the portfolio and are transfered to the bidder
- * 4. This continues until matienance margin is met or until the portofolio is declared as insolvent
- * where the security module will step into to handle the risk
+ * 4. This continues until maintenance margin is met or until the portofolio is declared as insolvent
+ *    where the security module will step into to handle the risk
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
 
