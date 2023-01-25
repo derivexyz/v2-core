@@ -14,8 +14,8 @@ interface IAsset {
    * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
    */
   function handleAdjustment(
-    // todo: + tradeId
     AccountStructs.AssetAdjustment memory adjustment,
+    uint, /*tradeId*/
     int preBalance,
     IManager manager,
     address caller

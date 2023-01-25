@@ -98,6 +98,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   function handleAdjustment(
     uint accountId,
+    uint, /*tradeId*/
     address caller,
     AccountStructs.AssetDelta[] memory deltas,
     bytes memory data
