@@ -207,7 +207,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(dumbManager.accAssetAdjustmentDelta(thisAcc, address(coolAsset), uint96(tokenSubId)), 0);
     assertEq(dumbManager.accAssetAdjustmentDelta(bobAcc, address(coolAsset), uint96(tokenSubId)), 0);
 
-    assertEq(dumbManager.recordedTradeId(), lastTrade+1);
+    assertEq(dumbManager.recordedTradeId(), lastTrade + 1);
   }
 
   /**

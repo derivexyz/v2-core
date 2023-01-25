@@ -29,13 +29,10 @@ contract MockManager is IManager {
     account = IAccounts(account_);
   }
 
-  function handleAdjustment(
-    uint acc,
-    uint tradeId,
-    address,
-    AccountStructs.AssetDelta[] memory deltas,
-    bytes memory
-  ) public virtual {
+  function handleAdjustment(uint acc, uint tradeId, address, AccountStructs.AssetDelta[] memory deltas, bytes memory)
+    public
+    virtual
+  {
     // testing mode: record all incoming "deltas"
     if (logAdjustmentTriggers) {
       recordedTradeId = tradeId;

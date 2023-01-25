@@ -404,6 +404,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @notice Transfer an amount from one account to another for a specific (asset, subId)
    * @dev    update the allowance and balanceAndOrder storage
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
+   * @param tradeId a shared id for both asset and manager hooks within a same call
    */
   function _transferAsset(AssetTransfer calldata assetTransfer, uint tradeId)
     internal
@@ -487,6 +488,8 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
   /**
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
+   * @param tradeId a shared id for both asset and manager hooks within a same call
+   * @param triggerHook whether this call should trigger asset hook
    * @return postBalance the final balance after adjustment
    * @return delta exact amount updated during the adjustment
    * @return needAllowance whether this adjustment needs allowance
@@ -536,6 +539,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    *         2. Assymetric balance adjustments from Assets
    *
    * @param accountId ID of account being checked
+   * @param tradeId a shared id for both asset and manager hooks within a same call
    * @param caller address of msg.sender initiating balance adjustment
    * @param managerData open ended data passed to manager
    */
@@ -555,6 +559,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    *         2. Assymetric balance adjustments from Managers or Asset
    * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage
+   * @param tradeId a shared id for both asset and manager hooks within a same call.
    * @param adjustment all details related to balance adjustment
    * @param preBalance balance before adjustment
    * @param caller address of msg.sender initiating balance adjustment
