@@ -16,6 +16,8 @@ contract MockManager is IManager {
 
   bool logAdjustmentTriggers;
 
+  uint public recordedTradeId;
+
   mapping(uint => uint) public accTriggeredDeltaLength;
 
   // acc => asset => subId => time
@@ -29,13 +31,14 @@ contract MockManager is IManager {
 
   function handleAdjustment(
     uint acc,
-    uint, /*tradeId*/
+    uint tradeId,
     address,
     AccountStructs.AssetDelta[] memory deltas,
     bytes memory
   ) public virtual {
     // testing mode: record all incoming "deltas"
     if (logAdjustmentTriggers) {
+      recordedTradeId = tradeId;
       accTriggeredDeltaLength[acc] = deltas.length;
       for (uint i; i < deltas.length; i++) {
         accAssetTriggered[acc][address(deltas[i].asset)][deltas[i].subId]++;
