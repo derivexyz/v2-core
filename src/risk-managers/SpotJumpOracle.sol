@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "src/interfaces/ISpotFeeds.sol";
 import "src/libraries/IntLib.sol";
-import "synthetix/DecimalMath.sol";
+import "src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
 import "forge-std/console2.sol";

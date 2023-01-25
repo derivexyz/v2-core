@@ -3,9 +3,9 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "synthetix/Owned.sol";
-import "synthetix/DecimalMath.sol";
-import "synthetix/SignedDecimalMath.sol";
+import "src/libraries/Owned.sol";
+import "src/libraries/DecimalMath.sol";
+import "src/libraries/SignedDecimalMath.sol";
 import "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
 import "src/interfaces/IAccounts.sol";

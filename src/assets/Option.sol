@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/ISpotFeeds.sol";
-import "synthetix/Owned.sol";
+import "src/libraries/Owned.sol";
 import "src/libraries/OptionEncoding.sol";
 
 /**

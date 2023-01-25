@@ -1,4 +1,4 @@
 forge-std/=lib/forge-std/src/
-synthetix/=lib/synthetix/
 openzeppelin/=lib/openzeppelin-contracts/contracts/
+openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 chainlink/=lib/chainlink/

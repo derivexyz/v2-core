@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "synthetix/Owned.sol";
+import "src/libraries/Owned.sol";
 import "src/interfaces/IAsset.sol";
 
 // simple single IV oracle

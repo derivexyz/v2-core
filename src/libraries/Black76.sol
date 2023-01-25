@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 // Libraries
-import "synthetix/SignedDecimalMath.sol";
-import "synthetix/DecimalMath.sol";
+import "src/libraries/SignedDecimalMath.sol";
+import "src/libraries/DecimalMath.sol";
 import "./FixedPointMathLib.sol";
 
 /**

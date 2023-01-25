@@ -40,17 +40,15 @@ interface IDutchAuction {
   /// @dev emmited when a risk manager tries to start an auction that has already been started
   error DA_AuctionAlreadyStarted(uint accountId);
 
-  /// @dev emmited when a bid is submitted on a closed/ended auction
-  error DA_AuctionEnded();
-
-  /// @dev emmited when a bid is submitted on a closed or non-existant auction.
-  error DA_AuctionNotActive();
+  /// @dev emmited when a bid is submitted on a solvent auction that has passed the auction time
+  ///      at this point, it can be converted into insolvent auction and keep going.
+  error DA_SolventAuctionEnded();
 
   /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
   error DA_AmountTooLarge(uint accountId, uint amount);
 
   /// @dev emitted when a bid is submitted for 0% of the portfolio
-  error DA_AmountInvalid(uint accountId, uint amount);
+  error DA_AmountIsZero(uint accountId);
 
   /// @dev emitted when a user tries to increment the step for an insovlent auction
   error DA_SolventAuctionCannotIncrement(uint accountId);

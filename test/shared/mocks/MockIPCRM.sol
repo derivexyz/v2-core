@@ -6,7 +6,7 @@ import "../../../src/interfaces/IManager.sol";
 import "../../../src/interfaces/IAsset.sol";
 import "../../../src/interfaces/IAccounts.sol";
 
-import "synthetix/DecimalMath.sol";
+import "../../../src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";

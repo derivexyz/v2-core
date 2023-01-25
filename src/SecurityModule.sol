@@ -6,9 +6,6 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/token/ERC20/ERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
-import "synthetix/Owned.sol";
-import "synthetix/DecimalMath.sol";
-
 import "./interfaces/IAsset.sol";
 import "./interfaces/IAccounts.sol";
 import "./interfaces/ICashAsset.sol";
@@ -16,6 +13,8 @@ import "./interfaces/ISecurityModule.sol";
 import "./interfaces/AccountStructs.sol";
 
 import "./libraries/ConvertDecimals.sol";
+import "./libraries/Owned.sol";
+import "./libraries/DecimalMath.sol";
 
 /**
  * @title SecurityModule
@@ -137,7 +136,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   //////////////////////////
 
   /**
-   * @notice Convert stalbe coin amounts to share amount
+   * @notice Convert stable coin amounts to share amount
    * @dev This should be called before pulling token in
    * @param stableAmount amount of stable coin in its native decimals
    */
