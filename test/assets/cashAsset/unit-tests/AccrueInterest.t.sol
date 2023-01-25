@@ -247,4 +247,26 @@ contract UNIT_CashAssetAccrueInterest is Test {
     // AccountId should have grow in balance (supply only)
     assertGt(uint(cashAsset.calculateBalanceWithInterest(accountId)), depositedAmount);
   }
+
+  function testPositiveSettledCashIncreasesCashBalance() public {
+    uint amountToBorrow = 2000e18;
+    uint account1 = account.createAccount(address(this), manager);
+
+    cashAsset.withdraw(account1, amountToBorrow, address(this));
+    assertEq(cashExchangeRate, 1);
+  
+    uint cashExchangeRate = cashAsset.getCashToStableExchangeRate();
+    console.log("CashExchangeRate", cashExchangeRate);
+    int posSettledCash = 10000 * 1e18;
+    cashAsset.updateSettledCash(posSettledCash);
+
+    cashExchangeRate = cashAsset.getCashToStableExchangeRate();
+    console.log("CashExchangeRate", cashExchangeRate);
+  }
+
+  // function testPositiveSettledCashIncreaseInterest() public {
+  
+  // }
+
+  // function testNegativeSettledCashDecreaseInterest() public {}
 }

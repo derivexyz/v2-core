@@ -369,8 +369,9 @@ contract CashAsset is ICashAsset, Owned {
   }
 
   /**
-   * @notice Adjusts netSettledCash when options are settled
-   * @param amountCash Amount of cash printed or burned
+   * @notice Allows whitelisted manager to adjust netSettledCash
+   * @dev Required to track printed cash for asymmetric settlements
+   * @param amountCash Amount of cash printed or burned       
    */
   function updateSettledCash(int amountCash) external {
     _checkManager(address(msg.sender));
@@ -420,8 +421,15 @@ contract CashAsset is ICashAsset, Owned {
     lastTimestamp = block.timestamp;
     if (totalBorrow == 0) return;
 
-    // Calculate interest since last timestamp using compounded interest rate
-    uint borrowRate = rateModel.getBorrowRate(totalSupply, totalBorrow);
+    // Calculate interest since last timestamp using compounded interest rate 
+    uint realSupply = totalSupply; // include netSettledCash in the totalSupply
+    if (netSettledCash >= 0) {
+      realSupply += netSettledCash.toUint256();
+    } else {
+      realSupply -= netSettledCash.toUint256();
+    }
+
+    uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
 
@@ -451,6 +459,11 @@ contract CashAsset is ICashAsset, Owned {
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply + accruedSmFees - totalBorrow;
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
+    if (netSettledCash >= 0) {
+      stableBalance += netSettledCash.toUint256();
+    } else {
+      stableBalance -= netSettledCash.toUint256();
+    }
     exchangeRate = stableBalance.divideDecimal(totalCash);
   }
 
