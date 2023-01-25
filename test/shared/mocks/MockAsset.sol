@@ -29,7 +29,6 @@ contract MockAsset is IAsset {
   // mocked state to test # of calls
   bool recordMangerChangeCalls;
   uint public handleManagerCalled;
-  uint public assetAdjustmentCalled;
 
   uint tokenToCashRate = 1e18;
 
