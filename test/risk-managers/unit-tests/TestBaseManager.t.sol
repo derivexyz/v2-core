@@ -9,7 +9,6 @@ import "src/risk-managers/BaseManager.sol";
 
 import "../../shared/mocks/MockAsset.sol";
 
-
 contract BaseManagerTester is BaseManager {
   constructor(IAccounts accounts_) BaseManager(accounts_) {}
 
@@ -45,7 +44,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     int amount = 5000 * 1e18;
     tester.transferWithoutMarginCheck(aliceAcc, bobAcc, mockAsset, 0, amount);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), - amount);
+    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), -amount);
     assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
   }
 
@@ -53,7 +52,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     int amount = -5000 * 1e18;
     tester.transferWithoutMarginCheck(aliceAcc, bobAcc, mockAsset, 0, amount);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), - amount);
+    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), -amount);
     assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
   }
 }
