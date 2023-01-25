@@ -11,6 +11,7 @@ import "../../src/liquidation/DutchAuction.sol";
 
 import "../shared/mocks/MockManager.sol";
 import "../shared/mocks/MockFeed.sol";
+import "../shared/mocks/MockIPCRM.sol";
 
 contract UNIT_DutchAuctionView is Test {
   address alice;
@@ -25,7 +26,7 @@ contract UNIT_DutchAuctionView is Test {
   MockAsset usdcAsset;
   MockAsset optionAdapter;
   MockAsset coolAsset;
-  MockManager manager;
+  MockIPCRM manager;
   MockFeed feed;
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
@@ -71,14 +72,15 @@ contract UNIT_DutchAuctionView is Test {
     optionAdapter = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
-    manager = new MockManager(address(account));
+    manager = new MockIPCRM(address(account));
 
     /*
      Feed for Spot*/
     feed = new MockFeed();
     feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
 
-    dutchAuction = new DutchAuction(address(manager));
+    dutchAuction =
+      dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
   }
 
   function mintAndDeposit(
@@ -102,32 +104,37 @@ contract UNIT_DutchAuctionView is Test {
   ///////////
 
   function testGetParams() public {
-    (uint stepInterval, uint lengthOfAuction, address securityModule) = dutchAuction.parameters();
-    assertEq(stepInterval, dutchAuctionParameters.stepInterval);
-    assertEq(lengthOfAuction, dutchAuctionParameters.lengthOfAuction);
-    assertEq(securityModule, dutchAuctionParameters.securityModule);
+    DutchAuction.DutchAuctionParameters memory retParams = dutchAuction.getParameters();
+    assertEq(retParams.stepInterval, dutchAuctionParameters.stepInterval);
+    assertEq(retParams.lengthOfAuction, dutchAuctionParameters.lengthOfAuction);
+    assertEq(retParams.securityModule, dutchAuctionParameters.securityModule);
 
     // change params
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({stepInterval: 2, lengthOfAuction: 200, securityModule: address(1)})
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        securityModule: address(1),
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0
+      })
     );
 
     // check if params changed
-    (stepInterval, lengthOfAuction, securityModule) = dutchAuction.parameters();
-    assertEq(stepInterval, 2);
-    assertEq(lengthOfAuction, 200);
-    assertEq(securityModule, address(1));
+    retParams = dutchAuction.getParameters();
+    assertEq(retParams.stepInterval, 2);
+    assertEq(retParams.lengthOfAuction, 200);
+    assertEq(retParams.securityModule, address(1));
   }
 
   function testGetRiskManager() public {
     assertEq(address(dutchAuction.riskManager()), address(manager));
   }
 
-  function testVMax() public {
-    assertEq(dutchAuction.getVMax(0, 0), 0);
-  }
-
-  function testVMin() public {
-    assertEq(dutchAuction.getVMin(0, 0), 0);
+  function testGetBounds() public {
+    (int max, int min) = dutchAuction.getBounds(1);
+    assertEq(max, 0);
+    assertEq(min, 0);
   }
 }

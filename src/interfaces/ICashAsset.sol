@@ -5,9 +5,46 @@ import "./IAsset.sol";
 import "./IInterestRateModel.sol";
 
 interface ICashAsset is IAsset {
-  ////////////
-  // Events //
-  ////////////
+  /**
+   * @dev Deposit USDC and increase account balance
+   * @param recipientAccount account id to receive the cash asset
+   * @param amount amount of USDC to deposit
+   */
+  function deposit(uint recipientAccount, uint amount) external;
+
+  /**
+   * @notice Withdraw USDC from a Lyra account
+   * @param accountId account id to withdraw
+   * @param amount amount of stable asset in its native decimals
+   * @param recipient USDC recipient
+   */
+  function withdraw(uint accountId, uint amount, address recipient) external;
+
+  /**
+   * @notice Liquidation module can report loss when there is insolvency.
+   *         This function will "print" the amount of cash to the target account
+   *         and socilize the loss to everyone in the system
+   *         this will result in turning on withdraw fee if the contract is indeed insolvent
+   * @param lossAmountInCash Total amount of cash loss
+   * @param accountToReceive Account to receive the new printed amount
+   */
+  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external;
+
+  /**
+   * @notice Returns latest balance without updating accounts but will update indexes
+   * @param accountId The accountId to check
+   */
+  function calculateBalanceWithInterest(uint accountId) external returns (int balance);
+
+  /**
+   * @dev Returns the exchange rate from cash asset to stable asset
+   *      this should always be equal to 1, unless we have an insolvency
+   */
+  function getCashToStableExchangeRate() external view returns (uint);
+
+  ////////////////
+  //   Events   //
+  ////////////////
 
   /// @dev Emitted when interest related state variables are updated
   event InterestAccrued(uint interestAccrued, uint borrowIndex, uint totalSupply, uint totalBorrow);
@@ -20,20 +57,6 @@ interface ICashAsset is IAsset {
 
   /// @dev Emitted when a manager address is whitelisted or unwhitelisted
   event WhitelistManagerSet(address manager, bool whitelisted);
-
-  /**
-   * @notice Liquidation module can report loss when there is insolvency.
-   *         This function will "print" the amount of cash to the target account
-   *         and socilize the loss to everyone in the system
-   *         this will result in turning on withdraw fee if the contract is indeed insolvent
-   * @param lossAmountInCash Total amount of cash loss
-   * @param accountToReceive Account to receive the new printed amount
-   */
-  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external;
-
-  ////////////////
-  //   Events   //
-  ////////////////
 
   /// @dev emitted when a user deposits to an account
   event Deposit(uint accountId, address from, uint amountCashMinted, uint stableAssetDeposited);

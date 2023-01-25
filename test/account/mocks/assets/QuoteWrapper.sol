@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "synthetix/Owned.sol";
+import "src/libraries/Owned.sol";
 import "src/interfaces/IAsset.sol";
 import "src/Accounts.sol";
 import "src/interfaces/AccountStructs.sol";

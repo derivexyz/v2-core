@@ -50,6 +50,7 @@ interface AccountStructs {
     uint fromAcc;
     // debited by amount
     uint toAcc;
+    // asset contract address
     IAsset asset;
     // adjustments will revert if >uint96
     uint subId;

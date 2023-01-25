@@ -39,7 +39,7 @@ abstract contract AbstractOwned {
 
   function acceptOwnership() external {
     if (msg.sender != nominatedOwner) {
-      revert OnlyNominatedOwner(address(this), msg.sender, nominatedOwner);
+      revert OnlyNominatedOwner();
     }
     emit OwnerChanged(owner, nominatedOwner);
     owner = nominatedOwner;
@@ -53,7 +53,7 @@ abstract contract AbstractOwned {
 
   function _onlyOwner() private view {
     if (msg.sender != owner) {
-      revert OnlyOwner(address(this), msg.sender, owner);
+      revert OnlyOwner();
     }
   }
 
@@ -63,6 +63,6 @@ abstract contract AbstractOwned {
   ////////////
   // Errors //
   ////////////
-  error OnlyOwner(address thrower, address caller, address owner);
-  error OnlyNominatedOwner(address thrower, address caller, address nominatedOwner);
+  error OnlyOwner();
+  error OnlyNominatedOwner();
 }
