@@ -36,7 +36,7 @@ contract MockCash is ICashAsset, MockAsset {
     );
   }
 
-  function deposit(uint recipientAccount, uint amount) external override(MockAsset, ICashAsset) {
+  function deposit(uint recipientAccount, uint amount) external override (MockAsset, ICashAsset) {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
@@ -51,7 +51,7 @@ contract MockCash is ICashAsset, MockAsset {
     token.transferFrom(msg.sender, address(this), amount);
   }
 
-  function withdraw(uint accountId, uint amount, address recipient) external override(MockAsset, ICashAsset) {
+  function withdraw(uint accountId, uint amount, address recipient) external override (MockAsset, ICashAsset) {
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,

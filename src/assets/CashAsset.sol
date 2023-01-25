@@ -55,6 +55,9 @@ contract CashAsset is ICashAsset, Owned {
   ///@dev Total amount of negative balances
   uint public totalBorrow;
 
+  ///@dev Net amount of cash printed/burned due to settlement
+  int public netSettledCash;
+
   ///@dev Total accrued fees for the security module
   uint public accruedSmFees;
 
@@ -255,6 +258,14 @@ contract CashAsset is ICashAsset, Owned {
     );
   }
 
+  /**
+   * @dev Returns the exchange rate from cash asset to stable asset
+   *      this should always be equal to 1, unless we have an insolvency
+   */
+  function getCashToStableExchangeRate() external view returns (uint) {
+    return _getExchangeRate();
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -358,11 +369,12 @@ contract CashAsset is ICashAsset, Owned {
   }
 
   /**
-   * @dev Returns the exchange rate from cash asset to stable asset
-   *      this should always be equal to 1, unless we have an insolvency
+   * @notice Adjusts netSettledCash when options are settled
+   * @param amountCash Amount of cash printed or burned
    */
-  function getCashToStableExchangeRate() external view returns (uint) {
-    return _getExchangeRate();
+  function updateSettledCash(int amountCash) external {
+    _checkManager(address(msg.sender));
+    netSettledCash += amountCash;
   }
 
   ////////////////////////////
