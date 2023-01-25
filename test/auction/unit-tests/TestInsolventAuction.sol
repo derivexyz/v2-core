@@ -54,9 +54,9 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.insolvent, true); // start as insolvent from the very beginning
-    assertEq(auction.auction.lowerBound, initMargin);
+    assertEq(auction.lowerBound, initMargin);
 
     // starts with 0 bid
     assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);

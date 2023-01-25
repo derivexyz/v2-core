@@ -136,7 +136,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   //////////////////////////
 
   /**
-   * @notice Convert stalbe coin amounts to share amount
+   * @notice Convert stable coin amounts to share amount
    * @dev This should be called before pulling token in
    * @param stableAmount amount of stable coin in its native decimals
    */

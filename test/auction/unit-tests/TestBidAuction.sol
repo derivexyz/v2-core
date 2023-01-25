@@ -106,7 +106,7 @@ contract UNIT_BidAuction is Test {
   /////////////////////////
 
   function testCannotBidOnAuctionThatHasNotStarted() public {
-    vm.expectRevert(IDutchAuction.DA_AuctionNotActive.selector);
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotStarted.selector, aliceAcc));
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
@@ -118,10 +118,10 @@ contract UNIT_BidAuction is Test {
     dutchAuction.startAuction(aliceAcc);
 
     vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 5);
-    vm.expectRevert(IDutchAuction.DA_AuctionEnded.selector);
+    vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
     dutchAuction.getCurrentBidPrice(aliceAcc);
 
-    vm.expectRevert(IDutchAuction.DA_AuctionEnded.selector);
+    vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
@@ -167,14 +167,14 @@ contract UNIT_BidAuction is Test {
 
     // testing that the auction is ended because init margin is 0
     manager.setAccInitMargin(aliceAcc, 0);
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, false);
   }
 
   function testCannotBid0() public {
     vm.prank(address(manager));
     dutchAuction.startAuction(aliceAcc);
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountInvalid.selector, aliceAcc, 0));
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountIsZero.selector, aliceAcc));
     dutchAuction.bid(aliceAcc, bobAcc, 0);
   }
 
@@ -183,7 +183,7 @@ contract UNIT_BidAuction is Test {
   function testBidTillSolventThenClose() public {
     createAuctionOnUser(aliceAcc, -10_000 * 1e18, 20_000 * 1e18);
 
-    DutchAuction.Auction memory auction = dutchAuction.getAuctionDetails(aliceAcc);
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
 
     uint p_max = dutchAuction.getMaxProportion(aliceAcc);
 
@@ -192,7 +192,7 @@ contract UNIT_BidAuction is Test {
     dutchAuction.bid(aliceAcc, bobAcc, p_max.divideDecimal(2 * 1e18));
 
     // checks bounds have not changed
-    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
@@ -201,7 +201,7 @@ contract UNIT_BidAuction is Test {
     dutchAuction.bid(aliceAcc, bobAcc, p_max.divideDecimal(2 * 1e18));
 
     // checks bounds have not changed
-    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
@@ -210,7 +210,7 @@ contract UNIT_BidAuction is Test {
 
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
-    auction = dutchAuction.getAuctionDetails(aliceAcc);
+    auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, false);
   }
 
