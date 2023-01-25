@@ -443,21 +443,18 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     if (auction.insolvent) {
+      // @invariant: if insolvent, bids should aways be negative
       uint numSteps = auction.stepInsolvent;
       return 0 - (auction.dv * numSteps).toInt256();
     } else {
+      // @invariant: if solvent, bids should aways be postiive
       if (block.timestamp > auction.startTime + parameters.lengthOfAuction) {
         revert DA_SolventAuctionEnded();
       }
 
       int upperBound = auction.upperBound;
       int bid = upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
-      // have to call markAsInsolvent before bid can be negative
-      if (bid <= 0) {
-        return 0;
-      } else {
-        return bid;
-      }
+      return bid;
     }
   }
 }
