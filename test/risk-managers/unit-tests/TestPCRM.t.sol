@@ -23,7 +23,7 @@ contract UNIT_TestPCRM is Test {
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
   MockV3Aggregator aggregator;
-  Option option;
+  MockAsset option;
   MockDutchAuction auction;
 
   address alice = address(0xaa);
@@ -41,7 +41,7 @@ contract UNIT_TestPCRM is Test {
 
     auction = new MockDutchAuction();
 
-    option = new Option();
+    option = new MockAsset(IERC20(address(0)), account, true);
     cash = new MockAsset(usdc, account, true);
     manager = new PCRM(
       address(account),

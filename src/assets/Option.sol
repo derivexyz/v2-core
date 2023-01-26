@@ -2,8 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
+
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IAccounts.sol";
+
 import "src/libraries/Owned.sol";
 import "src/libraries/OptionEncoding.sol";
 
@@ -19,6 +22,9 @@ contract Option is IOption, Owned {
   ///////////////
   // Variables //
   ///////////////
+
+  /// @dev Adderss of the Account module
+  IAccounts immutable accounts;
 
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
@@ -37,6 +43,10 @@ contract Option is IOption, Owned {
   //    Constructor     //
   ////////////////////////
 
+  constructor(IAccounts _accounts) {
+    accounts = _accounts;
+  }
+
   ///////////////
   // Transfers //
   ///////////////
@@ -47,7 +57,7 @@ contract Option is IOption, Owned {
     int preBalance,
     IManager, /*manager*/
     address /*caller*/
-  ) external returns (int finalBalance, bool needAllowance) {
+  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     // todo: check whitelist
 
     // todo: make sure valid subId
@@ -64,7 +74,7 @@ contract Option is IOption, Owned {
     return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
 
-  function handleManagerChange(uint accountId, IManager newManager) external {
+  function handleManagerChange(uint accountId, IManager newManager) external onlyAccount {
     // todo: check whitelist
   }
 
@@ -138,7 +148,12 @@ contract Option is IOption, Owned {
     }
   }
 
-  ////////////
-  // Errors //
-  ////////////
+  /////////////////
+  //  Modifiers  //
+  /////////////////
+
+  modifier onlyAccount() {
+    if (msg.sender != address(accounts)) revert OA_NotAccounts();
+    _;
+  }
 }

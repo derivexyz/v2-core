@@ -29,6 +29,9 @@ interface IOption is IAsset {
   //   Errors   //
   ////////////////
 
-  /// @dev revert when user trying to upgrade to a unknown manager
+  /// @dev revert if caller is not Accounts
+  error OA_NotAccounts();
+
+  /// @dev revert when settlement is triggered from unknown managers
   error OA_UnknownManager();
 }

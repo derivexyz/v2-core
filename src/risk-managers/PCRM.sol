@@ -9,6 +9,7 @@ import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IOption.sol";
 
 import "src/assets/Option.sol";
 
@@ -100,7 +101,7 @@ contract PCRM is BaseManager, IManager, Owned {
   ICashAsset public immutable cashAsset;
 
   /// @dev reserved option asset
-  Option public immutable option;
+  IOption public immutable option;
 
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
@@ -137,7 +138,7 @@ contract PCRM is BaseManager, IManager, Owned {
   {
     spotFeeds = ISpotFeeds(spotFeeds_);
     cashAsset = ICashAsset(cashAsset_);
-    option = Option(option_);
+    option = IOption(option_);
     dutchAuction = IDutchAuction(auction_);
   }
 
@@ -210,17 +211,8 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param liquidatorId Liquidator account ID.
    * @param portion Portion of account that is requested to be liquidated.
    * @param cashAmount Cash amount liquidator is offering for portion of account.
-   * @return postExecutionInitialMargin InitialMargin of account after portion is liquidated.
-   * @return Portfolio Sorted array of option holdings used to recompute new auction bounds
-   * @return cash Amount of cash held or borrowed in account
    */
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
-    external
-    onlyAuction
-    returns (int postExecutionInitialMargin, Portfolio[] memory, int cash)
-  {
-    // todo [Cameron / Dom]: this would be only dutch auction contract
-  }
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyAuction {}
 
   /////////////////
   // Margin Math //

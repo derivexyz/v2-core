@@ -30,7 +30,7 @@ contract UNIT_OptionAssetOITest is Test {
 
     manager = new MockManager(address(account));
 
-    option = new Option();
+    option = new Option(account);
 
     accountPos = account.createAccount(address(this), manager);
     accountNeg = account.createAccount(address(this), manager);
@@ -79,7 +79,6 @@ contract UNIT_OptionAssetOITest is Test {
   }
 
   function testOIIncreaseIfNetOpenIsBigger() public {
-    uint oiBefore = option.openInterest(subId);
     // AccountPos => +100 -> -50
     // AccountNeg => -100
     // AccountEmpty => 0 -> +150
@@ -90,7 +89,6 @@ contract UNIT_OptionAssetOITest is Test {
   }
 
   function testOIDecreaseIfNetCloseIsBigger() public {
-    uint oiBefore = option.openInterest(subId);
     // AccountPos => +100 -> +30
     // AccountNeg => -100 -> -30
     int transferAmount = 70e18;

@@ -86,13 +86,9 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
     uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
 
-    uint usdcBefore = usdc.balanceOf(address(this));
     securityModule.withdraw(sharesToWithdraw, address(this));
     uint sharesLeft = securityModule.balanceOf(address(this));
     assertEq(sharesLeft, sharesToWithdraw); // 50% shares remaining
-
-    // uint usdcAfter = usdc.balanceOf(address(this));
-    // assertEq(usdcAfter - usdcBefore, depositAmount / 2);
   }
 
   // test the numbers increased when we have fee cut on SM

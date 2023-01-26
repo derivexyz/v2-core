@@ -37,11 +37,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   // TODO: needs to be expanded upon next sprint to make sure that
   // it can handle the insolvency case properly
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
-    external
-    virtual
-    returns (int finalInitialMargin, Portfolio[] memory, int cash)
-  {
+  function executeBid(uint accountId, uint, /*liquidatorId*/ uint, /*portion*/ uint cashAmount) external virtual {
     if (cashAmount > 0) {
       initMargin[accountId] += cashAmount.toInt256();
     }
@@ -62,7 +58,7 @@ contract MockIPCRM is IPCRM, IManager {
     return 1000 * DecimalMath.UNIT;
   }
 
-  function getAccountValue(uint accountId) external view virtual returns (uint) {
+  function getAccountValue(uint /*accountId*/ ) external view virtual returns (uint) {
     // TODO: filler code
     return 0;
   }
@@ -72,7 +68,7 @@ contract MockIPCRM is IPCRM, IManager {
     return initMargin[accountId];
   }
 
-  function getMaintenanceMargin(uint accountId) external returns (uint) {
+  function getMaintenanceMargin(uint /*accountId*/ ) external pure returns (uint) {
     // TODO: filler code
     return 0;
   }
@@ -91,17 +87,17 @@ contract MockIPCRM is IPCRM, IManager {
     }
   }
 
-  function getCashAmount(uint accountId) external view virtual returns (int) {
+  function getCashAmount(uint /*accountId*/ ) external view virtual returns (int) {
     // TODO: filer coder
     return 0;
   }
 
   function handleAdjustment(
-    uint accountId,
+    uint, /*accountId*/
     uint, /*tradeId*/
-    address caller,
-    AccountStructs.AssetDelta[] memory deltas,
-    bytes memory data
+    address, /*caller*/
+    AccountStructs.AssetDelta[] memory, /*deltas*/
+    bytes memory /*data*/
   ) external virtual {
     // TODO: filler code
   }

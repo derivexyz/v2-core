@@ -335,7 +335,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function _getMaxProportion(uint accountId) internal returns (uint) {
+  function _getMaxProportion(uint accountId) internal view returns (uint) {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
