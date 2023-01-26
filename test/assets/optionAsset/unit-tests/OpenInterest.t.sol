@@ -108,6 +108,15 @@ contract UNIT_OptionAssetOITest is Test {
     assertEq(option.openInterest(subId), oiBefore);
   }
 
+  function testOIUnchangedCase2() public {
+    uint oiBefore = option.openInterest(subId);
+    // AccountNeg => -100 -> +100
+    // AccountPos => 100 -> -100
+    _transfer(accountPos, accountNeg, tradeAmount * 2);
+
+    assertEq(option.openInterest(subId), oiBefore);
+  }
+
   /// @dev util functino to transfer
   function _transfer(uint from, uint to, int amount) internal {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
