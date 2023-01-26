@@ -53,7 +53,7 @@ contract BaseWrapper is IAsset, Owned {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager, address)
+  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, uint, int preBal, IManager, address)
     external
     pure
     override

@@ -31,8 +31,11 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
   // Variables //
   ///////////////
 
-  /// @dev account id (ERC721 id) for the next account being created
-  uint public nextId = 0;
+  /// @dev last account id (ERC721 id) created
+  uint public lastAccountId = 0;
+
+  /// @dev last trade id that was attached with manager hook and asset hook
+  uint public lastTradeId = 0;
 
   /// @dev accountId to manager
   mapping(uint => IManager) public manager;
@@ -110,7 +113,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @return newId ID of new account
    */
   function _createAccount(address owner, IManager _manager) internal returns (uint newId) {
-    newId = ++nextId;
+    newId = ++lastAccountId;
     manager[newId] = _manager;
     _mint(owner, newId);
     emit AccountCreated(owner, newId, address(_manager));
@@ -143,9 +146,11 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     // update the manager after all checks (external calls) are done. expected reentry pattern
     manager[accountId] = newManager;
 
+    uint tradeId = ++lastTradeId;
+
     // trigger the manager hook on the new manager. Same as post-transfer checks
     AssetDelta[] memory deltas = new AssetDelta[](0);
-    _managerHook(accountId, msg.sender, deltas, newManagerData);
+    _managerHook(accountId, tradeId, msg.sender, deltas, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
@@ -334,15 +339,18 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param managerData Data passed to managers of both accounts
    */
   function _submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData) internal {
-    (int fromDelta, int toDelta) = _transferAsset(assetTransfer);
+    uint tradeId = ++lastTradeId;
+    (int fromDelta, int toDelta) = _transferAsset(assetTransfer, tradeId);
     _managerHook(
       assetTransfer.fromAcc,
+      tradeId,
       msg.sender,
       AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, fromDelta),
       managerData
     );
     _managerHook(
       assetTransfer.toAcc,
+      tradeId,
       msg.sender,
       AssetDeltaLib.getDeltasFromSingleAdjustment(assetTransfer.asset, assetTransfer.subId, toDelta),
       managerData
@@ -357,24 +365,23 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param managerData Data passed to every manager involved in trade
    */
   function _submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData) internal {
-    uint transfersLen = assetTransfers.length;
-
     // keep track of seen accounts to assess risk once per account
-    uint[] memory seenAccounts = new uint[](transfersLen * 2);
+    uint[] memory seenAccounts = new uint[](assetTransfers.length * 2);
 
     // keep track of the array of "asset delta" for each account
     // assetDeltas[i] stores asset delta array for seenAccounts[i]
-    AssetDeltaArrayCache[] memory assetDeltas = new AssetDeltaArrayCache[](transfersLen * 2);
+    AssetDeltaArrayCache[] memory assetDeltas = new AssetDeltaArrayCache[](assetTransfers.length * 2);
 
     uint nextSeenId = 0;
+    uint tradeId = ++lastTradeId;
 
-    for (uint i; i < transfersLen; ++i) {
+    for (uint i; i < assetTransfers.length; ++i) {
       // if from or to account is not seens before, add to seenAccounts in memory
       (uint fromIndex, uint toIndex) = (0, 0);
       (nextSeenId, fromIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
       (nextSeenId, toIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
 
-      (int fromDelta, int toDelta) = _transferAsset(assetTransfers[i]);
+      (int fromDelta, int toDelta) = _transferAsset(assetTransfers[i], tradeId);
 
       // update assetDeltas[from] directly.
       assetDeltas[fromIndex].addToAssetDeltaArray(
@@ -386,9 +393,10 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
         AssetDelta({asset: assetTransfers[i].asset, subId: uint96(assetTransfers[i].subId), delta: toDelta})
       );
     }
+
     for (uint i; i < nextSeenId; i++) {
       AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
-      _managerHook(seenAccounts[i], msg.sender, nonEmptyDeltas, managerData);
+      _managerHook(seenAccounts[i], tradeId, msg.sender, nonEmptyDeltas, managerData);
     }
   }
 
@@ -396,8 +404,12 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @notice Transfer an amount from one account to another for a specific (asset, subId)
    * @dev    update the allowance and balanceAndOrder storage
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
+   * @param tradeId a shared id for both asset and manager hooks within a same call
    */
-  function _transferAsset(AssetTransfer calldata assetTransfer) internal returns (int fromDelta, int toDelta) {
+  function _transferAsset(AssetTransfer calldata assetTransfer, uint tradeId)
+    internal
+    returns (int fromDelta, int toDelta)
+  {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
       revert AC_CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
     }
@@ -419,8 +431,8 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     });
 
     // balance is adjusted based on asset hook
-    (, int fromDelta_, bool fromAdjustmentNeedAllowance) = _adjustBalance(fromAccAdjustment, true);
-    (, int toDelta_, bool toAdjustmentNeedAllowance) = _adjustBalance(toAccAdjustment, true);
+    (, int fromDelta_, bool fromAdjustmentNeedAllowance) = _adjustBalance(fromAccAdjustment, tradeId, true);
+    (, int toDelta_, bool toAdjustmentNeedAllowance) = _adjustBalance(toAccAdjustment, tradeId, true);
 
     // if it's not ERC721 approved: spend allowances
     if (fromAdjustmentNeedAllowance && !_isApprovedOrOwner(msg.sender, fromAccAdjustment.acc)) {
@@ -443,8 +455,9 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     onlyManager(adjustment.acc)
     returns (int postAdjustmentBalance)
   {
+    uint tradeId = ++lastTradeId;
     // balance is adjusted based on asset hook
-    (postAdjustmentBalance,,) = _adjustBalance(adjustment, true);
+    (postAdjustmentBalance,,) = _adjustBalance(adjustment, tradeId, true);
   }
 
   /**
@@ -459,11 +472,13 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     onlyAsset(adjustment.asset)
     returns (int postAdjustmentBalance)
   {
+    uint tradeId = ++lastTradeId;
     // balance adjustment is routed through asset if triggerAssetHook == true
     int delta;
-    (postAdjustmentBalance, delta,) = _adjustBalance(adjustment, triggerAssetHook);
+    (postAdjustmentBalance, delta,) = _adjustBalance(adjustment, tradeId, triggerAssetHook);
     _managerHook(
       adjustment.acc,
+      tradeId,
       msg.sender,
       AssetDeltaLib.getDeltasFromSingleAdjustment(adjustment.asset, adjustment.subId, delta),
       managerData
@@ -473,11 +488,13 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
   /**
    * @dev the order field is never set back to 0 to safe on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
+   * @param tradeId a shared id for both asset and manager hooks within a same call
+   * @param triggerHook whether this call should trigger asset hook
    * @return postBalance the final balance after adjustment
    * @return delta exact amount updated during the adjustment
    * @return needAllowance whether this adjustment needs allowance
    */
-  function _adjustBalance(AssetAdjustment memory adjustment, bool triggerHook)
+  function _adjustBalance(AssetAdjustment memory adjustment, uint tradeId, bool triggerHook)
     internal
     returns (int postBalance, int delta, bool needAllowance)
   {
@@ -486,7 +503,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
 
     // allow asset to modify final balance in special cases
     if (triggerHook) {
-      (postBalance, needAllowance) = _assetHook(adjustment, preBalance, msg.sender);
+      (postBalance, needAllowance) = _assetHook(adjustment, tradeId, preBalance, msg.sender);
       delta = postBalance - preBalance;
     } else {
       postBalance = preBalance + adjustment.amount;
@@ -522,11 +539,18 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    *         2. Assymetric balance adjustments from Assets
    *
    * @param accountId ID of account being checked
+   * @param tradeId a shared id for both asset and manager hooks within a same call
    * @param caller address of msg.sender initiating balance adjustment
    * @param managerData open ended data passed to manager
    */
-  function _managerHook(uint accountId, address caller, AssetDelta[] memory deltas, bytes memory managerData) internal {
-    manager[accountId].handleAdjustment(accountId, caller, deltas, managerData);
+  function _managerHook(
+    uint accountId,
+    uint tradeId,
+    address caller,
+    AssetDelta[] memory deltas,
+    bytes memory managerData
+  ) internal {
+    manager[accountId].handleAdjustment(accountId, tradeId, caller, deltas, managerData);
   }
 
   /**
@@ -535,17 +559,18 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    *         2. Assymetric balance adjustments from Managers or Asset
    * @dev as hook is called for every asset transfer (unlike _managerHook())
    *      care must be given to reduce gas usage
+   * @param tradeId a shared id for both asset and manager hooks within a same call.
    * @param adjustment all details related to balance adjustment
    * @param preBalance balance before adjustment
    * @param caller address of msg.sender initiating balance adjustment
    * @return finalBalance the amount should be written as final balance
    * @return needAllowance true if this adjustment needs to consume adjustment
    */
-  function _assetHook(AssetAdjustment memory adjustment, int preBalance, address caller)
+  function _assetHook(AssetAdjustment memory adjustment, uint tradeId, int preBalance, address caller)
     internal
     returns (int finalBalance, bool needAllowance)
   {
-    return adjustment.asset.handleAdjustment(adjustment, preBalance, manager[adjustment.acc], caller);
+    return adjustment.asset.handleAdjustment(adjustment, tradeId, preBalance, manager[adjustment.acc], caller);
   }
 
   //////////

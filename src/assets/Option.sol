@@ -33,6 +33,7 @@ contract Option is IAsset, Owned {
 
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
+    uint, /*tradeId*/
     int preBalance,
     IManager, /*manager*/
     address /*caller*/

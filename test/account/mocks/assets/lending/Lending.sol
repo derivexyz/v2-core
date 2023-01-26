@@ -49,11 +49,13 @@ contract Lending is IAsset, Owned {
   // Accounts Hooks //
   ////////////////////
 
-  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address)
-    external
-    override
-    returns (int finalBal, bool needAdjustment)
-  {
+  function handleAdjustment(
+    AccountStructs.AssetAdjustment memory adjustment,
+    uint,
+    int preBal,
+    IManager riskModel,
+    address
+  ) external override returns (int finalBal, bool needAdjustment) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
 
     /* Makes a continuous compounding interest calculation.
