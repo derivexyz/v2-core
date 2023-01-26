@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "openzeppelin/utils/math/SafeCast.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/libraries/Owned.sol";
@@ -12,9 +13,23 @@ import "src/libraries/OptionEncoding.sol";
  * @notice Option asset that defines subIds, value and settlement
  */
 contract Option is IAsset, Owned {
+  using SafeCast for uint;
+  using SafeCast for int;
+
   ///////////////
   // Variables //
   ///////////////
+
+  struct OISnapshot {
+    bool initialized;
+    uint240 oi;
+  }
+
+  ///@dev SubId => tradeId => open interest snapshot
+  mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
+
+  ///@dev OI for a subId. OI is the sum of all positive balance
+  mapping(uint => uint) public openInterest;
 
   ////////////
   // Events //
@@ -33,14 +48,24 @@ contract Option is IAsset, Owned {
 
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
-    uint, /*tradeId*/
+    uint tradeId,
     int preBalance,
     IManager, /*manager*/
     address /*caller*/
-  ) external pure returns (int finalBalance, bool needAllowance) {
+  ) external returns (int finalBalance, bool needAllowance) {
     // todo: check whitelist
 
     // todo: make sure valid subId
+
+    // take snapshot of OI if this subId has not been traded in this tradeId
+    if (!openInterestBeforeTrade[adjustment.subId][tradeId].initialized) {
+      openInterestBeforeTrade[adjustment.subId][tradeId].initialized = true;
+      openInterestBeforeTrade[adjustment.subId][tradeId].oi = openInterest[adjustment.subId].toUint240();
+    }
+
+    // update the OI based on pre balance and change amount
+    _updateOI(adjustment.subId, preBalance, adjustment.amount);
+
     return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
 
@@ -93,6 +118,29 @@ contract Option is IAsset, Owned {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int pnl, bool priceSettled) {
     // todo: basic pnl
+  }
+
+  //////////////
+  // Internal //
+  //////////////
+
+  function _updateOI(uint subId, int preBalance, int change) internal {
+    int postBalance = preBalance + change;
+    if (preBalance > 0) {
+      if (postBalance > 0) {
+        // OI can be increased or decrease. result must be postive
+        openInterest[subId] = (openInterest[subId].toInt256() + change).toUint256();
+      } else {
+        // OI must be decreased, by amount of prebalance
+        openInterest[subId] -= uint(preBalance);
+      }
+    } else {
+      if (postBalance > 0) {
+        // balance went from negative to positive: total positive increased by ending amount
+        openInterest[subId] += uint(postBalance);
+      }
+      // if both pre and post balances are negative, this trade doesn't affect total positive
+    }
   }
 
   ////////////
