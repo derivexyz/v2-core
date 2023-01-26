@@ -2,13 +2,46 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/IAccounts.sol";
+import "src/interfaces/IOption.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/AccountStructs.sol";
 
-abstract contract BaseManager {
+abstract contract BaseManager is AccountStructs {
   ///@dev Account contract address
   IAccounts public immutable accounts;
 
-  constructor(IAccounts _accounts) {
+  ///@dev Option asset address
+  IOption public immutable option;
+
+  ///@dev Cash asset address
+  ICashAsset public immutable cashAsset;
+
+  ///@dev OI fee rate in BPS. Charged based on contract traded * OIFee * spot
+  uint OIFeeRateBPS = 10;
+
+  constructor(IAccounts _accounts, IOption _option, ICashAsset _cashAsset) {
     accounts = _accounts;
+    option = _option;
+    cashAsset = _cashAsset;
+  }
+
+  function _chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] memory assetDeltas) internal {
+    int fee;
+    // iterate through all asset changes, if it's option asset, change if OI increased
+    for (uint i; i < assetDeltas.length; i++) {
+      if (assetDeltas[i].asset == option) {
+        (, uint oiBefore) = option.openInterestBeforeTrade(assetDeltas[i].subId, tradeId);
+        uint oi = option.openInterest(assetDeltas[i].subId);
+
+        // this trade increase OI, charge a fee
+        if (oi > oiBefore) {}
+      }
+    }
+
+    if (fee > 0) {
+      // transfer cash to fee recipient account
+      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, fee);
+    }
   }
 
   /**

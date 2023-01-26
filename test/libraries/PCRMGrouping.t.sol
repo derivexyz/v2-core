@@ -43,7 +43,7 @@ contract PCRMGroupingTest is Test {
   function setUp() public {
     tester = new PCRMGroupingTester();
     pcrm = new PCRM(
-      address(0), address(0), address(0), address(0), address(0)
+      address(0), address(0), ICashAsset(address(0)), IOption(address(0)), address(0)
     );
   }
 

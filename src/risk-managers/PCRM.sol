@@ -97,12 +97,6 @@ contract PCRM is BaseManager, IManager, Owned {
   /// @dev spotFeeds that determine staleness and return prices
   ISpotFeeds public spotFeeds;
 
-  /// @dev asset used in all settlements and denominates margin
-  ICashAsset public immutable cashAsset;
-
-  /// @dev reserved option asset
-  IOption public immutable option;
-
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
@@ -132,13 +126,11 @@ contract PCRM is BaseManager, IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address accounts_, address spotFeeds_, address cashAsset_, address option_, address auction_)
-    BaseManager(IAccounts(accounts_))
+  constructor(address accounts_, address spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_)
+    BaseManager(IAccounts(accounts_), option_, cashAsset_)
     Owned()
   {
     spotFeeds = ISpotFeeds(spotFeeds_);
-    cashAsset = ICashAsset(cashAsset_);
-    option = IOption(option_);
     dutchAuction = IDutchAuction(auction_);
   }
 
@@ -150,12 +142,15 @@ contract PCRM is BaseManager, IManager, Owned {
    * @notice Ensures asset is valid and initial margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AccountStructs.AssetDelta[] memory, bytes memory)
+  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] memory assetDeltas, bytes memory)
     public
-    view
     override
   {
     // todo [Josh]: whitelist check
+
+    // charge OI fee
+    uint feeRecipient = 1;
+    _chargeOIFee(accountId, feeRecipient, tradeId, assetDeltas);
 
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
@@ -413,17 +408,13 @@ contract PCRM is BaseManager, IManager, Owned {
    */
 
   // todo [Josh]: rename this
-  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
-    internal
-    view
-    returns (Portfolio memory portfolio)
-  {
+  function _arrangePortfolio(AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
     portfolio.strikes = new PCRM.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
     Strike memory currentStrike;
-    AccountStructs.AssetBalance memory currentAsset;
+    AssetBalance memory currentAsset;
     uint strikeIndex;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];

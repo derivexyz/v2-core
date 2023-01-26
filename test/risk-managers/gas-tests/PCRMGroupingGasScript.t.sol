@@ -121,8 +121,8 @@ contract PCRMGroupingGasScript is Script {
     pcrm = new PCRM(
       address(account),
       address(spotFeeds),
-      address(cash),
-      address(option),
+      cash,
+      option,
       address(auction)
     );
 

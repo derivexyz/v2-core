@@ -41,13 +41,15 @@ contract UNIT_TestPCRM is Test {
 
     auction = new MockDutchAuction();
 
+    //todo: update these mocks
     option = new MockAsset(IERC20(address(0)), account, true);
     cash = new MockAsset(usdc, account, true);
+
     manager = new PCRM(
       address(account),
       address(spotFeeds),
-      address(cash),
-      address(option),
+      ICashAsset(address(cash)),
+      IOption(address(option)),
       address(auction)
     );
 
