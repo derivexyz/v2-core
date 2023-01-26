@@ -89,7 +89,7 @@ contract MockAsset is IAsset {
 
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
-    uint tradeId,
+    uint, /*tradeId*/
     int preBal,
     IManager _manager,
     address

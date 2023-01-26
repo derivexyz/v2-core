@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "src/interfaces/IAsset.sol";
+import "src/interfaces/IOption.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/libraries/Owned.sol";
 import "src/libraries/OptionEncoding.sol";
@@ -12,18 +12,13 @@ import "src/libraries/OptionEncoding.sol";
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IAsset, Owned {
+contract Option is IOption, Owned {
   using SafeCast for uint;
   using SafeCast for int;
 
   ///////////////
   // Variables //
   ///////////////
-
-  struct OISnapshot {
-    bool initialized;
-    uint240 oi;
-  }
 
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
