@@ -19,8 +19,8 @@ contract UNIT_OptionAssetOITest is Test {
   Accounts account;
 
   int tradeAmount = 100e18;
-  uint accountPos;   // balance: 100
-  uint accountNeg;   // balance: -100
+  uint accountPos; // balance: 100
+  uint accountNeg; // balance: -100
   uint accountEmpty; // balance: 0
 
   uint subId = 99999;
@@ -59,7 +59,7 @@ contract UNIT_OptionAssetOITest is Test {
 
     int transferAmount = 50e18;
     _transfer(accountPos, accountEmpty, transferAmount);
-    
+
     assertEq(oiBefore, option.openInterest(subId));
 
     // transfer some more
@@ -74,7 +74,7 @@ contract UNIT_OptionAssetOITest is Test {
     // the position betweens accountPos and accountNeg increases:
     int transferAmount = 50e18;
     _transfer(accountNeg, accountPos, transferAmount);
-    
+
     assertEq(oiBefore + uint(transferAmount), option.openInterest(subId));
   }
 
@@ -85,7 +85,7 @@ contract UNIT_OptionAssetOITest is Test {
     // AccountEmpty => 0 -> +150
     int transferAmount = 150e18;
     _transfer(accountPos, accountEmpty, transferAmount);
-    
+
     assertEq(option.openInterest(subId), 150e18);
   }
 
@@ -95,16 +95,16 @@ contract UNIT_OptionAssetOITest is Test {
     // AccountNeg => -100 -> -30
     int transferAmount = 70e18;
     _transfer(accountPos, accountNeg, transferAmount);
-    
+
     assertEq(option.openInterest(subId), 30e18);
   }
 
   function testOIUnchangedIfNegativeBalanceChangeHands() public {
     uint oiBefore = option.openInterest(subId);
     // AccountNeg => -100 -> 0
-    // AccountNeg => 0 -> -100 
+    // AccountNeg => 0 -> -100
     _transfer(accountNeg, accountEmpty, -tradeAmount);
-    
+
     assertEq(option.openInterest(subId), oiBefore);
   }
 
