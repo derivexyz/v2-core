@@ -19,7 +19,7 @@ abstract contract BaseManager {
    * @param subId Asset subId to transfer
    * @param amount Amount of asset to transfer
    */
-  function _transferWithoutMarginCheck(uint from, uint to, IAsset asset, uint96 subId, int amount) internal {
+  function _symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) internal {
     // deduct amount in from account
     accounts.managerAdjustment(
       AccountStructs.AssetAdjustment({acc: from, asset: asset, subId: subId, amount: -amount, assetData: bytes32(0)})

@@ -12,8 +12,8 @@ import "../../shared/mocks/MockAsset.sol";
 contract BaseManagerTester is BaseManager {
   constructor(IAccounts accounts_) BaseManager(accounts_) {}
 
-  function transferWithoutMarginCheck(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
-    _transferWithoutMarginCheck(from, to, asset, subId, amount);
+  function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
+    _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 }
 
@@ -42,7 +42,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testTransferWithoutMarginPositiveAmount() public {
     int amount = 5000 * 1e18;
-    tester.transferWithoutMarginCheck(aliceAcc, bobAcc, mockAsset, 0, amount);
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, amount);
 
     assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), -amount);
     assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
@@ -50,7 +50,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testTransferWithoutMarginNegativeAmount() public {
     int amount = -5000 * 1e18;
-    tester.transferWithoutMarginCheck(aliceAcc, bobAcc, mockAsset, 0, amount);
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, amount);
 
     assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), -amount);
     assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
