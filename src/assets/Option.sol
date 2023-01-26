@@ -121,8 +121,8 @@ contract Option is IOption, Owned {
 
   function _updateOI(uint subId, int preBalance, int change) internal {
     int postBalance = preBalance + change;
-    if (preBalance > 0) {
-      if (postBalance > 0) {
+    if (preBalance >= 0) {
+      if (postBalance >= 0) {
         // OI can be increased or decrease. result must be postive
         openInterest[subId] = (openInterest[subId].toInt256() + change).toUint256();
       } else {

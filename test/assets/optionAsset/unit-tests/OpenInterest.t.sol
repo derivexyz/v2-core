@@ -18,9 +18,12 @@ contract UNIT_OptionAssetOITest is Test {
   MockManager manager;
   Accounts account;
 
-  uint accountId;
+  int tradeAmount = 100e18;
+  uint accountPos;   // balance: 100
+  uint accountNeg;   // balance: -100
+  uint accountEmpty; // balance: 0
 
-  uint depositedAmount = 10000 ether;
+  uint subId = 99999;
 
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
@@ -29,12 +32,92 @@ contract UNIT_OptionAssetOITest is Test {
 
     option = new Option();
 
-    accountId = account.createAccount(address(this), manager);
+    accountPos = account.createAccount(address(this), manager);
+    accountNeg = account.createAccount(address(this), manager);
+    // init these 2 accounts with positive and negative balance
+    _transfer(accountNeg, accountPos, tradeAmount);
+
+    accountEmpty = account.createAccount(address(this), manager);
   }
 
   /* --------------------- *
    |      Transfers        *
    * --------------------- */
 
-  function testNormalTransfersBetweenPositiveAccountDoesntAffectOI() public {}
+  function testFirstTranferIncreaseOI() public {
+    assertEq(option.openInterest(subId), uint(tradeAmount));
+  }
+
+  function testCloseAllPositionsMakeOIZero() public {
+    _transfer(accountPos, accountNeg, tradeAmount);
+    assertEq(option.openInterest(subId), 0);
+  }
+
+  function testOIPositiveToPositive() public {
+    // transfer some positive amount to an empty account
+    uint oiBefore = option.openInterest(subId);
+
+    int transferAmount = 50e18;
+    _transfer(accountPos, accountEmpty, transferAmount);
+    
+    assertEq(oiBefore, option.openInterest(subId));
+
+    // transfer some more
+    transferAmount = 10e18;
+    _transfer(accountPos, accountEmpty, transferAmount);
+    assertEq(oiBefore, option.openInterest(subId));
+  }
+
+  function testOIIncreaseIfIncreasePosition() public {
+    uint oiBefore = option.openInterest(subId);
+
+    // the position betweens accountPos and accountNeg increases:
+    int transferAmount = 50e18;
+    _transfer(accountNeg, accountPos, transferAmount);
+    
+    assertEq(oiBefore + uint(transferAmount), option.openInterest(subId));
+  }
+
+  function testOIIncreaseIfNetOpenIsBigger() public {
+    uint oiBefore = option.openInterest(subId);
+    // AccountPos => +100 -> -50
+    // AccountNeg => -100
+    // AccountEmpty => 0 -> +150
+    int transferAmount = 150e18;
+    _transfer(accountPos, accountEmpty, transferAmount);
+    
+    assertEq(option.openInterest(subId), 150e18);
+  }
+
+  function testOIDecreaseIfNetCloseIsBigger() public {
+    uint oiBefore = option.openInterest(subId);
+    // AccountPos => +100 -> +30
+    // AccountNeg => -100 -> -30
+    int transferAmount = 70e18;
+    _transfer(accountPos, accountNeg, transferAmount);
+    
+    assertEq(option.openInterest(subId), 30e18);
+  }
+
+  function testOIUnchangedIfNegativeBalanceChangeHands() public {
+    uint oiBefore = option.openInterest(subId);
+    // AccountNeg => -100 -> 0
+    // AccountNeg => 0 -> -100 
+    _transfer(accountNeg, accountEmpty, -tradeAmount);
+    
+    assertEq(option.openInterest(subId), oiBefore);
+  }
+
+  /// @dev util functino to transfer
+  function _transfer(uint from, uint to, int amount) internal {
+    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+      fromAcc: from,
+      toAcc: to,
+      asset: option,
+      subId: subId,
+      amount: amount,
+      assetData: ""
+    });
+    account.submitTransfer(transfer, "");
+  }
 }
