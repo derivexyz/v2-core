@@ -129,6 +129,11 @@ contract Option is IOption, Owned {
   // Internal //
   //////////////
 
+  /**
+   * @dev update global OI for an subId, base on adjustment of a single account
+   * @param preBalance Account balance before an adjustment
+   * @param change Change of balance
+   */
   function _updateOI(uint subId, int preBalance, int change) internal {
     int postBalance = preBalance + change;
     if (preBalance >= 0) {
