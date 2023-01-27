@@ -100,6 +100,9 @@ contract PCRM is BaseManager, IManager, Owned {
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
 
+  /// @dev account id that receive OI fee
+  uint public feeRecipientAcc;
+
   Shocks public shocks;
 
   Discounts public discounts;
@@ -144,10 +147,7 @@ contract PCRM is BaseManager, IManager, Owned {
   {
     // todo [Josh]: whitelist check
 
-    // charge OI fee
-    uint feeRecipient = 1;
-
-    _chargeOIFee(accountId, feeRecipient, tradeId, assetDeltas);
+    _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
 
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
@@ -178,6 +178,17 @@ contract PCRM is BaseManager, IManager, Owned {
     // todo [Josh]: add bounds
     shocks = _shocks;
     discounts = _discounts;
+  }
+
+  /**
+   * @dev Governance determined account to receive OI fee
+   * @param _newAcc account id
+   */
+  function setFeeRecipient(uint _newAcc) external onlyOwner {
+    // this line will revert if trying go set an invalid account
+    accounts.ownerOf(_newAcc);
+
+    feeRecipientAcc = _newAcc;
   }
 
   //////////////////
