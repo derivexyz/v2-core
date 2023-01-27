@@ -297,7 +297,6 @@ contract UNIT_CashAssetAccrueInterest is Test {
   //   // Increase total borrow amount
   //   cashAsset.withdraw(newAccount, amountToBorrow, address(this));
 
-  //   // todo MOCK interest rate contract returns static value
   //   vm.prank(address(manager));
   //   int posSettledCash = 10000 * 1e18;
   //   cashAsset.updateSettledCash(posSettledCash);
