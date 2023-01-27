@@ -12,6 +12,9 @@ import "src/Accounts.sol";
 import "src/risk-managers/BaseManager.sol";
 
 import "../../shared/mocks/MockAsset.sol";
+import "../../shared/mocks/MockERC20.sol";
+import "../../shared/mocks/MockFeed.sol";
+import "../../shared/mocks/MockOption.sol";
 
 contract BaseManagerTester is BaseManager {
   constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cash_, IOption option_)
@@ -28,6 +31,10 @@ contract UNIT_TestAbstractBaseManager is Test {
   BaseManagerTester tester;
 
   MockAsset mockAsset;
+  MockFeed spotFeeds;
+  MockERC20 usdc;
+  MockOption option;
+  MockAsset cash;
 
   address alice = address(0xaa);
   address bob = address(0xb0ba);
@@ -37,7 +44,13 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function setUp() public {
     accounts = new Accounts("Lyra Accounts", "LyraAccount");
-    tester = new BaseManagerTester(accounts, ISpotFeeds(address(0)), ICashAsset(address(0)), IOption(address(0)));
+
+    spotFeeds = new MockFeed();
+    usdc = new MockERC20("USDC", "USDC");
+    option = new MockOption(accounts);
+    cash = new MockAsset(usdc, accounts, true);
+
+    tester = new BaseManagerTester(accounts, spotFeeds, ICashAsset(address(cash)), option);
 
     mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
 

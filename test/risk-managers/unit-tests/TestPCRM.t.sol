@@ -43,7 +43,6 @@ contract UNIT_TestPCRM is Test {
 
     auction = new MockDutchAuction();
 
-    //todo: update these mocks
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
 
