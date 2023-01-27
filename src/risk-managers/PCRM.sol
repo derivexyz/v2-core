@@ -141,7 +141,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @notice Ensures asset is valid and initial margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] memory assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
     override
   {

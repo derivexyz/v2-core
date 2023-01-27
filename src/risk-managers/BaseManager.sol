@@ -36,7 +36,7 @@ abstract contract BaseManager is AccountStructs {
     spotFeeds = spotFeeds_;
   }
 
-  function _chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] memory assetDeltas) internal {
+  function _chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] calldata assetDeltas) internal {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {

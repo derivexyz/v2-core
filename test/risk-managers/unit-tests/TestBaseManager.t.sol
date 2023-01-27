@@ -27,7 +27,7 @@ contract BaseManagerTester is BaseManager {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 
-  function chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] memory assetDeltas) external {
+  function chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] calldata assetDeltas) external {
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
   }
 }
