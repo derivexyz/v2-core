@@ -63,6 +63,7 @@ contract UNIT_OptionAssetOITest is Test {
     assertEq(oiBefore, option.openInterest(subId));
 
     // transfer some more
+    oiBefore = option.openInterest(subId);
     transferAmount = 10e18;
     _transfer(accountPos, accountEmpty, transferAmount);
     assertEq(oiBefore, option.openInterest(subId));
