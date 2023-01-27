@@ -119,8 +119,8 @@ contract PCRMGroupingGasScript is Script {
     cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)), rateModel, 0, address(auction));
 
     pcrm = new PCRM(
-      address(account),
-      address(spotFeeds),
+      account,
+      spotFeeds,
       cash,
       option,
       address(auction)

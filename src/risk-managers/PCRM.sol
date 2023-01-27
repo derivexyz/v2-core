@@ -94,9 +94,6 @@ contract PCRM is BaseManager, IManager, Owned {
   ///////////////
   int constant SECONDS_PER_YEAR = 365 days;
 
-  /// @dev spotFeeds that determine staleness and return prices
-  ISpotFeeds public spotFeeds;
-
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
@@ -126,11 +123,10 @@ contract PCRM is BaseManager, IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address accounts_, address spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_)
-    BaseManager(IAccounts(accounts_), option_, cashAsset_)
+  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_)
+    BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
     Owned()
   {
-    spotFeeds = ISpotFeeds(spotFeeds_);
     dutchAuction = IDutchAuction(auction_);
   }
 
@@ -150,6 +146,7 @@ contract PCRM is BaseManager, IManager, Owned {
 
     // charge OI fee
     uint feeRecipient = 1;
+
     _chargeOIFee(accountId, feeRecipient, tradeId, assetDeltas);
 
     // PCRM calculations

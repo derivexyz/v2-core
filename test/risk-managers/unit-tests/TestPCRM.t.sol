@@ -48,10 +48,10 @@ contract UNIT_TestPCRM is Test {
     cash = new MockAsset(usdc, account, true);
 
     manager = new PCRM(
-      address(account),
-      address(spotFeeds),
+      account,
+      spotFeeds,
       ICashAsset(address(cash)),
-      IOption(address(option)),
+      option,
       address(auction)
     );
 

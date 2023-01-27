@@ -5,8 +5,15 @@ import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/AccountStructs.sol";
+import "src/interfaces/ISpotFeeds.sol";
+
+import "src/libraries/IntLib.sol";
+import "src/libraries/DecimalMath.sol";
 
 abstract contract BaseManager is AccountStructs {
+  using IntLib for int;
+  using DecimalMath for uint;
+
   ///@dev Account contract address
   IAccounts public immutable accounts;
 
@@ -16,17 +23,21 @@ abstract contract BaseManager is AccountStructs {
   ///@dev Cash asset address
   ICashAsset public immutable cashAsset;
 
-  ///@dev OI fee rate in BPS. Charged based on contract traded * OIFee * spot
-  uint OIFeeRateBPS = 10;
+  ///@dev Spot feed oracle to get spot price for each asset id
+  ISpotFeeds public immutable spotFeeds;
 
-  constructor(IAccounts _accounts, IOption _option, ICashAsset _cashAsset) {
+  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * spot
+  uint constant OIFeeRateBPS = 0.001e18; // 10 BPS
+
+  constructor(IAccounts _accounts, ISpotFeeds spotFeeds_, ICashAsset _cashAsset, IOption _option) {
     accounts = _accounts;
     option = _option;
     cashAsset = _cashAsset;
+    spotFeeds = spotFeeds_;
   }
 
   function _chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] memory assetDeltas) internal {
-    int fee;
+    uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == option) {
@@ -34,13 +45,17 @@ abstract contract BaseManager is AccountStructs {
         uint oi = option.openInterest(assetDeltas[i].subId);
 
         // this trade increase OI, charge a fee
-        if (oi > oiBefore) {}
+        if (oi > oiBefore) {
+          // todo [Anton]: get spot for specific asset base on subid
+          uint spot = spotFeeds.getSpot(1);
+          fee += assetDeltas[i].delta.abs().multiplyDecimal(spot).multiplyDecimal(OIFeeRateBPS);
+        }
       }
     }
 
     if (fee > 0) {
       // transfer cash to fee recipient account
-      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, fee);
+      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
     }
   }
 

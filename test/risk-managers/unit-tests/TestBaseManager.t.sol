@@ -6,13 +6,17 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
+import "src/interfaces/ISpotFeeds.sol";
+
 import "src/Accounts.sol";
 import "src/risk-managers/BaseManager.sol";
 
 import "../../shared/mocks/MockAsset.sol";
 
 contract BaseManagerTester is BaseManager {
-  constructor(IAccounts accounts_, IOption option_, ICashAsset cash_) BaseManager(accounts_, option_, cash_) {}
+  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cash_, IOption option_)
+    BaseManager(accounts_, spotFeeds_, cash_, option_)
+  {}
 
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
@@ -33,7 +37,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function setUp() public {
     accounts = new Accounts("Lyra Accounts", "LyraAccount");
-    tester = new BaseManagerTester(accounts, IOption(address(0)), ICashAsset(address(0)));
+    tester = new BaseManagerTester(accounts, ISpotFeeds(address(0)), ICashAsset(address(0)), IOption(address(0)));
 
     mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
 

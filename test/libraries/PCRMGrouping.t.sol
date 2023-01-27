@@ -38,13 +38,9 @@ contract PCRMGroupingTester {
 
 contract PCRMGroupingTest is Test {
   PCRMGroupingTester tester;
-  PCRM pcrm;
 
   function setUp() public {
     tester = new PCRMGroupingTester();
-    pcrm = new PCRM(
-      address(0), address(0), ICashAsset(address(0)), IOption(address(0)), address(0)
-    );
   }
 
   ///////////////////////
@@ -110,7 +106,9 @@ contract PCRMGroupingTest is Test {
   // Util //
   //////////
   function _getDefaultHoldings() public view returns (PCRM.Portfolio memory) {
-    PCRM.Strike[] memory strikes = new PCRM.Strike[](pcrm.MAX_STRIKES());
+    // Hardcode max strike = 64
+    uint MAX_STRIKE = 64;
+    PCRM.Strike[] memory strikes = new PCRM.Strike[](MAX_STRIKE);
     // strike 1
     strikes[0] = PCRM.Strike({strike: 10e18, calls: 10, puts: -10, forwards: 1});
 
