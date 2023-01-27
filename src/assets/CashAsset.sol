@@ -424,9 +424,9 @@ contract CashAsset is ICashAsset, Owned {
     // Calculate interest since last timestamp using compounded interest rate
     uint realSupply = totalSupply; // include netSettledCash in the totalSupply
     if (netSettledCash >= 0) {
-      realSupply += netSettledCash.toUint256();
+      realSupply += netSettledCash.toUint256(); // decreases util rate and borrow rate
     } else {
-      realSupply -= netSettledCash.toUint256();
+      realSupply += (-netSettledCash).toUint256(); // GUARANTEES Util(during settlement) <= Util(before settlement)
     }
 
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);

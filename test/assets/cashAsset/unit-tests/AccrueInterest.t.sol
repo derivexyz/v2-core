@@ -266,7 +266,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertGt(cashExchangeRate, 1e18);
   }
 
-  function testPositiveSettledCashDecreasesCashBalance() public {
+  function testNegativeSettledCashDecreasesCashBalance() public {
     uint amountToBorrow = 2000e18;
     uint account1 = account.createAccount(address(this), manager);
 
@@ -275,16 +275,19 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertEq(cashExchangeRate, 1e18);
 
     // Track printed cash
-    int posSettledCash = -10000 * 1e18;
+    int negSettledCash = -10000 * 1e18;
     vm.prank(address(manager));
-    cashAsset.updateSettledCash(posSettledCash);
+    cashAsset.updateSettledCash(negSettledCash);
 
-    // Increase cash balance reflected in increased exchange rate
+    // Decrease cash balance reflected in decreased exchange rate
     cashExchangeRate = cashAsset.getCashToStableExchangeRate();
-    console.log("exchange rate", cashExchangeRate);
-    assertGt(cashExchangeRate, 1e18);
+
+    // In a real example the burnt amount would also be reflected in the supply (hook adj)
+    // which is cancelled out inside `getExchangeRate`
+    assertLt(cashExchangeRate, 1e18);
   }
 
+  // todo add to integration test with real rate model
   // function testPositiveSettledCashIncreaseInterest() public {
   //   uint amountToBorrow = 2000e18;
   //   uint newAccount = account.createAccount(address(this), manager);
@@ -293,12 +296,12 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
   //   // Increase total borrow amount
   //   cashAsset.withdraw(newAccount, amountToBorrow, address(this));
-    
+
   //   // todo MOCK interest rate contract returns static value
   //   vm.prank(address(manager));
   //   int posSettledCash = 10000 * 1e18;
   //   cashAsset.updateSettledCash(posSettledCash);
-    
+
   //   // Indexes should start at 1
   //   assertEq(cashAsset.borrowIndex(), 1e18);
   //   assertEq(cashAsset.supplyIndex(), 1e18);
@@ -312,6 +315,32 @@ contract UNIT_CashAssetAccrueInterest is Test {
   //   console.log("borrowIndex", cashAsset.borrowIndex());
   //   console.log("supplyIndex", cashAsset.supplyIndex());
   // }
+  // todo add to integration test with real rate model
+  function testNegativeSettledCashDecreaseInterest() public {
+    uint amountToBorrow = 2000e18;
+    uint newAccount = account.createAccount(address(this), manager);
+    uint totalBorrow = cashAsset.totalBorrow();
+    assertEq(totalBorrow, 0);
 
-  // function testNegativeSettledCashDecreaseInterest() public {}
+    // Increase total borrow amount
+    cashAsset.withdraw(newAccount, amountToBorrow, address(this));
+
+    // todo MOCK interest rate contract returns static value
+    vm.prank(address(manager));
+    int negSettledCash = -10000 * 1e18;
+    cashAsset.updateSettledCash(negSettledCash);
+
+    // Indexes should start at 1
+    assertEq(cashAsset.borrowIndex(), 1e18);
+    assertEq(cashAsset.supplyIndex(), 1e18);
+
+    vm.warp(block.timestamp + 1);
+
+    // After accrueInterest, should increase borrow and supply indexes
+    cashAsset.accrueInterest();
+    assertGt(cashAsset.borrowIndex(), 1e18);
+    assertGt(cashAsset.supplyIndex(), 1e18);
+    console.log("borrowIndex", cashAsset.borrowIndex());
+    console.log("supplyIndex", cashAsset.supplyIndex());
+  }
 }
