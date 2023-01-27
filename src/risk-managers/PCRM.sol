@@ -185,7 +185,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param _newAcc account id
    */
   function setFeeRecipient(uint _newAcc) external onlyOwner {
-    // this line will revert if trying go set an invalid account
+    // this line will revert if the owner tries to set an invalid account
     accounts.ownerOf(_newAcc);
 
     feeRecipientAcc = _newAcc;
