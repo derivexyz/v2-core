@@ -10,9 +10,11 @@ import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
+
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
+import "test/shared/mocks/MockOption.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestPCRM is Test {
@@ -23,7 +25,7 @@ contract UNIT_TestPCRM is Test {
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
   MockV3Aggregator aggregator;
-  MockAsset option;
+  MockOption option;
   MockDutchAuction auction;
 
   address alice = address(0xaa);
@@ -42,7 +44,7 @@ contract UNIT_TestPCRM is Test {
     auction = new MockDutchAuction();
 
     //todo: update these mocks
-    option = new MockAsset(IERC20(address(0)), account, true);
+    option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
 
     manager = new PCRM(
