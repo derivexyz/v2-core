@@ -19,6 +19,8 @@ import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 
+import "./BaseManager.sol";
+
 import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
@@ -26,7 +28,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PCRM is IManager, Owned {
+contract PCRM is BaseManager, IManager, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -91,9 +93,6 @@ contract PCRM is IManager, Owned {
   ///////////////
   int constant SECONDS_PER_YEAR = 365 days;
 
-  /// @dev asset used in all settlements and denominates margin
-  IAccounts public immutable account;
-
   /// @dev spotFeeds that determine staleness and return prices
   ISpotFeeds public spotFeeds;
 
@@ -132,8 +131,10 @@ contract PCRM is IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address account_, address spotFeeds_, address cashAsset_, address option_, address auction_) Owned() {
-    account = IAccounts(account_);
+  constructor(address accounts_, address spotFeeds_, address cashAsset_, address option_, address auction_)
+    BaseManager(IAccounts(accounts_))
+    Owned()
+  {
     spotFeeds = ISpotFeeds(spotFeeds_);
     cashAsset = ICashAsset(cashAsset_);
     option = Option(option_);
@@ -148,7 +149,7 @@ contract PCRM is IManager, Owned {
    * @notice Ensures asset is valid and initial margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory)
+  function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AccountStructs.AssetDelta[] memory, bytes memory)
     public
     view
     override
@@ -156,7 +157,7 @@ contract PCRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
+    Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     _calcMargin(portfolio, MarginType.INITIAL);
   }
@@ -447,7 +448,7 @@ contract PCRM is IManager, Owned {
    * @return portfolio Cash + arranged option holdings.
    */
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio) {
-    return _arrangePortfolio(account.getAccountBalances(accountId));
+    return _arrangePortfolio(accounts.getAccountBalances(accountId));
   }
 
   /**

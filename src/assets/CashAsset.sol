@@ -281,6 +281,7 @@ contract CashAsset is ICashAsset, Owned {
    */
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
+    uint, /*tradeId*/
     int preBalance,
     IManager manager,
     address caller
