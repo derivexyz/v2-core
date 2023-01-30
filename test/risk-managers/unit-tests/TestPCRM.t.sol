@@ -282,7 +282,7 @@ contract UNIT_TestPCRM is Test {
 
   function testCannotExecuteBidIfLiquidatorBecomesUnderwater() public {
     // alice open 1 long call, short 10 put
-    (uint callId, uint putId) = _openDefaultOptions();
+    _openDefaultOptions();
 
     uint exerciseCashAmount = 5000e18; // paying gitantic amount that makes liquidator insolvent
     vm.expectRevert(PCRM.PCRM_MarginRequirementNotMet.selector);
@@ -297,6 +297,12 @@ contract UNIT_TestPCRM is Test {
     manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
 
     assertEq(account.getAccountBalances(aliceAcc).length, 0);
+  }
+
+  function testCannotExecuteBidWithPortionGreatorThan100() public {
+    vm.expectRevert(PCRM.PCRM_InvalidBidPortion.selector);
+    vm.prank(address(auction));
+    manager.executeBid(aliceAcc, bobAcc, 1e18 + 1, 0);
   }
 
   //////////

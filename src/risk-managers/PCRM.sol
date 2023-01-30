@@ -214,6 +214,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param cashAmount Cash amount liquidator is offering for portion of account.
    */
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyAuction {
+    if (portion > DecimalMath.UNIT) revert PCRM_InvalidBidPortion();
     AccountStructs.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
     // transfer liquidated account's asset to liquidator
@@ -495,6 +496,8 @@ contract PCRM is BaseManager, IManager, Owned {
   ////////////
 
   error PCRM_OnlyAuction();
+
+  error PCRM_InvalidBidPortion();
 
   error PCRM_MarginRequirementNotMet();
 
