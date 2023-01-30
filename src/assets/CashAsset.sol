@@ -377,6 +377,8 @@ contract CashAsset is ICashAsset, Owned {
   function updateSettledCash(int amountCash) external {
     _checkManager(address(msg.sender));
     netSettledCash += amountCash;
+
+    emit SettledCashUpdated(amountCash, netSettledCash);
   }
 
   ////////////////////////////
@@ -425,10 +427,8 @@ contract CashAsset is ICashAsset, Owned {
     // Calculate interest since last timestamp using compounded interest rate
     uint realSupply = totalSupply; // include netSettledCash in the totalSupply
     if (netSettledCash >= 0) {
-      realSupply += netSettledCash.toUint256(); // decreases util rate and borrow rate
-    } else {
-      realSupply += (-netSettledCash).toUint256(); // GUARANTEES Util(during settlement) <= Util(before settlement)
-    }
+      realSupply -= netSettledCash.toUint256(); // account for printed supply due to settlements
+    } // for < 0, util = totalBorrow/(totalSupply - min(Print,0))
 
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
@@ -459,11 +459,9 @@ contract CashAsset is ICashAsset, Owned {
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply + accruedSmFees - totalBorrow;
-    if (netSettledCash >= 0) {
-      totalCash -= netSettledCash.toUint256(); // printed is positive we substract from supply
-    } else {
-      totalCash += (-netSettledCash).toUint256(); // printed is negative we add the amount to supply
-    }
+
+    // If netSettledCash > 0, we substract from supply, if < 0 we add amount to supply
+    totalCash = (totalCash.toInt256() - netSettledCash).toUint256();
 
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);

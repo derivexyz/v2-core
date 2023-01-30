@@ -64,6 +64,9 @@ interface ICashAsset is IAsset {
   /// @dev emitted when a user withdraws from an account
   event Withdraw(uint accountId, address recipient, uint amountCashBurn, uint stableAssetWidrawn);
 
+  /// @dev Emitted when asymmetric print/burn occurs for settlement
+  event SettledCashUpdated(int amountChanged, int currentSettledCash);
+
   /// @dev emitted when withdraw fee is enabled
   ///      this would imply there is an insolvency and loss is applied to all cash holders
   event WithdrawFeeEnabled(uint exchangeRate);
