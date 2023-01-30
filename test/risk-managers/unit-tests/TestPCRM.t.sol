@@ -127,6 +127,8 @@ contract UNIT_TestPCRM is Test {
   //////////////
 
   function testBlockTradeIfMultipleExpiries() public {
+    _depositCash(alice, aliceAcc, 5000e18);
+    _depositCash(bob, bobAcc, 5000e18);
     // prepare trades
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
     uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
@@ -335,14 +337,18 @@ contract UNIT_TestPCRM is Test {
     vm.stopPrank();
   }
 
-  // alice open 1 long call, 10 short put
+  // alice open 1 long call, 10 short put. both with 10K cash
   function _openDefaultOptions() internal returns (uint callSubId, uint putSubId) {
+    _depositCash(alice, aliceAcc, 10000e18);
+    _depositCash(bob, bobAcc, 10000e18);
+
     vm.startPrank(address(alice));
     callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
-
     putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
 
-    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
+
+    transfers[0] = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -350,7 +356,7 @@ contract UNIT_TestPCRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory putTransfer = AccountStructs.AssetTransfer({
+    transfers[1] = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -358,8 +364,15 @@ contract UNIT_TestPCRM is Test {
       amount: -10e18,
       assetData: ""
     });
-    account.submitTransfer(callTransfer, "");
-    account.submitTransfer(putTransfer, "");
+    account.submitTransfers(transfers, "");
+    vm.stopPrank();
+  }
+
+  function _depositCash(address user, uint account, uint amount) internal {
+    usdc.mint(user, amount);
+    vm.startPrank(user);
+    usdc.approve(address(cash), type(uint).max);
+    cash.deposit(account, 0, amount);
     vm.stopPrank();
   }
 }

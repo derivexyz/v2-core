@@ -160,8 +160,8 @@ contract PCRM is BaseManager, IManager, Owned {
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
-    // todo: use _checkMargin to revert if margin requirement is not met
-    _calcMargin(portfolio, MarginType.INITIAL);
+    // check initial margin
+    _checkMargin(portfolio, MarginType.INITIAL);
   }
 
   /**
