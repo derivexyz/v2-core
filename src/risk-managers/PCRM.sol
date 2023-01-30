@@ -314,7 +314,7 @@ contract PCRM is BaseManager, IManager, Owned {
 
   /**
    * @notice Calculate the discounted value of live option portfolio in a specific expiry.
-   * @param expiry All option portfolio within an expiry.
+   * @param portfolio All option portfolio within an expiry.
    * @param spotUp Spot shocked up based on initial or maintenance margin params.
    * @param spotDown Spot shocked down based on initial or maintenance margin params.
    * @param shockedVol Vol shocked up based on initial or maintenance margin params.
