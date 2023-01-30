@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
@@ -10,16 +9,13 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 
-import "test/libraries/OptionEncoding.t.sol";
+import "src/libraries/OptionEncoding.sol";
 
-contract UNIT_TestOption is Test {
+contract UNIT_TestOptionBasics is Test {
   Accounts account;
   MockManager manager;
 
-  ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
-  MockV3Aggregator aggregator;
   Option option;
-  OptionEncodingTester tester;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -29,12 +25,7 @@ contract UNIT_TestOption is Test {
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
-
-    option = new Option();
-    tester = new OptionEncodingTester();
+    option = new Option(account);
     manager = new MockManager(address(account));
 
     vm.startPrank(alice);
@@ -114,7 +105,7 @@ contract UNIT_TestOption is Test {
     uint expiry = block.timestamp + 3 days;
     uint strike = 1234e18;
     bool isCall = false;
-    uint96 trueSubId = tester.toSubId(expiry, strike, isCall);
+    uint96 trueSubId = OptionEncoding.toSubId(expiry, strike, isCall);
 
     (uint rExpiry, uint rStrike, bool rIsCall) = option.getOptionDetails(trueSubId);
     assertEq(expiry, rExpiry);
@@ -127,7 +118,7 @@ contract UNIT_TestOption is Test {
     uint expiry = block.timestamp + 30 days;
     uint strike = 10_000e18;
     bool isCall = true;
-    uint96 trueSubId = tester.toSubId(expiry, strike, isCall);
+    uint96 trueSubId = OptionEncoding.toSubId(expiry, strike, isCall);
     uint96 returnedSubId = option.getSubId(expiry, strike, true);
 
     assertEq(trueSubId, returnedSubId);

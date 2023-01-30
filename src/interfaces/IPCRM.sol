@@ -27,9 +27,7 @@ interface IPCRM {
 
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio);
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
-    external
-    returns (int finalInitialMargin, Portfolio[] memory, int cash);
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external;
 
   function getSpot() external view returns (uint spot);
 

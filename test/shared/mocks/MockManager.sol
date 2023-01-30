@@ -20,6 +20,8 @@ contract MockManager is IManager {
 
   mapping(uint => uint) public accTriggeredDeltaLength;
 
+  uint mockedSpot;
+
   // acc => asset => subId => time
   mapping(uint => mapping(address => mapping(uint96 => uint))) public accAssetTriggered;
 
@@ -66,6 +68,10 @@ contract MockManager is IManager {
   function test() public {}
 
   function getSpot() external view returns (uint) {
-    return 1000 * DecimalMath.UNIT; // hardcoded value not relevant to test
+    return mockedSpot;
+  }
+
+  function setMockedSpot(uint _spot) external {
+    mockedSpot = _spot;
   }
 }
