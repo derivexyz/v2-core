@@ -273,9 +273,8 @@ contract UNIT_TestPCRM is Test {
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
 
     assertEq(account.getAccountBalances(aliceAcc).length, 3);
-
-    assertEq(account.getBalance(aliceAcc, option, callId), 0.8e18);
-    assertEq(account.getBalance(aliceAcc, option, putId), -8e18);
+    assertEq(account.getBalance(aliceAcc, option, callId), 0.8e18); // 80% of +1 long call
+    assertEq(account.getBalance(aliceAcc, option, putId), -8e18); // 80% of -10 short put
 
     int aliceCashAfter = account.getBalance(aliceAcc, cash, 0);
     assertEq(aliceCashBefore * 4 / 5 + int(exerciseCashAmount), aliceCashAfter);
@@ -285,22 +284,19 @@ contract UNIT_TestPCRM is Test {
     // alice open 1 long call, short 10 put
     (uint callId, uint putId) = _openDefaultOptions();
 
-    uint exerciseCashAmount = 500e18;
-    // 20% got liquidated
+    uint exerciseCashAmount = 5000e18; // paying gitantic amount that makes liquidator insolvent
     vm.expectRevert(PCRM.PCRM_MarginRequirementNotMet.selector);
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
   }
 
   function testExecuteEmptyBidOnEmptyAccount() public {
-    AccountStructs.AssetBalance[] memory aliceBalances = account.getAccountBalances(aliceAcc);
-    assertEq(aliceBalances.length, 0);
+    assertEq(account.getAccountBalances(aliceAcc).length, 0);
 
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
 
-    AccountStructs.AssetBalance[] memory aliceBalancesAfter = account.getAccountBalances(aliceAcc);
-    assertEq(aliceBalancesAfter.length, 0);
+    assertEq(account.getAccountBalances(aliceAcc).length, 0);
   }
 
   //////////
