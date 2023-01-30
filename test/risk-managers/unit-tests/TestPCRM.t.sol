@@ -266,6 +266,7 @@ contract UNIT_TestPCRM is Test {
 
     // alice has 3 positions
     int aliceCashBefore = account.getBalance(aliceAcc, cash, 0);
+    int bobCashBefore = account.getBalance(bobAcc, cash, 0);
     assertEq(account.getAccountBalances(aliceAcc).length, 3);
 
     vm.prank(address(auction));
@@ -280,13 +281,16 @@ contract UNIT_TestPCRM is Test {
 
     int aliceCashAfter = account.getBalance(aliceAcc, cash, 0);
     assertEq(aliceCashBefore * 4 / 5 + int(exerciseCashAmount), aliceCashAfter);
+
+    int bobCashAfter = account.getBalance(bobAcc, cash, 0);
+    assertEq(aliceCashBefore * 1 / 5 - int(exerciseCashAmount), bobCashAfter - bobCashBefore);
   }
 
   function testCannotExecuteBidIfLiquidatorBecomesUnderwater() public {
     // alice open 1 long call, short 10 put
     _openDefaultOptions();
 
-    uint exerciseCashAmount = 5000e18; // paying gitantic amount that makes liquidator insolvent
+    uint exerciseCashAmount = 10000e18; // paying gitantic amount that makes liquidator insolvent
     vm.expectRevert(PCRM.PCRM_MarginRequirementNotMet.selector);
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
@@ -337,10 +341,10 @@ contract UNIT_TestPCRM is Test {
     vm.stopPrank();
   }
 
-  // alice open 1 long call, 10 short put. both with 10K cash
+  // alice open 1 long call, 10 short put. both with 4K cash
   function _openDefaultOptions() internal returns (uint callSubId, uint putSubId) {
-    _depositCash(alice, aliceAcc, 10000e18);
-    _depositCash(bob, bobAcc, 10000e18);
+    _depositCash(alice, aliceAcc, 4000e18);
+    _depositCash(bob, bobAcc, 4000e18);
 
     vm.startPrank(address(alice));
     callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
