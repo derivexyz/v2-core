@@ -55,6 +55,9 @@ contract CashAsset is ICashAsset, Owned {
   ///@dev Total amount of negative balances
   uint public totalBorrow;
 
+  ///@dev Net amount of cash printed/burned due to settlement
+  int public netSettledCash;
+
   ///@dev Total accrued fees for the security module
   uint public accruedSmFees;
 
@@ -255,6 +258,14 @@ contract CashAsset is ICashAsset, Owned {
     );
   }
 
+  /**
+   * @dev Returns the exchange rate from cash asset to stable asset
+   *      this should always be equal to 1, unless we have an insolvency
+   */
+  function getCashToStableExchangeRate() external view returns (uint) {
+    return _getExchangeRate();
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -359,11 +370,15 @@ contract CashAsset is ICashAsset, Owned {
   }
 
   /**
-   * @dev Returns the exchange rate from cash asset to stable asset
-   *      this should always be equal to 1, unless we have an insolvency
+   * @notice Allows whitelisted manager to adjust netSettledCash
+   * @dev Required to track printed cash for asymmetric settlements
+   * @param amountCash Amount of cash printed or burned
    */
-  function getCashToStableExchangeRate() external view returns (uint) {
-    return _getExchangeRate();
+  function updateSettledCash(int amountCash) external {
+    _checkManager(address(msg.sender));
+    netSettledCash += amountCash;
+
+    emit SettledCashUpdated(amountCash, netSettledCash);
   }
 
   ////////////////////////////
@@ -410,7 +425,12 @@ contract CashAsset is ICashAsset, Owned {
     if (totalBorrow == 0) return;
 
     // Calculate interest since last timestamp using compounded interest rate
-    uint borrowRate = rateModel.getBorrowRate(totalSupply, totalBorrow);
+    uint realSupply = totalSupply; // include netSettledCash in the totalSupply
+    if (netSettledCash >= 0) {
+      realSupply -= netSettledCash.toUint256(); // account for printed supply due to settlements
+    } // for < 0, util = totalBorrow/(totalSupply - min(Print,0))
+
+    uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
 
@@ -439,6 +459,10 @@ contract CashAsset is ICashAsset, Owned {
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply + accruedSmFees - totalBorrow;
+
+    // If netSettledCash > 0, we substract from supply, if < 0 we add amount to supply
+    totalCash = (totalCash.toInt256() - netSettledCash).toUint256();
+
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
   }
