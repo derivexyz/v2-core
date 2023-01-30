@@ -231,8 +231,7 @@ contract PCRM is BaseManager, IManager, Owned {
     _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
 
     // check liquidator's account status
-    Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
-    // []
+    Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(liquidatorId));
     _checkMargin(portfolio, MarginType.INITIAL);
   }
 

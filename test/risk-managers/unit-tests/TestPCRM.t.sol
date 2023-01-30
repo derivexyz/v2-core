@@ -249,9 +249,58 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testExecuteBid() public {
-    vm.startPrank(address(auction));
-    manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    // add some usdc for buffer
+    usdc.mint(bob, 1000_000e18);
+    vm.startPrank(bob);
+    usdc.approve(address(cash), type(uint).max);
+    cash.deposit(bobAcc, 0, 1000_000e18);
     vm.stopPrank();
+
+    // alice open 1 long call, short 10 put
+    (uint callId, uint putId) = _openDefaultOptions();
+
+    // alice transfer cash to bob
+    _transferCash();
+
+    // alice has 3 positions
+    int aliceCashBefore = account.getBalance(aliceAcc, cash, 0);
+    assertEq(account.getAccountBalances(aliceAcc).length, 3);
+
+    vm.prank(address(auction));
+
+    uint exerciseCashAmount = 50e18;
+    // 20% got liquidated
+    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
+
+    assertEq(account.getAccountBalances(aliceAcc).length, 3);
+
+    assertEq(account.getBalance(aliceAcc, option, callId), 0.8e18);
+    assertEq(account.getBalance(aliceAcc, option, putId), -8e18);
+
+    int aliceCashAfter = account.getBalance(aliceAcc, cash, 0);
+    assertEq(aliceCashBefore * 4 / 5 + int(exerciseCashAmount), aliceCashAfter);
+  }
+
+  function testCannotExecuteBidIfLiquidatorBecomesUnderwater() public {
+    // alice open 1 long call, short 10 put
+    (uint callId, uint putId) = _openDefaultOptions();
+
+    uint exerciseCashAmount = 500e18;
+    // 20% got liquidated
+    vm.expectRevert(PCRM.PCRM_MarginRequirementNotMet.selector);
+    vm.prank(address(auction));
+    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
+  }
+
+  function testExecuteEmptyBidOnEmptyAccount() public {
+    AccountStructs.AssetBalance[] memory aliceBalances = account.getAccountBalances(aliceAcc);
+    assertEq(aliceBalances.length, 0);
+
+    vm.prank(address(auction));
+    manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+
+    AccountStructs.AssetBalance[] memory aliceBalancesAfter = account.getAccountBalances(aliceAcc);
+    assertEq(aliceBalancesAfter.length, 0);
   }
 
   //////////
@@ -276,7 +325,7 @@ contract UNIT_TestPCRM is Test {
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(address(cash)),
-      subId: 1,
+      subId: 0,
       amount: 1000e18,
       assetData: ""
     });
@@ -284,11 +333,12 @@ contract UNIT_TestPCRM is Test {
     vm.stopPrank();
   }
 
-  function _openDefaultOptions() internal {
+  // alice open 1 long call, 10 short put
+  function _openDefaultOptions() internal returns (uint callSubId, uint putSubId) {
     vm.startPrank(address(alice));
-    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
+    callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
 
-    uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
+    putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
 
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
