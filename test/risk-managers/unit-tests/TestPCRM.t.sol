@@ -250,7 +250,7 @@ contract UNIT_TestPCRM is Test {
 
   function testExecuteBid() public {
     vm.startPrank(address(auction));
-    manager.executeBid(aliceAcc, 0, 5e17, 0);
+    manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
     vm.stopPrank();
   }
 
