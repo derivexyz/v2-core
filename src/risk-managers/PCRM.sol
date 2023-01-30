@@ -240,6 +240,11 @@ contract PCRM is BaseManager, IManager, Owned {
   // Margin Math //
   /////////////////
 
+  /**
+   * @notice revert if a portfolio is under margin
+   * @param portfolio Account portfolio
+   * @param marginType Initial or maintenance margin.
+   */
   function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal view {
     int margin = _calcMargin(portfolio, marginType);
     if (margin < 0) revert PCRM_MarginRequirementNotMet();
@@ -248,7 +253,7 @@ contract PCRM is BaseManager, IManager, Owned {
   /**
    * @notice Calculate the initial or maintenance margin of account.
    *         A positive value means the account is X amount over the required margin.
-   * @param portfolio Account holdings.
+   * @param portfolio Account portfolio.
    * @param marginType Initial or maintenance margin.
    * @return margin Amount by which account is over or under the required margin.
    */
@@ -287,8 +292,8 @@ contract PCRM is BaseManager, IManager, Owned {
   }
 
   /**
-   * @notice Calculate the settled value of option holdings.
-   * @param portfolio All option holdings
+   * @notice Calculate the settled value of option portfolio.
+   * @param portfolio All option portfolio
    * @return expiryValue Value of assets or debt of settled options.
    */
   function _calcSettledExpiryValue(Portfolio memory portfolio) internal pure returns (int expiryValue) {
@@ -308,14 +313,14 @@ contract PCRM is BaseManager, IManager, Owned {
   }
 
   /**
-   * @notice Calculate the discounted value of live option holdings in a specific expiry.
-   * @param expiry All option holdings within an expiry.
+   * @notice Calculate the discounted value of live option portfolio in a specific expiry.
+   * @param expiry All option portfolio within an expiry.
    * @param spotUp Spot shocked up based on initial or maintenance margin params.
    * @param spotDown Spot shocked down based on initial or maintenance margin params.
    * @param shockedVol Vol shocked up based on initial or maintenance margin params.
    * @return expiryValue Value of assets or debt of options in a given expiry.
    */
-  function _calcLiveExpiryValue(Portfolio memory expiry, uint128 spotUp, uint128 spotDown, uint128 shockedVol)
+  function _calcLiveExpiryValue(Portfolio memory portfolio, uint128 spotUp, uint128 spotDown, uint128 shockedVol)
     internal
     view
     returns (int expiryValue)
@@ -323,12 +328,12 @@ contract PCRM is BaseManager, IManager, Owned {
     int spotUpValue;
     int spotDownValue;
 
-    uint64 timeToExpiry = (expiry.expiry - block.timestamp).toUint64();
+    uint64 timeToExpiry = (portfolio.expiry - block.timestamp).toUint64();
 
-    for (uint i; i < expiry.strikes.length; i++) {
-      spotUpValue += _calcLiveStrikeValue(expiry.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
+    for (uint i; i < portfolio.strikes.length; i++) {
+      spotUpValue += _calcLiveStrikeValue(portfolio.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
 
-      spotDownValue += _calcLiveStrikeValue(expiry.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
+      spotDownValue += _calcLiveStrikeValue(portfolio.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
     }
 
     // return the worst of two scenarios
@@ -336,7 +341,7 @@ contract PCRM is BaseManager, IManager, Owned {
   }
 
   /**
-   * @notice Calculate the discounted value of live option holdings in a specific strike.
+   * @notice Calculate the discounted value of live option portfolio in a specific strike.
    * @param strikes All option holdings of the same strike.
    * @param isCurrentScenarioUp Whether the current scenario is spot up or down.
    * @param spotUp Spot shocked up based on initial or maintenance margin params.
@@ -473,7 +478,7 @@ contract PCRM is BaseManager, IManager, Owned {
   /**
    * @notice Calculate the initial margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Cash + arranged option holdings.
+   * @param portfolio Cash + arranged option porfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
   // todo [Josh]: public view function to get margin values directly through accountId
@@ -484,7 +489,7 @@ contract PCRM is BaseManager, IManager, Owned {
   /**
    * @notice Calculate the maintenance margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Cash + arranged option holdings.
+   * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
   function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int margin) {
