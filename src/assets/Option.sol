@@ -32,6 +32,9 @@ contract Option is IOption, Owned {
   ///@dev OI for a subId. OI is the sum of all positive balance
   mapping(uint => uint) public openInterest;
 
+  ///@dev SubId => Settlement price
+  mapping(uint => uint) public subIdToSettlementPrice;
+
   ////////////
   // Events //
   ////////////
@@ -89,6 +92,9 @@ contract Option is IOption, Owned {
    */
   function setSettlementPrice(uint subId) external {
     // todo: integrate with settlementFeeds
+    uint price = 0;
+
+    subIdToSettlementPrice[subId] = price;
     emit SettlementPriceSet(subId, 0);
   }
 
@@ -123,6 +129,15 @@ contract Option is IOption, Owned {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int pnl, bool priceSettled) {
     // todo: basic pnl
+    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId);
+    uint settlementPrice = subIdToSettlementPrice[subId];
+
+    // Return false if option cannot be settled yet or price settlement price has not been set
+    if (expiry > block.timestamp || settlementPrice == 0) {
+      return (0, false);
+    }
+
+    return (_getSettlementValue(strike, balance, settlementPrice, isBall), true);
   }
 
   //////////////
@@ -150,6 +165,43 @@ contract Option is IOption, Owned {
         openInterest[subId] += uint(postBalance);
       }
       // if both pre and post balances are negative, this trade doesn't affect total positive
+    }
+  }
+
+  function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    internal
+    pure
+    returns (int)
+  {
+    int pnl = (settlementPrice - strikePrice).toInt256();
+
+    // if (isCall) {
+    //   if (pnl > 0) {
+    //     // ITM Call
+    //     return pnl.multiplyDecimal(balance);
+    //   } else {
+    //     // todo or am i just returning 0 here
+    //     return -pnl.multiplyDecimal(balance);
+    //   }
+    // } else {
+    //   if (pnl > 0) {
+    //     // ITM Put
+    //     return -pnl.multiplyDecimal(balance);
+    //   } else {
+    //     // todo
+    //     return pnl.multiplyDecimal(balance);
+    //   }
+    // }
+
+    if (isCall && pnl > 0) {
+      // ITM Call 
+      return pnl.multiplyDecimal(balance);
+    } else if (!isCall && pnl < 0) {
+      // ITM Put
+      return -pnl.multiplyDecimal(balance);
+    } else {
+      // OTM
+      return 0;
     }
   }
 
