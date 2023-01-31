@@ -15,7 +15,7 @@ import "src/libraries/OptionEncoding.sol";
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, Owned {
+contract Option is IOption, ISettlementFeed, Owned {
   using SafeCast for uint;
   using SafeCast for int;
 
@@ -34,13 +34,6 @@ contract Option is IOption, Owned {
 
   ///@dev SubId => Settlement price
   mapping(uint => uint) public subIdToSettlementPrice;
-
-  ////////////
-  // Events //
-  ////////////
-
-  /// @dev Emitted when spot price for option settlement determined
-  event SettlementPriceSet(uint indexed subId, uint settlementPrice);
 
   ////////////////////////
   //    Constructor     //
@@ -124,10 +117,10 @@ contract Option is IOption, Owned {
    * @notice Get settlement value of a specific option. Will return false if option not settled yet.
    * @param subId ID of option.
    * @param balance Amount of option held.
-   * @return pnl Amount the holder will receive or pay when position is settled
+   * @return payout Amount the holder will receive or pay when position is settled
    * @return priceSettled Whether the settlement price of the option has been set.
    */
-  function calcSettlementValue(uint subId, int balance) external view returns (int pnl, bool priceSettled) {
+  function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
     // todo: basic pnl
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId);
     uint settlementPrice = subIdToSettlementPrice[subId];
@@ -173,32 +166,14 @@ contract Option is IOption, Owned {
     pure
     returns (int)
   {
-    int pnl = (settlementPrice - strikePrice).toInt256();
+    int payout = (settlementPrice - strikePrice).toInt256();
 
-    // if (isCall) {
-    //   if (pnl > 0) {
-    //     // ITM Call
-    //     return pnl.multiplyDecimal(balance);
-    //   } else {
-    //     // todo or am i just returning 0 here
-    //     return -pnl.multiplyDecimal(balance);
-    //   }
-    // } else {
-    //   if (pnl > 0) {
-    //     // ITM Put
-    //     return -pnl.multiplyDecimal(balance);
-    //   } else {
-    //     // todo
-    //     return pnl.multiplyDecimal(balance);
-    //   }
-    // }
-
-    if (isCall && pnl > 0) {
+    if (isCall && payout > 0) {
       // ITM Call 
-      return pnl.multiplyDecimal(balance);
-    } else if (!isCall && pnl < 0) {
+      return payout.multiplyDecimal(balance);
+    } else if (!isCall && payout < 0) {
       // ITM Put
-      return -pnl.multiplyDecimal(balance);
+      return -payout.multiplyDecimal(balance);
     } else {
       // OTM
       return 0;
