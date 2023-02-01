@@ -74,6 +74,8 @@ contract DutchAuction is IDutchAuction, Owned {
     int inversePortfolioModifier;
     // Number, Amount of time between steps when the auction is insolvent
     uint secBetweenSteps;
+    // Liquidator fee rate, 18 decimals
+    uint liquidatorFeeRate;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -109,16 +111,15 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice Sets the dutch Auction Parameters
    * @dev This function is used to set the parameters for the dutch auction
    * @param _parameters A struct that contains all the parameters for the dutch auction
-   * @return Documents the parameters for the dutch auction that were just set.
    */
   function setDutchAuctionParameters(DutchAuctionParameters memory _parameters)
     external
     onlyOwner
-    returns (DutchAuctionParameters memory)
   {
-    // set the parameters for the dutch auction
+    // liquidator fee cannot be higher than 10%
+    if(_parameters.liquidatorFeeRate > 0.1e18) revert DA_InvalidParameter();
+
     parameters = _parameters;
-    return parameters;
   }
 
   /**
@@ -171,7 +172,6 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice a user submits a bid for a particular auction
    * @dev Takes in the auction and returns the account id
    * @param accountId the bytesId that corresponds to a particular auction
-   * @return percentOfAccount the percentOfAccount as a percentage of the portfolio that the user is willing to purchase
    */
   function bid(uint accountId, uint bidderId, uint percentOfAccount) external returns (uint) {
     if (percentOfAccount > DecimalMath.UNIT) {
@@ -211,18 +211,18 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     // risk manager transfers portion of the account to the bidder
-    // liquidator pays "cashAmountFromLiquidator"
-    riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmountFromLiquidator);
+    // liquidator pays "cashAmountFromLiquidator" to accountId
+    // liquidator pays "fee" to security module
+    uint fee = cashAmountFromLiquidator * parameters.liquidatorFeeRate;
+    riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmountFromLiquidator, fee);
 
-    emit Bid(accountId, bidderId, block.timestamp);
+    emit Bid(accountId, bidderId, percentOfAccount, cashAmountFromLiquidator, fee);
 
     // terminating the auction if the initial margin is positive
     // This has to be checked after the scailing
     if (riskManager.getInitialMargin(accountId) >= 0) {
       _terminateAuction(accountId);
     }
-
-    return percentOfAccount;
   }
 
   /**

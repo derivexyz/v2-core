@@ -276,7 +276,7 @@ contract UNIT_TestPCRM is Test {
 
     uint exerciseCashAmount = 50e18;
     // 20% got liquidated
-    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
+    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
 
     assertEq(account.getAccountBalances(aliceAcc).length, 3);
     assertEq(account.getBalance(aliceAcc, option, callId), 0.8e18); // 80% of +1 long call
@@ -296,14 +296,14 @@ contract UNIT_TestPCRM is Test {
     uint exerciseCashAmount = 10000e18; // paying gitantic amount that makes liquidator insolvent
     vm.expectRevert(PCRM.PCRM_MarginRequirementNotMet.selector);
     vm.prank(address(auction));
-    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
+    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
   }
 
   function testExecuteEmptyBidOnEmptyAccount() public {
     assertEq(account.getAccountBalances(aliceAcc).length, 0);
 
     vm.prank(address(auction));
-    manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
     assertEq(account.getAccountBalances(aliceAcc).length, 0);
   }
@@ -311,7 +311,7 @@ contract UNIT_TestPCRM is Test {
   function testCannotExecuteBidWithPortionGreatorThan100() public {
     vm.expectRevert(PCRM.PCRM_InvalidBidPortion.selector);
     vm.prank(address(auction));
-    manager.executeBid(aliceAcc, bobAcc, 1e18 + 1, 0);
+    manager.executeBid(aliceAcc, bobAcc, 1e18 + 1, 0, 0);
   }
 
   //////////
@@ -375,11 +375,11 @@ contract UNIT_TestPCRM is Test {
     vm.stopPrank();
   }
 
-  function _depositCash(address user, uint account, uint amount) internal {
+  function _depositCash(address user, uint acc, uint amount) internal {
     usdc.mint(user, amount);
     vm.startPrank(user);
     usdc.approve(address(cash), type(uint).max);
-    cash.deposit(account, 0, amount);
+    cash.deposit(acc, 0, amount);
     vm.stopPrank();
   }
 }

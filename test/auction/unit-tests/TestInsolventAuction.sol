@@ -31,7 +31,8 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         lengthOfAuction: 200,
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
-        secBetweenSteps: 0
+        secBetweenSteps: 0,
+        liquidatorFeeRate: 0.05e18
       })
     );
 
@@ -85,7 +86,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
 
     // if sm has enough balance
     sm.mockBalance(expectedTotalPayoutFromSM);
-    usdcAsset.deposit(sm.smAccountId(), uint(expectedTotalPayoutFromSM));
+    usdcAsset.deposit(sm.accountId(), uint(expectedTotalPayoutFromSM));
 
     assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -expectedTotalPayoutFromSM);
 
@@ -115,7 +116,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
 
     // if sm doesn't have enough balance
     sm.mockBalance(1000e18);
-    usdcAsset.deposit(sm.smAccountId(), uint(1000e18));
+    usdcAsset.deposit(sm.accountId(), uint(1000e18));
 
     int cashBefore = account.getBalance(bobAcc, usdcAsset, 0);
 
@@ -138,6 +139,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         lengthOfAuction: 2,
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
+        liquidatorFeeRate: 0.05e18,
         secBetweenSteps: 0 // cool down is 0
       })
     );
@@ -160,6 +162,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         lengthOfAuction: 200,
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
+        liquidatorFeeRate: 0.05e18,
         secBetweenSteps: 100
       })
     );

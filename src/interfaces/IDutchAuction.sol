@@ -12,7 +12,7 @@ interface IDutchAuction {
   event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime, bool insolvent);
 
   // emmited when a bid is placed
-  event Bid(uint accountId, uint bidderId, uint amount);
+  event Bid(uint accountId, uint bidderId, uint percentagePortfolio, uint cash, uint fee);
 
   // emmited when an auction results in insolvency
   event Insolvent(uint accountId);
@@ -26,6 +26,9 @@ interface IDutchAuction {
 
   /// @dev emmited when a non-risk manager tries to start an auction
   error DA_NotRiskManager();
+
+  /// @dev emmited owner is trying to set a bad parameter for auction
+  error DA_InvalidParameter();
 
   /// @dev emmited when someone tries to start an insolvent auction when bidding
   /// has not concluded.
