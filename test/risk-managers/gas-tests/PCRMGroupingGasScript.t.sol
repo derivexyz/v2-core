@@ -123,7 +123,8 @@ contract PCRMGroupingGasScript is Script {
       spotFeeds,
       cash,
       option,
-      address(auction)
+      address(auction),
+      address(0)
     );
 
     pcrm.setParams(

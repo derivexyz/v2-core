@@ -10,6 +10,7 @@ import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
+import "src/interfaces/ISecurityModule.sol";
 
 import "src/assets/Option.sol";
 
@@ -97,6 +98,9 @@ contract PCRM is BaseManager, IManager, Owned {
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
+  /// @dev security module address where we receive fees 
+  ISecurityModule public immutable securityModule;
+
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
 
@@ -126,11 +130,12 @@ contract PCRM is BaseManager, IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_)
+  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_, address securityModule_)
     BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
     Owned()
   {
     dutchAuction = IDutchAuction(auction_);
+    securityModule = ISecurityModule(securityModule_);
   }
 
   ///////////////////
@@ -234,8 +239,11 @@ contract PCRM is BaseManager, IManager, Owned {
       );
     }
 
-    // transfer cash to accountId
+    // transfer cash (bid amount) to liquidated account
     _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
+
+    // transfer fee to security module
+    _symmetricManagerAdjustment(liquidatorId, securityModule.accountId(), cashAsset, 0, int(liquidatorFee));
 
     // check liquidator's account status
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(liquidatorId));

@@ -15,6 +15,8 @@ import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
+import "test/shared/mocks/MockSM.sol";
+
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestPCRM is Test {
@@ -27,6 +29,7 @@ contract UNIT_TestPCRM is Test {
   MockV3Aggregator aggregator;
   MockOption option;
   MockDutchAuction auction;
+  MockSM sm;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -42,6 +45,8 @@ contract UNIT_TestPCRM is Test {
     usdc = new MockERC20("USDC", "USDC");
 
     auction = new MockDutchAuction();
+    
+
 
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
@@ -51,8 +56,11 @@ contract UNIT_TestPCRM is Test {
       spotFeeds,
       ICashAsset(address(cash)),
       option,
-      address(auction)
+      address(auction),
+      address(sm)
     );
+
+    sm.createAccountForSM(manager);
 
     // cash.setWhitfelistManager(address(manager), true);
     manager.setParams(
