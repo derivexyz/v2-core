@@ -23,14 +23,14 @@ interface ISettlementFeed {
   ////////////
 
   /// @dev Emitted when spot price for option settlement determined
-  event SettlementPriceSet(uint indexed subId, uint settlementPrice);
+  event SettlementPriceSet(uint indexed expiry, uint settlementPrice);
 
   ///////////
   // Error //
   ///////////
 
-  /// @dev revert if settlement price is already set for a subId
-  error SettlementPriceAlreadySet(uint subId, uint priceSet);
+  /// @dev revert if settlement price is already set for an expiry
+  error SettlementPriceAlreadySet(uint expiry, uint priceSet);
 
   /// @dev reverts if an option has not reached expiry
   error NotExpired(uint expiry, uint timeNow);

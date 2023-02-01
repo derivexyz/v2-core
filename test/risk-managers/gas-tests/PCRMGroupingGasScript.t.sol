@@ -106,7 +106,7 @@ contract PCRMGroupingGasScript is Script {
 
     auction = new MockDutchAuction();
 
-    option = new Option(account, address(0));
+    option = new Option(account, address(0), 0);
     MockERC20 stable = new MockERC20("mock", "MOCK");
 
     // interest rate model
