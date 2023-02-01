@@ -25,8 +25,8 @@ contract Option is IOption, ISettlementFeed, Owned {
   /// @dev Address of the Account module
   IAccounts immutable accounts;
 
-  /// @dev spotFeeds that determine settlement prices
-  ISpotFeeds public spotFeeds;
+  /// @dev Contract to get spot prices which are locked in at settlement
+  ISpotFeeds public spotFeed;
 
   ///////////////
   // Variables //
@@ -50,7 +50,7 @@ contract Option is IOption, ISettlementFeed, Owned {
 
   constructor(IAccounts _accounts, address _spotFeeds, uint _feedId) {
     accounts = _accounts;
-    spotFeeds = ISpotFeeds(_spotFeeds);
+    spotFeed = ISpotFeeds(_spotFeeds);
     feedId = _feedId;
   }
 
@@ -95,12 +95,11 @@ contract Option is IOption, ISettlementFeed, Owned {
    * @param subId ID of option
    */
   function setSettlementPrice(uint subId) external {
-    // todo: integrate with settlementFeeds
     (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
     if (settlementPrices[expiry] != 0) revert SettlementPriceAlreadySet(expiry, settlementPrices[expiry]);
     if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
 
-    settlementPrices[expiry] = spotFeeds.getSpot(feedId);
+    settlementPrices[expiry] = spotFeed.getSpot(feedId);
     emit SettlementPriceSet(expiry, 0);
   }
 
@@ -127,14 +126,14 @@ contract Option is IOption, ISettlementFeed, Owned {
   }
 
   /**
-   * @notice Get settlement value of a specific option. Will return false if option not settled yet.
+   * @notice Get settlement value of a specific option.
+   * @dev Will return false if option not settled yet.
    * @param subId ID of option.
    * @param balance Amount of option held.
    * @return payout Amount the holder will receive or pay when position is settled
    * @return priceSettled Whether the settlement price of the option has been set.
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
-    // todo: basic pnl
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
     uint settlementPrice = settlementPrices[expiry];
 

@@ -83,20 +83,6 @@ contract UNIT_TestOptionBasics is Test {
     vm.stopPrank();
   }
 
-  ////////////////
-  // Settlement //
-  ////////////////
-
-  function testSetSettlementPrice() public {
-    // todo: do actual price check
-    // option.setSettlementPrice(0);
-  }
-
-  function testCalcSettlementValue() public view {
-    // todo: do actual calc
-    // option.calcSettlementValue(0, 0);
-  }
-
   ///////////
   // Utils //
   ///////////

@@ -10,7 +10,8 @@ interface ISettlementFeed {
   function setSettlementPrice(uint subId) external;
 
   /**
-   * @notice Get settlement value of a specific option. Will return false if option not settled yet.
+   * @notice Get settlement value of a specific option.
+   * @dev Will return false if option not settled yet.
    * @param subId ID of option.
    * @param balance Amount of option held.
    * @return payout Amount the holder will receive or pay when position is settled
