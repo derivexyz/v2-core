@@ -126,6 +126,21 @@ contract UNIT_DutchAuctionView is Test {
     assertEq(retParams.lengthOfAuction, 200);
   }
 
+  function testCannotSetInvalidParameter() public {
+    // change params
+    vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
+    dutchAuction.setDutchAuctionParameters(
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0,
+        liquidatorFeeRate: 0.11e18 // invalid fee rate
+      })
+    );
+  }
+
   function testGetRiskManager() public {
     assertEq(address(dutchAuction.riskManager()), address(manager));
   }
