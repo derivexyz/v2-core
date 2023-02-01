@@ -169,8 +169,8 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice a user submits a bid for a particular auction
    * @dev Takes in the auction and returns the account id
    * @param accountId Account ID of the liquidated account
-   * @param bidderID Account ID of bidder, must be owned by msg.sender
-   * @param percentageOfAccount Percentage of account to liquidate, in 18 decimals
+   * @param bidderId Account ID of bidder, must be owned by msg.sender
+   * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
    * @return finalPercentage Actual percentage liquidated
    * @return cashFromBidder Amount of cash paid from bidder to liquidated account
    * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
