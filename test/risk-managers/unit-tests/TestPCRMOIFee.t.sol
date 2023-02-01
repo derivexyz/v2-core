@@ -85,6 +85,9 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
   }
 
   function testSubmitTransferChargeOIFee() public {
+    _depositCash(alice, aliceAcc, 1000e18);
+    _depositCash(bob, bobAcc, 1000e18);
+
     uint expiry = block.timestamp + 7 days;
     uint spotPrice = 1000e18;
     spotFeeds.setSpot(spotPrice);
@@ -121,5 +124,13 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     assertEq(bobCashAfter, bobCashBefore - premium - expectedOIFee);
 
     assertEq(accounts.getBalance(feeRecipientAcc, cash, 0), expectedOIFee * 2);
+  }
+
+  function _depositCash(address user, uint account, uint amount) internal {
+    usdc.mint(user, amount);
+    vm.startPrank(user);
+    usdc.approve(address(cash), type(uint).max);
+    cash.deposit(account, 0, amount);
+    vm.stopPrank();
   }
 }
