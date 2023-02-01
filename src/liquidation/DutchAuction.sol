@@ -22,8 +22,8 @@ import "../libraries/IntLib.sol";
  * @notice Is used to liquidate an account that does not meet the margin requirements
  * 1. The auction is started by the risk Manager
  * 2. Bids are taken in a descending fashion until the maintenance margin
- * 3. A scalar is applied to the assets of the portfolio and are transfered to the bidder
- * 4. This continues until maintenance margin is met or until the portofolio is declared as insolvent
+ * 3. A scalar is applied to the assets of the portfolio and are transferred to the bidder
+ * 4. This continues until maintenance margin is met or until the portfolio is declared as insolvent
  *    where the security module will step into to handle the risk
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
@@ -74,7 +74,7 @@ contract DutchAuction is IDutchAuction, Owned {
     int inversePortfolioModifier;
     // Number, Amount of time between steps when the auction is insolvent
     uint secBetweenSteps;
-    // Liquidator fee rate, 18 decimals
+    // Liquidator fee rate in percentage, 1e18 = 100%
     uint liquidatorFeeRate;
   }
 
@@ -84,7 +84,7 @@ contract DutchAuction is IDutchAuction, Owned {
   /// @dev The risk manager that is the parent of the dutch auction contract
   IPCRM public immutable riskManager;
 
-  /// @dev The security module that will help pay out for insolvent auctinos
+  /// @dev The security module that will help pay out for insolvent auctions
   ISecurityModule public immutable securityModule;
 
   /// @dev The cash asset address, will be used to socialize losses when there's systematic insolvency
@@ -134,7 +134,7 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     (int upperBound, int lowerBound) = _getBounds(accountId);
-    // covers the case where an auction could start as insolvent, upperbound < 0
+    // covers the case where an auction could start as insolvent, upper bound < 0
     if (upperBound > 0) {
       _startSolventAuction(upperBound, accountId);
     } else {
@@ -150,7 +150,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
    */
   function convertToInsolventAuction(uint accountId) external {
-    // getCurentBidPrice will revert if there is no auction for accountId going on
+    // getCurrentBidPrice will revert if there is no auction for accountId going on
     if (_getCurrentBidPrice(accountId) > 0) {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
@@ -224,7 +224,6 @@ contract DutchAuction is IDutchAuction, Owned {
     emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
     // terminating the auction if the initial margin is positive
-    // This has to be checked after the scailing
     if (riskManager.getInitialMargin(accountId) >= 0) {
       _terminateAuction(accountId);
     }
@@ -253,7 +252,7 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @notice This function can only be used for when the auction is insolvent and is a safety mechanism for
    * if the network is down for rpc provider is unable to submit requests to sequencer, potentially resulting
-   * massive insolvency due to bids failling to v_lower.
+   * massive insolvency due to bids falling to v_lower.
    * @dev This is to prevent an auction falling all the way through if a provider or the network goes down
    * @param accountId the accountId that relates to the auction that is being stepped
    * @return uint the step that the auction is on
@@ -421,7 +420,7 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
-   * @notice Function to invert an aribtary portfolio
+   * @notice Function to invert an arbitrary portfolio
    * @dev Inverted portfolio required for the upper bound calculation
    * @param portfolio The portfolio to invert
    */
@@ -446,11 +445,11 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     if (auction.insolvent) {
-      // @invariant: if insolvent, bids should aways be negative
+      // @invariant: if insolvent, bids should always be negative
       uint numSteps = auction.stepInsolvent;
       return 0 - (auction.dv * numSteps).toInt256();
     } else {
-      // @invariant: if solvent, bids should aways be postiive
+      // @invariant: if solvent, bids should always be positive
       if (block.timestamp > auction.startTime + parameters.lengthOfAuction) {
         revert DA_SolventAuctionEnded();
       }
