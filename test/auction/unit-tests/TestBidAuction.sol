@@ -17,6 +17,8 @@ import "../../shared/mocks/MockIPCRM.sol";
 // Math library
 import "src/libraries/DecimalMath.sol";
 
+import "forge-std/console2.sol";
+
 contract UNIT_BidAuction is Test {
   using SafeCast for int;
   using SafeCast for uint;
@@ -203,6 +205,25 @@ contract UNIT_BidAuction is Test {
 
     auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, false);
+  }
+
+  function testBidFeeCalculation() public {
+    int initMargin = -10_000e18;
+
+    // create solvent auction: -10K underwater, invert portfolio is 10K
+    createAuctionOnUser(aliceAcc, initMargin, -initMargin);
+
+    vm.warp(block.timestamp + (dutchAuctionParameters.lengthOfAuction) / 2);
+
+    // getting the max proportion
+    int bidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    uint maxBid = dutchAuction.getMaxProportion(aliceAcc);
+
+    // bid with max percentage
+    vm.prank(bob);
+    (uint percentage, uint costPaid,, uint fee) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    assertEq(costPaid, uint(bidPrice) * maxBid / 1e18);
+    assertEq(fee, costPaid * 5 / 100);
   }
 
   /////////////

@@ -192,7 +192,7 @@ contract DutchAuction is IDutchAuction, Owned {
 
       // the account is insolvent when the bid price for the account falls below zero
       // someone get paid from security module to take on the risk
-      uint cashToLiquidator = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(percentOfAccount);
+      uint cashToLiquidator = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(finalPercentage);
       // we first ask the security module to compensate the bidder
       uint amountPaid = securityModule.requestPayout(bidderId, cashToLiquidator);
       // if amount paid is less than we requested:
@@ -206,14 +206,14 @@ contract DutchAuction is IDutchAuction, Owned {
       // if the account is solvent, the bidder pays the account for a portion of the account
       uint p_max = _getMaxProportion(accountId);
       finalPercentage = percentOfAccount > p_max ? p_max : percentOfAccount;
-      cashFromBidder = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
+      cashFromBidder = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(finalPercentage); // bid * f_max
     }
 
     // risk manager transfers portion of the account to the bidder
     // liquidator pays "cashFromLiquidator" to accountId
     // liquidator pays "fee" to security module
     if (cashFromBidder > 0) {
-      fee = cashFromBidder * parameters.liquidatorFeeRate;
+      fee = cashFromBidder.multiplyDecimal(parameters.liquidatorFeeRate);
       riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
     }
 
