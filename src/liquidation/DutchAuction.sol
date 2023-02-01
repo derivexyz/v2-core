@@ -218,10 +218,8 @@ contract DutchAuction is IDutchAuction, Owned {
     // risk manager transfers portion of the account to the bidder
     // liquidator pays "cashFromLiquidator" to accountId
     // liquidator pays "fee" to security module
-    if (cashFromBidder > 0) {
-      fee = cashFromBidder.multiplyDecimal(parameters.liquidatorFeeRate);
-      riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
-    }
+    fee = cashFromBidder.multiplyDecimal(parameters.liquidatorFeeRate);
+    riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
     emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
