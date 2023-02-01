@@ -98,7 +98,7 @@ contract PCRM is BaseManager, IManager, Owned {
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
-  /// @dev security module address where we receive fees 
+  /// @dev security module address where we receive fees
   ISecurityModule public immutable securityModule;
 
   /// @dev max number of strikes per expiry allowed to be held in one account

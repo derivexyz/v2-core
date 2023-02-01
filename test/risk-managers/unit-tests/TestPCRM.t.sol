@@ -45,8 +45,6 @@ contract UNIT_TestPCRM is Test {
     usdc = new MockERC20("USDC", "USDC");
 
     auction = new MockDutchAuction();
-    
-
 
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
