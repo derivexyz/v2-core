@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 interface ISettlementFeed {
-  
   /**
    * @notice Locks-in price at which option settles.
    * @dev Settlement handled by option to simplify multiple managers settling same option
@@ -17,7 +16,7 @@ interface ISettlementFeed {
    * @return payout Amount the holder will receive or pay when position is settled
    * @return priceSettled Whether the settlement price of the option has been set.
    */
-  function calcSettlementValue(uint sudId, int balance) external view returns (int payout, bool priceSettled);
+  function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled);
 
   ////////////
   // Events //
@@ -25,4 +24,14 @@ interface ISettlementFeed {
 
   /// @dev Emitted when spot price for option settlement determined
   event SettlementPriceSet(uint indexed subId, uint settlementPrice);
+
+  ///////////
+  // Error //
+  ///////////
+
+  /// @dev revert if settlement price is already set for a subId
+  error SettlementPriceAlreadySet(uint subId, uint priceSet);
+
+  /// @dev reverts if an option has not reached expiry
+  error NotExpired(uint expiry, uint timeNow);
 }

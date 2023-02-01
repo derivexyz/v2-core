@@ -6,9 +6,11 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISettlementFeed.sol";
 
 import "src/libraries/Owned.sol";
 import "src/libraries/OptionEncoding.sol";
+import "src/libraries/SignedDecimalMath.sol";
 
 /**
  * @title Option
@@ -18,6 +20,7 @@ import "src/libraries/OptionEncoding.sol";
 contract Option is IOption, ISettlementFeed, Owned {
   using SafeCast for uint;
   using SafeCast for int;
+  using SignedDecimalMath for int;
 
   ///////////////
   // Variables //
@@ -26,6 +29,9 @@ contract Option is IOption, ISettlementFeed, Owned {
   /// @dev Adderss of the Account module
   IAccounts immutable accounts;
 
+  /// @dev spotFeeds that determine settlement prices
+  ISpotFeeds public spotFeeds;
+
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
@@ -33,14 +39,15 @@ contract Option is IOption, ISettlementFeed, Owned {
   mapping(uint => uint) public openInterest;
 
   ///@dev SubId => Settlement price
-  mapping(uint => uint) public subIdToSettlementPrice;
+  mapping(uint => uint) public settlementPrices;
 
   ////////////////////////
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts) {
+  constructor(IAccounts _accounts, address _spotFeeds) {
     accounts = _accounts;
+    spotFeeds = ISpotFeeds(_spotFeeds);
   }
 
   ///////////////
@@ -85,9 +92,13 @@ contract Option is IOption, ISettlementFeed, Owned {
    */
   function setSettlementPrice(uint subId) external {
     // todo: integrate with settlementFeeds
-    uint price = 0;
+    if (settlementPrices[subId] != 0) revert SettlementPriceAlreadySet(subId, settlementPrices[subId]);
+    (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
 
-    subIdToSettlementPrice[subId] = price;
+    uint price = spotFeeds.getSpot(1);
+
+    settlementPrices[subId] = price;
     emit SettlementPriceSet(subId, 0);
   }
 
@@ -122,15 +133,15 @@ contract Option is IOption, ISettlementFeed, Owned {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
     // todo: basic pnl
-    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId);
-    uint settlementPrice = subIdToSettlementPrice[subId];
+    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    uint settlementPrice = settlementPrices[subId];
 
     // Return false if option cannot be settled yet or price settlement price has not been set
     if (expiry > block.timestamp || settlementPrice == 0) {
       return (0, false);
-    }
+    } 
 
-    return (_getSettlementValue(strike, balance, settlementPrice, isBall), true);
+    return (_getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
 
   //////////////
@@ -169,7 +180,7 @@ contract Option is IOption, ISettlementFeed, Owned {
     int payout = (settlementPrice - strikePrice).toInt256();
 
     if (isCall && payout > 0) {
-      // ITM Call 
+      // ITM Call
       return payout.multiplyDecimal(balance);
     } else if (!isCall && payout < 0) {
       // ITM Put
