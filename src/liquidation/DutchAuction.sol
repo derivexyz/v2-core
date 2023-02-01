@@ -170,7 +170,10 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev Takes in the auction and returns the account id
    * @param accountId the bytesId that corresponds to a particular auction
    */
-  function bid(uint accountId, uint bidderId, uint percentOfAccount) external returns (uint) {
+  function bid(uint accountId, uint bidderId, uint percentOfAccount)
+    external
+    returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder, uint fee)
+  {
     if (percentOfAccount > DecimalMath.UNIT) {
       revert DA_AmountTooLarge(accountId, percentOfAccount);
     } else if (percentOfAccount == 0) {
@@ -184,36 +187,37 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // _getCurrentBidPrice below will check if the auction is active or not
 
-    uint cashAmountFromLiquidator = 0;
-
     if (auctions[accountId].insolvent) {
+      finalPercentage = percentOfAccount;
+
       // the account is insolvent when the bid price for the account falls below zero
       // someone get paid from security module to take on the risk
-      uint amountToPay = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(percentOfAccount);
+      uint cashToLiquidator = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(percentOfAccount);
       // we first ask the security module to compensate the bidder
-      uint amountPaid = securityModule.requestPayout(bidderId, amountToPay);
-
+      uint amountPaid = securityModule.requestPayout(bidderId, cashToLiquidator);
       // if amount paid is less than we requested:
       // 1. we trigger socialize losses on cash asset
       // 2. print cash to the bidder (in cash.socializeLoss)
-      if (amountToPay > amountPaid) {
-        uint loss = amountToPay - amountPaid;
+      if (cashToLiquidator > amountPaid) {
+        uint loss = cashToLiquidator - amountPaid;
         cash.socializeLoss(loss, bidderId);
       }
     } else {
       // if the account is solvent, the bidder pays the account for a portion of the account
       uint p_max = _getMaxProportion(accountId);
-      percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
-      cashAmountFromLiquidator = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
+      finalPercentage = percentOfAccount > p_max ? p_max : percentOfAccount;
+      cashFromBidder = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
     }
 
     // risk manager transfers portion of the account to the bidder
-    // liquidator pays "cashAmountFromLiquidator" to accountId
+    // liquidator pays "cashFromLiquidator" to accountId
     // liquidator pays "fee" to security module
-    uint fee = cashAmountFromLiquidator * parameters.liquidatorFeeRate;
-    riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmountFromLiquidator, fee);
+    if (cashFromBidder > 0) {
+      fee = cashFromBidder * parameters.liquidatorFeeRate;
+      riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
+    }
 
-    emit Bid(accountId, bidderId, percentOfAccount, cashAmountFromLiquidator, fee);
+    emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
     // terminating the auction if the initial margin is positive
     // This has to be checked after the scailing
