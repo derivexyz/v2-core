@@ -198,7 +198,7 @@ contract UNIT_BidAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
 
-    // bid for the remaing amount of the account should close end the auction
+    // bid for the remaining amount of the account should close end the auction
     manager.setNextIsEndingBid(); // mock the account to return
 
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);

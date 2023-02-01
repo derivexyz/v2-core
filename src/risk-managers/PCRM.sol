@@ -485,7 +485,7 @@ contract PCRM is BaseManager, IManager, Owned {
   /**
    * @notice Calculate the initial margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Cash + arranged option porfolio.
+   * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
   // todo [Josh]: public view function to get margin values directly through accountId

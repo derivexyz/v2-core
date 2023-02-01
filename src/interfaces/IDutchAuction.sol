@@ -8,42 +8,42 @@ interface IDutchAuction {
   // EVENTS //
   ////////////
 
-  // emmited when an auction starts
+  // emitted when an auction starts
   event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime, bool insolvent);
 
-  // emmited when a bid is placed
+  // emitted when a bid is placed
   event Bid(uint accountId, uint bidderId, uint percentagePortfolio, uint cash, uint fee);
 
-  // emmited when an auction results in insolvency
+  // emitted when an auction results in insolvency
   event Insolvent(uint accountId);
 
-  // emmited when an auction ends, either by insolvency or by the assets of an account being purchased.
+  // emitted when an auction ends, either by insolvency or by the assets of an account being purchased.
   event AuctionEnded(uint accountId, uint endTime);
 
   ////////////
   // ERRORS //
   ////////////
 
-  /// @dev emmited when a non-risk manager tries to start an auction
+  /// @dev emitted when a non-risk manager tries to start an auction
   error DA_NotRiskManager();
 
-  /// @dev emmited owner is trying to set a bad parameter for auction
+  /// @dev emitted owner is trying to set a bad parameter for auction
   error DA_InvalidParameter();
 
-  /// @dev emmited when someone tries to start an insolvent auction when bidding
+  /// @dev emitted when someone tries to start an insolvent auction when bidding
   /// has not concluded.
   error DA_AuctionNotEnteredInsolvency(uint accountId);
 
-  /// @dev emmited when someone tries mark an insolvent aunction again
+  /// @dev emitted when someone tries mark an insolvent auction again
   error DA_AuctionAlreadyInInsolvencyMode(uint accountId);
 
-  /// @dev emmited when someone tries to start an auction that has already been started
+  /// @dev emitted when someone tries to start an auction that has already been started
   error DA_AuctionNotStarted(uint accountId);
 
-  /// @dev emmited when a risk manager tries to start an auction that has already been started
+  /// @dev emitted when a risk manager tries to start an auction that has already been started
   error DA_AuctionAlreadyStarted(uint accountId);
 
-  /// @dev emmited when a bid is submitted on a solvent auction that has passed the auction time
+  /// @dev emitted when a bid is submitted on a solvent auction that has passed the auction time
   ///      at this point, it can be converted into insolvent auction and keep going.
   error DA_SolventAuctionEnded();
 
@@ -53,7 +53,7 @@ interface IDutchAuction {
   /// @dev emitted when a bid is submitted for 0% of the portfolio
   error DA_AmountIsZero(uint accountId);
 
-  /// @dev emitted when a user tries to increment the step for an insovlent auction
+  /// @dev emitted when a user tries to increment the step for an insolvent auction
   error DA_SolventAuctionCannotIncrement(uint accountId);
 
   /// @dev emitted when a user doesn't own the account that they are trying to bid on
@@ -62,9 +62,9 @@ interface IDutchAuction {
   /// @dev emitted when a user tries to terminate an insolvent Auction
   error DA_AuctionCannotTerminate(uint accountId);
 
-  /// @dev emmited when a increase the step for an insolvent auction that has already reach its steps
+  /// @dev emitted when a increase the step for an insolvent auction that has already reach its steps
   error DA_MaxStepReachedInsolventAuction();
 
-  /// @dev emmited when IncremenetInsolventAuction is spammed
+  /// @dev emitted when IncrementInsolventAuction is spammed
   error DA_CannotStepBeforeCoolDownEnds(uint blockTimeStamp, uint coolDownEnds);
 }
