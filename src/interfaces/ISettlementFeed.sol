@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 interface ISettlementFeed {
   /**
-   * @notice Locks-in price at which option settles.
+   * @notice Locks-in price which the option settles at for an expiry.
    * @dev Settlement handled by option to simplify multiple managers settling same option
    * @param subId ID of option
    */

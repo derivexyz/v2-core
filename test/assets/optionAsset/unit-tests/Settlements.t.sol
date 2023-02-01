@@ -11,22 +11,16 @@ import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 
 /**
- * @dev testing open interest before and after
- * asset transfers
- * single side adjustments
+ * @dev Tests functions related to OptionAsset settlements
+ * setSettlementPrice
+ * calcSettlementValue
  */
-contract UNIT_OptionAssetOITest is Test {
+contract UNIT_OptionAssetSettlementsTest is Test {
   Option option;
-  MockManager manager;
   Accounts account;
 
   ChainlinkSpotFeeds spotFeeds;
   MockV3Aggregator aggregator;
-
-  int tradeAmount = 100e18;
-  uint accountPos; // balance: 100
-  uint accountNeg; // balance: -100
-  uint accountEmpty; // balance: 0
 
   uint expiry = block.timestamp + 2 weeks;
   uint strike = 1000e18;
@@ -35,20 +29,12 @@ contract UNIT_OptionAssetOITest is Test {
 
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
-    manager = new MockManager(address(account));
 
     uint feedId = _setupFeeds();
     option = new Option(account, address(spotFeeds), feedId);
 
     callId = option.getSubId(expiry, strike, true);
     putId = option.getSubId(expiry, strike, false);
-
-    accountPos = account.createAccount(address(this), manager);
-    accountNeg = account.createAccount(address(this), manager);
-    // init these 2 accounts with positive and negative balance
-    _transfer(accountNeg, accountPos, tradeAmount);
-
-    accountEmpty = account.createAccount(address(this), manager);
   }
 
   function testCanSetSettlementPrice() external {
@@ -178,18 +164,5 @@ contract UNIT_OptionAssetOITest is Test {
 
   function _updateFeed(MockV3Aggregator aggregator, uint80 roundId, int spotPrice, uint80 answeredInRound) internal {
     aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
-  }
-
-  /// @dev util function to transfer
-  function _transfer(uint from, uint to, int amount) internal {
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
-      fromAcc: from,
-      toAcc: to,
-      asset: option,
-      subId: callId,
-      amount: amount,
-      assetData: ""
-    });
-    account.submitTransfer(transfer, "");
   }
 }
