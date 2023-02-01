@@ -30,6 +30,7 @@ contract UNIT_TestPCRM is Test {
   MockOption option;
   MockDutchAuction auction;
   MockSM sm;
+  uint feeRecipient;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -54,11 +55,8 @@ contract UNIT_TestPCRM is Test {
       spotFeeds,
       ICashAsset(address(cash)),
       option,
-      address(auction),
-      address(sm)
+      address(auction)
     );
-
-    sm.createAccountForSM(manager);
 
     // cash.setWhitfelistManager(address(manager), true);
     manager.setParams(
@@ -72,6 +70,8 @@ contract UNIT_TestPCRM is Test {
       }),
       PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
     );
+
+    feeRecipient = account.createAccount(address(this), manager);
 
     vm.startPrank(alice);
     aliceAcc = account.createAccount(alice, IManager(manager));
@@ -260,6 +260,7 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testExecuteBid() public {
+    manager.setFeeRecipient(feeRecipient);
     // add some usdc for buffer
     usdc.mint(bob, 1000_000e18);
     vm.startPrank(bob);
@@ -296,6 +297,7 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testCannotExecuteBidIfLiquidatorBecomesUnderwater() public {
+    manager.setFeeRecipient(feeRecipient);
     // alice open 1 long call, short 10 put
     _openDefaultOptions();
 
@@ -306,6 +308,7 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testExecuteEmptyBidOnEmptyAccount() public {
+    manager.setFeeRecipient(feeRecipient);
     assertEq(account.getAccountBalances(aliceAcc).length, 0);
 
     vm.prank(address(auction));
