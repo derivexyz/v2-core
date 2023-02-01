@@ -279,21 +279,27 @@ contract UNIT_TestPCRM is Test {
     int bobCashBefore = account.getBalance(bobAcc, cash, 0);
     assertEq(account.getAccountBalances(aliceAcc).length, 3);
 
-    vm.prank(address(auction));
 
     uint exerciseCashAmount = 50e18;
+    uint fee = 5e18;
     // 20% got liquidated
-    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
+
+    vm.prank(address(auction));
+    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, fee);
 
     assertEq(account.getAccountBalances(aliceAcc).length, 3);
     assertEq(account.getBalance(aliceAcc, option, callId), 0.8e18); // 80% of +1 long call
     assertEq(account.getBalance(aliceAcc, option, putId), -8e18); // 80% of -10 short put
 
+    // alice got 80% of her cash left + amount paid
     int aliceCashAfter = account.getBalance(aliceAcc, cash, 0);
     assertEq(aliceCashBefore * 4 / 5 + int(exerciseCashAmount), aliceCashAfter);
 
+    // bob's is increased by 20% of alice cash - amount paid to alice - fee
     int bobCashAfter = account.getBalance(bobAcc, cash, 0);
-    assertEq(aliceCashBefore * 1 / 5 - int(exerciseCashAmount), bobCashAfter - bobCashBefore);
+    assertEq(aliceCashBefore * 1 / 5 - int(exerciseCashAmount) - int(fee), bobCashAfter - bobCashBefore);
+    
+    assertEq(account.getBalance(feeRecipient, cash, 0), int(fee));
   }
 
   function testCannotExecuteBidIfLiquidatorBecomesUnderwater() public {
