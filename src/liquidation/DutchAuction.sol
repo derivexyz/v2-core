@@ -112,12 +112,9 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev This function is used to set the parameters for the dutch auction
    * @param _parameters A struct that contains all the parameters for the dutch auction
    */
-  function setDutchAuctionParameters(DutchAuctionParameters memory _parameters)
-    external
-    onlyOwner
-  {
+  function setDutchAuctionParameters(DutchAuctionParameters memory _parameters) external onlyOwner {
     // liquidator fee cannot be higher than 10%
-    if(_parameters.liquidatorFeeRate > 0.1e18) revert DA_InvalidParameter();
+    if (_parameters.liquidatorFeeRate > 0.1e18) revert DA_InvalidParameter();
 
     parameters = _parameters;
   }
