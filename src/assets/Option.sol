@@ -92,10 +92,9 @@ contract Option is IOption, ISettlementFeed, Owned {
   /**
    * @notice Locks-in price which the option settles at for an expiry.
    * @dev Settlement handled by option to simplify multiple managers settling same option
-   * @param subId ID of option
+   * @param expiry Timestamp of when the option expires
    */
-  function setSettlementPrice(uint subId) external {
-    (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+  function setSettlementPrice(uint expiry) external {
     if (settlementPrices[expiry] != 0) revert SettlementPriceAlreadySet(expiry, settlementPrices[expiry]);
     if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
 
@@ -178,14 +177,14 @@ contract Option is IOption, ISettlementFeed, Owned {
     pure
     returns (int)
   {
-    int payout = settlementPrice.toInt256() - strikePrice.toInt256();
+    int priceDiff = settlementPrice.toInt256() - strikePrice.toInt256();
 
-    if (isCall && payout > 0) {
+    if (isCall && priceDiff > 0) {
       // ITM Call
-      return payout.multiplyDecimal(balance);
-    } else if (!isCall && payout < 0) {
+      return priceDiff.multiplyDecimal(balance);
+    } else if (!isCall && priceDiff < 0) {
       // ITM Put
-      return -payout.multiplyDecimal(balance);
+      return -priceDiff.multiplyDecimal(balance);
     } else {
       // OTM
       return 0;

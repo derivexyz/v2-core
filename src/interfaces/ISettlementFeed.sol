@@ -5,9 +5,9 @@ interface ISettlementFeed {
   /**
    * @notice Locks-in price which the option settles at for an expiry.
    * @dev Settlement handled by option to simplify multiple managers settling same option
-   * @param subId ID of option
+   * @param expiry Timestamp of when the option expires
    */
-  function setSettlementPrice(uint subId) external;
+  function setSettlementPrice(uint expiry) external;
 
   /**
    * @notice Get settlement value of a specific option.
