@@ -17,11 +17,11 @@ contract UNIT_InterestRateModel is Test {
 
   function setUp() public {
     uint minRate = 0.06 * 1e18;
-    uint rateMultipler = 0.2 * 1e18;
-    uint highRateMultipler = 0.4 * 1e18;
+    uint rateMultiplier = 0.2 * 1e18;
+    uint highRateMultiplier = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
 
-    rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
   }
 
   function testLowUtilBorrowRate() public {
@@ -99,7 +99,7 @@ contract UNIT_InterestRateModel is Test {
     uint util = rateModel.getUtilRate(supply, borrows);
     uint opUtil = rateModel.optimalUtil();
     uint minRate = rateModel.minRate();
-    uint lowSlope = rateModel.rateMultipler();
+    uint lowSlope = rateModel.rateMultiplier();
     uint borrowRate = rateModel.getBorrowRate(supply, borrows);
 
     if (util <= opUtil) {
@@ -108,7 +108,7 @@ contract UNIT_InterestRateModel is Test {
     } else {
       uint lowRate = opUtil.multiplyDecimal(lowSlope) + minRate;
       uint excessUtil = util - opUtil;
-      uint highSlope = rateModel.highRateMultipler();
+      uint highSlope = rateModel.highRateMultiplier();
       uint highRate = excessUtil.multiplyDecimal(highSlope) + lowRate;
       assertEq(borrowRate, highRate);
     }

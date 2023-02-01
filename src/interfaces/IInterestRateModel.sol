@@ -32,7 +32,7 @@ interface IInterestRateModel {
   ////////////
 
   ///@dev Emitted when interest rate parameters are set
-  event InterestRateParamsSet(uint minRate, uint rateMultipler, uint highRateMultipler, uint optimalUtil);
+  event InterestRateParamsSet(uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil);
 
   ////////////
   // Errors //
