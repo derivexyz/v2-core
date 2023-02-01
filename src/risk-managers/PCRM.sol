@@ -216,6 +216,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param liquidatorId Liquidator account ID.
    * @param portion Portion of account that is requested to be liquidated.
    * @param cashAmount Cash amount liquidator is offering for portion of account.
+   * @param liquidatorFee Cash amount liquidator will be paying the security module
    */
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee)
     external
