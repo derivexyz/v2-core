@@ -68,8 +68,6 @@ contract DutchAuction is IDutchAuction, Owned {
     uint stepInterval;
     /// Big number: Total length of an auction in seconds
     uint lengthOfAuction;
-    /// Big number: The address of the security module
-    address securityModule;
     // Big number: portfolio modifier
     int portfolioModifier;
     // Big number: inversed modifier
@@ -294,7 +292,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function getMaxProportion(uint accountId) external returns (uint) {
+  function getMaxProportion(uint accountId) external view returns (uint) {
     return _getMaxProportion(accountId);
   }
 
@@ -453,8 +451,9 @@ contract DutchAuction is IDutchAuction, Owned {
       }
 
       int upperBound = auction.upperBound;
-      int bid = upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
-      return bid;
+      int bidPrice =
+        upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
+      return bidPrice;
     }
   }
 }
