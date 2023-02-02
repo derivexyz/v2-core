@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "../shared/IntegrationTestBase.sol";
+import "src/interfaces/IManager.sol";
 
 /**
  * @dev testing open interest before and after
@@ -11,12 +12,15 @@ import "../shared/IntegrationTestBase.sol";
  * single side adjustments
  */
 contract INTEGRATION_OIFeeTest is IntegrationTestBase {
+  address alice = address(0xaa);
+  uint accAcc;
+
   function setUp() public {
-    deployAllV2Contracts();
+    _setupIntegrationTestComplete();
   }
 
-  function testDeployed() public {
-    uint a = 1;
-    assertEq(a, 1);
+  function testDeploy() public {
+    accAcc = accounts.createAccount(alice, IManager(pcrm));
+    _depositCash(address(alice), accAcc, 5000e18);
   }
 }

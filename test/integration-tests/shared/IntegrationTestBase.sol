@@ -28,7 +28,7 @@ contract IntegrationTestBase is Test {
   address public constant liquidation = address(0xdead);
 
   Accounts accounts;
-  CashAsset cashAsset;
+  CashAsset cash;
   MockERC20 usdc;
   Option option;
   PCRM pcrm;
@@ -38,16 +38,21 @@ contract IntegrationTestBase is Test {
   DutchAuction auction;
   MockV3Aggregator aggregator;
 
-  uint smAccId;
-  uint accountId;
-
   // need to add feed
   uint feedId = 1;
 
   // sm need to be the first one create an account
   uint smAccountId = 1;
 
-  function deployAllV2Contracts() public {
+  function _setupIntegrationTestComplete() internal {
+    // deployment
+    _deployAllV2Contracts();
+
+    // necessary shared setup
+    _finishContractSetups();
+  }
+
+  function _deployAllV2Contracts() internal {
     // nonce: 1 => Deploy Accounts
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
@@ -67,44 +72,63 @@ contract IntegrationTestBase is Test {
 
     // nonce: 4 => Deploy RateModel
     // deploy rate model
-    (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModuleParam();
+    (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModelParam();
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // nonce: 5 => Deploy CashAsset
     address auctionAddr = _predictAddress(address(this), 8);
-    cashAsset = new CashAsset(accounts, usdc, rateModel, smAccountId, auctionAddr);
+    cash = new CashAsset(accounts, usdc, rateModel, smAccountId, auctionAddr);
 
     // nonce: 6 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
 
     // nonce: 7 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, cashAsset, option, auctionAddr);
+    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr);
 
     // nonce: 8 => Deploy Auction
     // todo: remove IPCRM(address())
     address smAddr = _predictAddress(address(this), 9);
-    auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cashAsset);
+    auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
 
     assertEq(address(auction), auctionAddr);
 
     // nonce: 9 => Deploy SM
-    securityModule = new SecurityModule(accounts, cashAsset, usdc, IManager(address(pcrm)));
+    securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
     assertEq(securityModule.accountId(), smAccountId);
-
-    // finish misc settings on permission ...etc
-    _finishContractSetups();
   }
 
   function _finishContractSetups() internal {
-    cashAsset.setWhitelistManager(address(pcrm), true);
+    // whitelist setting in cash asset
+    cash.setWhitelistManager(address(pcrm), true);
+    //todo: pcrm
 
+    // add aggregator to feed
     aggregator = new MockV3Aggregator(8, 2000e8);
     uint _feedId = feed.addFeed("ETH/USD", address(aggregator), 1 hours);
     assertEq(feedId, _feedId);
+
+    // set parameter for auction
+    auction.setDutchAuctionParameters(_getDefaultAuctionParam());
+
+    // todo: option asset whitelist
   }
 
-  function _getDefaultRateModuleParam()
+  /**
+   * @dev helper to mint USDC and deposit cash for account (from user)
+   */
+  function _depositCash(address user, uint acc, uint amount) internal {
+    usdc.mint(user, amount);
+    vm.startPrank(user);
+    usdc.approve(address(cash), type(uint).max);
+    cash.deposit(acc, amount);
+    vm.stopPrank();
+  }
+
+  /**
+   * @dev default parameters for rate model
+   */
+  function _getDefaultRateModelParam()
     internal
     returns (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil)
   {
@@ -112,6 +136,17 @@ contract IntegrationTestBase is Test {
     rateMultiplier = 0.2 * 1e18;
     highRateMultiplier = 0.4 * 1e18;
     optimalUtil = 0.6 * 1e18;
+  }
+
+  function _getDefaultAuctionParam() internal returns (DutchAuction.DutchAuctionParameters memory param) {
+    param = DutchAuction.DutchAuctionParameters({
+      stepInterval: 2,
+      lengthOfAuction: 200,
+      portfolioModifier: 1e18,
+      inversePortfolioModifier: 1e18,
+      secBetweenSteps: 1, // cool down
+      liquidatorFeeRate: 0.05e18
+    });
   }
 
   /**
@@ -144,5 +179,8 @@ contract IntegrationTestBase is Test {
     );
   }
 
+  /**
+   * for coverage to ignore
+   */
   function test() public {}
 }
