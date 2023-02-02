@@ -38,10 +38,10 @@ contract IntegrationTestBase is Test {
   DutchAuction auction;
   MockV3Aggregator aggregator;
 
-  // need to add feed
+  // feedId of the aggregator
   uint feedId = 1;
 
-  // sm need to be the first one create an account
+  // sm account id will be 1 after setup 
   uint smAccountId = 1;
 
   function _setupIntegrationTestComplete() internal {
