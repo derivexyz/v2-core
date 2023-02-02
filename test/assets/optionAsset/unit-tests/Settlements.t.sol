@@ -214,7 +214,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.assume(priceDiff >= 0 && priceDiff <= BIG_PRICE);
     (uint expiry, uint strike,) = option.getOptionDetails(uint96(putId));
 
-    // Lock in settlment price for putId at expiry below strike
+    // Lock in settlment price for putId at expiry above strike
     vm.warp(expiry);
     int spotPrice = int(strike) + priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
