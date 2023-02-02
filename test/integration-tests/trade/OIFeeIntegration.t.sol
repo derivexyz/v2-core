@@ -11,8 +11,6 @@ import "../shared/setup.sol";
  * single side adjustments
  */
 contract INTEGRATION_OIFeeTest is IntegrationTestBase {
-  
-
   function setUp() public {
     deployAllV2Contracts();
   }
@@ -21,5 +19,4 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
     uint a = 1;
     assertEq(a, 1);
   }
-  
 }

@@ -25,7 +25,6 @@ import "src/interfaces/IManager.sol";
  * @dev real SecurityModule contract
  */
 contract IntegrationTestBase is Test {
-  
   address public constant liquidation = address(0xdead);
 
   Accounts accounts;
@@ -44,10 +43,9 @@ contract IntegrationTestBase is Test {
 
   // need to add feed
   uint feedId = 1;
-  
+
   // sm need to be the first one create an account
   uint smAccountId = 1;
-  
 
   function deployAllV2Contracts() public {
     // nonce: 1 => Deploy Accounts
@@ -75,7 +73,7 @@ contract IntegrationTestBase is Test {
     // nonce: 5 => Deploy CashAsset
     address auctionAddr = _predictAddress(address(this), 8);
     cashAsset = new CashAsset(accounts, usdc, rateModel, smAccountId, auctionAddr);
-    
+
     // nonce: 6 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
 
@@ -84,7 +82,7 @@ contract IntegrationTestBase is Test {
 
     // nonce: 8 => Deploy Auction
     // todo: remove IPCRM(address())
-    address smAddr = _predictAddress(address(this), 9); 
+    address smAddr = _predictAddress(address(this), 9);
     auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cashAsset);
 
     assertEq(address(auction), auctionAddr);
@@ -106,7 +104,10 @@ contract IntegrationTestBase is Test {
     assertEq(feedId, _feedId);
   }
 
-  function _getDefaultRateModuleParam() internal returns (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) {
+  function _getDefaultRateModuleParam()
+    internal
+    returns (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil)
+  {
     minRate = 0.06 * 1e18;
     rateMultiplier = 0.2 * 1e18;
     highRateMultiplier = 0.4 * 1e18;
@@ -116,31 +117,31 @@ contract IntegrationTestBase is Test {
   /**
    * predict the address of the next contract being deployed
    */
-  function _predictAddress(address _origin, uint256 _nonce) public pure returns (address) {
-      if (_nonce == 0x00) {
-          return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80))))));
-      }
-      if (_nonce <= 0x7f) {
-          return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, uint8(_nonce))))));
-      }
-      if (_nonce <= 0xff) {
-          return address(
-              uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd7), bytes1(0x94), _origin, bytes1(0x81), uint8(_nonce)))))
-          );
-      }
-      if (_nonce <= 0xffff) {
-          return address(
-              uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd8), bytes1(0x94), _origin, bytes1(0x82), uint16(_nonce)))))
-          );
-      }
-      if (_nonce <= 0xffffff) {
-          return address(
-              uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd9), bytes1(0x94), _origin, bytes1(0x83), uint24(_nonce)))))
-          );
-      }
+  function _predictAddress(address _origin, uint _nonce) public pure returns (address) {
+    if (_nonce == 0x00) {
+      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80))))));
+    }
+    if (_nonce <= 0x7f) {
+      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, uint8(_nonce))))));
+    }
+    if (_nonce <= 0xff) {
       return address(
-          uint160(uint256(keccak256(abi.encodePacked(bytes1(0xda), bytes1(0x94), _origin, bytes1(0x84), uint32(_nonce)))))
+        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd7), bytes1(0x94), _origin, bytes1(0x81), uint8(_nonce)))))
       );
+    }
+    if (_nonce <= 0xffff) {
+      return address(
+        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd8), bytes1(0x94), _origin, bytes1(0x82), uint16(_nonce)))))
+      );
+    }
+    if (_nonce <= 0xffffff) {
+      return address(
+        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd9), bytes1(0x94), _origin, bytes1(0x83), uint24(_nonce)))))
+      );
+    }
+    return address(
+      uint160(uint(keccak256(abi.encodePacked(bytes1(0xda), bytes1(0x94), _origin, bytes1(0x84), uint32(_nonce)))))
+    );
   }
 
   function test() public {}
