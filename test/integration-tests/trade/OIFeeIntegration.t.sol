@@ -7,9 +7,7 @@ import "../shared/IntegrationTestBase.sol";
 import "src/interfaces/IManager.sol";
 
 /**
- * @dev testing open interest before and after
- * asset transfers
- * single side adjustments
+ * @dev testing charge of OI fee in a real setting
  */
 contract INTEGRATION_OIFeeTest is IntegrationTestBase {
   address alice = address(0xaa);
