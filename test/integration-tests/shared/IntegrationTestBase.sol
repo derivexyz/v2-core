@@ -41,7 +41,7 @@ contract IntegrationTestBase is Test {
   // feedId of the aggregator
   uint feedId = 1;
 
-  // sm account id will be 1 after setup 
+  // sm account id will be 1 after setup
   uint smAccountId = 1;
 
   function _setupIntegrationTestComplete() internal {
