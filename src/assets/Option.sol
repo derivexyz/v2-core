@@ -35,9 +35,6 @@ contract Option is IOption, ISettlementFeed, Owned {
   ///@dev Id used to query spot price
   uint public feedId;
 
-  /// @dev Address of the Account module
-  IAccounts immutable accounts;
-
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
