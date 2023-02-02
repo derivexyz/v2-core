@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../shared/setup.sol";
+import "../shared/IntegrationTestBase.sol";
 
 /**
  * @dev testing open interest before and after
