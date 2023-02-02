@@ -36,6 +36,13 @@ abstract contract BaseManager is AccountStructs {
     spotFeeds = spotFeeds_;
   }
 
+  /**
+   * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
+   * @param accountId Account potentially to charge
+   * @param feeRecipientAcc Account of feeRecipient
+   * @param tradeId ID of the trade informed by Accounts
+   * @param assetDeltas Array of asset changes made to this account
+   */
   function _chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] calldata assetDeltas) internal {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
@@ -46,7 +53,7 @@ abstract contract BaseManager is AccountStructs {
 
         // this trade increase OI, charge a fee
         if (oi > oiBefore) {
-          // todo [Anton]: get spot for specific asset base on subid
+          // todo [Anton]: get spot for specific asset base on subId
           uint spot = spotFeeds.getSpot(1);
           fee += assetDeltas[i].delta.abs().multiplyDecimal(spot).multiplyDecimal(OIFeeRateBPS);
         }
