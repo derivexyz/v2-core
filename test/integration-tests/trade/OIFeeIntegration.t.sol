@@ -17,7 +17,8 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
     _setupIntegrationTestComplete();
   }
 
-  function testDeploy() public {
+  function testOIFee() public {
+    // not real test, just need this to make sure setUp works
     accAcc = accounts.createAccount(alice, IManager(pcrm));
     _depositCash(address(alice), accAcc, 5000e18);
   }
