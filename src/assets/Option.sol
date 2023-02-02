@@ -6,25 +6,34 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISettlementFeed.sol";
 
 import "src/libraries/Owned.sol";
 import "src/libraries/OptionEncoding.sol";
+import "src/libraries/SignedDecimalMath.sol";
 
 /**
  * @title Option
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, Owned {
+contract Option is IOption, ISettlementFeed, Owned {
   using SafeCast for uint;
   using SafeCast for int;
+  using SignedDecimalMath for int;
+
+  /// @dev Address of the Account module
+  IAccounts immutable accounts;
+
+  /// @dev Contract to get spot prices which are locked in at settlement
+  ISpotFeeds public spotFeed;
 
   ///////////////
   // Variables //
   ///////////////
 
-  /// @dev Adderss of the Account module
-  IAccounts immutable accounts;
+  ///@dev Id used to query spot price
+  uint public feedId;
 
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
@@ -32,19 +41,17 @@ contract Option is IOption, Owned {
   ///@dev OI for a subId. OI is the sum of all positive balance
   mapping(uint => uint) public openInterest;
 
-  ////////////
-  // Events //
-  ////////////
-
-  /// @dev Emitted when spot price for option settlement determined
-  event SettlementPriceSet(uint indexed subId, uint settlementPrice);
+  ///@dev Expiry => Settlement price
+  mapping(uint => uint) public settlementPrices;
 
   ////////////////////////
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts) {
+  constructor(IAccounts _accounts, address _spotFeeds, uint _feedId) {
     accounts = _accounts;
+    spotFeed = ISpotFeeds(_spotFeeds);
+    feedId = _feedId;
   }
 
   ///////////////
@@ -83,13 +90,16 @@ contract Option is IOption, Owned {
   ////////////////
 
   /**
-   * @notice Locks-in price at which option settles.
+   * @notice Locks-in price which the option settles at for an expiry.
    * @dev Settlement handled by option to simplify multiple managers settling same option
-   * @param subId ID of option
+   * @param expiry Timestamp of when the option expires
    */
-  function setSettlementPrice(uint subId) external {
-    // todo: integrate with settlementFeeds
-    emit SettlementPriceSet(subId, 0);
+  function setSettlementPrice(uint expiry) external {
+    if (settlementPrices[expiry] != 0) revert SettlementPriceAlreadySet(expiry, settlementPrices[expiry]);
+    if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
+
+    settlementPrices[expiry] = spotFeed.getSpot(feedId);
+    emit SettlementPriceSet(expiry, 0);
   }
 
   //////////
@@ -115,14 +125,23 @@ contract Option is IOption, Owned {
   }
 
   /**
-   * @notice Get settlement value of a specific option. Will return false if option not settled yet.
+   * @notice Get settlement value of a specific option.
+   * @dev Will return false if option not settled yet.
    * @param subId ID of option.
    * @param balance Amount of option held.
-   * @return pnl Amount the holder will receive or pay when position is settled
+   * @return payout Amount the holder will receive or pay when position is settled
    * @return priceSettled Whether the settlement price of the option has been set.
    */
-  function calcSettlementValue(uint subId, int balance) external view returns (int pnl, bool priceSettled) {
-    // todo: basic pnl
+  function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
+    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    uint settlementPrice = settlementPrices[expiry];
+
+    // Return false if settlement price has not been locked in
+    if (settlementPrice == 0) {
+      return (0, false);
+    }
+
+    return (_getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
 
   //////////////
@@ -150,6 +169,25 @@ contract Option is IOption, Owned {
         openInterest[subId] += uint(postBalance);
       }
       // if both pre and post balances are negative, this trade doesn't affect total positive
+    }
+  }
+
+  function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    internal
+    pure
+    returns (int)
+  {
+    int priceDiff = settlementPrice.toInt256() - strikePrice.toInt256();
+
+    if (isCall && priceDiff > 0) {
+      // ITM Call
+      return priceDiff.multiplyDecimal(balance);
+    } else if (!isCall && priceDiff < 0) {
+      // ITM Put
+      return -priceDiff.multiplyDecimal(balance);
+    } else {
+      // OTM
+      return 0;
     }
   }
 

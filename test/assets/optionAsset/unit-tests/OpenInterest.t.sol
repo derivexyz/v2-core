@@ -30,7 +30,7 @@ contract UNIT_OptionAssetOITest is Test {
 
     manager = new MockManager(address(account));
 
-    option = new Option(account);
+    option = new Option(account, address(0), 0);
 
     accountPos = account.createAccount(address(this), manager);
     accountNeg = account.createAccount(address(this), manager);
