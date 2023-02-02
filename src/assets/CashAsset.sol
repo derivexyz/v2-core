@@ -36,7 +36,7 @@ contract CashAsset is ICashAsset, Owned {
   ///@dev InterestRateModel contract address
   IInterestRateModel public rateModel;
 
-  ///@dev The address of liqudation module, which can trigger call of insolvency
+  ///@dev The address of liquidation module, which can trigger call of insolvency
   address public immutable liquidationModule;
 
   ///@dev The security module accountId used for collecting a portion of fees
@@ -77,7 +77,7 @@ contract CashAsset is ICashAsset, Owned {
   uint public previousSmFeePercentage;
 
   ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
-  ///     In which case we turn on the withdraw fee to prevent bankrun
+  ///     In which case we turn on the withdraw fee to prevent bank-run
   bool public temporaryWithdrawFeeEnabled;
 
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
@@ -124,7 +124,7 @@ contract CashAsset is ICashAsset, Owned {
 
   /**
    * @notice Allows owner to set InterestRateModel contract
-   * @dev Accures interest to make sure indexes are up to date before changing the model
+   * @dev Accrues interest to make sure indexes are up to date before changing the model
    * @param _rateModel Interest rate model address
    */
   function setInterestRateModel(IInterestRateModel _rateModel) external onlyOwner {
@@ -460,7 +460,7 @@ contract CashAsset is ICashAsset, Owned {
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     uint totalCash = totalSupply + accruedSmFees - totalBorrow;
 
-    // If netSettledCash > 0, we substract from supply, if < 0 we add amount to supply
+    // If netSettledCash > 0, we subtract from supply, if < 0 we add amount to supply
     totalCash = (totalCash.toInt256() - netSettledCash).toUint256();
 
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);

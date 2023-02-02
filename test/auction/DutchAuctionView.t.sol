@@ -107,17 +107,16 @@ contract UNIT_DutchAuctionView is Test {
     DutchAuction.DutchAuctionParameters memory retParams = dutchAuction.getParameters();
     assertEq(retParams.stepInterval, dutchAuctionParameters.stepInterval);
     assertEq(retParams.lengthOfAuction, dutchAuctionParameters.lengthOfAuction);
-    assertEq(retParams.securityModule, dutchAuctionParameters.securityModule);
 
     // change params
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
         stepInterval: 2,
         lengthOfAuction: 200,
-        securityModule: address(1),
         portfolioModifier: 1e18,
         inversePortfolioModifier: 1e18,
-        secBetweenSteps: 0
+        secBetweenSteps: 0,
+        liquidatorFeeRate: 0.05e18
       })
     );
 
@@ -125,7 +124,21 @@ contract UNIT_DutchAuctionView is Test {
     retParams = dutchAuction.getParameters();
     assertEq(retParams.stepInterval, 2);
     assertEq(retParams.lengthOfAuction, 200);
-    assertEq(retParams.securityModule, address(1));
+  }
+
+  function testCannotSetInvalidParameter() public {
+    // change params
+    vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
+    dutchAuction.setDutchAuctionParameters(
+      DutchAuction.DutchAuctionParameters({
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        portfolioModifier: 1e18,
+        inversePortfolioModifier: 1e18,
+        secBetweenSteps: 0,
+        liquidatorFeeRate: 0.11e18 // invalid fee rate
+      })
+    );
   }
 
   function testGetRiskManager() public {

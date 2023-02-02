@@ -37,7 +37,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   // TODO: needs to be expanded upon next sprint to make sure that
   // it can handle the insolvency case properly
-  function executeBid(uint accountId, uint, /*liquidatorId*/ uint, /*portion*/ uint cashAmount) external virtual {
+  function executeBid(uint accountId, uint, /*liquidatorId*/ uint, /*portion*/ uint cashAmount, uint) external virtual {
     if (cashAmount > 0) {
       initMargin[accountId] += cashAmount.toInt256();
     }

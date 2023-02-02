@@ -15,6 +15,8 @@ import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
+import "test/shared/mocks/MockSM.sol";
+
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestPCRM is Test {
@@ -27,6 +29,8 @@ contract UNIT_TestPCRM is Test {
   MockV3Aggregator aggregator;
   MockOption option;
   MockDutchAuction auction;
+  MockSM sm;
+  uint feeRecipient;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -66,6 +70,8 @@ contract UNIT_TestPCRM is Test {
       }),
       PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
     );
+
+    feeRecipient = account.createAccount(address(this), manager);
 
     vm.startPrank(alice);
     aliceAcc = account.createAccount(alice, IManager(manager));
@@ -254,6 +260,7 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testExecuteBid() public {
+    manager.setFeeRecipient(feeRecipient);
     // add some usdc for buffer
     usdc.mint(bob, 1000_000e18);
     vm.startPrank(bob);
@@ -272,38 +279,45 @@ contract UNIT_TestPCRM is Test {
     int bobCashBefore = account.getBalance(bobAcc, cash, 0);
     assertEq(account.getAccountBalances(aliceAcc).length, 3);
 
-    vm.prank(address(auction));
-
     uint exerciseCashAmount = 50e18;
+    uint fee = 5e18;
     // 20% got liquidated
-    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
+
+    vm.prank(address(auction));
+    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, fee);
 
     assertEq(account.getAccountBalances(aliceAcc).length, 3);
     assertEq(account.getBalance(aliceAcc, option, callId), 0.8e18); // 80% of +1 long call
     assertEq(account.getBalance(aliceAcc, option, putId), -8e18); // 80% of -10 short put
 
+    // alice got 80% of her cash left + amount paid
     int aliceCashAfter = account.getBalance(aliceAcc, cash, 0);
     assertEq(aliceCashBefore * 4 / 5 + int(exerciseCashAmount), aliceCashAfter);
 
+    // bob's is increased by 20% of alice cash - amount paid to alice - fee
     int bobCashAfter = account.getBalance(bobAcc, cash, 0);
-    assertEq(aliceCashBefore * 1 / 5 - int(exerciseCashAmount), bobCashAfter - bobCashBefore);
+    assertEq(aliceCashBefore * 1 / 5 - int(exerciseCashAmount) - int(fee), bobCashAfter - bobCashBefore);
+
+    assertEq(account.getBalance(feeRecipient, cash, 0), int(fee));
   }
 
   function testCannotExecuteBidIfLiquidatorBecomesUnderwater() public {
+    manager.setFeeRecipient(feeRecipient);
     // alice open 1 long call, short 10 put
     _openDefaultOptions();
 
     uint exerciseCashAmount = 10000e18; // paying gitantic amount that makes liquidator insolvent
     vm.expectRevert(PCRM.PCRM_MarginRequirementNotMet.selector);
     vm.prank(address(auction));
-    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount);
+    manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
   }
 
   function testExecuteEmptyBidOnEmptyAccount() public {
+    manager.setFeeRecipient(feeRecipient);
     assertEq(account.getAccountBalances(aliceAcc).length, 0);
 
     vm.prank(address(auction));
-    manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    manager.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
     assertEq(account.getAccountBalances(aliceAcc).length, 0);
   }
@@ -311,7 +325,7 @@ contract UNIT_TestPCRM is Test {
   function testCannotExecuteBidWithPortionGreatorThan100() public {
     vm.expectRevert(PCRM.PCRM_InvalidBidPortion.selector);
     vm.prank(address(auction));
-    manager.executeBid(aliceAcc, bobAcc, 1e18 + 1, 0);
+    manager.executeBid(aliceAcc, bobAcc, 1e18 + 1, 0, 0);
   }
 
   //////////
@@ -375,11 +389,11 @@ contract UNIT_TestPCRM is Test {
     vm.stopPrank();
   }
 
-  function _depositCash(address user, uint account, uint amount) internal {
+  function _depositCash(address user, uint acc, uint amount) internal {
     usdc.mint(user, amount);
     vm.startPrank(user);
     usdc.approve(address(cash), type(uint).max);
-    cash.deposit(account, 0, amount);
+    cash.deposit(acc, 0, amount);
     vm.stopPrank();
   }
 }

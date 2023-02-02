@@ -157,10 +157,10 @@ contract Option is IOption, ISettlementFeed, Owned {
     int postBalance = preBalance + change;
     if (preBalance >= 0) {
       if (postBalance >= 0) {
-        // OI can be increased or decrease. result must be postive
+        // OI can be increased or decrease. result must be positive
         openInterest[subId] = (openInterest[subId].toInt256() + change).toUint256();
       } else {
-        // OI must be decreased, by amount of prebalance
+        // OI must be decreased, by amount of pre-balance
         openInterest[subId] -= uint(preBalance);
       }
     } else {

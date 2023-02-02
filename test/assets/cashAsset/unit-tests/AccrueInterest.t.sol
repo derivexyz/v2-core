@@ -53,8 +53,8 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
   function testSetNewInterestRateModel() public {
     uint minRate = 0.8 * 1e18;
-    uint rateMultipler = 0.8 * 1e18;
-    uint highRateMultipler = 0.8 * 1e18;
+    uint rateMultiplier = 0.8 * 1e18;
+    uint highRateMultiplier = 0.8 * 1e18;
     uint optimalUtil = 0.8 * 1e18;
 
     // Make sure when setting new rateModel indexes are updated
@@ -71,7 +71,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     assertEq(cashAsset.supplyIndex(), 1e18);
 
     vm.warp(block.timestamp + 1);
-    InterestRateModel newModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    InterestRateModel newModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // Setting new rate model should update indexes
     cashAsset.setInterestRateModel(newModel);

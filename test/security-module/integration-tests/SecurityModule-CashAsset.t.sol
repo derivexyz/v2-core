@@ -42,10 +42,10 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
     // todo: cleanup
     uint minRate = 0.06 * 1e18;
-    uint rateMultipler = 0.2 * 1e18;
-    uint highRateMultipler = 0.4 * 1e18;
+    uint rateMultiplier = 0.2 * 1e18;
+    uint highRateMultiplier = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
-    rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // need to predict this
     uint smAccountId;
