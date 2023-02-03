@@ -169,7 +169,6 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlment price for callId at expiry above strike
     vm.warp(expiry);
     int spotPrice = int(strike) + priceDiff;
-    vm.assume(spotPrice > 0);
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
@@ -186,7 +185,6 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlment price for callId at expiry below strike
     vm.warp(expiry);
     int spotPrice = int(strike) - priceDiff;
-    vm.assume(spotPrice > 0);
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
@@ -203,7 +201,6 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlment price for putId at expiry below strike
     vm.warp(expiry);
     int spotPrice = int(strike) - priceDiff;
-    vm.assume(spotPrice > 0);
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
@@ -220,7 +217,6 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlment price for putId at expiry above strike
     vm.warp(expiry);
     int spotPrice = int(strike) + priceDiff;
-    vm.assume(spotPrice > 0);
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
