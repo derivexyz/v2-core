@@ -26,6 +26,8 @@ import "src/interfaces/IManager.sol";
  */
 contract IntegrationTestBase is Test {
   address public constant liquidation = address(0xdead);
+  uint public constant DEFAULT_DEPOSIT = 5000e18;
+  int public constant ETH_PRICE = 2000e8;
 
   Accounts accounts;
   CashAsset cash;
@@ -101,10 +103,12 @@ contract IntegrationTestBase is Test {
   function _finishContractSetups() internal {
     // whitelist setting in cash asset
     cash.setWhitelistManager(address(pcrm), true);
+
     //todo: pcrm
+    pcrm.setFeeRecipient(smAccountId);
 
     // add aggregator to feed
-    aggregator = new MockV3Aggregator(8, 2000e8);
+    aggregator = new MockV3Aggregator(8, ETH_PRICE);
     uint _feedId = feed.addFeed("ETH/USD", address(aggregator), 1 hours);
     assertEq(feedId, _feedId);
 
@@ -122,6 +126,15 @@ contract IntegrationTestBase is Test {
     vm.startPrank(user);
     usdc.approve(address(cash), type(uint).max);
     cash.deposit(acc, amount);
+    vm.stopPrank();
+  }
+
+  /**
+   * @dev helper to withdraw (or borrow) cash for account (from user)
+   */
+  function _withdrawCash(address user, uint acc, uint amount) internal {
+    vm.startPrank(user);
+    cash.withdraw(acc, amount, user);
     vm.stopPrank();
   }
 
