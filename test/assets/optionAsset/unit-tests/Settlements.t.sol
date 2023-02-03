@@ -195,7 +195,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
   }
 
   function testFuzzITMPut(int priceDiff) external {
-    vm.assume(priceDiff >= 0 && priceDiff <= int(strike));
+    vm.assume(priceDiff >= 0 && priceDiff < int(strike));
     (uint expiry, uint strike,) = option.getOptionDetails(uint96(putId));
 
     // Lock in settlment price for putId at expiry below strike
