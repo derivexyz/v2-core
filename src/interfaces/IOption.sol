@@ -3,8 +3,9 @@ pragma solidity ^0.8.13;
 
 import "./IAsset.sol";
 import "./IInterestRateModel.sol";
+import "./ISettlementFeed.sol";
 
-interface IOption is IAsset {
+interface IOption is IAsset, ISettlementFeed {
   /////////////////
   //   Structs   //
   /////////////////
