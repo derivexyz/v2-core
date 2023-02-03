@@ -238,6 +238,31 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     assertEq(accounts.getBalance(aliceAcc, cash, 0), 0);
   }
 
+  function testSettlementBatch() external {
+    (uint callId, uint putId) = _openDefaultPositions();
+
+    // mock settlement value
+    option.setMockedSubIdSettled(callId, true);
+    option.setMockedSubIdSettled(putId, true);
+    option.setMockedTotalSettlementValue(callId, -500e18);
+    option.setMockedTotalSettlementValue(putId, 1000e18);
+
+    uint[] memory accountsToSettle = new uint[](2);
+    accountsToSettle[0] = aliceAcc;
+    accountsToSettle[1] = bobAcc;
+    tester.batchSettleAccounts(accountsToSettle);
+
+    assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
+    assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
+
+    assertEq(accounts.getBalance(bobAcc, option, callId), 0);
+    assertEq(accounts.getBalance(bobAcc, option, putId), 0);
+
+    // cash increase for both. (because the payout is mocked to be the same)
+    assertEq(accounts.getBalance(aliceAcc, cash, 0), 500e18);
+    assertEq(accounts.getBalance(bobAcc, cash, 0), 500e18);
+  }
+
   // alice open 10 long call, 10 short put
   function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {
     vm.prank(bob);

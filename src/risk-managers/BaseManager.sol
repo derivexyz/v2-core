@@ -42,11 +42,21 @@ abstract contract BaseManager is AccountStructs {
   //////////////////////////
 
   /**
-   * @dev settle expired option positions in an account.
-   *      this function can be called by anyone
+   * @notice Settle expired option positions in an account.
+   * @dev This function can be called by anyone
    */
   function settleAccount(uint accountId) external {
     _settleAccount(accountId);
+  }
+
+  /**
+   * @notice Settle accounts in batch
+   * @dev This function can be called by anyone
+   */
+  function batchSettleAccounts(uint[] calldata accountIds) external {
+    for (uint i; i < accountIds.length; ++i) {
+      _settleAccount(accountIds[i]);
+    }
   }
 
   //////////////////////////
