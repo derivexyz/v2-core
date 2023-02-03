@@ -17,6 +17,7 @@ import "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockOption.sol";
+import "../../auction/mocks/MockCashAsset.sol";
 
 contract BaseManagerTester is BaseManager {
   constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cash_, IOption option_)
@@ -30,6 +31,16 @@ contract BaseManagerTester is BaseManager {
   function chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] calldata assetDeltas) external {
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
   }
+
+  function handleAdjustment(
+    uint, /*accountId*/
+    uint, /*tradeId*/
+    address,
+    AssetDelta[] calldata, /*assetDeltas*/
+    bytes memory
+  ) public {}
+
+  function handleManagerChange(uint, IManager) external {}
 }
 
 contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
@@ -40,7 +51,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   MockFeed spotFeeds;
   MockERC20 usdc;
   MockOption option;
-  MockAsset cash;
+  MockCash cash;
 
   address alice = address(0xaa);
   address bob = address(0xb0ba);
@@ -55,9 +66,9 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     spotFeeds = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
-    cash = new MockAsset(usdc, accounts, true);
+    cash = new MockCash(usdc, accounts);
 
-    tester = new BaseManagerTester(accounts, spotFeeds, ICashAsset(address(cash)), option);
+    tester = new BaseManagerTester(accounts, spotFeeds, cash, option);
 
     mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
 
@@ -171,5 +182,90 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     // fee for each subId2 = 10 * 0.1% * 2000 = 20;
     // fee for each subId3 = 10 * 0.1% * 2000 = 20;
     assertEq(fee, 40e18);
+  }
+
+  function testSettlementNetPositive() external {
+    (uint callId, uint putId) = _openDefaultPositions();
+
+    // mock settlement value
+    option.setMockedSubIdSettled(callId, true);
+    option.setMockedSubIdSettled(putId, true);
+    option.setMockedTotalSettlementValue(callId, -500e18);
+    option.setMockedTotalSettlementValue(putId, 1000e18);
+
+    tester.settleAccount(aliceAcc);
+
+    assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
+    assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
+
+    // cash increase
+    assertEq(accounts.getBalance(aliceAcc, cash, 0), 500e18);
+  }
+
+  function testSettlementNetNegative() external {
+    (uint callId, uint putId) = _openDefaultPositions();
+
+    // mock settlement value
+    option.setMockedSubIdSettled(callId, true);
+    option.setMockedSubIdSettled(putId, true);
+    option.setMockedTotalSettlementValue(callId, -1500e18);
+    option.setMockedTotalSettlementValue(putId, 200e18);
+
+    tester.settleAccount(aliceAcc);
+
+    assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
+    assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
+
+    // cash increase
+    assertEq(accounts.getBalance(aliceAcc, cash, 0), -1300e18);
+  }
+
+  function testSettleOnUnsettledAsset() external {
+    (uint callId, uint putId) = _openDefaultPositions();
+
+    int callBalanceBefore = accounts.getBalance(aliceAcc, option, callId);
+    int putBalanceBefore = accounts.getBalance(aliceAcc, option, putId);
+
+    // mock settlement value: settled still remain false
+    option.setMockedTotalSettlementValue(callId, -500e18);
+    option.setMockedTotalSettlementValue(putId, 1000e18);
+
+    tester.settleAccount(aliceAcc);
+
+    assertEq(accounts.getBalance(aliceAcc, option, callId), callBalanceBefore);
+    assertEq(accounts.getBalance(aliceAcc, option, putId), putBalanceBefore);
+    // cash increase
+    assertEq(accounts.getBalance(aliceAcc, cash, 0), 0);
+  }
+
+  // alice open 10 long call, 10 short put
+  function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {
+    vm.prank(bob);
+    accounts.approve(alice, bobAcc);
+
+    callSubId = 100;
+    putSubId = 200;
+
+    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
+
+    transfers[0] = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 10e18,
+      assetData: ""
+    });
+    transfers[1] = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: putSubId,
+      amount: 10e18,
+      assetData: ""
+    });
+
+    vm.prank(alice);
+    accounts.submitTransfers(transfers, "");
   }
 }

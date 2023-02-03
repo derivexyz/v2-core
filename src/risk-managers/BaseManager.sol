@@ -37,6 +37,22 @@ abstract contract BaseManager is AccountStructs {
     spotFeeds = spotFeeds_;
   }
 
+  //////////////////////////
+  //  External Functions  //
+  //////////////////////////
+
+  /**
+   * @dev settle expired option positions in an account.
+   *      this function can be called by anyone
+   */
+  function settleAccount(uint accountId) external {
+    _settleAccount(accountId);
+  }
+
+  //////////////////////////
+  //  Internal Functions  //
+  //////////////////////////
+
   /**
    * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
    * @param accountId Account potentially to charge
@@ -48,16 +64,16 @@ abstract contract BaseManager is AccountStructs {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset == option) {
-        (, uint oiBefore) = option.openInterestBeforeTrade(assetDeltas[i].subId, tradeId);
-        uint oi = option.openInterest(assetDeltas[i].subId);
+      if (assetDeltas[i].asset != option) continue;
 
-        // this trade increase OI, charge a fee
-        if (oi > oiBefore) {
-          uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting methods
-          fee += assetDeltas[i].delta.abs().multiplyDecimal(spot).multiplyDecimal(OIFeeRateBPS);
-        }
-      }
+      (, uint oiBefore) = option.openInterestBeforeTrade(assetDeltas[i].subId, tradeId);
+      uint oi = option.openInterest(assetDeltas[i].subId);
+
+      // if OI decreases, don't charge a fee
+      if (oi <= oiBefore) continue;
+
+      uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting methods
+      fee += assetDeltas[i].delta.abs().multiplyDecimal(spot).multiplyDecimal(OIFeeRateBPS);
     }
 
     if (fee > 0) {
@@ -66,6 +82,10 @@ abstract contract BaseManager is AccountStructs {
     }
   }
 
+  /**
+   * @dev settle an account by removing all expired option positions and adjust cash balance
+   * @param accountId Account Id to settle
+   */
   function _settleAccount(uint accountId) internal {
     AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
     int cashDelta = 0;
