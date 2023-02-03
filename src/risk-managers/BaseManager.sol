@@ -6,6 +6,7 @@ import "src/interfaces/IOption.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/ISettlementFeed.sol";
 
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
@@ -53,8 +54,7 @@ abstract contract BaseManager is AccountStructs {
 
         // this trade increase OI, charge a fee
         if (oi > oiBefore) {
-          // todo [Anton]: get spot for specific asset base on subId
-          uint spot = spotFeeds.getSpot(1);
+          uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting methods
           fee += assetDeltas[i].delta.abs().multiplyDecimal(spot).multiplyDecimal(OIFeeRateBPS);
         }
       }
@@ -64,6 +64,30 @@ abstract contract BaseManager is AccountStructs {
       // transfer cash to fee recipient account
       _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
     }
+  }
+
+  function _settleAccount(uint accountId) internal {
+    AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+    int cashDelta = 0;
+    for (uint i; i < balances.length; i++) {
+      // skip non option asset
+      if (balances[i].asset != option) continue;
+
+      (int value, bool isSettled) = option.calcSettlementValue(balances[i].subId, balances[i].balance);
+      if (!isSettled) continue;
+
+      cashDelta += value;
+
+      // update user option balance
+      accounts.managerAdjustment(
+        AccountStructs.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
+      );
+    }
+
+    // update user cash amount
+    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
+    // report total print / burn to cash asset
+    cashAsset.updateSettledCash(cashDelta);
   }
 
   /**

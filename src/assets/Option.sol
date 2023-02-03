@@ -17,7 +17,7 @@ import "src/libraries/SignedDecimalMath.sol";
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, ISettlementFeed, Owned {
+contract Option is IOption, Owned {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;

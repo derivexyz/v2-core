@@ -97,7 +97,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     int amount = 1e18;
 
     // OI increase
-    option.setMockedOISanpshotBeforeTrade(subId, tradeId, 0);
+    option.setMockedOISnapshotBeforeTrade(subId, tradeId, 0);
     option.setMockedOI(subId, 100e18);
 
     AssetDelta[] memory assetDeltas = new AssetDelta[](1);
@@ -120,7 +120,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     int amount = 1e18;
 
     // OI decrease
-    option.setMockedOISanpshotBeforeTrade(subId, tradeId, 100e18);
+    option.setMockedOISnapshotBeforeTrade(subId, tradeId, 100e18);
     option.setMockedOI(subId, 0);
 
     AssetDelta[] memory assetDeltas = new AssetDelta[](1);
