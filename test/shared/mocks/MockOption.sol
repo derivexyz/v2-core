@@ -73,6 +73,14 @@ contract MockOption is IOption {
     // just to comply with interface
   }
 
+  function setMockedTotalSettlementValue(uint subId, int value) external {
+    mockedTotalSettlementValue[subId] = value;
+  }
+
+  function setMockedSubIdSettled(uint subId, bool settled) external {
+    mockedSubSettled[subId] = settled;
+  }
+
   function calcSettlementValue(uint subId, int /*balance*/ ) external view returns (int payout, bool priceSettled) {
     return (mockedTotalSettlementValue[subId], mockedSubSettled[subId]);
   }
