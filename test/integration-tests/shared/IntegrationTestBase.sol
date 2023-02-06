@@ -139,6 +139,30 @@ contract IntegrationTestBase is Test {
   }
 
   /**
+   * @dev helper to mint options to an account
+   */
+  function _managerMintOption(uint toAcc, uint subId, int amount) internal {
+    vm.startPrank(address(pcrm));
+     accounts.managerAdjustment(
+      AccountStructs.AssetAdjustment({
+        acc: toAcc,
+        asset: option,
+        subId: subId,
+        amount: amount,
+        assetData: ""
+      })
+    );
+    vm.stopPrank();
+  }
+
+  /**
+   * @dev helper to update spot prices 
+   */
+  function _updatePriceFeed(int spotPrice, uint80 roundId, uint80 answeredInRound) internal {
+    aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
+  }
+
+  /**
    * @dev default parameters for rate model
    */
   function _getDefaultRateModelParam()
@@ -163,7 +187,7 @@ contract IntegrationTestBase is Test {
   }
 
   /**
-   * predict the address of the next contract being deployed
+   * @dev predict the address of the next contract being deployed
    */
   function _predictAddress(address _origin, uint _nonce) public pure returns (address) {
     if (_nonce == 0x00) {

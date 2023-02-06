@@ -146,6 +146,7 @@ contract PCRM is BaseManager, IManager, Owned {
     public
     override
   {
+    console2.log("--- PCRM manager handle adjustment ---");
     // todo [Josh]: whitelist check
 
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
@@ -275,6 +276,7 @@ contract PCRM is BaseManager, IManager, Owned {
     uint128 spotUp;
     uint128 spotDown;
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
+    console2.log("PCRM spot is", spot);
     uint staticDiscount;
     if (marginType == MarginType.INITIAL) {
       spotUp = spot.multiplyDecimal(shocks.spotUpInitial).toUint128();
@@ -298,8 +300,10 @@ contract PCRM is BaseManager, IManager, Owned {
       margin = _calcSettledExpiryValue(portfolio);
     }
 
+    console2.log("margin before cash", margin);
     // add cash
     margin += portfolio.cash;
+    console2.log("margin afterr cash", margin);
   }
 
   /**
@@ -308,7 +312,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @return expiryValue Value of assets or debt of settled options.
    */
   function _calcSettledExpiryValue(Portfolio memory portfolio) internal pure returns (int expiryValue) {
-    uint settlementPrice = 1000e18; // todo: [Josh] integrate settlement feed
+    uint settlementPrice = 2000e8; // todo: [Josh] integrate settlement feed
     for (uint i; i < portfolio.strikes.length; i++) {
       Strike memory strike = portfolio.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
@@ -346,6 +350,9 @@ contract PCRM is BaseManager, IManager, Owned {
 
       spotDownValue += _calcLiveStrikeValue(portfolio.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
     }
+    console2.log("SpotUpValue", spotUpValue);
+    console2.log("SpotDownVal", spotDownValue);
+
 
     // return the worst of two scenarios
     return SignedMath.min(spotUpValue, spotDownValue);
@@ -402,6 +409,7 @@ contract PCRM is BaseManager, IManager, Owned {
     strikeValue += (strikes.puts >= 0)
       ? strikes.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikes.puts.multiplyDecimal(putValue.toInt256());
+
   }
 
   function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {

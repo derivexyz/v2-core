@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 
 import "../shared/IntegrationTestBase.sol";
 import "src/interfaces/IManager.sol";
@@ -30,7 +31,11 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, IManager(pcrm));
-    // _depositCash(address(charlie), charlieAcc, DEFAULT_DEPOSIT);
+    _depositCash(address(charlie), charlieAcc, DEFAULT_DEPOSIT);
+
+    console.logInt(accounts.getBalance(aliceAcc, cash, 0));
+    console.logInt(accounts.getBalance(bobAcc, cash, 0));
+    console.logInt(accounts.getBalance(charlieAcc, cash, 0));
 
     // Charlie borrows money against his ITM Call
     uint callExpiry = block.timestamp + 4 weeks;
@@ -47,16 +52,30 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
       assetData: ""
     });
 
-    accounts.submitTransfer(callTransfer, "");
-
+    console.log("--- ABOUT TO SUBMIT TRRANSFER HERE ---");
+    _managerMintOption(charlieAcc, callId, 1e18);
+    console.log("--- AFTER TRRANSFER HERE ---");
+    
     assertEq(cash.borrowIndex(), 1e18);
     assertEq(cash.supplyIndex(), 1e18);
 
-    // cash.withdraw(bobAcc, DEFAULT_DEPOSIT * 2, bob);
-    _withdrawCash(alice, aliceAcc, DEFAULT_DEPOSIT * 2);
+    // Borrow against the option
+    _withdrawCash(charlie, charlieAcc, DEFAULT_DEPOSIT);
 
-    console.logInt(accounts.getBalance(aliceAcc, cash, 0));
-    console.logInt(accounts.getBalance(bobAcc, cash, 0));
-    console.logInt(accounts.getBalance(charlieAcc, cash, 0));
+    vm.warp(callExpiry);
+    _updatePriceFeed(2100e18, 2,2);
+    option.setSettlementPrice(callExpiry);
+    (int payout, bool settled) = option.calcSettlementValue(callId, 1e18);
+    console2.log("Payout is", payout/1e18);
+    console2.log("Settle is", settled);
+    // _withdrawCash(charlie, charlieAcc, 1e8);
+
+    // console.logInt(accounts.getBalance(aliceAcc, cash, 0));
+    // console.logInt(accounts.getBalance(bobAcc, cash, 0));
+    // console.logInt(accounts.getBalance(charlieAcc, cash, 0));
+
+
+    // console.logInt(accounts.getBalance(aliceAcc, option, callId));
+    // console.logInt(accounts.getBalance(charlieAcc, option, callId));
   }
 }
