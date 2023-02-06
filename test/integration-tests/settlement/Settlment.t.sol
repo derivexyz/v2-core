@@ -19,7 +19,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
   uint bobAcc;
 
   // value used for test
-  uint constant initCash = 3000e18;
+  uint constant initCash = 5000e18;
   int constant amountOfContracts = 10e18;
   uint constant strike = 2000e18;
 
@@ -79,7 +79,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     assertEq(oiAfter, oiBefore);
   }
 
-  // only settle alice's account at expiry
+  // only settle bob's account after expiry
   function testSettleLongCallImbalance() public {
     _tradeCall();
 
@@ -106,29 +106,55 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
   }
 
   // only settle alice's account at expiry
-  // function testSettleShortPutImbalance() public {
-  //  //todo: conform init margin for put
-  //   _tradePut();
+  function testSettleShortPutImbalance() public {
+    _tradePut();
 
-  //   // stimulate expiry price
-  //   vm.warp(expiry);
-  //   _setSpotPriceAndSubmitForExpiry(1500e18, expiry);
+    // stimulate expiry price
+    vm.warp(expiry);
+    _setSpotPriceAndSubmitForExpiry(1500e18, expiry);
 
-  //   int aliceCashBefore = getCashBalance(aliceAcc);
+    int aliceCashBefore = getCashBalance(aliceAcc);
 
-  //   pcrm.settleAccount(aliceAcc);
-  //   int aliceCashAfter = getCashBalance(aliceAcc);
+    pcrm.settleAccount(aliceAcc);
+    int aliceCashAfter = getCashBalance(aliceAcc);
 
-  //   // payout is 500 USDC per contract
-  //   int expectedPayout = 500 * amountOfContracts;
+    // payout is 500 USDC per contract
+    int expectedPayout = 500 * amountOfContracts;
 
-  //   assertEq(aliceCashAfter, aliceCashBefore - expectedPayout);
+    assertEq(aliceCashAfter, aliceCashBefore - expectedPayout);
 
-  //   // we have net burn
-  //   assertEq(cash.netSettledCash(), -expectedPayout);
+    // we have net burn
+    assertEq(cash.netSettledCash(), -expectedPayout);
 
-  //   _assertCashSolvent();
-  // }
+    _assertCashSolvent();
+  }
+
+  // only settle bob's account at expiry
+  function testSettleLongPutImbalance() public {
+    _tradePut();
+
+    // stimulate expiry price
+    vm.warp(expiry);
+    _setSpotPriceAndSubmitForExpiry(1500e18, expiry);
+
+    int bobCashBefore = getCashBalance(bobAcc);
+
+    pcrm.settleAccount(bobAcc);
+    int bobCashAfter = getCashBalance(bobAcc);
+    uint oiAfter = option.openInterest(putId);
+
+    // payout is 500 USDC per contract
+    int expectedPayout = 500 * amountOfContracts;
+
+    assertEq(bobCashAfter, bobCashBefore + expectedPayout);
+
+    // we have net print to Bob
+    assertEq(cash.netSettledCash(), expectedPayout);
+
+    _assertCashSolvent();
+
+    assertEq(oiAfter, 0);
+  }
 
   ///@dev alice go short, bob go long
   function _tradeCall() public {

@@ -369,7 +369,7 @@ contract PCRM is BaseManager, IManager, Owned {
     uint128 spotDown,
     uint128 shockedVol,
     uint64 timeToExpiry
-  ) internal pure returns (int strikeValue) {
+  ) internal view returns (int strikeValue) {
     // Calculate both spot up and down payoffs.
     int markedDownCallValue = uint(spotDown).toInt256() - strikes.strike.toInt256();
     int markedDownPutValue = strikes.strike.toInt256() - uint(spotUp).toInt256();
@@ -379,7 +379,7 @@ contract PCRM is BaseManager, IManager, Owned {
       ? strikes.forwards.multiplyDecimal(-markedDownPutValue)
       : strikes.forwards.multiplyDecimal(markedDownCallValue);
 
-    // Get BlackSchole price.
+    // Get BlackScholes price.
     (uint callValue, uint putValue) = (0, 0);
     if (strikes.calls != 0 || strikes.puts != 0) {
       (callValue, putValue) = Black76.prices(
