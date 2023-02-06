@@ -58,7 +58,7 @@ contract UNIT_TestPCRM is Test {
       address(auction)
     );
 
-    // cash.setWhitfelistManager(address(manager), true);
+    // cash.setWhitWelistManager(address(manager), true);
     manager.setParams(
       PCRM.Shocks({
         spotUpInitial: 120e16,
@@ -306,7 +306,7 @@ contract UNIT_TestPCRM is Test {
     // alice open 1 long call, short 10 put
     _openDefaultOptions();
 
-    uint exerciseCashAmount = 10000e18; // paying gitantic amount that makes liquidator insolvent
+    uint exerciseCashAmount = 10000e18; // paying gigantic amount that makes liquidator insolvent
     vm.expectRevert(PCRM.PCRM_MarginRequirementNotMet.selector);
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
