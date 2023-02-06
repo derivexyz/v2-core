@@ -13,7 +13,6 @@ import "src/interfaces/ICashAsset.sol";
 import "src/assets/Option.sol";
 
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMGrouping.sol";
 import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
@@ -28,6 +27,17 @@ contract PCRM is IManager, Owned {
   using DecimalMath for uint;
   using SafeCast for uint;
 
+  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory)
+    public
+    view
+    override
+  {
+
+  }
+
+  function handleManagerChange(uint accountId, IManager newManager) external {
+    // todo [Josh]: nextManager whitelist check
+  }
 
 
 }
