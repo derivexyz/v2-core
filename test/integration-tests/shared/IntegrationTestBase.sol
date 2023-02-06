@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 
@@ -166,6 +167,30 @@ contract IntegrationTestBase is Test {
     });
 
     accounts.submitTransfers(transferBatch, "");
+  }
+
+  /**
+   * @dev set current price of aggregator
+   * @param price price in 18 decimals
+   */
+  function _setSpotPriceE18(int price) internal {
+    uint80 round = 1;
+    int answerE8 = price / 1e10;
+    aggregator.updateRoundData(round, answerE8, block.timestamp, block.timestamp, round);
+  }
+
+  /**
+   * @dev set current price of aggregator, and report as settlement price at {expiry}
+   * @param price price in 18 decimals
+   */
+  function _setSpotPriceAndSubmitForExpiry(int price, uint expiry) internal {
+    _setSpotPriceE18(price);
+    option.setSettlementPrice(expiry);
+  }
+
+  function _assertCashSolvent() internal {
+    // exchange rate should be >= 1
+    assertGe(cash.getCashToStableExchangeRate(), 1e18);
   }
 
   /**

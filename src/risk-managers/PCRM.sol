@@ -258,7 +258,7 @@ contract PCRM is BaseManager, IManager, Owned {
    */
   function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal view {
     int margin = _calcMargin(portfolio, marginType);
-    if (margin < 0) revert PCRM_MarginRequirementNotMet();
+    if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
   }
 
   /**
@@ -511,7 +511,7 @@ contract PCRM is BaseManager, IManager, Owned {
 
   error PCRM_InvalidBidPortion();
 
-  error PCRM_MarginRequirementNotMet();
+  error PCRM_MarginRequirementNotMet(int initMargin);
 
   error PCRM_SingleExpiryPerAccount();
 }
