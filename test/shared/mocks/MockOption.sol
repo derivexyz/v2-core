@@ -4,13 +4,8 @@ pragma solidity ^0.8.13;
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IAccounts.sol";
-import "src/libraries/DecimalMath.sol";
-/**
- */
 
 contract MockOption is IOption {
-  using DecimalMath for uint;
-
   IAccounts immutable account;
 
   bool revertHandleManagerChange;
@@ -18,6 +13,12 @@ contract MockOption is IOption {
   // mocked state to test # of calls
   bool recordMangerChangeCalls;
   uint public handleManagerCalled;
+
+  // subId => settlement value
+  mapping(uint => int) mockedTotalSettlementValue;
+
+  // subId => settled or not
+  mapping(uint => bool) mockedSubSettled;
 
   mapping(uint => uint) public openInterest;
 
@@ -64,8 +65,24 @@ contract MockOption is IOption {
     openInterest[_subId] = _oi;
   }
 
-  function setMockedOISanpshotBeforeTrade(uint _subId, uint _tradeId, uint _oi) external {
+  function setMockedOISnapshotBeforeTrade(uint _subId, uint _tradeId, uint _oi) external {
     openInterestBeforeTrade[_subId][_tradeId] = OISnapshot(true, uint240(_oi));
+  }
+
+  function setSettlementPrice(uint /*expiry*/ ) external {
+    // just to comply with interface
+  }
+
+  function setMockedTotalSettlementValue(uint subId, int value) external {
+    mockedTotalSettlementValue[subId] = value;
+  }
+
+  function setMockedSubIdSettled(uint subId, bool settled) external {
+    mockedSubSettled[subId] = settled;
+  }
+
+  function calcSettlementValue(uint subId, int /*balance*/ ) external view returns (int payout, bool priceSettled) {
+    return (mockedTotalSettlementValue[subId], mockedSubSettled[subId]);
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
