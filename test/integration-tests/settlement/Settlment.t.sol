@@ -53,8 +53,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   // only settle alice's account at expiry
   function testSettleShortCallImbalance() public {
-    _assertCashSolvent();
-
     _tradeCall();
 
     // stimulate expiry price
@@ -62,9 +60,11 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     _setSpotPriceAndSubmitForExpiry(2500e18, expiry);
 
     int aliceCashBefore = getCashBalance(aliceAcc);
+    uint oiBefore = option.openInterest(callId);
 
     pcrm.settleAccount(aliceAcc);
     int aliceCashAfter = getCashBalance(aliceAcc);
+    uint oiAfter = option.openInterest(callId);
 
     // payout is 500 USDC per contract
     int expectedPayout = 500 * amountOfContracts;
@@ -73,8 +73,36 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     // we have net burn
     assertEq(cash.netSettledCash(), -expectedPayout);
-
     _assertCashSolvent();
+
+    // total positive is the same, no change of OI
+    assertEq(oiAfter, oiBefore);
+  }
+
+  // only settle alice's account at expiry
+  function testSettleLongCallImbalance() public {
+    _tradeCall();
+
+    // stimulate expiry price
+    vm.warp(expiry);
+    _setSpotPriceAndSubmitForExpiry(2500e18, expiry);
+
+    int bobCashBefore = getCashBalance(bobAcc);
+
+    pcrm.settleAccount(bobAcc);
+    int bobCashAfter = getCashBalance(bobAcc);
+    uint oiAfter = option.openInterest(callId);
+
+    // payout is 500 USDC per contract
+    int expectedPayout = 500 * amountOfContracts;
+
+    assertEq(bobCashAfter, bobCashBefore + expectedPayout);
+
+    // we have net print to bob's account
+    assertEq(cash.netSettledCash(), expectedPayout);
+    _assertCashSolvent();
+
+    assertEq(oiAfter, 0);
   }
 
   // only settle alice's account at expiry
