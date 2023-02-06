@@ -66,6 +66,16 @@ contract MLRM is IManager, Owned {
     view
     override
   {
+    // todo [Josh]: whitelist check
+
+    // PCRM calculations
+    Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
+
+    int margin = _calcMargin(portfolio);
+
+    if (margin < 0) {
+      revert MLRM_PortfolioBelowMargin(accountId, margin);
+    }
 
   }
 
@@ -101,6 +111,9 @@ contract MLRM is IManager, Owned {
 
       totalCalls += currentStrike.calls;
     }
+
+    // add cash
+    margin += portfolio.cash;
 
     // check if still bounded
     if (totalCalls < 0) {
@@ -168,4 +181,5 @@ contract MLRM is IManager, Owned {
   error MLRM_OnlyPositiveCash();
   error MLRM_UnsupportedAsset(address asset); // could be used in both PCRM/MLRM
   error MLRM_PayoffUnbounded(int totalCalls);
+  error MLRM_PortfolioBelowMargin(uint accountId, int margin);
 }
