@@ -17,6 +17,8 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
   address bob = address(0xbb);
   uint bobAcc;
 
+  uint constant initCash = 200e18;
+
   function setUp() public {
     _setupIntegrationTestComplete();
 
@@ -28,13 +30,13 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
     accounts.setApprovalForAll(address(this), true);
     vm.prank(bob);
     accounts.setApprovalForAll(address(this), true);
+
+    // init setup for both accounts
+    _depositCash(alice, aliceAcc, initCash);
+    _depositCash(bob, bobAcc, initCash);
   }
 
   function testChargeOIFee() public {
-    uint initCash = 200e18;
-    _depositCash(alice, aliceAcc, initCash);
-    _depositCash(bob, bobAcc, initCash);
-
     uint spot = feed.getSpot(feedId);
 
     uint expiry = block.timestamp + 7 days;
@@ -51,5 +53,33 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
     assertEq(getCashBalance(pcrmFeeAcc), int(expectedOIFeeEach) * 2);
     assertEq(getCashBalance(aliceAcc), int(initCash) + premium - int(expectedOIFeeEach));
     assertEq(getCashBalance(bobAcc), int(initCash) - premium - int(expectedOIFeeEach));
+  }
+
+  function testClosingChargeNoFee() public {
+    // same setup
+    uint spot = feed.getSpot(feedId);
+    uint expiry = block.timestamp + 7 days;
+    uint strike = spot + 1000e18;
+    uint96 callToTrade = OptionEncoding.toSubId(expiry, strike, true);
+    int amountOfContracts = 10e18;
+    int premium = 50e18;
+
+    // open positions first
+    _submitTrade(aliceAcc, option, callToTrade, amountOfContracts, bobAcc, cash, 0, premium);
+
+    // pre-states before closing trade
+    int aliceCashBefore = getCashBalance(aliceAcc);
+    int bobCashBefore = getCashBalance(bobAcc);
+    int totalFeeBefore = getCashBalance(pcrmFeeAcc);
+
+    // alice pays premium2 to close position short with bob
+    int premium2 = 100e18;
+    _submitTrade(aliceAcc, cash, 0, premium2, bobAcc, option, callToTrade, amountOfContracts);
+
+    assertEq(getCashBalance(aliceAcc), aliceCashBefore - premium2);
+    assertEq(getCashBalance(bobAcc), bobCashBefore + premium2);
+
+    // no more fee
+    assertEq(getCashBalance(pcrmFeeAcc), totalFeeBefore);
   }
 }
