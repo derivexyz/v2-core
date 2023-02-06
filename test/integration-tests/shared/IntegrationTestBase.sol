@@ -44,7 +44,10 @@ contract IntegrationTestBase is Test {
   uint feedId = 1;
 
   // sm account id will be 1 after setup
-  uint smAccountId = 1;
+  uint smAcc = 1;
+
+  // updatable 
+  uint pcrmFeeAcc;
 
   function _setupIntegrationTestComplete() internal {
     // deployment
@@ -79,7 +82,7 @@ contract IntegrationTestBase is Test {
 
     // nonce: 5 => Deploy CashAsset
     address auctionAddr = _predictAddress(address(this), 8);
-    cash = new CashAsset(accounts, usdc, rateModel, smAccountId, auctionAddr);
+    cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
     // nonce: 6 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
@@ -97,15 +100,16 @@ contract IntegrationTestBase is Test {
     // nonce: 9 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
-    assertEq(securityModule.accountId(), smAccountId);
+    assertEq(securityModule.accountId(), smAcc);
   }
 
   function _finishContractSetups() internal {
     // whitelist setting in cash asset
     cash.setWhitelistManager(address(pcrm), true);
-
     //todo: pcrm
-    pcrm.setFeeRecipient(smAccountId);
+
+    pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
+    pcrm.setFeeRecipient(pcrmFeeAcc);
 
     // add aggregator to feed
     aggregator = new MockV3Aggregator(8, ETH_PRICE);

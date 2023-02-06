@@ -300,6 +300,7 @@ contract PCRM is BaseManager, IManager, Owned {
       margin = _calcSettledExpiryValue(portfolio);
     }
 
+    console2.log("Portfolio strikes", portfolio.strikes.length);
     console2.log("margin before cash", margin);
     // add cash
     margin += portfolio.cash;
