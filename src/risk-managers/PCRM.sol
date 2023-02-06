@@ -369,7 +369,7 @@ contract PCRM is BaseManager, IManager, Owned {
     uint128 spotDown,
     uint128 shockedVol,
     uint64 timeToExpiry
-  ) internal view returns (int strikeValue) {
+  ) internal pure returns (int strikeValue) {
     // Calculate both spot up and down payoffs.
     int markedDownCallValue = uint(spotDown).toInt256() - strikes.strike.toInt256();
     int markedDownPutValue = strikes.strike.toInt256() - uint(spotUp).toInt256();
