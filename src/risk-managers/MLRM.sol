@@ -98,7 +98,15 @@ contract MLRM is IManager, Owned {
 
       margin += SignedMath.max(spot - currentStrike.strike.toInt256(), 0).multiplyDecimal(currentStrike.calls);
       margin += SignedMath.max(currentStrike.strike.toInt256() - spot, 0).multiplyDecimal(currentStrike.puts);
+
+      totalCalls += currentStrike.calls;
     }
+
+    // check if still bounded
+    if (totalCalls < 0) {
+      revert MLRM_PayoffUnbounded(totalCalls);
+    }
+
   } 
 
   function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
@@ -159,5 +167,5 @@ contract MLRM is IManager, Owned {
   error MLRM_SingleExpiryPerAccount();
   error MLRM_OnlyPositiveCash();
   error MLRM_UnsupportedAsset(address asset); // could be used in both PCRM/MLRM
-  error MLRM_PayoffUnbounded(uint account);
+  error MLRM_PayoffUnbounded(int totalCalls);
 }
