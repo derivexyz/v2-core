@@ -73,12 +73,41 @@ contract MLRM is IManager, Owned {
     // todo [Josh]: nextManager whitelist check
   }
 
+
+
+  //////////
+  // Util //
+  //////////
+
+  function _calcMargin(PCRM.Portfolio memory portfolio) internal view returns (int margin) {
+    // keep track to check unbounded
+    int totalCalls;
+
+    // check if expired or not
+    int timeToExpiry = portfolio.expiry.toInt256() - block.timestamp.toInt256();
+    int spot;
+    if (timeToExpiry > 0) {
+      spot = spotFeeds.getSpot(1).toInt256(); // todo [Josh]: create feedId setting method
+    } else {
+      spot = spotFeeds.getSpot(1).toInt256(); // todo [Josh]: need to switch over to settled price if already expired
+    }
+
+    // calculate margin
+    for (uint i; i < portfolio.strikes.length; i++) {
+      PCRM.Strike memory currentStrike = portfolio.strikes[i];
+
+      margin += SignedMath.max(spot - currentStrike.strike.toInt256(), 0).multiplyDecimal(currentStrike.calls);
+      margin += SignedMath.max(currentStrike.strike.toInt256() - spot, 0).multiplyDecimal(currentStrike.puts);
+    }
+  } 
+
   function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
     internal
     view
     returns (PCRM.Portfolio memory portfolio)
   {
     // note: differs from PCRM._arrangePortfolio since forwards aren't filtered
+    // todo: [Josh] ok that both use the same struct but one doesn't have forwards? 
     portfolio.strikes = new PCRM.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
@@ -130,4 +159,5 @@ contract MLRM is IManager, Owned {
   error MLRM_SingleExpiryPerAccount();
   error MLRM_OnlyPositiveCash();
   error MLRM_UnsupportedAsset(address asset); // could be used in both PCRM/MLRM
+  error MLRM_PayoffUnbounded(uint account);
 }
