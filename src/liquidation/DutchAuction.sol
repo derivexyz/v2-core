@@ -198,14 +198,14 @@ contract DutchAuction is IDutchAuction, Owned {
 
       // the account is insolvent when the bid price for the account falls below zero
       // someone get paid from security module to take on the risk
-      uint cashToLiquidator = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(finalPercentage);
+      cashToBidder = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(finalPercentage);
       // we first ask the security module to compensate the bidder
-      uint amountPaid = securityModule.requestPayout(bidderId, cashToLiquidator);
+      uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
       // if amount paid is less than we requested:
       // 1. we trigger socialize losses on cash asset
       // 2. print cash to the bidder (in cash.socializeLoss)
-      if (cashToLiquidator > amountPaid) {
-        uint loss = cashToLiquidator - amountPaid;
+      if (cashToBidder > amountPaid) {
+        uint loss = cashToBidder - amountPaid;
         cash.socializeLoss(loss, bidderId);
       }
     } else {

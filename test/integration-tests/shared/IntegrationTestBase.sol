@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "forge-std/console2.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 
@@ -27,6 +26,8 @@ import "src/interfaces/IManager.sol";
  */
 contract IntegrationTestBase is Test {
   address public constant liquidation = address(0xdead);
+  uint public constant DEFAULT_DEPOSIT = 5000e18;
+  int public constant ETH_PRICE = 2000e8;
 
   Accounts accounts;
   CashAsset cash;
@@ -136,6 +137,16 @@ contract IntegrationTestBase is Test {
     vm.stopPrank();
   }
 
+  /**
+   * @dev helper to withdraw (or borrow) cash for account (from user)
+   */
+  function _withdrawCash(address user, uint acc, uint amountCash) internal {
+    uint amountUSDC = amountCash / 1e12;
+    vm.startPrank(user);
+    cash.withdraw(acc, amountUSDC, user);
+    vm.stopPrank();
+  }
+
   function _submitTrade(
     uint accA,
     IAsset assetA,
@@ -198,15 +209,32 @@ contract IntegrationTestBase is Test {
   /**
    * @dev view function to help writing integration test
    */
-  function getCashBalance(uint acc) public returns (int) {
+  function getCashBalance(uint acc) public view returns (int) {
     return accounts.getBalance(acc, cash, 0);
   }
 
   /**
    * @dev view function to help writing integration test
    */
-  function getOptionBalance(uint acc, uint96 subId) public returns (int) {
+  function getOptionBalance(uint acc, uint96 subId) public view returns (int) {
     return accounts.getBalance(acc, option, subId);
+  }
+
+  function getAccInitMargin(uint acc) public view returns (int) {
+    PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
+    return pcrm.getInitialMargin(portfolio);
+  }
+
+  function getAccMaintenanceMargin(uint acc) public view returns (int) {
+    PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
+    return pcrm.getMaintenanceMargin(portfolio);
+  }
+
+  /**
+   * @dev helper to update spot prices
+   */
+  function _updatePriceFeed(int spotPrice, uint80 roundId, uint80 answeredInRound) internal {
+    aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
   }
 
   /**
@@ -214,6 +242,7 @@ contract IntegrationTestBase is Test {
    */
   function _getDefaultRateModelParam()
     internal
+    pure
     returns (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil)
   {
     minRate = 0.06 * 1e18;
@@ -237,7 +266,7 @@ contract IntegrationTestBase is Test {
     return PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16});
   }
 
-  function _getDefaultAuctionParam() internal returns (DutchAuction.DutchAuctionParameters memory param) {
+  function _getDefaultAuctionParam() internal pure returns (DutchAuction.DutchAuctionParameters memory param) {
     param = DutchAuction.DutchAuctionParameters({
       stepInterval: 2,
       lengthOfAuction: 200,
@@ -249,7 +278,7 @@ contract IntegrationTestBase is Test {
   }
 
   /**
-   * predict the address of the next contract being deployed
+   * @dev predict the address of the next contract being deployed
    */
   function _predictAddress(address _origin, uint _nonce) public pure returns (address) {
     if (_nonce == 0x00) {

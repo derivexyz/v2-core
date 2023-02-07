@@ -48,7 +48,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     _updateFeed(aggregator, 2, 1200e18, 2);
 
-    // Lock in settlment price
+    // Lock in settlement price
     option.setSettlementPrice(expiry);
 
     // Assert settled price same as feed
@@ -74,7 +74,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     _updateFeed(aggregator, 2, 1200e18, 2);
 
-    // Lock in settlment price for callId
+    // Lock in settlement price for callId
     option.setSettlementPrice(expiry);
 
     // Assert settled price same as feed
@@ -88,60 +88,60 @@ contract UNIT_OptionAssetSettlementsTest is Test {
   }
 
   function testCalcSettlementValueITMCall() external {
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(callId));
+    (uint expiry,,) = option.getOptionDetails(uint96(callId));
 
-    // Lock in settlment price for callId at expiry above strike
+    // Lock in settlement price for callId at expiry above strike
     vm.warp(expiry);
     int spotPrice = int(strike) + 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(callId, 1e18);
+    (int payout,) = option.calcSettlementValue(callId, 1e18);
 
     // Call should profit 200
     assertEq(uint(payout), 200e18);
   }
 
   function testCalcSettlementValueOTMCall() external {
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(callId));
+    (uint expiry,,) = option.getOptionDetails(uint96(callId));
 
-    // Lock in settlment price for callId at expiry below strike
+    // Lock in settlement price for callId at expiry below strike
     vm.warp(expiry);
     int spotPrice = int(strike) - 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(callId, 1e18);
+    (int payout,) = option.calcSettlementValue(callId, 1e18);
 
     // Call should be worthless
     assertEq(uint(payout), 0);
   }
 
   function testCalcSettlementValueITMPut() external {
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(putId));
+    (uint expiry,,) = option.getOptionDetails(uint96(putId));
 
-    // Lock in settlment price for putId at expiry below strike
+    // Lock in settlement price for putId at expiry below strike
     vm.warp(expiry);
     int spotPrice = int(strike) - 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(putId, 1e18);
+    (int payout,) = option.calcSettlementValue(putId, 1e18);
 
     // Put should profit 200
     assertEq(uint(payout), 200e18);
   }
 
   function testCalcSettlementValueOTMPut() external {
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(putId));
+    (uint expiry,,) = option.getOptionDetails(uint96(putId));
 
-    // Lock in settlment price for putId at expiry above strike
+    // Lock in settlement price for putId at expiry above strike
     vm.warp(expiry);
     int spotPrice = int(strike) + 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(putId, 1e18);
+    (int payout,) = option.calcSettlementValue(putId, 1e18);
 
     // Put should profit 200
     assertEq(uint(payout), 0);
@@ -164,15 +164,15 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
   function testFuzzITMCall(int priceDiff) external {
     vm.assume(priceDiff >= 0 && priceDiff <= BIG_PRICE);
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(callId));
+    (uint expiry,,) = option.getOptionDetails(uint96(callId));
 
-    // Lock in settlment price for callId at expiry above strike
+    // Lock in settlement price for callId at expiry above strike
     vm.warp(expiry);
     int spotPrice = int(strike) + priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(callId, 1e18);
+    (int payout,) = option.calcSettlementValue(callId, 1e18);
 
     // Call should payout spot - strike
     assertEq(uint(payout), uint(spotPrice) - strike);
@@ -180,15 +180,15 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
   function testFuzzOTMCall(int priceDiff) external {
     vm.assume(priceDiff >= 0 && priceDiff <= int(strike));
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(callId));
+    (uint expiry,,) = option.getOptionDetails(uint96(callId));
 
-    // Lock in settlment price for callId at expiry below strike
+    // Lock in settlement price for callId at expiry below strike
     vm.warp(expiry);
     int spotPrice = int(strike) - priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(callId, 1e18);
+    (int payout,) = option.calcSettlementValue(callId, 1e18);
 
     // Call should be worthless
     assertEq(uint(payout), 0);
@@ -196,15 +196,15 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
   function testFuzzITMPut(int priceDiff) external {
     vm.assume(priceDiff >= 0 && priceDiff < int(strike));
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(putId));
+    (uint expiry,,) = option.getOptionDetails(uint96(putId));
 
-    // Lock in settlment price for putId at expiry below strike
+    // Lock in settlement price for putId at expiry below strike
     vm.warp(expiry);
     int spotPrice = int(strike) - priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(putId, 1e18);
+    (int payout,) = option.calcSettlementValue(putId, 1e18);
 
     // Put should be payout spot - strike
     assertEq(uint(payout), strike - uint(spotPrice));
@@ -212,15 +212,15 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
   function testFuzzOTMPut(int priceDiff) external {
     vm.assume(priceDiff >= 0 && priceDiff <= BIG_PRICE);
-    (uint expiry, uint strike,) = option.getOptionDetails(uint96(putId));
+    (uint expiry,,) = option.getOptionDetails(uint96(putId));
 
-    // Lock in settlment price for putId at expiry above strike
+    // Lock in settlement price for putId at expiry above strike
     vm.warp(expiry);
     int spotPrice = int(strike) + priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
     option.setSettlementPrice(expiry);
 
-    (int payout, bool priceSettled) = option.calcSettlementValue(putId, 1e18);
+    (int payout,) = option.calcSettlementValue(putId, 1e18);
 
     // Put should be worthless
     assertEq(uint(payout), 0);
@@ -234,7 +234,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     return feedId;
   }
 
-  function _updateFeed(MockV3Aggregator aggregator, uint80 roundId, int spotPrice, uint80 answeredInRound) internal {
-    aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
+  function _updateFeed(MockV3Aggregator _aggregator, uint80 roundId, int spotPrice, uint80 answeredInRound) internal {
+    _aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
   }
 }

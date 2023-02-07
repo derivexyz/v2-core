@@ -19,6 +19,11 @@ interface ISettlementFeed {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled);
 
+  /**
+   * @dev Get settlement price for the underlying asset
+   */
+  function settlementPrices(uint expiry) external view returns (uint price);
+
   ////////////
   // Events //
   ////////////

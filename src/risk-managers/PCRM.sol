@@ -307,8 +307,8 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param portfolio All option portfolio
    * @return expiryValue Value of assets or debt of settled options.
    */
-  function _calcSettledExpiryValue(Portfolio memory portfolio) internal pure returns (int expiryValue) {
-    uint settlementPrice = 1000e18; // todo: [Josh] integrate settlement feed
+  function _calcSettledExpiryValue(Portfolio memory portfolio) internal view returns (int expiryValue) {
+    uint settlementPrice = option.settlementPrices(portfolio.expiry);
     for (uint i; i < portfolio.strikes.length; i++) {
       Strike memory strike = portfolio.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();

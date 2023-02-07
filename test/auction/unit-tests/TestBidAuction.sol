@@ -224,6 +224,9 @@ contract UNIT_BidAuction is Test {
     (uint percentage, uint costPaid,, uint fee) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
     assertEq(costPaid, uint(bidPrice) * maxBid / 1e18);
     assertEq(fee, costPaid * 5 / 100);
+
+    // todo[Anton]: check numbers
+    assertEq(percentage, 571428571428571428); // 57% of portfolio get liquidated
   }
 
   /////////////

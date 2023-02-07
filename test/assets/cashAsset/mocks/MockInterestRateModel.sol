@@ -42,21 +42,17 @@ contract MockInterestRateModel is IInterestRateModel {
    * @notice MOCKED Function to calculate the interest using a compounded interest rate formula
    *         P_0 * e ^(rt) = Principal with accrued interest
    *
-   * @param elapsedTime Seconds since last interest accrual
-   * @param borrowRate The current borrow rate for the asset
    * @return Compounded interest rate: e^(rt) - 1
    */
-  function getBorrowInterestFactor(uint elapsedTime, uint borrowRate) external pure override returns (uint) {
+  function getBorrowInterestFactor(uint, /*_elapsedTime*/ uint /*_borrowRate*/ ) external pure override returns (uint) {
     return 0.5 * 1e18; // must be pure function
   }
 
   /**
    * @notice MOCKED Calculates the current borrow rate as a linear equation
-   * @param supply The supplied amount of stablecoin for the asset
-   * @param borrows The amount of borrows in the market
    * @return The borrow rate percentage as a mantissa
    */
-  function getBorrowRate(uint supply, uint borrows) external view returns (uint) {
+  function getBorrowRate(uint, /*supply*/ uint /*borrows*/ ) external view returns (uint) {
     return borrowRate;
   }
 
