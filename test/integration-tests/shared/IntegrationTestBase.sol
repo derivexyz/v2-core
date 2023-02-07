@@ -242,6 +242,7 @@ contract IntegrationTestBase is Test {
    */
   function _getDefaultRateModelParam()
     internal
+    pure
     returns (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil)
   {
     minRate = 0.06 * 1e18;
@@ -265,7 +266,7 @@ contract IntegrationTestBase is Test {
     return PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16});
   }
 
-  function _getDefaultAuctionParam() internal returns (DutchAuction.DutchAuctionParameters memory param) {
+  function _getDefaultAuctionParam() internal pure returns (DutchAuction.DutchAuctionParameters memory param) {
     param = DutchAuction.DutchAuctionParameters({
       stepInterval: 2,
       lengthOfAuction: 200,

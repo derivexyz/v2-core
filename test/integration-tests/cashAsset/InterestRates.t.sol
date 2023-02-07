@@ -64,10 +64,9 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
 
     cash.accrueInterest();
 
+    //todo: check exact numbers
     assertGt(cash.borrowIndex(), 1e18);
     assertGt(cash.supplyIndex(), 1e18);
-
-    int initMargin = getAccInitMargin(charlieAcc);
   }
 
   function testCannotBorrowAgainstOTMCall() public {
