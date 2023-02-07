@@ -309,12 +309,7 @@ contract CashAsset is ICashAsset, Owned {
     // Need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    // Update totalSupply and totalBorrow amounts only if the call is not from manager
-    // If the call is from manager, the call is triggered from managerAdjustment hook
-    // from manager during settlement.
-    if (caller != address(manager)) {
-      _updateSupplyAndBorrow(preBalance, finalBalance);
-    }
+    _updateSupplyAndBorrow(preBalance, finalBalance);
   }
 
   /**
@@ -459,10 +454,7 @@ contract CashAsset is ICashAsset, Owned {
    * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
-    uint totalCash = totalSupply + accruedSmFees - totalBorrow;
-
-    // If netSettledCash > 0, we subtract from supply, if < 0 we add amount to supply
-    totalCash = (totalCash.toInt256() - netSettledCash).toUint256();
+    uint totalCash = (int(totalSupply) + int(accruedSmFees) - int(totalBorrow) - netSettledCash).toUint256();
 
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);

@@ -24,6 +24,8 @@ contract MockCashAssetWithExchangeRate is MockAsset {
 
   constructor(IAccounts _accounts, IERC20Metadata _stableAsset) MockAsset(_stableAsset, _accounts, true) {}
 
+  int public netSettledCash;
+
   function calculateBalanceWithInterest(uint accountId) external view returns (int balance) {
     return mockedBalanceWithInterest[accountId];
   }
@@ -38,6 +40,10 @@ contract MockCashAssetWithExchangeRate is MockAsset {
 
   function setMockedExchangeRate(uint rate) external {
     mockExchangeRate = rate;
+  }
+
+  function updateSettledCash(int amountCash) external {
+    netSettledCash += amountCash;
   }
 
   function testMock() public {}

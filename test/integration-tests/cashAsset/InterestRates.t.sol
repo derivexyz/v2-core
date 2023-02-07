@@ -20,10 +20,16 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
 
   function setUp() public {
     _setupIntegrationTestComplete();
+
+    vm.prank(alice);
+    accounts.setApprovalForAll(address(this), true);
+
+    vm.prank(bob);
+    accounts.setApprovalForAll(address(this), true);
   }
 
   function testBorrowAgainstITMCall() public {
-    // Alice and Bob deposite cash into the system
+    // Alice and Bob deposit cash into the system
     aliceAcc = accounts.createAccount(alice, IManager(pcrm));
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
 
@@ -40,7 +46,6 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     // Charlie borrows money against his ITM Call
     uint callExpiry = block.timestamp + 4 weeks;
     uint callStrike = 1200e8;
-
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({

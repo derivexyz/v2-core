@@ -259,7 +259,7 @@ contract PCRM is BaseManager, IManager, Owned {
    */
   function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal view {
     int margin = _calcMargin(portfolio, marginType);
-    if (margin < 0) revert PCRM_MarginRequirementNotMet();
+    if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
   }
 
   /**
@@ -387,7 +387,7 @@ contract PCRM is BaseManager, IManager, Owned {
       ? strikes.forwards.multiplyDecimal(-markedDownPutValue)
       : strikes.forwards.multiplyDecimal(markedDownCallValue);
 
-    // Get BlackSchole price.
+    // Get BlackScholes price.
     (uint callValue, uint putValue) = (0, 0);
     if (strikes.calls != 0 || strikes.puts != 0) {
       (callValue, putValue) = Black76.prices(
@@ -520,7 +520,7 @@ contract PCRM is BaseManager, IManager, Owned {
 
   error PCRM_InvalidBidPortion();
 
-  error PCRM_MarginRequirementNotMet();
+  error PCRM_MarginRequirementNotMet(int initMargin);
 
   error PCRM_SingleExpiryPerAccount();
 }
