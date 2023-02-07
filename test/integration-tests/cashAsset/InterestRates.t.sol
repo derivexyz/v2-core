@@ -26,61 +26,100 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
 
     vm.prank(bob);
     accounts.setApprovalForAll(address(this), true);
+    
+    vm.prank(charlie);
+    accounts.setApprovalForAll(address(this), true);
   }
 
   function testBorrowAgainstITMCall() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, IManager(pcrm));
+    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
 
-    bobAcc = accounts.createAccount(bob, IManager(pcrm));
+    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
-    charlieAcc = accounts.createAccount(charlie, IManager(pcrm));
-    _depositCash(address(charlie), charlieAcc, DEFAULT_DEPOSIT);
-
-    console.logInt(accounts.getBalance(aliceAcc, cash, 0));
-    console.logInt(accounts.getBalance(bobAcc, cash, 0));
-    console.logInt(accounts.getBalance(charlieAcc, cash, 0));
+    charlieAcc = accounts.createAccount(charlie, pcrm);
 
     // Charlie borrows money against his ITM Call
     uint callExpiry = block.timestamp + 4 weeks;
-    uint callStrike = 1200e8;
+    uint callStrike = 200e8;
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
-    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
-      fromAcc: aliceAcc,
-      toAcc: charlieAcc,
-      asset: IAsset(option),
-      subId: callId,
-      amount: 1e18,
-      assetData: ""
-    });
-
-    console.log("--- ABOUT TO SUBMIT TRRANSFER HERE ---");
-    _managerMintOption(charlieAcc, callId, 1e18);
-    console.log("--- AFTER TRRANSFER HERE ---");
+    _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 0);
     
     assertEq(cash.borrowIndex(), 1e18);
     assertEq(cash.supplyIndex(), 1e18);
 
     // Borrow against the option
-    _withdrawCash(charlie, charlieAcc, DEFAULT_DEPOSIT);
+    _withdrawCash(charlie, charlieAcc, 500e18);
 
-    vm.warp(callExpiry);
-    _updatePriceFeed(2100e18, 2,2);
-    option.setSettlementPrice(callExpiry);
-    (int payout, bool settled) = option.calcSettlementValue(callId, 1e18);
-    console2.log("Payout is", payout/1e18);
-    console2.log("Settle is", settled);
-    // _withdrawCash(charlie, charlieAcc, 1e8);
+    console2.log("Charlie", accounts.getBalance(charlieAcc, cash, 0));
+    // Charlie balance should be negative
+    assertLt(accounts.getBalance(charlieAcc, cash, 0), 0);
 
-    // console.logInt(accounts.getBalance(aliceAcc, cash, 0));
-    // console.logInt(accounts.getBalance(bobAcc, cash, 0));
-    // console.logInt(accounts.getBalance(charlieAcc, cash, 0));
+    vm.warp(block.timestamp + 1 weeks);
+    cash.accrueInterest();
 
+    assertGt(cash.borrowIndex(), 1e18);
+    assertGt(cash.supplyIndex(), 1e18);
+  }
 
-    // console.logInt(accounts.getBalance(aliceAcc, option, callId));
-    // console.logInt(accounts.getBalance(charlieAcc, option, callId));
+  // function testCannotBorrowAgainstOTMCall() public {
+  //   // Alice and Bob deposit cash into the system
+  //   aliceAcc = accounts.createAccount(alice, pcrm);
+  //   _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
+
+  //   bobAcc = accounts.createAccount(bob, pcrm);
+  //   _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
+
+  //   charlieAcc = accounts.createAccount(charlie, pcrm);
+
+  //   // OTM Call
+  //   uint callExpiry = block.timestamp + 1;
+  //   uint callStrike = 5000e8;
+  //   uint callId = option.getSubId(callExpiry, callStrike, true);
+
+  //    _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 50e18);
+    
+  //   assertEq(cash.borrowIndex(), 1e18);
+  //   assertEq(cash.supplyIndex(), 1e18);
+
+  //   // Fails to borrow against the OTM call
+  //    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector,-500e18));
+  //   _withdrawCash(charlie, charlieAcc, 500e18);
+  // }
+
+  function testBorrowAgainstITMPut() public {
+    // Alice and Bob deposit cash into the system
+    aliceAcc = accounts.createAccount(alice, pcrm);
+    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
+
+    bobAcc = accounts.createAccount(bob, pcrm);
+    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
+
+    charlieAcc = accounts.createAccount(charlie, pcrm);
+
+    // Charlie borrows money against his ITM Put
+    uint putExpiry = block.timestamp + 4 weeks;
+    uint putStrike = 7000e8;
+    uint96 putId = option.getSubId(putExpiry, putStrike, true);
+
+    _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 50e18);
+    
+    assertEq(cash.borrowIndex(), 1e18);
+    assertEq(cash.supplyIndex(), 1e18);
+
+    // Borrow against the option
+    _withdrawCash(charlie, charlieAcc, 50e18);
+
+    // Charlie balance should be -1000
+    assertLt(accounts.getBalance(charlieAcc, cash, 0), 0);
+
+    vm.warp(block.timestamp + 1 weeks);
+    cash.accrueInterest();
+
+    assertGt(cash.borrowIndex(), 1e18);
+    assertGt(cash.supplyIndex(), 1e18);
   }
 }

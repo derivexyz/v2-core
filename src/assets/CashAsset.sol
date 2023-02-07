@@ -11,7 +11,7 @@ import "src/libraries/ConvertDecimals.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
-import "forge-std/console2.sol";
+
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit USDC and credit this cash asset into their accounts.
@@ -197,8 +197,6 @@ contract CashAsset is ICashAsset, Owned {
 
     // transfer the asset out after potentially needing to calculate exchange rate
     stableAsset.safeTransfer(recipient, stableAmount);
-
-    console2.log("Withdraw asset adjustment");
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,

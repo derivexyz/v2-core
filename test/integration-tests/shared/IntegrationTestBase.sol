@@ -83,7 +83,6 @@ contract IntegrationTestBase is Test {
     // nonce: 5 => Deploy CashAsset
     address auctionAddr = _predictAddress(address(this), 8);
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
-    cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
     // nonce: 6 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
@@ -101,7 +100,6 @@ contract IntegrationTestBase is Test {
     // nonce: 9 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
-    assertEq(securityModule.accountId(), smAcc);
     assertEq(securityModule.accountId(), smAcc);
   }
 

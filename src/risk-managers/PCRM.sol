@@ -22,7 +22,6 @@ import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 
 import "./BaseManager.sol";
-
 import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
@@ -146,7 +145,6 @@ contract PCRM is BaseManager, IManager, Owned {
     public
     override
   {
-    console2.log("--- PCRM manager handle adjustment ---");
     // todo [Josh]: whitelist check
 
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
@@ -259,6 +257,7 @@ contract PCRM is BaseManager, IManager, Owned {
    */
   function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal view {
     int margin = _calcMargin(portfolio, marginType);
+    console2.log("margine is", margin/1e18);
     if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
   }
 
@@ -276,7 +275,6 @@ contract PCRM is BaseManager, IManager, Owned {
     uint128 spotUp;
     uint128 spotDown;
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
-    console2.log("PCRM spot is", spot);
     uint staticDiscount;
     if (marginType == MarginType.INITIAL) {
       spotUp = spot.multiplyDecimal(shocks.spotUpInitial).toUint128();
@@ -300,11 +298,8 @@ contract PCRM is BaseManager, IManager, Owned {
       margin = _calcSettledExpiryValue(portfolio);
     }
 
-    console2.log("Portfolio strikes", portfolio.strikes.length);
-    console2.log("margin before cash", margin);
     // add cash
     margin += portfolio.cash;
-    console2.log("margin afterr cash", margin);
   }
 
   /**
@@ -351,9 +346,6 @@ contract PCRM is BaseManager, IManager, Owned {
 
       spotDownValue += _calcLiveStrikeValue(portfolio.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
     }
-    console2.log("SpotUpValue", spotUpValue);
-    console2.log("SpotDownVal", spotDownValue);
-
 
     // return the worst of two scenarios
     return SignedMath.min(spotUpValue, spotDownValue);
