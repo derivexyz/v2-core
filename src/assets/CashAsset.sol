@@ -284,7 +284,7 @@ contract CashAsset is ICashAsset, Owned {
     uint, /*tradeId*/
     int preBalance,
     IManager manager,
-    address caller
+    address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {

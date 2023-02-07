@@ -48,7 +48,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     _updateFeed(aggregator, 2, 1200e18, 2);
 
-    // Lock in settlment price
+    // Lock in settlement price
     option.setSettlementPrice(expiry);
 
     // Assert settled price same as feed

@@ -209,26 +209,25 @@ contract IntegrationTestBase is Test {
   /**
    * @dev view function to help writing integration test
    */
-  function getCashBalance(uint acc) public returns (int) {
+  function getCashBalance(uint acc) public view returns (int) {
     return accounts.getBalance(acc, cash, 0);
   }
 
   /**
    * @dev view function to help writing integration test
    */
-  function getOptionBalance(uint acc, uint96 subId) public returns (int) {
+  function getOptionBalance(uint acc, uint96 subId) public view returns (int) {
     return accounts.getBalance(acc, option, subId);
   }
 
-  /**
-   * @dev helper to mint options to an account
-   */
-  function _managerMintOption(uint toAcc, uint subId, int amount) internal {
-    vm.startPrank(address(pcrm));
-    accounts.managerAdjustment(
-      AccountStructs.AssetAdjustment({acc: toAcc, asset: option, subId: subId, amount: amount, assetData: ""})
-    );
-    vm.stopPrank();
+  function getAccInitMargin(uint acc) public view returns (int) {
+    PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
+    return pcrm.getInitialMargin(portfolio);
+  }
+
+  function getAccMaintenanceMargin(uint acc) public view returns (int) {
+    PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
+    return pcrm.getMaintenanceMargin(portfolio);
   }
 
   /**

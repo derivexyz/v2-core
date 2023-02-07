@@ -20,6 +20,9 @@ contract MockOption is IOption {
   // subId => settled or not
   mapping(uint => bool) mockedSubSettled;
 
+  // expiry => price
+  mapping(uint => uint) mockedExpiryPrice;
+
   mapping(uint => uint) public openInterest;
 
   // mocked state to test reverting calls from bad manager
@@ -83,6 +86,14 @@ contract MockOption is IOption {
 
   function calcSettlementValue(uint subId, int /*balance*/ ) external view returns (int payout, bool priceSettled) {
     return (mockedTotalSettlementValue[subId], mockedSubSettled[subId]);
+  }
+
+  function setMockedExpiryPrice(uint expiry, uint price) external {
+    mockedExpiryPrice[expiry] = price;
+  }
+
+  function settlementPrices(uint expiry) external view returns (uint price) {
+    return mockedExpiryPrice[expiry];
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.

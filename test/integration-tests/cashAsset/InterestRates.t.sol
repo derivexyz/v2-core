@@ -43,7 +43,7 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
 
     // Charlie borrows money against his ITM Call
     uint callExpiry = block.timestamp + 4 weeks;
-    uint callStrike = 200e8;
+    uint callStrike = 200e18;
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
     _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 0);
@@ -54,41 +54,45 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     // Borrow against the option
     _withdrawCash(charlie, charlieAcc, 500e18);
 
-    console2.log("Charlie", accounts.getBalance(charlieAcc, cash, 0));
     // Charlie balance should be negative
-    assertLt(accounts.getBalance(charlieAcc, cash, 0), 0);
+    assertLt(getCashBalance(charlieAcc), 0);
+    // todo: check why this number
+    assertEq(getCashBalance(charlieAcc), -502e18);
 
     vm.warp(block.timestamp + 1 weeks);
+    _setSpotPriceE18(2000e18); // after 1 week jump, need to set time again otherwise it revert with "Stale Spot"
+
     cash.accrueInterest();
 
     assertGt(cash.borrowIndex(), 1e18);
     assertGt(cash.supplyIndex(), 1e18);
+
+    int initMargin = getAccInitMargin(charlieAcc);
   }
 
-  // function testCannotBorrowAgainstOTMCall() public {
-  //   // Alice and Bob deposit cash into the system
-  //   aliceAcc = accounts.createAccount(alice, pcrm);
-  //   _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
+  function testCannotBorrowAgainstOTMCall() public {
+    // Alice and Bob deposit cash into the system
+    aliceAcc = accounts.createAccount(alice, pcrm);
+    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
 
-  //   bobAcc = accounts.createAccount(bob, pcrm);
-  //   _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
+    bobAcc = accounts.createAccount(bob, pcrm);
+    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
-  //   charlieAcc = accounts.createAccount(charlie, pcrm);
+    charlieAcc = accounts.createAccount(charlie, pcrm);
+    _depositCash(address(charlie), charlieAcc, 2e18); // deposit $2 to pay init OI fee
 
-  //   // OTM Call
-  //   uint callExpiry = block.timestamp + 1;
-  //   uint callStrike = 5000e8;
-  //   uint callId = option.getSubId(callExpiry, callStrike, true);
+    // OTM Call
+    uint callExpiry = block.timestamp + 1;
+    uint callStrike = 4000e18;
+    uint callId = option.getSubId(callExpiry, callStrike, true);
 
-  //    _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 50e18);
+    // charlie pays 0 for the call
+    _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 0);
 
-  //   assertEq(cash.borrowIndex(), 1e18);
-  //   assertEq(cash.supplyIndex(), 1e18);
-
-  //   // Fails to borrow against the OTM call
-  //    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector,-500e18));
-  //   _withdrawCash(charlie, charlieAcc, 500e18);
-  // }
+    // Fails to borrow against the OTM call (charlie now has net init margin == 0)
+    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, -50e18));
+    _withdrawCash(charlie, charlieAcc, 50e18);
+  }
 
   function testBorrowAgainstITMPut() public {
     // Alice and Bob deposit cash into the system
@@ -102,8 +106,8 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
 
     // Charlie borrows money against his ITM Put
     uint putExpiry = block.timestamp + 4 weeks;
-    uint putStrike = 7000e8;
-    uint96 putId = option.getSubId(putExpiry, putStrike, true);
+    uint putStrike = 3000e18;
+    uint96 putId = option.getSubId(putExpiry, putStrike, false);
 
     _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 50e18);
 
