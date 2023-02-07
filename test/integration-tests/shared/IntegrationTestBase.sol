@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 
@@ -104,10 +105,12 @@ contract IntegrationTestBase is Test {
   function _finishContractSetups() internal {
     // whitelist setting in cash asset
     cash.setWhitelistManager(address(pcrm), true);
-    //todo: pcrm
 
+    // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
     pcrm.setFeeRecipient(pcrmFeeAcc);
+
+    pcrm.setParams(_getDefaultPCRMShocks(), _getDefaultPCRMDiscount());
 
     // add aggregator to feed
     aggregator = new MockV3Aggregator(8, 2000e8);
@@ -169,6 +172,30 @@ contract IntegrationTestBase is Test {
   }
 
   /**
+   * @dev set current price of aggregator
+   * @param price price in 18 decimals
+   */
+  function _setSpotPriceE18(int price) internal {
+    uint80 round = 1;
+    int answerE8 = price / 1e10;
+    aggregator.updateRoundData(round, answerE8, block.timestamp, block.timestamp, round);
+  }
+
+  /**
+   * @dev set current price of aggregator, and report as settlement price at {expiry}
+   * @param price price in 18 decimals
+   */
+  function _setSpotPriceAndSubmitForExpiry(int price, uint expiry) internal {
+    _setSpotPriceE18(price);
+    option.setSettlementPrice(expiry);
+  }
+
+  function _assertCashSolvent() internal {
+    // exchange rate should be >= 1
+    assertGe(cash.getCashToStableExchangeRate(), 1e18);
+  }
+
+  /**
    * @dev view function to help writing integration test
    */
   function getCashBalance(uint acc) public returns (int) {
@@ -193,6 +220,21 @@ contract IntegrationTestBase is Test {
     rateMultiplier = 0.2 * 1e18;
     highRateMultiplier = 0.4 * 1e18;
     optimalUtil = 0.6 * 1e18;
+  }
+
+  function _getDefaultPCRMShocks() internal pure returns (PCRM.Shocks memory) {
+    return PCRM.Shocks({
+      spotUpInitial: 120e16,
+      spotDownInitial: 80e16,
+      spotUpMaintenance: 110e16,
+      spotDownMaintenance: 90e16,
+      vol: 300e16,
+      rfr: 10e16
+    });
+  }
+
+  function _getDefaultPCRMDiscount() internal pure returns (PCRM.Discounts memory) {
+    return PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16});
   }
 
   function _getDefaultAuctionParam() internal returns (DutchAuction.DutchAuctionParameters memory param) {

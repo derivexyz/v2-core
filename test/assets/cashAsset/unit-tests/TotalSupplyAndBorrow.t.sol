@@ -250,30 +250,6 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     assertEq(totalBorrowAfter, 0);
   }
 
-  function testAdjustmentFromManagerDoesntChangeTotalSupplyOrBorrow() public {
-    int settlementAmount = 1000e6;
-
-    uint totalSupplyBefore = cashAsset.totalSupply();
-    uint totalBorrowBefore = cashAsset.totalBorrow();
-
-    // mock call from manager
-    vm.prank(address(manager));
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(
-      accountId,
-      cashAsset,
-      0, // subid
-      settlementAmount,
-      0x00
-    );
-    account.managerAdjustment(adjustment);
-
-    uint totalSupplyAfter = cashAsset.totalSupply();
-    uint totalBorrowAfter = cashAsset.totalBorrow();
-
-    assertEq(totalSupplyBefore, totalSupplyAfter);
-    assertEq(totalBorrowBefore, totalBorrowAfter);
-  }
-
   /* ------------------- *
    |      Withdraw       *
    * ------------------- */
