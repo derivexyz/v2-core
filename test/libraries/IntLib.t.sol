@@ -19,16 +19,6 @@ contract IntLibTester {
     uint res = IntLib.absMin(a, b);
     return res;
   }
-
-  function min(int a, int b) external pure returns (int res) {
-    int res = IntLib.min(a, b);
-    return res;
-  }
-
-  function max(int a, int b) external pure returns (int res) {
-    int res = IntLib.max(a, b);
-    return res;
-  }
 }
 
 contract IntLibTest is Test {
@@ -74,17 +64,5 @@ contract IntLibTest is Test {
     assertEq(tester.absMin(-200, -100), 100);
 
     assertEq(tester.absMin(200, 100), 100);
-  }
-
-  function testMin() public {
-    assertEq(tester.min(0, -100), -100);
-    assertEq(tester.min(-200, -100), -200);
-    assertEq(tester.min(200, 100), 100);
-  }
-
-  function testMax() public {
-    assertEq(tester.max(0, -100), 0);
-    assertEq(tester.max(-200, -100), -100);
-    assertEq(tester.max(200, 100), 200);
   }
 }

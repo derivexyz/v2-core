@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
 import "src/interfaces/IOption.sol";
@@ -157,7 +158,7 @@ contract Option is IOption, Owned {
   function _updateOI(uint subId, int preBalance, int change) internal {
     int postBalance = preBalance + change;
     openInterest[subId] =
-      (openInterest[subId].toInt256() + IntLib.max(0, postBalance) - IntLib.max(0, preBalance)).toUint256();
+      (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
   }
 
   function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)

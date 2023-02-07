@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
@@ -465,26 +466,9 @@ contract CashAsset is ICashAsset, Owned {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    if (preBalance <= 0 && finalBalance <= 0) {
-      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
-    } else if (preBalance >= 0 && finalBalance >= 0) {
-      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
-    } else if (preBalance < 0 && finalBalance > 0) {
-      totalBorrow -= (-preBalance).toUint256();
-      totalSupply += finalBalance.toUint256();
-    } else {
-      // (preBalance > 0 && finalBalance < 0)
-      totalBorrow += (-finalBalance).toUint256();
-      totalSupply -= preBalance.toUint256();
-    }
+    totalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
+    totalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
   }
-
-  /**
-   * @dev get current account cash balance
-   */
-  // function _getStaleBalance(uint accountId) internal view returns (int balance) {
-  //   balance = accounts.getBalance(accountId, ICashAsset(address(this)), 0);
-  // }
 
   ///////////////////
   //   Modifiers   //

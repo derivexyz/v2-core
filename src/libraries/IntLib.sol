@@ -29,18 +29,4 @@ library IntLib {
     uint absB = abs(b);
     absMinAmount = (absA <= absB) ? absA : absB;
   }
-
-  /**
-   * @notice Return the max of 2 integer
-   */
-  function max(int a, int b) internal pure returns (int) {
-    return a > b ? a : b;
-  }
-
-  /**
-   * @notice Return the in of 2 integer
-   */
-  function min(int a, int b) internal pure returns (int) {
-    return a < b ? a : b;
-  }
 }
