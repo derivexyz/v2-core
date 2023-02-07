@@ -44,7 +44,10 @@ contract IntegrationTestBase is Test {
   uint feedId = 1;
 
   // sm account id will be 1 after setup
-  uint smAccountId = 1;
+  uint smAcc = 1;
+
+  // updatable
+  uint pcrmFeeAcc;
 
   function _setupIntegrationTestComplete() internal {
     // deployment
@@ -79,7 +82,7 @@ contract IntegrationTestBase is Test {
 
     // nonce: 5 => Deploy CashAsset
     address auctionAddr = _predictAddress(address(this), 8);
-    cash = new CashAsset(accounts, usdc, rateModel, smAccountId, auctionAddr);
+    cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
     // nonce: 6 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
@@ -97,18 +100,21 @@ contract IntegrationTestBase is Test {
     // nonce: 9 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
-    assertEq(securityModule.accountId(), smAccountId);
+    assertEq(securityModule.accountId(), smAcc);
   }
 
   function _finishContractSetups() internal {
     // whitelist setting in cash asset
     cash.setWhitelistManager(address(pcrm), true);
 
-    //todo: pcrm
-    pcrm.setFeeRecipient(smAccountId);
+    // PCRM setups
+    pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
+    pcrm.setFeeRecipient(pcrmFeeAcc);
+
+    pcrm.setParams(_getDefaultPCRMShocks(), _getDefaultPCRMDiscount());
 
     // add aggregator to feed
-    aggregator = new MockV3Aggregator(8, ETH_PRICE);
+    aggregator = new MockV3Aggregator(8, 2000e8);
     uint _feedId = feed.addFeed("ETH/USD", address(aggregator), 1 hours);
     assertEq(feedId, _feedId);
 
@@ -121,21 +127,97 @@ contract IntegrationTestBase is Test {
   /**
    * @dev helper to mint USDC and deposit cash for account (from user)
    */
-  function _depositCash(address user, uint acc, uint amount) internal {
-    usdc.mint(user, amount);
+  function _depositCash(address user, uint acc, uint amountCash) internal {
+    uint amountUSDC = amountCash / 1e12;
+    usdc.mint(user, amountUSDC);
+
     vm.startPrank(user);
     usdc.approve(address(cash), type(uint).max);
-    cash.deposit(acc, amount);
+    cash.deposit(acc, amountUSDC);
     vm.stopPrank();
   }
 
   /**
    * @dev helper to withdraw (or borrow) cash for account (from user)
    */
-  function _withdrawCash(address user, uint acc, uint amount) internal {
+  function _withdrawCash(address user, uint acc, uint amountCash) internal {
+    uint amountUSDC = amountCash / 1e12;
     vm.startPrank(user);
-    cash.withdraw(acc, amount, user);
+    cash.withdraw(acc, amountUSDC, user);
     vm.stopPrank();
+  }
+
+  function _submitTrade(
+    uint accA,
+    IAsset assetA,
+    uint96 subIdA,
+    int amountA,
+    uint accB,
+    IAsset assetB,
+    uint subIdB,
+    int amountB
+  ) internal {
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+
+    // accA transfer asset A to accB
+    transferBatch[0] = AccountStructs.AssetTransfer({
+      fromAcc: accA,
+      toAcc: accB,
+      asset: assetA,
+      subId: subIdA,
+      amount: amountA,
+      assetData: bytes32(0)
+    });
+
+    // accB transfer asset B to accA
+    transferBatch[1] = AccountStructs.AssetTransfer({
+      fromAcc: accB,
+      toAcc: accA,
+      asset: assetB,
+      subId: subIdB,
+      amount: amountB,
+      assetData: bytes32(0)
+    });
+
+    accounts.submitTransfers(transferBatch, "");
+  }
+
+  /**
+   * @dev set current price of aggregator
+   * @param price price in 18 decimals
+   */
+  function _setSpotPriceE18(int price) internal {
+    uint80 round = 1;
+    int answerE8 = price / 1e10;
+    aggregator.updateRoundData(round, answerE8, block.timestamp, block.timestamp, round);
+  }
+
+  /**
+   * @dev set current price of aggregator, and report as settlement price at {expiry}
+   * @param price price in 18 decimals
+   */
+  function _setSpotPriceAndSubmitForExpiry(int price, uint expiry) internal {
+    _setSpotPriceE18(price);
+    option.setSettlementPrice(expiry);
+  }
+
+  function _assertCashSolvent() internal {
+    // exchange rate should be >= 1
+    assertGe(cash.getCashToStableExchangeRate(), 1e18);
+  }
+
+  /**
+   * @dev view function to help writing integration test
+   */
+  function getCashBalance(uint acc) public returns (int) {
+    return accounts.getBalance(acc, cash, 0);
+  }
+
+  /**
+   * @dev view function to help writing integration test
+   */
+  function getOptionBalance(uint acc, uint96 subId) public returns (int) {
+    return accounts.getBalance(acc, option, subId);
   }
 
   /**
@@ -149,6 +231,21 @@ contract IntegrationTestBase is Test {
     rateMultiplier = 0.2 * 1e18;
     highRateMultiplier = 0.4 * 1e18;
     optimalUtil = 0.6 * 1e18;
+  }
+
+  function _getDefaultPCRMShocks() internal pure returns (PCRM.Shocks memory) {
+    return PCRM.Shocks({
+      spotUpInitial: 120e16,
+      spotDownInitial: 80e16,
+      spotUpMaintenance: 110e16,
+      spotDownMaintenance: 90e16,
+      vol: 300e16,
+      rfr: 10e16
+    });
+  }
+
+  function _getDefaultPCRMDiscount() internal pure returns (PCRM.Discounts memory) {
+    return PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16});
   }
 
   function _getDefaultAuctionParam() internal returns (DutchAuction.DutchAuctionParameters memory param) {
