@@ -31,11 +31,12 @@ contract DumbManager is MockManager {
 
   function handleAdjustment(
     uint accountId,
+    uint tradeId,
     address sender,
     AccountStructs.AssetDelta[] memory deltas,
     bytes memory data
   ) public override {
-    super.handleAdjustment(accountId, sender, deltas, data);
+    super.handleAdjustment(accountId, tradeId, sender, deltas, data);
 
     // read the value, so we calculate the SLOADs
     IAccounts(account).getAccountBalances(accountId);

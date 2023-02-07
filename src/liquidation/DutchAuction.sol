@@ -22,8 +22,8 @@ import "../libraries/IntLib.sol";
  * @notice Is used to liquidate an account that does not meet the margin requirements
  * 1. The auction is started by the risk Manager
  * 2. Bids are taken in a descending fashion until the maintenance margin
- * 3. A scalar is applied to the assets of the portfolio and are transfered to the bidder
- * 4. This continues until maintenance margin is met or until the portofolio is declared as insolvent
+ * 3. A scalar is applied to the assets of the portfolio and are transferred to the bidder
+ * 4. This continues until maintenance margin is met or until the portfolio is declared as insolvent
  *    where the security module will step into to handle the risk
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
@@ -68,14 +68,14 @@ contract DutchAuction is IDutchAuction, Owned {
     uint stepInterval;
     /// Big number: Total length of an auction in seconds
     uint lengthOfAuction;
-    /// Big number: The address of the security module
-    address securityModule;
     // Big number: portfolio modifier
     int portfolioModifier;
     // Big number: inversed modifier
     int inversePortfolioModifier;
     // Number, Amount of time between steps when the auction is insolvent
     uint secBetweenSteps;
+    // Liquidator fee rate in percentage, 1e18 = 100%
+    uint liquidatorFeeRate;
   }
 
   /// @dev AccountId => Auction for when an auction is started
@@ -84,7 +84,7 @@ contract DutchAuction is IDutchAuction, Owned {
   /// @dev The risk manager that is the parent of the dutch auction contract
   IPCRM public immutable riskManager;
 
-  /// @dev The security module that will help pay out for insolvent auctinos
+  /// @dev The security module that will help pay out for insolvent auctions
   ISecurityModule public immutable securityModule;
 
   /// @dev The cash asset address, will be used to socialize losses when there's systematic insolvency
@@ -111,16 +111,12 @@ contract DutchAuction is IDutchAuction, Owned {
    * @notice Sets the dutch Auction Parameters
    * @dev This function is used to set the parameters for the dutch auction
    * @param _parameters A struct that contains all the parameters for the dutch auction
-   * @return Documents the parameters for the dutch auction that were just set.
    */
-  function setDutchAuctionParameters(DutchAuctionParameters memory _parameters)
-    external
-    onlyOwner
-    returns (DutchAuctionParameters memory)
-  {
-    // set the parameters for the dutch auction
+  function setDutchAuctionParameters(DutchAuctionParameters memory _parameters) external onlyOwner {
+    // liquidator fee cannot be higher than 10%
+    if (_parameters.liquidatorFeeRate > 0.1e18) revert DA_InvalidParameter();
+
     parameters = _parameters;
-    return parameters;
   }
 
   /**
@@ -138,7 +134,7 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     (int upperBound, int lowerBound) = _getBounds(accountId);
-    // covers the case where an auction could start as insolvent, upperbound < 0
+    // covers the case where an auction could start as insolvent, upper bound < 0
     if (upperBound > 0) {
       _startSolventAuction(upperBound, accountId);
     } else {
@@ -154,7 +150,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
    */
   function convertToInsolventAuction(uint accountId) external {
-    // getCurentBidPrice will revert if there is no auction for accountId going on
+    // getCurrentBidPrice will revert if there is no auction for accountId going on
     if (_getCurrentBidPrice(accountId) > 0) {
       revert DA_AuctionNotEnteredInsolvency(accountId);
     }
@@ -172,10 +168,18 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @notice a user submits a bid for a particular auction
    * @dev Takes in the auction and returns the account id
-   * @param accountId the bytesId that corresponds to a particular auction
-   * @return percentOfAccount the percentOfAccount as a percentage of the portfolio that the user is willing to purchase
+   * @param accountId Account ID of the liquidated account
+   * @param bidderId Account ID of bidder, must be owned by msg.sender
+   * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
+   * @return finalPercentage Actual percentage liquidated
+   * @return cashFromBidder Amount of cash paid from bidder to liquidated account
+   * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
+   * @return fee Amount of cash paid from bidder to security module
    */
-  function bid(uint accountId, uint bidderId, uint percentOfAccount) external returns (uint) {
+  function bid(uint accountId, uint bidderId, uint percentOfAccount)
+    external
+    returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder, uint fee)
+  {
     if (percentOfAccount > DecimalMath.UNIT) {
       revert DA_AmountTooLarge(accountId, percentOfAccount);
     } else if (percentOfAccount == 0) {
@@ -189,42 +193,40 @@ contract DutchAuction is IDutchAuction, Owned {
 
     // _getCurrentBidPrice below will check if the auction is active or not
 
-    uint cashAmountFromLiquidator = 0;
-
     if (auctions[accountId].insolvent) {
+      finalPercentage = percentOfAccount;
+
       // the account is insolvent when the bid price for the account falls below zero
       // someone get paid from security module to take on the risk
-      uint amountToPay = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(percentOfAccount);
+      cashToBidder = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(finalPercentage);
       // we first ask the security module to compensate the bidder
-      uint amountPaid = securityModule.requestPayout(bidderId, amountToPay);
-
+      uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
       // if amount paid is less than we requested:
       // 1. we trigger socialize losses on cash asset
       // 2. print cash to the bidder (in cash.socializeLoss)
-      if (amountToPay > amountPaid) {
-        uint loss = amountToPay - amountPaid;
+      if (cashToBidder > amountPaid) {
+        uint loss = cashToBidder - amountPaid;
         cash.socializeLoss(loss, bidderId);
       }
     } else {
       // if the account is solvent, the bidder pays the account for a portion of the account
       uint p_max = _getMaxProportion(accountId);
-      percentOfAccount = percentOfAccount > p_max ? p_max : percentOfAccount;
-      cashAmountFromLiquidator = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(percentOfAccount); // bid * f_max
+      finalPercentage = percentOfAccount > p_max ? p_max : percentOfAccount;
+      cashFromBidder = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(finalPercentage); // bid * f_max
     }
 
     // risk manager transfers portion of the account to the bidder
-    // liquidator pays "cashAmountFromLiquidator"
-    riskManager.executeBid(accountId, bidderId, percentOfAccount, cashAmountFromLiquidator);
+    // liquidator pays "cashFromLiquidator" to accountId
+    // liquidator pays "fee" to security module
+    fee = cashFromBidder.multiplyDecimal(parameters.liquidatorFeeRate);
+    riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
-    emit Bid(accountId, bidderId, block.timestamp);
+    emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
     // terminating the auction if the initial margin is positive
-    // This has to be checked after the scailing
     if (riskManager.getInitialMargin(accountId) >= 0) {
       _terminateAuction(accountId);
     }
-
-    return percentOfAccount;
   }
 
   /**
@@ -250,7 +252,7 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @notice This function can only be used for when the auction is insolvent and is a safety mechanism for
    * if the network is down for rpc provider is unable to submit requests to sequencer, potentially resulting
-   * massive insolvency due to bids failling to v_lower.
+   * massive insolvency due to bids falling to v_lower.
    * @dev This is to prevent an auction falling all the way through if a provider or the network goes down
    * @param accountId the accountId that relates to the auction that is being stepped
    * @return uint the step that the auction is on
@@ -294,7 +296,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function getMaxProportion(uint accountId) external returns (uint) {
+  function getMaxProportion(uint accountId) external view returns (uint) {
     return _getMaxProportion(accountId);
   }
 
@@ -335,7 +337,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function _getMaxProportion(uint accountId) internal returns (uint) {
+  function _getMaxProportion(uint accountId) internal view returns (uint) {
     int initialMargin = riskManager.getInitialMargin(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
@@ -418,7 +420,7 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
-   * @notice Function to invert an aribtary portfolio
+   * @notice Function to invert an arbitrary portfolio
    * @dev Inverted portfolio required for the upper bound calculation
    * @param portfolio The portfolio to invert
    */
@@ -443,18 +445,19 @@ contract DutchAuction is IDutchAuction, Owned {
     }
 
     if (auction.insolvent) {
-      // @invariant: if insolvent, bids should aways be negative
+      // @invariant: if insolvent, bids should always be negative
       uint numSteps = auction.stepInsolvent;
       return 0 - (auction.dv * numSteps).toInt256();
     } else {
-      // @invariant: if solvent, bids should aways be postiive
+      // @invariant: if solvent, bids should always be positive
       if (block.timestamp > auction.startTime + parameters.lengthOfAuction) {
         revert DA_SolventAuctionEnded();
       }
 
       int upperBound = auction.upperBound;
-      int bid = upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
-      return bid;
+      int bidPrice =
+        upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
+      return bidPrice;
     }
   }
 }

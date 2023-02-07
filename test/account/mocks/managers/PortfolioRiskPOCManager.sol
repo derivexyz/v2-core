@@ -175,7 +175,10 @@ contract PortfolioRiskPOCManager is Owned, IManager {
   ////
   // Views
 
-  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory) public override {
+  function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AccountStructs.AssetDelta[] memory, bytes memory)
+    public
+    override
+  {
     assessRisk(accountId, account.getAccountBalances(accountId));
   }
 
@@ -213,7 +216,6 @@ contract PortfolioRiskPOCManager is Owned, IManager {
           scenarioValue += int(shockedSpot).multiplyDecimal(assetBalance.balance);
         } else if (assetBalance.asset == IAsset(quoteAsset)) {
           scenarioValue += assetBalance.balance;
-          // console2.log("added value", uint(assetBalance.balance));
         } else if (assetBalance.asset == IAsset(lending)) {
           // placeholder for lending asset
           scenarioValue += freshLendingBalance;

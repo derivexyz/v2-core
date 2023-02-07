@@ -34,6 +34,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     account.approve(address(this), bobAcc);
     vm.prank(alice);
     account.approve(address(this), aliceAcc);
+    uint lastTrade = account.lastTradeId();
 
     int usdcAmount = 1e18;
     int coolAmount = 2e18;
@@ -77,6 +78,8 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(address(bobBalances[1].asset), address(usdcAsset));
     assertEq(bobBalances[1].subId, 0);
     assertEq(bobBalances[1].balance, usdcAmount);
+
+    assertEq(account.lastTradeId(), lastTrade + 1);
   }
 
   function testCannotSubmitTradesWithMoreThan100Deltas() public {
@@ -104,7 +107,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
 
   /**
    * =================================================
-   * test  hook data pass to Manager.handleAdjustment |
+   * test hook data pass to Manager.handleAdjustment |
    * =================================================
    */
 
@@ -120,6 +123,8 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     account.approve(address(this), aliceAcc);
 
     // start recording triggers
+    uint lastTrade = account.lastTradeId();
+
     dumbManager.setLogAdjustmentTriggers(true);
 
     int amount = 1e18;
@@ -201,6 +206,8 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     assertEq(dumbManager.accAssetAdjustmentDelta(aliceAcc, address(coolAsset), uint96(tokenSubId)), 0);
     assertEq(dumbManager.accAssetAdjustmentDelta(thisAcc, address(coolAsset), uint96(tokenSubId)), 0);
     assertEq(dumbManager.accAssetAdjustmentDelta(bobAcc, address(coolAsset), uint96(tokenSubId)), 0);
+
+    assertEq(dumbManager.recordedTradeId(), lastTrade + 1);
   }
 
   /**
@@ -248,9 +255,9 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
   }
 
   /**
-   * =========================================================
-   * tests for call flow rom Asset => Account.adjustBalance()  |
-   * ========================================================= *
+   * ===========================================================
+   * tests for call flow from Asset => Account.adjustBalance()  |
+   * ========================================================== *
    */
 
   function testCanAdjustBalanceFromAsset() public {

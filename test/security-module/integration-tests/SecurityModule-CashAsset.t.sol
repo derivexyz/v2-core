@@ -42,10 +42,10 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
     // todo: cleanup
     uint minRate = 0.06 * 1e18;
-    uint rateMultipler = 0.2 * 1e18;
-    uint highRateMultipler = 0.4 * 1e18;
+    uint rateMultiplier = 0.2 * 1e18;
+    uint highRateMultiplier = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
-    rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // need to predict this
     uint smAccountId;
@@ -86,13 +86,9 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
     uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
 
-    uint usdcBefore = usdc.balanceOf(address(this));
     securityModule.withdraw(sharesToWithdraw, address(this));
     uint sharesLeft = securityModule.balanceOf(address(this));
     assertEq(sharesLeft, sharesToWithdraw); // 50% shares remaining
-
-    // uint usdcAfter = usdc.balanceOf(address(this));
-    // assertEq(usdcAfter - usdcBefore, depositAmount / 2);
   }
 
   // test the numbers increased when we have fee cut on SM

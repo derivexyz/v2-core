@@ -26,12 +26,12 @@ contract InterestRateModel is IInterestRateModel {
   uint public immutable minRate;
 
   ///@dev The multiplier of utilization rate that gives the slope of the interest rate as a mantissa
-  uint public immutable rateMultipler;
+  uint public immutable rateMultiplier;
 
   ///@dev The multiplier after hitting the optimal utilization point
-  uint public immutable highRateMultipler;
+  uint public immutable highRateMultiplier;
 
-  ///@dev The utilization point at which the highRateMultipler is applied, represented as a mantissa
+  ///@dev The utilization point at which the highRateMultiplier is applied, represented as a mantissa
   uint public immutable optimalUtil;
 
   ////////////////////////
@@ -41,21 +41,21 @@ contract InterestRateModel is IInterestRateModel {
   /**
    * @notice Construct an interest rate model
    * @param _minRate The approximate target base APR
-   * @param _rateMultipler The rate of increase in interest rate wrt utilization
-   * @param _highRateMultipler The multiplier after hitting a specified utilization point
-   * @param _optimalUtil The utilization point at which the highRateMultipler is applied
+   * @param _rateMultiplier The rate of increase in interest rate wrt utilization
+   * @param _highRateMultiplier The multiplier after hitting a specified utilization point
+   * @param _optimalUtil The utilization point at which the highRateMultiplier is applied
    */
-  constructor(uint _minRate, uint _rateMultipler, uint _highRateMultipler, uint _optimalUtil) {
+  constructor(uint _minRate, uint _rateMultiplier, uint _highRateMultiplier, uint _optimalUtil) {
     if (_minRate > 1e18) revert IRM_ParameterMustBeLessThanOne(_minRate);
-    if (_rateMultipler > 1e18) revert IRM_ParameterMustBeLessThanOne(_rateMultipler);
-    if (_highRateMultipler > 1e18) revert IRM_ParameterMustBeLessThanOne(_highRateMultipler);
+    if (_rateMultiplier > 1e18) revert IRM_ParameterMustBeLessThanOne(_rateMultiplier);
+    if (_highRateMultiplier > 1e18) revert IRM_ParameterMustBeLessThanOne(_highRateMultiplier);
     if (_optimalUtil > 1e18) revert IRM_ParameterMustBeLessThanOne(_optimalUtil);
     minRate = _minRate;
-    rateMultipler = _rateMultipler;
-    highRateMultipler = _highRateMultipler;
+    rateMultiplier = _rateMultiplier;
+    highRateMultiplier = _highRateMultiplier;
     optimalUtil = _optimalUtil;
 
-    emit InterestRateParamsSet(_minRate, _rateMultipler, _highRateMultipler, _optimalUtil);
+    emit InterestRateParamsSet(_minRate, _rateMultiplier, _highRateMultiplier, _optimalUtil);
   }
 
   ////////////////////////
@@ -85,11 +85,11 @@ contract InterestRateModel is IInterestRateModel {
     uint util = _getUtilRate(supply, borrows);
 
     if (util <= optimalUtil) {
-      return util.multiplyDecimal(rateMultipler) + minRate;
+      return util.multiplyDecimal(rateMultiplier) + minRate;
     } else {
-      uint normalRate = optimalUtil.multiplyDecimal(rateMultipler) + minRate;
+      uint normalRate = optimalUtil.multiplyDecimal(rateMultiplier) + minRate;
       uint excessUtil = util - optimalUtil;
-      return excessUtil.multiplyDecimal(highRateMultipler) + normalRate;
+      return excessUtil.multiplyDecimal(highRateMultiplier) + normalRate;
     }
   }
 

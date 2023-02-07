@@ -9,7 +9,7 @@ import "../../../src/interfaces/IAsset.sol";
 contract MockSM is ISecurityModule {
   IAccounts public immutable accounts;
 
-  uint public smAccountId;
+  uint public accountId;
 
   int public smCashBalance;
 
@@ -21,7 +21,7 @@ contract MockSM is ISecurityModule {
   }
 
   function createAccountForSM(IManager _manager) external {
-    smAccountId = accounts.createAccount(address(this), _manager);
+    accountId = accounts.createAccount(address(this), _manager);
   }
 
   function mockBalance(int bal) external {
@@ -38,7 +38,7 @@ contract MockSM is ISecurityModule {
     }
 
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
-      fromAcc: smAccountId,
+      fromAcc: accountId,
       toAcc: targetAccount,
       asset: cash,
       subId: 0,

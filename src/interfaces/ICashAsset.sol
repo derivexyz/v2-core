@@ -23,7 +23,7 @@ interface ICashAsset is IAsset {
   /**
    * @notice Liquidation module can report loss when there is insolvency.
    *         This function will "print" the amount of cash to the target account
-   *         and socilize the loss to everyone in the system
+   *         and socialize the loss to everyone in the system
    *         this will result in turning on withdraw fee if the contract is indeed insolvent
    * @param lossAmountInCash Total amount of cash loss
    * @param accountToReceive Account to receive the new printed amount
@@ -41,6 +41,13 @@ interface ICashAsset is IAsset {
    *      this should always be equal to 1, unless we have an insolvency
    */
   function getCashToStableExchangeRate() external view returns (uint);
+
+  /**
+   * @notice Allows whitelisted manager to adjust netSettledCash
+   * @dev Required to track printed cash for asymmetric settlements
+   * @param amountCash Amount of cash printed or burned
+   */
+  function updateSettledCash(int amountCash) external;
 
   ////////////////
   //   Events   //
@@ -63,6 +70,9 @@ interface ICashAsset is IAsset {
 
   /// @dev emitted when a user withdraws from an account
   event Withdraw(uint accountId, address recipient, uint amountCashBurn, uint stableAssetWidrawn);
+
+  /// @dev Emitted when asymmetric print/burn occurs for settlement
+  event SettledCashUpdated(int amountChanged, int currentSettledCash);
 
   /// @dev emitted when withdraw fee is enabled
   ///      this would imply there is an insolvency and loss is applied to all cash holders

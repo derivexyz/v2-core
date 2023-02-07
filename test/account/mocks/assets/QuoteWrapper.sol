@@ -59,12 +59,13 @@ contract QuoteWrapper is IAsset, Owned {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, int preBal, IManager riskModel, address)
-    external
-    view
-    override
-    returns (int finalBalance, bool needAllowance)
-  {
+  function handleAdjustment(
+    AccountStructs.AssetAdjustment memory adjustment,
+    uint,
+    int preBal,
+    IManager riskModel,
+    address
+  ) external view override returns (int finalBalance, bool needAllowance) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
     return (preBal + adjustment.amount, adjustment.amount < 0);
   }

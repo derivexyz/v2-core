@@ -9,6 +9,8 @@ import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IOption.sol";
+import "src/interfaces/ISecurityModule.sol";
 
 import "src/assets/Option.sol";
 
@@ -19,6 +21,8 @@ import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 
+import "./BaseManager.sol";
+
 import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
@@ -26,7 +30,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PCRM is IManager, Owned {
+contract PCRM is BaseManager, IManager, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -91,23 +95,14 @@ contract PCRM is IManager, Owned {
   ///////////////
   int constant SECONDS_PER_YEAR = 365 days;
 
-  /// @dev asset used in all settlements and denominates margin
-  IAccounts public immutable account;
-
-  /// @dev spotFeeds that determine staleness and return prices
-  ISpotFeeds public spotFeeds;
-
-  /// @dev asset used in all settlements and denominates margin
-  ICashAsset public immutable cashAsset;
-
-  /// @dev reserved option asset
-  Option public immutable option;
-
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
+
+  /// @dev account id that receive OI fee
+  uint public feeRecipientAcc;
 
   Shocks public shocks;
 
@@ -123,7 +118,7 @@ contract PCRM is IManager, Owned {
 
   modifier onlyAuction() {
     if (msg.sender != address(dutchAuction)) {
-      revert PCRM_OnlyAuction(msg.sender, address(dutchAuction));
+      revert PCRM_OnlyAuction();
     }
     _;
   }
@@ -132,11 +127,10 @@ contract PCRM is IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address account_, address spotFeeds_, address cashAsset_, address option_, address auction_) Owned() {
-    account = IAccounts(account_);
-    spotFeeds = ISpotFeeds(spotFeeds_);
-    cashAsset = ICashAsset(cashAsset_);
-    option = Option(option_);
+  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_)
+    BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
+    Owned()
+  {
     dutchAuction = IDutchAuction(auction_);
   }
 
@@ -148,17 +142,19 @@ contract PCRM is IManager, Owned {
    * @notice Ensures asset is valid and initial margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, address, AccountStructs.AssetDelta[] memory, bytes memory)
+  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
-    view
     override
   {
     // todo [Josh]: whitelist check
 
-    // PCRM calculations
-    Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
+    _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
 
-    _calcMargin(portfolio, MarginType.INITIAL);
+    // PCRM calculations
+    Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+
+    // check initial margin
+    _checkMargin(portfolio, MarginType.INITIAL);
   }
 
   /**
@@ -185,6 +181,17 @@ contract PCRM is IManager, Owned {
     discounts = _discounts;
   }
 
+  /**
+   * @dev Governance determined account to receive OI fee
+   * @param _newAcc account id
+   */
+  function setFeeRecipient(uint _newAcc) external onlyOwner {
+    // this line will revert if the owner tries to set an invalid account
+    accounts.ownerOf(_newAcc);
+
+    feeRecipientAcc = _newAcc;
+  }
+
   //////////////////
   // Liquidations //
   //////////////////
@@ -209,16 +216,35 @@ contract PCRM is IManager, Owned {
    * @param liquidatorId Liquidator account ID.
    * @param portion Portion of account that is requested to be liquidated.
    * @param cashAmount Cash amount liquidator is offering for portion of account.
-   * @return postExecutionInitialMargin InitialMargin of account after portion is liquidated.
-   * @return Portfolio Sorted array of option holdings used to recompute new auction bounds
-   * @return cash Amount of cash held or borrowed in account
+   * @param liquidatorFee Cash amount liquidator will be paying the security module
    */
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount)
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee)
     external
     onlyAuction
-    returns (int postExecutionInitialMargin, Portfolio[] memory, int cash)
   {
-    // todo [Cameron / Dom]: this would be only dutch auction contract
+    if (portion > DecimalMath.UNIT) revert PCRM_InvalidBidPortion();
+    AccountStructs.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+
+    // transfer liquidated account's asset to liquidator
+    for (uint i; i < assetBalances.length; i++) {
+      _symmetricManagerAdjustment(
+        accountId,
+        liquidatorId,
+        assetBalances[i].asset,
+        uint96(assetBalances[i].subId),
+        assetBalances[i].balance.multiplyDecimal(int(portion))
+      );
+    }
+
+    // transfer cash (bid amount) to liquidated account
+    _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
+
+    // transfer fee to security module
+    _symmetricManagerAdjustment(liquidatorId, feeRecipientAcc, cashAsset, 0, int(liquidatorFee));
+
+    // check liquidator's account status
+    Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(liquidatorId));
+    _checkMargin(portfolio, MarginType.INITIAL);
   }
 
   /////////////////
@@ -226,15 +252,25 @@ contract PCRM is IManager, Owned {
   /////////////////
 
   /**
+   * @notice revert if a portfolio is under margin
+   * @param portfolio Account portfolio
+   * @param marginType Initial or maintenance margin.
+   */
+  function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal view {
+    int margin = _calcMargin(portfolio, marginType);
+    if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
+  }
+
+  /**
    * @notice Calculate the initial or maintenance margin of account.
-   *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Account holdings.
+   *         A positive value means the account is X amount over the required margin.
+   * @param portfolio Account portfolio.
    * @param marginType Initial or maintenance margin.
    * @return margin Amount by which account is over or under the required margin.
    */
-
-  // todo [Josh]: add RV related add-ons
   function _calcMargin(Portfolio memory portfolio, MarginType marginType) internal view returns (int margin) {
+    // todo [Josh]: add RV related add-ons
+
     // get shock amounts
     uint128 spotUp;
     uint128 spotDown;
@@ -267,14 +303,14 @@ contract PCRM is IManager, Owned {
   }
 
   /**
-   * @notice Calculate the settled value of option holdings in a specific expiry.
-   * @param expiry All option holdings within an expiry.
+   * @notice Calculate the settled value of option portfolio.
+   * @param portfolio All option portfolio
    * @return expiryValue Value of assets or debt of settled options.
    */
-  function _calcSettledExpiryValue(Portfolio memory expiry) internal pure returns (int expiryValue) {
-    uint settlementPrice = 1000e18; // todo: [Josh] integrate settlement feed
-    for (uint i; i < expiry.strikes.length; i++) {
-      Strike memory strike = expiry.strikes[i];
+  function _calcSettledExpiryValue(Portfolio memory portfolio) internal view returns (int expiryValue) {
+    uint settlementPrice = option.settlementPrices(portfolio.expiry);
+    for (uint i; i < portfolio.strikes.length; i++) {
+      Strike memory strike = portfolio.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
 
       // calculate proceeds for forwards / calls / puts
@@ -288,14 +324,14 @@ contract PCRM is IManager, Owned {
   }
 
   /**
-   * @notice Calculate the discounted value of live option holdings in a specific expiry.
-   * @param expiry All option holdings within an expiry.
+   * @notice Calculate the discounted value of live option portfolio in a specific expiry.
+   * @param portfolio All option portfolio within an expiry.
    * @param spotUp Spot shocked up based on initial or maintenance margin params.
    * @param spotDown Spot shocked down based on initial or maintenance margin params.
    * @param shockedVol Vol shocked up based on initial or maintenance margin params.
    * @return expiryValue Value of assets or debt of options in a given expiry.
    */
-  function _calcLiveExpiryValue(Portfolio memory expiry, uint128 spotUp, uint128 spotDown, uint128 shockedVol)
+  function _calcLiveExpiryValue(Portfolio memory portfolio, uint128 spotUp, uint128 spotDown, uint128 shockedVol)
     internal
     view
     returns (int expiryValue)
@@ -303,12 +339,12 @@ contract PCRM is IManager, Owned {
     int spotUpValue;
     int spotDownValue;
 
-    uint64 timeToExpiry = (expiry.expiry - block.timestamp).toUint64();
+    uint64 timeToExpiry = (portfolio.expiry - block.timestamp).toUint64();
 
-    for (uint i; i < expiry.strikes.length; i++) {
-      spotUpValue += _calcLiveStrikeValue(expiry.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
+    for (uint i; i < portfolio.strikes.length; i++) {
+      spotUpValue += _calcLiveStrikeValue(portfolio.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
 
-      spotDownValue += _calcLiveStrikeValue(expiry.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
+      spotDownValue += _calcLiveStrikeValue(portfolio.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
     }
 
     // return the worst of two scenarios
@@ -316,7 +352,7 @@ contract PCRM is IManager, Owned {
   }
 
   /**
-   * @notice Calculate the discounted value of live option holdings in a specific strike.
+   * @notice Calculate the discounted value of live option portfolio in a specific strike.
    * @param strikes All option holdings of the same strike.
    * @param isCurrentScenarioUp Whether the current scenario is spot up or down.
    * @param spotUp Spot shocked up based on initial or maintenance margin params.
@@ -343,7 +379,7 @@ contract PCRM is IManager, Owned {
       ? strikes.forwards.multiplyDecimal(-markedDownPutValue)
       : strikes.forwards.multiplyDecimal(markedDownCallValue);
 
-    // Get BlackSchole price.
+    // Get BlackScholes price.
     (uint callValue, uint putValue) = (0, 0);
     if (strikes.calls != 0 || strikes.puts != 0) {
       (callValue, putValue) = Black76.prices(
@@ -388,17 +424,13 @@ contract PCRM is IManager, Owned {
    */
 
   // todo [Josh]: rename this
-  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
-    internal
-    view
-    returns (Portfolio memory portfolio)
-  {
+  function _arrangePortfolio(AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
     portfolio.strikes = new PCRM.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
     Strike memory currentStrike;
-    AccountStructs.AssetBalance memory currentAsset;
+    AssetBalance memory currentAsset;
     uint strikeIndex;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
@@ -447,13 +479,13 @@ contract PCRM is IManager, Owned {
    * @return portfolio Cash + arranged option holdings.
    */
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio) {
-    return _arrangePortfolio(account.getAccountBalances(accountId));
+    return _arrangePortfolio(accounts.getAccountBalances(accountId));
   }
 
   /**
    * @notice Calculate the initial margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Cash + arranged option holdings.
+   * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
   // todo [Josh]: public view function to get margin values directly through accountId
@@ -464,7 +496,7 @@ contract PCRM is IManager, Owned {
   /**
    * @notice Calculate the maintenance margin of account.
    *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Cash + arranged option holdings.
+   * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
   function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int margin) {
@@ -475,7 +507,11 @@ contract PCRM is IManager, Owned {
   // Errors //
   ////////////
 
-  error PCRM_OnlyAuction(address sender, address auction);
+  error PCRM_OnlyAuction();
+
+  error PCRM_InvalidBidPortion();
+
+  error PCRM_MarginRequirementNotMet(int initMargin);
 
   error PCRM_SingleExpiryPerAccount();
 }

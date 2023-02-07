@@ -31,7 +31,7 @@ contract UNIT_CashAssetHook is Test {
   function testCannotCallHandleAdjustmentFromNonAccount() public {
     vm.expectRevert(ICashAsset.CA_NotAccount.selector);
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
-    cashAsset.handleAdjustment(adjustment, 0, manager, address(this));
+    cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
 
   function testCannotExecuteHandleAdjustmentIfManagerIsNotWhitelisted() public {
@@ -40,7 +40,7 @@ contract UNIT_CashAssetHook is Test {
     vm.expectRevert(ICashAsset.CA_UnknownManager.selector);
 
     vm.prank(account);
-    cashAsset.handleAdjustment(adjustment, 0, manager, address(this));
+    cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
 
   function testAssetHookAccurInterestOnPositiveAdjustment() public {
@@ -49,7 +49,7 @@ contract UNIT_CashAssetHook is Test {
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
 
     vm.prank(account);
-    (int postBalance, bool needAllowance) = cashAsset.handleAdjustment(adjustment, 0, manager, address(this));
+    (int postBalance, bool needAllowance) = cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
 
     assertEq(cashAsset.lastTimestamp(), block.timestamp);
     assertEq(needAllowance, false);
@@ -64,7 +64,7 @@ contract UNIT_CashAssetHook is Test {
 
     // stimulate call from account
     vm.prank(account);
-    (int postBalance, bool needAllowance) = cashAsset.handleAdjustment(adjustment, 0, manager, address(this));
+    (int postBalance, bool needAllowance) = cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
 
     assertEq(needAllowance, true);
     // todo: updaete this check to include interest

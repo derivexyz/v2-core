@@ -106,23 +106,23 @@ contract PCRMGroupingGasScript is Script {
 
     auction = new MockDutchAuction();
 
-    option = new Option();
+    option = new Option(account, address(0), 0);
     MockERC20 stable = new MockERC20("mock", "MOCK");
 
     // interest rate model
     uint minRate = 0.06 * 1e18;
-    uint rateMultipler = 0.2 * 1e18;
-    uint highRateMultipler = 0.4 * 1e18;
+    uint rateMultiplier = 0.2 * 1e18;
+    uint highRateMultiplier = 0.4 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
-    InterestRateModel rateModel = new InterestRateModel(minRate, rateMultipler, highRateMultipler, optimalUtil);
+    InterestRateModel rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)), rateModel, 0, address(auction));
 
     pcrm = new PCRM(
-      address(account),
-      address(spotFeeds),
-      address(cash),
-      address(option),
+      account,
+      spotFeeds,
+      cash,
+      option,
       address(auction)
     );
 

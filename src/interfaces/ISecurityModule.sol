@@ -13,6 +13,11 @@ interface ISecurityModule {
 
   function requestPayout(uint accountId, uint amountCashNeeded) external returns (uint amountCashDeposited);
 
+  /**
+   * @dev return the account id of security module
+   */
+  function accountId() external returns (uint);
+
   ////////////
   // Events //
   ////////////

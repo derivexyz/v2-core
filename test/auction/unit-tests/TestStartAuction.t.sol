@@ -63,25 +63,16 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction =
       dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
 
-    dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({
-        stepInterval: 1,
-        lengthOfAuction: 200,
-        securityModule: address(1),
-        portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18,
-        secBetweenSteps: 0
-      })
-    );
-
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
       stepInterval: 1,
       lengthOfAuction: 200,
-      securityModule: address(1),
       portfolioModifier: 1e18,
       inversePortfolioModifier: 1e18,
-      secBetweenSteps: 0
+      secBetweenSteps: 0,
+      liquidatorFeeRate: 0.05e18
     });
+
+    dutchAuction.setDutchAuctionParameters(dutchAuctionParameters);
   }
 
   function mintAndDeposit(

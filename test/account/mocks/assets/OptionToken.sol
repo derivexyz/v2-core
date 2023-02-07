@@ -68,6 +68,7 @@ contract OptionToken is IAsset, Owned {
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
+    uint, /*tradeId*/
     int preBal,
     IManager riskModel,
     address caller

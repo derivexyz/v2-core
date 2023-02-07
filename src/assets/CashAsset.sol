@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
@@ -36,7 +37,7 @@ contract CashAsset is ICashAsset, Owned {
   ///@dev InterestRateModel contract address
   IInterestRateModel public rateModel;
 
-  ///@dev The address of liqudation module, which can trigger call of insolvency
+  ///@dev The address of liquidation module, which can trigger call of insolvency
   address public immutable liquidationModule;
 
   ///@dev The security module accountId used for collecting a portion of fees
@@ -54,6 +55,9 @@ contract CashAsset is ICashAsset, Owned {
 
   ///@dev Total amount of negative balances
   uint public totalBorrow;
+
+  ///@dev Net amount of cash printed/burned due to settlement
+  int public netSettledCash;
 
   ///@dev Total accrued fees for the security module
   uint public accruedSmFees;
@@ -74,7 +78,7 @@ contract CashAsset is ICashAsset, Owned {
   uint public previousSmFeePercentage;
 
   ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
-  ///     In which case we turn on the withdraw fee to prevent bankrun
+  ///     In which case we turn on the withdraw fee to prevent bank-run
   bool public temporaryWithdrawFeeEnabled;
 
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
@@ -121,7 +125,7 @@ contract CashAsset is ICashAsset, Owned {
 
   /**
    * @notice Allows owner to set InterestRateModel contract
-   * @dev Accures interest to make sure indexes are up to date before changing the model
+   * @dev Accrues interest to make sure indexes are up to date before changing the model
    * @param _rateModel Interest rate model address
    */
   function setInterestRateModel(IInterestRateModel _rateModel) external onlyOwner {
@@ -255,6 +259,14 @@ contract CashAsset is ICashAsset, Owned {
     );
   }
 
+  /**
+   * @dev Returns the exchange rate from cash asset to stable asset
+   *      this should always be equal to 1, unless we have an insolvency
+   */
+  function getCashToStableExchangeRate() external view returns (uint) {
+    return _getExchangeRate();
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -270,9 +282,10 @@ contract CashAsset is ICashAsset, Owned {
    */
   function handleAdjustment(
     AccountStructs.AssetAdjustment memory adjustment,
+    uint, /*tradeId*/
     int preBalance,
     IManager manager,
-    address caller
+    address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
@@ -296,12 +309,7 @@ contract CashAsset is ICashAsset, Owned {
     // Need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    // Update totalSupply and totalBorrow amounts only if the call is not from manager
-    // If the call is from manager, the call is triggered from managerAdjustment hook
-    // from manager during settlement.
-    if (caller != address(manager)) {
-      _updateSupplyAndBorrow(preBalance, finalBalance);
-    }
+    _updateSupplyAndBorrow(preBalance, finalBalance);
   }
 
   /**
@@ -358,11 +366,15 @@ contract CashAsset is ICashAsset, Owned {
   }
 
   /**
-   * @dev Returns the exchange rate from cash asset to stable asset
-   *      this should always be equal to 1, unless we have an insolvency
+   * @notice Allows whitelisted manager to adjust netSettledCash
+   * @dev Required to track printed cash for asymmetric settlements
+   * @param amountCash Amount of cash printed or burned
    */
-  function getCashToStableExchangeRate() external view returns (uint) {
-    return _getExchangeRate();
+  function updateSettledCash(int amountCash) external {
+    _checkManager(address(msg.sender));
+    netSettledCash += amountCash;
+
+    emit SettledCashUpdated(amountCash, netSettledCash);
   }
 
   ////////////////////////////
@@ -409,7 +421,12 @@ contract CashAsset is ICashAsset, Owned {
     if (totalBorrow == 0) return;
 
     // Calculate interest since last timestamp using compounded interest rate
-    uint borrowRate = rateModel.getBorrowRate(totalSupply, totalBorrow);
+    uint realSupply = totalSupply; // include netSettledCash in the totalSupply
+    if (netSettledCash >= 0) {
+      realSupply -= netSettledCash.toUint256(); // account for printed supply due to settlements
+    } // for < 0, util = totalBorrow/(totalSupply - min(Print,0))
+
+    uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
 
@@ -437,7 +454,8 @@ contract CashAsset is ICashAsset, Owned {
    * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
-    uint totalCash = totalSupply + accruedSmFees - totalBorrow;
+    uint totalCash = (int(totalSupply) + int(accruedSmFees) - int(totalBorrow) - netSettledCash).toUint256();
+
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
   }
@@ -448,26 +466,9 @@ contract CashAsset is ICashAsset, Owned {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    if (preBalance <= 0 && finalBalance <= 0) {
-      totalBorrow = (totalBorrow.toInt256() + (preBalance - finalBalance)).toUint256();
-    } else if (preBalance >= 0 && finalBalance >= 0) {
-      totalSupply = (totalSupply.toInt256() + (finalBalance - preBalance)).toUint256();
-    } else if (preBalance < 0 && finalBalance > 0) {
-      totalBorrow -= (-preBalance).toUint256();
-      totalSupply += finalBalance.toUint256();
-    } else {
-      // (preBalance > 0 && finalBalance < 0)
-      totalBorrow += (-finalBalance).toUint256();
-      totalSupply -= preBalance.toUint256();
-    }
+    totalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
+    totalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
   }
-
-  /**
-   * @dev get current account cash balance
-   */
-  // function _getStaleBalance(uint accountId) internal view returns (int balance) {
-  //   balance = accounts.getBalance(accountId, ICashAsset(address(this)), 0);
-  // }
 
   ///////////////////
   //   Modifiers   //

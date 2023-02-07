@@ -19,6 +19,8 @@ contract MockCash is ICashAsset, MockAsset {
 
   uint public mockedExchangeRate;
 
+  int public netSettledCash;
+
   constructor(IERC20 token_, IAccounts accounts_) MockAsset(token_, accounts_, true) {}
 
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
@@ -80,6 +82,10 @@ contract MockCash is ICashAsset, MockAsset {
 
   function setExchangeRate(uint rate) external {
     mockedExchangeRate = rate;
+  }
+
+  function updateSettledCash(int amountCash) external {
+    netSettledCash += amountCash;
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
