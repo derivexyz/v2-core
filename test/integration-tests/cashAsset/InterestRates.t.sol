@@ -26,7 +26,7 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
 
     vm.prank(bob);
     accounts.setApprovalForAll(address(this), true);
-    
+
     vm.prank(charlie);
     accounts.setApprovalForAll(address(this), true);
   }
@@ -47,7 +47,7 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
     _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 0);
-    
+
     assertEq(cash.borrowIndex(), 1e18);
     assertEq(cash.supplyIndex(), 1e18);
 
@@ -81,7 +81,7 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
   //   uint callId = option.getSubId(callExpiry, callStrike, true);
 
   //    _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 50e18);
-    
+
   //   assertEq(cash.borrowIndex(), 1e18);
   //   assertEq(cash.supplyIndex(), 1e18);
 
@@ -106,7 +106,7 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     uint96 putId = option.getSubId(putExpiry, putStrike, true);
 
     _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 50e18);
-    
+
     assertEq(cash.borrowIndex(), 1e18);
     assertEq(cash.supplyIndex(), 1e18);
 

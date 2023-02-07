@@ -197,6 +197,7 @@ contract CashAsset is ICashAsset, Owned {
 
     // transfer the asset out after potentially needing to calculate exchange rate
     stableAsset.safeTransfer(recipient, stableAmount);
+
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: accountId,

@@ -46,7 +46,7 @@ contract IntegrationTestBase is Test {
   // sm account id will be 1 after setup
   uint smAcc = 1;
 
-  // updatable 
+  // updatable
   uint pcrmFeeAcc;
 
   function _setupIntegrationTestComplete() internal {
@@ -225,20 +225,14 @@ contract IntegrationTestBase is Test {
    */
   function _managerMintOption(uint toAcc, uint subId, int amount) internal {
     vm.startPrank(address(pcrm));
-     accounts.managerAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: toAcc,
-        asset: option,
-        subId: subId,
-        amount: amount,
-        assetData: ""
-      })
+    accounts.managerAdjustment(
+      AccountStructs.AssetAdjustment({acc: toAcc, asset: option, subId: subId, amount: amount, assetData: ""})
     );
     vm.stopPrank();
   }
 
   /**
-   * @dev helper to update spot prices 
+   * @dev helper to update spot prices
    */
   function _updatePriceFeed(int spotPrice, uint80 roundId, uint80 answeredInRound) internal {
     aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);

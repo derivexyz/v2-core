@@ -22,6 +22,7 @@ import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 
 import "./BaseManager.sol";
+
 import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
@@ -257,7 +258,6 @@ contract PCRM is BaseManager, IManager, Owned {
    */
   function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal view {
     int margin = _calcMargin(portfolio, marginType);
-    console2.log("margine is", margin/1e18);
     if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
   }
 
@@ -402,7 +402,6 @@ contract PCRM is BaseManager, IManager, Owned {
     strikeValue += (strikes.puts >= 0)
       ? strikes.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikes.puts.multiplyDecimal(putValue.toInt256());
-
   }
 
   function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
