@@ -11,6 +11,7 @@ import "src/interfaces/ISettlementFeed.sol";
 import "src/libraries/Owned.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/SignedDecimalMath.sol";
+import "src/libraries/IntLib.sol";
 
 /**
  * @title Option
@@ -155,21 +156,8 @@ contract Option is IOption, Owned {
    */
   function _updateOI(uint subId, int preBalance, int change) internal {
     int postBalance = preBalance + change;
-    if (preBalance >= 0) {
-      if (postBalance >= 0) {
-        // OI can be increased or decrease. result must be positive
-        openInterest[subId] = (openInterest[subId].toInt256() + change).toUint256();
-      } else {
-        // OI must be decreased, by amount of pre-balance
-        openInterest[subId] -= uint(preBalance);
-      }
-    } else {
-      if (postBalance > 0) {
-        // balance went from negative to positive: total positive increased by ending amount
-        openInterest[subId] += uint(postBalance);
-      }
-      // if both pre and post balances are negative, this trade doesn't affect total positive
-    }
+    openInterest[subId] =
+      (openInterest[subId].toInt256() + IntLib.max(0, postBalance) - IntLib.max(0, preBalance)).toUint256();
   }
 
   function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
