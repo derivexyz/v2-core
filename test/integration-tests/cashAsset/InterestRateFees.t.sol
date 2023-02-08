@@ -31,36 +31,23 @@ contract INTEGRATION_InterestRateFeesTest is IntegrationTestBase {
   }
 
   // todo: test there is no fees when no borrow
-  function testNoInterestPaidForNoBorrow() public {
-  }
+  function testNoInterestPaidForNoBorrow() public {}
 
-  // todo: test fees paid correct for low util on short time frame (suppliers, borrowers, sm) 
-  function testInterestPaidForNormalUtil() public {
+  // todo: test fees paid correct for low util on short time frame (suppliers, borrowers, sm)
+  function testInterestPaidForNormalUtil() public {}
 
-  }
+  // todo: test fees paid correct for low util on long time frame (suppliers, borrowers, sm)
+  function testInterestPaidForNormalUtilLongTerm() public {}
 
-  // todo: test fees paid correct for low util on long time frame (suppliers, borrowers, sm) 
-  function testInterestPaidForNormalUtilLongTerm() public {
-
-  }
-  
   // todo: test fees paid correct for high util on short time frame (suppliers, borrowers, sm)
-  function testInterestPaidForHighUtil() public {
-
-  }
+  function testInterestPaidForHighUtil() public {}
 
   // todo: test fees paid correct for high util on long time frame (suppliers, borrowers, sm)
-  function testInterestPaidForHighUtil() public {
+  function testInterestPaidForHighUtil() public {}
 
-  }
+  // todo: test increase in supply reduces fees
+  function testIncreaseSupplyDecreasesInterest() public {}
 
-  // todo: test increase in supply reduces fees 
-  function testIncreaseSupplyDecreasesInterest() public {
-    
-  }
-
-  // todo: test increase in borrow increase fees 
-  function testIncreaseBorrowIncreasesInterest() public {
-
-  }
+  // todo: test increase in borrow increase fees
+  function testIncreaseBorrowIncreasesInterest() public {}
 }
