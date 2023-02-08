@@ -7,8 +7,6 @@ import "forge-std/console2.sol";
 import "../shared/IntegrationTestBase.sol";
 
 /**
- * @dev Tests to verify correct fees paid and recieved by suppliers and borrowers 
+ * @dev Tests to verify correct fees paid and recieved by suppliers and borrowers
  */
-contract INTEGRATION_InterestRateFeesTest is IntegrationTestBase {
-
-}
+contract INTEGRATION_InterestRateFeesTest is IntegrationTestBase {}
