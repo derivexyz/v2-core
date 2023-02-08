@@ -155,10 +155,6 @@ contract UNIT_BidAuction is Test {
   function testBidOnSolventAuctionCanAutomaticallyTerminate() public {
     createDefaultSolventAuction(aliceAcc);
 
-    // getting the max proportion
-    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-    assertLt(maxProportion, 5e17); // should be less than half
-
     // mock that the next bid make the account above init margin
     manager.setNextIsEndingBid();
 
@@ -246,6 +242,21 @@ contract UNIT_BidAuction is Test {
 
     // todo[Anton]: check numbers
     assertEq(percentage, 571428571428571428); // 57% of portfolio get liquidated
+  }
+
+  // handle branch coverage where during IM check, the call to manager could rever
+  function testBidOnSolventAuctionRevert() public {
+    createDefaultSolventAuction(aliceAcc);
+
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertLt(maxProportion, 5e17); // should be less than half
+
+    // bidding
+    vm.startPrank(bob);
+    manager.setRevertMargin();
+    vm.expectRevert();
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
   }
 
   /////////////

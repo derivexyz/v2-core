@@ -240,11 +240,11 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId ID of the account to check
    */
   function _checkCanTerminateAuction(uint accountId) internal view returns (bool) {
-    if (auctions[accountId].insolvent) {
-      return riskManager.getMaintenanceMarginForAccount(accountId) >= 0;
-    } else {
+    if (!auctions[accountId].insolvent) {
       // todo: change to rv = 0;
       return riskManager.getInitialMarginForAccount(accountId) >= 0;
+    } else {
+      return riskManager.getMaintenanceMarginForAccount(accountId) >= 0;
     }
   }
 

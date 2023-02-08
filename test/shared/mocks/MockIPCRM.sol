@@ -32,6 +32,8 @@ contract MockIPCRM is IPCRM, IManager {
   // if set to true, assume next executeBid will bring init margin to 0
   bool nextIsEndingBid = false;
 
+  bool revertGetMargin = false;
+
   constructor(address _account) {
     account = _account;
   }
@@ -55,10 +57,12 @@ contract MockIPCRM is IPCRM, IManager {
   }
 
   function getInitialMarginForAccount(uint accountId) external view virtual returns (int) {
+    if (revertGetMargin) revert("test revert");
     return initMargin[accountId];
   }
 
   function getMaintenanceMarginForAccount(uint accountId) external view returns (int) {
+    if (revertGetMargin) revert("test revert");
     return maintenanceMargin[accountId];
   }
 
@@ -125,6 +129,10 @@ contract MockIPCRM is IPCRM, IManager {
 
   function getInitialMarginForPortfolio(IPCRM.Portfolio memory) external view returns (int) {
     return portMargin;
+  }
+
+  function setRevertMargin() external {
+    revertGetMargin = true;
   }
 
   function test() public {}
