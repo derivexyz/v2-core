@@ -16,12 +16,14 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
+import "test/shared/mocks/MockIPCRM.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract UNIT_TestMLRM is Test {
   Accounts account;
-  MLRM manager;
+  MLRM mlrm;
+  MockIPCRM pcrm;
   MockAsset cash;
   MockERC20 usdc;
 
@@ -47,22 +49,99 @@ contract UNIT_TestMLRM is Test {
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
 
-    manager = new MLRM(
+    mlrm = new MLRM(
       account,
       spotFeeds,
       ICashAsset(address(cash)),
       option
     );
 
+    pcrm = new MockIPCRM(address(account));
+
     vm.startPrank(alice);
-    aliceAcc = account.createAccount(alice, IManager(manager));
-    bobAcc = account.createAccount(bob, IManager(manager));
+    aliceAcc = account.createAccount(alice, IManager(mlrm));
+    bobAcc = account.createAccount(bob, IManager(pcrm));
     vm.stopPrank();
 
     vm.startPrank(bob);
     account.approve(alice, bobAcc);
     vm.stopPrank();
   }
+
+  ///////////////////////
+  // Arrange Portfolio //
+  ///////////////////////
+
+  function testBlockIfNegativeCashBalance() public {
+    _depositCash(alice, aliceAcc, 2000e18);
+    _depositCash(bob, bobAcc, 1000e18);
+
+    // prepare trades
+    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
+    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory cashBorrow = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(cash),
+      subId: 0,
+      amount: 5000e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    transferBatch[0] = callTransfer;
+    transferBatch[1] = cashBorrow;
+
+
+    // fail when adding an option with a new expiry
+    vm.startPrank(address(alice));
+    vm.expectRevert(MLRM.MLRM_OnlyPositiveCash.selector);
+    account.submitTransfers(transferBatch, "");
+    vm.stopPrank();
+  }
+
+  function testBlockIfUnsupportedOption() public {
+    // create unsupported option
+    MockOption unsupportedOption = new MockOption(account);
+
+    // prepare trades
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
+    AccountStructs.AssetTransfer memory invalidOption = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(unsupportedOption),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory validOption = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 5e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    transferBatch[0] = validOption;
+    transferBatch[1] = invalidOption;
+
+
+    // fail when adding an option with a new expiry
+    vm.startPrank(address(alice));
+    vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_UnsupportedAsset.selector, address(unsupportedOption)));
+    account.submitTransfers(transferBatch, "");
+    vm.stopPrank();
+  }
+
+
 
   //////////////
   // Transfer //
@@ -184,11 +263,11 @@ contract UNIT_TestMLRM is Test {
   //   vm.stopPrank();
   // }
 
-  // function _depositCash(address user, uint acc, uint amount) internal {
-  //   usdc.mint(user, amount);
-  //   vm.startPrank(user);
-  //   usdc.approve(address(cash), type(uint).max);
-  //   cash.deposit(acc, 0, amount);
-  //   vm.stopPrank();
-  // }
+  function _depositCash(address user, uint acc, uint amount) internal {
+    usdc.mint(user, amount);
+    vm.startPrank(user);
+    usdc.approve(address(cash), type(uint).max);
+    cash.deposit(acc, 0, amount);
+    vm.stopPrank();
+  }
 }

@@ -20,6 +20,9 @@ import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
+
+import "forge-std/console2.sol";
+
 /**
  * @title MaxLossRiskManager
  * @author Lyra
@@ -58,7 +61,6 @@ contract MLRM is BaseManager, IManager {
     // todo [Josh]: whitelist check
     // todo [Josh]: charge OI fee
 
-    // PCRM calculations
     BaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     int margin = _calcMargin(portfolio);
@@ -143,7 +145,7 @@ contract MLRM is BaseManager, IManager {
       if (address(currentAsset.asset) == address(option)) {
         _addOption(portfolio, currentAsset);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
-        if (currentAsset.balance >= 0) {
+        if (currentAsset.balance < 0) {
           revert MLRM_OnlyPositiveCash();
         }
         portfolio.cash = currentAsset.balance;
@@ -151,6 +153,20 @@ contract MLRM is BaseManager, IManager {
         revert MLRM_UnsupportedAsset(address(currentAsset.asset));
       }
     }
+  }
+
+  //////////
+  // View //
+  //////////
+
+  /**
+   * @notice Get account portfolio, consisting of cash + arranged
+   *         array of [strikes][calls / puts / forwards].
+   * @param accountId ID of account to retrieve.
+   * @return portfolio Cash + arranged option holdings.
+   */
+  function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio) {
+    return _arrangePortfolio(accounts.getAccountBalances(accountId));
   }
 
   ////////////
