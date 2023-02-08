@@ -69,7 +69,7 @@ contract MLRM is IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
+    PCRM.Portfolio memory portfolio = _arrangePortfolio(account.getAccountBalances(accountId));
 
     int margin = _calcMargin(portfolio);
 
