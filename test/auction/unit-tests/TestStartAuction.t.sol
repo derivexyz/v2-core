@@ -118,7 +118,6 @@ contract UNIT_TestStartAuction is Test {
     (int upperBound, int lowerBound) = dutchAuction.getBounds(aliceAcc);
     assertEq(upperBound, 10000e18);
     assertEq(lowerBound, -1000e18);
-    
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
