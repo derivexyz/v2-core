@@ -99,7 +99,6 @@ contract UNIT_TestMLRM is Test {
     transferBatch[0] = callTransfer;
     transferBatch[1] = cashBorrow;
 
-
     // fail when adding an option with a new expiry
     vm.startPrank(address(alice));
     vm.expectRevert(MLRM.MLRM_OnlyPositiveCash.selector);
@@ -133,7 +132,6 @@ contract UNIT_TestMLRM is Test {
     transferBatch[0] = validOption;
     transferBatch[1] = invalidOption;
 
-
     // fail due to unsupported asset
     vm.startPrank(address(alice));
     vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_UnsupportedAsset.selector, address(unsupportedOption)));
@@ -146,7 +144,6 @@ contract UNIT_TestMLRM is Test {
   /////////////////////////
 
   function testBlockIfUnbounded() public {
-
     // prepare trades
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
     AccountStructs.AssetTransfer memory validOption = AccountStructs.AssetTransfer({
@@ -158,7 +155,6 @@ contract UNIT_TestMLRM is Test {
       assetData: ""
     });
 
-
     // fail as there are <0 calls
     vm.startPrank(address(alice));
     vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_PayoffUnbounded.selector, int(-5e18)));
@@ -167,8 +163,8 @@ contract UNIT_TestMLRM is Test {
   }
 
   function testBlockIfBelowMargin() public {
-    // todo [mech, Josh to organize PR]: 
-    // create separate test file where all cases of valid margin calcs can be tested 
+    // todo [mech, Josh to organize PR]:
+    // create separate test file where all cases of valid margin calcs can be tested
 
     _depositCash(alice, aliceAcc, 100e18);
     _depositCash(bob, bobAcc, 100e18);
@@ -203,10 +199,10 @@ contract UNIT_TestMLRM is Test {
   }
 
   function testExpiredOption() public {
-    // todo: do full test once settlement feed integrated 
+    // todo: do full test once settlement feed integrated
 
-    // todo [mech, Josh to organize PR]: 
-    // create separate test file where all cases of valid margin calcs can be tested 
+    // todo [mech, Josh to organize PR]:
+    // create separate test file where all cases of valid margin calcs can be tested
 
     _depositCash(alice, aliceAcc, 100e18);
     _depositCash(bob, bobAcc, 100e18);
@@ -283,8 +279,6 @@ contract UNIT_TestMLRM is Test {
     portfolio = mlrm.getPortfolio(aliceAcc);
     assertEq(mlrm.getMargin(portfolio), 0);
   }
-
-
 
   // ////////////////////
   // // Manager Change //

@@ -105,10 +105,9 @@ contract MLRM is BaseManager, IManager {
     // calculate margin
     bool zeroStrikeOwned;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-
       // on the last scenario evalute the 0 strike case
       uint scenarioPrice = portfolio.strikes[i].strike;
-      
+
       margin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), margin);
 
       // keep track of totalCalls to later check if payoff unbounded
