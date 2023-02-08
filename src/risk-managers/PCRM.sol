@@ -46,28 +46,6 @@ contract PCRM is BaseManager, IManager, Owned {
     MAINTENANCE
   }
 
-  struct Portfolio {
-    /// cash amount or debt
-    int cash;
-    /// timestamp of expiry for all strike holdings
-    uint expiry;
-    /// # of strikes with active balances
-    uint numStrikesHeld;
-    /// array of strike holding details
-    Strike[] strikes;
-  }
-
-  struct Strike {
-    /// strike price of held options
-    uint strike;
-    /// number of calls held
-    int calls;
-    /// number of puts held
-    int puts;
-    /// number of forwards held
-    int forwards;
-  }
-
   struct Shocks {
     /// high spot value used for initial margin
     uint spotUpInitial;
@@ -429,37 +407,16 @@ contract PCRM is BaseManager, IManager, Owned {
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
-    Strike memory currentStrike;
     AssetBalance memory currentAsset;
     uint strikeIndex;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-        // decode subId
-        (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
-
-        // assume expiry = 0 means this is the first strike.
-        if (portfolio.expiry == 0) {
-          portfolio.expiry = expiry;
-        }
-
-        if (portfolio.expiry != expiry) {
-          revert PCRM_SingleExpiryPerAccount();
-        }
-
-        (strikeIndex, portfolio.numStrikesHeld) =
-          PCRMGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
-
-        // add call or put balance
-        currentStrike = portfolio.strikes[strikeIndex];
-        if (isCall) {
-          currentStrike.calls += currentAsset.balance;
-        } else {
-          currentStrike.puts += currentAsset.balance;
-        }
+        // add option balance to portfolio in-memory
+        strikeIndex = _arrangeOption(portfolio, currentAsset);
 
         // if possible, combine calls and puts into forwards
-        PCRMGrouping.updateForwards(currentStrike);
+        PCRMGrouping.updateForwards(portfolio.strikes[strikeIndex]);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       }
@@ -512,6 +469,4 @@ contract PCRM is BaseManager, IManager, Owned {
   error PCRM_InvalidBidPortion();
 
   error PCRM_MarginRequirementNotMet(int initMargin);
-
-  error PCRM_SingleExpiryPerAccount();
 }
