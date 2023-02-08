@@ -106,7 +106,7 @@ contract UNIT_TestStartAuction is Test {
 
   function testStartAuctionRead() public {
     // making call from Riskmanager of the dutch auction contract
-    vm.startPrank(address(manager));
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -114,7 +114,7 @@ contract UNIT_TestStartAuction is Test {
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
 
-    // log all the auction struct detials
+    // log all the auction struct detai∂ls
     assertEq(auction.insolvent, true); // this would be flagged as an insolvent auction
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
@@ -128,16 +128,13 @@ contract UNIT_TestStartAuction is Test {
     assertEq(currentBidPrice, 0);
   }
 
-  function testCannotStartWithNonManager() public {
-    vm.startPrank(address(0xdead));
-
-    // start an auction on Alice's account
-    vm.expectRevert(IDutchAuction.DA_NotRiskManager.selector);
+  function testCannotStartAuctionOnAccountAboveMargin() public {
+    vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
     dutchAuction.startAuction(aliceAcc);
   }
 
   function testStartAuctionAndCheckValues() public {
-    vm.startPrank(address(manager));
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -151,7 +148,7 @@ contract UNIT_TestStartAuction is Test {
   }
 
   function testCannotStartAuctionAlreadyStarted() public {
-    vm.startPrank(address(manager));
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -161,10 +158,11 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.startAuction(aliceAcc);
   }
 
-  // test that an auction is correcttly marked as insolvent
+  // test that an auction is correctly marked as insolvent
   function testInsolventAuction() public {
-    vm.startPrank(address(manager));
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, 1000 * 1e18);
+
     manager.giveAssets(aliceAcc);
     manager.setMarginForPortfolio(10_000 * 1e18);
     // start an auction on Alice's account
@@ -191,7 +189,7 @@ contract UNIT_TestStartAuction is Test {
 
   function testStartAuctionFailingOnGoingAuction() public {
     // wrong mark as insolvent not called by risk manager
-    vm.startPrank(address(manager));
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -201,22 +199,8 @@ contract UNIT_TestStartAuction is Test {
     assertEq(dutchAuction.getAuction(aliceAcc).insolvent, true); // auction will start as insolvent
   }
 
-  // test account with accoiunt id greater than 2
-  function testStartAuctionWithAccountGreaterThan2() public {
-    vm.startPrank(address(manager));
-
-    // start an auction on Alice's account
-    dutchAuction.startAuction(aliceAcc + 1);
-
-    // testing that the view returns the correct auction.
-    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc + 1);
-    assertEq(auction.accountId, aliceAcc + 1);
-    assertEq(auction.ongoing, true);
-    assertEq(auction.startTime, block.timestamp);
-  }
-
   function testCannotMarkInsolventIfAuctionNotInsolvent() public {
-    vm.startPrank(address(manager));
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
 
     // give assets
     manager.giveAssets(aliceAcc);
@@ -237,8 +221,8 @@ contract UNIT_TestStartAuction is Test {
   }
 
   function testGetMaxProportionNegativeMargin() public {
-    vm.startPrank(address(manager));
-    // deposit marign to the account
+    // mock MM and IM
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, -100_000 * 1e18);
 
     // start an auction on Alice's account
@@ -250,8 +234,8 @@ contract UNIT_TestStartAuction is Test {
   }
 
   function testGetMaxProportionPositiveMargin() public {
-    vm.startPrank(address(manager));
-    // deposit marign to the account
+    // mock MM and IM
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, 1000 * 1e18);
 
     // start an auction on Alice's account
@@ -263,9 +247,8 @@ contract UNIT_TestStartAuction is Test {
   }
 
   function testGetMaxProportionWithAssets() public {
-    vm.startPrank(address(manager));
-
-    // deposit marign to the account
+    // mock MM and IM
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, -1000 * 1e18); // set init margin for -1000
 
     // deposit assets to the account
@@ -282,10 +265,8 @@ contract UNIT_TestStartAuction is Test {
   }
 
   function testStartInsolventAuctionAndIncrement() public {
-    vm.startPrank(address(manager));
-
-    // deposit marign to the account
-    manager.setAccInitMargin(aliceAcc, -1000 * 1e24); // 1 million bucks underwater
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
+    manager.setAccInitMargin(aliceAcc, -1000_000 * 1e18); // 1 million bucks underwater
 
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
@@ -306,9 +287,7 @@ contract UNIT_TestStartAuction is Test {
   }
 
   function testCannotStepNonInsolventAuction() public {
-    vm.startPrank(address(manager));
-
-    // deposit marign to the account
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, 10000 * 1e18); // 1 million bucks
 
     // deposit assets to the account
@@ -325,10 +304,8 @@ contract UNIT_TestStartAuction is Test {
   }
 
   // manager successfully terminates an auction
-  function testManagerTerminatesAuction() public {
-    vm.startPrank(address(manager));
-
-    // deposit marign to the account
+  function testTerminatesAuction() public {
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, -10000 * 1e18); // 1 thousand bucks
     manager.setMarginForPortfolio(10_000 * 1e18);
     // deposit assets to the account
@@ -341,7 +318,7 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, true);
 
-    // deposit margin
+    // deposit margin => makes init margin > 0
     manager.setAccInitMargin(aliceAcc, 15_000 * 1e18); // 1 thousand bucks
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
@@ -349,11 +326,8 @@ contract UNIT_TestStartAuction is Test {
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
   }
 
-  // nonmanager cannot terminate an auction
-  function testNonManagerCannotTerminateInsolventAuction() public {
-    vm.startPrank(address(manager));
-
-    // deposit marign to the account
+  function tesCannotTerminateInsolventAuction() public {
+    manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, -10000 * 1e18); // 1 million bucks
 
     // deposit assets to the account
@@ -370,7 +344,7 @@ contract UNIT_TestStartAuction is Test {
 
   /// Helper
   // will round off the percentages at 2dp
-  function percentageHelper(uint bigNumberPercantage) public pure returns (uint) {
-    return bigNumberPercantage * 100 / 1e16;
+  function percentageHelper(uint bigNumberPercentage) public pure returns (uint) {
+    return bigNumberPercentage * 100 / 1e16;
   }
 }

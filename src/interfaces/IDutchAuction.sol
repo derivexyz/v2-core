@@ -24,15 +24,15 @@ interface IDutchAuction {
   // ERRORS //
   ////////////
 
-  /// @dev emitted when a non-risk manager tries to start an auction
-  error DA_NotRiskManager();
-
   /// @dev emitted owner is trying to set a bad parameter for auction
   error DA_InvalidParameter();
 
   /// @dev emitted when someone tries to start an insolvent auction when bidding
   /// has not concluded.
   error DA_AuctionNotEnteredInsolvency(uint accountId);
+
+  /// @dev revert if trying to start an auction when it's above maintenance margin (well collateralized)
+  error DA_AccountIsAboveMaintenanceMargin();
 
   /// @dev emitted when someone tries mark an insolvent auction again
   error DA_AuctionAlreadyInInsolvencyMode(uint accountId);

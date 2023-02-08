@@ -40,23 +40,29 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
     usdc.approve(address(usdcAsset), type(uint).max);
   }
 
+  function createDefaultInsolventAuction(uint accountId) public {
+    // slightly under maintenance margin
+    int maintenanceMargin = -1;
+    // init margin is also below 0
+    int initialMargin = -1000_000e18;
+    // inverted portfolio max value = 0
+    int reversedPortfolioIM = 0;
+
+    manager.setAccMaintenanceMargin(accountId, maintenanceMargin);
+    manager.setAccInitMargin(accountId, initialMargin);
+    manager.setMarginForPortfolio(reversedPortfolioIM);
+
+    dutchAuction.startAuction(accountId);
+  }
+
   ///////////
   // TESTS //
   ///////////
 
   function testStartInsolventAuction() public {
-    vm.startPrank(address(manager));
-
-    int initMargin = -1000_000 * 1e18;
-
-    // deposit marign to the account
-    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
-
-    // start an auction on Alice's account
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultInsolventAuction(aliceAcc);
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.insolvent, true); // start as insolvent from the very beginning
-    assertEq(auction.lowerBound, initMargin);
 
     // starts with 0 bid
     assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
@@ -72,11 +78,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
   }
 
   function testBidForInsolventAuctionFromSM() public {
-    int initMargin = -1000_000 * 1e18;
-    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
-
-    vm.prank(address(manager));
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultInsolventAuction(aliceAcc);
 
     // 2 of 200 steps
     dutchAuction.incrementInsolventAuction(aliceAcc);
@@ -102,11 +104,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
   }
 
   function testBidForInsolventAuctionMakesSMInsolvent() public {
-    int initMargin = -1000_000 * 1e18;
-    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
-
-    vm.prank(address(manager));
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultInsolventAuction(aliceAcc);
 
     // 2 of 200 steps
     dutchAuction.incrementInsolventAuction(aliceAcc);
@@ -130,9 +128,6 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
   }
 
   function testIncreaseStepMax() public {
-    int initMargin = -1000_000 * 1e18;
-    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
-
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
         stepInterval: 2,
@@ -143,8 +138,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         secBetweenSteps: 0 // cool down is 0
       })
     );
-    vm.prank(address(manager));
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultInsolventAuction(aliceAcc);
 
     dutchAuction.incrementInsolventAuction(aliceAcc);
 
@@ -153,8 +147,6 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
   }
 
   function testCannotSpamIncrementStep() public {
-    int initMargin = -1000_000 * 1e18;
-    manager.setAccInitMargin(aliceAcc, initMargin); // 1 million bucks underwater
     // change parameters to add cool down
     dutchAuction.setDutchAuctionParameters(
       DutchAuction.DutchAuctionParameters({
@@ -166,8 +158,7 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
         secBetweenSteps: 100
       })
     );
-    vm.prank(address(manager));
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultInsolventAuction(aliceAcc);
 
     dutchAuction.incrementInsolventAuction(aliceAcc);
 

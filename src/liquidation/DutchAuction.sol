@@ -125,9 +125,8 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId The id of the account being liquidated
    */
   function startAuction(uint accountId) external {
-    //todo: change to check margin with manger and start on our own
-    if (address(riskManager) != msg.sender) {
-      revert DA_NotRiskManager();
+    if (riskManager.getMaintenanceMarginForAccount(accountId) >= 0) {
+      revert DA_AccountIsAboveMaintenanceMargin();
     }
 
     if (auctions[accountId].ongoing) {
@@ -414,7 +413,6 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
    */
-  // TODO: investigate gas consumption after merge
   function _getBounds(uint accountId) internal view returns (int upperBound, int lowerBound) {
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
 
