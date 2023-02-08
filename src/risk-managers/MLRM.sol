@@ -103,14 +103,28 @@ contract MLRM is BaseManager, IManager {
     }
 
     // calculate margin
+    bool zeroStrikeOwned;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      BaseManager.Strike memory currentStrike = portfolio.strikes[i];
 
-      margin += SignedMath.max(spot - currentStrike.strike.toInt256(), 0).multiplyDecimal(currentStrike.calls);
-      margin += SignedMath.max(currentStrike.strike.toInt256() - spot, 0).multiplyDecimal(currentStrike.puts);
+      // on the last scenario evalute the 0 strike case
+      uint scenarioPrice = portfolio.strikes[i].strike;
+      
+      margin += _calcPayoffAtPrice(portfolio, scenarioPrice);
 
-      totalCalls += currentStrike.calls;
+      // keep track of totalCalls to later check if payoff unbounded
+      totalCalls += portfolio.strikes[i].calls;
+
+      if (scenarioPrice == 0) {
+        zeroStrikeOwned = true;
+      }
     }
+
+    // on the last scenario evalute the 0 strike case
+    if (!zeroStrikeOwned) {
+      margin += _calcPayoffAtPrice(portfolio, 0);
+    }
+
+    console2.log("margin before cash", margin);
 
     // add cash
     margin += portfolio.cash;
@@ -118,6 +132,14 @@ contract MLRM is BaseManager, IManager {
     // check if bounded
     if (totalCalls < 0) {
       revert MLRM_PayoffUnbounded(totalCalls);
+    }
+  }
+
+  function _calcPayoffAtPrice(BaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
+    for (uint i; i < portfolio.numStrikesHeld; i++) {
+      BaseManager.Strike memory currentStrike = portfolio.strikes[i];
+      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
+      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }
   }
 
@@ -174,7 +196,7 @@ contract MLRM is BaseManager, IManager {
   ////////////
 
   error MLRM_OnlyPositiveCash();
-  error MLRM_UnsupportedAsset(address asset); // could be used in both PCRM/MLRM
+  error MLRM_UnsupportedAsset(address asset); // todo [Josh]: should move to BaseManager
   error MLRM_PayoffUnbounded(int totalCalls);
   error MLRM_PortfolioBelowMargin(uint accountId, int margin);
 }

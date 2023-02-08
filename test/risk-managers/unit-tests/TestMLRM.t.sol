@@ -29,7 +29,7 @@ contract UNIT_TestMLRM is Test {
 
   ChainlinkSpotFeeds spotFeeds;
   MockV3Aggregator aggregator;
-  MockOption option;
+  Option option;
   MockDutchAuction auction;
   MockSM sm;
   uint feeRecipient;
@@ -46,7 +46,7 @@ contract UNIT_TestMLRM is Test {
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
     usdc = new MockERC20("USDC", "USDC");
-    option = new MockOption(account);
+    option = new Option(account, address(spotFeeds), 1);
     cash = new MockAsset(usdc, account, true);
 
     mlrm = new MLRM(
@@ -134,90 +134,79 @@ contract UNIT_TestMLRM is Test {
     transferBatch[1] = invalidOption;
 
 
-    // fail when adding an option with a new expiry
+    // fail due to unsupported asset
     vm.startPrank(address(alice));
     vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_UnsupportedAsset.selector, address(unsupportedOption)));
     account.submitTransfers(transferBatch, "");
     vm.stopPrank();
   }
 
+  /////////////////////////
+  // Margin calculations //
+  /////////////////////////
+
+  function testBlockIfUnbounded() public {
+
+    // prepare trades
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
+    AccountStructs.AssetTransfer memory validOption = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 5e18,
+      assetData: ""
+    });
 
 
-  //////////////
-  // Transfer //
-  //////////////
+    // fail as there are <0 calls
+    vm.startPrank(address(alice));
+    vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_PayoffUnbounded.selector, int(-5e18)));
+    account.submitTransfer(validOption, "");
+    vm.stopPrank();
+  }
 
-  // function testHandleAdjustment() public {
-  //   vm.startPrank(alice);
-  //   AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
-  //     fromAcc: bobAcc,
-  //     toAcc: aliceAcc,
-  //     asset: IAsset(option),
-  //     subId: 1,
-  //     amount: 1e18,
-  //     assetData: ""
-  //   });
-  //   account.submitTransfer(assetTransfer, "");
-  //   vm.stopPrank();
+  function testBlockIfBelowMargin() public {
+    // todo [mech, Josh to organize PR]: 
+    // create separate test file where all cases of valid margin calcs can be tested 
 
-  //   // todo: actually do manager
-  // }
+    _depositCash(alice, aliceAcc, 100e18);
+    _depositCash(bob, bobAcc, 100e18);
 
-  // /////////////////////////
-  // // Margin calculations //
-  // /////////////////////////
+    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 500e18, false);
+    AccountStructs.AssetTransfer memory putTransfer = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: putSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(cash),
+      subId: 0,
+      amount: 100e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    transferBatch[0] = putTransfer;
+    transferBatch[1] = premiumTransfer;
 
-  // function testEmptyInitialMarginCalculation() public view {
-  //   BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
-  //   strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
+    // fail as alice will be below margin
+    vm.startPrank(address(alice));
+    vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_PortfolioBelowMargin.selector, uint(aliceAcc), -300e18));
+    account.submitTransfers(transferBatch, "");
+    vm.stopPrank();
+  }
 
-  //   BaseManager.Portfolio memory expiry =
-  //     BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
+  function testExpiredOption() public view {
+    // todo: do full test once settlement feed integrated 
+  }
 
-  //   manager.getInitialMargin(expiry);
 
-  //   // todo: actually test
-  // }
-
-  // function testEmptyMaintenanceMarginCalculation() public view {
-  //   BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
-  //   strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
-
-  //   BaseManager.Portfolio memory expiry =
-  //     BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
-
-  //   manager.getMaintenanceMargin(expiry);
-
-  //   // todo: actually test
-  // }
-
-  // function testInitialMarginCalculation() public view {
-  //   BaseManager.Strike[] memory strikes = new BaseManager.Strike[](2);
-  //   strikes[0] = BaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-  //   strikes[1] = BaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
-
-  //   BaseManager.Portfolio memory expiry =
-  //     BaseManager.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
-
-  //   manager.getInitialMargin(expiry);
-
-  //   // todo: actually test
-  // }
-
-  // function testNegativePnLSettledExpiryCalculation() public {
-  //   skip(30 days);
-  //   BaseManager.Strike[] memory strikes = new BaseManager.Strike[](2);
-  //   strikes[0] = BaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-  //   strikes[1] = BaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
-
-  //   aggregator.updateRoundData(2, 100e18, block.timestamp, block.timestamp, 2);
-  //   BaseManager.Portfolio memory expiry =
-  //     BaseManager.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
-
-  //   manager.getInitialMargin(expiry);
-
-  //   // todo: actually test, added for coverage
-  // }
 
   // ////////////////////
   // // Manager Change //

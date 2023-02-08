@@ -143,7 +143,7 @@ contract Option is IOption, Owned {
       return (0, false);
     }
 
-    return (_getSettlementValue(strike, balance, settlementPrice, isCall), true);
+    return (getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
 
   //////////////
@@ -161,8 +161,8 @@ contract Option is IOption, Owned {
       (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
   }
 
-  function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
-    internal
+  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    public
     pure
     returns (int)
   {

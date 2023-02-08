@@ -96,6 +96,12 @@ contract MockOption is IOption {
     return mockedExpiryPrice[expiry];
   }
 
+  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    public
+    pure
+    returns (int)
+  {}
+
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
 }
