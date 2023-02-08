@@ -125,6 +125,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId The id of the account being liquidated
    */
   function startAuction(uint accountId) external {
+    //todo: change to check margin with manger and start on our own
     if (address(riskManager) != msg.sender) {
       revert DA_NotRiskManager();
     }
