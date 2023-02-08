@@ -43,7 +43,7 @@ contract INTEGRATION_InterestRateFeesTest is IntegrationTestBase {
   function testInterestPaidForHighUtil() public {}
 
   // todo: test fees paid correct for high util on long time frame (suppliers, borrowers, sm)
-  function testInterestPaidForHighUtil() public {}
+  function testInterestPaidForHighUtilLongTerm() public {}
 
   // todo: test increase in supply reduces fees
   function testIncreaseSupplyDecreasesInterest() public {}
