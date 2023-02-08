@@ -18,7 +18,6 @@ import "./BaseManager.sol";
 
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
-import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 /**
@@ -27,7 +26,7 @@ import "src/libraries/DecimalMath.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract MLRM is BaseManager, IManager, Owned {
+contract MLRM is BaseManager, IManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -45,7 +44,6 @@ contract MLRM is BaseManager, IManager, Owned {
 
   constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_)
     BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
-    Owned()
   {}
 
   /**
