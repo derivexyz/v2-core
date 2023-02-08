@@ -109,7 +109,7 @@ contract MLRM is BaseManager, IManager {
       // on the last scenario evalute the 0 strike case
       uint scenarioPrice = portfolio.strikes[i].strike;
       
-      margin += _calcPayoffAtPrice(portfolio, scenarioPrice);
+      margin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), margin);
 
       // keep track of totalCalls to later check if payoff unbounded
       totalCalls += portfolio.strikes[i].calls;
@@ -121,7 +121,7 @@ contract MLRM is BaseManager, IManager {
 
     // on the last scenario evalute the 0 strike case
     if (!zeroStrikeOwned) {
-      margin += _calcPayoffAtPrice(portfolio, 0);
+      margin += SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
     }
 
     // add cash
@@ -187,6 +187,16 @@ contract MLRM is BaseManager, IManager {
    */
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio) {
     return _arrangePortfolio(accounts.getAccountBalances(accountId));
+  }
+
+  /**
+   * @notice Calculate the max loss margin of account.
+   *         A negative value means the account is X amount over the required margin.
+   * @param portfolio Cash + arranged option portfolio.
+   * @return margin Amount by which account is over or under the required margin.
+   */
+  function getMargin(Portfolio memory portfolio) external view returns (int margin) {
+    return _calcMargin(portfolio);
   }
 
   ////////////

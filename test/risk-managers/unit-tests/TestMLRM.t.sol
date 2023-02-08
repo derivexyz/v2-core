@@ -241,6 +241,49 @@ contract UNIT_TestMLRM is Test {
     vm.stopPrank();
   }
 
+  function testZeroStrikeOption() public {
+    _depositCash(alice, aliceAcc, 100e18);
+    _depositCash(bob, bobAcc, 100e18);
+
+    // add ZSC
+    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    uint expiry = block.timestamp + 1 days;
+    uint callSubId = OptionEncoding.toSubId(expiry, 0, true);
+    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    vm.startPrank(address(alice));
+    account.submitTransfer(callTransfer, "");
+    vm.stopPrank();
+
+    // ZSC valued at $0
+    BaseManager.Portfolio memory portfolio = mlrm.getPortfolio(aliceAcc);
+    assertEq(mlrm.getMargin(portfolio), 100e18);
+
+    // add short put
+    uint putSubId = OptionEncoding.toSubId(expiry, 100e18, false);
+    AccountStructs.AssetTransfer memory putTransfer = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: putSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    vm.startPrank(address(alice));
+    account.submitTransfer(putTransfer, "");
+    vm.stopPrank();
+
+    // ZSC and put offset
+    portfolio = mlrm.getPortfolio(aliceAcc);
+    assertEq(mlrm.getMargin(portfolio), 0);
+  }
+
 
 
   // ////////////////////
