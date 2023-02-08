@@ -31,7 +31,7 @@ interface IOption is IAsset, ISettlementFeed {
   event WhitelistManagerSet(address manager, bool whitelisted);
 
   /// @dev Emitted when interest related state variables are updated
-  event OA_SnapshotTaken(uint subId, uint tradeId, uint oi);
+  event SnapshotTaken(uint subId, uint tradeId, uint oi);
 
   ////////////////
   //   Errors   //
