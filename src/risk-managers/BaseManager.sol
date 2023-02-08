@@ -97,6 +97,12 @@ abstract contract BaseManager is AccountStructs {
   //  Internal Functions  //
   //////////////////////////
 
+  /**
+   * @notice Adds option to portfolio holdings.
+   * @param portfolio current portfolio of account
+   * @param asset option asset to be added
+   * @return strikeIndex index of existing or added strike struct
+   */
   function _arrangeOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
     internal
     pure

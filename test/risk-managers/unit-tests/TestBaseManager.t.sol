@@ -32,6 +32,10 @@ contract BaseManagerTester is BaseManager {
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
   }
 
+  function arrangeOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset) external pure {
+    _arrangeOption(portfolio, asset);
+  }
+
   function handleAdjustment(
     uint, /*accountId*/
     uint, /*tradeId*/
@@ -93,6 +97,37 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
 
     assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), -amount);
     assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
+  }
+
+  /* ----------------------------- *
+   *    Test Option Arrangement    *
+   * ---------------------------- **/
+
+  function testBlockTradeIfMultipleExpiries() public {
+    // initial portfolio
+    BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
+    strikes[0] = BaseManager.Strike({
+      strike: 1000e18,
+      calls: 1e18,
+      puts: 0,
+      forwards: 0
+    });
+    BaseManager.Portfolio memory portfolio = BaseManager.Portfolio({
+      cash: 0,
+      expiry: 1 days,
+      numStrikesHeld: 1,
+      strikes: strikes
+    });
+
+    // construct asset
+    AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({
+      asset: IAsset(address(option)),
+      subId: OptionEncoding.toSubId(block.timestamp + 1.2 days, 1000e18, true),
+      balance: 10e18
+    });
+
+    vm.expectRevert(BaseManager.BM_OnlySingleExpiryPerAccount.selector);
+    tester.arrangeOption(portfolio, assetBalance);
   }
 
   /* ----------------- *
@@ -293,4 +328,5 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     vm.prank(alice);
     accounts.submitTransfers(transfers, "");
   }
+
 }

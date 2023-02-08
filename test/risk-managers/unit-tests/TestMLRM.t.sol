@@ -64,42 +64,9 @@ contract UNIT_TestMLRM is Test {
     vm.stopPrank();
   }
 
-  // //////////////
-  // // Transfer //
-  // //////////////
-
-  // function testBlockTradeIfMultipleExpiries() public {
-  //   _depositCash(alice, aliceAcc, 5000e18);
-  //   _depositCash(bob, bobAcc, 5000e18);
-  //   // prepare trades
-  //   uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
-  //   uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
-  //   AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
-  //     fromAcc: bobAcc,
-  //     toAcc: aliceAcc,
-  //     asset: IAsset(option),
-  //     subId: callSubId,
-  //     amount: 1e18,
-  //     assetData: ""
-  //   });
-  //   AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
-  //     fromAcc: bobAcc,
-  //     toAcc: aliceAcc,
-  //     asset: IAsset(option),
-  //     subId: longtermSubId,
-  //     amount: 5e18,
-  //     assetData: ""
-  //   });
-
-  //   // open first expiry option
-  //   vm.startPrank(address(alice));
-  //   account.submitTransfer(callTransfer, "");
-
-  //   // fail when adding an option with a new expiry
-  //   vm.expectRevert(BaseManager.BM_OnlySingleExpiryPerAccount.selector);
-  //   account.submitTransfer(longtermTransfer, "");
-  //   vm.stopPrank();
-  // }
+  //////////////
+  // Transfer //
+  //////////////
 
   // function testHandleAdjustment() public {
   //   vm.startPrank(alice);
