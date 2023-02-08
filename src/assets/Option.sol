@@ -101,7 +101,7 @@ contract Option is IOption, Owned {
     return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
 
-  function handleManagerChange(uint accountId, IManager newManager) external view onlyAccount {
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view onlyAccount {
     _checkManager(address(newManager));
   }
 
@@ -173,7 +173,7 @@ contract Option is IOption, Owned {
    * @param manager manager address
    */
   function _checkManager(address manager) internal view {
-    if (!whitelistedManager[manager]) revert CA_UnknownManager();
+    if (!whitelistedManager[manager]) revert OA_UnknownManager();
   }
 
   /**
