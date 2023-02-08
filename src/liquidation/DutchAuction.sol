@@ -225,7 +225,7 @@ contract DutchAuction is IDutchAuction, Owned {
     emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
     // terminating the auction if the initial margin is positive
-    if (riskManager.getInitialMargin(accountId) >= 0) {
+    if (riskManager.getInitialMarginForAccount(accountId) >= 0) {
       _terminateAuction(accountId);
     }
   }
@@ -280,12 +280,21 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
+   * @dev check if an account is above maintenance margin, if so return true, otherwise return false
+   * @param accountId ID of the account to check
+   */
+  function _isAboveMaintenanceMargin(uint accountId) internal view returns (bool isAboveMargin) {
+    int maintenanceMargin = riskManager.getMaintenanceMarginForAccount(accountId);
+    isAboveMargin = maintenanceMargin > 0;
+  }
+
+  /**
    * @notice This function can used by anyone to end an auction early
    * @dev This is to allow account owner to cancel the auction after adding more collateral
    * @param accountId the accountId that relates to the auction that is being stepped
    */
   function terminateAuction(uint accountId) external {
-    if (riskManager.getInitialMargin(accountId) < 0) {
+    if (riskManager.getInitialMarginForAccount(accountId) < 0) {
       revert DA_AuctionCannotTerminate(accountId);
     }
 
@@ -339,7 +348,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
   function _getMaxProportion(uint accountId) internal view returns (uint) {
-    int initialMargin = riskManager.getInitialMargin(accountId);
+    int initialMargin = riskManager.getInitialMarginForAccount(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
     if (currentBidPrice <= 0) {
@@ -412,12 +421,13 @@ contract DutchAuction is IDutchAuction, Owned {
     // update the portfolio in-memory
     _inversePortfolio(portfolio);
 
-    int cashMargin = riskManager.getCashAmount(accountId);
+    int cashMargin = _getAccountCash(accountId);
 
     // get the initial margin for the inversed portfolio
     upperBound =
       (riskManager.getInitialMarginForPortfolio(portfolio) - cashMargin) * parameters.portfolioModifier / 1e18;
-    lowerBound = (riskManager.getInitialMargin(accountId) + cashMargin) * parameters.inversePortfolioModifier / 1e18;
+    lowerBound =
+      (riskManager.getInitialMarginForAccount(accountId) + cashMargin) * parameters.inversePortfolioModifier / 1e18;
   }
 
   /**
@@ -460,5 +470,9 @@ contract DutchAuction is IDutchAuction, Owned {
         upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
       return bidPrice;
     }
+  }
+
+  function _getAccountCash(uint accountId) internal view returns (int) {
+    return accounts.getBalance(accountId, cash, 0);
   }
 }

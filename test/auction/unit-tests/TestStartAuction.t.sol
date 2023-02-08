@@ -362,7 +362,7 @@ contract UNIT_TestStartAuction is Test {
     // start an auction on Alice's account
     dutchAuction.startAuction(aliceAcc);
 
-    assertLt(manager.getInitialMargin(aliceAcc), 0);
+    assertLt(manager.getInitialMarginForAccount(aliceAcc), 0);
     // terminate the auction
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionCannotTerminate.selector, aliceAcc));
     dutchAuction.terminateAuction(aliceAcc);

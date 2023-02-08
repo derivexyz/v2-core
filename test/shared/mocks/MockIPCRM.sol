@@ -22,6 +22,7 @@ contract MockIPCRM is IPCRM, IManager {
   address account;
 
   mapping(uint => int) public initMargin;
+  mapping(uint => int) public maintenanceMargin;
   mapping(uint => bool) public accHasAssets;
 
   // next init margin that should be returned when calling getInitialMarginForPortfolio
@@ -53,24 +54,12 @@ contract MockIPCRM is IPCRM, IManager {
     nextIsEndingBid = true;
   }
 
-  function getSpot() external view virtual returns (uint spot) {
-    // TODO: filler code
-    return 1000 * DecimalMath.UNIT;
-  }
-
-  function getAccountValue(uint /*accountId*/ ) external view virtual returns (uint) {
-    // TODO: filler code
-    return 0;
-  }
-
-  function getInitialMargin(uint accountId) external view virtual returns (int) {
-    // TODO: filler code
+  function getInitialMarginForAccount(uint accountId) external view virtual returns (int) {
     return initMargin[accountId];
   }
 
-  function getMaintenanceMargin(uint /*accountId*/ ) external pure returns (uint) {
-    // TODO: filler code
-    return 0;
+  function getMaintenanceMarginForAccount(uint accountId) external view returns (int) {
+    return maintenanceMargin[accountId];
   }
 
   function getPortfolio(uint accountId) external view virtual returns (Portfolio memory portfolio) {
@@ -85,11 +74,6 @@ contract MockIPCRM is IPCRM, IManager {
 
       portfolio = Portfolio(0, block.timestamp + 2 weeks, 4, strikeHoldings);
     }
-  }
-
-  function getCashAmount(uint /*accountId*/ ) external view virtual returns (int) {
-    // TODO: filer coder
-    return 0;
   }
 
   function handleAdjustment(
@@ -112,6 +96,10 @@ contract MockIPCRM is IPCRM, IManager {
 
   function setAccInitMargin(uint accountId, int amount) external {
     initMargin[accountId] = amount;
+  }
+
+  function setAccMaintenanceMargin(uint accountId, int amount) external {
+    maintenanceMargin[accountId] = amount;
   }
 
   function giveAssets(uint accountId) external {
