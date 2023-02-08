@@ -102,7 +102,7 @@ contract MLRM is BaseManager, IManager, Owned {
     }
 
     // calculate margin
-    for (uint i; i < portfolio.strikes.length; i++) {
+    for (uint i; i < portfolio.numStrikesHeld; i++) {
       BaseManager.Strike memory currentStrike = portfolio.strikes[i];
 
       margin += SignedMath.max(spot - currentStrike.strike.toInt256(), 0).multiplyDecimal(currentStrike.calls);
