@@ -32,8 +32,10 @@ contract BaseManagerTester is BaseManager {
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
   }
 
-  function arrangeOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset) external pure {
-    _arrangeOption(portfolio, asset);
+  function addOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset) 
+    external pure returns (Portfolio memory updatedPortfolio) {
+    _addOption(portfolio, asset);
+    return portfolio;
   }
 
   function handleAdjustment(
@@ -127,7 +129,66 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     });
 
     vm.expectRevert(BaseManager.BM_OnlySingleExpiryPerAccount.selector);
-    tester.arrangeOption(portfolio, assetBalance);
+    tester.addOption(portfolio, assetBalance);
+  }
+
+  function testAddOption() public {
+    // initial portfolio
+    uint expiry = block.timestamp + 1 days;
+    BaseManager.Strike[] memory strikes = new BaseManager.Strike[](5);
+    strikes[0] = BaseManager.Strike({
+      strike: 1000e18,
+      calls: -5e18,
+      puts: 0,
+      forwards: 0
+    });
+    strikes[1] = BaseManager.Strike({
+      strike: 2000e18,
+      calls: -1e18,
+      puts: 0,
+      forwards: 0
+    });
+    strikes[2] = BaseManager.Strike({
+      strike: 3000e18,
+      calls: 10e18,
+      puts: 5e18,
+      forwards: 0
+    });
+    BaseManager.Portfolio memory portfolio = BaseManager.Portfolio({
+      cash: 0,
+      expiry: expiry,
+      numStrikesHeld: 3,
+      strikes: strikes
+    });
+
+    // add call to existing strike
+    AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({
+      asset: IAsset(address(option)),
+      subId: OptionEncoding.toSubId(expiry, 1000e18, true),
+      balance: 10e18
+    });
+    BaseManager.Portfolio memory updatedPortfolio = tester.addOption(portfolio, assetBalance);
+    assertEq(updatedPortfolio.strikes[0].calls, 5e18);
+
+    // add put to existing strike
+    assetBalance = AccountStructs.AssetBalance({
+      asset: IAsset(address(option)),
+      subId: OptionEncoding.toSubId(expiry, 2000e18, false),
+      balance: -100e18
+    });
+    updatedPortfolio = tester.addOption(portfolio, assetBalance);
+    assertEq(updatedPortfolio.strikes[1].puts, -100e18);
+
+    // add put to new strike
+    assetBalance = AccountStructs.AssetBalance({
+      asset: IAsset(address(option)),
+      subId: OptionEncoding.toSubId(expiry, 20000e18, false),
+      balance: 1e18
+    });
+    updatedPortfolio = tester.addOption(portfolio, assetBalance);
+    assertEq(updatedPortfolio.strikes[3].puts, 1e18);
+    assertEq(updatedPortfolio.numStrikesHeld, 4);
+
   }
 
   /* ----------------- *

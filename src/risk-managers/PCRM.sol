@@ -412,7 +412,7 @@ contract PCRM is BaseManager, IManager, Owned {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         // add option balance to portfolio in-memory
-        strikeIndex = _arrangeOption(portfolio, currentAsset);
+        strikeIndex = _addOption(portfolio, currentAsset);
 
         // if possible, combine calls and puts into forwards
         PCRMGrouping.updateForwards(portfolio.strikes[strikeIndex]);

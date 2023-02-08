@@ -99,11 +99,12 @@ abstract contract BaseManager is AccountStructs {
 
   /**
    * @notice Adds option to portfolio holdings.
+   * @dev This option arrangement is only additive, as portfolios are reconstructed for every trade
    * @param portfolio current portfolio of account
    * @param asset option asset to be added
-   * @return strikeIndex index of existing or added strike struct
+   * @return addedStrikeIndex index of existing or added strike struct
    */
-  function _arrangeOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
+  function _addOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
     internal
     pure
     returns (uint addedStrikeIndex)

@@ -141,7 +141,7 @@ contract MLRM is BaseManager, IManager {
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-        _arrangeOption(portfolio, currentAsset);
+        _addOption(portfolio, currentAsset);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         if (currentAsset.balance >= 0) {
           revert MLRM_OnlyPositiveCash();
