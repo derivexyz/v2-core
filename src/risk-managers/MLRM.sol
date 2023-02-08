@@ -58,6 +58,7 @@ contract MLRM is BaseManager, IManager, Owned {
     override
   {
     // todo [Josh]: whitelist check
+    // todo [Josh]: charge OI fee
 
     // PCRM calculations
     BaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
