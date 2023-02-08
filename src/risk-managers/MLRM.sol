@@ -36,7 +36,6 @@ contract MLRM is BaseManager, IManager, Owned {
   // Variables //
   ///////////////
 
-
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
 
@@ -44,10 +43,15 @@ contract MLRM is BaseManager, IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_) 
-    BaseManager(accounts_, spotFeeds_, cashAsset_, option_) 
-    Owned() {}
+  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_)
+    BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
+    Owned()
+  {}
 
+  /**
+   * @notice Ensures asset is valid and Max Loss margin is met.
+   * @param accountId Account for which to check trade.
+   */
   function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
     view
@@ -56,27 +60,35 @@ contract MLRM is BaseManager, IManager, Owned {
     // todo [Josh]: whitelist check
 
     // PCRM calculations
-    PCRM.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+    BaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     int margin = _calcMargin(portfolio);
 
     if (margin < 0) {
       revert MLRM_PortfolioBelowMargin(accountId, margin);
     }
-
   }
 
+  /**
+   * @notice Ensures new manager is valid.
+   * @param accountId Account for which to check trade.
+   * @param newManager IManager to change account to.
+   */
   function handleManagerChange(uint accountId, IManager newManager) external {
     // todo [Josh]: nextManager whitelist check
   }
-
-
 
   //////////
   // Util //
   //////////
 
-  function _calcMargin(PCRM.Portfolio memory portfolio) internal view returns (int margin) {
+  /**
+   * @notice Calculate the required margin of the account using the Max Loss method.
+   *         A positive value means the account is X amount over the required margin.
+   * @param portfolio Account portfolio.
+   * @return margin Amount by which account is over or under the required margin.
+   */
+  function _calcMargin(BaseManager.Portfolio memory portfolio) internal view returns (int margin) {
     // keep track to check unbounded
     int totalCalls;
 
@@ -91,7 +103,7 @@ contract MLRM is BaseManager, IManager, Owned {
 
     // calculate margin
     for (uint i; i < portfolio.strikes.length; i++) {
-      PCRM.Strike memory currentStrike = portfolio.strikes[i];
+      BaseManager.Strike memory currentStrike = portfolio.strikes[i];
 
       margin += SignedMath.max(spot - currentStrike.strike.toInt256(), 0).multiplyDecimal(currentStrike.calls);
       margin += SignedMath.max(currentStrike.strike.toInt256() - spot, 0).multiplyDecimal(currentStrike.puts);
@@ -102,13 +114,19 @@ contract MLRM is BaseManager, IManager, Owned {
     // add cash
     margin += portfolio.cash;
 
-    // check if still bounded
+    // check if bounded
     if (totalCalls < 0) {
       revert MLRM_PayoffUnbounded(totalCalls);
     }
+  }
 
-  } 
-
+  /**
+   * @notice Arrange portfolio into cash + arranged
+   *         array of [strikes][calls / puts].
+   *         Unlike PCRM, the forwards are purposefully not filtered.
+   * @param assets Array of balances for given asset and subId.
+   * @return portfolio Cash + option holdings.
+   */
   function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
     internal
     view
@@ -116,7 +134,7 @@ contract MLRM is BaseManager, IManager, Owned {
   {
     // note: differs from PCRM._arrangePortfolio since forwards aren't filtered
     // todo: [Josh] can just combine with PCRM _arrangePortfolio and remove struct
-    portfolio.strikes = new PCRM.Strike[](
+    portfolio.strikes = new BaseManager.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
@@ -124,9 +142,7 @@ contract MLRM is BaseManager, IManager, Owned {
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-
         _arrangeOption(portfolio, currentAsset);
-
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         if (currentAsset.balance >= 0) {
           revert MLRM_OnlyPositiveCash();
@@ -136,7 +152,7 @@ contract MLRM is BaseManager, IManager, Owned {
         revert MLRM_UnsupportedAsset(address(currentAsset.asset));
       }
     }
-  } 
+  }
 
   ////////////
   // Errors //

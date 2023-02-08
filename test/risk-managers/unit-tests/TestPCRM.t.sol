@@ -192,7 +192,8 @@ contract UNIT_TestPCRM is Test {
     BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
     strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    BaseManager.Portfolio memory expiry = BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    BaseManager.Portfolio memory expiry =
+      BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -203,7 +204,8 @@ contract UNIT_TestPCRM is Test {
     BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
     strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    BaseManager.Portfolio memory expiry = BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    BaseManager.Portfolio memory expiry =
+      BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getMaintenanceMargin(expiry);
 

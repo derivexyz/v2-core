@@ -401,7 +401,6 @@ contract PCRM is BaseManager, IManager, Owned {
    * @return portfolio Cash + option holdings.
    */
 
-  // todo [Josh]: rename this
   function _arrangePortfolio(AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
     portfolio.strikes = new PCRM.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES

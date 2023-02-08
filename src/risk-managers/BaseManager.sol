@@ -97,10 +97,11 @@ abstract contract BaseManager is AccountStructs {
   //  Internal Functions  //
   //////////////////////////
 
-  function _arrangeOption(
-    Portfolio memory portfolio, 
-    AccountStructs.AssetBalance memory asset
-  ) internal pure returns (uint addedStrikeIndex) {
+  function _arrangeOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
+    internal
+    pure
+    returns (uint addedStrikeIndex)
+  {
     // decode subId
     (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(asset.subId));
 
@@ -210,5 +211,4 @@ abstract contract BaseManager is AccountStructs {
   ////////////
 
   error BM_OnlySingleExpiryPerAccount();
-
 }
