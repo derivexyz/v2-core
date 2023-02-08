@@ -275,6 +275,8 @@ contract UNIT_BidAuction is Test {
     manager.setAccInitMargin(accountId, intMargin);
     manager.setMarginForPortfolio(reversedPortfolioIM);
 
+    manager.giveAssets(accountId);
+
     dutchAuction.startAuction(accountId);
   }
 }

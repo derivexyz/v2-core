@@ -115,6 +115,11 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
 
+    (int upperBound, int lowerBound) = dutchAuction.getBounds(aliceAcc);
+    assertEq(upperBound, 10000e18);
+    assertEq(lowerBound, -1000e18);
+    
+
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
     assertEq(currentBidPrice, 10_000e18);
@@ -130,6 +135,10 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.insolvent, true);
     assertEq(auction.ongoing, true);
     assertEq(auction.startTime, block.timestamp);
+
+    (int upperBound, int lowerBound) = dutchAuction.getBounds(aliceAcc);
+    assertEq(upperBound, -1);
+    assertEq(lowerBound, -1000e18);
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
@@ -150,7 +159,7 @@ contract UNIT_TestStartAuction is Test {
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
 
-    (int lowerBound, int upperBound) = dutchAuction.getBounds(aliceAcc);
+    (int upperBound, int lowerBound) = dutchAuction.getBounds(aliceAcc);
     assertEq(auction.lowerBound, lowerBound);
     assertEq(auction.upperBound, upperBound);
   }
