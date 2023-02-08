@@ -276,7 +276,6 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.incrementInsolventAuction(aliceAcc);
   }
 
-  // manager successfully terminates an auction
   function testTerminatesSolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
 
@@ -285,14 +284,29 @@ contract UNIT_TestStartAuction is Test {
     assertEq(auction.ongoing, true);
 
     // deposit margin => makes init margin > 0
-    manager.setAccInitMargin(aliceAcc, 15_000 * 1e18); // 1 thousand bucks
+    manager.setAccInitMargin(aliceAcc, 15_000 * 1e18);
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
   }
 
-  function tesCannotTerminateAuctionIfAccountIsUnderwater() public {
+  function testTerminatesInsolventAuction() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true);
+
+    // set maintenance margin > 0
+    manager.setAccMaintenanceMargin(aliceAcc, 5_000 * 1e18);
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+    // check that the auction is terminated
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+  }
+
+  function testCannotTerminateAuctionIfAccountIsUnderwater() public {
     manager.setAccMaintenanceMargin(aliceAcc, -1);
     manager.setAccInitMargin(aliceAcc, -10000 * 1e18); // 1 million bucks
 
@@ -305,24 +319,23 @@ contract UNIT_TestStartAuction is Test {
     dutchAuction.terminateAuction(aliceAcc);
   }
 
-  function _startDefaultSolventAuction(uint account) internal {
-    manager.setAccMaintenanceMargin(account, -1);
-    manager.setAccInitMargin(account, -1000 * 1e18); // 1 thousand bucks
-
-    manager.setMarginForPortfolio(10_000 * 1e18); // price drops from 10_000
+  function _startDefaultSolventAuction(uint acc) internal {
+    manager.setAccMaintenanceMargin(acc, -1);
+    manager.setAccInitMargin(acc, -1000 * 1e18); // -1000 underwater
+    manager.setMarginForPortfolio(10_000 * 1e18); // price drops from 10_000 => -1K
 
     // start an auction on Alice's account
-    dutchAuction.startAuction(account);
+    dutchAuction.startAuction(acc);
   }
 
-  function _startDefaultInsolventAuction(uint account) internal {
-    manager.setAccMaintenanceMargin(account, -1);
-    manager.setAccInitMargin(account, -1000 * 1e18); // 1 thousand bucks
+  function _startDefaultInsolventAuction(uint acc) internal {
+    manager.setAccMaintenanceMargin(acc, -1);
+    manager.setAccInitMargin(acc, -1000 * 1e18); // 1 thousand bucks
 
-    manager.setMarginForPortfolio(-1); // price drops -1: starts negative
+    manager.setMarginForPortfolio(-1); // price drops from -1 => -1000
 
     // start an auction on Alice's account
-    dutchAuction.startAuction(account);
+    dutchAuction.startAuction(acc);
   }
 
   /// Helper
