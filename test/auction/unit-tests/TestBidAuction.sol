@@ -99,13 +99,16 @@ contract UNIT_BidAuction is Test {
   /////////////////////////
 
   function testCannotBidOnAuctionThatHasNotStarted() public {
+    // init margin is below 0, but not marked yet
+    manager.setAccInitMargin(aliceAcc, -1);
+
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotStarted.selector, aliceAcc));
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
 
   function testCannotBidOnAuctionThatHasEnded() public {
-    createAuctionOnUser(aliceAcc, -1, 0, 10_000 * 1e18);
+    createDefaultSolventAuction(aliceAcc);
 
     vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 5);
     vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
@@ -117,14 +120,14 @@ contract UNIT_BidAuction is Test {
   }
 
   function testCannotBidForGreaterThanOneHundredPercent() public {
-    createAuctionOnUser(aliceAcc, -1, 0, 10_000 * 1e18);
+    createDefaultSolventAuction(aliceAcc);
 
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountTooLarge.selector, aliceAcc, 101 * 1e16));
     dutchAuction.bid(aliceAcc, bobAcc, 101 * 1e16);
   }
 
   function testCannotMakeBidUnlessOwnerOfBidder() public {
-    createAuctionOnUser(aliceAcc, -1, 0, 10_000 * 1e18);
+    createDefaultSolventAuction(aliceAcc);
 
     // bidding
     vm.stopPrank();
@@ -134,7 +137,7 @@ contract UNIT_BidAuction is Test {
   }
 
   function testBidOnSolventAuction() public {
-    createAuctionOnUser(aliceAcc, -1, 0, 10_000 * 1e18);
+    createDefaultSolventAuction(aliceAcc);
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
@@ -144,23 +147,53 @@ contract UNIT_BidAuction is Test {
     vm.startPrank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
-    // testing that the auction is ended because init margin is 0
-    manager.setAccInitMargin(aliceAcc, 0);
+    // the auction will keep going
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true);
+  }
+
+  function testBidOnSolventAuctionCanAutomaticallyTerminate() public {
+    createDefaultSolventAuction(aliceAcc);
+
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertLt(maxProportion, 5e17); // should be less than half
+
+    // mock that the next bid make the account above init margin
+    manager.setNextIsEndingBid();
+
+    // bidding
+    vm.startPrank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+
+    // the auction was terminated because init margin became 0 after the last bid
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, false);
   }
 
+  function testCannotBidOnAuctionThatIsNoLongerLiquidatable() public {
+    createDefaultSolventAuction(aliceAcc);
+
+    // imagine that now the init margin is back to positive
+    manager.setAccInitMargin(aliceAcc, 1);
+
+    // bidding should not go through
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionShouldBeTerminated.selector, aliceAcc));
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
   function testCannotBid0() public {
-    createAuctionOnUser(aliceAcc, -1, 0, 10_000 * 1e18);
+    createDefaultSolventAuction(aliceAcc);
 
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountIsZero.selector, aliceAcc));
     dutchAuction.bid(aliceAcc, bobAcc, 0);
   }
 
-  // Bid a few times whilst the auction is solvent and check if it correctly recalcs bounds
+  // Bid a few times whilst the auction is solvent and check if it correctly recalculates bounds
   // and terminates.
   function testBidTillSolventThenClose() public {
-    createAuctionOnUser(aliceAcc, -1, -10_000 * 1e18, 20_000 * 1e18);
+    createDefaultSolventAuction(aliceAcc);
 
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
 
@@ -219,9 +252,14 @@ contract UNIT_BidAuction is Test {
   // helpers //
   /////////////
 
-  function createAuctionOnUser(uint accountId, int maintenanceMargin, int intMargin, int reversedPortfolioIM) public {
-    manager.giveAssets(accountId);
+  function createDefaultSolventAuction(uint accountId) public {
+    int maintenanceMargin = -1e18;
+    int initMargin = -1000e18;
+    int reversedPortfolioIM = 1500e18; // price drops from 1500 => 0
+    createAuctionOnUser(accountId, maintenanceMargin, initMargin, reversedPortfolioIM);
+  }
 
+  function createAuctionOnUser(uint accountId, int maintenanceMargin, int intMargin, int reversedPortfolioIM) public {
     manager.setAccMaintenanceMargin(accountId, maintenanceMargin);
     manager.setAccInitMargin(accountId, intMargin);
     manager.setMarginForPortfolio(reversedPortfolioIM);

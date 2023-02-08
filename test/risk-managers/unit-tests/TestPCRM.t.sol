@@ -188,6 +188,14 @@ contract UNIT_TestPCRM is Test {
   // Margin calculations //
   /////////////////////////
 
+  function testInitialMarginCalculationOnEmptyAccount() public {
+    int initMargin = manager.getInitialMarginForAccount(aliceAcc);
+    assertEq(initMargin, 0);
+
+    int maintenanceMargin = manager.getMaintenanceMarginForAccount(aliceAcc);
+    assertEq(maintenanceMargin, 0);
+  }
+
   function testEmptyInitialMarginCalculation() public view {
     PCRM.Strike[] memory strikes = new PCRM.Strike[](1);
     strikes[0] = PCRM.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});

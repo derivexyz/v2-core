@@ -482,10 +482,22 @@ contract PCRM is BaseManager, IManager, Owned {
     return _arrangePortfolio(accounts.getAccountBalances(accountId));
   }
 
+  /**
+   * @notice Calculate the initial margin of an account.
+   *         A positive value means the account is X amount over the required margin.
+   * @param accountId ID of the account
+   * @return margin Amount by which account is over or under the required margin.
+   */
   function getInitialMarginForAccount(uint accountId) external view returns (int margin) {
     return _calcMargin(_arrangePortfolio(accounts.getAccountBalances(accountId)), MarginType.INITIAL);
   }
 
+  /**
+   * @notice Calculate the maintenance margin of an account.
+   *         A positive value means the account is X amount over the required margin.
+   * @param accountId ID of the account
+   * @return margin Amount by which account is over or under the required margin.
+   */
   function getMaintenanceMarginForAccount(uint accountId) external view returns (int margin) {
     return _calcMargin(_arrangePortfolio(accounts.getAccountBalances(accountId)), MarginType.MAINTENANCE);
   }

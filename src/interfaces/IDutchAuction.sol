@@ -37,7 +37,7 @@ interface IDutchAuction {
   /// @dev emitted when someone tries mark an insolvent auction again
   error DA_AuctionAlreadyInInsolvencyMode(uint accountId);
 
-  /// @dev emitted when someone tries to start an auction that has already been started
+  /// @dev emitted when someone tries to bid on auction that has not started
   error DA_AuctionNotStarted(uint accountId);
 
   /// @dev emitted when a risk manager tries to start an auction that has already been started
@@ -59,8 +59,11 @@ interface IDutchAuction {
   /// @dev emitted when a user doesn't own the account that they are trying to bid on
   error DA_BidderNotOwner(uint accountId, address bidder);
 
-  /// @dev emitted when a user tries to terminate an insolvent Auction
+  /// @dev emitted when a user tries to terminate an auction but the account is still underwater
   error DA_AuctionCannotTerminate(uint accountId);
+
+  /// @dev emitted when a user tries to bid on an auction, but it should be terminated
+  error DA_AuctionShouldBeTerminated(uint accountId);
 
   /// @dev emitted when a increase the step for an insolvent auction that has already reach its steps
   error DA_MaxStepReachedInsolventAuction();

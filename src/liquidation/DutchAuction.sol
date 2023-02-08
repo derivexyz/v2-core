@@ -191,6 +191,10 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_BidderNotOwner(bidderId, msg.sender);
     }
 
+    if (_checkCanTerminateAuction(accountId)) {
+      revert DA_AuctionShouldBeTerminated(accountId);
+    }
+
     // _getCurrentBidPrice below will check if the auction is active or not
 
     if (auctions[accountId].insolvent) {
@@ -223,9 +227,24 @@ contract DutchAuction is IDutchAuction, Owned {
 
     emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
-    // terminating the auction if the initial margin is positive
-    if (riskManager.getInitialMarginForAccount(accountId) >= 0) {
+    // terminating the auction if the account is back above water
+    if (_checkCanTerminateAuction(accountId)) {
       _terminateAuction(accountId);
+    }
+  }
+
+  /**
+   * @notice Return true if an auction can be terminated (back above water)
+   * @dev for solvent auction: if IM(rv=0) > 0
+   * @dev for insolvent auction: if MM > 0
+   * @param accountId ID of the account to check
+   */
+  function _checkCanTerminateAuction(uint accountId) internal view returns (bool) {
+    if (auctions[accountId].insolvent) {
+      return riskManager.getMaintenanceMarginForAccount(accountId) >= 0;
+    } else {
+      // todo: change to rv = 0;
+      return riskManager.getInitialMarginForAccount(accountId) >= 0;
     }
   }
 
@@ -279,24 +298,12 @@ contract DutchAuction is IDutchAuction, Owned {
   }
 
   /**
-   * @dev check if an account is above maintenance margin, if so return true, otherwise return false
-   * @param accountId ID of the account to check
-   */
-  function _isAboveMaintenanceMargin(uint accountId) internal view returns (bool isAboveMargin) {
-    int maintenanceMargin = riskManager.getMaintenanceMarginForAccount(accountId);
-    isAboveMargin = maintenanceMargin > 0;
-  }
-
-  /**
    * @notice This function can used by anyone to end an auction early
    * @dev This is to allow account owner to cancel the auction after adding more collateral
    * @param accountId the accountId that relates to the auction that is being stepped
    */
   function terminateAuction(uint accountId) external {
-    if (riskManager.getInitialMarginForAccount(accountId) < 0) {
-      revert DA_AuctionCannotTerminate(accountId);
-    }
-
+    if (!_checkCanTerminateAuction(accountId)) revert DA_AuctionCannotTerminate(accountId);
     _terminateAuction(accountId);
   }
 
