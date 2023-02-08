@@ -124,8 +124,6 @@ contract MLRM is BaseManager, IManager {
       margin += _calcPayoffAtPrice(portfolio, 0);
     }
 
-    console2.log("margin before cash", margin);
-
     // add cash
     margin += portfolio.cash;
 

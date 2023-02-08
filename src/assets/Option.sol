@@ -80,6 +80,8 @@ contract Option is IOption, Owned {
     // update the OI based on pre balance and change amount
     _updateOI(adjustment.subId, preBalance, adjustment.amount);
 
+    // todo: should block trading of settled options?
+
     return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
 

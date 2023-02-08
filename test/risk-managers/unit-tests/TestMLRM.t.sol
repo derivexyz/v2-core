@@ -202,8 +202,43 @@ contract UNIT_TestMLRM is Test {
     vm.stopPrank();
   }
 
-  function testExpiredOption() public view {
+  function testExpiredOption() public {
     // todo: do full test once settlement feed integrated 
+
+    // todo [mech, Josh to organize PR]: 
+    // create separate test file where all cases of valid margin calcs can be tested 
+
+    _depositCash(alice, aliceAcc, 100e18);
+    _depositCash(bob, bobAcc, 100e18);
+
+    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 750e18, false);
+    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    vm.startPrank(address(alice));
+    account.submitTransfer(callTransfer, "");
+    vm.stopPrank();
+
+    // uses settled price
+    skip(3 days);
+    aggregator.updateRoundData(3, 800e18, block.timestamp, block.timestamp, 3);
+    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(cash),
+      subId: 0,
+      amount: 100e18,
+      assetData: ""
+    });
+    vm.startPrank(address(alice));
+    account.submitTransfer(premiumTransfer, "");
+    vm.stopPrank();
   }
 
 
