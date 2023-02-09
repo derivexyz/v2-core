@@ -146,6 +146,7 @@ contract UNIT_DutchAuctionView is Test {
   }
 
   function testGetBounds() public {
+    manager.giveAssets(1);
     (int max, int min) = dutchAuction.getBounds(1);
     assertEq(max, 0);
     assertEq(min, 0);

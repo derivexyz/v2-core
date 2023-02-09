@@ -25,8 +25,17 @@ contract MockIPCRM is IPCRM, IManager {
   mapping(uint => int) public maintenanceMargin;
   mapping(uint => bool) public accHasAssets;
 
-  // next init margin that should be returned when calling getInitialMarginForPortfolio
-  int public portMargin;
+  // next init margin that should be returned when calling getInitialMargin
+  int public mockedInitMarginForPortfolio;
+  // next init margin that should be returned when calling getInitialMargin, if portfolio passed in is inversed
+  int public mockedInitMarginForPortfolioInversed;
+
+  // next maintenance margin that should be returned when calling getMaintenanceMargin
+  int public mockedMaintenanceMarginForPortfolio;
+
+  // next margin that should be returned when calling getInitialMarginRVZero
+  int public mockedInitMarginZeroRV;
+
   Portfolio public userAcc; // just a result that can be set to be returned when testing
 
   // if set to true, assume next executeBid will bring init margin to 0
@@ -56,18 +65,7 @@ contract MockIPCRM is IPCRM, IManager {
     nextIsEndingBid = true;
   }
 
-  function getInitialMarginForAccount(uint accountId) external view virtual returns (int) {
-    if (revertGetMargin) revert("test revert");
-    return initMargin[accountId];
-  }
-
-  function getMaintenanceMarginForAccount(uint accountId) external view returns (int) {
-    if (revertGetMargin) revert("test revert");
-    return maintenanceMargin[accountId];
-  }
-
   function getPortfolio(uint accountId) external view virtual returns (Portfolio memory portfolio) {
-    // TODO: filler code
     if (accHasAssets[accountId]) {
       Strike[] memory strikeHoldings = new Strike[](4);
 
@@ -98,14 +96,6 @@ contract MockIPCRM is IPCRM, IManager {
     // TODO: filler code
   }
 
-  function setAccInitMargin(uint accountId, int amount) external {
-    initMargin[accountId] = amount;
-  }
-
-  function setAccMaintenanceMargin(uint accountId, int amount) external {
-    maintenanceMargin[accountId] = amount;
-  }
-
   function giveAssets(uint accountId) external {
     accHasAssets[accountId] = true;
   }
@@ -123,12 +113,38 @@ contract MockIPCRM is IPCRM, IManager {
     }
   }
 
-  function setMarginForPortfolio(int margin) external {
-    portMargin = margin;
+  function setInitMarginForPortfolio(int margin) external {
+    mockedInitMarginForPortfolio = margin;
   }
 
-  function getInitialMarginForPortfolio(IPCRM.Portfolio memory) external view returns (int) {
-    return portMargin;
+  function setInitMarginForInversedPortfolio(int margin) external {
+    mockedInitMarginForPortfolioInversed = margin;
+  }
+
+  function setInitMarginForPortfolioZeroRV(int margin) external {
+    mockedInitMarginZeroRV = margin;
+  }
+
+  function setMaintenanceMarginForPortfolio(int margin) external {
+    mockedMaintenanceMarginForPortfolio = margin;
+  }
+
+  function getInitialMargin(IPCRM.Portfolio memory portfolio) external view returns (int) {
+    // default is strikes[0] = {1000, 1 call, 1 put, 0 forward}
+    if (portfolio.strikes.length == 0) revert("Please give portfolio to account first!");
+    if (portfolio.strikes[0].calls > 0) {
+      return mockedInitMarginForPortfolio;
+    } else {
+      return mockedInitMarginForPortfolioInversed;
+    }
+  }
+
+  function getMaintenanceMargin(IPCRM.Portfolio memory) external view returns (int) {
+    return mockedMaintenanceMarginForPortfolio;
+  }
+
+  function getInitialMarginRVZero(IPCRM.Portfolio memory) external view returns (int) {
+    return mockedInitMarginZeroRV;
   }
 
   function setRevertMargin() external {

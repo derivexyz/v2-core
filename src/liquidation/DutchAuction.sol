@@ -13,6 +13,7 @@ import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "../libraries/DecimalMath.sol";
+import "../libraries/SignedDecimalMath.sol";
 import "../libraries/Owned.sol";
 import "../libraries/IntLib.sol";
 
@@ -31,6 +32,7 @@ import "../libraries/IntLib.sol";
 contract DutchAuction is IDutchAuction, Owned {
   using SafeCast for int;
   using SafeCast for uint;
+  using SignedDecimalMath for int;
   using DecimalMath for uint;
 
   struct AuctionDetails {
@@ -125,7 +127,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId The id of the account being liquidated
    */
   function startAuction(uint accountId) external {
-    if (riskManager.getMaintenanceMarginForAccount(accountId) >= 0) {
+    if (getMaintenanceMarginForAccount(accountId) >= 0) {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
 
@@ -191,7 +193,7 @@ contract DutchAuction is IDutchAuction, Owned {
       revert DA_BidderNotOwner(bidderId, msg.sender);
     }
 
-    if (_checkCanTerminateAuction(accountId)) {
+    if (checkCanTerminateAuction(accountId)) {
       revert DA_AuctionShouldBeTerminated(accountId);
     }
 
@@ -228,7 +230,7 @@ contract DutchAuction is IDutchAuction, Owned {
     emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
 
     // terminating the auction if the account is back above water
-    if (_checkCanTerminateAuction(accountId)) {
+    if (checkCanTerminateAuction(accountId)) {
       _terminateAuction(accountId);
     }
   }
@@ -239,12 +241,11 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev for insolvent auction: if MM > 0
    * @param accountId ID of the account to check
    */
-  function _checkCanTerminateAuction(uint accountId) internal view returns (bool) {
+  function checkCanTerminateAuction(uint accountId) public view returns (bool) {
     if (!auctions[accountId].insolvent) {
-      // todo: change to rv = 0;
-      return riskManager.getInitialMarginForAccount(accountId) >= 0;
+      return getInitMarginForAccountRVZero(accountId) >= 0;
     } else {
-      return riskManager.getMaintenanceMarginForAccount(accountId) >= 0;
+      return getMaintenanceMarginForAccount(accountId) >= 0;
     }
   }
 
@@ -257,6 +258,28 @@ contract DutchAuction is IDutchAuction, Owned {
     Auction storage auction = auctions[accountId];
     auction.ongoing = false;
     emit AuctionEnded(accountId, block.timestamp);
+  }
+
+  function getMaintenanceMarginForAccount(uint accountId) public view returns (int) {
+    return riskManager.getMaintenanceMargin(riskManager.getPortfolio(accountId));
+  }
+
+  function getInitMarginForAccount(uint accountId) public view returns (int) {
+    return riskManager.getInitialMargin(riskManager.getPortfolio(accountId));
+  }
+
+  function getInitMarginForInversedPortfolio(uint accountId) public view returns (int) {
+    IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
+    _inversePortfolio(portfolio);
+    return riskManager.getInitialMargin(portfolio);
+  }
+
+  /**
+   * @dev Get initial margin for a portfolio with rv = 0
+   */
+  function getInitMarginForAccountRVZero(uint accountId) public view returns (int) {
+    IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
+    return riskManager.getInitialMarginRVZero(portfolio);
   }
 
   /**
@@ -303,7 +326,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the accountId that relates to the auction that is being stepped
    */
   function terminateAuction(uint accountId) external {
-    if (!_checkCanTerminateAuction(accountId)) revert DA_AuctionCannotTerminate(accountId);
+    if (!checkCanTerminateAuction(accountId)) revert DA_AuctionCannotTerminate(accountId);
     _terminateAuction(accountId);
   }
 
@@ -354,7 +377,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
   function _getMaxProportion(uint accountId) internal view returns (uint) {
-    int initialMargin = riskManager.getInitialMarginForAccount(accountId);
+    int initialMargin = getInitMarginForAccountRVZero(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
     if (currentBidPrice <= 0) {
@@ -364,7 +387,7 @@ contract DutchAuction is IDutchAuction, Owned {
     // IM is always negative under the margining system.
     int pMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
 
-    // commented out if statement to hit coverage dont have a test that hits it.
+    // commented out if statement to hit coverage don't have a test that hits it.
     return pMax.toUint256();
   }
 
@@ -418,6 +441,8 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @notice gets the upper bound for the liquidation price
    * @dev requires the accountId and the spot price to mark each asset at a particular value
+   * @dev vUpper = IM(P'), while P' being the inversed portfolio
+   * @dev vLower = IM(P)
    * @param accountId the accountId of the account that is being liquidated
    */
   function _getBounds(uint accountId) internal view returns (int upperBound, int lowerBound) {
@@ -426,13 +451,9 @@ contract DutchAuction is IDutchAuction, Owned {
     // update the portfolio in-memory
     _inversePortfolio(portfolio);
 
-    int cashMargin = _getAccountCash(accountId);
-
     // get the initial margin for the inversed portfolio
-    upperBound =
-      (riskManager.getInitialMarginForPortfolio(portfolio) - cashMargin) * parameters.portfolioModifier / 1e18;
-    lowerBound =
-      (riskManager.getInitialMarginForAccount(accountId) + cashMargin) * parameters.inversePortfolioModifier / 1e18;
+    upperBound = getInitMarginForInversedPortfolio(accountId).multiplyDecimal(parameters.portfolioModifier);
+    lowerBound = getInitMarginForAccount(accountId).multiplyDecimal(parameters.inversePortfolioModifier);
   }
 
   /**

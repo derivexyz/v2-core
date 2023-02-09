@@ -29,9 +29,10 @@ interface IPCRM {
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee) external;
 
-  function getInitialMarginForAccount(uint accountId) external view returns (int);
+  function getInitialMargin(Portfolio memory portfolio) external view returns (int);
 
-  function getMaintenanceMarginForAccount(uint accountId) external view returns (int);
+  /// @dev temporary function place holder to return RV = 0
+  function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int);
 
-  function getInitialMarginForPortfolio(Portfolio memory portfolio) external view returns (int);
+  function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int);
 }

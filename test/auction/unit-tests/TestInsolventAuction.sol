@@ -43,14 +43,18 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
   function createDefaultInsolventAuction(uint accountId) public {
     // slightly under maintenance margin
     int maintenanceMargin = -1;
+
     // init margin is also below 0
     int initialMargin = -1000_000e18;
-    // inverted portfolio max value = 0
-    int reversedPortfolioIM = 0;
 
-    manager.setAccMaintenanceMargin(accountId, maintenanceMargin);
-    manager.setAccInitMargin(accountId, initialMargin);
-    manager.setMarginForPortfolio(reversedPortfolioIM);
+    // inverted portfolio max value = 0
+    int inversedPortfolioIM = 0;
+
+    manager.giveAssets(accountId);
+
+    manager.setMaintenanceMarginForPortfolio(maintenanceMargin);
+    manager.setInitMarginForPortfolio(initialMargin); // lower bound
+    manager.setInitMarginForInversedPortfolio(inversedPortfolioIM);
 
     dutchAuction.startAuction(accountId);
   }

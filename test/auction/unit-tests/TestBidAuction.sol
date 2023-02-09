@@ -100,7 +100,7 @@ contract UNIT_BidAuction is Test {
 
   function testCannotBidOnAuctionThatHasNotStarted() public {
     // init margin is below 0, but not marked yet
-    manager.setAccInitMargin(aliceAcc, -1);
+    manager.setInitMarginForPortfolio(-1);
 
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotStarted.selector, aliceAcc));
     vm.prank(bob);
@@ -171,7 +171,7 @@ contract UNIT_BidAuction is Test {
     createDefaultSolventAuction(aliceAcc);
 
     // imagine that now the init margin is back to positive
-    manager.setAccInitMargin(aliceAcc, 1);
+    manager.setInitMarginForPortfolio(1);
 
     // bidding should not go through
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionShouldBeTerminated.selector, aliceAcc));
@@ -266,14 +266,13 @@ contract UNIT_BidAuction is Test {
   function createDefaultSolventAuction(uint accountId) public {
     int maintenanceMargin = -1e18;
     int initMargin = -1000e18;
-    int reversedPortfolioIM = 1500e18; // price drops from 1500 => 0
-    createAuctionOnUser(accountId, maintenanceMargin, initMargin, reversedPortfolioIM);
+    int inversedPortfolioIM = 1500e18; // price drops from 1500 => 0
+    createAuctionOnUser(accountId, maintenanceMargin, initMargin, inversedPortfolioIM);
   }
 
-  function createAuctionOnUser(uint accountId, int maintenanceMargin, int intMargin, int reversedPortfolioIM) public {
-    manager.setAccMaintenanceMargin(accountId, maintenanceMargin);
-    manager.setAccInitMargin(accountId, intMargin);
-    manager.setMarginForPortfolio(reversedPortfolioIM);
+  function createAuctionOnUser(uint accountId, int maintenanceMargin, int intMargin, int inversedPortfolioIM) public {
+    manager.setMaintenanceMarginForPortfolio(maintenanceMargin);
+    manager.setInitMarginForPortfolio(intMargin);
 
     manager.giveAssets(accountId);
 
