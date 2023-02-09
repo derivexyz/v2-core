@@ -21,8 +21,6 @@ contract MockIPCRM is IPCRM, IManager {
 
   address account;
 
-  mapping(uint => int) public initMargin;
-  mapping(uint => int) public maintenanceMargin;
   mapping(uint => bool) public accHasAssets;
 
   // next init margin that should be returned when calling getInitialMargin
@@ -47,18 +45,11 @@ contract MockIPCRM is IPCRM, IManager {
     account = _account;
   }
 
-  // TODO: needs to be expanded upon next sprint to make sure that
-  // it can handle the insolvency case properly
   function executeBid(uint accountId, uint, /*liquidatorId*/ uint, /*portion*/ uint cashAmount, uint) external virtual {
-    if (cashAmount > 0) {
-      initMargin[accountId] += cashAmount.toInt256();
-    }
     if (nextIsEndingBid) {
       nextIsEndingBid = false;
-      initMargin[accountId] = 0;
+      mockedInitMarginZeroRV = 0;
     }
-
-    // portMargin[accountId] = (portMargin[accountId] * portion.toInt256()) / 1e18;
   }
 
   function setNextIsEndingBid() external {
@@ -130,6 +121,7 @@ contract MockIPCRM is IPCRM, IManager {
   }
 
   function getInitialMargin(IPCRM.Portfolio memory portfolio) external view returns (int) {
+    if (revertGetMargin) revert("mocked revert");
     // default is strikes[0] = {1000, 1 call, 1 put, 0 forward}
     if (portfolio.strikes.length == 0) revert("Please give portfolio to account first!");
     if (portfolio.strikes[0].calls > 0) {
@@ -140,10 +132,12 @@ contract MockIPCRM is IPCRM, IManager {
   }
 
   function getMaintenanceMargin(IPCRM.Portfolio memory) external view returns (int) {
+    if (revertGetMargin) revert("mocked revert");
     return mockedMaintenanceMarginForPortfolio;
   }
 
   function getInitialMarginRVZero(IPCRM.Portfolio memory) external view returns (int) {
+    if (revertGetMargin) revert("mocked revert");
     return mockedInitMarginZeroRV;
   }
 

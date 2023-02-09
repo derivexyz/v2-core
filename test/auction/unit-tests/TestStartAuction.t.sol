@@ -296,8 +296,8 @@ contract UNIT_TestStartAuction is Test {
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, true);
 
-    // deposit margin => makes init margin > 0
-    manager.setInitMarginForPortfolio(15_000 * 1e18);
+    // deposit margin => makes IM(rv = 0) > 0
+    manager.setInitMarginForPortfolioZeroRV(15_000 * 1e18);
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
@@ -337,6 +337,10 @@ contract UNIT_TestStartAuction is Test {
 
     manager.setMaintenanceMarginForPortfolio(-1);
     manager.setInitMarginForPortfolio(-1000 * 1e18); // -1000 underwater
+
+    // mock call if rv = 0
+    manager.setInitMarginForPortfolioZeroRV(-1000 * 1e18);
+
     manager.setInitMarginForInversedPortfolio(10_000 * 1e18); // price drops from 10_000 => -1K
 
     // start an auction on Alice's account
