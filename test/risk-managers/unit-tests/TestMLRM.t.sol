@@ -107,7 +107,7 @@ contract UNIT_TestMLRM is Test {
   }
 
   function testBlockIfUnsupportedOption() public {
-    // create unsupported option 
+    // create unsupported option
     MockOption unsupportedOption = new MockOption(account);
 
     // prepare trades
