@@ -120,7 +120,7 @@ contract MLRM is BaseManager, IManager {
 
     // on the last scenario evalute the 0 strike case
     if (!zeroStrikeOwned) {
-      margin += SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
+      margin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
     }
 
     // add cash

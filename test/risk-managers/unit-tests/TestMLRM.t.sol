@@ -196,6 +196,36 @@ contract UNIT_TestMLRM is Test {
     vm.stopPrank();
   }
 
+  function testDoubleShortPutMargin() public {
+    uint put1SubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
+    uint put2SubId = OptionEncoding.toSubId(block.timestamp + 1 days, 2000e18, false);
+    AccountStructs.AssetTransfer memory putTransfer1 = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: put1SubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory putTransfer2 = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: put2SubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    transferBatch[0] = putTransfer1;
+    transferBatch[1] = putTransfer2;
+
+    // fail as alice will be below margin
+    vm.startPrank(alice);
+    vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_PortfolioBelowMargin.selector, uint(aliceAcc), -3000e18));
+    account.submitTransfers(transferBatch, "");
+    vm.stopPrank();
+  }
+
   function testExpiredOption() public {
     // todo: do full test once settlement feed integrated
 
