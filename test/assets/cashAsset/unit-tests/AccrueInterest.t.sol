@@ -339,7 +339,5 @@ contract UNIT_CashAssetAccrueInterest is Test {
     cashAsset.accrueInterest();
     assertGt(cashAsset.borrowIndex(), 1e18);
     assertGt(cashAsset.supplyIndex(), 1e18);
-    console.log("borrowIndex", cashAsset.borrowIndex());
-    console.log("supplyIndex", cashAsset.supplyIndex());
   }
 }

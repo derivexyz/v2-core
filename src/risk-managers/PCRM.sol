@@ -488,7 +488,6 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  // todo [Josh]: public view function to get margin values directly through accountId
   function getInitialMargin(Portfolio memory portfolio) external view returns (int margin) {
     return _calcMargin(portfolio, MarginType.INITIAL);
   }
