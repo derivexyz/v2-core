@@ -45,7 +45,10 @@ contract MockIPCRM is IPCRM, IManager {
     account = _account;
   }
 
-  function executeBid(uint /*accountId*/, uint, /*liquidatorId*/ uint, /*portion*/ uint /*cashAmount*/, uint) external virtual {
+  function executeBid(uint, /*accountId*/ uint, /*liquidatorId*/ uint, /*portion*/ uint, /*cashAmount*/ uint)
+    external
+    virtual
+  {
     if (nextIsEndingBid) {
       nextIsEndingBid = false;
       mockedInitMarginZeroRV = 0;
