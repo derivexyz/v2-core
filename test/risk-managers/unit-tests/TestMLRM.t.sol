@@ -312,45 +312,14 @@ contract UNIT_TestMLRM is Test {
   // // Manager Change //
   // ////////////////////
 
-  // function testValidManagerChange() public {
-  //   MockManager newManager = new MockManager(address(account));
+  function testValidManagerChange() public {
+    MockManager newManager = new MockManager(address(account));
 
-  //   // todo: test change to valid manager
-  //   vm.startPrank(alice);
-  //   account.changeManager(aliceAcc, IManager(address(newManager)), "");
-  //   vm.stopPrank();
-  // }
-
-  // // alice open 1 long call, 10 short put. both with 4K cash
-  // function _openDefaultOptions() internal returns (uint callSubId, uint putSubId) {
-  //   _depositCash(alice, aliceAcc, 4000e18);
-  //   _depositCash(bob, bobAcc, 4000e18);
-
-  //   vm.startPrank(alice);
-  //   callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
-  //   putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
-
-  //   AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
-
-  //   transfers[0] = AccountStructs.AssetTransfer({
-  //     fromAcc: bobAcc,
-  //     toAcc: aliceAcc,
-  //     asset: IAsset(option),
-  //     subId: callSubId,
-  //     amount: 1e18,
-  //     assetData: ""
-  //   });
-  //   transfers[1] = AccountStructs.AssetTransfer({
-  //     fromAcc: bobAcc,
-  //     toAcc: aliceAcc,
-  //     asset: IAsset(option),
-  //     subId: putSubId,
-  //     amount: -10e18,
-  //     assetData: ""
-  //   });
-  //   account.submitTransfers(transfers, "");
-  //   vm.stopPrank();
-  // }
+    // todo: test nextManager whitelist once implemented.
+    vm.startPrank(alice);
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    vm.stopPrank();
+  }
 
   function _depositCash(address user, uint acc, uint amount) internal {
     usdc.mint(user, amount);

@@ -53,11 +53,7 @@ contract MLRM is BaseManager, IManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
-    public
-    view
-    override
-  {
+  function handleAdjustment(uint accountId, uint, address, AssetDelta[] calldata, bytes memory) public view override {
     // todo [Josh]: whitelist check
     // todo [Josh]: charge OI fee
 
@@ -90,9 +86,6 @@ contract MLRM is BaseManager, IManager {
    * @return margin Amount by which account is over or under the required margin.
    */
   function _calcMargin(BaseManager.Portfolio memory portfolio) internal view returns (int margin) {
-    // keep track to check unbounded
-    int totalCalls;
-
     // check if expired or not
     int timeToExpiry = portfolio.expiry.toInt256() - block.timestamp.toInt256();
     int spot;
@@ -102,36 +95,43 @@ contract MLRM is BaseManager, IManager {
       spot = spotFeeds.getSpot(1).toInt256(); // todo [Josh]: need to switch over to settled price if already expired
     }
 
-    // calculate margin
+    // The portfolio payoff is evaluated at the strike price of each owned option.
+    // This guarantees that the max loss of a portfolio can be found.
     bool zeroStrikeOwned;
+    int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      // on the last scenario evalute the 0 strike case
       uint scenarioPrice = portfolio.strikes[i].strike;
-
       margin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), margin);
 
-      // keep track of totalCalls to later check if payoff unbounded
-      totalCalls += portfolio.strikes[i].calls;
+      netCalls += portfolio.strikes[i].calls;
 
       if (scenarioPrice == 0) {
         zeroStrikeOwned = true;
       }
     }
 
-    // on the last scenario evalute the 0 strike case
+    // Ensure $0 scenario is always evaluated.
     if (!zeroStrikeOwned) {
       margin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
     }
 
-    // add cash
+    // Add cash balance.
     margin += portfolio.cash;
 
-    // check if bounded
-    if (totalCalls < 0) {
-      revert MLRM_PayoffUnbounded(totalCalls);
+    // Max loss cannot be calculated when netCalls below zero,
+    // since short calls have an unbounded payoff.
+    if (netCalls < 0) {
+      revert MLRM_PayoffUnbounded(netCalls);
     }
   }
 
+  /**
+   * @notice Calculate the full portfolio payoff at a given settlement price.
+   *         This is used in '_calcMargin()' calculated the max loss of a given portfolio.
+   * @param portfolio Account portfolio.
+   * @param price Assumed scenario price.
+   * @return payoff Net $ profit or loss of the portfolio given a settlement price.
+   */
   function _calcPayoffAtPrice(BaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       BaseManager.Strike memory currentStrike = portfolio.strikes[i];
