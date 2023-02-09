@@ -170,6 +170,15 @@ contract PCRM is BaseManager, IManager, Owned {
     feeRecipientAcc = _newAcc;
   }
 
+  /**
+   * @notice Governance determined OI fee rate to be set
+   * @dev Charged fee = contract traded * OIFee * spot
+   * @param newFeeRate OI fee rate in BPS
+   */
+  function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
+    OIFeeRateBPS = newFeeRate;
+  }
+
   //////////////////
   // Liquidations //
   //////////////////
@@ -456,6 +465,13 @@ contract PCRM is BaseManager, IManager, Owned {
    */
   function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int margin) {
     return _calcMargin(portfolio, MarginType.MAINTENANCE);
+  }
+
+  /**
+   * @notice Get the OI fee rate in bps
+   */
+  function getOIFeeRateBPS() external view returns (uint) {
+    return OIFeeRateBPS;
   }
 
   ////////////
