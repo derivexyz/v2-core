@@ -134,9 +134,9 @@ contract UNIT_TestMLRM is Test {
 
     // // fail due to unsupported asset
     vm.startPrank(alice);
-    // vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_UnsupportedAsset.selector, address(unsupportedOption)));
-    // account.submitTransfers(transferBatch, "");
-    // vm.stopPrank();
+    vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_UnsupportedAsset.selector, address(unsupportedOption)));
+    account.submitTransfers(transferBatch, "");
+    vm.stopPrank();
   }
 
   /////////////////////////
