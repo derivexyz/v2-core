@@ -259,14 +259,23 @@ contract DutchAuction is IDutchAuction, Owned {
     emit AuctionEnded(accountId, block.timestamp);
   }
 
+  /**
+   * @dev Helper to get maintenance margin for an accountId
+   */
   function getMaintenanceMarginForAccount(uint accountId) public view returns (int) {
     return riskManager.getMaintenanceMargin(riskManager.getPortfolio(accountId));
   }
 
+  /**
+   * @dev Helper to get initial margin for an accountId
+   */
   function getInitMarginForAccount(uint accountId) public view returns (int) {
     return riskManager.getInitialMargin(riskManager.getPortfolio(accountId));
   }
 
+  /**
+   * @dev Helper to get initial margin for the inversed portfolio of accountId
+   */
   function getInitMarginForInversedPortfolio(uint accountId) public view returns (int) {
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     _inversePortfolio(portfolio);
