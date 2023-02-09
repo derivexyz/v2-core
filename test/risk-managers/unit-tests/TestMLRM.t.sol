@@ -128,9 +128,9 @@ contract UNIT_TestMLRM is Test {
       amount: 5e18,
       assetData: ""
     });
-    // AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
-    // transferBatch[0] = validOption;
-    // transferBatch[1] = invalidOption;
+    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    transferBatch[0] = validOption;
+    transferBatch[1] = invalidOption;
 
     // // fail due to unsupported asset
     // vm.startPrank(address(alice));
