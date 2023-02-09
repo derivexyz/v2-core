@@ -107,27 +107,27 @@ contract UNIT_TestMLRM is Test {
   }
 
   function testBlockIfUnsupportedOption() public {
-    // create unsupported option
-    // MockOption unsupportedOption = new MockOption(account);
+    create unsupported option
+    MockOption unsupportedOption = new MockOption(account);
 
-    // // prepare trades
-    // uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
-    // AccountStructs.AssetTransfer memory invalidOption = AccountStructs.AssetTransfer({
-    //   fromAcc: bobAcc,
-    //   toAcc: aliceAcc,
-    //   asset: IAsset(unsupportedOption),
-    //   subId: callSubId,
-    //   amount: 1e18,
-    //   assetData: ""
-    // });
-    // AccountStructs.AssetTransfer memory validOption = AccountStructs.AssetTransfer({
-    //   fromAcc: aliceAcc,
-    //   toAcc: bobAcc,
-    //   asset: IAsset(option),
-    //   subId: callSubId,
-    //   amount: 5e18,
-    //   assetData: ""
-    // });
+    // prepare trades
+    uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
+    AccountStructs.AssetTransfer memory invalidOption = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(unsupportedOption),
+      subId: callSubId,
+      amount: 1e18,
+      assetData: ""
+    });
+    AccountStructs.AssetTransfer memory validOption = AccountStructs.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: IAsset(option),
+      subId: callSubId,
+      amount: 5e18,
+      assetData: ""
+    });
     // AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
     // transferBatch[0] = validOption;
     // transferBatch[1] = invalidOption;
