@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
-import "src/assets/Option.sol";
 import "src/risk-managers/MLRM.sol";
 import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
@@ -29,7 +28,7 @@ contract UNIT_TestMLRM is Test {
 
   ChainlinkSpotFeeds spotFeeds;
   MockV3Aggregator aggregator;
-  Option option;
+  MockOption option;
   MockDutchAuction auction;
   MockSM sm;
   uint feeRecipient;
@@ -46,7 +45,7 @@ contract UNIT_TestMLRM is Test {
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
     usdc = new MockERC20("USDC", "USDC");
-    option = new Option(account, address(spotFeeds), 1);
+    option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
 
     mlrm = new MLRM(
@@ -169,7 +168,6 @@ contract UNIT_TestMLRM is Test {
     _depositCash(alice, aliceAcc, 100e18);
     _depositCash(bob, bobAcc, 100e18);
 
-    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
     uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 500e18, false);
     AccountStructs.AssetTransfer memory putTransfer = AccountStructs.AssetTransfer({
       fromAcc: aliceAcc,

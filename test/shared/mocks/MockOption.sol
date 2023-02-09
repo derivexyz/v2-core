@@ -2,10 +2,16 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import "src/libraries/SignedDecimalMath.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IAccounts.sol";
 
 contract MockOption is IOption {
+  using SafeCast for uint;
+  using SafeCast for int;
+  using SignedDecimalMath for int;
+
   IAccounts immutable account;
 
   bool revertHandleManagerChange;
@@ -100,7 +106,20 @@ contract MockOption is IOption {
     public
     pure
     returns (int)
-  {}
+  {
+    int priceDiff = settlementPrice.toInt256() - strikePrice.toInt256();
+
+    if (isCall && priceDiff > 0) {
+      // ITM Call
+      return priceDiff.multiplyDecimal(balance);
+    } else if (!isCall && priceDiff < 0) {
+      // ITM Put
+      return -priceDiff.multiplyDecimal(balance);
+    } else {
+      // OTM
+      return 0;
+    }
+  }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
