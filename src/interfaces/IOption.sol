@@ -15,9 +15,6 @@ interface IOption is IAsset, ISettlementFeed {
     uint240 oi;
   }
 
-  /// @dev Emitted when interest related state variables are updated
-  event OA_SnapshotTaken(uint subId, uint tradeId, uint oi);
-
   ///////////////////
   //   Functions   //
   ///////////////////
@@ -30,6 +27,16 @@ interface IOption is IAsset, ISettlementFeed {
     external
     pure
     returns (int);
+
+  ////////////////
+  //   Events   //
+  ////////////////
+
+  /// @dev Emitted when a manager address is whitelisted or unwhitelisted
+  event WhitelistManagerSet(address manager, bool whitelisted);
+
+  /// @dev Emitted when interest related state variables are updated
+  event SnapshotTaken(uint subId, uint tradeId, uint oi);
 
   ////////////////
   //   Errors   //
