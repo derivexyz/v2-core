@@ -28,7 +28,6 @@ import "../libraries/IntLib.sol";
  *    where the security module will step into to handle the risk
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
-
 contract DutchAuction is IDutchAuction, Owned {
   using SafeCast for int;
   using SafeCast for uint;
@@ -496,9 +495,5 @@ contract DutchAuction is IDutchAuction, Owned {
         upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
       return bidPrice;
     }
-  }
-
-  function _getAccountCash(uint accountId) internal view returns (int) {
-    return accounts.getBalance(accountId, cash, 0);
   }
 }
