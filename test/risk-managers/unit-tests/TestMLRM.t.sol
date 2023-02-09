@@ -100,7 +100,7 @@ contract UNIT_TestMLRM is Test {
     transferBatch[1] = cashBorrow;
 
     // fail when adding an option with a new expiry
-    vm.startPrank(address(alice));
+    vm.startPrank(alice);
     vm.expectRevert(MLRM.MLRM_OnlyPositiveCash.selector);
     account.submitTransfers(transferBatch, "");
     vm.stopPrank();
@@ -133,7 +133,7 @@ contract UNIT_TestMLRM is Test {
     transferBatch[1] = invalidOption;
 
     // // fail due to unsupported asset
-    // vm.startPrank(address(alice));
+    vm.startPrank(alice);
     // vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_UnsupportedAsset.selector, address(unsupportedOption)));
     // account.submitTransfers(transferBatch, "");
     // vm.stopPrank();
@@ -156,7 +156,7 @@ contract UNIT_TestMLRM is Test {
     });
 
     // fail as there are <0 calls
-    vm.startPrank(address(alice));
+    vm.startPrank(alice);
     vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_PayoffUnbounded.selector, int(-5e18)));
     account.submitTransfer(validOption, "");
     vm.stopPrank();
@@ -192,7 +192,7 @@ contract UNIT_TestMLRM is Test {
     transferBatch[1] = premiumTransfer;
 
     // fail as alice will be below margin
-    vm.startPrank(address(alice));
+    vm.startPrank(alice);
     vm.expectRevert(abi.encodeWithSelector(MLRM.MLRM_PortfolioBelowMargin.selector, uint(aliceAcc), -300e18));
     account.submitTransfers(transferBatch, "");
     vm.stopPrank();
@@ -217,7 +217,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    vm.startPrank(address(alice));
+    vm.startPrank(alice);
     account.submitTransfer(callTransfer, "");
     vm.stopPrank();
 
@@ -232,7 +232,7 @@ contract UNIT_TestMLRM is Test {
       amount: 100e18,
       assetData: ""
     });
-    vm.startPrank(address(alice));
+    vm.startPrank(alice);
     account.submitTransfer(premiumTransfer, "");
     vm.stopPrank();
   }
@@ -253,7 +253,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    vm.startPrank(address(alice));
+    vm.startPrank(alice);
     account.submitTransfer(callTransfer, "");
     vm.stopPrank();
 
@@ -271,7 +271,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    vm.startPrank(address(alice));
+    vm.startPrank(alice);
     account.submitTransfer(putTransfer, "");
     vm.stopPrank();
 
@@ -288,7 +288,7 @@ contract UNIT_TestMLRM is Test {
   //   MockManager newManager = new MockManager(address(account));
 
   //   // todo: test change to valid manager
-  //   vm.startPrank(address(alice));
+  //   vm.startPrank(alice);
   //   account.changeManager(aliceAcc, IManager(address(newManager)), "");
   //   vm.stopPrank();
   // }
@@ -298,7 +298,7 @@ contract UNIT_TestMLRM is Test {
   //   _depositCash(alice, aliceAcc, 4000e18);
   //   _depositCash(bob, bobAcc, 4000e18);
 
-  //   vm.startPrank(address(alice));
+  //   vm.startPrank(alice);
   //   callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
   //   putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
 
