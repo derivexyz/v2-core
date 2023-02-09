@@ -23,6 +23,11 @@ interface IOption is IAsset, ISettlementFeed {
 
   function openInterest(uint subId) external view returns (uint oi);
 
+  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    external
+    pure
+    returns (int);
+
   ////////////////
   //   Events   //
   ////////////////

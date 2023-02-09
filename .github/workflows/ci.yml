@@ -26,7 +26,7 @@ jobs:
         run: forge fmt --check
       
       - name: Run tests
-        run: forge test --gas-report
+        run: forge test -vvv
 
       - name: Run Coverage
         run: forge coverage --report lcov
