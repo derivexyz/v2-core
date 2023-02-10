@@ -58,7 +58,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
         vol: 300e16,
         rfr: 10e16
       }),
-      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+      PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16})
     );
 
     aliceAcc = accounts.createAccount(alice, IManager(manager));

@@ -263,8 +263,8 @@ contract IntegrationTestBase is Test {
     });
   }
 
-  function _getDefaultPCRMDiscount() internal pure returns (PCRM.Discounts memory) {
-    return PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16});
+  function _getDefaultPCRMDiscount() internal pure returns (PCRM.PortfolioDiscounts memory) {
+    return PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16});
   }
 
   function _getDefaultAuctionParam() internal pure returns (DutchAuction.DutchAuctionParameters memory param) {

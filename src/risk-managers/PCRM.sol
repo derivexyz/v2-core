@@ -61,11 +61,11 @@ contract PCRM is BaseManager, IManager, Owned {
     uint rfr;
   }
 
-  struct Discounts {
+  struct PortfolioDiscounts {
     /// maintenance discount applied to whole expiry
-    uint maintenanceStaticDiscount;
+    uint maintenance;
     /// initial discount applied to whole expiry
-    uint initialStaticDiscount;
+    uint initial;
   }
 
   ///////////////
@@ -84,7 +84,7 @@ contract PCRM is BaseManager, IManager, Owned {
 
   Shocks public shocks;
 
-  Discounts public discounts;
+  PortfolioDiscounts public portfolioDiscounts;
 
   ////////////
   // Events //
@@ -153,10 +153,10 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param _shocks Spot / vol / risk-free-rate shocks for inputs into BS pricing / payoffs.
    * @param _discounts discounting of portfolio value post BS pricing / payoffs.
    */
-  function setParams(Shocks calldata _shocks, Discounts calldata _discounts) external onlyOwner {
+  function setParams(Shocks calldata _shocks, PortfolioDiscounts calldata _discounts) external onlyOwner {
     // todo [Josh]: add bounds
     shocks = _shocks;
-    discounts = _discounts;
+    portfolioDiscounts = _discounts;
   }
 
   /**
@@ -253,15 +253,15 @@ contract PCRM is BaseManager, IManager, Owned {
     uint128 spotUp;
     uint128 spotDown;
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
-    uint staticDiscount;
+    uint portfolioDiscount;
     if (marginType == MarginType.INITIAL) {
       spotUp = spot.multiplyDecimal(shocks.spotUpInitial).toUint128();
       spotDown = spot.multiplyDecimal(shocks.spotDownInitial).toUint128();
-      staticDiscount = discounts.initialStaticDiscount;
+      portfolioDiscount = portfolioDiscounts.initial;
     } else {
       spotUp = spot.multiplyDecimal(shocks.spotUpMaintenance).toUint128();
       spotDown = spot.multiplyDecimal(shocks.spotDownMaintenance).toUint128();
-      staticDiscount = discounts.maintenanceStaticDiscount;
+      portfolioDiscount = portfolioDiscounts.maintenance;
     }
     // todo [Josh]: add actual vol shocks
 
@@ -270,7 +270,7 @@ contract PCRM is BaseManager, IManager, Owned {
     if (timeToExpiry > 0) {
       margin = _calcLiveExpiryValue(portfolio, spotUp, spotDown, 1e18);
       if (margin > 0) {
-        margin.multiplyDecimal(_getExpiryDiscount(staticDiscount, timeToExpiry));
+        margin.multiplyDecimal(_getExpiryDiscount(portfolioDiscount, timeToExpiry));
       }
     } else {
       margin = _calcSettledExpiryValue(portfolio);
@@ -381,6 +381,10 @@ contract PCRM is BaseManager, IManager, Owned {
       ? strikes.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikes.puts.multiplyDecimal(putValue.toInt256());
   }
+
+  /////////////////////
+  // Dynamic Factors //
+  /////////////////////
 
   function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
     int tau = timeToExpiry * 1e18 / SECONDS_PER_YEAR;

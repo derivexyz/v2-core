@@ -68,7 +68,7 @@ contract UNIT_TestPCRM is Test {
         vol: 300e16,
         rfr: 10e16
       }),
-      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+      PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16})
     );
 
     feeRecipient = account.createAccount(address(this), manager);
@@ -99,7 +99,7 @@ contract UNIT_TestPCRM is Test {
         vol: 300e16,
         rfr: 10e16
       }),
-      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+      PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16})
     );
     vm.stopPrank();
   }
@@ -114,7 +114,7 @@ contract UNIT_TestPCRM is Test {
         vol: 400e16,
         rfr: 20e16
       }),
-      PCRM.Discounts({maintenanceStaticDiscount: 85e16, initialStaticDiscount: 75e16})
+      PCRM.PortfolioDiscounts({maintenance: 85e16, initial: 75e16})
     );
 
     (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance, uint vol, uint rfr) =
@@ -126,9 +126,9 @@ contract UNIT_TestPCRM is Test {
     assertEq(vol, 400e16);
     assertEq(rfr, 20e16);
 
-    (uint maintenanceStaticDiscount, uint initialStaticDiscount) = manager.discounts();
-    assertEq(maintenanceStaticDiscount, 85e16);
-    assertEq(initialStaticDiscount, 75e16);
+    (uint maintenance, uint initial) = manager.portfolioDiscounts();
+    assertEq(maintenance, 85e16);
+    assertEq(initial, 75e16);
   }
 
   //////////////
