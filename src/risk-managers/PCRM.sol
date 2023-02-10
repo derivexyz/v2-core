@@ -270,7 +270,7 @@ contract PCRM is BaseManager, IManager, Owned {
     if (timeToExpiry > 0) {
       margin = _calcLiveExpiryValue(portfolio, spotUp, spotDown, 1e18);
       if (margin > 0) {
-        margin.multiplyDecimal(_getExpiryDiscount(staticDiscount, timeToExpiry));
+        margin = margin.multiplyDecimal(_getExpiryDiscount(staticDiscount, timeToExpiry));
       }
     } else {
       margin = _calcSettledExpiryValue(portfolio);
@@ -385,9 +385,8 @@ contract PCRM is BaseManager, IManager, Owned {
   function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
     int tau = timeToExpiry * 1e18 / SECONDS_PER_YEAR;
     int exponent = SafeCast.toInt256(FixedPointMathLib.exp(-tau.multiplyDecimal(shocks.rfr.toInt256())));
-
     // no need for safecast as .setParams() bounds will ensure no overflow
-    return (int(staticDiscount) * exponent);
+    return (int(staticDiscount) * exponent / 1e18);
   }
 
   //////////
