@@ -13,7 +13,7 @@ contract JsonMechIO is Test {
     string memory path = string.concat(vm.projectRoot(), dirRelativeToRoot);
     string memory json = vm.readFile(path);
 
-    // if key value is "pivots", say ".pivots", for more info use: 
+    // if key value is "pivots", say ".pivots", for more info use:
     // forge uses `jq` syntax for parsing: https://stedolan.github.io/jq/manual/#Basicfilters
     return json.readUintArray(key);
   }

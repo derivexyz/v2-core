@@ -11,7 +11,6 @@ import "src/interfaces/IManager.sol";
  * @dev testing charge of OI fee in a real setting
  */
 contract PositionBuilderBase is IntegrationTestBase {
-
   struct Position {
     uint96 subId;
     int amount;
@@ -23,15 +22,15 @@ contract PositionBuilderBase is IntegrationTestBase {
     _depositCash(address(accounts.ownerOf(shortAcc)), shortAcc, DEFAULT_DEPOSIT);
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](positions.length);
 
-    for (uint i=0; i<positions.length; i++) {
+    for (uint i = 0; i < positions.length; i++) {
       transferBatch[i] = AccountStructs.AssetTransfer({
-      fromAcc: shortAcc,
-      toAcc: longAcc,
-      asset: option,
-      subId: uint96(positions[i].subId),
-      amount: positions[i].amount,
-      assetData: bytes32(0)
-    });
+        fromAcc: shortAcc,
+        toAcc: longAcc,
+        asset: option,
+        subId: uint96(positions[i].subId),
+        amount: positions[i].amount,
+        assetData: bytes32(0)
+      });
     }
     accounts.submitTransfers(transferBatch, "");
 

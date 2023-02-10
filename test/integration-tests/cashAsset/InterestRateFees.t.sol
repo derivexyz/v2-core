@@ -42,7 +42,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     // to print the json example, run in terminal: `forge test --match-test testNoInterestPaidForNoBorrow -vvvv`
     jsonParser = new JsonMechIO();
     uint[] memory sampleInputs = jsonParser.loadUints(
-      "/test/integration-tests/cashAsset/InterestRateFees.json", 
+      "/test/integration-tests/cashAsset/InterestRateFees.json",
       ".expectedAccruedInterest" // not the "." before the key
     );
 
@@ -57,7 +57,6 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
 
   // todo: test fees paid correct for low util on short time frame (suppliers, borrowers, sm)
   function testInterestPaidForNormalUtil() public {
-
     // todo: just showing how PositionBuilderBase works
     // @Sean if you run `forge test --match-contract="(MECH_)" -vv` you'll see
     // that aliceAcc has around -$80 in a leveraged box, and bob has a short box with $100 collat
@@ -67,7 +66,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     Position[] memory positions = _openBox(aliceAcc, bobAcc);
     // Position[] memory positions = _openLeveragedZSC(aliceAcc, bobAcc);
     console.log("Options:");
-    for (uint i=0; i<positions.length; i++) {
+    for (uint i = 0; i < positions.length; i++) {
       console.logInt(accounts.getBalance(aliceAcc, IAsset(option), positions[i].subId));
       console.logInt(accounts.getBalance(bobAcc, IAsset(option), positions[i].subId));
     }
