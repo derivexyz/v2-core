@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import "../shared/IntegrationTestBase.sol";
@@ -59,7 +60,6 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     uint oiFee = pcrm.getOIFeeRateBPS().multiplyDecimal(feed.getSpot(1));
 
     // Charlie balance should be negative
-    assertLt(getCashBalance(charlieAcc), 0);
     assertEq(getCashBalance(charlieAcc), -int(borrowAmount + oiFee));
 
     vm.warp(block.timestamp + 1 weeks);
@@ -109,7 +109,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     uint putStrike = 3000e18;
     uint96 putId = option.getSubId(putExpiry, putStrike, false);
 
-    _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 50e18);
+    _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 0);
 
     assertEq(cash.borrowIndex(), 1e18);
     assertEq(cash.supplyIndex(), 1e18);
@@ -117,14 +117,15 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     // Borrow against the option
     _withdrawCash(charlie, charlieAcc, 50e18);
 
-    // Charlie balance should be -1000
-    assertLt(accounts.getBalance(charlieAcc, cash, 0), 0);
+    // Charlie balance should be -borrowed amount + oiFee
+    uint oiFee = pcrm.getOIFeeRateBPS().multiplyDecimal(feed.getSpot(1));
+    assertEq(accounts.getBalance(charlieAcc, cash, 0), -int(50e18 + oiFee));
 
     vm.warp(block.timestamp + 1 weeks);
     cash.accrueInterest();
 
-    assertGt(cash.borrowIndex(), 1e18);
-    assertGt(cash.supplyIndex(), 1e18);
+    assertEq(cash.borrowIndex(), 1001171311598975475);
+    assertEq(cash.supplyIndex(), 1000006089602394193);
   }
 
   function testCannotBorrowAgainstOTMPut() public {
