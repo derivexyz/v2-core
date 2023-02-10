@@ -2,11 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/ISpotJumpOracle.sol";
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-
-import "forge-std/console2.sol";
 
 /**
  * @title SpotJumpOracle
@@ -19,23 +18,10 @@ import "forge-std/console2.sol";
  *      When finding the "max jump", traverses the buckets in reverse order until the first non-stale jump is found
  */
 
-contract SpotJumpOracle {
+contract SpotJumpOracle is ISpotJumpOracle {
   using SafeCast for uint;
   using DecimalMath for uint;
   using IntLib for int;
-
-  struct JumpParams {
-    // 500 bps would imply the first bucket is 5% -> 5% + width
-    uint32 start;
-    // 150 bps would imply [0-1.5%, 1.5-3.0%, ...]
-    uint32 width;
-    // update timestamp of the spotFeed price used as reference
-    uint32 referenceUpdatedAt;
-    // sec until reference price is considered stale
-    uint32 secToReferenceStale;
-    // reference price used when calculating jump bp
-    uint128 referencePrice;
-  }
 
   ///////////////
   // Variables //
@@ -50,19 +36,13 @@ contract SpotJumpOracle {
   /// @dev stores update timestamp of the spotFeed price for which jump was calculated
   uint32[NUM_BUCKETS] public jumps;
   /// @dev stores all parameters required to store the jump
-  JumpParams public params;
+  ISpotJumpOracle.JumpParams public params;
 
   /// @dev maximum value of a uint32 used to prevent overflows
   uint public constant UINT32_MAX = 0xFFFFFFFF;
 
   /// @dev conversion constant from percent decimal to bp.
   uint public constant BASIS_POINT_DECIMALS = 10000;
-
-  ////////////
-  // Events //
-  ////////////
-
-  event JumpUpdated(uint32 jump, uint livePrice, uint referencePrice);
 
   ////////////////////////
   //    Constructor     //
@@ -179,9 +159,4 @@ contract SpotJumpOracle {
     jumps[idx] = timestamp;
   }
 
-  ////////////
-  // Errors //
-  ////////////
-
-  error SJO_MaxJumpExceedsLimit();
 }

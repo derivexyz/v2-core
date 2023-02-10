@@ -63,7 +63,7 @@ contract UNIT_TestSpotJumpOracle is Test {
 
     // make large so that width * 16 > type(uint32).max
     params.width = 300_000_000;
-    vm.expectRevert(SpotJumpOracle.SJO_MaxJumpExceedsLimit.selector);
+    vm.expectRevert(ISpotJumpOracle.SJO_MaxJumpExceedsLimit.selector);
     oracle = new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
   }
 
@@ -263,7 +263,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   }
 
   function _defaultJumpParams(uint referencePrice) internal view returns (SpotJumpOracle.JumpParams memory params) {
-    params = SpotJumpOracle.JumpParams({
+    params = ISpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),

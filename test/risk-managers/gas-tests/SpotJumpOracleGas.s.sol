@@ -105,7 +105,7 @@ contract PCRMSpotJumpOracleGas is Script {
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
 
-    SpotJumpOracle.JumpParams memory params = SpotJumpOracle.JumpParams({
+    SpotJumpOracle.JumpParams memory params = ISpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),
