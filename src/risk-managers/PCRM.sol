@@ -11,6 +11,7 @@ import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ISecurityModule.sol";
+import "src/interfaces/ISpotJumpOracle.sol";
 
 import "src/assets/Option.sol";
 
@@ -82,9 +83,14 @@ contract PCRM is BaseManager, IManager, Owned {
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
+  /// @dev shock parameters used to calculate the final vol and spot shocks
   Shocks public shocks;
 
+  /// @dev discount applied to the portfolio value (less cash) as a whole
   PortfolioDiscounts public portfolioDiscounts;
+
+  /// @dev finds max jump in spot during the last X days
+  ISpotJumpOracle public spotJumpOracle;
 
   ////////////
   // Events //
@@ -105,11 +111,18 @@ contract PCRM is BaseManager, IManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_)
-    BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
+  constructor(
+    IAccounts accounts_, 
+    ISpotFeeds spotFeeds_, 
+    ICashAsset cashAsset_, 
+    IOption option_, 
+    address auction_, 
+    ISpotJumpOracle spotJumpOracle_
+  ) BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
     Owned()
   {
     dutchAuction = IDutchAuction(auction_);
+    spotJumpOracle = spotJumpOracle_;
   }
 
   ///////////////////
@@ -154,9 +167,17 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param _discounts discounting of portfolio value post BS pricing / payoffs.
    */
   function setParams(Shocks calldata _shocks, PortfolioDiscounts calldata _discounts) external onlyOwner {
-    // todo [Josh]: add bounds
+    // todo [Josh]: add bounds / make sure IM > MM by 5%
     shocks = _shocks;
     portfolioDiscounts = _discounts;
+  }
+
+  /**
+   * @notice Governance determined spotJumpOracle contract for determining vol / spot add_ons.
+   * @param spotJumpOracle_ Contract that finds max jump in spot during the last X days.
+   */
+  function setSpotJumpOracle(ISpotJumpOracle spotJumpOracle_) external onlyOwner {
+    spotJumpOracle = spotJumpOracle_;
   }
 
   /**

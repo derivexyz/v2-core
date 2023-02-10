@@ -13,6 +13,7 @@ import "src/assets/Option.sol";
 import "src/assets/InterestRateModel.sol";
 import "src/liquidation/DutchAuction.sol";
 import "src/Accounts.sol";
+import "src/risk-managers/SpotJumpOracle.sol";
 
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
@@ -34,6 +35,7 @@ contract IntegrationTestBase is Test {
   MockERC20 usdc;
   Option option;
   PCRM pcrm;
+  SpotJumpOracle spotJumpOracle;
   SecurityModule securityModule;
   InterestRateModel rateModel;
   ChainlinkSpotFeeds feed;
@@ -81,23 +83,27 @@ contract IntegrationTestBase is Test {
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // nonce: 5 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 8);
+    address auctionAddr = _predictAddress(address(this), 9);
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
     // nonce: 6 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
 
-    // nonce: 7 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr);
+    // nonce: 7 => deploy SpotJumpOracle
+    (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) = _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
+    spotJumpOracle = new SpotJumpOracle(feed, feedId, params, initialJumps);
 
-    // nonce: 8 => Deploy Auction
+    // nonce: 8 => Deploy Manager
+    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr, spotJumpOracle);
+
+    // nonce: 9 => Deploy Auction
     // todo: remove IPCRM(address())
-    address smAddr = _predictAddress(address(this), 9);
+    address smAddr = _predictAddress(address(this), 10);
     auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
 
     assertEq(address(auction), auctionAddr);
 
-    // nonce: 9 => Deploy SM
+    // nonce: 10 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
     assertEq(securityModule.accountId(), smAcc);
@@ -265,6 +271,18 @@ contract IntegrationTestBase is Test {
 
   function _getDefaultPCRMDiscount() internal pure returns (PCRM.PortfolioDiscounts memory) {
     return PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16});
+  }
+
+  function _getDefaultSpotJumpParams(uint initialSpot) internal pure returns (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) {
+    params = ISpotJumpOracle.JumpParams({
+      start: 500,
+      width: 250,
+      referenceUpdatedAt: 0,
+      secToReferenceStale: 1 days,
+      referencePrice: SafeCast.toUint128(initialSpot)
+    });
+
+    return (params, initialJumps);
   }
 
   function _getDefaultAuctionParam() internal pure returns (DutchAuction.DutchAuctionParameters memory param) {

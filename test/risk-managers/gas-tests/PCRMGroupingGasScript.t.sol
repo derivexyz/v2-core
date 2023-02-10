@@ -14,6 +14,7 @@ import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
+import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 contract PCRMGroupingGasScript is Script {
   Accounts account;
@@ -24,6 +25,7 @@ contract PCRMGroupingGasScript is Script {
   Option option;
   MockDutchAuction auction;
   CashAsset cash;
+  MockSpotJumpOracle spotJumpOracle;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -118,12 +120,15 @@ contract PCRMGroupingGasScript is Script {
 
     cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)), rateModel, 0, address(auction));
 
+    spotJumpOracle = new MockSpotJumpOracle();
+
     pcrm = new PCRM(
       account,
-      spotFeeds,
+      ISpotFeeds(address(spotFeeds)),
       cash,
       option,
-      address(auction)
+      address(auction),
+      ISpotJumpOracle(address(spotJumpOracle))
     );
 
     pcrm.setParams(

@@ -48,8 +48,8 @@ contract SpotJumpOracle is ISpotJumpOracle {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[NUM_BUCKETS] memory _initialJumps) {
-    spotFeeds = ISpotFeeds(_spotFeeds);
+  constructor(ISpotFeeds _spotFeeds, uint _feedId, JumpParams memory _params, uint32[NUM_BUCKETS] memory _initialJumps) {
+    spotFeeds = _spotFeeds;
     feedId = _feedId;
     params = _params;
     jumps = _initialJumps;

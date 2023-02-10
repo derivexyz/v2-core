@@ -16,6 +16,7 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
+import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
@@ -26,6 +27,7 @@ contract UNIT_TestPCRM is Test {
   MockERC20 usdc;
 
   ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
+  MockSpotJumpOracle spotJumpOracle;
   MockV3Aggregator aggregator;
   MockOption option;
   MockDutchAuction auction;
@@ -49,13 +51,15 @@ contract UNIT_TestPCRM is Test {
 
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
+    spotJumpOracle = new MockSpotJumpOracle();
 
     manager = new PCRM(
       account,
-      spotFeeds,
+      ISpotFeeds(address(spotFeeds)),
       ICashAsset(address(cash)),
       option,
-      address(auction)
+      address(auction),
+      ISpotJumpOracle(address(spotJumpOracle))
     );
 
     // cash.setWhitWelistManager(address(manager), true);

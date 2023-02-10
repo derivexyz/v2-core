@@ -41,6 +41,7 @@ interface ISpotJumpOracle {
 
   /// @dev stores update timestamp of the spotFeed price for which jump was calculated
   function jumps(uint index) external returns (uint32 jump);
+
   /// @dev stores all parameters required to store the jump
   function params() external returns (
     uint32 start,

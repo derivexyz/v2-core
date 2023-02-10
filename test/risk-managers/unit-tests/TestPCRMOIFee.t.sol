@@ -15,6 +15,7 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
+import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 import "src/libraries/OptionEncoding.sol";
 
@@ -25,6 +26,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
   MockERC20 usdc;
 
   MockFeed spotFeeds;
+  MockSpotJumpOracle spotJumpOracle;
   MockOption option;
 
   address alice = address(0xaa);
@@ -40,13 +42,15 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
     cash = new MockAsset(usdc, accounts, true);
+    spotJumpOracle = new MockSpotJumpOracle();
 
     manager = new PCRM(
       accounts,
-      spotFeeds,
+      ISpotFeeds(address(spotFeeds)),
       ICashAsset(address(cash)),
       option,
-      address(0) // auction
+      address(0), // auction
+      ISpotJumpOracle(address(spotJumpOracle))
     );
 
     manager.setParams(
