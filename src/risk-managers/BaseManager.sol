@@ -28,7 +28,7 @@ abstract contract BaseManager is AccountStructs {
   ISpotFeeds public immutable spotFeeds;
 
   ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * spot
-  uint constant OIFeeRateBPS = 0.001e18; // 10 BPS
+  uint public OIFeeRateBPS = 0.001e18; // 10 BPS
 
   constructor(IAccounts _accounts, ISpotFeeds spotFeeds_, ICashAsset _cashAsset, IOption _option) {
     accounts = _accounts;
