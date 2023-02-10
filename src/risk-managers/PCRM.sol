@@ -192,6 +192,15 @@ contract PCRM is BaseManager, IManager, Owned {
     feeRecipientAcc = _newAcc;
   }
 
+  /**
+   * @notice Governance determined OI fee rate to be set
+   * @dev Charged fee = contract traded * OIFee * spot
+   * @param newFeeRate OI fee rate in BPS
+   */
+  function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
+    OIFeeRateBPS = newFeeRate;
+  }
+
   //////////////////
   // Liquidations //
   //////////////////
