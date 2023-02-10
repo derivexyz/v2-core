@@ -4,6 +4,7 @@ out = 'out'
 
 optimizer = true
 optimizer_runs = 10_000
+fs_permissions = [{access = "read", path = "./"}]
 
 solc_version="0.8.17"
 

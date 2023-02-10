@@ -7,7 +7,7 @@ import "forge-std/console2.sol";
 import "../../src/libraries/PCRMGrouping.sol";
 
 contract PCRMGroupingTester {
-  function updateForwards(PCRM.Strike memory strike) external pure returns (PCRM.Strike memory) {
+  function updateForwards(BaseManager.Strike memory strike) external pure returns (BaseManager.Strike memory) {
     PCRMGrouping.updateForwards(strike);
     return strike;
   }
@@ -16,7 +16,7 @@ contract PCRMGroupingTester {
     newForwards = PCRMGrouping.findForwards(calls, puts);
   }
 
-  function findOrAddStrike(PCRM.Strike[] memory strikes, uint newStrike, uint numStrikesHeld)
+  function findOrAddStrike(BaseManager.Strike[] memory strikes, uint newStrike, uint numStrikesHeld)
     external
     pure
     returns (uint, uint)
@@ -68,15 +68,15 @@ contract PCRMGroupingTest is Test {
   }
 
   function testUpdateForwardsForStrike() public {
-    PCRM.Portfolio memory portfolio = _getDefaultHoldings();
+    BaseManager.Portfolio memory portfolio = _getDefaultHoldings();
 
     // check corrected filtering
-    PCRM.Strike memory strike_0 = tester.updateForwards(portfolio.strikes[0]);
+    BaseManager.Strike memory strike_0 = tester.updateForwards(portfolio.strikes[0]);
     assertEq(strike_0.calls, 0);
     assertEq(strike_0.puts, 0);
     assertEq(strike_0.forwards, 11);
 
-    PCRM.Strike memory strike_1 = tester.updateForwards(portfolio.strikes[1]);
+    BaseManager.Strike memory strike_1 = tester.updateForwards(portfolio.strikes[1]);
     assertEq(strike_1.calls, 0);
     assertEq(strike_1.puts, -10);
     assertEq(strike_1.forwards, 5);
@@ -87,7 +87,7 @@ contract PCRMGroupingTest is Test {
   //////////////////////////////
 
   function testFindOrAddStrike() public {
-    PCRM.Portfolio memory portfolio = _getDefaultHoldings();
+    BaseManager.Portfolio memory portfolio = _getDefaultHoldings();
     (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(portfolio.strikes, 1250e18, 2);
 
     assertEq(strikeIndex, 2);
@@ -95,7 +95,7 @@ contract PCRMGroupingTest is Test {
   }
 
   function testAddExistingStrike() public {
-    PCRM.Portfolio memory portfolio = _getDefaultHoldings();
+    BaseManager.Portfolio memory portfolio = _getDefaultHoldings();
     (uint strikeIndex, uint newArrayLen) = tester.findOrAddStrike(portfolio.strikes, 10e18, 2);
 
     assertEq(strikeIndex, 0);
@@ -105,19 +105,19 @@ contract PCRMGroupingTest is Test {
   //////////
   // Util //
   //////////
-  function _getDefaultHoldings() public view returns (PCRM.Portfolio memory) {
+  function _getDefaultHoldings() public view returns (BaseManager.Portfolio memory) {
     // Hardcode max strike = 64
     uint MAX_STRIKE = 64;
-    PCRM.Strike[] memory strikes = new PCRM.Strike[](MAX_STRIKE);
+    BaseManager.Strike[] memory strikes = new BaseManager.Strike[](MAX_STRIKE);
     // strike 1
-    strikes[0] = PCRM.Strike({strike: 10e18, calls: 10, puts: -10, forwards: 1});
+    strikes[0] = BaseManager.Strike({strike: 10e18, calls: 10, puts: -10, forwards: 1});
 
     // strike 2
-    strikes[1] = PCRM.Strike({strike: 15e18, calls: 0, puts: -10, forwards: 5});
+    strikes[1] = BaseManager.Strike({strike: 15e18, calls: 0, puts: -10, forwards: 5});
 
     // all expiries
-    PCRM.Portfolio memory portfolio =
-      PCRM.Portfolio({cash: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
+    BaseManager.Portfolio memory portfolio =
+      BaseManager.Portfolio({cash: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
 
     return portfolio;
   }
