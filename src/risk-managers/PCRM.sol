@@ -467,13 +467,6 @@ contract PCRM is BaseManager, IManager, Owned {
     return _calcMargin(portfolio, MarginType.MAINTENANCE);
   }
 
-  /**
-   * @notice Get the OI fee rate in bps
-   */
-  function getOIFeeRateBPS() external view returns (uint) {
-    return OIFeeRateBPS;
-  }
-
   ////////////
   // Errors //
   ////////////
