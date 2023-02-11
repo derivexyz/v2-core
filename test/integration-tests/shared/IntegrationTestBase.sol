@@ -91,7 +91,7 @@ contract IntegrationTestBase is Test {
 
     // nonce: 7 => deploy SpotJumpOracle
     (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) =
-      _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
+      _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE * 1e10));
     spotJumpOracle = new SpotJumpOracle(feed, feedId, params, initialJumps);
 
     // nonce: 8 => Deploy Manager

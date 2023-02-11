@@ -491,7 +491,7 @@ contract PCRM is BaseManager, IManager, Owned {
 
   function _getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) internal returns (uint multiple) {
     uint jumpBasisPoints = uint(spotJumpOracle.updateAndGetMaxJump(lookbackLength));
-    uint jumpPercent = (jumpBasisPoints * DecimalMath.UNIT).divideDecimal(10000);
+    uint jumpPercent = (jumpBasisPoints * DecimalMath.UNIT) / 10000;
     return spotJumpSlope.multiplyDecimal(jumpPercent);
   }
 
