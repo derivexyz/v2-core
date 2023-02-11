@@ -8,7 +8,6 @@ import "src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
 contract MockSpotJumpOracle is ISpotJumpOracle {
-
   uint32 mockMaxJump;
 
   //////////////
@@ -46,5 +45,4 @@ contract MockSpotJumpOracle is ISpotJumpOracle {
   function setMaxJump(uint32 mockMaxJump_) external {
     mockMaxJump = mockMaxJump_;
   }
-
 }

@@ -132,15 +132,28 @@ contract PCRMGroupingGasScript is Script {
     );
 
     pcrm.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
+      PCRM.SpotShockParams({
+        upInitial: 1.25e18,
+        downInitial: 0.75e18,
+        upMaintenance: 1.1e18,
+        downMaintenance: 0.9e18,
+        timeSlope: 1e18,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16})
+      PCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 3e18,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      PCRM.PortfolioDiscountParams({
+        maintenance: 0.9e18, // 90%
+        initial: 0.8e18, // 80%
+        riskFreeRate: 0.1e18 // 10%
+      })
     );
   }
 

@@ -47,32 +47,65 @@ contract PCRM is BaseManager, IManager, Owned {
     MAINTENANCE
   }
 
-  struct Shocks {
+  struct SpotShockParams {
     /// high spot value used for initial margin
-    uint spotUpInitial;
+    uint upInitial;
     /// low spot value used for initial margin
-    uint spotDownInitial;
+    uint downInitial;
     /// high spot value used for maintenance margin
-    uint spotUpMaintenance;
+    uint upMaintenance;
     /// low spot value used for maintenance margin
-    uint spotDownMaintenance;
-    /// volatility shock
-    uint vol;
-    /// risk-free-rate shock
-    uint rfr;
+    uint downMaintenance;
+    /// rate at which the shocks increase with further timeToExpiry
+    uint timeSlope;
+    /// slope at which vol increases with jumps in spot price
+    uint spotJumpMultipleSlope;
+    /// how many seconds to look back when finding the max jump
+    uint32 spotJumpMultipleLookback;
   }
 
-  struct PortfolioDiscounts {
+  struct VolShockParams {
+    /* The vol shock is derived from the following chart:
+     *
+     *     vol
+     *      |
+     * max  |____
+     *      |     \
+     *      |      \
+     * min  |       \ ___
+     *      |____________  time to expiry
+     *           A   B
+     */
+    /// smallest vol shock
+    uint minVol;
+    /// largest vol shock
+    uint maxVol;
+    /// sec to expiry at which vol begins to grow
+    uint timeA;
+    /// sec to expiry at which vol grow any further
+    uint timeB;
+    // todo: quite opinionated to assume we always take a jump input.
+    //       ideally should just take RV in.
+    //       may be able to find a way to put into a library or wrapper
+    //       so that it can be reused in later deployments
+    /// slope at which vol increases with jumps in spot price
+    uint spotJumpMultipleSlope;
+    /// how many seconds to look back when finding the max jump
+    uint32 spotJumpMultipleLookback;
+  }
+
+  struct PortfolioDiscountParams {
     /// maintenance discount applied to whole expiry
     uint maintenance;
     /// initial discount applied to whole expiry
     uint initial;
+    /// used when discounting to net present value by risk free rate
+    uint riskFreeRate;
   }
 
   ///////////////
   // Variables //
   ///////////////
-  int constant SECONDS_PER_YEAR = 365 days;
 
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
@@ -83,11 +116,14 @@ contract PCRM is BaseManager, IManager, Owned {
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
-  /// @dev shock parameters used to calculate the final vol and spot shocks
-  Shocks public shocks;
+  /// @dev spot shock parameters
+  SpotShockParams public spotShockParams;
+
+  /// @dev vol shock parameters
+  VolShockParams public volShockParams;
 
   /// @dev discount applied to the portfolio value (less cash) as a whole
-  PortfolioDiscounts public portfolioDiscounts;
+  PortfolioDiscountParams public portfolioDiscountParams;
 
   /// @dev finds max jump in spot during the last X days
   ISpotJumpOracle public spotJumpOracle;
@@ -112,15 +148,13 @@ contract PCRM is BaseManager, IManager, Owned {
   ////////////////////////
 
   constructor(
-    IAccounts accounts_, 
-    ISpotFeeds spotFeeds_, 
-    ICashAsset cashAsset_, 
-    IOption option_, 
-    address auction_, 
+    IAccounts accounts_,
+    ISpotFeeds spotFeeds_,
+    ICashAsset cashAsset_,
+    IOption option_,
+    address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
-    Owned()
-  {
+  ) BaseManager(accounts_, spotFeeds_, cashAsset_, option_) Owned() {
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }
@@ -163,13 +197,19 @@ contract PCRM is BaseManager, IManager, Owned {
 
   /**
    * @notice Governance determined shocks and discounts used in margin calculations.
-   * @param _shocks Spot / vol / risk-free-rate shocks for inputs into BS pricing / payoffs.
-   * @param _discounts discounting of portfolio value post BS pricing / payoffs.
+   * @param _spotShock Params to determine spotShock used in BS pricing / payoffs.
+   * @param _volShock Params to determine volShock used in BS pricing / payoffs.
+   * @param _discount discounting of portfolio value post BS pricing / payoffs.
    */
-  function setParams(Shocks calldata _shocks, PortfolioDiscounts calldata _discounts) external onlyOwner {
+  function setParams(
+    SpotShockParams calldata _spotShock,
+    VolShockParams calldata _volShock,
+    PortfolioDiscountParams calldata _discount
+  ) external onlyOwner {
     // todo [Josh]: add bounds / make sure IM > MM by 5%
-    shocks = _shocks;
-    portfolioDiscounts = _discounts;
+    spotShockParams = _spotShock;
+    volShockParams = _volShock;
+    portfolioDiscountParams = _discount;
   }
 
   /**
@@ -255,7 +295,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param portfolio Account portfolio
    * @param marginType Initial or maintenance margin.
    */
-  function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal view {
+  function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal {
     int margin = _calcMargin(portfolio, marginType);
     if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
   }
@@ -267,34 +307,50 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param marginType Initial or maintenance margin.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(Portfolio memory portfolio, MarginType marginType) internal view returns (int margin) {
-    // todo [Josh]: add RV related add-ons
+  function _calcMargin(Portfolio memory portfolio, MarginType marginType) internal returns (int margin) {
+    // todo [Anton]: add ability to do RV = 0?
+    if (portfolio.expiry < block.timestamp) {
+      return _calcSettledExpiryValue(portfolio) + portfolio.cash;
+    }
+
+    uint timeToExpiry = portfolio.expiry - block.timestamp;
+    uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
+    uint vol = _getVolShock(timeToExpiry);
 
     // get shock amounts
-    uint128 spotUp;
-    uint128 spotDown;
-    uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
+    uint spotUp;
+    uint spotDown;
     uint portfolioDiscount;
     if (marginType == MarginType.INITIAL) {
-      spotUp = spot.multiplyDecimal(shocks.spotUpInitial).toUint128();
-      spotDown = spot.multiplyDecimal(shocks.spotDownInitial).toUint128();
-      portfolioDiscount = portfolioDiscounts.initial;
+      (spotUp, spotDown) = _getSpotShocks(
+        spot.multiplyDecimal(spotShockParams.upInitial).toUint128(),
+        spot.multiplyDecimal(spotShockParams.downInitial).toUint128(),
+        timeToExpiry,
+        spotShockParams.timeSlope
+      );
+      portfolioDiscount = portfolioDiscountParams.initial;
+      vol = vol.multiplyDecimal(
+        DecimalMath.UNIT
+          + _getSpotJumpMultiple(volShockParams.spotJumpMultipleSlope, volShockParams.spotJumpMultipleLookback)
+      );
+      uint spotAddon =
+        _getSpotJumpMultiple(spotShockParams.spotJumpMultipleSlope, spotShockParams.spotJumpMultipleLookback);
+      spotUp += spotAddon;
+      spotDown -= spotAddon;
     } else {
-      spotUp = spot.multiplyDecimal(shocks.spotUpMaintenance).toUint128();
-      spotDown = spot.multiplyDecimal(shocks.spotDownMaintenance).toUint128();
-      portfolioDiscount = portfolioDiscounts.maintenance;
+      (spotUp, spotDown) = _getSpotShocks(
+        spot.multiplyDecimal(spotShockParams.upMaintenance).toUint128(),
+        spot.multiplyDecimal(spotShockParams.downMaintenance).toUint128(),
+        timeToExpiry,
+        spotShockParams.timeSlope
+      );
+      portfolioDiscount = portfolioDiscountParams.maintenance;
     }
-    // todo [Josh]: add actual vol shocks
 
     // discount option value
-    int timeToExpiry = portfolio.expiry.toInt256() - block.timestamp.toInt256();
-    if (timeToExpiry > 0) {
-      margin = _calcLiveExpiryValue(portfolio, spotUp, spotDown, 1e18);
-      if (margin > 0) {
-        margin.multiplyDecimal(_getExpiryDiscount(portfolioDiscount, timeToExpiry));
-      }
-    } else {
-      margin = _calcSettledExpiryValue(portfolio);
+    margin = _calcLiveExpiryValue(portfolio, spotUp.toUint128(), spotDown.toUint128(), 1e18);
+    if (margin > 0) {
+      margin = margin.multiplyDecimal(_getExpiryDiscount(portfolioDiscount, timeToExpiry).toInt256());
     }
 
     // add cash
@@ -407,12 +463,45 @@ contract PCRM is BaseManager, IManager, Owned {
   // Dynamic Factors //
   /////////////////////
 
-  function _getExpiryDiscount(uint staticDiscount, int timeToExpiry) internal view returns (int expiryDiscount) {
-    int tau = timeToExpiry * 1e18 / SECONDS_PER_YEAR;
-    int exponent = SafeCast.toInt256(FixedPointMathLib.exp(-tau.multiplyDecimal(shocks.rfr.toInt256())));
+  function _getSpotShocks(uint initialUp, uint initialDown, uint timeToExpiry, uint timeSlope)
+    internal
+    pure
+    returns (uint up, uint down)
+  {
+    uint shock = timeSlope.multiplyDecimal(timeToExpiry * 1e18 / 365 days);
+    return (initialUp + shock, initialDown - shock);
+  }
+
+  /**
+   * @dev taken directly from Avalon/OptionGreekCache.getShockVol
+   */
+  function _getVolShock(uint timeToExpiry) internal view returns (uint volShock) {
+    VolShockParams memory params = volShockParams;
+    if (timeToExpiry <= params.timeA) {
+      return params.maxVol;
+    }
+    if (timeToExpiry >= params.timeB) {
+      return params.minVol;
+    }
+
+    // Flip a and b so we don't need to convert to int
+    return params.maxVol
+      - (((params.maxVol - params.minVol) * (timeToExpiry - params.timeA)) / (params.timeB - params.timeA));
+  }
+
+  function _getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) internal returns (uint multiple) {
+    uint jumpBasisPoints = uint(spotJumpOracle.updateAndGetMaxJump(lookbackLength));
+    uint jumpPercent = (jumpBasisPoints * DecimalMath.UNIT).divideDecimal(10000);
+    return spotJumpSlope.multiplyDecimal(jumpPercent);
+  }
+
+  // todo: change to portfolio discount
+  function _getExpiryDiscount(uint staticDiscount, uint timeToExpiry) internal view returns (uint expiryDiscount) {
+    uint tau = timeToExpiry * 1e18 / 365 days;
+    uint exponent = FixedPointMathLib.exp(-SafeCast.toInt256(tau.multiplyDecimal(portfolioDiscountParams.riskFreeRate)));
 
     // no need for safecast as .setParams() bounds will ensure no overflow
-    return (int(staticDiscount) * exponent);
+    return staticDiscount.multiplyDecimal(exponent);
   }
 
   //////////
@@ -469,7 +558,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getInitialMargin(Portfolio memory portfolio) external view returns (int margin) {
+  function getInitialMargin(Portfolio memory portfolio) external returns (int margin) {
     return _calcMargin(portfolio, MarginType.INITIAL);
   }
 
@@ -479,7 +568,7 @@ contract PCRM is BaseManager, IManager, Owned {
    * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int margin) {
+  function getMaintenanceMargin(Portfolio memory portfolio) external returns (int margin) {
     return _calcMargin(portfolio, MarginType.MAINTENANCE);
   }
 

@@ -90,7 +90,8 @@ contract IntegrationTestBase is Test {
     option = new Option(accounts, address(feed), feedId);
 
     // nonce: 7 => deploy SpotJumpOracle
-    (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) = _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
+    (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) =
+      _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
     spotJumpOracle = new SpotJumpOracle(feed, feedId, params, initialJumps);
 
     // nonce: 8 => Deploy Manager
@@ -117,8 +118,9 @@ contract IntegrationTestBase is Test {
     // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
     pcrm.setFeeRecipient(pcrmFeeAcc);
-
-    pcrm.setParams(_getDefaultPCRMShocks(), _getDefaultPCRMDiscount());
+    (PCRM.SpotShockParams memory spot, PCRM.VolShockParams memory vol, PCRM.PortfolioDiscountParams memory discount) =
+      _getDefaultPCRMParams();
+    pcrm.setParams(spot, vol, discount);
 
     // add aggregator to feed
     aggregator = new MockV3Aggregator(8, 2000e8);
@@ -227,12 +229,12 @@ contract IntegrationTestBase is Test {
     return accounts.getBalance(acc, option, subId);
   }
 
-  function getAccInitMargin(uint acc) public view returns (int) {
+  function getAccInitMargin(uint acc) public returns (int) {
     PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
     return pcrm.getInitialMargin(portfolio);
   }
 
-  function getAccMaintenanceMargin(uint acc) public view returns (int) {
+  function getAccMaintenanceMargin(uint acc) public returns (int) {
     PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
     return pcrm.getMaintenanceMargin(portfolio);
   }
@@ -258,22 +260,46 @@ contract IntegrationTestBase is Test {
     optimalUtil = 0.6 * 1e18;
   }
 
-  function _getDefaultPCRMShocks() internal pure returns (PCRM.Shocks memory) {
-    return PCRM.Shocks({
-      spotUpInitial: 120e16,
-      spotDownInitial: 80e16,
-      spotUpMaintenance: 110e16,
-      spotDownMaintenance: 90e16,
-      vol: 300e16,
-      rfr: 10e16
+  function _getDefaultPCRMParams()
+    internal
+    pure
+    returns (
+      PCRM.SpotShockParams memory spot,
+      PCRM.VolShockParams memory vol,
+      PCRM.PortfolioDiscountParams memory discount
+    )
+  {
+    spot = PCRM.SpotShockParams({
+      upInitial: 1.25e18,
+      downInitial: 0.75e18,
+      upMaintenance: 1.1e18,
+      downMaintenance: 0.9e18,
+      timeSlope: 1e18,
+      spotJumpMultipleSlope: 5e18,
+      spotJumpMultipleLookback: 1 days
+    });
+
+    vol = PCRM.VolShockParams({
+      minVol: 1e18,
+      maxVol: 3e18,
+      timeA: 30 days,
+      timeB: 90 days,
+      spotJumpMultipleSlope: 5e18,
+      spotJumpMultipleLookback: 1 days
+    });
+
+    discount = PCRM.PortfolioDiscountParams({
+      maintenance: 0.9e18, // 90%
+      initial: 0.8e18, // 80%
+      riskFreeRate: 0.1e18 // 10%
     });
   }
 
-  function _getDefaultPCRMDiscount() internal pure returns (PCRM.PortfolioDiscounts memory) {
-    return PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16});
-  }
-
-  function _getDefaultSpotJumpParams(uint initialSpot) internal pure returns (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) {
+  function _getDefaultSpotJumpParams(uint initialSpot)
+    internal
+    pure
+    returns (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps)
+  {
     params = ISpotJumpOracle.JumpParams({
       start: 500,
       width: 250,

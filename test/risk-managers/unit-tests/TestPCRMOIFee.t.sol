@@ -54,15 +54,28 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     );
 
     manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
+      PCRM.SpotShockParams({
+        upInitial: 120e16,
+        downInitial: 80e16,
+        upMaintenance: 110e16,
+        downMaintenance: 90e16,
+        timeSlope: 1e18,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16})
+      PCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 3e18,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      PCRM.PortfolioDiscountParams({
+        maintenance: 90e16, // 90%
+        initial: 80e16, // 80%
+        riskFreeRate: 10e16 // 10%
+      })
     );
 
     aliceAcc = accounts.createAccount(alice, IManager(manager));

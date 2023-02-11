@@ -64,15 +64,28 @@ contract UNIT_TestPCRM is Test {
 
     // cash.setWhitWelistManager(address(manager), true);
     manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
+      PCRM.SpotShockParams({
+        upInitial: 120e16,
+        downInitial: 80e16,
+        upMaintenance: 110e16,
+        downMaintenance: 90e16,
+        timeSlope: 1e18,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16})
+      PCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 3e18,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      PCRM.PortfolioDiscountParams({
+        maintenance: 90e16, // 90%
+        initial: 80e16, // 80%
+        riskFreeRate: 10e16 // 10%
+      })
     );
 
     feeRecipient = account.createAccount(address(this), manager);
@@ -95,44 +108,73 @@ contract UNIT_TestPCRM is Test {
     vm.startPrank(alice);
     vm.expectRevert(AbstractOwned.OnlyOwner.selector);
     manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
+      PCRM.SpotShockParams({
+        upInitial: 120e16,
+        downInitial: 80e16,
+        upMaintenance: 110e16,
+        downMaintenance: 90e16,
+        timeSlope: 1e18,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscounts({maintenance: 90e16, initial: 80e16})
+      PCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 3e18,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      PCRM.PortfolioDiscountParams({
+        maintenance: 90e16, // 90%
+        initial: 80e16, // 80%
+        riskFreeRate: 10e16 // 10%
+      })
     );
     vm.stopPrank();
   }
 
   function testSetParamsWithOwner() public {
     manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 200e16,
-        spotDownInitial: 50e16,
-        spotUpMaintenance: 120e16,
-        spotDownMaintenance: 70e16,
-        vol: 400e16,
-        rfr: 20e16
+      PCRM.SpotShockParams({
+        upInitial: 200e16,
+        downInitial: 50e16,
+        upMaintenance: 120e16,
+        downMaintenance: 70e16,
+        timeSlope: 1e18,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscounts({maintenance: 85e16, initial: 75e16})
+      PCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 400e16,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      PCRM.PortfolioDiscountParams({
+        maintenance: 85e16, // 90%
+        initial: 75e16, // 80%
+        riskFreeRate: 20e16 // 10%
+      })
     );
 
-    (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance, uint vol, uint rfr) =
-      manager.shocks();
+    (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance,,,) =
+      manager.spotShockParams();
     assertEq(spotUpInitial, 200e16);
     assertEq(spotDownInitial, 50e16);
     assertEq(spotUpMaintenance, 120e16);
     assertEq(spotDownMaintenance, 70e16);
-    assertEq(vol, 400e16);
-    assertEq(rfr, 20e16);
 
-    (uint maintenance, uint initial) = manager.portfolioDiscounts();
+    (uint minVol, uint maxVol,,,,) = manager.volShockParams();
+    assertEq(minVol, 1e18);
+    assertEq(maxVol, 400e16);
+
+    (uint maintenance, uint initial, uint riskFreeRate) = manager.portfolioDiscountParams();
     assertEq(maintenance, 85e16);
     assertEq(initial, 75e16);
+    assertEq(riskFreeRate, 20e16);
   }
 
   //////////////
@@ -192,7 +234,7 @@ contract UNIT_TestPCRM is Test {
   // Margin calculations //
   /////////////////////////
 
-  function testEmptyInitialMarginCalculation() public view {
+  function testEmptyInitialMarginCalculation() public {
     BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
     strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
@@ -204,7 +246,7 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
-  function testEmptyMaintenanceMarginCalculation() public view {
+  function testEmptyMaintenanceMarginCalculation() public {
     BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
     strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
@@ -216,7 +258,7 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
-  function testInitialMarginCalculation() public view {
+  function testInitialMarginCalculation() public {
     BaseManager.Strike[] memory strikes = new BaseManager.Strike[](2);
     strikes[0] = BaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     strikes[1] = BaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});

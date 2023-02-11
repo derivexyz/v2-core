@@ -15,7 +15,6 @@ import "forge-std/console2.sol";
  */
 
 interface ISpotJumpOracle {
-
   struct JumpParams {
     // 500 bps would imply the first bucket is 5% -> 5% + width
     uint32 start;
@@ -43,13 +42,9 @@ interface ISpotJumpOracle {
   function jumps(uint index) external returns (uint32 jump);
 
   /// @dev stores all parameters required to store the jump
-  function params() external returns (
-    uint32 start,
-    uint32 width,
-    uint32 referenceUpdatedAt,
-    uint32 secToReferenceStale,
-    uint128 referencePrice
-  );
+  function params()
+    external
+    returns (uint32 start, uint32 width, uint32 referenceUpdatedAt, uint32 secToReferenceStale, uint128 referencePrice);
 
   //////////////
   // External //
