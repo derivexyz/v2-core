@@ -14,7 +14,6 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
   using DecimalMath for uint;
 
   address charlie = address(0xca1e);
-
   uint charlieAcc;
 
   function setUp() public {
@@ -26,10 +25,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
 
   function testBorrowAgainstITMCall() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-
-    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
@@ -63,10 +59,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
 
   function testCannotBorrowAgainstOTMCall() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-
-    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
@@ -87,10 +80,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
 
   function testBorrowAgainstITMPut() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-
-    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
@@ -121,10 +111,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
 
   function testCannotBorrowAgainstOTMPut() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-
-    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
