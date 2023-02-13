@@ -54,18 +54,16 @@ contract PositionBuilderBase is IntegrationTestBase {
     //console2.log("short cash:", accounts.getBalance(shortAcc, IAsset(cash), 0)/1e18);
     //console2.log("SM balance:", accounts.getBalance(smAcc, IAsset(cash), 0)/1e18);
 
-    int longMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(longAcc)) * 99/100;
-    int shortMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(shortAcc)) ;
+    int longMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(longAcc)) * 99 / 100;
+    int shortMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(shortAcc));
 
     _withdrawCash(address(accounts.ownerOf(longAcc)), longAcc, uint(longMaxWithdraw));
     _withdrawCash(address(accounts.ownerOf(shortAcc)), shortAcc, uint(shortMaxWithdraw));
-
 
     //console2.log("-----AFTER WITHDRAW-----");
     //console2.log("long cash:", accounts.getBalance(longAcc, IAsset(cash), 0)/1e18);
     //console2.log("short cash:", accounts.getBalance(shortAcc, IAsset(cash), 0)/1e18);
     //console2.log("SM balance:", accounts.getBalance(smAcc, IAsset(cash), 0)/1e18);
-
   }
 
   function _openLeveragedZSC(uint longAcc, uint shortAcc) internal returns (Position[] memory positions) {

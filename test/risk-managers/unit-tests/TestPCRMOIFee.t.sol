@@ -84,6 +84,11 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     assertEq(manager.feeRecipientAcc(), aliceAcc);
   }
 
+  function testAdminCanUpdateOIFeeRate() public {
+    manager.setOIFeeRateBPS(0.01e18);
+    assertEq(manager.OIFeeRateBPS(), 0.01e18);
+  }
+
   function testSubmitTransferChargeOIFee() public {
     _depositCash(alice, aliceAcc, 1000e18);
     _depositCash(bob, bobAcc, 1000e18);

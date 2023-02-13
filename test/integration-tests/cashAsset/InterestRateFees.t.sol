@@ -61,10 +61,10 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     console.log("Start time");
     console.log(block.timestamp);
     console.log("Alice Cash Balance");
-    console.logInt(accounts.getBalance(aliceAcc, IAsset(cash),0)/1e18);
+    console.logInt(accounts.getBalance(aliceAcc, IAsset(cash), 0) / 1e18);
 
     console.log("Bob Cash Balance");
-    console.logInt(accounts.getBalance(bobAcc, IAsset(cash),0)/1e18);
+    console.logInt(accounts.getBalance(bobAcc, IAsset(cash), 0) / 1e18);
 
     console.log("End Time");
     console.log(block.timestamp + 2 days);
@@ -73,10 +73,10 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     _depositCash(address(bob), bobAcc, 0);
 
     console.log("Alice Cash Balance at end");
-    console.logInt(accounts.getBalance(aliceAcc, IAsset(cash),0)/1e18);
+    console.logInt(accounts.getBalance(aliceAcc, IAsset(cash), 0) / 1e18);
 
     console.log("Bob Cash Balance at end");
-    console.logInt(accounts.getBalance(bobAcc, IAsset(cash),0)/1e18);
+    console.logInt(accounts.getBalance(bobAcc, IAsset(cash), 0) / 1e18);
   }
 
   // todo: test fees paid correct for low util on short time frame (suppliers, borrowers, sm)
@@ -88,9 +88,9 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     bobAcc = accounts.createAccount(bob, pcrm);
 
     console.log("---- POST ACCOUNT CREATION ----");
-    console2.log("Alice cash:", getCashBalance(aliceAcc)/1e18);
-    console2.log("Bob cash:", getCashBalance(bobAcc)/1e18);
-    console2.log("SM balance:", getCashBalance(smAcc)/1e18);
+    console2.log("Alice cash:", getCashBalance(aliceAcc) / 1e18);
+    console2.log("Bob cash:", getCashBalance(bobAcc) / 1e18);
+    console2.log("SM balance:", getCashBalance(smAcc) / 1e18);
     console2.log("balanceOf(USDC):", usdc.balanceOf(address(cash)));
     console2.log("");
 
@@ -115,10 +115,9 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     console2.log("SM balance:", getCashBalance(smAcc));
     console2.log("balanceOf(USDC):", usdc.balanceOf(address(cash)));
 
-
     uint totalBorrow_postTrade = cash.totalBorrow();
     uint totalSupply_postTrade = cash.totalSupply();
-    uint balanceOf_postTrade = usdc.balanceOf(address(cash))* 1e12;
+    uint balanceOf_postTrade = usdc.balanceOf(address(cash)) * 1e12;
 
     console2.log("-----");
     console2.log("Utilization: ", rateModel.getUtilRate(totalSupply_postTrade, totalBorrow_postTrade));
@@ -133,7 +132,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     console.log("---- POST 14 day wait ----");
     _depositCash(address(alice), aliceAcc, 0);
     _depositCash(address(bob), bobAcc, 0);
-    _depositCash(address(securityModule), smAcc,0);
+    _depositCash(address(securityModule), smAcc, 0);
 
     //securityModule.deposit(100000);
     console2.log("Alice cash:", getCashBalance(aliceAcc));
@@ -144,7 +143,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
 
     uint totalBorrow_postWait = cash.totalBorrow();
     uint totalSupply_postWait = cash.totalSupply();
-    uint balanceOf_postWait = usdc.balanceOf(address(cash))* 1e12;
+    uint balanceOf_postWait = usdc.balanceOf(address(cash)) * 1e12;
 
     console2.log("-----");
     console2.log("Utilization: ", rateModel.getUtilRate(totalSupply_postWait, totalBorrow_postWait));
@@ -152,13 +151,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
 
     assertEq(totalSupply_postWait - totalBorrow_postWait, balanceOf_postWait);
 
-
-
-
-
     //
-
-
   }
 
   // todo: test fees paid correct for low util on long time frame (suppliers, borrowers, sm)
