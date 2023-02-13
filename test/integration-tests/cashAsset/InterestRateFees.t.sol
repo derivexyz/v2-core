@@ -15,12 +15,11 @@ import "../shared/PositionBuilderBase.sol";
  */
 contract MECH_InterestRateFeesTest is PositionBuilderBase {
   address charlie = address(0xca1e);
-  
+
   uint charlieAcc;
   JsonMechIO jsonParser;
 
   function setUp() public {
-
     // alice and bob accounts are already setup
     _setupIntegrationTestComplete();
 
