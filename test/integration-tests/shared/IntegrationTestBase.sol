@@ -199,6 +199,7 @@ contract IntegrationTestBase is Test {
    */
   function _setSpotPriceE18(int price) internal {
     uint80 round = 1;
+    // convert to chainlink decimals
     int answerE8 = price / 1e10;
     aggregator.updateRoundData(round, answerE8, block.timestamp, block.timestamp, round);
   }
