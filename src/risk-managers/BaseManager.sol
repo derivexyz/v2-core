@@ -139,4 +139,11 @@ abstract contract BaseManager is AccountStructs {
       AccountStructs.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
     );
   }
+
+  ////////////////
+  //   Events   //
+  ////////////////
+
+  /// @dev Emitted when OI fee rate is set
+  event OIFeeRateSet(uint oiFeeRate);
 }

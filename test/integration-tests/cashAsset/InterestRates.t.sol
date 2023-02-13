@@ -57,7 +57,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     uint borrowAmount = 500e18;
     _withdrawCash(charlie, charlieAcc, borrowAmount);
 
-    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(feed.getSpot(1));
+    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(feed.getSpot(feedId));
 
     // Charlie balance should be negative
     assertEq(getCashBalance(charlieAcc), -int(borrowAmount + oiFee));
@@ -83,7 +83,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
 
     // OTM Call
     uint callExpiry = block.timestamp + 1;
-    uint callStrike = 2000e18;
+    uint callStrike = 4000e18;
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
     // charlie pays 0 for the call
@@ -118,7 +118,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     _withdrawCash(charlie, charlieAcc, 50e18);
 
     // Charlie balance should be -borrowed amount + oiFee
-    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(feed.getSpot(1));
+    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(feed.getSpot(feedId));
     assertEq(accounts.getBalance(charlieAcc, cash, 0), -int(50e18 + oiFee));
 
     vm.warp(block.timestamp + 1 weeks);

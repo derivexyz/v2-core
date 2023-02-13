@@ -199,6 +199,8 @@ contract PCRM is BaseManager, IManager, Owned {
    */
   function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
     OIFeeRateBPS = newFeeRate;
+
+    emit OIFeeRateSet(OIFeeRateBPS);
   }
 
   //////////////////
