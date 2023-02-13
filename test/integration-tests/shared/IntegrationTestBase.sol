@@ -27,7 +27,7 @@ import "src/interfaces/IManager.sol";
 contract IntegrationTestBase is Test {
   address public constant liquidation = address(0xdead);
   uint public constant DEFAULT_DEPOSIT = 5000e18;
-  int public constant ETH_PRICE = 2000e8;
+  int public constant ETH_PRICE = 2000e18;
 
   Accounts accounts;
   CashAsset cash;
@@ -121,8 +121,6 @@ contract IntegrationTestBase is Test {
 
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());
-
-    // todo: option asset whitelist
   }
 
   /**

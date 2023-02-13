@@ -189,11 +189,11 @@ contract UNIT_TestPCRM is Test {
   /////////////////////////
 
   function testEmptyInitialMarginCalculation() public view {
-    BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
-    strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
+    IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
+    strikes[0] = IBaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    BaseManager.Portfolio memory expiry =
-      BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    IBaseManager.Portfolio memory expiry =
+      IBaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -201,11 +201,11 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testEmptyMaintenanceMarginCalculation() public view {
-    BaseManager.Strike[] memory strikes = new BaseManager.Strike[](1);
-    strikes[0] = BaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
+    IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
+    strikes[0] = IBaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    BaseManager.Portfolio memory expiry =
-      BaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
+    IBaseManager.Portfolio memory expiry =
+      IBaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getMaintenanceMargin(expiry);
 
@@ -213,12 +213,12 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testInitialMarginCalculation() public view {
-    BaseManager.Strike[] memory strikes = new BaseManager.Strike[](2);
-    strikes[0] = BaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-    strikes[1] = BaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+    IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](2);
+    strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = IBaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
-    BaseManager.Portfolio memory expiry =
-      BaseManager.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
+    IBaseManager.Portfolio memory expiry =
+      IBaseManager.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -227,13 +227,13 @@ contract UNIT_TestPCRM is Test {
 
   function testNegativePnLSettledExpiryCalculation() public {
     skip(30 days);
-    BaseManager.Strike[] memory strikes = new BaseManager.Strike[](2);
-    strikes[0] = BaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-    strikes[1] = BaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+    IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](2);
+    strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[1] = IBaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
     aggregator.updateRoundData(2, 100e18, block.timestamp, block.timestamp, 2);
-    BaseManager.Portfolio memory expiry =
-      BaseManager.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
+    IBaseManager.Portfolio memory expiry =
+      IBaseManager.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -339,7 +339,7 @@ contract UNIT_TestPCRM is Test {
 
     _transferCash();
 
-    (BaseManager.Portfolio memory holding) = manager.getPortfolio(aliceAcc);
+    (IBaseManager.Portfolio memory holding) = manager.getPortfolio(aliceAcc);
     assertEq(holding.strikes[0].strike, 1000e18);
     assertEq(holding.strikes[0].calls, 0);
     assertEq(holding.strikes[0].puts, -9e18);

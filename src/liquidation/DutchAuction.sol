@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 // interfaces
 import "../interfaces/IPCRM.sol";
+import "../interfaces/IBaseManager.sol";
 import "../interfaces/ISecurityModule.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IDutchAuction.sol";
@@ -263,14 +264,16 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev Helper to get maintenance margin for an accountId
    */
   function getMaintenanceMarginForAccount(uint accountId) public view returns (int) {
-    return riskManager.getMaintenanceMargin(riskManager.getPortfolio(accountId));
+    IBaseManager.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
+    return riskManager.getMaintenanceMargin(portfolio);
   }
 
   /**
    * @dev Helper to get initial margin for an accountId
    */
   function getInitMarginForAccount(uint accountId) public view returns (int) {
-    return riskManager.getInitialMargin(riskManager.getPortfolio(accountId));
+    IBaseManager.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
+    return riskManager.getInitialMargin(portfolio);
   }
 
   /**

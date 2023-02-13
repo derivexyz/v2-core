@@ -9,41 +9,16 @@ import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/ISettlementFeed.sol";
+import "src/interfaces/IBaseManager.sol";
 
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
 
-abstract contract BaseManager is AccountStructs {
+abstract contract BaseManager is AccountStructs, IBaseManager {
   using IntLib for int;
   using DecimalMath for uint;
-
-  /////////////
-  // Structs //
-  /////////////
-
-  struct Portfolio {
-    /// cash amount or debt
-    int cash;
-    /// timestamp of expiry for all strike holdings
-    uint expiry;
-    /// # of strikes with active balances
-    uint numStrikesHeld;
-    /// array of strike holding details
-    Strike[] strikes;
-  }
-
-  struct Strike {
-    /// strike price of held options
-    uint strike;
-    /// number of calls held
-    int calls;
-    /// number of puts held
-    int puts;
-    /// number of forwards held
-    int forwards;
-  }
 
   ///////////////
   // Variables //
