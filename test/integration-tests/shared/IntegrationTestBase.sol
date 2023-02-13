@@ -91,9 +91,8 @@ contract IntegrationTestBase is Test {
     pcrm = new PCRM(accounts, feed, cash, option, auctionAddr);
 
     // nonce: 8 => Deploy Auction
-    // todo: remove IPCRM(address())
     address smAddr = _predictAddress(address(this), 9);
-    auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
+    auction = new DutchAuction(pcrm, accounts, ISecurityModule(smAddr), cash);
 
     assertEq(address(auction), auctionAddr);
 
@@ -121,6 +120,9 @@ contract IntegrationTestBase is Test {
 
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());
+
+    // allow liquidation to request payout from sm
+    securityModule.setWhitelistModule(address(auction), true);
   }
 
   /**
@@ -179,6 +181,16 @@ contract IntegrationTestBase is Test {
     });
 
     accounts.submitTransfers(transferBatch, "");
+  }
+
+  function _depositSecurityModule(address user, uint amountCash) internal {
+    uint amountUSDC = amountCash / 1e12;
+    usdc.mint(user, amountUSDC);
+
+    vm.startPrank(user);
+    usdc.approve(address(securityModule), type(uint).max);
+    securityModule.deposit(amountUSDC);
+    vm.stopPrank();
   }
 
   /**

@@ -218,7 +218,10 @@ contract DutchAuction is IDutchAuction, Owned {
       // if the account is solvent, the bidder pays the account for a portion of the account
       uint p_max = _getMaxProportion(accountId);
       finalPercentage = percentOfAccount > p_max ? p_max : percentOfAccount;
-      cashFromBidder = _getCurrentBidPrice(accountId).toUint256().multiplyDecimal(finalPercentage); // bid * f_max
+      // bid price == 0 means auction has ended
+      int bidPrice = _getCurrentBidPrice(accountId);
+      if (bidPrice == 0) revert DA_SolventAuctionEnded();
+      cashFromBidder = bidPrice.toUint256().multiplyDecimal(finalPercentage); // bid * f_max
     }
 
     // risk manager transfers portion of the account to the bidder
@@ -499,7 +502,7 @@ contract DutchAuction is IDutchAuction, Owned {
     } else {
       // @invariant: if solvent, bids should always be positive
       if (block.timestamp > auction.startTime + parameters.lengthOfAuction) {
-        revert DA_SolventAuctionEnded();
+        return 0;
       }
 
       int upperBound = auction.upperBound;

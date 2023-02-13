@@ -460,7 +460,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     return _calcMargin(portfolio, MarginType.INITIAL);
   }
 
-  // @todo: update to real implementation 
+  // @todo: update to real implementation
   function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int margin) {
     return _calcMargin(portfolio, MarginType.INITIAL);
   }
