@@ -192,10 +192,12 @@ contract UNIT_TestPCRM is Test {
     IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
     strikes[0] = IBaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
-    IBaseManager.Portfolio memory expiry =
+    IBaseManager.Portfolio memory portfolio =
       IBaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
-    manager.getInitialMargin(expiry);
+    manager.getInitialMargin(portfolio);
+
+    manager.getInitialMarginRVZero(portfolio);
 
     // todo: actually test
   }
