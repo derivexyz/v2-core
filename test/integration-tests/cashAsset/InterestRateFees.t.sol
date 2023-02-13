@@ -15,21 +15,16 @@ import "../shared/PositionBuilderBase.sol";
  */
 contract MECH_InterestRateFeesTest is PositionBuilderBase {
   address charlie = address(0xca1e);
-
   
   uint charlieAcc;
   JsonMechIO jsonParser;
 
   function setUp() public {
+
+    // alice and bob accounts are already setup
     _setupIntegrationTestComplete();
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
-
-    vm.prank(alice);
-    accounts.setApprovalForAll(address(this), true);
-
-    vm.prank(bob);
-    accounts.setApprovalForAll(address(this), true);
 
     vm.prank(charlie);
     accounts.setApprovalForAll(address(this), true);

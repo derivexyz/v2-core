@@ -41,7 +41,7 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
 
     uint expectedOIFeeEach = spot * uint(amountOfContracts) / 1e18 / 1000;
 
-    assertEq(getCashBalance(pcrmFeeAcc), int(expectedOIFeeEach) * 2);
+    assertEq(getCashBalance(smAcc), int(expectedOIFeeEach) * 2);
     assertEq(getCashBalance(aliceAcc), int(initCash) + premium - int(expectedOIFeeEach));
     assertEq(getCashBalance(bobAcc), int(initCash) - premium - int(expectedOIFeeEach));
   }
