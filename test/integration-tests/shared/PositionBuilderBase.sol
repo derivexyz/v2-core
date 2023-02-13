@@ -18,8 +18,19 @@ contract PositionBuilderBase is IntegrationTestBase {
 
   function _openStrategy(uint longAcc, uint shortAcc, Position[] memory positions) internal {
     // set up long and short accounts to hold max leveraged positions against one another
+
+    //console2.log("-----BEFORE DEPOSIT-----");
+    //console2.log("long cash:", getCashBalance(longAcc)/1e18);
+    //console2.log("short cash:", accounts.getBalance(shortAcc, IAsset(cash), 0)/1e18);
+    //console2.log(usdc.balanceOf(address(cash)));
+
     _depositCash(address(accounts.ownerOf(longAcc)), longAcc, DEFAULT_DEPOSIT);
     _depositCash(address(accounts.ownerOf(shortAcc)), shortAcc, DEFAULT_DEPOSIT);
+
+    //console2.log("-----AFTER DEPOSIT-----");
+    //console2.log("long cash:", accounts.getBalance(longAcc, IAsset(cash), 0)/1e18);
+    //console2.log("short cash:", accounts.getBalance(shortAcc, IAsset(cash), 0)/1e18);
+    //console2.log(usdc.balanceOf(address(cash)));
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](positions.length);
 
     for (uint i = 0; i < positions.length; i++) {
@@ -34,10 +45,27 @@ contract PositionBuilderBase is IntegrationTestBase {
     }
     accounts.submitTransfers(transferBatch, "");
 
-    int longMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(longAcc));
-    int shortMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(shortAcc));
+    //console2.log("SMfees:", cash.accruedSmFees());
+
+    cash.transferSmFees();
+
+    //console2.log("-----AFTER TRADE-----");
+    //console2.log("long cash:", accounts.getBalance(longAcc, IAsset(cash), 0)/1e18);
+    //console2.log("short cash:", accounts.getBalance(shortAcc, IAsset(cash), 0)/1e18);
+    //console2.log("SM balance:", accounts.getBalance(smAcc, IAsset(cash), 0)/1e18);
+
+    int longMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(longAcc)) * 99/100;
+    int shortMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(shortAcc)) ;
+
     _withdrawCash(address(accounts.ownerOf(longAcc)), longAcc, uint(longMaxWithdraw));
     _withdrawCash(address(accounts.ownerOf(shortAcc)), shortAcc, uint(shortMaxWithdraw));
+
+
+    //console2.log("-----AFTER WITHDRAW-----");
+    //console2.log("long cash:", accounts.getBalance(longAcc, IAsset(cash), 0)/1e18);
+    //console2.log("short cash:", accounts.getBalance(shortAcc, IAsset(cash), 0)/1e18);
+    //console2.log("SM balance:", accounts.getBalance(smAcc, IAsset(cash), 0)/1e18);
+
   }
 
   function _openLeveragedZSC(uint longAcc, uint shortAcc) internal returns (Position[] memory positions) {

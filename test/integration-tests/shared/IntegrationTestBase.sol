@@ -110,7 +110,7 @@ contract IntegrationTestBase is Test {
 
     // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
-    pcrm.setFeeRecipient(pcrmFeeAcc);
+    pcrm.setFeeRecipient(smAcc);
 
     pcrm.setParams(_getDefaultPCRMShocks(), _getDefaultPCRMDiscount());
 
