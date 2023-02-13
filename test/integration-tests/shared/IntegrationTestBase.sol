@@ -104,8 +104,9 @@ contract IntegrationTestBase is Test {
   }
 
   function _finishContractSetups() internal {
-    // whitelist setting in cash asset
+    // whitelist setting in cash asset and option assert
     cash.setWhitelistManager(address(pcrm), true);
+    option.setWhitelistManager(address(pcrm), true);
 
     // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);

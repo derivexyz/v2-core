@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "openzeppelin/utils/math/SafeCast.sol";
+
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ICashAsset.sol";
@@ -10,10 +12,42 @@ import "src/interfaces/ISettlementFeed.sol";
 
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
+import "src/libraries/OptionEncoding.sol";
+import "src/libraries/PCRMGrouping.sol";
 
 abstract contract BaseManager is AccountStructs {
   using IntLib for int;
   using DecimalMath for uint;
+
+  /////////////
+  // Structs //
+  /////////////
+
+  struct Portfolio {
+    /// cash amount or debt
+    int cash;
+    /// timestamp of expiry for all strike holdings
+    uint expiry;
+    /// # of strikes with active balances
+    uint numStrikesHeld;
+    /// array of strike holding details
+    Strike[] strikes;
+  }
+
+  struct Strike {
+    /// strike price of held options
+    uint strike;
+    /// number of calls held
+    int calls;
+    /// number of puts held
+    int puts;
+    /// number of forwards held
+    int forwards;
+  }
+
+  ///////////////
+  // Variables //
+  ///////////////
 
   ///@dev Account contract address
   IAccounts public immutable accounts;
@@ -62,6 +96,45 @@ abstract contract BaseManager is AccountStructs {
   //////////////////////////
   //  Internal Functions  //
   //////////////////////////
+
+  /**
+   * @notice Adds option to portfolio holdings.
+   * @dev This option arrangement is only additive, as portfolios are reconstructed for every trade
+   * @param portfolio current portfolio of account
+   * @param asset option asset to be added
+   * @return addedStrikeIndex index of existing or added strike struct
+   */
+  function _addOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
+    internal
+    pure
+    returns (uint addedStrikeIndex)
+  {
+    // decode subId
+    (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(asset.subId));
+
+    // assume expiry = 0 means this is the first strike.
+    if (portfolio.expiry == 0) {
+      portfolio.expiry = expiry;
+    }
+
+    if (portfolio.expiry != expiry) {
+      revert BM_OnlySingleExpiryPerAccount();
+    }
+
+    // add strike in-memory to portfolio
+    (addedStrikeIndex, portfolio.numStrikesHeld) =
+      PCRMGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
+
+    // add call or put balance
+    if (isCall) {
+      portfolio.strikes[addedStrikeIndex].calls += asset.balance;
+    } else {
+      portfolio.strikes[addedStrikeIndex].puts += asset.balance;
+    }
+
+    // return the index of the strike which was just modified
+    return addedStrikeIndex;
+  }
 
   /**
    * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
@@ -146,4 +219,10 @@ abstract contract BaseManager is AccountStructs {
 
   /// @dev Emitted when OI fee rate is set
   event OIFeeRateSet(uint oiFeeRate);
+
+  ////////////
+  // Errors //
+  ////////////
+
+  error BM_OnlySingleExpiryPerAccount();
 }

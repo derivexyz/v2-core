@@ -46,6 +46,9 @@ contract Option is IOption, Owned {
   ///@dev Expiry => Settlement price
   mapping(uint => uint) public settlementPrices;
 
+  ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
+  mapping(address => bool) public whitelistedManager;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -56,6 +59,21 @@ contract Option is IOption, Owned {
     feedId = _feedId;
   }
 
+  //////////////////////////////
+  //   Owner-only Functions   //
+  //////////////////////////////
+
+  /**
+   * @notice Whitelist or un-whitelist a manager
+   * @param _manager manager address
+   * @param _whitelisted true to whitelist
+   */
+  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
+    whitelistedManager[_manager] = _whitelisted;
+
+    emit WhitelistManagerSet(_manager, _whitelisted);
+  }
+
   ///////////////
   // Transfers //
   ///////////////
@@ -64,10 +82,10 @@ contract Option is IOption, Owned {
     AccountStructs.AssetAdjustment memory adjustment,
     uint tradeId,
     int preBalance,
-    IManager, /*manager*/
+    IManager manager,
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    // todo: check whitelist
+    _checkManager(address(manager));
 
     // todo: make sure valid subId
 
@@ -83,8 +101,12 @@ contract Option is IOption, Owned {
     return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
 
-  function handleManagerChange(uint accountId, IManager newManager) external onlyAccount {
-    // todo: check whitelist
+  /**
+   * @notice Triggered when a user wants to migrate an account to a new manager
+   * @dev block update with non-whitelisted manager
+   */
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view onlyAccount {
+    _checkManager(address(newManager));
   }
 
   ////////////////
@@ -143,12 +165,20 @@ contract Option is IOption, Owned {
       return (0, false);
     }
 
-    return (_getSettlementValue(strike, balance, settlementPrice, isCall), true);
+    return (getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
 
   //////////////
   // Internal //
   //////////////
+
+  /**
+   * @dev Revert if manager address is not whitelisted by this contract
+   * @param manager manager address
+   */
+  function _checkManager(address manager) internal view {
+    if (!whitelistedManager[manager]) revert OA_UnknownManager();
+  }
 
   /**
    * @dev update global OI for an subId, base on adjustment of a single account
@@ -161,8 +191,8 @@ contract Option is IOption, Owned {
       (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
   }
 
-  function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
-    internal
+  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    public
     pure
     returns (int)
   {

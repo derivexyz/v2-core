@@ -99,16 +99,18 @@ contract UNIT_BidAuction is Test {
   /////////////////////////
 
   function testCannotBidOnAuctionThatHasNotStarted() public {
+    // init margin is below 0, but not marked yet
+    manager.giveAssets(aliceAcc);
+    manager.setMaintenanceMarginForPortfolio(-1);
+    manager.setInitMarginForPortfolioZeroRV(-1);
+
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotStarted.selector, aliceAcc));
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
 
   function testCannotBidOnAuctionThatHasEnded() public {
-    manager.setMarginForPortfolio(10_000 * 1e18); // positive v_max
-
-    vm.prank(address(manager));
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultSolventAuction(aliceAcc);
 
     vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 5);
     vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
@@ -120,17 +122,14 @@ contract UNIT_BidAuction is Test {
   }
 
   function testCannotBidForGreaterThanOneHundredPercent() public {
-    vm.prank(address(manager));
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultSolventAuction(aliceAcc);
+
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountTooLarge.selector, aliceAcc, 101 * 1e16));
     dutchAuction.bid(aliceAcc, bobAcc, 101 * 1e16);
   }
 
   function testCannotMakeBidUnlessOwnerOfBidder() public {
-    vm.startPrank(address(manager));
-
-    // start an auction on Alice's account
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultSolventAuction(aliceAcc);
 
     // bidding
     vm.stopPrank();
@@ -140,15 +139,7 @@ contract UNIT_BidAuction is Test {
   }
 
   function testBidOnSolventAuction() public {
-    vm.startPrank(address(manager));
-
-    manager.giveAssets(aliceAcc);
-
-    // set the initialMargin result for the portfolio
-    manager.setMarginForPortfolio(10_000 * 1e18);
-
-    dutchAuction.startAuction(aliceAcc);
-    vm.stopPrank();
+    createDefaultSolventAuction(aliceAcc);
 
     // getting the max proportion
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
@@ -158,23 +149,49 @@ contract UNIT_BidAuction is Test {
     vm.startPrank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
-    // testing that the auction is ended because init margin is 0
-    manager.setAccInitMargin(aliceAcc, 0);
+    // the auction will keep going
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true);
+  }
+
+  function testBidOnSolventAuctionCanAutomaticallyTerminate() public {
+    createDefaultSolventAuction(aliceAcc);
+
+    // mock that the next bid make the account above init margin
+    manager.setNextIsEndingBid();
+
+    // bidding
+    vm.startPrank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+
+    // the auction was terminated because init margin became 0 after the last bid
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, false);
   }
 
+  function testCannotBidOnAuctionThatIsNoLongerLiquidatable() public {
+    createDefaultSolventAuction(aliceAcc);
+
+    // scenario: init margin with rv = 0 is back to positive
+    manager.setInitMarginForPortfolioZeroRV(1);
+
+    // bidding should not go through
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionShouldBeTerminated.selector, aliceAcc));
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
   function testCannotBid0() public {
-    vm.prank(address(manager));
-    dutchAuction.startAuction(aliceAcc);
+    createDefaultSolventAuction(aliceAcc);
+
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AmountIsZero.selector, aliceAcc));
     dutchAuction.bid(aliceAcc, bobAcc, 0);
   }
 
-  // Bid a few times whilst the auction is solvent and check if it correctly recalcs bounds
+  // Bid a few times whilst the auction is solvent and check if it correctly recalculates bounds
   // and terminates.
   function testBidTillSolventThenClose() public {
-    createAuctionOnUser(aliceAcc, -10_000 * 1e18, 20_000 * 1e18);
+    createDefaultSolventAuction(aliceAcc);
 
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
 
@@ -211,7 +228,7 @@ contract UNIT_BidAuction is Test {
     int initMargin = -10_000e18;
 
     // create solvent auction: -10K underwater, invert portfolio is 10K
-    createAuctionOnUser(aliceAcc, initMargin, -initMargin);
+    createAuctionOnUser(aliceAcc, -1, initMargin, -initMargin);
 
     vm.warp(block.timestamp + (dutchAuctionParameters.lengthOfAuction) / 2);
 
@@ -229,16 +246,42 @@ contract UNIT_BidAuction is Test {
     assertEq(percentage, 571428571428571428); // 57% of portfolio get liquidated
   }
 
+  // handle branch coverage where during IM check, the call to manager could rever
+  function testBidOnSolventAuctionRevert() public {
+    createDefaultSolventAuction(aliceAcc);
+
+    // getting the max proportion
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
+    assertLt(maxProportion, 5e17); // should be less than half
+
+    // bidding
+    vm.startPrank(bob);
+    manager.setRevertMargin();
+    vm.expectRevert();
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
   /////////////
   // helpers //
   /////////////
 
-  function createAuctionOnUser(uint accountId, int margin, int invMargin) public {
-    vm.startPrank(address(manager));
+  function createDefaultSolventAuction(uint accountId) public {
+    int maintenanceMargin = -1e18;
+    int initMargin = -1000e18;
+    int inversedPortfolioIM = 1500e18; // price drops from 1500 => 0
+    createAuctionOnUser(accountId, maintenanceMargin, initMargin, inversedPortfolioIM);
+  }
+
+  function createAuctionOnUser(uint accountId, int maintenanceMargin, int initMargin, int inversedPortfolioIM) public {
     manager.giveAssets(accountId);
-    manager.setAccInitMargin(accountId, margin);
-    manager.setMarginForPortfolio(invMargin);
+
+    manager.setMaintenanceMarginForPortfolio(maintenanceMargin);
+    manager.setInitMarginForPortfolio(initMargin);
+    manager.setInitMarginForInversedPortfolio(inversedPortfolioIM);
+
+    // currently set this to the same as init margin
+    manager.setInitMarginForPortfolioZeroRV(initMargin);
+
     dutchAuction.startAuction(accountId);
-    vm.stopPrank();
   }
 }
