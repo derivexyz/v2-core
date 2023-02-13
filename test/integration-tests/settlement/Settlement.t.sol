@@ -12,12 +12,6 @@ import "src/libraries/OptionEncoding.sol";
  * @dev testing settlement logic
  */
 contract INTEGRATION_Settlement is IntegrationTestBase {
-  address alice = address(0xaa);
-  uint aliceAcc;
-
-  address bob = address(0xbb);
-  uint bobAcc;
-
   // value used for test
   uint constant initCash = 5000e18;
   int constant amountOfContracts = 10e18;
@@ -31,9 +25,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   function setUp() public {
     _setupIntegrationTestComplete();
-
-    aliceAcc = accounts.createAccount(alice, pcrm);
-    bobAcc = accounts.createAccount(bob, pcrm);
 
     // allow this contract to submit trades
     vm.prank(alice);
