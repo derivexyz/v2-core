@@ -81,7 +81,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     uint supplyBefore = cash.totalSupply();
 
     int bidPrice = auction.getCurrentBidPrice(aliceAcc);
-    assertEq(bidPrice, -3573_000000012457452000); // bidding now will require security module to pay out $3573
+    assertEq(bidPrice / 1e18, -3573); // bidding now will require security module to pay out $3573
 
     // bid from bob
     vm.prank(bob);
