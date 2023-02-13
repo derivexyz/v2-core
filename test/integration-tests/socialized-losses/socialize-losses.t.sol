@@ -12,12 +12,6 @@ import "src/libraries/OptionEncoding.sol";
  * @dev insolvent auction leads to socialize losses
  */
 contract INTEGRATION_SocializeLosses is IntegrationTestBase {
-  address alice = address(0xaa);
-  uint aliceAcc;
-
-  address bob = address(0xbb);
-  uint bobAcc;
-
   address charlie = address(0xcc);
 
   // value used for test
@@ -34,15 +28,6 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
 
   function setUp() public {
     _setupIntegrationTestComplete();
-
-    aliceAcc = accounts.createAccount(alice, pcrm);
-    bobAcc = accounts.createAccount(bob, pcrm);
-
-    // allow this contract to submit trades
-    vm.prank(alice);
-    accounts.setApprovalForAll(address(this), true);
-    vm.prank(bob);
-    accounts.setApprovalForAll(address(this), true);
 
     // init setup for both accounts
     _depositCash(alice, aliceAcc, aliceCollat);

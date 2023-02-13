@@ -25,6 +25,11 @@ import "src/interfaces/IManager.sol";
  * @dev real SecurityModule contract
  */
 contract IntegrationTestBase is Test {
+  address alice = address(0xace);
+  address bob = address(0xb0b);
+  uint aliceAcc;
+  uint bobAcc;
+
   address public constant liquidation = address(0xdead);
   uint public constant DEFAULT_DEPOSIT = 5000e18;
   int public constant ETH_PRICE = 2000e18;
@@ -55,6 +60,22 @@ contract IntegrationTestBase is Test {
 
     // necessary shared setup
     _finishContractSetups();
+
+    _setupAliceAndBob();
+  }
+
+  function _setupAliceAndBob() internal {
+    vm.label(alice, "alice");
+    vm.label(bob, "bob");
+
+    aliceAcc = accounts.createAccount(alice, pcrm);
+    bobAcc = accounts.createAccount(bob, pcrm);
+
+    // allow this contract to submit trades
+    vm.prank(alice);
+    accounts.setApprovalForAll(address(this), true);
+    vm.prank(bob);
+    accounts.setApprovalForAll(address(this), true);
   }
 
   function _deployAllV2Contracts() internal {
