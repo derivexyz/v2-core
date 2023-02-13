@@ -14,20 +14,15 @@ import "../shared/PositionBuilderBase.sol";
  * @dev Tests to verify correct fees paid and received by suppliers and borrowers
  */
 contract MECH_InterestRateFeesTest is PositionBuilderBase {
-  address alice = address(0xace);
-  address bob = address(0xb0b);
   address charlie = address(0xca1e);
 
-  uint aliceAcc;
-  uint bobAcc;
+  
   uint charlieAcc;
   JsonMechIO jsonParser;
 
   function setUp() public {
     _setupIntegrationTestComplete();
 
-    aliceAcc = accounts.createAccount(alice, pcrm);
-    bobAcc = accounts.createAccount(bob, pcrm);
     charlieAcc = accounts.createAccount(charlie, pcrm);
 
     vm.prank(alice);
