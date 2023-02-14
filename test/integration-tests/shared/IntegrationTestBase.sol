@@ -44,11 +44,12 @@ contract IntegrationTestBase is Test {
   InterestRateModel rateModel;
   // ChainlinkSpotFeeds feed;
   DutchAuction auction;
+  ChainlinkSpotFeeds chainlinkFeed;
   MockV3Aggregator aggregator;
   TokenFeedV2 feed;
 
   // feedId of the aggregator
-  uint feedId;
+  uint feedId = 1;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
@@ -94,9 +95,8 @@ contract IntegrationTestBase is Test {
     usdc.setDecimals(6);
 
     // nonce: 3  => Deploy Chainlink Feed aggregator
-    ChainlinkSpotFeeds chainlinkFeed = new ChainlinkSpotFeeds();
+    chainlinkFeed = new ChainlinkSpotFeeds();
 
-    feedId = chainlinkFeed.addFeed("ETH/USD", address(aggregator), 1 hours);
     // nonce: 4 => Deploy Feed that will be used as future price and settlement price
     feed = new TokenFeedV2(chainlinkFeed, feedId);
 
@@ -110,7 +110,7 @@ contract IntegrationTestBase is Test {
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
     // nonce: 7 => Deploy OptionAsset
-    option = new Option(accounts, address(feed), feedId);
+    option = new Option(accounts, address(feed));
 
     // nonce: 8 => Deploy Manager
     pcrm = new PCRM(accounts, feed, feed, cash, option, auctionAddr);
@@ -140,6 +140,10 @@ contract IntegrationTestBase is Test {
 
     // add aggregator to feed
     aggregator = new MockV3Aggregator(8, 2000e8);
+
+    uint _feedId = chainlinkFeed.addFeed("ETH/USD", address(aggregator), 1 hours);
+
+    assertEq(_feedId, feedId);
 
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());
@@ -234,8 +238,7 @@ contract IntegrationTestBase is Test {
   function _setSpotPriceAndSubmitForExpiry(int price, uint expiry) internal {
     _setSpotPriceE18(price);
 
-    // todo: update
-    // option.setSettlementPrice(expiry);
+    feed.setSettlementPrice(expiry);
   }
 
   function _assertCashSolvent() internal {

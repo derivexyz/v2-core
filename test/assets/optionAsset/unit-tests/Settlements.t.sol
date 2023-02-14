@@ -8,6 +8,7 @@ import "../../../shared/mocks/MockManager.sol";
 import "../../../../src/assets/Option.sol";
 import "../../../../src/Accounts.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
+import "test/shared/mocks/MockFeed.sol";
 import "src/feeds/ChainlinkSpotFeeds.sol";
 
 /**
@@ -19,7 +20,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
   Option option;
   Accounts account;
 
-  ChainlinkSpotFeeds spotFeeds;
+  MockFeed feed;
   MockV3Aggregator aggregator;
 
   int public constant BIG_PRICE = 1e42;
@@ -31,8 +32,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    uint feedId = _setupFeeds();
-    option = new Option(account, address(spotFeeds), feedId);
+    feed = new MockFeed();
+    option = new Option(account, address(feed));
 
     callId = option.getSubId(setExpiry, strike, true);
     putId = option.getSubId(setExpiry, strike, false);
@@ -43,9 +44,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for callId at expiry above strike
     vm.warp(expiry);
-    int spotPrice = int(strike) + 200e18;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(strike) + 200e18;
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -58,9 +58,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for callId at expiry below strike
     vm.warp(expiry);
-    int spotPrice = int(strike) - 200e18;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(strike) - 200e18;
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -73,9 +72,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for putId at expiry below strike
     vm.warp(expiry);
-    int spotPrice = int(strike) - 200e18;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(strike) - 200e18;
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -88,9 +86,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for putId at expiry above strike
     vm.warp(expiry);
-    int spotPrice = int(strike) + 200e18;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(strike) + 200e18;
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -119,9 +116,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for callId at expiry above strike
     vm.warp(expiry);
-    int spotPrice = int(strike) + priceDiff;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(int(strike) + priceDiff);
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -135,9 +131,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for callId at expiry below strike
     vm.warp(expiry);
-    int spotPrice = int(strike) - priceDiff;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(int(strike) - priceDiff);
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -151,9 +146,8 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for putId at expiry below strike
     vm.warp(expiry);
-    int spotPrice = int(strike) - priceDiff;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(int(strike) - priceDiff);
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -167,25 +161,12 @@ contract UNIT_OptionAssetSettlementsTest is Test {
 
     // Lock in settlement price for putId at expiry above strike
     vm.warp(expiry);
-    int spotPrice = int(strike) + priceDiff;
-    _updateFeed(aggregator, 2, spotPrice, 2);
-    // option.setSettlementPrice(expiry);
+    uint spotPrice = uint(int(strike) + priceDiff);
+    feed.setFuturePrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
     // Put should be worthless
     assertEq(uint(payout), 0);
-  }
-
-  function _setupFeeds() public returns (uint) {
-    aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    uint feedId = spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
-    aggregator.updateRoundData(1, 1000e18, block.timestamp, block.timestamp, 1);
-    return feedId;
-  }
-
-  function _updateFeed(MockV3Aggregator _aggregator, uint80 roundId, int spotPrice, uint80 answeredInRound) internal {
-    _aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
   }
 }

@@ -34,9 +34,6 @@ contract Option is IOption, Owned {
   // Variables //
   ///////////////
 
-  ///@dev Id used to query spot price
-  uint public feedId;
-
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
@@ -50,10 +47,9 @@ contract Option is IOption, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts, address _settlementFeed, uint _feedId) {
+  constructor(IAccounts _accounts, address _settlementFeed) {
     accounts = _accounts;
     settlementFeed = ISettlementFeed(_settlementFeed);
-    feedId = _feedId;
   }
 
   //////////////////////////////
