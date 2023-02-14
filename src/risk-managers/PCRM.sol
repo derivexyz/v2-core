@@ -360,15 +360,11 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     }
 
     // discount option value
-    console2.log("portfolio", portfolio.strikes[0].calls);
     margin = _calcLiveExpiryValue(portfolio, spotUp.toUint128(), spotDown.toUint128(), vol.toUint128());
-    console2.log("margin before discount", margin);
 
     if (margin > 0) {
       margin = margin.multiplyDecimal(_getExpiryDiscount(portfolioDiscount, timeToExpiry).toInt256());
     }
-    console2.log("margin before cash", margin);
-    console2.log("portfolio.cash", portfolio.cash);
 
     // add cash
     margin += portfolio.cash;
@@ -414,7 +410,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     uint64 timeToExpiry = (portfolio.expiry - block.timestamp).toUint64();
 
     for (uint i; i < portfolio.strikes.length; i++) {
-      console2.log("strike", portfolio.strikes[i].strike);
       // Solidity forces only static arrays in memory, so need to handle empty positions.
       if (portfolio.strikes[i].calls == 0 && portfolio.strikes[i].puts == 0 && portfolio.strikes[i].forwards == 0) {
         continue;
@@ -422,8 +417,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       spotUpValue += _calcLiveStrikeValue(portfolio.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
       spotDownValue += _calcLiveStrikeValue(portfolio.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
 
-      console2.log("spotUpValue", spotUpValue);
-      console2.log("spotDownValue", spotDownValue);
     }
 
     // return the worst of two scenarios
@@ -482,9 +475,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     strikeValue += (strikes.puts >= 0)
       ? strikes.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikes.puts.multiplyDecimal(putValue.toInt256());
-
-    console2.log("markedDownCallValue", markedDownCallValue);
-    console2.log("strikeValue", strikeValue);
 
   }
 
