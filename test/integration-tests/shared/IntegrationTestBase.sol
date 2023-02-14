@@ -232,6 +232,15 @@ contract IntegrationTestBase is Test {
   }
 
   /**
+   * @dev set future price for feed
+   * @param price price in 18 decimals
+   */
+  function _setFuturePrice(uint, /*expiry*/ int price) internal {
+    // currently the same as set spot price
+    _setSpotPriceE18(price);
+  }
+
+  /**
    * @dev set current price of aggregator, and report as settlement price at {expiry}
    * @param price price in 18 decimals
    */

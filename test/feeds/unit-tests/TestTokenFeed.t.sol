@@ -39,7 +39,7 @@ contract UNIT_PriceFeed is Test {
 
     // Fast forward to expiry and update feed
     vm.warp(expiry);
-    _updateFeed(aggregator, 2, 1200e18, 2);
+    _updateChainlinkData(1200e18, 2);
 
     // Lock in settlement price
     feed.setSettlementPrice(expiry);
@@ -61,7 +61,7 @@ contract UNIT_PriceFeed is Test {
 
     // Fast forward to expiry and update feed
     vm.warp(expiry);
-    _updateFeed(aggregator, 2, 1200e18, 2);
+    _updateChainlinkData(1200e18, 2);
 
     // Lock in settlement price for callId
     feed.setSettlementPrice(expiry);
@@ -83,7 +83,7 @@ contract UNIT_PriceFeed is Test {
     return feedId;
   }
 
-  function _updateFeed(MockV3Aggregator _aggregator, uint80 roundId, int spotPrice, uint80 answeredInRound) internal {
-    _aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
+  function _updateChainlinkData(int spotPrice, uint80 roundId) internal {
+    aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, roundId);
   }
 }

@@ -58,7 +58,6 @@ contract TokenFeedV2 is ITokenFeedV2 {
   }
 
   function getSettlementPrice(uint expiry) external view returns (uint) {
-    if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
     return settlementPrices[expiry];
   }
 

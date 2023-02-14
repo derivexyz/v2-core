@@ -39,6 +39,8 @@ contract UNIT_TestPCRM is Test {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeed();
+    feed.setSpot(1000e18);
+
     usdc = new MockERC20("USDC", "USDC");
 
     auction = new MockDutchAuction();

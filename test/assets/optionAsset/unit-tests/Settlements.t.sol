@@ -47,7 +47,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     uint spotPrice = uint(strike) + 200e18;
     feed.setFuturePrice(expiry, spotPrice);
 
-    (int payout,) = option.calcSettlementValue(callId, 1e18);
+    (int payout, bool settled) = option.calcSettlementValue(callId, 1e18);
 
     // Call should profit 200
     assertEq(uint(payout), 200e18);

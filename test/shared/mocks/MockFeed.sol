@@ -13,11 +13,20 @@ contract MockFeed is IFutureFeed, ISettlementFeed {
     return spot;
   }
 
-  function getFuturePrice(uint) external view returns (uint) {
+  function getFuturePrice(uint)
+    /**
+     * expiry*
+     */
+    external
+    view
+    returns (uint)
+  {
     return spot;
   }
 
-  function getSettlementPrice(uint expiry) external view returns (uint) {}
+  function getSettlementPrice(uint expiry) external view returns (uint) {
+    return expiryPrice[expiry];
+  }
 
   function setFuturePrice(uint expiry, uint price) external {
     expiryPrice[expiry] = price;
