@@ -427,7 +427,8 @@ contract CashAsset is ICashAsset, Owned {
       realSupply -= netSettledCash.toUint256(); // account for printed supply due to settlements
     } // for < 0, util = totalBorrow/(totalSupply - min(Print,0))
     console.log("realSupply", realSupply);
-    console.log("realSupply", totalSupply);
+    console.log("totalBorro", totalBorrow);
+    // console.log("realSupply", totalSupply);
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     console.log("borrowRate", borrowRate);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);

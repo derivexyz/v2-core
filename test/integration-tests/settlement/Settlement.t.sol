@@ -210,18 +210,12 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     int bobCashBefore = getCashBalance(bobAcc);
 
-    // Check interest rates before
-    console.log("Supply", cash.totalSupply());
-    console.log("Borrow", cash.totalBorrow());
-    console2.log("Net print", cash.netSettledCash());
-
+    // Check interest accrued before settle
     uint interestAccrued =
       _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+    
     pcrm.settleAccount(bobAcc);
-    console.log("Supply", cash.totalSupply());
-    console.log("Borrow", cash.totalBorrow());
-
-    console2.log("Net print", cash.netSettledCash());
+  
     console.log("IA:", interestAccrued);
     console.log("RA:", cash.totalBorrow() - 500e18);
 
@@ -244,8 +238,11 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     interestAccrued =
       _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
     cash.accrueInterest();
+
+    // todo clarify that interest increases for the moment there is printed from settlement
     console2.log("YES:", cash.totalBorrow() - currentBorrow);
     console2.log("YES:", interestAccrued);
+    // assertGt()
 
     assertEq(oiAfter, 0);
   }
@@ -295,3 +292,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     return interestAccrued;
   }
 }
+
+// 62791525707315919
+// 67729618811223981
