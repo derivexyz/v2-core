@@ -164,4 +164,11 @@ contract UNIT_TestPCRM is Test {
     spotJumpOracle.setMaxJump(1000);
     assertApproxEqAbs(manager.getSpotJumpMultiple(5e17, 1 days), 1.05e18, 1e14);
   }
+
+  function testFuzzMultipleAlwaysAboveZero(uint32 maxJump, uint slope) public {
+    vm.assume(slope < 100e18);
+
+    spotJumpOracle.setMaxJump(maxJump);
+    assertGe(manager.getSpotJumpMultiple(slope, 1 days), 1e18);
+  }
 }
