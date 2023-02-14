@@ -143,6 +143,8 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   ) external onlyOwner {
     if (_discount.maintenance > DecimalMath.UNIT || 
       _discount.initial > DecimalMath.UNIT || 
+      _discount.riskFreeRate > 10e18 ||
+      _volShock.timeB <= _volShock.timeA ||
       _volShock.spotJumpMultipleSlope > 100e18
     ) {
       revert PCRM_InvalidMarginParam();

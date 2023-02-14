@@ -111,33 +111,36 @@ contract UNIT_TestPCRM is Test {
     );
   }
 
-  ////////////////////////
-  // Portfolio Discount //
-  ////////////////////////
 
-  function testPortfolioDiscountIsTimeDependent() public {
-    // case 1: 1 day, 50% initial discount
-    assertApproxEqAbs(manager.getPortfolioDiscount(50e16, 1 days), 49.99e16, 1e14);
+  /////////////////
+  // Getting Vol //
+  /////////////////
 
-    // case 2: 7 day, 80% initial discount
-    assertApproxEqAbs(manager.getPortfolioDiscount(80e16, 7 days), 79.85e16, 1e14);
+  function testGetVol() public {
+    // case 1: before time A
+    assertApproxEqAbs(manager.getVol(1 days), 3e18, 1e14);
 
-    // case 3: 1 month, 90% initial discount
-    assertApproxEqAbs(manager.getPortfolioDiscount(90e16, 30 days), 89.26e16, 1e14);
+    // case 2: after time B
+    assertApproxEqAbs(manager.getVol(91 days), 1e18, 1e14);
 
-    // case 4: 12 months, 20% initial discount
-    assertApproxEqAbs(manager.getPortfolioDiscount(20e16, 365 days), 18.10e16, 1e14);
+    // case 3: right in the middle
+    assertApproxEqAbs(manager.getVol(60 days), 2e18, 1e14);
 
-    // case 5: 36 months, 10% initial discount
-    assertApproxEqAbs(manager.getPortfolioDiscount(10e16, 1095 days), 7.41e16, 1e14);
+    // case 4: between A and B
+    assertApproxEqAbs(manager.getVol(35 days), 2.8333e18, 1e14);
+
+    // case 5: between A and B
+    assertApproxEqAbs(manager.getVol(79 days), 1.3666e18, 1e14);
   }
 
-  function testFuzzDiscountAlwaysIncreases(uint staticDiscount, uint timeToExpiry) public {
-    vm.assume(staticDiscount < 1e18); 
-    vm.assume(timeToExpiry >= 0);
-    vm.assume(timeToExpiry < 50 * 365 days);
-    assertGe(staticDiscount, manager.getPortfolioDiscount(staticDiscount, timeToExpiry));
+  function testFuzzNeverBeyondMinOrMaxVol(uint timeToExpiry) public {
+    (uint minVol, uint maxVol,,,,) = manager.volShockParams();
+    
+    // vm.assume(timeToExpiry < 100e18);
+    assertGe(manager.getVol(timeToExpiry), minVol);
+    assertLe(manager.getVol(timeToExpiry), maxVol);
   }
+
 
   ////////////////////////
   // Spot Jump Multiple //
@@ -171,4 +174,35 @@ contract UNIT_TestPCRM is Test {
     spotJumpOracle.setMaxJump(maxJump);
     assertGe(manager.getSpotJumpMultiple(slope, 1 days), 1e18);
   }
+
+  ////////////////////////
+  // Portfolio Discount //
+  ////////////////////////
+
+  function testPortfolioDiscountIsTimeDependent() public {
+    // case 1: 1 day, 50% initial discount
+    assertApproxEqAbs(manager.getPortfolioDiscount(50e16, 1 days), 49.99e16, 1e14);
+
+    // case 2: 7 day, 80% initial discount
+    assertApproxEqAbs(manager.getPortfolioDiscount(80e16, 7 days), 79.85e16, 1e14);
+
+    // case 3: 1 month, 90% initial discount
+    assertApproxEqAbs(manager.getPortfolioDiscount(90e16, 30 days), 89.26e16, 1e14);
+
+    // case 4: 12 months, 20% initial discount
+    assertApproxEqAbs(manager.getPortfolioDiscount(20e16, 365 days), 18.10e16, 1e14);
+
+    // case 5: 36 months, 10% initial discount
+    assertApproxEqAbs(manager.getPortfolioDiscount(10e16, 1095 days), 7.41e16, 1e14);
+  }
+
+  function testFuzzDiscountAlwaysIncreases(uint staticDiscount, uint timeToExpiry) public {
+    vm.assume(staticDiscount < 1e18); 
+    vm.assume(timeToExpiry >= 0);
+    vm.assume(timeToExpiry < 50 * 365 days);
+    assertGe(staticDiscount, manager.getPortfolioDiscount(staticDiscount, timeToExpiry));
+  }
+
+
+  
 }
