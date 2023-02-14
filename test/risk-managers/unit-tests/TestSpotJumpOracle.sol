@@ -252,6 +252,43 @@ contract UNIT_TestSpotJumpOracle is Test {
     assertEq(maxJump, 900);
   }
 
+  function testRoundDown() public {
+    oracle = _setupDefaultOracle();
+    skip(30 days);
+
+    uint32[16] memory initialJumps = _getDefaultJumps();
+    oracle.overrideJumps(initialJumps);
+
+    // rounds down to zero if below cutoff (100 bp)
+    aggregator.updateRoundData(2, 1000.1e18, block.timestamp, block.timestamp, 2);
+    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 0);
+
+    // rounds down to lower bound of first bucket
+    skip(1 hours);
+    aggregator.updateRoundData(3, 1015e18, block.timestamp, block.timestamp, 3);
+    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 100);
+
+    // rounds down to lower bound of second bucket
+    skip(1 hours);
+    aggregator.updateRoundData(4, 1035e18, block.timestamp, block.timestamp, 4);
+    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 300);
+
+    // rounds down to lower bound of third bucket
+    skip(1 hours);
+    aggregator.updateRoundData(5, 1065e18, block.timestamp, block.timestamp, 5);
+    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 500);
+
+    // rounds down to upper bound of bucket when huge jump
+    skip(1 hours);
+    aggregator.updateRoundData(6, 2000e18, block.timestamp, block.timestamp, 6);
+    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 3100);
+  }
+
   /////////////
   // Helpers //
   /////////////

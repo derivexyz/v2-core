@@ -493,7 +493,9 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     returns (uint up, uint down)
   {
     uint shock = timeSlope.multiplyDecimal(timeToExpiry * 1e18 / 365 days);
-    return (spot.multiplyDecimal(spotUpPercent) + shock, spot.multiplyDecimal(spotDownPercent) - shock);
+
+    // todo: need guardrails here to make sure cannot overflow / underflow
+    return (spot.multiplyDecimal(spotUpPercent + shock), spot.multiplyDecimal(spotDownPercent - shock));
   }
 
   /**
