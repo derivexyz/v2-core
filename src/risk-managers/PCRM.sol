@@ -127,6 +127,9 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   {
     // todo [Josh]: whitelist check
 
+    // bypass the IM check if only adding cash
+    if (assetDeltas.length == 1 && assetDeltas[0].asset == cashAsset && assetDeltas[0].delta >= 0) return;
+
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
 
     // PCRM calculations

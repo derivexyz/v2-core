@@ -184,6 +184,13 @@ contract UNIT_TestPCRM is Test {
     // todo: actually do manager
   }
 
+  function testCanHandleEmptyAdjustments() public {
+    address caller = address(0xca11);
+    vm.prank(address(account));
+    AccountStructs.AssetDelta[] memory emptyDeltas = new AccountStructs.AssetDelta[](0);
+    manager.handleAdjustment(aliceAcc, 2, caller, emptyDeltas, "");
+  }
+
   /////////////////////////
   // Margin calculations //
   /////////////////////////
@@ -240,6 +247,28 @@ contract UNIT_TestPCRM is Test {
     manager.getInitialMargin(expiry);
 
     // todo: actually test, added for coverage
+  }
+
+  function testCanBypassCashCheck() public {
+    manager.setFeeRecipient(feeRecipient);
+    // alice open 1 long call, short 10 put
+    _openDefaultOptions();
+
+    // set price to 0. Alice is insolvent
+    aggregator.updateRoundData(1, 0, block.timestamp, block.timestamp, 1);
+
+    IBaseManager.Portfolio memory portfolio = manager.getPortfolio(aliceAcc);
+    int marginBefore = manager.getInitialMargin(portfolio);
+
+    // margin is negative
+    assertLt(marginBefore, 0);
+
+    uint amountCashToAdd = 1000e18;
+    _depositCash(alice, aliceAcc, amountCashToAdd);
+
+    IBaseManager.Portfolio memory portfolioAfter = manager.getPortfolio(aliceAcc);
+    int marginAfter = manager.getInitialMargin(portfolioAfter);
+    assertEq(marginAfter, marginBefore + int(amountCashToAdd));
   }
 
   ////////////////////
