@@ -59,9 +59,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
         downInitial: 80e16,
         upMaintenance: 110e16,
         downMaintenance: 90e16,
-        timeSlope: 1e18,
-        spotJumpMultipleSlope: 5e18,
-        spotJumpMultipleLookback: 1 days
+        timeSlope: 1e18
       }),
       PCRM.VolShockParams({
         minVol: 1e18,

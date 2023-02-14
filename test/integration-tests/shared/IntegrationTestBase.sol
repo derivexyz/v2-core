@@ -309,9 +309,7 @@ contract IntegrationTestBase is Test {
       downInitial: 0.75e18,
       upMaintenance: 1.1e18,
       downMaintenance: 0.9e18,
-      timeSlope: 1e18,
-      spotJumpMultipleSlope: 5e18,
-      spotJumpMultipleLookback: 1 days
+      timeSlope: 1e18
     });
 
     vol = PCRM.VolShockParams({

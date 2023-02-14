@@ -60,10 +60,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     uint downMaintenance;
     /// rate at which the shocks increase with further timeToExpiry
     uint timeSlope;
-    /// slope at which vol increases with jumps in spot price
-    uint spotJumpMultipleSlope;
-    /// how many seconds to look back when finding the max jump
-    uint32 spotJumpMultipleLookback;
   }
 
   struct VolShockParams {

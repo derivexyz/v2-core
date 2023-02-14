@@ -69,9 +69,7 @@ contract UNIT_TestPCRM is Test {
         downInitial: 80e16,
         upMaintenance: 110e16,
         downMaintenance: 90e16,
-        timeSlope: 1e18,
-        spotJumpMultipleSlope: 5e18,
-        spotJumpMultipleLookback: 1 days
+        timeSlope: 1e18
       }),
       PCRM.VolShockParams({
         minVol: 1e18,
@@ -113,9 +111,7 @@ contract UNIT_TestPCRM is Test {
         downInitial: 80e16,
         upMaintenance: 110e16,
         downMaintenance: 90e16,
-        timeSlope: 1e18,
-        spotJumpMultipleSlope: 5e18,
-        spotJumpMultipleLookback: 1 days
+        timeSlope: 1e18
       }),
       PCRM.VolShockParams({
         minVol: 1e18,
@@ -141,9 +137,7 @@ contract UNIT_TestPCRM is Test {
         downInitial: 50e16,
         upMaintenance: 120e16,
         downMaintenance: 70e16,
-        timeSlope: 1e18,
-        spotJumpMultipleSlope: 5e18,
-        spotJumpMultipleLookback: 1 days
+        timeSlope: 1e18
       }),
       PCRM.VolShockParams({
         minVol: 1e18,
@@ -160,7 +154,7 @@ contract UNIT_TestPCRM is Test {
       })
     );
 
-    (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance,,,) =
+    (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance,) =
       manager.spotShockParams();
     assertEq(spotUpInitial, 200e16);
     assertEq(spotDownInitial, 50e16);
