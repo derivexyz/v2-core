@@ -138,4 +138,30 @@ contract UNIT_TestPCRM is Test {
     vm.assume(timeToExpiry < 50 * 365 days);
     assertGe(staticDiscount, manager.getPortfolioDiscount(staticDiscount, timeToExpiry));
   }
+
+  ////////////////////////
+  // Spot Jump Multiple //
+  ////////////////////////
+
+  function testSpotJumpMultiple() public {
+    // case 1: slope: 2x, Max Jump: 0%
+    spotJumpOracle.setMaxJump(0);
+    assertApproxEqAbs(manager.getSpotJumpMultiple(2e18, 1 days), 1e18, 1e14);
+
+    // case 2: slope: 1x, Max Jump: 5%
+    spotJumpOracle.setMaxJump(500);
+    assertApproxEqAbs(manager.getSpotJumpMultiple(2e18, 1 days), 1.1e18, 1e14);
+
+    // case 3: slope: 5x, Max Jump: 20%, 
+    spotJumpOracle.setMaxJump(2000);
+    assertApproxEqAbs(manager.getSpotJumpMultiple(5e18, 1 days), 2e18, 1e14);
+
+    // case 4: slope: 0x, Max Jump: 10%, 
+    spotJumpOracle.setMaxJump(1000);
+    assertApproxEqAbs(manager.getSpotJumpMultiple(0, 1 days), 1e18, 1e14);
+
+    // case 5: slope: 0.5x, Max Jump: 10%, 
+    spotJumpOracle.setMaxJump(1000);
+    assertApproxEqAbs(manager.getSpotJumpMultiple(5e17, 1 days), 1.05e18, 1e14);
+  }
 }
