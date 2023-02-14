@@ -109,12 +109,15 @@ contract UNIT_BidAuction is Test {
     dutchAuction.bid(aliceAcc, bobAcc, 50 * 1e16);
   }
 
+  // todo: do we want to block bidding at 0?
+  // it seems like letting people take with bid  = 0 is better than going insolvent
   function testCannotBidOnAuctionThatHasEnded() public {
     createDefaultSolventAuction(aliceAcc);
 
     vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction + 5);
-    vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
-    dutchAuction.getCurrentBidPrice(aliceAcc);
+    // vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
+    int bid = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(bid, 0);
 
     vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
     vm.prank(bob);

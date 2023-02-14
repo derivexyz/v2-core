@@ -12,12 +12,6 @@ import "src/libraries/OptionEncoding.sol";
  * @dev testing settlement logic
  */
 contract INTEGRATION_Settlement is IntegrationTestBase {
-  address alice = address(0xaa);
-  uint aliceAcc;
-
-  address bob = address(0xbb);
-  uint bobAcc;
-
   // value used for test
   uint constant initCash = 5000e18;
   int constant amountOfContracts = 10e18;
@@ -31,9 +25,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   function setUp() public {
     _setupIntegrationTestComplete();
-
-    aliceAcc = accounts.createAccount(alice, pcrm);
-    bobAcc = accounts.createAccount(bob, pcrm);
 
     // allow this contract to submit trades
     vm.prank(alice);
@@ -158,13 +149,13 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   ///@dev alice go short, bob go long
   function _tradeCall() public {
-    int premium = 500e18;
+    int premium = 1750e18;
     // alice send call to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, callId, amountOfContracts, bobAcc, cash, 0, premium);
   }
 
   function _tradePut() public {
-    int premium = 500e18;
+    int premium = 1750e18;
     // alice send put to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, putId, amountOfContracts, bobAcc, cash, 0, premium);
   }

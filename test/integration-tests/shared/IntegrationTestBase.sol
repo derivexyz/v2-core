@@ -26,9 +26,14 @@ import "src/interfaces/IManager.sol";
  * @dev real SecurityModule contract
  */
 contract IntegrationTestBase is Test {
+  address alice = address(0xace);
+  address bob = address(0xb0b);
+  uint aliceAcc;
+  uint bobAcc;
+
   address public constant liquidation = address(0xdead);
   uint public constant DEFAULT_DEPOSIT = 5000e18;
-  int public constant ETH_PRICE = 2000e8;
+  int public constant ETH_PRICE = 2000e18;
 
   Accounts accounts;
   CashAsset cash;
@@ -57,6 +62,22 @@ contract IntegrationTestBase is Test {
 
     // necessary shared setup
     _finishContractSetups();
+
+    _setupAliceAndBob();
+  }
+
+  function _setupAliceAndBob() internal {
+    vm.label(alice, "alice");
+    vm.label(bob, "bob");
+
+    aliceAcc = accounts.createAccount(alice, pcrm);
+    bobAcc = accounts.createAccount(bob, pcrm);
+
+    // allow this contract to submit trades
+    vm.prank(alice);
+    accounts.setApprovalForAll(address(this), true);
+    vm.prank(bob);
+    accounts.setApprovalForAll(address(this), true);
   }
 
   function _deployAllV2Contracts() internal {
@@ -91,8 +112,10 @@ contract IntegrationTestBase is Test {
 
     // nonce: 7 => deploy SpotJumpOracle
     (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) =
-      _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE * 1e10));
+      _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
     spotJumpOracle = new SpotJumpOracle(feed, feedId, params, initialJumps);
+
+    skip(7 days); // skip to make jumps stale
 
     // nonce: 8 => Deploy Manager
     pcrm = new PCRM(accounts, feed, cash, option, auctionAddr, spotJumpOracle);
@@ -130,7 +153,8 @@ contract IntegrationTestBase is Test {
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());
 
-    // todo: option asset whitelist
+    // allow liquidation to request payout from sm
+    securityModule.setWhitelistModule(address(auction), true);
   }
 
   /**
@@ -191,12 +215,23 @@ contract IntegrationTestBase is Test {
     accounts.submitTransfers(transferBatch, "");
   }
 
+  function _depositSecurityModule(address user, uint amountCash) internal {
+    uint amountUSDC = amountCash / 1e12;
+    usdc.mint(user, amountUSDC);
+
+    vm.startPrank(user);
+    usdc.approve(address(securityModule), type(uint).max);
+    securityModule.deposit(amountUSDC);
+    vm.stopPrank();
+  }
+
   /**
    * @dev set current price of aggregator
    * @param price price in 18 decimals
    */
   function _setSpotPriceE18(int price) internal {
     uint80 round = 1;
+    // convert to chainlink decimals
     int answerE8 = price / 1e10;
     aggregator.updateRoundData(round, answerE8, block.timestamp, block.timestamp, round);
   }

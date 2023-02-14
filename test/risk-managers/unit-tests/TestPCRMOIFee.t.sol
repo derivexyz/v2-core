@@ -101,9 +101,14 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     assertEq(manager.feeRecipientAcc(), aliceAcc);
   }
 
+  function testAdminCanUpdateOIFeeRate() public {
+    manager.setOIFeeRateBPS(0.01e18);
+    assertEq(manager.OIFeeRateBPS(), 0.01e18);
+  }
+
   function testSubmitTransferChargeOIFee() public {
     _depositCash(alice, aliceAcc, 1000e18);
-    _depositCash(bob, bobAcc, 1000e18);
+    _depositCash(bob, bobAcc, 3000e18);
 
     uint expiry = block.timestamp + 7 days;
     uint spotPrice = 1000e18;
@@ -120,7 +125,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     int bobCashBefore = accounts.getBalance(bobAcc, cash, 0);
 
     int amount = 10e18;
-    int premium = 500e18;
+    int premium = 2500e18;
     AccountStructs.AssetTransfer[] memory transferBatch = new AssetTransfer[](3);
     transferBatch[0] = AssetTransfer(aliceAcc, bobAcc, option, subId1, amount, bytes32(0));
     transferBatch[1] = AssetTransfer(aliceAcc, bobAcc, option, subId2, amount, bytes32(0));

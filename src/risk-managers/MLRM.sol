@@ -57,7 +57,7 @@ contract MLRM is BaseManager, IManager {
     // todo [Josh]: whitelist check
     // todo [Josh]: charge OI fee
 
-    BaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+    IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     int margin = _calcMargin(portfolio);
 
@@ -85,7 +85,7 @@ contract MLRM is BaseManager, IManager {
    * @param portfolio Account portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(BaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+  function _calcMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
     // check if expired or not
     int timeToExpiry = portfolio.expiry.toInt256() - block.timestamp.toInt256();
     int spot;
@@ -132,9 +132,9 @@ contract MLRM is BaseManager, IManager {
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(BaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
+  function _calcPayoffAtPrice(IBaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      BaseManager.Strike memory currentStrike = portfolio.strikes[i];
+      IBaseManager.Strike memory currentStrike = portfolio.strikes[i];
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }
@@ -154,7 +154,7 @@ contract MLRM is BaseManager, IManager {
   {
     // note: differs from PCRM._arrangePortfolio since forwards aren't filtered
     // todo: [Josh] can just combine with PCRM _arrangePortfolio and remove struct
-    portfolio.strikes = new BaseManager.Strike[](
+    portfolio.strikes = new IBaseManager.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 

@@ -12,6 +12,7 @@ import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ISecurityModule.sol";
 import "src/interfaces/ISpotJumpOracle.sol";
+import "src/interfaces/IPCRM.sol";
 
 import "src/assets/Option.sol";
 
@@ -31,7 +32,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PCRM is BaseManager, IManager, Owned {
+contract PCRM is BaseManager, IManager, Owned, IPCRM {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -231,6 +232,17 @@ contract PCRM is BaseManager, IManager, Owned {
     feeRecipientAcc = _newAcc;
   }
 
+  /**
+   * @notice Governance determined OI fee rate to be set
+   * @dev Charged fee = contract traded * OIFee * spot
+   * @param newFeeRate OI fee rate in BPS
+   */
+  function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
+    OIFeeRateBPS = newFeeRate;
+
+    emit OIFeeRateSet(OIFeeRateBPS);
+  }
+
   //////////////////
   // Liquidations //
   //////////////////
@@ -348,10 +360,15 @@ contract PCRM is BaseManager, IManager, Owned {
     }
 
     // discount option value
-    margin = _calcLiveExpiryValue(portfolio, spotUp.toUint128(), spotDown.toUint128(), 1e18);
+    console2.log("portfolio", portfolio.strikes[0].calls);
+    margin = _calcLiveExpiryValue(portfolio, spotUp.toUint128(), spotDown.toUint128(), vol.toUint128());
+    console2.log("margin before discount", margin);
+
     if (margin > 0) {
       margin = margin.multiplyDecimal(_getExpiryDiscount(portfolioDiscount, timeToExpiry).toInt256());
     }
+    console2.log("margin before cash", margin);
+    console2.log("portfolio.cash", portfolio.cash);
 
     // add cash
     margin += portfolio.cash;
@@ -397,9 +414,16 @@ contract PCRM is BaseManager, IManager, Owned {
     uint64 timeToExpiry = (portfolio.expiry - block.timestamp).toUint64();
 
     for (uint i; i < portfolio.strikes.length; i++) {
+      console2.log("strike", portfolio.strikes[i].strike);
+      // Solidity forces only static arrays in memory, so need to handle empty positions.
+      if (portfolio.strikes[i].calls == 0 && portfolio.strikes[i].puts == 0 && portfolio.strikes[i].forwards == 0) {
+        continue;
+      }
       spotUpValue += _calcLiveStrikeValue(portfolio.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
-
       spotDownValue += _calcLiveStrikeValue(portfolio.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
+
+      console2.log("spotUpValue", spotUpValue);
+      console2.log("spotDownValue", spotDownValue);
     }
 
     // return the worst of two scenarios
@@ -424,7 +448,7 @@ contract PCRM is BaseManager, IManager, Owned {
     uint128 spotDown,
     uint128 shockedVol,
     uint64 timeToExpiry
-  ) internal pure returns (int strikeValue) {
+  ) internal view returns (int strikeValue) {
     // Calculate both spot up and down payoffs.
     int markedDownCallValue = uint(spotDown).toInt256() - strikes.strike.toInt256();
     int markedDownPutValue = strikes.strike.toInt256() - uint(spotUp).toInt256();
@@ -449,6 +473,7 @@ contract PCRM is BaseManager, IManager, Owned {
     }
 
     // Add call value.
+    // todo [Josh]: should probably make separate functions for positive / negative calls
     strikeValue += (strikes.calls >= 0)
       ? strikes.calls.multiplyDecimal(SignedMath.max(markedDownCallValue, 0))
       : strikes.calls.multiplyDecimal(callValue.toInt256());
@@ -457,6 +482,10 @@ contract PCRM is BaseManager, IManager, Owned {
     strikeValue += (strikes.puts >= 0)
       ? strikes.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikes.puts.multiplyDecimal(putValue.toInt256());
+
+    console2.log("markedDownCallValue", markedDownCallValue);
+    console2.log("strikeValue", strikeValue);
+
   }
 
   /////////////////////
@@ -559,6 +588,11 @@ contract PCRM is BaseManager, IManager, Owned {
    * @return margin Amount by which account is over or under the required margin.
    */
   function getInitialMargin(Portfolio memory portfolio) external returns (int margin) {
+    return _calcMargin(portfolio, MarginType.INITIAL);
+  }
+
+  // @todo: update to real implementation
+  function getInitialMarginRVZero(Portfolio memory portfolio) external returns (int margin) {
     return _calcMargin(portfolio, MarginType.INITIAL);
   }
 
