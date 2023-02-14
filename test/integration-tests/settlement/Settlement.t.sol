@@ -165,7 +165,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   // Check that after all settlements printed cash is 0
   function testPrintedCashAroundSettlements() public {
-    // Alice <-> Charlie trade 
+    // Alice <-> Charlie trade
     _createBorrowForUser(charlie, charlieAcc, 500e18);
     // Alice <-> Bob trade
     _tradeCall();
@@ -189,7 +189,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     assertLt(cash.netSettledCash(), 0);
     _assertCashSolvent();
 
-    // Should be 0 after all trades are settled (print for charlie ITM)    
+    // Should be 0 after all trades are settled (print for charlie ITM)
     pcrm.settleAccount(charlieAcc);
     assertEq(cash.netSettledCash(), 0);
     _assertCashSolvent();
@@ -252,7 +252,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
   ///@dev create ITM call for user to borrow against
   function _createBorrowForUser(address user, uint userAcc, uint borrowAmount) internal {
     _depositCash(alice, aliceAcc, 3000e18);
-    
+
     // trade ITM call for user to borrow against
     uint callStrike = 100e18;
     _submitTrade(aliceAcc, option, uint96(option.getSubId(expiry, callStrike, true)), 1e18, userAcc, cash, 0, 0);
