@@ -345,10 +345,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
         DecimalMath.UNIT
           + _getSpotJumpMultiple(volShockParams.spotJumpMultipleSlope, volShockParams.spotJumpMultipleLookback)
       );
-      uint spotAddon =
-        _getSpotJumpMultiple(spotShockParams.spotJumpMultipleSlope, spotShockParams.spotJumpMultipleLookback);
-      spotUp += spotAddon;
-      spotDown -= spotAddon;
     } else {
       (spotUp, spotDown) = _getSpotShocks(
         spot.multiplyDecimal(spotShockParams.upMaintenance).toUint128(),
