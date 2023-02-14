@@ -301,7 +301,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the auction that is being queried
    * @return Auction returns the struct of the auction details
    */
-  function getAuction(uint accountId) external returns (Auction memory) {
+  function getAuction(uint accountId) external view returns (Auction memory) {
     return auctions[accountId];
   }
 

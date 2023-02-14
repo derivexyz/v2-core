@@ -38,69 +38,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   using SafeCast for int;
   using SafeCast for uint;
 
-  // todo [Josh]: move to interface
-
-  /**
-   * INITIAL: margin required for trade to pass
-   * MAINTENANCE: margin required to prevent liquidation
-   */
-  enum MarginType {
-    INITIAL,
-    MAINTENANCE
-  }
-
-  struct SpotShockParams {
-    /// high spot value used for initial margin
-    uint upInitial;
-    /// low spot value used for initial margin
-    uint downInitial;
-    /// high spot value used for maintenance margin
-    uint upMaintenance;
-    /// low spot value used for maintenance margin
-    uint downMaintenance;
-    /// rate at which the shocks increase with further timeToExpiry
-    uint timeSlope;
-  }
-
-  struct VolShockParams {
-    /* The vol shock is derived from the following chart:
-     *
-     *     vol
-     *      |
-     * max  |____
-     *      |     \
-     *      |      \
-     * min  |       \ ___
-     *      |____________  time to expiry
-     *           A   B
-     */
-    /// smallest vol shock
-    uint minVol;
-    /// largest vol shock
-    uint maxVol;
-    /// sec to expiry at which vol begins to grow
-    uint timeA;
-    /// sec to expiry at which vol grow any further
-    uint timeB;
-    // todo: quite opinionated to assume we always take a jump input.
-    //       ideally should just take RV in.
-    //       may be able to find a way to put into a library or wrapper
-    //       so that it can be reused in later deployments
-    /// slope at which vol increases with jumps in spot price
-    uint spotJumpMultipleSlope;
-    /// how many seconds to look back when finding the max jump
-    uint32 spotJumpMultipleLookback;
-  }
-
-  struct PortfolioDiscountParams {
-    /// maintenance discount applied to whole expiry
-    uint maintenance;
-    /// initial discount applied to whole expiry
-    uint initial;
-    /// used when discounting to net present value by risk free rate
-    uint riskFreeRate;
-  }
-
   ///////////////
   // Variables //
   ///////////////
@@ -337,7 +274,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getMaintenanceMargin(Portfolio memory portfolio) public returns (int margin) {
+  function getMaintenanceMargin(Portfolio memory portfolio) public view returns (int margin) {
     (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _getMarginParams(
       spotShockParams.upMaintenance, 
       spotShockParams.downMaintenance, 
@@ -365,7 +302,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     uint spotUp, 
     uint spotDown, 
     uint portfolioDiscount
-  ) internal returns (int margin) {
+  ) internal view returns (int margin) {
     // todo [Anton]: add ability to do RV = 0?
 
     // If options expired, get settled value.

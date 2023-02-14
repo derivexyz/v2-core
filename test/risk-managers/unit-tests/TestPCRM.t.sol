@@ -64,14 +64,14 @@ contract UNIT_TestPCRM is Test {
 
     // cash.setWhitWelistManager(address(manager), true);
     manager.setParams(
-      PCRM.SpotShockParams({
+      IPCRM.SpotShockParams({
         upInitial: 120e16,
         downInitial: 80e16,
         upMaintenance: 110e16,
         downMaintenance: 90e16,
         timeSlope: 1e18
       }),
-      PCRM.VolShockParams({
+      IPCRM.VolShockParams({
         minVol: 1e18,
         maxVol: 3e18,
         timeA: 30 days,
@@ -79,7 +79,7 @@ contract UNIT_TestPCRM is Test {
         spotJumpMultipleSlope: 5e18,
         spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscountParams({
+      IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
         riskFreeRate: 10e16 // 10%
@@ -106,14 +106,14 @@ contract UNIT_TestPCRM is Test {
     vm.startPrank(alice);
     vm.expectRevert(AbstractOwned.OnlyOwner.selector);
     manager.setParams(
-      PCRM.SpotShockParams({
+      IPCRM.SpotShockParams({
         upInitial: 120e16,
         downInitial: 80e16,
         upMaintenance: 110e16,
         downMaintenance: 90e16,
         timeSlope: 1e18
       }),
-      PCRM.VolShockParams({
+      IPCRM.VolShockParams({
         minVol: 1e18,
         maxVol: 3e18,
         timeA: 30 days,
@@ -121,7 +121,7 @@ contract UNIT_TestPCRM is Test {
         spotJumpMultipleSlope: 5e18,
         spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscountParams({
+      IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
         riskFreeRate: 10e16 // 10%
@@ -132,14 +132,14 @@ contract UNIT_TestPCRM is Test {
 
   function testSetParamsWithOwner() public {
     manager.setParams(
-      PCRM.SpotShockParams({
+      IPCRM.SpotShockParams({
         upInitial: 200e16,
         downInitial: 50e16,
         upMaintenance: 120e16,
         downMaintenance: 70e16,
         timeSlope: 1e18
       }),
-      PCRM.VolShockParams({
+      IPCRM.VolShockParams({
         minVol: 1e18,
         maxVol: 400e16,
         timeA: 30 days,
@@ -147,7 +147,7 @@ contract UNIT_TestPCRM is Test {
         spotJumpMultipleSlope: 5e18,
         spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscountParams({
+      IPCRM.PortfolioDiscountParams({
         maintenance: 85e16, // 90%
         initial: 75e16, // 80%
         riskFreeRate: 20e16 // 10%
@@ -242,7 +242,7 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
-  function testEmptyMaintenanceMarginCalculation() public {
+  function testEmptyMaintenanceMarginCalculation() public view {
     IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
     strikes[0] = IBaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 

@@ -54,14 +54,14 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     );
 
     manager.setParams(
-      PCRM.SpotShockParams({
+      IPCRM.SpotShockParams({
         upInitial: 120e16,
         downInitial: 80e16,
         upMaintenance: 110e16,
         downMaintenance: 90e16,
         timeSlope: 1e18
       }),
-      PCRM.VolShockParams({
+      IPCRM.VolShockParams({
         minVol: 1e18,
         maxVol: 3e18,
         timeA: 30 days,
@@ -69,7 +69,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
         spotJumpMultipleSlope: 5e18,
         spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscountParams({
+      IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
         riskFreeRate: 10e16 // 10%

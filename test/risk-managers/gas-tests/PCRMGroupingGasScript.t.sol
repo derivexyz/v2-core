@@ -132,14 +132,14 @@ contract PCRMGroupingGasScript is Script {
     );
 
     pcrm.setParams(
-      PCRM.SpotShockParams({
+      IPCRM.SpotShockParams({
         upInitial: 1.25e18,
         downInitial: 0.75e18,
         upMaintenance: 1.1e18,
         downMaintenance: 0.9e18,
         timeSlope: 1e18
       }),
-      PCRM.VolShockParams({
+      IPCRM.VolShockParams({
         minVol: 1e18,
         maxVol: 3e18,
         timeA: 30 days,
@@ -147,7 +147,7 @@ contract PCRMGroupingGasScript is Script {
         spotJumpMultipleSlope: 5e18,
         spotJumpMultipleLookback: 1 days
       }),
-      PCRM.PortfolioDiscountParams({
+      IPCRM.PortfolioDiscountParams({
         maintenance: 0.9e18, // 90%
         initial: 0.8e18, // 80%
         riskFreeRate: 0.1e18 // 10%

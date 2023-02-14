@@ -141,7 +141,7 @@ contract IntegrationTestBase is Test {
     // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
     pcrm.setFeeRecipient(pcrmFeeAcc);
-    (PCRM.SpotShockParams memory spot, PCRM.VolShockParams memory vol, PCRM.PortfolioDiscountParams memory discount) =
+    (IPCRM.SpotShockParams memory spot, IPCRM.VolShockParams memory vol, IPCRM.PortfolioDiscountParams memory discount) =
       _getDefaultPCRMParams();
     pcrm.setParams(spot, vol, discount);
 
@@ -269,7 +269,7 @@ contract IntegrationTestBase is Test {
     return pcrm.getInitialMargin(portfolio);
   }
 
-  function getAccMaintenanceMargin(uint acc) public returns (int) {
+  function getAccMaintenanceMargin(uint acc) public view returns (int) {
     PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
     return pcrm.getMaintenanceMargin(portfolio);
   }
@@ -299,12 +299,12 @@ contract IntegrationTestBase is Test {
     internal
     pure
     returns (
-      PCRM.SpotShockParams memory spot,
-      PCRM.VolShockParams memory vol,
-      PCRM.PortfolioDiscountParams memory discount
+      IPCRM.SpotShockParams memory spot,
+      IPCRM.VolShockParams memory vol,
+      IPCRM.PortfolioDiscountParams memory discount
     )
   {
-    spot = PCRM.SpotShockParams({
+    spot = IPCRM.SpotShockParams({
       upInitial: 1.25e18,
       downInitial: 0.75e18,
       upMaintenance: 1.1e18,
@@ -312,7 +312,7 @@ contract IntegrationTestBase is Test {
       timeSlope: 1e18
     });
 
-    vol = PCRM.VolShockParams({
+    vol = IPCRM.VolShockParams({
       minVol: 1e18,
       maxVol: 3e18,
       timeA: 30 days,
@@ -321,7 +321,7 @@ contract IntegrationTestBase is Test {
       spotJumpMultipleLookback: 1 days
     });
 
-    discount = PCRM.PortfolioDiscountParams({
+    discount = IPCRM.PortfolioDiscountParams({
       maintenance: 0.9e18, // 90%
       initial: 0.8e18, // 80%
       riskFreeRate: 0.1e18 // 10%
