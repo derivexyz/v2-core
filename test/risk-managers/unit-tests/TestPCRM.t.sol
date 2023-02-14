@@ -254,7 +254,7 @@ contract UNIT_TestPCRM is Test {
     _openDefaultOptions();
 
     // set price to 0. Alice is insolvent
-    aggregator.updateRoundData(1, 0, block.timestamp, block.timestamp, 1);
+    feed.setSpot(0);
 
     IBaseManager.Portfolio memory portfolio = manager.getPortfolio(aliceAcc);
     int marginBefore = manager.getInitialMargin(portfolio);
