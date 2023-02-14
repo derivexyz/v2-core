@@ -141,7 +141,10 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     VolShockParams calldata _volShock,
     PortfolioDiscountParams calldata _discount
   ) external onlyOwner {
-    // todo [Josh]: add bounds / make sure IM > MM by 5%
+    if (portfolioDiscountParams.maintenance > DecimalMath.UNIT || portfolioDiscountParams.initial > DecimalMath.UNIT) {
+      revert PCRM_PortfolioDiscountParamTooHigh();
+    }
+
     spotShockParams = _spotShock;
     volShockParams = _volShock;
     portfolioDiscountParams = _discount;
@@ -598,4 +601,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   error PCRM_InvalidBidPortion();
 
   error PCRM_MarginRequirementNotMet(int initMargin);
+
+  error PCRM_PortfolioDiscountParamTooHigh();
+
 }

@@ -131,4 +131,11 @@ contract UNIT_TestPCRM is Test {
     // case 5: 36 months, 10% initial discount
     assertApproxEqAbs(manager.getPortfolioDiscount(10e16, 1095 days), 7.41e16, 1e14);
   }
+
+  function testFuzzDiscountAlwaysIncreases(uint staticDiscount, uint timeToExpiry) public {
+    vm.assume(staticDiscount < 1e18); 
+    vm.assume(timeToExpiry >= 0);
+    vm.assume(timeToExpiry < 50 * 365 days);
+    assertGe(staticDiscount, manager.getPortfolioDiscount(staticDiscount, timeToExpiry));
+  }
 }
