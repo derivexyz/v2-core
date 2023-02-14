@@ -12,6 +12,7 @@ import "src/libraries/OptionEncoding.sol";
  * @dev testing settlement logic
  */
 contract INTEGRATION_Settlement is IntegrationTestBase {
+    using DecimalMath for uint;
   address alice = address(0xaa);
   uint aliceAcc;
 
@@ -211,10 +212,16 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     // Check interest rates before
     console.log("Supply", cash.totalSupply());
     console.log("Borrow", cash.totalBorrow());
+    console2.log("Net print", cash.netSettledCash());
 
+    uint interestAccrued = _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
     pcrm.settleAccount(bobAcc);
     console.log("Supply", cash.totalSupply());
     console.log("Borrow", cash.totalBorrow());
+
+    console2.log("Net print", cash.netSettledCash());
+    console.log("IA:", interestAccrued);
+    console.log("RA:", cash.totalBorrow()-500e18);
 
     int bobCashAfter = getCashBalance(bobAcc);
     uint oiAfter = option.openInterest(callId);
@@ -229,9 +236,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     assertEq(cash.netSettledCash(), expectedPayout);
     _assertCashSolvent();
 
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(charlieAcc);
-    console2.log("Net settled cash", cash.netSettledCash());
 
     assertEq(oiAfter, 0);
   }
@@ -257,5 +261,19 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     uint callStrike = 100e18;
     _submitTrade(aliceAcc, option, uint96(option.getSubId(expiry, callStrike, true)), 1e18, userAcc, cash, 0, 0);
     _withdrawCash(user, userAcc, borrowAmount);
+  }
+
+  /**
+   * @notice Returns interest accrued for the given parameters.
+   * @dev Used to calculate interest without netSettledCash being considered.
+   * @param supply the desired supply to test
+   * @param borrow the desired borrow to test
+   * @param elapsedTime the time elapsed for interest accrual
+   */
+  function _calculateAccruedInterestNoPrint(uint supply, uint borrow, uint elapsedTime) public view returns (uint) {
+     uint borrowRate = rateModel.getBorrowRate(supply, borrow);
+    uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
+    uint interestAccrued = borrow.multiplyDecimal(borrowInterestFactor);
+    return interestAccrued;
   }
 }
