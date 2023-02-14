@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "../../shared/mocks/MockERC20.sol";
 
 import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/TokenFeedV2.sol";
 import "src/SecurityModule.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -41,12 +42,13 @@ contract IntegrationTestBase is Test {
   PCRM pcrm;
   SecurityModule securityModule;
   InterestRateModel rateModel;
-  ChainlinkSpotFeeds feed;
+  // ChainlinkSpotFeeds feed;
   DutchAuction auction;
   MockV3Aggregator aggregator;
+  TokenFeedV2 feed;
 
   // feedId of the aggregator
-  uint feedId = 1;
+  uint feedId;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
@@ -91,33 +93,35 @@ contract IntegrationTestBase is Test {
     // function call: doesn't increase deployment nonce
     usdc.setDecimals(6);
 
-    // nonce: 3  => Deploy Feed
-    feed = new ChainlinkSpotFeeds();
-    address addr3 = _predictAddress(address(this), 3);
-    assertEq(addr3, address(feed));
+    // nonce: 3  => Deploy Chainlink Feed aggregator
+    ChainlinkSpotFeeds chainlinkFeed = new ChainlinkSpotFeeds();
 
-    // nonce: 4 => Deploy RateModel
+    feedId = chainlinkFeed.addFeed("ETH/USD", address(aggregator), 1 hours);
+    // nonce: 4 => Deploy Feed that will be used as future price and settlement price
+    feed = new TokenFeedV2(chainlinkFeed, feedId);
+
+    // nonce: 5 => Deploy RateModel
     // deploy rate model
     (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModelParam();
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    // nonce: 5 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 8);
+    // nonce: 6 => Deploy CashAsset
+    address auctionAddr = _predictAddress(address(this), 9);
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
-    // nonce: 6 => Deploy OptionAsset
+    // nonce: 7 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
 
-    // nonce: 7 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr);
+    // nonce: 8 => Deploy Manager
+    pcrm = new PCRM(accounts, feed, feed, cash, option, auctionAddr);
 
-    // nonce: 8 => Deploy Auction
-    address smAddr = _predictAddress(address(this), 9);
+    // nonce: 9 => Deploy Auction
+    address smAddr = _predictAddress(address(this), 10);
     auction = new DutchAuction(pcrm, accounts, ISecurityModule(smAddr), cash);
 
     assertEq(address(auction), auctionAddr);
 
-    // nonce: 9 => Deploy SM
+    // nonce: 10 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
     assertEq(securityModule.accountId(), smAcc);
@@ -136,8 +140,6 @@ contract IntegrationTestBase is Test {
 
     // add aggregator to feed
     aggregator = new MockV3Aggregator(8, 2000e8);
-    uint _feedId = feed.addFeed("ETH/USD", address(aggregator), 1 hours);
-    assertEq(feedId, _feedId);
 
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());
@@ -231,7 +233,9 @@ contract IntegrationTestBase is Test {
    */
   function _setSpotPriceAndSubmitForExpiry(int price, uint expiry) internal {
     _setSpotPriceE18(price);
-    option.setSettlementPrice(expiry);
+
+    // todo: update
+    // option.setSettlementPrice(expiry);
   }
 
   function _assertCashSolvent() internal {

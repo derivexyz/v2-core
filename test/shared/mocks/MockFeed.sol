@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../../../src/interfaces/ISpotFeeds.sol";
+import "../../../src/interfaces/IFutureFeed.sol";
+import "../../../src/interfaces/ISettlementFeed.sol";
 
-contract MockFeed is ISpotFeeds {
+contract MockFeed is IFutureFeed, ISettlementFeed {
   uint public spot;
+  mapping(uint => uint) expiryPrice;
 
   function setSpot(uint _spot) external returns (uint) {
     spot = _spot;
     return spot;
   }
 
-  function getSpot(uint) external view override returns (uint) {
+  function getFuturePrice(uint) external view returns (uint) {
     return spot;
   }
 
-  function getSymbol(uint /*feedId*/ ) external pure returns (bytes32) {
-    return bytes32("eth/usdc");
-  }
+  function getSettlementPrice(uint expiry) external view returns (uint) {}
 
-  function getSpotAndUpdatedAt(uint /*feedId*/ ) external view returns (uint, uint) {
-    return (spot, block.timestamp);
+  function setFuturePrice(uint expiry, uint price) external {
+    expiryPrice[expiry] = price;
   }
 
   function test() public {}

@@ -38,55 +38,6 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     putId = option.getSubId(setExpiry, strike, false);
   }
 
-  function testCanSetSettlementPrice() external {
-    (uint expiry,,) = option.getOptionDetails(uint96(callId));
-
-    // First confirm that the settlement price hasn't been set for callId
-    assertEq(option.settlementPrices(expiry), 0);
-
-    // Fast forward to expiry and update feed
-    vm.warp(expiry);
-    _updateFeed(aggregator, 2, 1200e18, 2);
-
-    // Lock in settlement price
-    option.setSettlementPrice(expiry);
-
-    // Assert settled price same as feed
-    (, int answer,,,) = aggregator.latestRoundData();
-    assertEq(option.settlementPrices(expiry), uint(answer));
-  }
-
-  function testCannotSetSettlementPriceOnFutureExpiry() external {
-    (uint expiry,,) = option.getOptionDetails(uint96(callId));
-
-    // Should revert because we have not reached expiry time
-    vm.expectRevert(abi.encodeWithSelector(ISettlementFeed.NotExpired.selector, expiry, block.timestamp));
-    option.setSettlementPrice(expiry);
-  }
-
-  function testCannotSettlePriceAlreadySet() external {
-    (uint expiry,,) = option.getOptionDetails(uint96(callId));
-
-    // First confirm that the settlement price hasn't been set for callId
-    assertEq(option.settlementPrices(expiry), 0);
-
-    // Fast forward to expiry and update feed
-    vm.warp(expiry);
-    _updateFeed(aggregator, 2, 1200e18, 2);
-
-    // Lock in settlement price for callId
-    option.setSettlementPrice(expiry);
-
-    // Assert settled price same as feed
-    (, int answer,,,) = aggregator.latestRoundData();
-    assertEq(option.settlementPrices(expiry), uint(answer));
-
-    // Revert for putId because it has the same expiry
-    (uint putExpiry,,) = option.getOptionDetails(uint96(callId));
-    vm.expectRevert(abi.encodeWithSelector(ISettlementFeed.SettlementPriceAlreadySet.selector, expiry, uint(answer)));
-    option.setSettlementPrice(putExpiry);
-  }
-
   function testCalcSettlementValueITMCall() external {
     (uint expiry,,) = option.getOptionDetails(uint96(callId));
 
@@ -94,7 +45,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) + 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -109,7 +60,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) - 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -124,7 +75,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) - 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -139,7 +90,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) + 200e18;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -170,7 +121,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) + priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -186,7 +137,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) - priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -202,7 +153,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) - priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -218,7 +169,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     vm.warp(expiry);
     int spotPrice = int(strike) + priceDiff;
     _updateFeed(aggregator, 2, spotPrice, 2);
-    option.setSettlementPrice(expiry);
+    // option.setSettlementPrice(expiry);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 

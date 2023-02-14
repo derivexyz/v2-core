@@ -1,8 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+
 import "src/risk-managers/MLRM.sol";
 import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
@@ -16,6 +15,7 @@ import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
 import "test/shared/mocks/MockIPCRM.sol";
+import "test/shared/mocks/MockFeed.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
@@ -26,11 +26,10 @@ contract UNIT_TestMLRM is Test {
   MockAsset cash;
   MockERC20 usdc;
 
-  ChainlinkSpotFeeds spotFeeds;
-  MockV3Aggregator aggregator;
   MockOption option;
   MockDutchAuction auction;
   MockSM sm;
+  MockFeed feed;
   uint feeRecipient;
 
   address alice = address(0xaa);
@@ -41,16 +40,16 @@ contract UNIT_TestMLRM is Test {
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
 
+    feed = new MockFeed();
+
     mlrm = new MLRM(
       account,
-      spotFeeds,
+      feed,
+      feed,
       ICashAsset(address(cash)),
       option
     );
@@ -76,7 +75,7 @@ contract UNIT_TestMLRM is Test {
     _depositCash(bob, bobAcc, 1000e18);
 
     // prepare trades
-    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    feed.setSpot(1000e18);
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -235,7 +234,7 @@ contract UNIT_TestMLRM is Test {
     _depositCash(alice, aliceAcc, 100e18);
     _depositCash(bob, bobAcc, 100e18);
 
-    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    feed.setSpot(1000e18);
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 750e18, false);
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -251,7 +250,7 @@ contract UNIT_TestMLRM is Test {
 
     // uses settled price
     skip(3 days);
-    aggregator.updateRoundData(3, 800e18, block.timestamp, block.timestamp, 3);
+    feed.setSpot(800e18);
     AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
@@ -270,7 +269,7 @@ contract UNIT_TestMLRM is Test {
     _depositCash(bob, bobAcc, 100e18);
 
     // add ZSC
-    aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
+    feed.setSpot(1000e18);
     uint expiry = block.timestamp + 1 days;
     uint callSubId = OptionEncoding.toSubId(expiry, 0, true);
     AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({

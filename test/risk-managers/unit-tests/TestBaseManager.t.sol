@@ -20,9 +20,13 @@ import "../../shared/mocks/MockOption.sol";
 import "../../auction/mocks/MockCashAsset.sol";
 
 contract BaseManagerTester is BaseManager {
-  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cash_, IOption option_)
-    BaseManager(accounts_, spotFeeds_, cash_, option_)
-  {}
+  constructor(
+    IAccounts accounts_,
+    IFutureFeed futureFeed_,
+    ISettlementFeed settlementFeed_,
+    ICashAsset cash_,
+    IOption option_
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cash_, option_) {}
 
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
@@ -57,7 +61,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   BaseManagerTester tester;
 
   MockAsset mockAsset;
-  MockFeed spotFeeds;
+  MockFeed feed;
   MockERC20 usdc;
   MockOption option;
   MockCash cash;
@@ -72,12 +76,12 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   function setUp() public {
     accounts = new Accounts("Lyra Accounts", "LyraAccount");
 
-    spotFeeds = new MockFeed();
+    feed = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
     cash = new MockCash(usdc, accounts);
 
-    tester = new BaseManagerTester(accounts, spotFeeds, cash, option);
+    tester = new BaseManagerTester(accounts, feed, feed, cash, option);
 
     mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
 
@@ -171,7 +175,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
 
   function testChargeFeeOn1SubIdIfOIIncreased() public {
     uint spot = 2000e18;
-    spotFeeds.setSpot(spot);
+    feed.setSpot(spot);
 
     uint96 subId = 1;
     uint tradeId = 5;
@@ -194,7 +198,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
 
   function testShouldNotChargeFeeIfOIDecrease() public {
     uint spot = 2000e18;
-    spotFeeds.setSpot(spot);
+    feed.setSpot(spot);
 
     uint96 subId = 1;
     uint tradeId = 5;
@@ -229,7 +233,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
 
   function testOnlyChargeFeeOnSubIDWIthOIIncreased() public {
     uint spot = 2000e18;
-    spotFeeds.setSpot(spot);
+    feed.setSpot(spot);
 
     (uint96 subId1, uint96 subId2, uint96 subId3) = (1, 2, 3);
     uint tradeId = 5;

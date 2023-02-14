@@ -13,6 +13,7 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
+import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
 contract PCRMGroupingGasScript is Script {
@@ -24,6 +25,7 @@ contract PCRMGroupingGasScript is Script {
   Option option;
   MockDutchAuction auction;
   CashAsset cash;
+  MockFeed feed; // both future price & settlement price
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -95,10 +97,7 @@ contract PCRMGroupingGasScript is Script {
   }
 
   function _setupFeeds() public {
-    aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
-    aggregator.updateRoundData(1, 1000e18, block.timestamp, block.timestamp, 1);
+    feed = new MockFeed();
   }
 
   function _setupBaseLayer() public {
@@ -120,7 +119,8 @@ contract PCRMGroupingGasScript is Script {
 
     pcrm = new PCRM(
       account,
-      spotFeeds,
+      feed,
+      feed,
       cash,
       option,
       address(auction)

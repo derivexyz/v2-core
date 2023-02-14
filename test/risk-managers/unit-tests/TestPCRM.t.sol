@@ -1,8 +1,6 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -16,6 +14,7 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
+import "test/shared/mocks/MockFeed.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
@@ -25,8 +24,7 @@ contract UNIT_TestPCRM is Test {
   MockAsset cash;
   MockERC20 usdc;
 
-  ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
-  MockV3Aggregator aggregator;
+  MockFeed feed;
   MockOption option;
   MockDutchAuction auction;
   MockSM sm;
@@ -40,9 +38,7 @@ contract UNIT_TestPCRM is Test {
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    feed = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
 
     auction = new MockDutchAuction();
@@ -52,7 +48,8 @@ contract UNIT_TestPCRM is Test {
 
     manager = new PCRM(
       account,
-      spotFeeds,
+      feed,
+      feed,
       ICashAsset(address(cash)),
       option,
       address(auction)
@@ -233,7 +230,7 @@ contract UNIT_TestPCRM is Test {
     strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     strikes[1] = IBaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
-    aggregator.updateRoundData(2, 100e18, block.timestamp, block.timestamp, 2);
+    feed.setSpot(100e18);
     IBaseManager.Portfolio memory expiry =
       IBaseManager.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
 

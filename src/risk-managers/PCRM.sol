@@ -106,10 +106,14 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_, address auction_)
-    BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
-    Owned()
-  {
+  constructor(
+    IAccounts accounts_,
+    IFutureFeed futureFeed_,
+    ISettlementFeed settlementFeed_,
+    ICashAsset cashAsset_,
+    IOption option_,
+    address auction_
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_) Owned() {
     dutchAuction = IDutchAuction(auction_);
   }
 
@@ -264,7 +268,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     // get shock amounts
     uint128 spotUp;
     uint128 spotDown;
-    uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
+    uint spot = futureFeed.getFuturePrice(portfolio.expiry);
     uint staticDiscount;
     if (marginType == MarginType.INITIAL) {
       spotUp = spot.multiplyDecimal(shocks.spotUpInitial).toUint128();
@@ -298,7 +302,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return expiryValue Value of assets or debt of settled options.
    */
   function _calcSettledExpiryValue(Portfolio memory portfolio) internal view returns (int expiryValue) {
-    uint settlementPrice = option.settlementPrices(portfolio.expiry);
+    uint settlementPrice = settlementFeed.getSettlementPrice(portfolio.expiry);
     for (uint i; i < portfolio.strikes.length; i++) {
       Strike memory strike = portfolio.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();

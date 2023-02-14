@@ -28,7 +28,7 @@ contract Option is IOption, Owned {
   IAccounts immutable accounts;
 
   /// @dev Contract to get spot prices which are locked in at settlement
-  ISpotFeeds public spotFeed;
+  ISettlementFeed public settlementFeed;
 
   ///////////////
   // Variables //
@@ -43,9 +43,6 @@ contract Option is IOption, Owned {
   ///@dev OI for a subId. OI is the sum of all positive balance
   mapping(uint => uint) public openInterest;
 
-  ///@dev Expiry => Settlement price
-  mapping(uint => uint) public settlementPrices;
-
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
 
@@ -53,9 +50,9 @@ contract Option is IOption, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts, address _spotFeeds, uint _feedId) {
+  constructor(IAccounts _accounts, address _settlementFeed, uint _feedId) {
     accounts = _accounts;
-    spotFeed = ISpotFeeds(_spotFeeds);
+    settlementFeed = ISettlementFeed(_settlementFeed);
     feedId = _feedId;
   }
 
@@ -109,23 +106,6 @@ contract Option is IOption, Owned {
     _checkManager(address(newManager));
   }
 
-  ////////////////
-  // Settlement //
-  ////////////////
-
-  /**
-   * @notice Locks-in price which the option settles at for an expiry.
-   * @dev Settlement handled by option to simplify multiple managers settling same option
-   * @param expiry Timestamp of when the option expires
-   */
-  function setSettlementPrice(uint expiry) external {
-    if (settlementPrices[expiry] != 0) revert SettlementPriceAlreadySet(expiry, settlementPrices[expiry]);
-    if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
-
-    settlementPrices[expiry] = spotFeed.getSpot(feedId);
-    emit SettlementPriceSet(expiry, 0);
-  }
-
   //////////
   // View //
   //////////
@@ -158,7 +138,7 @@ contract Option is IOption, Owned {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
-    uint settlementPrice = settlementPrices[expiry];
+    uint settlementPrice = settlementFeed.getSettlementPrice(expiry);
 
     // Return false if settlement price has not been locked in
     if (settlementPrice == 0) {
