@@ -35,6 +35,7 @@ import "forge-std/console2.sol";
 contract PCRM is BaseManager, IManager, Owned, IPCRM {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
+  using SafeCast for int;
   using SafeCast for uint;
 
   // todo [Josh]: move to interface
@@ -180,7 +181,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     // check initial margin
-    _checkMargin(portfolio, MarginType.INITIAL);
+    _checkInitialMargin(portfolio);
   }
 
   /**
@@ -295,7 +296,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
 
     // check liquidator's account status
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(liquidatorId));
-    _checkMargin(portfolio, MarginType.INITIAL);
+    _checkInitialMargin(portfolio);
   }
 
   /////////////////
@@ -305,64 +306,84 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   /**
    * @notice revert if a portfolio is under margin
    * @param portfolio Account portfolio
-   * @param marginType Initial or maintenance margin.
    */
-  function _checkMargin(Portfolio memory portfolio, MarginType marginType) internal {
-    int margin = _calcMargin(portfolio, marginType);
+  function _checkInitialMargin(Portfolio memory portfolio) internal {
+    int margin = getInitialMargin(portfolio);
     if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
+  }
+
+  /**
+   * @notice Calculate the initial margin of account.
+   *         A negative value means the account is X amount over the required margin.
+   * @param portfolio Cash + arranged option portfolio.
+   * @return margin Amount by which account is over or under the required margin.
+   */
+  function getInitialMargin(Portfolio memory portfolio) public returns (int margin) {
+    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _getMarginParams(
+      spotShockParams.upInitial, 
+      spotShockParams.downInitial, 
+      spotShockParams.timeSlope, 
+      portfolioDiscountParams.initial, 
+      portfolio.expiry.toInt256() - block.timestamp.toInt256()
+    );
+
+    vol = vol.multiplyDecimal(_getSpotJumpMultiple(
+      volShockParams.spotJumpMultipleSlope, 
+      volShockParams.spotJumpMultipleLookback
+    ));
+    
+    return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
+  }
+
+  /**
+   * @notice Calculate the maintenance margin of account.
+   *         A negative value means the account is X amount over the required margin.
+   * @param portfolio Cash + arranged option portfolio.
+   * @return margin Amount by which account is over or under the required margin.
+   */
+  function getMaintenanceMargin(Portfolio memory portfolio) public returns (int margin) {
+    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _getMarginParams(
+      spotShockParams.upMaintenance, 
+      spotShockParams.downMaintenance, 
+      spotShockParams.timeSlope, 
+      portfolioDiscountParams.maintenance, 
+      portfolio.expiry.toInt256() - block.timestamp.toInt256()
+    );
+
+    return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
   }
 
   /**
    * @notice Calculate the initial or maintenance margin of account.
    *         A positive value means the account is X amount over the required margin.
    * @param portfolio Account portfolio.
-   * @param marginType Initial or maintenance margin.
+   * @param vol Shocked vol used in margin calculations
+   * @param spotUp Shocked up spot used as inpute in margin scenarios
+   * @param spotDown Shocked down spot used as inpute in margin scenarios
+   * @param portfolioDiscount Total time based discount applied to the whole portfolio if margin > 0.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(Portfolio memory portfolio, MarginType marginType) internal returns (int margin) {
+  function _calcMargin(
+    Portfolio memory portfolio, 
+    uint vol, 
+    uint spotUp, 
+    uint spotDown, 
+    uint portfolioDiscount
+  ) internal returns (int margin) {
     // todo [Anton]: add ability to do RV = 0?
+
+    // If options expired, get settled value.
     if (portfolio.expiry < block.timestamp) {
       return _calcSettledExpiryValue(portfolio) + portfolio.cash;
     }
 
-    uint timeToExpiry = portfolio.expiry - block.timestamp;
-    uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
-    uint vol = _getVolShock(timeToExpiry);
-
-    // get shock amounts
-    uint spotUp;
-    uint spotDown;
-    uint portfolioDiscount;
-    if (marginType == MarginType.INITIAL) {
-      (spotUp, spotDown) = _getSpotShocks(
-        spot.multiplyDecimal(spotShockParams.upInitial).toUint128(),
-        spot.multiplyDecimal(spotShockParams.downInitial).toUint128(),
-        timeToExpiry,
-        spotShockParams.timeSlope
-      );
-      portfolioDiscount = portfolioDiscountParams.initial;
-      vol = vol.multiplyDecimal(
-        DecimalMath.UNIT
-          + _getSpotJumpMultiple(volShockParams.spotJumpMultipleSlope, volShockParams.spotJumpMultipleLookback)
-      );
-    } else {
-      (spotUp, spotDown) = _getSpotShocks(
-        spot.multiplyDecimal(spotShockParams.upMaintenance).toUint128(),
-        spot.multiplyDecimal(spotShockParams.downMaintenance).toUint128(),
-        timeToExpiry,
-        spotShockParams.timeSlope
-      );
-      portfolioDiscount = portfolioDiscountParams.maintenance;
-    }
-
-    // discount option value
+    // Otherwise, get discounted option value.
     margin = _calcLiveExpiryValue(portfolio, spotUp.toUint128(), spotDown.toUint128(), vol.toUint128());
-
     if (margin > 0) {
-      margin = margin.multiplyDecimal(_getExpiryDiscount(portfolioDiscount, timeToExpiry).toInt256());
+      margin = margin.multiplyDecimal(portfolioDiscount.toInt256());
     }
 
-    // add cash
+    // Add cash
     margin += portfolio.cash;
   }
 
@@ -437,7 +458,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     uint128 spotDown,
     uint128 shockedVol,
     uint64 timeToExpiry
-  ) internal view returns (int strikeValue) {
+  ) internal pure returns (int strikeValue) {
     // Calculate both spot up and down payoffs.
     int markedDownCallValue = uint(spotDown).toInt256() - strikes.strike.toInt256();
     int markedDownPutValue = strikes.strike.toInt256() - uint(spotUp).toInt256();
@@ -474,23 +495,73 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
 
   }
 
-  /////////////////////
-  // Dynamic Factors //
-  /////////////////////
+  ///////////////////////////////////////
+  // Getting Margin Calculation Inputs //
+  ///////////////////////////////////////
 
-  function _getSpotShocks(uint initialUp, uint initialDown, uint timeToExpiry, uint timeSlope)
+  /**
+   * @notice Computes all params used in calculating margin requirements. 
+   *         The param inputs will depend on whether looking for initial or maintenance margin.
+   * @param spotUpPercent Percent by which to multiply spot to get the `up` scenario.
+   * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario.
+   * @param spotTimeSlope Rate at which to increase the shocks with larger `timeToExpiry`.
+   * @param portfolioDiscountFactor Initial discouting factor applied when option margin > 0.
+   * @param timeToExpiry Seconds till option expires.
+   * @return vol Volatility.
+   * @return spotUp Shocked up spot.
+   * @return spotDown Shocked down spot.
+   * @return portfolioDiscount Portfolio-wide static discount
+   */
+  function _getMarginParams(
+    uint spotUpPercent, uint spotDownPercent, uint spotTimeSlope, uint portfolioDiscountFactor, int timeToExpiry
+  ) internal view returns (
+    uint vol, uint spotUp, uint spotDown, uint portfolioDiscount
+  ) {
+    // can return zero params as settled options do not require these
+    if (timeToExpiry <= 0) {
+      return (0, 0, 0, 0);
+    }
+
+    vol = _getVol(timeToExpiry.toUint256());
+
+    // get shock amounts
+    uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting method
+    (spotUp, spotDown) = _getSpotShocks(
+      spot,
+      spotUpPercent,
+      spotDownPercent,
+      spotTimeSlope,
+      timeToExpiry.toUint256()
+    );
+    
+    portfolioDiscount = _getPortfolioDiscount(portfolioDiscountFactor, timeToExpiry.toUint256());
+  }
+
+  /**
+   * @notice Used to find the shocked up / down spot used when calculating margin.
+   * @param spotUpPercent Percent by which to multiply spot to get the `up` scenario
+   * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario
+   * @param timeSlope Rate at which to increase the shocks with larger `timeToExpiry`
+   * @param timeToExpiry Seconds till option expires.
+   * @return up Shocked up spot.
+   * @return down Shocked down spot.
+   */
+  function _getSpotShocks(uint spot, uint spotUpPercent, uint spotDownPercent, uint timeSlope, uint timeToExpiry)
     internal
     pure
     returns (uint up, uint down)
   {
     uint shock = timeSlope.multiplyDecimal(timeToExpiry * 1e18 / 365 days);
-    return (initialUp + shock, initialDown - shock);
+    return (spot.multiplyDecimal(spotUpPercent) + shock, spot.multiplyDecimal(spotDownPercent) - shock);
   }
 
   /**
-   * @dev taken directly from Avalon/OptionGreekCache.getShockVol
+   * @notice Used to find the volatility used to determine collateral requirements for shorts.
+   *         The vol reduces for longer expiries: taken directly from `Avalon/OptionGreekCache.getShockVol()`.
+   * @param timeToExpiry Seconds till option expires.
+   * @return vol Used to determine collateral requirements for shorts.
    */
-  function _getVolShock(uint timeToExpiry) internal view returns (uint volShock) {
+  function _getVol(uint timeToExpiry) internal view returns (uint vol) {
     VolShockParams memory params = volShockParams;
     if (timeToExpiry <= params.timeA) {
       return params.maxVol;
@@ -504,14 +575,28 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       - (((params.maxVol - params.minVol) * (timeToExpiry - params.timeA)) / (params.timeB - params.timeA));
   }
 
+  /**
+   * @notice In order to account for volatility spikes, uses a spot jump oracle to
+   *         find the max % spot jump in the past X seconds.
+   *         This max spot jump is then used to scale up the vol shock by `multiple`.
+   * @param spotJumpSlope Rate at which vol is added per increase in spot jump.
+   * @param lookbackLength The amount of sec the oracle looks back when finding max jump.
+   * @return multiple Multiple by which to increase the vol shock.
+   */
   function _getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) internal returns (uint multiple) {
     uint jumpBasisPoints = uint(spotJumpOracle.updateAndGetMaxJump(lookbackLength));
     uint jumpPercent = (jumpBasisPoints * DecimalMath.UNIT) / 10000;
-    return spotJumpSlope.multiplyDecimal(jumpPercent);
+    return DecimalMath.UNIT + spotJumpSlope.multiplyDecimal(jumpPercent);
   }
 
-  // todo: change to portfolio discount
-  function _getExpiryDiscount(uint staticDiscount, uint timeToExpiry) internal view returns (uint expiryDiscount) {
+
+  /**
+   * @notice Gets portfolio-wide discount only applied to the positive option value (if option value > 0)
+   * @param staticDiscount Static param determined by whether margin is initial or maintenance.
+   * @param timeToExpiry Sec till option expires.
+   * @return expiryDiscount Effective discount applied to the positive margin.
+   */
+  function _getPortfolioDiscount(uint staticDiscount, uint timeToExpiry) internal view returns (uint expiryDiscount) {
     uint tau = timeToExpiry * 1e18 / 365 days;
     uint exponent = FixedPointMathLib.exp(-SafeCast.toInt256(tau.multiplyDecimal(portfolioDiscountParams.riskFreeRate)));
 
@@ -529,7 +614,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-
   function _arrangePortfolio(AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
     portfolio.strikes = new PCRM.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
@@ -567,29 +651,9 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     return _arrangePortfolio(accounts.getAccountBalances(accountId));
   }
 
-  /**
-   * @notice Calculate the initial margin of account.
-   *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Cash + arranged option portfolio.
-   * @return margin Amount by which account is over or under the required margin.
-   */
-  function getInitialMargin(Portfolio memory portfolio) external returns (int margin) {
-    return _calcMargin(portfolio, MarginType.INITIAL);
-  }
-
   // @todo: update to real implementation
   function getInitialMarginRVZero(Portfolio memory portfolio) external returns (int margin) {
-    return _calcMargin(portfolio, MarginType.INITIAL);
-  }
-
-  /**
-   * @notice Calculate the maintenance margin of account.
-   *         A negative value means the account is X amount over the required margin.
-   * @param portfolio Cash + arranged option portfolio.
-   * @return margin Amount by which account is over or under the required margin.
-   */
-  function getMaintenanceMargin(Portfolio memory portfolio) external returns (int margin) {
-    return _calcMargin(portfolio, MarginType.MAINTENANCE);
+    return getInitialMargin(portfolio);
   }
 
   ////////////
