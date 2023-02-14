@@ -429,6 +429,7 @@ contract CashAsset is ICashAsset, Owned {
     console.log("realSupply", realSupply);
     console.log("realSupply", totalSupply);
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
+    console.log("borrowRate", borrowRate);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
 

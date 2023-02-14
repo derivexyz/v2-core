@@ -12,7 +12,8 @@ import "src/libraries/OptionEncoding.sol";
  * @dev testing settlement logic
  */
 contract INTEGRATION_Settlement is IntegrationTestBase {
-    using DecimalMath for uint;
+  using DecimalMath for uint;
+
   address alice = address(0xaa);
   uint aliceAcc;
 
@@ -214,14 +215,15 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     console.log("Borrow", cash.totalBorrow());
     console2.log("Net print", cash.netSettledCash());
 
-    uint interestAccrued = _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+    uint interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
     pcrm.settleAccount(bobAcc);
     console.log("Supply", cash.totalSupply());
     console.log("Borrow", cash.totalBorrow());
 
     console2.log("Net print", cash.netSettledCash());
     console.log("IA:", interestAccrued);
-    console.log("RA:", cash.totalBorrow()-500e18);
+    console.log("RA:", cash.totalBorrow() - 500e18);
 
     int bobCashAfter = getCashBalance(bobAcc);
     uint oiAfter = option.openInterest(callId);
@@ -236,6 +238,14 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     assertEq(cash.netSettledCash(), expectedPayout);
     _assertCashSolvent();
 
+    uint currentBorrow = cash.totalBorrow();
+    console2.log("YES:", currentBorrow);
+    vm.warp(block.timestamp + 1 weeks);
+    interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+    cash.accrueInterest();
+    console2.log("YES:", cash.totalBorrow() - currentBorrow);
+    console2.log("YES:", interestAccrued);
 
     assertEq(oiAfter, 0);
   }
@@ -271,9 +281,17 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
    * @param elapsedTime the time elapsed for interest accrual
    */
   function _calculateAccruedInterestNoPrint(uint supply, uint borrow, uint elapsedTime) public view returns (uint) {
-     uint borrowRate = rateModel.getBorrowRate(supply, borrow);
+    console.log("----- inside -----");
+    console.log("s:", supply);
+    console.log("b:", borrow);
+    console.log("t:", elapsedTime);
+
+    uint borrowRate = rateModel.getBorrowRate(supply, borrow);
+    console.log("borrowRate", borrowRate);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = borrow.multiplyDecimal(borrowInterestFactor);
+
+    console.log("----- outside -----");
     return interestAccrued;
   }
 }
