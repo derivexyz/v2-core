@@ -112,9 +112,30 @@ contract UNIT_TestPCRM is Test {
   }
 
 
-  /////////////////
-  // Getting Vol //
-  /////////////////
+  ///////////////////////////
+  // Computing Spot Shocks //
+  ///////////////////////////
+
+  function testGetSpotShocks() public {
+    // case 1: < 1 year with 1x slope
+    (uint up, uint down) = manager.getSpotShocks(1000e18, 1.2e18, 0.8e18, 1e18, 100 days);
+    assertApproxEqAbs(up, 1473.9726e18, 1e14);
+    assertApproxEqAbs(down, 526.027397e18, 1e14);
+
+    // case 2: < 1 year with 2x slope
+    (up, down) = manager.getSpotShocks(1000e18, 1.5e18, 0.5e18, 2e18, 30 days);
+    assertApproxEqAbs(up, 1664.38356e18, 1e14);
+    assertApproxEqAbs(down, 335.616438e18, 1e14);
+
+    // case 3: > 1 year with down hitting zero
+    (up, down) = manager.getSpotShocks(2e18, 1.1e18, 0.1e18, 5e18, 500 days);
+    assertApproxEqAbs(up, 15.89863e18, 1e14);
+    assertApproxEqAbs(down, 0, 1e14);
+  }
+
+  ///////////////////
+  // Computing Vol //
+  ///////////////////
 
   function testGetVol() public {
     // case 1: before time A

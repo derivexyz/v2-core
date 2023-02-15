@@ -141,11 +141,17 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     VolShockParams calldata _volShock,
     PortfolioDiscountParams calldata _discount
   ) external onlyOwner {
-    if (_discount.maintenance > DecimalMath.UNIT || 
-      _discount.initial > DecimalMath.UNIT || 
-      _discount.riskFreeRate > 10e18 ||
+    if (_spotShock.upInitial < DecimalMath.UNIT ||
+      _spotShock.downInitial > DecimalMath.UNIT ||
+      _spotShock.upInitial <= _spotShock.downInitial ||
+      _spotShock.upMaintenance < DecimalMath.UNIT ||
+      _spotShock.downMaintenance > DecimalMath.UNIT ||
+      _spotShock.upMaintenance <= _spotShock.downMaintenance ||
       _volShock.timeB <= _volShock.timeA ||
-      _volShock.spotJumpMultipleSlope > 100e18
+      _volShock.spotJumpMultipleSlope > 100e18 ||
+      _discount.maintenance > DecimalMath.UNIT || 
+      _discount.initial > DecimalMath.UNIT || 
+      _discount.riskFreeRate > 10e18
     ) {
       revert PCRM_InvalidMarginParam();
     }
@@ -492,10 +498,12 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     pure
     returns (uint up, uint down)
   {
-    uint shock = timeSlope.multiplyDecimal(timeToExpiry * 1e18 / 365 days);
+    uint timeWeight = timeSlope.multiplyDecimal(timeToExpiry * 1e18 / 365 days);
 
-    // todo: need guardrails here to make sure cannot overflow / underflow
-    return (spot.multiplyDecimal(spotUpPercent + shock), spot.multiplyDecimal(spotDownPercent - shock));
+    uint upShock = spotUpPercent + timeWeight;
+    uint downShock = (spotDownPercent > timeWeight) ? spotDownPercent - timeWeight : 0;
+
+    return (spot.multiplyDecimal(upShock), spot.multiplyDecimal(downShock));
   }
 
   /**
