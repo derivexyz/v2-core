@@ -30,15 +30,15 @@ contract PCRMTester is PCRM {
     ISpotJumpOracle spotJumpOracle_
   ) PCRM(accounts_, spotFeeds_, cashAsset_, option_, auction_, spotJumpOracle_) {}
 
-  function applyTimeWeighting(
-    uint spotUpPercent,
-    uint spotDownPercent,
-    uint spotTimeSlope,
-    uint portfolioDiscountFactor,
-    int timeToExpiry
-  ) external view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
-    return _applyTimeWeighting(spotUpPercent, spotDownPercent, spotTimeSlope, portfolioDiscountFactor, timeToExpiry);
-  }
+  // function applyTimeWeighting(
+  //   uint spotUpPercent,
+  //   uint spotDownPercent,
+  //   uint spotTimeSlope,
+  //   uint portfolioDiscountFactor,
+  //   int timeToExpiry
+  // ) external view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
+  //   return _applyTimeWeighting(spotUpPercent, spotDownPercent, spotTimeSlope, portfolioDiscountFactor, timeToExpiry);
+  // }
 
   function timeWeightSpotShocks(uint spot, uint spotUpPercent, uint spotDownPercent, uint timeSlope, uint timeToExpiry)
     external
@@ -65,7 +65,7 @@ contract PCRMTester is PCRM {
   }
 }
 
-contract UNIT_TestPCRM is Test {
+contract UNIT_TimeWeightingPCRM is Test {
   Accounts account;
   PCRMTester manager;
   MockAsset cash;
