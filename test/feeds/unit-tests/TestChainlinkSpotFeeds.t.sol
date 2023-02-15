@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "src/feeds/ChainlinkSpotFeed.sol";
+import "../../shared/mocks/MockERC20.sol";
 
 contract UNIT_TestChainlinkSpotFeed18Decimals is Test {
   ChainlinkSpotFeed feed;
@@ -51,7 +52,7 @@ contract UNIT_TestChainlinkSpotFeed18Decimals is Test {
 
     // Fast forward to expiry and update feed
     vm.warp(expiry);
-    _updateChainlinkData(1200e18, 2);
+    _updateFeed(2, 1200e18, 2);
 
     // Lock in settlement price
     feed.setSettlementPrice(expiry);
@@ -73,7 +74,7 @@ contract UNIT_TestChainlinkSpotFeed18Decimals is Test {
 
     // Fast forward to expiry and update feed
     vm.warp(expiry);
-    _updateChainlinkData(1200e18, 2);
+    _updateFeed(2, 1200e18, 2);
 
     // Lock in settlement price for callId
     feed.setSettlementPrice(expiry);
@@ -87,10 +88,6 @@ contract UNIT_TestChainlinkSpotFeed18Decimals is Test {
       abi.encodeWithSelector(IChainlinkSpotFeed.CF_SettlementPriceAlreadySet.selector, expiry, uint(answer))
     );
     feed.setSettlementPrice(expiry);
-  }
-
-  function _updateChainlinkData(int spotPrice, uint80 roundId) internal {
-    aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, roundId);
   }
 
   /////////////
