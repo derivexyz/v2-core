@@ -101,3 +101,21 @@ contract UNIT_TestChainlinkSpotFeed18Decimals is Test {
     aggregator.updateRoundData(roundId, spotPrice, block.timestamp, block.timestamp, answeredInRound);
   }
 }
+
+contract UNIT_TestChainlinkSpotFeed8Decimals is Test {
+  ChainlinkSpotFeed feed;
+  MockV3Aggregator aggregator;
+
+  uint expiry = block.timestamp + 2 hours;
+
+  function setUp() public {
+    aggregator = new MockV3Aggregator(8, 1000e8);
+    feed = new ChainlinkSpotFeed(aggregator, 1 hours);
+  }
+
+  function testGetSpot() public {
+    /* get correct initial feed */
+    uint ethSpotPrice = feed.getSpot();
+    assertEq(ethSpotPrice, 1000e18);
+  }
+}
