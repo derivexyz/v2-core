@@ -46,7 +46,9 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
   }
 
   /**
+   * @notice Return future price for an expiry
    * @dev For now we just return spot price as future price
+   * @return futurePrice Future price with 18 decimal.
    */
   function getFuturePrice(uint /*expiry*/ ) external view returns (uint futurePrice) {
     return getSpot();
@@ -54,7 +56,7 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
 
   /**
    * @notice Gets spot price
-   * @return spotPrice 18 decimal price of trading pair.
+   * @return spotPrice Spot price with 18 decimals.
    */
   function getSpot() public view returns (uint) {
     (uint spotPrice, uint updatedAt) = getSpotAndUpdatedAt();
@@ -69,7 +71,7 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
   /**
    * @notice Uses chainlinks `AggregatorV3` oracles to retrieve price.
    *         The price is always converted to an 18 decimal uint.
-   * @return spotPrice 18 decimal price of trading pair
+   * @return spotPrice 18 decimal price
    * @return updatedAt Timestamp of update
    */
   function getSpotAndUpdatedAt() public view returns (uint, uint) {
