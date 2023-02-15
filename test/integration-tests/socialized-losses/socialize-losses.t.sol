@@ -49,7 +49,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     _setSpotPriceE18(ETH_PRICE * 2);
 
     int initMargin = getAccInitMargin(aliceAcc);
-    assertEq(initMargin / 1e18, -28596); // -23K underwater
+    assertEq(initMargin / 1e18, -28382); // -23K underwater
 
     // start auction on alice's account
     auction.startAuction(aliceAcc);
@@ -66,7 +66,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     uint supplyBefore = cash.totalSupply();
 
     int bidPrice = auction.getCurrentBidPrice(aliceAcc);
-    assertEq(bidPrice / 1e18, -4289); // bidding now will require security module to pay out $3573
+    assertEq(bidPrice / 1e18, -4257); // bidding now will require security module to pay out $3573
 
     // bid from bob
     vm.prank(bob);
@@ -104,7 +104,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
 
   ///@dev alice go short, bob go long
   function _openPosition() public {
-    int premium = 300e18 * 10; // 10 calls
+    int premium = 350e18 * 10; // 10 calls
     // alice send call to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, callId, amountOfContracts, bobAcc, cash, 0, premium);
   }

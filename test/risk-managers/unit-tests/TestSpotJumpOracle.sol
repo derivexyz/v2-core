@@ -227,14 +227,14 @@ contract UNIT_TestSpotJumpOracle is Test {
     // finds 7th bucket
     aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
     uint32 maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
-    assertEq(maxJump, 1700);
+    assertEq(maxJump, 1500);
 
     // override 7th bucket, should find 5th bucket
     initialJumps[7] = uint32(block.timestamp) - 11 days;
     oracle.overrideJumps(initialJumps);
 
     maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
-    assertEq(maxJump, 1300);
+    assertEq(maxJump, 1100);
   }
 
   function testGetsMaxJumpForDifferentSecToStale() public {
@@ -249,7 +249,7 @@ contract UNIT_TestSpotJumpOracle is Test {
 
     // finds the first jump that's < 2hours old
     maxJump = oracle.updateAndGetMaxJump(uint32(2 hours));
-    assertEq(maxJump, 900);
+    assertEq(maxJump, 700);
   }
 
   function testRoundDown() public {

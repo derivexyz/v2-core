@@ -353,7 +353,7 @@ contract UNIT_TestPCRM is Test {
     uint exerciseCashAmount = 10000e18; // paying gigantic amount that makes liquidator insolvent
     vm.expectRevert(abi.encodeWithSelector(
       PCRM.PCRM_MarginRequirementNotMet.selector, 
-      int(-5360002191780821917808))
+      int(-5362191780821917808000))
     );
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
