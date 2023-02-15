@@ -5,8 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 
-import "src/feeds/ChainlinkSpotFeeds.sol";
-import "src/feeds/TokenFeedV2.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/SecurityModule.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -42,14 +41,9 @@ contract IntegrationTestBase is Test {
   PCRM pcrm;
   SecurityModule securityModule;
   InterestRateModel rateModel;
-  // ChainlinkSpotFeeds feed;
   DutchAuction auction;
-  ChainlinkSpotFeeds chainlinkFeed;
+  ChainlinkSpotFeed feed;
   MockV3Aggregator aggregator;
-  TokenFeedV2 feed;
-
-  // feedId of the aggregator
-  uint feedId = 1;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
@@ -94,11 +88,11 @@ contract IntegrationTestBase is Test {
     // function call: doesn't increase deployment nonce
     usdc.setDecimals(6);
 
-    // nonce: 3  => Deploy Chainlink Feed aggregator
-    chainlinkFeed = new ChainlinkSpotFeeds();
+    // nonce: 3  => Deploy Chainlink aggregator
+    aggregator = new MockV3Aggregator(8, 2000e8);
 
     // nonce: 4 => Deploy Feed that will be used as future price and settlement price
-    feed = new TokenFeedV2(chainlinkFeed, feedId);
+    feed = new ChainlinkSpotFeed(aggregator, 1 hours);
 
     // nonce: 5 => Deploy RateModel
     // deploy rate model
@@ -137,13 +131,6 @@ contract IntegrationTestBase is Test {
     pcrm.setFeeRecipient(pcrmFeeAcc);
 
     pcrm.setParams(_getDefaultPCRMShocks(), _getDefaultPCRMDiscount());
-
-    // add aggregator to feed
-    aggregator = new MockV3Aggregator(8, 2000e8);
-
-    uint _feedId = chainlinkFeed.addFeed("ETH/USD", address(aggregator), 1 hours);
-
-    assertEq(_feedId, feedId);
 
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());

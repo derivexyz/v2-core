@@ -5,7 +5,7 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
 import "src/interfaces/IOption.sol";
-import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ISettlementFeed.sol";
 

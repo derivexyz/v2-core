@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -20,7 +20,7 @@ contract PCRMGroupingGasScript is Script {
   Accounts account;
   PCRM pcrm;
 
-  ChainlinkSpotFeeds spotFeeds;
+  ChainlinkSpotFeed spotFeeds;
   MockV3Aggregator aggregator;
   Option option;
   MockDutchAuction auction;

@@ -6,7 +6,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
-import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";

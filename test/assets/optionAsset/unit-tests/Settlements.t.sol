@@ -9,7 +9,7 @@ import "../../../../src/assets/Option.sol";
 import "../../../../src/Accounts.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "test/shared/mocks/MockFeed.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 
 /**
  * @dev Tests functions related to OptionAsset settlements

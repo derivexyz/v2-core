@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "src/risk-managers/SpotJumpOracle.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
@@ -30,7 +30,7 @@ contract SpotJumpOracleTester is SpotJumpOracle {
 
 contract UNIT_TestSpotJumpOracle is Test {
   Accounts account;
-  ChainlinkSpotFeeds spotFeeds;
+  ChainlinkSpotFeed spotFeeds;
   MockV3Aggregator aggregator;
   SpotJumpOracleTester oracle;
 
@@ -43,8 +43,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    spotFeeds = new ChainlinkSpotFeed(aggregator, 1 hours);
   }
 
   ///////////

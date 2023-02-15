@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
@@ -41,8 +41,8 @@ contract SpotJumpOracle {
   // Variables //
   ///////////////
 
-  /// @dev address of ISpotFeed for price
-  ISpotFeeds public spotFeeds;
+  /// @dev address of IChainlinkSpotFeed for price
+  IChainlinkSpotFeed public spotFeeds;
   /// @dev id of feed used when querying price from spotFeeds
   uint public feedId;
   /// @dev number of distinct jump buckets
@@ -69,7 +69,7 @@ contract SpotJumpOracle {
   ////////////////////////
 
   constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[NUM_BUCKETS] memory _initialJumps) {
-    spotFeeds = ISpotFeeds(_spotFeeds);
+    spotFeeds = IChainlinkSpotFeed(_spotFeeds);
     feedId = _feedId;
     params = _params;
     jumps = _initialJumps;
@@ -91,7 +91,7 @@ contract SpotJumpOracle {
    */
   function updateJumps() public {
     JumpParams memory memParams = params;
-    (uint livePrice, uint updatedAt) = spotFeeds.getSpotAndUpdatedAt(feedId);
+    (uint livePrice, uint updatedAt) = spotFeeds.getSpotAndUpdatedAt();
     uint32 spotUpdatedAt = uint32(updatedAt);
 
     // calculate jump basis points and store

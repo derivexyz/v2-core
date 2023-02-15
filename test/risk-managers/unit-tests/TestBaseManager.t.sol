@@ -7,7 +7,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
-import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/AccountStructs.sol";
 
 import "src/Accounts.sol";

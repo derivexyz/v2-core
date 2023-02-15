@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/risk-managers/SpotJumpOracle.sol";
@@ -13,7 +13,7 @@ import "src/interfaces/AccountStructs.sol";
 
 contract PCRMSpotJumpOracleGas is Script {
   Accounts account;
-  ChainlinkSpotFeeds spotFeeds;
+  ChainlinkSpotFeed spotFeeds;
   MockV3Aggregator aggregator;
   SpotJumpOracle oracle;
 
@@ -102,8 +102,7 @@ contract PCRMSpotJumpOracleGas is Script {
   function _setup() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
     aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    spotFeeds = new ChainlinkSpotFeed(aggregator, 1 hours);
 
     SpotJumpOracle.JumpParams memory params = SpotJumpOracle.JumpParams({
       start: 100,
