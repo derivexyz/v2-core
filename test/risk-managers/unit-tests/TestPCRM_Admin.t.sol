@@ -187,7 +187,59 @@ contract UNIT_TestPCRM is Test {
   }
 
   function testInvalidParamSetting() public {
+    IPCRM.SpotShockParams memory validSpotShocks = IPCRM.SpotShockParams({
+      upInitial: 120e16,
+      downInitial: 80e16,
+      upMaintenance: 110e16,
+      downMaintenance: 90e16,
+      timeSlope: 1e18
+    });
 
+    IPCRM.VolShockParams memory validVolShocks = IPCRM.VolShockParams({
+      minVol: 1e18,
+      maxVol: 3e18,
+      timeA: 30 days,
+      timeB: 90 days,
+      spotJumpMultipleSlope: 5e18,
+      spotJumpMultipleLookback: 1 days
+    });
+
+    IPCRM.PortfolioDiscountParams memory validPortfolioParam = IPCRM.PortfolioDiscountParams({
+      maintenance: 90e16, // 90%
+      initial: 80e16, // 80%
+      riskFreeRate: 10e16 // 10%
+    });
+  
+    // invalid spot shocks
+    validSpotShocks.upInitial = 0.8e18;
+    vm.expectRevert(PCRM.PCRM_InvalidMarginParam.selector);
+    manager.setParams(validSpotShocks, validVolShocks, validPortfolioParam);
+    validSpotShocks.upInitial = 1.2e18;
+
+    validSpotShocks.downInitial = 0.95e18;
+    vm.expectRevert(PCRM.PCRM_InvalidMarginParam.selector);
+    manager.setParams(validSpotShocks, validVolShocks, validPortfolioParam);
+    validSpotShocks.downInitial = 0.8e18;
+
+    // invalid vol shocks
+    validVolShocks.timeA = block.timestamp + 10 days;
+    validVolShocks.timeB = block.timestamp + 1 days;
+    vm.expectRevert(PCRM.PCRM_InvalidMarginParam.selector);
+    manager.setParams(validSpotShocks, validVolShocks, validPortfolioParam);
+    validVolShocks.timeA = block.timestamp + 1 days;
+    validVolShocks.timeB = block.timestamp + 10 days;
+
+    validVolShocks.minVol = 150e18;
+    validVolShocks.maxVol = 125e18;
+    vm.expectRevert(PCRM.PCRM_InvalidMarginParam.selector);
+    manager.setParams(validSpotShocks, validVolShocks, validPortfolioParam);
+    validVolShocks.minVol = 150e18;
+    validVolShocks.maxVol = 175e18;
+
+    // invalid portfolio discount
+    validPortfolioParam.initial = 1.1e18;
+    vm.expectRevert(PCRM.PCRM_InvalidMarginParam.selector);
+    manager.setParams(validSpotShocks, validVolShocks, validPortfolioParam);
   }
 
   function testSetNewSpotJumpOracle() public {

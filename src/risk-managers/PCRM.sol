@@ -141,16 +141,15 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     VolShockParams calldata _volShock,
     PortfolioDiscountParams calldata _discount
   ) external onlyOwner {
-    if (_spotShock.upInitial < DecimalMath.UNIT ||
-      _spotShock.downInitial > DecimalMath.UNIT ||
-      _spotShock.upInitial <= _spotShock.downInitial ||
-      _spotShock.upMaintenance < DecimalMath.UNIT ||
+    if (_spotShock.upMaintenance < DecimalMath.UNIT ||
       _spotShock.downMaintenance > DecimalMath.UNIT ||
-      _spotShock.upMaintenance <= _spotShock.downMaintenance ||
+      _spotShock.upMaintenance > _spotShock.upInitial ||
+      _spotShock.downMaintenance < _spotShock.downInitial ||
+      _volShock.maxVol < _volShock.minVol ||
       _volShock.timeB <= _volShock.timeA ||
       _volShock.spotJumpMultipleSlope > 100e18 ||
       _discount.maintenance > DecimalMath.UNIT || 
-      _discount.initial > DecimalMath.UNIT || 
+      _discount.initial > _discount.maintenance || 
       _discount.riskFreeRate > 10e18
     ) {
       revert PCRM_InvalidMarginParam();
