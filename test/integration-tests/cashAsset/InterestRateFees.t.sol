@@ -31,14 +31,18 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     // example of loading simple Uint array
     // to print the json example, run in terminal: `forge test --match-test testNoInterestPaidForNoBorrow -vvvv`
     jsonParser = new JsonMechIO();
-    uint[] memory sampleInputs = jsonParser.loadUints(
-      "/test/integration-tests/cashAsset/InterestRateFees.json",
-      ".expectedAccruedInterest" // not the "." before the key
-    );
+    string memory json = jsonParser.jsonFromRelPath(
+      "/test/integration-tests/cashAsset/json/testInterestPaidForHighUtil.json"
+      );
+    console2.log("parsing json...");
+    console2.log(jsonParser.readTableValue(json, "Account1", 1));
+    console2.log(jsonParser.readTableValue(json, "Account0", 0));
+    console2.log(jsonParser.readColDecimals(json, "Spot"));
+    console2.log(jsonParser.readColDecimals(json, "txType"));
 
-    for (uint i; i < sampleInputs.length; i++) {
-      //console2.log("json", i, sampleInputs[i]);
-    }
+    uint i = jsonParser.findIndexForValue(json, "Time", 1209601);
+    console2.log(jsonParser.readTableValue(json, "SM", i));
+
   }
 
   // to do single test, in terminal run: `forge test --match-test testNoInterestPaidForNoBorrow -vvvv`
