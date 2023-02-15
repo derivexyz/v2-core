@@ -11,8 +11,8 @@ import "test/shared/mocks/MockManager.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
 contract SpotJumpOracleTester is SpotJumpOracle {
-  constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps)
-    SpotJumpOracle(_spotFeeds, _feedId, _params, _initialJumps)
+  constructor(address _spotFeeds, JumpParams memory _params, uint32[16] memory _initialJumps)
+    SpotJumpOracle(_spotFeeds, _params, _initialJumps)
   {}
 
   function calcSpotJump(uint liveSpot, uint referencePrice) external pure returns (uint32 jump) {
@@ -53,7 +53,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   function testCreateContractAndSetEmptyJumps() public {
     SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracleTester(address(spotFeeds), params, initialJumps);
   }
 
   function testRevertIfMaxJumpTooHigh() public {
@@ -63,7 +63,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     // make large so that width * 16 > type(uint32).max
     params.width = 300_000_000;
     vm.expectRevert(SpotJumpOracle.SJO_MaxJumpExceedsLimit.selector);
-    oracle = new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracleTester(address(spotFeeds), params, initialJumps);
   }
 
   ///////////////
@@ -258,7 +258,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   function _setupDefaultOracle() internal returns (SpotJumpOracleTester) {
     SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
     uint32[16] memory initialJumps;
-    return new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
+    return new SpotJumpOracleTester(address(spotFeeds), params, initialJumps);
   }
 
   function _defaultJumpParams(uint referencePrice) internal view returns (SpotJumpOracle.JumpParams memory params) {

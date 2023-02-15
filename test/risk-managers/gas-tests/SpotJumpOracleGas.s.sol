@@ -113,7 +113,7 @@ contract PCRMSpotJumpOracleGas is Script {
     });
 
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracle(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracle(address(spotFeeds), params, initialJumps);
   }
 
   function test() public {}

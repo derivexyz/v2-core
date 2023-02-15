@@ -42,9 +42,7 @@ contract SpotJumpOracle {
   ///////////////
 
   /// @dev address of IChainlinkSpotFeed for price
-  IChainlinkSpotFeed public spotFeeds;
-  /// @dev id of feed used when querying price from spotFeeds
-  uint public feedId;
+  IChainlinkSpotFeed public spotFeed;
   /// @dev number of distinct jump buckets
   uint internal constant NUM_BUCKETS = 16;
   /// @dev stores update timestamp of the spotFeed price for which jump was calculated
@@ -68,9 +66,8 @@ contract SpotJumpOracle {
   //    Constructor     //
   ////////////////////////
 
-  constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[NUM_BUCKETS] memory _initialJumps) {
-    spotFeeds = IChainlinkSpotFeed(_spotFeeds);
-    feedId = _feedId;
+  constructor(address _spotFeed, JumpParams memory _params, uint32[NUM_BUCKETS] memory _initialJumps) {
+    spotFeed = IChainlinkSpotFeed(_spotFeed);
     params = _params;
     jumps = _initialJumps;
 
@@ -91,7 +88,7 @@ contract SpotJumpOracle {
    */
   function updateJumps() public {
     JumpParams memory memParams = params;
-    (uint livePrice, uint updatedAt) = spotFeeds.getSpotAndUpdatedAt();
+    (uint livePrice, uint updatedAt) = spotFeed.getSpotAndUpdatedAt();
     uint32 spotUpdatedAt = uint32(updatedAt);
 
     // calculate jump basis points and store
@@ -139,7 +136,7 @@ contract SpotJumpOracle {
   /**
    * @notice Finds the percentage difference between two prices and converts to basis points.
    * @dev Values are always rounded down.
-   * @param liveSpot Current price taken from spotFeeds
+   * @param liveSpot Current price taken from spotFeed
    * @param referencePrice Price recoreded in previous updates but < params.secToReferenceStale
    * @return jump Difference between two prices in basis points
    */
