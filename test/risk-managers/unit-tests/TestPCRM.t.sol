@@ -201,8 +201,26 @@ contract UNIT_TestPCRM is Test {
     strikes[1] = IBaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
     aggregator.updateRoundData(2, 100e18, block.timestamp, block.timestamp, 2);
+    uint expiryTimestamp = block.timestamp - 1 days;
+    option.setMockedExpiryPrice(expiryTimestamp, 100e18);
     IBaseManager.Portfolio memory expiry =
-      IBaseManager.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, expiry: expiryTimestamp, numStrikesHeld: 2, strikes: strikes});
+
+    manager.getInitialMargin(expiry);
+
+    // todo: actually test, added for coverage
+  }
+
+  function testPositivePnLSettledExpiryCalculation() public {
+    skip(30 days);
+    IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
+    strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+
+    aggregator.updateRoundData(2, 2000e18, block.timestamp, block.timestamp, 2);
+    uint expiryTimestamp = block.timestamp - 1 days;
+    option.setMockedExpiryPrice(expiryTimestamp, 2000e18);
+    IBaseManager.Portfolio memory expiry =
+      IBaseManager.Portfolio({cash: 0, expiry: expiryTimestamp, numStrikesHeld: 1, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -278,10 +296,7 @@ contract UNIT_TestPCRM is Test {
     _openDefaultOptions();
 
     uint exerciseCashAmount = 10000e18; // paying gigantic amount that makes liquidator insolvent
-    vm.expectRevert(abi.encodeWithSelector(
-      PCRM.PCRM_MarginRequirementNotMet.selector, 
-      int(-5362191780821917808000))
-    );
+    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, int(-5362191780821917808000)));
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
   }

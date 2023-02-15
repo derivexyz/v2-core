@@ -209,7 +209,7 @@ contract UNIT_TestPCRM is Test {
       initial: 80e16, // 80%
       riskFreeRate: 10e16 // 10%
     });
-  
+
     // invalid spot shocks
     validSpotShocks.upInitial = 0.8e18;
     vm.expectRevert(PCRM.PCRM_InvalidMarginParam.selector);

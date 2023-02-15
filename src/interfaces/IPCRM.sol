@@ -9,7 +9,6 @@ import "src/interfaces/IBaseManager.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 interface IPCRM is IBaseManager {
-
   /////////////
   // Structs //
   /////////////
@@ -78,7 +77,7 @@ interface IPCRM is IBaseManager {
   //////////////
   // External //
   //////////////
-  
+
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio);
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee) external;

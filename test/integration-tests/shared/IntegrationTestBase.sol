@@ -141,8 +141,8 @@ contract IntegrationTestBase is Test {
     // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
     pcrm.setFeeRecipient(pcrmFeeAcc);
-    (IPCRM.SpotShockParams memory spot, IPCRM.VolShockParams memory vol, IPCRM.PortfolioDiscountParams memory discount) =
-      _getDefaultPCRMParams();
+    (IPCRM.SpotShockParams memory spot, IPCRM.VolShockParams memory vol, IPCRM.PortfolioDiscountParams memory discount)
+    = _getDefaultPCRMParams();
     pcrm.setParams(spot, vol, discount);
 
     // add aggregator to feed

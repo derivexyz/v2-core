@@ -112,7 +112,7 @@ contract SpotJumpOracle is ISpotJumpOracle {
     // traverse jumps in descending order, finding the first non-stale jump
     uint32[NUM_BUCKETS] memory memJumps = jumps;
     for (uint32 i = uint32(NUM_BUCKETS); i > 0; i--) {
-      if (memJumps[i-1] + secToJumpStale > currentTime) {
+      if (memJumps[i - 1] + secToJumpStale > currentTime) {
         // return largest jump that's not stale
         return memParams.start + memParams.width * (i - 1);
       }

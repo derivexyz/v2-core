@@ -31,13 +31,20 @@ contract PCRMTester is PCRM {
   ) PCRM(accounts_, spotFeeds_, cashAsset_, option_, auction_, spotJumpOracle_) {}
 
   function applyTimeWeighting(
-    uint spotUpPercent, uint spotDownPercent, uint spotTimeSlope, uint portfolioDiscountFactor, int timeToExpiry
+    uint spotUpPercent,
+    uint spotDownPercent,
+    uint spotTimeSlope,
+    uint portfolioDiscountFactor,
+    int timeToExpiry
   ) external view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
     return _applyTimeWeighting(spotUpPercent, spotDownPercent, spotTimeSlope, portfolioDiscountFactor, timeToExpiry);
   }
 
   function timeWeightSpotShocks(uint spot, uint spotUpPercent, uint spotDownPercent, uint timeSlope, uint timeToExpiry)
-    external pure returns (uint up, uint down) {
+    external
+    pure
+    returns (uint up, uint down)
+  {
     return _timeWeightSpotShocks(spot, spotUpPercent, spotDownPercent, timeSlope, timeToExpiry);
   }
 
@@ -45,7 +52,11 @@ contract PCRMTester is PCRM {
     return _timeWeightVol(timeToExpiry);
   }
 
-  function timeWeightPortfolioDiscount(uint staticDiscount, uint timeToExpiry) external view returns (uint expiryDiscount) {
+  function timeWeightPortfolioDiscount(uint staticDiscount, uint timeToExpiry)
+    external
+    view
+    returns (uint expiryDiscount)
+  {
     return _timeWeightPortfolioDiscount(staticDiscount, timeToExpiry);
   }
 
@@ -111,7 +122,6 @@ contract UNIT_TestPCRM is Test {
     );
   }
 
-
   ///////////////////////////
   // Computing Spot Shocks //
   ///////////////////////////
@@ -171,7 +181,7 @@ contract UNIT_TestPCRM is Test {
 
   function testFuzzNeverBeyondMinOrMaxVol(uint timeToExpiry) public {
     (uint minVol, uint maxVol,,,,) = manager.volShockParams();
-    
+
     // vm.assume(timeToExpiry < 100e18);
     assertGe(manager.timeWeightVol(timeToExpiry), minVol);
     assertLe(manager.timeWeightVol(timeToExpiry), maxVol);
@@ -192,19 +202,18 @@ contract UNIT_TestPCRM is Test {
     assertApproxEqAbs(manager.timeWeightPortfolioDiscount(90e16, 30 days), 89.26e16, 1e14);
 
     // case 4: 12 months, 20% initial discount
-    assertApproxEqAbs(manager.timeWeightPortfolioDiscount(20e16, 365 days), 18.10e16, 1e14);
+    assertApproxEqAbs(manager.timeWeightPortfolioDiscount(20e16, 365 days), 18.1e16, 1e14);
 
     // case 5: 36 months, 10% initial discount
     assertApproxEqAbs(manager.timeWeightPortfolioDiscount(10e16, 1095 days), 7.41e16, 1e14);
   }
 
   function testFuzzDiscountAlwaysIncreases(uint staticDiscount, uint timeToExpiry) public {
-    vm.assume(staticDiscount < 1e18); 
+    vm.assume(staticDiscount < 1e18);
     vm.assume(timeToExpiry >= 0);
     vm.assume(timeToExpiry < 50 * 365 days);
     assertGe(staticDiscount, manager.timeWeightPortfolioDiscount(staticDiscount, timeToExpiry));
   }
-
 
   ////////////////////////
   // Spot Jump Multiple //
@@ -219,15 +228,15 @@ contract UNIT_TestPCRM is Test {
     spotJumpOracle.setMaxJump(500);
     assertApproxEqAbs(manager.getSpotJumpMultiple(2e18, 1 days), 1.1e18, 1e14);
 
-    // case 3: slope: 5x, Max Jump: 20%, 
+    // case 3: slope: 5x, Max Jump: 20%,
     spotJumpOracle.setMaxJump(2000);
     assertApproxEqAbs(manager.getSpotJumpMultiple(5e18, 1 days), 2e18, 1e14);
 
-    // case 4: slope: 0x, Max Jump: 10%, 
+    // case 4: slope: 0x, Max Jump: 10%,
     spotJumpOracle.setMaxJump(1000);
     assertApproxEqAbs(manager.getSpotJumpMultiple(0, 1 days), 1e18, 1e14);
 
-    // case 5: slope: 0.5x, Max Jump: 10%, 
+    // case 5: slope: 0.5x, Max Jump: 10%,
     spotJumpOracle.setMaxJump(1000);
     assertApproxEqAbs(manager.getSpotJumpMultiple(5e17, 1 days), 1.05e18, 1e14);
   }
@@ -238,7 +247,4 @@ contract UNIT_TestPCRM is Test {
     spotJumpOracle.setMaxJump(maxJump);
     assertGe(manager.getSpotJumpMultiple(slope, 1 days), 1e18);
   }
-
-
-  
 }

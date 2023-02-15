@@ -141,16 +141,12 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     VolShockParams calldata _volShock,
     PortfolioDiscountParams calldata _discount
   ) external onlyOwner {
-    if (_spotShock.upMaintenance < DecimalMath.UNIT ||
-      _spotShock.downMaintenance > DecimalMath.UNIT ||
-      _spotShock.upMaintenance > _spotShock.upInitial ||
-      _spotShock.downMaintenance < _spotShock.downInitial ||
-      _volShock.maxVol < _volShock.minVol ||
-      _volShock.timeB <= _volShock.timeA ||
-      _volShock.spotJumpMultipleSlope > 100e18 ||
-      _discount.maintenance > DecimalMath.UNIT || 
-      _discount.initial > _discount.maintenance || 
-      _discount.riskFreeRate > 10e18
+    if (
+      _spotShock.upMaintenance < DecimalMath.UNIT || _spotShock.downMaintenance > DecimalMath.UNIT
+        || _spotShock.upMaintenance > _spotShock.upInitial || _spotShock.downMaintenance < _spotShock.downInitial
+        || _volShock.maxVol < _volShock.minVol || _volShock.timeB <= _volShock.timeA
+        || _volShock.spotJumpMultipleSlope > 100e18 || _discount.maintenance > DecimalMath.UNIT
+        || _discount.initial > _discount.maintenance || _discount.riskFreeRate > 10e18
     ) {
       revert PCRM_InvalidMarginParam();
     }
@@ -266,18 +262,17 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    */
   function getInitialMargin(Portfolio memory portfolio) public returns (int margin) {
     (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _applyTimeWeighting(
-      spotShockParams.upInitial, 
-      spotShockParams.downInitial, 
-      spotShockParams.timeSlope, 
-      portfolioDiscountParams.initial, 
+      spotShockParams.upInitial,
+      spotShockParams.downInitial,
+      spotShockParams.timeSlope,
+      portfolioDiscountParams.initial,
       portfolio.expiry.toInt256() - block.timestamp.toInt256()
     );
 
-    vol = vol.multiplyDecimal(_getSpotJumpMultiple(
-      volShockParams.spotJumpMultipleSlope, 
-      volShockParams.spotJumpMultipleLookback
-    ));
-    
+    vol = vol.multiplyDecimal(
+      _getSpotJumpMultiple(volShockParams.spotJumpMultipleSlope, volShockParams.spotJumpMultipleLookback)
+    );
+
     return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
   }
 
@@ -289,10 +284,10 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    */
   function getMaintenanceMargin(Portfolio memory portfolio) public view returns (int margin) {
     (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _applyTimeWeighting(
-      spotShockParams.upMaintenance, 
-      spotShockParams.downMaintenance, 
-      spotShockParams.timeSlope, 
-      portfolioDiscountParams.maintenance, 
+      spotShockParams.upMaintenance,
+      spotShockParams.downMaintenance,
+      spotShockParams.timeSlope,
+      portfolioDiscountParams.maintenance,
       portfolio.expiry.toInt256() - block.timestamp.toInt256()
     );
 
@@ -309,13 +304,11 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param portfolioDiscount Total time based discount applied to the whole portfolio if margin > 0.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(
-    Portfolio memory portfolio, 
-    uint vol, 
-    uint spotUp, 
-    uint spotDown, 
-    uint portfolioDiscount
-  ) internal view returns (int margin) {
+  function _calcMargin(Portfolio memory portfolio, uint vol, uint spotUp, uint spotDown, uint portfolioDiscount)
+    internal
+    view
+    returns (int margin)
+  {
     // todo [Anton]: add ability to do RV = 0?
 
     // If options expired, get settled value.
@@ -343,6 +336,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     for (uint i; i < portfolio.strikes.length; i++) {
       Strike memory strike = portfolio.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
+      console2.log("pnl", pnl);
 
       // calculate proceeds for forwards / calls / puts
       // todo [Josh]: need to figure out the order of settlement as this may affect cash supply / borrow
@@ -379,7 +373,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       }
       spotUpValue += _calcLiveStrikeValue(portfolio.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
       spotDownValue += _calcLiveStrikeValue(portfolio.strikes[i], false, spotUp, spotDown, shockedVol, timeToExpiry);
-
     }
 
     // return the worst of two scenarios
@@ -438,7 +431,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     strikeValue += (strikes.puts >= 0)
       ? strikes.puts.multiplyDecimal(SignedMath.max(markedDownPutValue, 0))
       : strikes.puts.multiplyDecimal(putValue.toInt256());
-
   }
 
   //////////////////////////////////////////////
@@ -446,7 +438,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   //////////////////////////////////////////////
 
   /**
-   * @notice Applies time weighting to all params used in computing margin. 
+   * @notice Applies time weighting to all params used in computing margin.
    *         The param inputs will depend on whether looking for initial or maintenance margin.
    * @param spotUpPercent Percent by which to multiply spot to get the `up` scenario.
    * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario.
@@ -459,10 +451,12 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return portfolioDiscount Portfolio-wide static discount
    */
   function _applyTimeWeighting(
-    uint spotUpPercent, uint spotDownPercent, uint spotTimeSlope, uint portfolioDiscountFactor, int timeToExpiry
-  ) internal view returns (
-    uint vol, uint spotUp, uint spotDown, uint portfolioDiscount
-  ) {
+    uint spotUpPercent,
+    uint spotDownPercent,
+    uint spotTimeSlope,
+    uint portfolioDiscountFactor,
+    int timeToExpiry
+  ) internal view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
     // Can return zero params as settled options do not require these.
     if (timeToExpiry <= 0) {
       return (0, 0, 0, 0);
@@ -472,14 +466,9 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
 
     // Get spot shock
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: use Anton's IFutureFeed
-    (spotUp, spotDown) = _timeWeightSpotShocks(
-      spot,
-      spotUpPercent,
-      spotDownPercent,
-      spotTimeSlope,
-      timeToExpiry.toUint256()
-    );
-    
+    (spotUp, spotDown) =
+      _timeWeightSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
+
     // Get portfolio-wide discount
     portfolioDiscount = _timeWeightPortfolioDiscount(portfolioDiscountFactor, timeToExpiry.toUint256());
   }
@@ -532,7 +521,11 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param timeToExpiry Sec till option expires.
    * @return expiryDiscount Effective discount applied to the positive margin.
    */
-  function _timeWeightPortfolioDiscount(uint staticDiscount, uint timeToExpiry) internal view returns (uint expiryDiscount) {
+  function _timeWeightPortfolioDiscount(uint staticDiscount, uint timeToExpiry)
+    internal
+    view
+    returns (uint expiryDiscount)
+  {
     uint tau = timeToExpiry * 1e18 / 365 days;
     uint exponent = FixedPointMathLib.exp(-SafeCast.toInt256(tau.multiplyDecimal(portfolioDiscountParams.riskFreeRate)));
 
@@ -617,5 +610,4 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   error PCRM_MarginRequirementNotMet(int initMargin);
 
   error PCRM_InvalidMarginParam();
-
 }
