@@ -60,7 +60,7 @@ contract PCRMTester is PCRM {
     return _timeWeightPortfolioDiscount(staticDiscount, timeToExpiry);
   }
 
-  function getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) external returns (uint multiple) {
+  function getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) external view returns (uint multiple) {
     return _getSpotJumpMultiple(spotJumpSlope, lookbackLength);
   }
 }

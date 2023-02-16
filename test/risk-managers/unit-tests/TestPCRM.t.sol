@@ -155,7 +155,7 @@ contract UNIT_TestPCRM is Test {
   // Margin calculations //
   /////////////////////////
 
-  function testEmptyInitialMarginCalculation() public {
+  function testEmptyInitialMarginCalculation() public view {
     IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
     strikes[0] = IBaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
@@ -181,7 +181,7 @@ contract UNIT_TestPCRM is Test {
     // todo: actually test
   }
 
-  function testInitialMarginCalculation() public {
+  function testInitialMarginCalculation() public view {
     IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](2);
     strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     strikes[1] = IBaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});

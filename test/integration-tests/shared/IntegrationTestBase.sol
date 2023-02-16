@@ -264,7 +264,7 @@ contract IntegrationTestBase is Test {
     return accounts.getBalance(acc, option, subId);
   }
 
-  function getAccInitMargin(uint acc) public returns (int) {
+  function getAccInitMargin(uint acc) public view returns (int) {
     PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
     return pcrm.getInitialMargin(portfolio);
   }

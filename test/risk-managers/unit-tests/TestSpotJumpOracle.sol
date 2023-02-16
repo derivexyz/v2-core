@@ -226,14 +226,16 @@ contract UNIT_TestSpotJumpOracle is Test {
 
     // finds 7th bucket
     aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
-    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    uint32 maxJump = oracle.getMaxJump(uint32(10 days));
     assertEq(maxJump, 1500);
 
     // override 7th bucket, should find 5th bucket
     initialJumps[7] = uint32(block.timestamp) - 11 days;
     oracle.overrideJumps(initialJumps);
 
-    maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(10 days));
     assertEq(maxJump, 1100);
   }
 
@@ -244,11 +246,13 @@ contract UNIT_TestSpotJumpOracle is Test {
     oracle.overrideJumps(initialJumps);
 
     // ignores all entries if secToJumpStale = 30 minutes
-    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    oracle.updateJumps();
+    uint32 maxJump = oracle.getMaxJump(uint32(30 minutes));
     assertEq(maxJump, 0);
 
     // finds the first jump that's < 2hours old
-    maxJump = oracle.updateAndGetMaxJump(uint32(2 hours));
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(2 hours));
     assertEq(maxJump, 700);
   }
 
@@ -261,31 +265,36 @@ contract UNIT_TestSpotJumpOracle is Test {
 
     // rounds down to zero if below cutoff (100 bp)
     aggregator.updateRoundData(2, 1000.1e18, block.timestamp, block.timestamp, 2);
-    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    oracle.updateJumps();
+    uint32 maxJump = oracle.getMaxJump(uint32(30 minutes));
     assertEq(maxJump, 0);
 
     // rounds down to lower bound of first bucket
     skip(1 hours);
     aggregator.updateRoundData(3, 1015e18, block.timestamp, block.timestamp, 3);
-    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
     assertEq(maxJump, 100);
 
     // rounds down to lower bound of second bucket
     skip(1 hours);
     aggregator.updateRoundData(4, 1035e18, block.timestamp, block.timestamp, 4);
-    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
     assertEq(maxJump, 300);
 
     // rounds down to lower bound of third bucket
     skip(1 hours);
     aggregator.updateRoundData(5, 1065e18, block.timestamp, block.timestamp, 5);
-    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
     assertEq(maxJump, 500);
 
     // rounds down to upper bound of bucket when huge jump
     skip(1 hours);
     aggregator.updateRoundData(6, 2000e18, block.timestamp, block.timestamp, 6);
-    maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
     assertEq(maxJump, 3100);
   }
 

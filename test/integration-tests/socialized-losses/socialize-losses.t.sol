@@ -48,8 +48,9 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     // price went up 200%, now alice is mega insolvent
     _setSpotPriceE18(ETH_PRICE * 2);
 
+    spotJumpOracle.updateJumps();
     int initMargin = getAccInitMargin(aliceAcc);
-    assertEq(initMargin / 1e18, -28382); // -23K underwater
+    assertEq(initMargin / 1e18, -28382); // -28K underwater
 
     // start auction on alice's account
     auction.startAuction(aliceAcc);

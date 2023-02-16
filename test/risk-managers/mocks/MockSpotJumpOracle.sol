@@ -29,7 +29,7 @@ contract MockSpotJumpOracle is ISpotJumpOracle {
    *         If there is no jump that is > params.start, 0 is returned.
    * @return jump The largest jump amount denominated in basis points.
    */
-  function updateAndGetMaxJump(uint32) external view returns (uint32 jump) {
+  function getMaxJump(uint32) external view returns (uint32 jump) {
     return mockMaxJump;
   }
 

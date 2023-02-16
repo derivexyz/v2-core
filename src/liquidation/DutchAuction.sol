@@ -7,6 +7,7 @@ import "../interfaces/IBaseManager.sol";
 import "../interfaces/ISecurityModule.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IDutchAuction.sol";
+import "../interfaces/ISpotJumpOracle.sol";
 import "../Accounts.sol";
 
 // inherited
@@ -275,6 +276,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev Helper to get initial margin for an accountId
    */
   function getInitMarginForAccount(uint accountId) public returns (int) {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
     IBaseManager.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     return riskManager.getInitialMargin(portfolio);
   }
@@ -283,6 +285,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev Helper to get initial margin for the inversed portfolio of accountId
    */
   function getInitMarginForInversedPortfolio(uint accountId) public returns (int) {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     _inversePortfolio(portfolio);
     return riskManager.getInitialMargin(portfolio);
@@ -292,6 +295,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev Get initial margin for a portfolio with rv = 0
    */
   function getInitMarginForAccountRVZero(uint accountId) public returns (int) {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     return riskManager.getInitialMarginRVZero(portfolio);
   }

@@ -30,7 +30,7 @@ contract PCRMTester is PCRM {
     ISpotJumpOracle spotJumpOracle_
   ) PCRM(accounts_, spotFeeds_, cashAsset_, option_, auction_, spotJumpOracle_) {}
 
-  function getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) external returns (uint multiple) {
+  function getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) external view returns (uint multiple) {
     return _getSpotJumpMultiple(spotJumpSlope, lookbackLength);
   }
 }

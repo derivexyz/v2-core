@@ -114,6 +114,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     // check initial margin
+    spotJumpOracle.updateJumps();
     _checkInitialMargin(portfolio);
   }
 
@@ -249,7 +250,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @notice revert if a portfolio is under margin
    * @param portfolio Account portfolio
    */
-  function _checkInitialMargin(Portfolio memory portfolio) internal {
+  function _checkInitialMargin(Portfolio memory portfolio) internal view {
     int margin = getInitialMargin(portfolio);
     if (margin < 0) revert PCRM_MarginRequirementNotMet(margin);
   }
@@ -260,7 +261,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getInitialMargin(Portfolio memory portfolio) public returns (int margin) {
+  function getInitialMargin(Portfolio memory portfolio) public view returns (int margin) {
     (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _applyTimeWeighting(
       spotShockParams.upInitial,
       spotShockParams.downInitial,
@@ -336,7 +337,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     for (uint i; i < portfolio.strikes.length; i++) {
       Strike memory strike = portfolio.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
-      console2.log("pnl", pnl);
 
       // calculate proceeds for forwards / calls / puts
       // todo [Josh]: need to figure out the order of settlement as this may affect cash supply / borrow
@@ -541,8 +541,8 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param lookbackLength The amount of sec the oracle looks back when finding max jump.
    * @return multiple Multiple by which to increase the vol shock.
    */
-  function _getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) internal returns (uint multiple) {
-    uint jumpBasisPoints = uint(spotJumpOracle.updateAndGetMaxJump(lookbackLength));
+  function _getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) internal view returns (uint multiple) {
+    uint jumpBasisPoints = uint(spotJumpOracle.getMaxJump(lookbackLength));
     uint jumpPercent = (jumpBasisPoints * DecimalMath.UNIT) / 10000;
     return DecimalMath.UNIT + spotJumpSlope.multiplyDecimal(jumpPercent);
   }
@@ -595,7 +595,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
   }
 
   // @todo: update to real implementation
-  function getInitialMarginRVZero(Portfolio memory portfolio) external returns (int margin) {
+  function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int margin) {
     return getInitialMargin(portfolio);
   }
 

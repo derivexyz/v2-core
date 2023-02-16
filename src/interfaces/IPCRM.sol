@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/IBaseManager.sol";
+import "src/interfaces/ISpotJumpOracle.sol";
 
 /**
  * @title PartialCollateralRiskManager
@@ -77,6 +78,8 @@ interface IPCRM is IBaseManager {
   //////////////
   // External //
   //////////////
+
+  function spotJumpOracle() external view returns (ISpotJumpOracle oracle);
 
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio);
 

@@ -54,7 +54,8 @@ contract PCRMSpotJumpOracleGas is Script {
     // estimate tx cost when max jump is the first value to be read from the array
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetFirstJump:", initGas - gasleft());
   }
@@ -71,7 +72,8 @@ contract PCRMSpotJumpOracleGas is Script {
 
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetLastJump:", initGas - gasleft());
   }

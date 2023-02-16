@@ -58,12 +58,12 @@ interface ISpotJumpOracle {
   function updateJumps() external;
 
   /**
-   * @notice Returns the max jump that is not stale.
+   * @notice Returns the max jump (rounded down) that is not stale.
    *         If there is no jump that is > params.start, 0 is returned.
    * @param secToJumpStale sec that jump is considered as valid
    * @return jump The largest jump amount denominated in basis points.
    */
-  function updateAndGetMaxJump(uint32 secToJumpStale) external returns (uint32 jump);
+  function getMaxJump(uint32 secToJumpStale) external view returns (uint32 jump);
 
   ////////////
   // Errors //
