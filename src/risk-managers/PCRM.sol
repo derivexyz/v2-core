@@ -11,6 +11,7 @@ import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ISecurityModule.sol";
+import "src/interfaces/IPCRM.sol";
 
 import "src/assets/Option.sol";
 
@@ -30,7 +31,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PCRM is BaseManager, IManager, Owned {
+contract PCRM is BaseManager, IManager, Owned, IPCRM {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -125,6 +126,9 @@ contract PCRM is BaseManager, IManager, Owned {
     override
   {
     // todo [Josh]: whitelist check
+
+    // bypass the IM check if only adding cash
+    if (assetDeltas.length == 1 && assetDeltas[0].asset == cashAsset && assetDeltas[0].delta >= 0) return;
 
     _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
 
@@ -456,6 +460,11 @@ contract PCRM is BaseManager, IManager, Owned {
    * @return margin Amount by which account is over or under the required margin.
    */
   function getInitialMargin(Portfolio memory portfolio) external view returns (int margin) {
+    return _calcMargin(portfolio, MarginType.INITIAL);
+  }
+
+  // @todo: update to real implementation
+  function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int margin) {
     return _calcMargin(portfolio, MarginType.INITIAL);
   }
 
