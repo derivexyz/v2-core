@@ -414,6 +414,7 @@ contract CashAsset is ICashAsset, Owned {
    */
   function _accrueInterest() internal {
     if (lastTimestamp == block.timestamp) return;
+
     // Update timestamp even if there are no borrows
     uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = block.timestamp;
@@ -424,7 +425,7 @@ contract CashAsset is ICashAsset, Owned {
     if (netSettledCash < 0) {
       realSupply += (-netSettledCash).toUint256(); // account for printed supply due to settlements
     } // for < 0, util = totalBorrow/(totalSupply - min(Print,0))
-    
+
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);

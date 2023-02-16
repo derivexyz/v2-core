@@ -277,8 +277,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     assertEq(cash.totalSupply() + expectedPayout - interestAccrued, supplyBefore);
 
     int aliceCashAfter = getCashBalance(aliceAcc);
-    console2.log("Before", aliceCashBefore);
-    console2.log("Afterr", aliceCashAfter);
 
     // Greater than because interest is paid to Alice's account
     assertGt(aliceCashAfter, aliceCashBefore - int(expectedPayout));
@@ -440,22 +438,10 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
    * @param elapsedTime the time elapsed for interest accrual
    */
   function _calculateAccruedInterestNoPrint(uint supply, uint borrow, uint elapsedTime) public view returns (uint) {
-    console.log("----- inside -----");
-    console.log("s:", supply);
-    console.log("b:", borrow);
-    console.log("t:", elapsedTime);
-
     uint borrowRate = rateModel.getBorrowRate(supply, borrow);
-    console.log("borrowRate", borrowRate);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = borrow.multiplyDecimal(borrowInterestFactor);
 
-    console.log("----- outside -----");
     return interestAccrued;
   }
 }
-
-// 62791525707315919
-// 67729618811223981
-// 13002000000000000000000
-// 18004603124726958316000
