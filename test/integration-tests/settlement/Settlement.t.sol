@@ -168,7 +168,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
   // Check that after all settlements printed cash is 0
   function testPrintedCashAroundSettlements() public {
     // Alice <-> Charlie trade
-    _createBorrowForUser(charlie, charlieAcc, 500e18);
+    _createBorrowForUser(charlie, aliceAcc, charlieAcc, 500e18);
     // Alice <-> Bob trade
     _tradeCall();
 
@@ -199,51 +199,213 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     assertEq(option.openInterest(callId), 0);
   }
 
-  // Check interest rates and prints surrounding bob settling his account (asymmetric)
-  function testInterestRateAtSettleLongCallImbalance() public {
-    _createBorrowForUser(charlie, charlieAcc, 500e18);
+  // Check that negative settled cash (burned) is accounted for in interest rates
+  function testInterestRateAtSettleShortCallImbalance() public {
+    _createBorrowForUser(charlie, bobAcc, charlieAcc, 500e18);
     _tradeCall();
+
+    uint settlePrint = 500e18;
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSpotPriceAndSubmitForExpiry(2500e18, expiry);
+    _setSpotPriceAndSubmitForExpiry(ETH_PRICE + int(settlePrint), expiry);
 
-    int bobCashBefore = getCashBalance(bobAcc);
-
-    // Check interest accrued before settle
+    // Record interest accrued before settle
     uint interestAccrued =
       _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
-    
-    pcrm.settleAccount(bobAcc);
-  
-    console.log("IA:", interestAccrued);
-    console.log("RA:", cash.totalBorrow() - 500e18);
 
-    int bobCashAfter = getCashBalance(bobAcc);
-    uint oiAfter = option.openInterest(callId);
+    int aliceCashBefore = getCashBalance(aliceAcc);
 
-    // payout is 500 USDC per contract
-    int expectedPayout = 500 * amountOfContracts;
+    // Check that cash was burned to settle
+    uint supplyBefore = cash.totalSupply();
+    pcrm.settleAccount(aliceAcc);
 
-    // Greater than because interest is paid to Bob
-    assertGt(bobCashAfter, bobCashBefore + expectedPayout);
+    // Payout is 500 USDC per contract
+    uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
 
-    // we have net print to bob's account
-    assertEq(cash.netSettledCash(), expectedPayout);
+    // $500 * 10 contracts was burned to settle Alice's account
+    assertEq(cash.totalSupply() + expectedPayout - interestAccrued, supplyBefore);
+
+    int aliceCashAfter = getCashBalance(aliceAcc);
+
+    // Greater than because interest is paid to Alice's account
+    assertGt(aliceCashAfter, aliceCashBefore - int(expectedPayout));
+
+    // We have net burned to Alice's account
+    assertEq(cash.netSettledCash(), -int(expectedPayout));
     _assertCashSolvent();
 
-    uint currentBorrow = cash.totalBorrow();
-    console2.log("YES:", currentBorrow);
+    uint prevBorrow = cash.totalBorrow();
+
+    // Fast forward to check interest rate is including this burned cash
     vm.warp(block.timestamp + 1 weeks);
+
+    // Burned supply which increases interest accrued
     interestAccrued =
       _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
     cash.accrueInterest();
 
-    // todo clarify that interest increases for the moment there is printed from settlement
-    console2.log("YES:", cash.totalBorrow() - currentBorrow);
-    console2.log("YES:", interestAccrued);
-    // assertGt()
+    // Real interest should be less since we account for the "burned" supply
+    uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
+    assertLt(realInterestAccrued, interestAccrued);
+  }
 
+  function testInterestRateAtSettleShortPutImbalance() public {
+    _createBorrowForUser(charlie, bobAcc, charlieAcc, 500e18);
+    _tradePut();
+
+    uint settlePrint = 500e18;
+
+    // stimulate expiry price
+    vm.warp(expiry);
+    _setSpotPriceAndSubmitForExpiry(ETH_PRICE - int(settlePrint), expiry);
+
+    // Record interest accrued before settle
+    uint interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+
+    int aliceCashBefore = getCashBalance(aliceAcc);
+
+    // Check that cash was burned to settle
+    uint supplyBefore = cash.totalSupply();
+    pcrm.settleAccount(aliceAcc);
+
+    // Payout is 500 USDC per contract
+    uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
+
+    // $500 * 10 contracts was burned to settle Alice's account
+    assertEq(cash.totalSupply() + expectedPayout - interestAccrued, supplyBefore);
+
+    int aliceCashAfter = getCashBalance(aliceAcc);
+    console2.log("Before", aliceCashBefore);
+    console2.log("Afterr", aliceCashAfter);
+
+    // Greater than because interest is paid to Alice's account
+    assertGt(aliceCashAfter, aliceCashBefore - int(expectedPayout));
+
+    // We have net burned to Alice's account
+    assertEq(cash.netSettledCash(), -int(expectedPayout));
+    _assertCashSolvent();
+
+    uint prevBorrow = cash.totalBorrow();
+
+    // Fast forward to check interest rate is including this burned cash
+    vm.warp(block.timestamp + 1 weeks);
+
+    // Burned supply which increases interest accrued
+    interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+    cash.accrueInterest();
+
+    // Real interest should be less since we account for the "burned" supply
+    uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
+    assertLt(realInterestAccrued, interestAccrued);
+  }
+
+  // Check that positive settled cash (minted) is not accounted for in interest rates
+  function testInterestRateAtSettleLongCallImbalance() public {
+    _createBorrowForUser(charlie, aliceAcc, charlieAcc, 500e18);
+    _tradeCall();
+
+    uint settlePrint = 500e18;
+
+    // stimulate expiry price
+    vm.warp(expiry);
+    _setSpotPriceAndSubmitForExpiry(ETH_PRICE + int(settlePrint), expiry);
+
+    // Record interest accrued before settle
+    uint interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+
+    int bobCashBefore = getCashBalance(bobAcc);
+
+    // Check that cash was printed to settle
+    uint supplyBefore = cash.totalSupply();
+    pcrm.settleAccount(bobAcc);
+
+    // Payout is 500 USDC per contract
+    uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
+
+    // $500 * 10 contracts was printed to settle Bob's account
+    assertEq(cash.totalSupply() - expectedPayout - interestAccrued, supplyBefore);
+
+    int bobCashAfter = getCashBalance(bobAcc);
+
+    // Greater than because interest is paid to Bob's account
+    assertGt(bobCashAfter, bobCashBefore + int(expectedPayout));
+
+    // We have net print to bob's account
+    assertEq(cash.netSettledCash(), int(expectedPayout));
+    _assertCashSolvent();
+
+    uint prevBorrow = cash.totalBorrow();
+
+    // Fast forward to check interest rate is not including this printed cash
+    vm.warp(block.timestamp + 1 weeks);
+
+    // Interest not accounting for netSettledCash
+    interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+    cash.accrueInterest();
+
+    // Real interest should be equal to the interest not accounting for netSettledCash
+    uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
+    assertEq(realInterestAccrued, interestAccrued);
+
+    uint oiAfter = option.openInterest(callId);
+    assertEq(oiAfter, 0);
+  }
+
+  function testInterestRateAtSettleLongPutImbalance() public {
+    _createBorrowForUser(charlie, aliceAcc, charlieAcc, 500e18);
+    _tradePut();
+
+    uint settlePrint = 500e18;
+
+    // stimulate expiry price
+    vm.warp(expiry);
+    _setSpotPriceAndSubmitForExpiry(ETH_PRICE - int(settlePrint), expiry);
+
+    // Record interest accrued before settle
+    uint interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+
+    int bobCashBefore = getCashBalance(bobAcc);
+
+    // Check that cash was printed to settle
+    uint supplyBefore = cash.totalSupply();
+    pcrm.settleAccount(bobAcc);
+
+    // Payout is 500 USDC per contract
+    uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
+
+    // $500 * 10 contracts was printed to settle Bob's account
+    assertEq(cash.totalSupply() - expectedPayout - interestAccrued, supplyBefore);
+
+    int bobCashAfter = getCashBalance(bobAcc);
+
+    // Greater than because interest is paid to Bob's account
+    assertGt(bobCashAfter, bobCashBefore + int(expectedPayout));
+
+    // We have net print to bob's account
+    assertEq(cash.netSettledCash(), int(expectedPayout));
+    _assertCashSolvent();
+
+    uint prevBorrow = cash.totalBorrow();
+
+    // Fast forward to check interest rate not including this printed cash
+    vm.warp(block.timestamp + 1 weeks);
+
+    // Interest not accounting for netSettledCash
+    interestAccrued =
+      _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
+    cash.accrueInterest();
+
+    // Real interest should be equal to the interest not accounting for netSettledCash
+    uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
+    assertEq(realInterestAccrued, interestAccrued);
+
+    uint oiAfter = option.openInterest(callId);
     assertEq(oiAfter, 0);
   }
 
@@ -261,13 +423,13 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
   }
 
   ///@dev create ITM call for user to borrow against
-  function _createBorrowForUser(address user, uint userAcc, uint borrowAmount) internal {
+  function _createBorrowForUser(address user, uint fromAcc, uint toAcc, uint borrowAmount) internal {
     _depositCash(alice, aliceAcc, 3000e18);
 
     // trade ITM call for user to borrow against
     uint callStrike = 100e18;
-    _submitTrade(aliceAcc, option, uint96(option.getSubId(expiry, callStrike, true)), 1e18, userAcc, cash, 0, 0);
-    _withdrawCash(user, userAcc, borrowAmount);
+    _submitTrade(fromAcc, option, uint96(option.getSubId(expiry, callStrike, true)), 1e18, toAcc, cash, 0, 0);
+    _withdrawCash(user, toAcc, borrowAmount);
   }
 
   /**
@@ -295,3 +457,5 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
 // 62791525707315919
 // 67729618811223981
+// 13002000000000000000000
+// 18004603124726958316000

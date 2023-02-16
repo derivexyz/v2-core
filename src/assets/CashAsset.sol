@@ -12,7 +12,7 @@ import "src/libraries/ConvertDecimals.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
-import "forge-std/Test.sol";
+
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit USDC and credit this cash asset into their accounts.
@@ -414,7 +414,7 @@ contract CashAsset is ICashAsset, Owned {
    */
   function _accrueInterest() internal {
     if (lastTimestamp == block.timestamp) return;
-    console.log("------ ACCRUE INTEREST ------ ");
+    
     // Update timestamp even if there are no borrows
     uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = block.timestamp;
@@ -422,15 +422,11 @@ contract CashAsset is ICashAsset, Owned {
 
     // Calculate interest since last timestamp using compounded interest rate
     uint realSupply = totalSupply; // include netSettledCash in the totalSupply
-    if (netSettledCash > 0) {
-      console.log("here", netSettledCash.toUint256());
-      realSupply -= netSettledCash.toUint256(); // account for printed supply due to settlements
+    if (netSettledCash < 0) {
+      realSupply += (-netSettledCash).toUint256(); // account for printed supply due to settlements
     } // for < 0, util = totalBorrow/(totalSupply - min(Print,0))
-    console.log("realSupply", realSupply);
-    console.log("totalBorro", totalBorrow);
-    // console.log("realSupply", totalSupply);
+    
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
-    console.log("borrowRate", borrowRate);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
 
