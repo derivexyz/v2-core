@@ -14,7 +14,6 @@ import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/PCRMGrouping.sol";
-import "forge-std/console2.sol";
 
 abstract contract BaseManager is AccountStructs {
   using IntLib for int;
@@ -191,7 +190,6 @@ abstract contract BaseManager is AccountStructs {
     // update user cash amount
     accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
     // report total print / burn to cash asset
-    console2.log("cashDelta", cashDelta / 1e18);
     cashAsset.updateSettledCash(cashDelta);
   }
 

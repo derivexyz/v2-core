@@ -414,7 +414,6 @@ contract CashAsset is ICashAsset, Owned {
    */
   function _accrueInterest() internal {
     if (lastTimestamp == block.timestamp) return;
-    
     // Update timestamp even if there are no borrows
     uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = block.timestamp;
