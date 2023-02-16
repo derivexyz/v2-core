@@ -14,12 +14,6 @@ import "src/libraries/OptionEncoding.sol";
 contract INTEGRATION_Settlement is IntegrationTestBase {
   using DecimalMath for uint;
 
-  address alice = address(0xaa);
-  uint aliceAcc;
-
-  address bob = address(0xbb);
-  uint bobAcc;
-
   address charlie = address(0xcc);
   uint charlieAcc;
 
@@ -35,16 +29,9 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   function setUp() public {
     _setupIntegrationTestComplete();
-
-    aliceAcc = accounts.createAccount(alice, pcrm);
-    bobAcc = accounts.createAccount(bob, pcrm);
     charlieAcc = accounts.createAccount(charlie, pcrm);
 
     // allow this contract to submit trades
-    vm.prank(alice);
-    accounts.setApprovalForAll(address(this), true);
-    vm.prank(bob);
-    accounts.setApprovalForAll(address(this), true);
     vm.prank(charlie);
     accounts.setApprovalForAll(address(this), true);
 
