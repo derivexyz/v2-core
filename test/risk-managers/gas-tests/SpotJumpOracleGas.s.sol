@@ -54,7 +54,8 @@ contract PCRMSpotJumpOracleGas is Script {
     // estimate tx cost when max jump is the first value to be read from the array
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetFirstJump:", initGas - gasleft());
   }
@@ -71,7 +72,8 @@ contract PCRMSpotJumpOracleGas is Script {
 
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetLastJump:", initGas - gasleft());
   }
@@ -105,7 +107,7 @@ contract PCRMSpotJumpOracleGas is Script {
     spotFeeds = new ChainlinkSpotFeeds();
     spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
 
-    SpotJumpOracle.JumpParams memory params = SpotJumpOracle.JumpParams({
+    SpotJumpOracle.JumpParams memory params = ISpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),
@@ -114,7 +116,7 @@ contract PCRMSpotJumpOracleGas is Script {
     });
 
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracle(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracle(ISpotFeeds(address(spotFeeds)), 1, params, initialJumps);
   }
 
   function test() public {}

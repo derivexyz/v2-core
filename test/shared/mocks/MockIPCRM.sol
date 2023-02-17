@@ -10,6 +10,7 @@ import "../../../src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
+import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 // forge testing
 import "forge-std/Test.sol";
@@ -22,6 +23,8 @@ contract MockIPCRM is IPCRM, IManager {
   address account;
 
   mapping(uint => bool) public accHasAssets;
+
+  ISpotJumpOracle public spotJumpOracle;
 
   // next init margin that should be returned when calling getInitialMargin
   int public mockedInitMarginForPortfolio;
@@ -43,6 +46,7 @@ contract MockIPCRM is IPCRM, IManager {
 
   constructor(address _account) {
     account = _account;
+    spotJumpOracle = new MockSpotJumpOracle();
   }
 
   function executeBid(uint, /*accountId*/ uint, /*liquidatorId*/ uint, /*portion*/ uint, /*cashAmount*/ uint)

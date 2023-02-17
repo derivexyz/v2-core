@@ -11,7 +11,7 @@ import "test/shared/mocks/MockManager.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
 contract SpotJumpOracleTester is SpotJumpOracle {
-  constructor(address _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps)
+  constructor(ISpotFeeds _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps)
     SpotJumpOracle(_spotFeeds, _feedId, _params, _initialJumps)
   {}
 
@@ -54,7 +54,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   function testCreateContractAndSetEmptyJumps() public {
     SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracleTester(ISpotFeeds(spotFeeds), 1, params, initialJumps);
   }
 
   function testRevertIfMaxJumpTooHigh() public {
@@ -63,8 +63,8 @@ contract UNIT_TestSpotJumpOracle is Test {
 
     // make large so that width * 16 > type(uint32).max
     params.width = 300_000_000;
-    vm.expectRevert(SpotJumpOracle.SJO_MaxJumpExceedsLimit.selector);
-    oracle = new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
+    vm.expectRevert(ISpotJumpOracle.SJO_MaxJumpExceedsLimit.selector);
+    oracle = new SpotJumpOracleTester(ISpotFeeds(address(spotFeeds)), 1, params, initialJumps);
   }
 
   ///////////////
@@ -226,15 +226,17 @@ contract UNIT_TestSpotJumpOracle is Test {
 
     // finds 7th bucket
     aggregator.updateRoundData(2, 1000e18, block.timestamp, block.timestamp, 2);
-    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
-    assertEq(maxJump, 1700);
+    oracle.updateJumps();
+    uint32 maxJump = oracle.getMaxJump(uint32(10 days));
+    assertEq(maxJump, 1500);
 
     // override 7th bucket, should find 5th bucket
     initialJumps[7] = uint32(block.timestamp) - 11 days;
     oracle.overrideJumps(initialJumps);
 
-    maxJump = oracle.updateAndGetMaxJump(uint32(10 days));
-    assertEq(maxJump, 1300);
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(10 days));
+    assertEq(maxJump, 1100);
   }
 
   function testGetsMaxJumpForDifferentSecToStale() public {
@@ -244,12 +246,56 @@ contract UNIT_TestSpotJumpOracle is Test {
     oracle.overrideJumps(initialJumps);
 
     // ignores all entries if secToJumpStale = 30 minutes
-    uint32 maxJump = oracle.updateAndGetMaxJump(uint32(30 minutes));
+    oracle.updateJumps();
+    uint32 maxJump = oracle.getMaxJump(uint32(30 minutes));
     assertEq(maxJump, 0);
 
     // finds the first jump that's < 2hours old
-    maxJump = oracle.updateAndGetMaxJump(uint32(2 hours));
-    assertEq(maxJump, 900);
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(2 hours));
+    assertEq(maxJump, 700);
+  }
+
+  function testRoundDown() public {
+    oracle = _setupDefaultOracle();
+    skip(30 days);
+
+    uint32[16] memory initialJumps = _getDefaultJumps();
+    oracle.overrideJumps(initialJumps);
+
+    // rounds down to zero if below cutoff (100 bp)
+    aggregator.updateRoundData(2, 1000.1e18, block.timestamp, block.timestamp, 2);
+    oracle.updateJumps();
+    uint32 maxJump = oracle.getMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 0);
+
+    // rounds down to lower bound of first bucket
+    skip(1 hours);
+    aggregator.updateRoundData(3, 1015e18, block.timestamp, block.timestamp, 3);
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 100);
+
+    // rounds down to lower bound of second bucket
+    skip(1 hours);
+    aggregator.updateRoundData(4, 1035e18, block.timestamp, block.timestamp, 4);
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 300);
+
+    // rounds down to lower bound of third bucket
+    skip(1 hours);
+    aggregator.updateRoundData(5, 1065e18, block.timestamp, block.timestamp, 5);
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 500);
+
+    // rounds down to upper bound of bucket when huge jump
+    skip(1 hours);
+    aggregator.updateRoundData(6, 2000e18, block.timestamp, block.timestamp, 6);
+    oracle.updateJumps();
+    maxJump = oracle.getMaxJump(uint32(30 minutes));
+    assertEq(maxJump, 3100);
   }
 
   /////////////
@@ -259,11 +305,11 @@ contract UNIT_TestSpotJumpOracle is Test {
   function _setupDefaultOracle() internal returns (SpotJumpOracleTester) {
     SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
     uint32[16] memory initialJumps;
-    return new SpotJumpOracleTester(address(spotFeeds), 1, params, initialJumps);
+    return new SpotJumpOracleTester(ISpotFeeds(address(spotFeeds)), 1, params, initialJumps);
   }
 
   function _defaultJumpParams(uint referencePrice) internal view returns (SpotJumpOracle.JumpParams memory params) {
-    params = SpotJumpOracle.JumpParams({
+    params = ISpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),

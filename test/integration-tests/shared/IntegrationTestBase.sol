@@ -13,6 +13,7 @@ import "src/assets/Option.sol";
 import "src/assets/InterestRateModel.sol";
 import "src/liquidation/DutchAuction.sol";
 import "src/Accounts.sol";
+import "src/risk-managers/SpotJumpOracle.sol";
 
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
@@ -39,6 +40,7 @@ contract IntegrationTestBase is Test {
   MockERC20 usdc;
   Option option;
   PCRM pcrm;
+  SpotJumpOracle spotJumpOracle;
   SecurityModule securityModule;
   InterestRateModel rateModel;
   ChainlinkSpotFeeds feed;
@@ -102,22 +104,30 @@ contract IntegrationTestBase is Test {
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // nonce: 5 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 8);
+    address auctionAddr = _predictAddress(address(this), 9);
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
     // nonce: 6 => Deploy OptionAsset
     option = new Option(accounts, address(feed), feedId);
 
-    // nonce: 7 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr);
+    // nonce: 7 => deploy SpotJumpOracle
+    (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) =
+      _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
+    spotJumpOracle = new SpotJumpOracle(feed, feedId, params, initialJumps);
 
-    // nonce: 8 => Deploy Auction
-    address smAddr = _predictAddress(address(this), 9);
-    auction = new DutchAuction(pcrm, accounts, ISecurityModule(smAddr), cash);
+    skip(7 days); // skip to make jumps stale
+
+    // nonce: 8 => Deploy Manager
+    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr, spotJumpOracle);
+
+    // nonce: 9 => Deploy Auction
+    // todo: remove IPCRM(address())
+    address smAddr = _predictAddress(address(this), 10);
+    auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
 
     assertEq(address(auction), auctionAddr);
 
-    // nonce: 9 => Deploy SM
+    // nonce: 10 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
     assertEq(securityModule.accountId(), smAcc);
@@ -131,8 +141,9 @@ contract IntegrationTestBase is Test {
     // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
     pcrm.setFeeRecipient(pcrmFeeAcc);
-
-    pcrm.setParams(_getDefaultPCRMShocks(), _getDefaultPCRMDiscount());
+    (IPCRM.SpotShockParams memory spot, IPCRM.VolShockParams memory vol, IPCRM.PortfolioDiscountParams memory discount)
+    = _getDefaultPCRMParams();
+    pcrm.setParams(spot, vol, discount);
 
     // add aggregator to feed
     aggregator = new MockV3Aggregator(8, 2000e8);
@@ -284,19 +295,53 @@ contract IntegrationTestBase is Test {
     optimalUtil = 0.6 * 1e18;
   }
 
-  function _getDefaultPCRMShocks() internal pure returns (PCRM.Shocks memory) {
-    return PCRM.Shocks({
-      spotUpInitial: 120e16,
-      spotDownInitial: 80e16,
-      spotUpMaintenance: 110e16,
-      spotDownMaintenance: 90e16,
-      vol: 300e16,
-      rfr: 10e16
+  function _getDefaultPCRMParams()
+    internal
+    pure
+    returns (
+      IPCRM.SpotShockParams memory spot,
+      IPCRM.VolShockParams memory vol,
+      IPCRM.PortfolioDiscountParams memory discount
+    )
+  {
+    spot = IPCRM.SpotShockParams({
+      upInitial: 1.25e18,
+      downInitial: 0.75e18,
+      upMaintenance: 1.1e18,
+      downMaintenance: 0.9e18,
+      timeSlope: 1e18
+    });
+
+    vol = IPCRM.VolShockParams({
+      minVol: 1e18,
+      maxVol: 3e18,
+      timeA: 30 days,
+      timeB: 90 days,
+      spotJumpMultipleSlope: 5e18,
+      spotJumpMultipleLookback: 1 days
+    });
+
+    discount = IPCRM.PortfolioDiscountParams({
+      maintenance: 0.9e18, // 90%
+      initial: 0.8e18, // 80%
+      riskFreeRate: 0.1e18 // 10%
     });
   }
 
-  function _getDefaultPCRMDiscount() internal pure returns (PCRM.Discounts memory) {
-    return PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16});
+  function _getDefaultSpotJumpParams(uint initialSpot)
+    internal
+    pure
+    returns (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps)
+  {
+    params = ISpotJumpOracle.JumpParams({
+      start: 500,
+      width: 250,
+      referenceUpdatedAt: 0,
+      secToReferenceStale: 1 days,
+      referencePrice: SafeCast.toUint128(initialSpot)
+    });
+
+    return (params, initialJumps);
   }
 
   function _getDefaultAuctionParam() internal pure returns (DutchAuction.DutchAuctionParameters memory param) {

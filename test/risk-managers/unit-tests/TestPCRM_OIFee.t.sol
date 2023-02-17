@@ -15,6 +15,7 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
+import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 import "src/libraries/OptionEncoding.sol";
 
@@ -25,6 +26,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
   MockERC20 usdc;
 
   MockFeed spotFeeds;
+  MockSpotJumpOracle spotJumpOracle;
   MockOption option;
 
   address alice = address(0xaa);
@@ -40,25 +42,38 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
     cash = new MockAsset(usdc, accounts, true);
+    spotJumpOracle = new MockSpotJumpOracle();
 
     manager = new PCRM(
       accounts,
-      spotFeeds,
+      ISpotFeeds(address(spotFeeds)),
       ICashAsset(address(cash)),
       option,
-      address(0) // auction
+      address(0), // auction
+      ISpotJumpOracle(address(spotJumpOracle))
     );
 
     manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
+      IPCRM.SpotShockParams({
+        upInitial: 120e16,
+        downInitial: 80e16,
+        upMaintenance: 110e16,
+        downMaintenance: 90e16,
+        timeSlope: 1e18
       }),
-      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+      IPCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 3e18,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      IPCRM.PortfolioDiscountParams({
+        maintenance: 90e16, // 90%
+        initial: 80e16, // 80%
+        riskFreeRate: 10e16 // 10%
+      })
     );
 
     aliceAcc = accounts.createAccount(alice, IManager(manager));
@@ -91,7 +106,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
 
   function testSubmitTransferChargeOIFee() public {
     _depositCash(alice, aliceAcc, 1000e18);
-    _depositCash(bob, bobAcc, 1000e18);
+    _depositCash(bob, bobAcc, 3000e18);
 
     uint expiry = block.timestamp + 7 days;
     uint spotPrice = 1000e18;
@@ -108,7 +123,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
     int bobCashBefore = accounts.getBalance(bobAcc, cash, 0);
 
     int amount = 10e18;
-    int premium = 500e18;
+    int premium = 2500e18;
     AccountStructs.AssetTransfer[] memory transferBatch = new AssetTransfer[](3);
     transferBatch[0] = AssetTransfer(aliceAcc, bobAcc, option, subId1, amount, bytes32(0));
     transferBatch[1] = AssetTransfer(aliceAcc, bobAcc, option, subId2, amount, bytes32(0));

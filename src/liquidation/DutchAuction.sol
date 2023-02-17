@@ -7,6 +7,7 @@ import "../interfaces/IBaseManager.sol";
 import "../interfaces/ISecurityModule.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IDutchAuction.sol";
+import "../interfaces/ISpotJumpOracle.sol";
 import "../Accounts.sol";
 
 // inherited
@@ -244,7 +245,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev for insolvent auction: if MM > 0
    * @param accountId ID of the account to check
    */
-  function checkCanTerminateAuction(uint accountId) public view returns (bool) {
+  function checkCanTerminateAuction(uint accountId) public returns (bool) {
     if (!auctions[accountId].insolvent) {
       return getInitMarginForAccountRVZero(accountId) >= 0;
     } else {
@@ -266,7 +267,7 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @dev Helper to get maintenance margin for an accountId
    */
-  function getMaintenanceMarginForAccount(uint accountId) public view returns (int) {
+  function getMaintenanceMarginForAccount(uint accountId) public returns (int) {
     IBaseManager.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     return riskManager.getMaintenanceMargin(portfolio);
   }
@@ -274,7 +275,8 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @dev Helper to get initial margin for an accountId
    */
-  function getInitMarginForAccount(uint accountId) public view returns (int) {
+  function getInitMarginForAccount(uint accountId) public returns (int) {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
     IBaseManager.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     return riskManager.getInitialMargin(portfolio);
   }
@@ -282,7 +284,8 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @dev Helper to get initial margin for the inversed portfolio of accountId
    */
-  function getInitMarginForInversedPortfolio(uint accountId) public view returns (int) {
+  function getInitMarginForInversedPortfolio(uint accountId) public returns (int) {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     _inversePortfolio(portfolio);
     return riskManager.getInitialMargin(portfolio);
@@ -291,7 +294,8 @@ contract DutchAuction is IDutchAuction, Owned {
   /**
    * @dev Get initial margin for a portfolio with rv = 0
    */
-  function getInitMarginForAccountRVZero(uint accountId) public view returns (int) {
+  function getInitMarginForAccountRVZero(uint accountId) public returns (int) {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
     return riskManager.getInitialMarginRVZero(portfolio);
   }
@@ -349,7 +353,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function getMaxProportion(uint accountId) external view returns (uint) {
+  function getMaxProportion(uint accountId) external returns (uint) {
     return _getMaxProportion(accountId);
   }
 
@@ -358,7 +362,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev requires the accountId and the spot price to mark each asset at a particular value
    * @param accountId the accountId of the account that is being liquidated
    */
-  function getBounds(uint accountId) external view returns (int, int) {
+  function getBounds(uint accountId) external returns (int, int) {
     return _getBounds(accountId);
   }
 
@@ -390,7 +394,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function _getMaxProportion(uint accountId) internal view returns (uint) {
+  function _getMaxProportion(uint accountId) internal returns (uint) {
     int initialMargin = getInitMarginForAccountRVZero(accountId);
     int currentBidPrice = _getCurrentBidPrice(accountId);
 
@@ -459,7 +463,7 @@ contract DutchAuction is IDutchAuction, Owned {
    * @dev vLower = IM(P)
    * @param accountId the accountId of the account that is being liquidated
    */
-  function _getBounds(uint accountId) internal view returns (int upperBound, int lowerBound) {
+  function _getBounds(uint accountId) internal returns (int upperBound, int lowerBound) {
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
 
     // update the portfolio in-memory

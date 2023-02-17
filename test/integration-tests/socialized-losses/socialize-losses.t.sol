@@ -48,8 +48,9 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     // price went up 200%, now alice is mega insolvent
     _setSpotPriceE18(ETH_PRICE * 2);
 
+    spotJumpOracle.updateJumps();
     int initMargin = getAccInitMargin(aliceAcc);
-    assertEq(initMargin / 1e18, -23820); // -23K underwater
+    assertEq(initMargin / 1e18, -28382); // -28K underwater
 
     // start auction on alice's account
     auction.startAuction(aliceAcc);
@@ -66,7 +67,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     uint supplyBefore = cash.totalSupply();
 
     int bidPrice = auction.getCurrentBidPrice(aliceAcc);
-    assertEq(bidPrice / 1e18, -3573); // bidding now will require security module to pay out $3573
+    assertEq(bidPrice / 1e18, -4257); // bidding now will require security module to pay out $3573
 
     // bid from bob
     vm.prank(bob);
@@ -104,7 +105,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
 
   ///@dev alice go short, bob go long
   function _openPosition() public {
-    int premium = 200e18;
+    int premium = 350e18 * 10; // 10 calls
     // alice send call to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, callId, amountOfContracts, bobAcc, cash, 0, premium);
   }
