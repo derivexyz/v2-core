@@ -25,7 +25,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
   MockAsset cash;
   MockERC20 usdc;
 
-  MockFeed spotFeeds;
+  MockFeed feed;
   MockSpotJumpOracle spotJumpOracle;
   MockOption option;
 
@@ -38,7 +38,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
   function setUp() public {
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    spotFeeds = new MockFeed();
+    feed = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
     cash = new MockAsset(usdc, accounts, true);
@@ -46,7 +46,8 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
 
     manager = new PCRM(
       accounts,
-      ISpotFeeds(address(spotFeeds)),
+      feed,
+      feed,
       ICashAsset(address(cash)),
       option,
       address(0), // auction
@@ -110,7 +111,7 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
 
     uint expiry = block.timestamp + 7 days;
     uint spotPrice = 1000e18;
-    spotFeeds.setSpot(spotPrice);
+    feed.setSpot(spotPrice);
 
     uint96 subId1 = OptionEncoding.toSubId(expiry, 1200e18, true);
     uint96 subId2 = OptionEncoding.toSubId(expiry, 1500e18, true);

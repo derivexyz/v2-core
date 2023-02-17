@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "src/risk-managers/SpotJumpOracle.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
@@ -11,8 +11,8 @@ import "test/shared/mocks/MockManager.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
 contract SpotJumpOracleTester is SpotJumpOracle {
-  constructor(ISpotFeeds _spotFeeds, uint _feedId, JumpParams memory _params, uint32[16] memory _initialJumps)
-    SpotJumpOracle(_spotFeeds, _feedId, _params, _initialJumps)
+  constructor(IChainlinkSpotFeed _spotFeed, JumpParams memory _params, uint32[16] memory _initialJumps)
+    SpotJumpOracle(_spotFeed, _params, _initialJumps)
   {}
 
   function calcSpotJump(uint liveSpot, uint referencePrice) external pure returns (uint32 jump) {
@@ -30,7 +30,7 @@ contract SpotJumpOracleTester is SpotJumpOracle {
 
 contract UNIT_TestSpotJumpOracle is Test {
   Accounts account;
-  ChainlinkSpotFeeds spotFeeds;
+  ChainlinkSpotFeed spotFeed;
   MockV3Aggregator aggregator;
   SpotJumpOracleTester oracle;
 
@@ -43,8 +43,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    spotFeed = new ChainlinkSpotFeed(aggregator, 1 hours);
   }
 
   ///////////
@@ -54,7 +53,7 @@ contract UNIT_TestSpotJumpOracle is Test {
   function testCreateContractAndSetEmptyJumps() public {
     SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracleTester(ISpotFeeds(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracleTester(spotFeed, params, initialJumps);
   }
 
   function testRevertIfMaxJumpTooHigh() public {
@@ -64,7 +63,7 @@ contract UNIT_TestSpotJumpOracle is Test {
     // make large so that width * 16 > type(uint32).max
     params.width = 300_000_000;
     vm.expectRevert(ISpotJumpOracle.SJO_MaxJumpExceedsLimit.selector);
-    oracle = new SpotJumpOracleTester(ISpotFeeds(address(spotFeeds)), 1, params, initialJumps);
+    oracle = new SpotJumpOracleTester(spotFeed, params, initialJumps);
   }
 
   ///////////////
@@ -305,7 +304,8 @@ contract UNIT_TestSpotJumpOracle is Test {
   function _setupDefaultOracle() internal returns (SpotJumpOracleTester) {
     SpotJumpOracle.JumpParams memory params = _defaultJumpParams(1000e18);
     uint32[16] memory initialJumps;
-    return new SpotJumpOracleTester(ISpotFeeds(address(spotFeeds)), 1, params, initialJumps);
+
+    return new SpotJumpOracleTester(spotFeed, params, initialJumps);
   }
 
   function _defaultJumpParams(uint referencePrice) internal view returns (SpotJumpOracle.JumpParams memory params) {

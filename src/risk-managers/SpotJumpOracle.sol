@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/ISpotJumpOracle.sol";
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
@@ -29,10 +29,8 @@ contract SpotJumpOracle is ISpotJumpOracle {
   // Variables //
   ///////////////
 
-  /// @dev address of ISpotFeed for price
-  ISpotFeeds public spotFeeds;
-  /// @dev id of feed used when querying price from spotFeeds
-  uint public feedId;
+  /// @dev address of IChainlinkSpotFeed for price
+  IChainlinkSpotFeed public spotFeed;
   /// @dev number of distinct jump buckets
   uint internal constant NUM_BUCKETS = 16;
   /// @dev stores update timestamp of the spotFeed price for which jump was calculated
@@ -50,14 +48,8 @@ contract SpotJumpOracle is ISpotJumpOracle {
   //    Constructor     //
   ////////////////////////
 
-  constructor(
-    ISpotFeeds _spotFeeds,
-    uint _feedId,
-    JumpParams memory _params,
-    uint32[NUM_BUCKETS] memory _initialJumps
-  ) {
-    spotFeeds = _spotFeeds;
-    feedId = _feedId;
+  constructor(IChainlinkSpotFeed _spotFeed, JumpParams memory _params, uint32[NUM_BUCKETS] memory _initialJumps) {
+    spotFeed = _spotFeed;
     params = _params;
     jumps = _initialJumps;
 
@@ -78,7 +70,7 @@ contract SpotJumpOracle is ISpotJumpOracle {
    */
   function updateJumps() public {
     JumpParams memory memParams = params;
-    (uint livePrice, uint updatedAt) = spotFeeds.getSpotAndUpdatedAt(feedId);
+    (uint livePrice, uint updatedAt) = spotFeed.getSpotAndUpdatedAt();
     uint32 spotUpdatedAt = uint32(updatedAt);
 
     // calculate jump basis points and store
@@ -125,7 +117,7 @@ contract SpotJumpOracle is ISpotJumpOracle {
   /**
    * @notice Finds the percentage difference between two prices and converts to basis points.
    * @dev Values are always rounded down.
-   * @param liveSpot Current price taken from spotFeeds
+   * @param liveSpot Current price taken from spotFeed
    * @param referencePrice Price recoreded in previous updates but < params.secToReferenceStale
    * @return jump Difference between two prices in basis points
    */

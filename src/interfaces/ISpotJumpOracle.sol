@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/interfaces/ISpotFeeds.sol";
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";

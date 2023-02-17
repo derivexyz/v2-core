@@ -5,7 +5,7 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
 import "src/interfaces/IOption.sol";
-import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ISettlementFeed.sol";
 
@@ -28,23 +28,17 @@ contract Option is IOption, Owned {
   IAccounts immutable accounts;
 
   /// @dev Contract to get spot prices which are locked in at settlement
-  ISpotFeeds public spotFeed;
+  ISettlementFeed public settlementFeed;
 
   ///////////////
   // Variables //
   ///////////////
-
-  ///@dev Id used to query spot price
-  uint public feedId;
 
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
   ///@dev OI for a subId. OI is the sum of all positive balance
   mapping(uint => uint) public openInterest;
-
-  ///@dev Expiry => Settlement price
-  mapping(uint => uint) public settlementPrices;
 
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
@@ -53,10 +47,9 @@ contract Option is IOption, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts, address _spotFeeds, uint _feedId) {
+  constructor(IAccounts _accounts, address _settlementFeed) {
     accounts = _accounts;
-    spotFeed = ISpotFeeds(_spotFeeds);
-    feedId = _feedId;
+    settlementFeed = ISettlementFeed(_settlementFeed);
   }
 
   //////////////////////////////
@@ -109,23 +102,6 @@ contract Option is IOption, Owned {
     _checkManager(address(newManager));
   }
 
-  ////////////////
-  // Settlement //
-  ////////////////
-
-  /**
-   * @notice Locks-in price which the option settles at for an expiry.
-   * @dev Settlement handled by option to simplify multiple managers settling same option
-   * @param expiry Timestamp of when the option expires
-   */
-  function setSettlementPrice(uint expiry) external {
-    if (settlementPrices[expiry] != 0) revert SettlementPriceAlreadySet(expiry, settlementPrices[expiry]);
-    if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
-
-    settlementPrices[expiry] = spotFeed.getSpot(feedId);
-    emit SettlementPriceSet(expiry, 0);
-  }
-
   //////////
   // View //
   //////////
@@ -158,7 +134,7 @@ contract Option is IOption, Owned {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
-    uint settlementPrice = settlementPrices[expiry];
+    uint settlementPrice = settlementFeed.getSettlementPrice(expiry);
 
     // Return false if settlement price has not been locked in
     if (settlementPrice == 0) {

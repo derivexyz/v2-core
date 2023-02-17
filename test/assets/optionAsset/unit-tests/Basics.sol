@@ -25,7 +25,7 @@ contract UNIT_TestOptionBasics is Test {
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    option = new Option(account, address(0), 0);
+    option = new Option(account, address(0));
     manager = new MockManager(address(account));
 
     vm.startPrank(alice);

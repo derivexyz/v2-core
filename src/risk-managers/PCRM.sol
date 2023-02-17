@@ -6,7 +6,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
-import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
@@ -84,12 +83,13 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
 
   constructor(
     IAccounts accounts_,
-    ISpotFeeds spotFeeds_,
+    IFutureFeed futureFeed_,
+    ISettlementFeed settlementFeed_,
     ICashAsset cashAsset_,
     IOption option_,
     address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) BaseManager(accounts_, spotFeeds_, cashAsset_, option_) Owned() {
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_) Owned() {
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }
@@ -270,7 +270,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       spotShockParams.downInitial,
       spotShockParams.timeSlope,
       portfolioDiscountParams.initial,
-      portfolio.expiry.toInt256() - block.timestamp.toInt256()
+      portfolio.expiry
     );
 
     vol = vol.multiplyDecimal(
@@ -292,7 +292,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       spotShockParams.downMaintenance,
       spotShockParams.timeSlope,
       portfolioDiscountParams.maintenance,
-      portfolio.expiry.toInt256() - block.timestamp.toInt256()
+      portfolio.expiry
     );
 
     return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
@@ -336,7 +336,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return expiryValue Value of assets or debt of settled options.
    */
   function _calcSettledExpiryValue(Portfolio memory portfolio) internal view returns (int expiryValue) {
-    uint settlementPrice = option.settlementPrices(portfolio.expiry);
+    uint settlementPrice = settlementFeed.getSettlementPrice(portfolio.expiry);
     for (uint i; i < portfolio.strikes.length; i++) {
       Strike memory strike = portfolio.strikes[i];
       int pnl = settlementPrice.toInt256() - strike.strike.toInt256();
@@ -447,7 +447,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario.
    * @param spotTimeSlope Rate at which to increase the shocks with larger `timeToExpiry`.
    * @param portfolioDiscountFactor Initial discouting factor applied when option margin > 0.
-   * @param timeToExpiry Seconds till option expires.
+   * @param expiry expiry of the portfolio
    * @return vol Volatility.
    * @return spotUp Shocked up spot.
    * @return spotDown Shocked down spot.
@@ -458,8 +458,9 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     uint spotDownPercent,
     uint spotTimeSlope,
     uint portfolioDiscountFactor,
-    int timeToExpiry
+    uint expiry
   ) public view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
+    int timeToExpiry = expiry.toInt256() - block.timestamp.toInt256();
     // Can return zero params as settled options do not require these.
     if (timeToExpiry <= 0) {
       return (0, 0, 0, 0);
@@ -467,8 +468,8 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
 
     vol = _applyTimeWeightToVol(timeToExpiry.toUint256());
 
-    // Get spot shock
-    uint spot = spotFeeds.getSpot(1); // todo [Josh]: use Anton's IFutureFeed
+    // Get future price as spot, and apply shocks
+    uint spot = futureFeed.getFuturePrice(expiry);
     (spotUp, spotDown) =
       _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 

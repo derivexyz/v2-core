@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/SecurityModule.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -43,12 +43,9 @@ contract IntegrationTestBase is Test {
   SpotJumpOracle spotJumpOracle;
   SecurityModule securityModule;
   InterestRateModel rateModel;
-  ChainlinkSpotFeeds feed;
   DutchAuction auction;
+  ChainlinkSpotFeed feed;
   MockV3Aggregator aggregator;
-
-  // feedId of the aggregator
-  uint feedId = 1;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
@@ -93,47 +90,51 @@ contract IntegrationTestBase is Test {
     // function call: doesn't increase deployment nonce
     usdc.setDecimals(6);
 
-    // nonce: 3  => Deploy Feed
-    feed = new ChainlinkSpotFeeds();
-    address addr3 = _predictAddress(address(this), 3);
-    assertEq(addr3, address(feed));
+    // nonce: 3  => Deploy Chainlink aggregator
+    aggregator = new MockV3Aggregator(8, 2000e8);
 
-    // nonce: 4 => Deploy RateModel
+    // nonce: 4 => Deploy Feed that will be used as future price and settlement price
+    feed = new ChainlinkSpotFeed(aggregator, 1 hours);
+
+    // nonce: 5 => Deploy RateModel
     // deploy rate model
     (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModelParam();
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    // nonce: 5 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 9);
+    // nonce: 6 => Deploy CashAsset
+    address auctionAddr = _predictAddress(address(this), 10);
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
-    // nonce: 6 => Deploy OptionAsset
-    option = new Option(accounts, address(feed), feedId);
+    // nonce: 7 => Deploy OptionAsset
+    option = new Option(accounts, address(feed));
 
-    // nonce: 7 => deploy SpotJumpOracle
+    // nonce: 8 => deploy SpotJumpOracle
     (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) =
       _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
-    spotJumpOracle = new SpotJumpOracle(feed, feedId, params, initialJumps);
+    spotJumpOracle = new SpotJumpOracle(feed, params, initialJumps);
 
     skip(7 days); // skip to make jumps stale
 
-    // nonce: 8 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr, spotJumpOracle);
+    // nonce: 9 => Deploy Manager
+    pcrm = new PCRM(accounts, feed, feed, cash, option, auctionAddr, spotJumpOracle);
 
-    // nonce: 9 => Deploy Auction
+    // nonce: 10 => Deploy Auction
     // todo: remove IPCRM(address())
-    address smAddr = _predictAddress(address(this), 10);
+    address smAddr = _predictAddress(address(this), 11);
     auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
 
     assertEq(address(auction), auctionAddr);
 
-    // nonce: 10 => Deploy SM
+    // nonce: 11 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
 
     assertEq(securityModule.accountId(), smAcc);
   }
 
   function _finishContractSetups() internal {
+    // set aggregator again to update "updatedAt" in oracle, avoid stale reverts
+    _setSpotPriceE18(ETH_PRICE);
+
     // whitelist setting in cash asset and option assert
     cash.setWhitelistManager(address(pcrm), true);
     option.setWhitelistManager(address(pcrm), true);
@@ -144,11 +145,6 @@ contract IntegrationTestBase is Test {
     (IPCRM.SpotShockParams memory spot, IPCRM.VolShockParams memory vol, IPCRM.PortfolioDiscountParams memory discount)
     = _getDefaultPCRMParams();
     pcrm.setParams(spot, vol, discount);
-
-    // add aggregator to feed
-    aggregator = new MockV3Aggregator(8, 2000e8);
-    uint _feedId = feed.addFeed("ETH/USD", address(aggregator), 1 hours);
-    assertEq(feedId, _feedId);
 
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());
@@ -237,12 +233,22 @@ contract IntegrationTestBase is Test {
   }
 
   /**
+   * @dev set future price for feed
+   * @param price price in 18 decimals
+   */
+  function _setFuturePrice(uint, /*expiry*/ int price) internal {
+    // currently the same as set spot price
+    _setSpotPriceE18(price);
+  }
+
+  /**
    * @dev set current price of aggregator, and report as settlement price at {expiry}
    * @param price price in 18 decimals
    */
   function _setSpotPriceAndSubmitForExpiry(int price, uint expiry) internal {
     _setSpotPriceE18(price);
-    option.setSettlementPrice(expiry);
+
+    feed.setSettlementPrice(expiry);
   }
 
   function _assertCashSolvent() internal {

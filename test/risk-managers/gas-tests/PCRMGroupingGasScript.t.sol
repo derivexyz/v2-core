@@ -1,8 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -13,6 +12,7 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
+import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
@@ -20,11 +20,10 @@ contract PCRMGroupingGasScript is Script {
   Accounts account;
   PCRM pcrm;
 
-  ChainlinkSpotFeeds spotFeeds;
-  MockV3Aggregator aggregator;
   Option option;
   MockDutchAuction auction;
   CashAsset cash;
+  MockFeed feed; // both future price & settlement price
   MockSpotJumpOracle spotJumpOracle;
 
   address alice = address(0xaa);
@@ -97,10 +96,7 @@ contract PCRMGroupingGasScript is Script {
   }
 
   function _setupFeeds() public {
-    aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
-    aggregator.updateRoundData(1, 1000e18, block.timestamp, block.timestamp, 1);
+    feed = new MockFeed();
   }
 
   function _setupBaseLayer() public {
@@ -108,7 +104,7 @@ contract PCRMGroupingGasScript is Script {
 
     auction = new MockDutchAuction();
 
-    option = new Option(account, address(0), 0);
+    option = new Option(account, address(0));
     MockERC20 stable = new MockERC20("mock", "MOCK");
 
     // interest rate model
@@ -124,7 +120,8 @@ contract PCRMGroupingGasScript is Script {
 
     pcrm = new PCRM(
       account,
-      ISpotFeeds(address(spotFeeds)),
+      feed,
+      feed,
       cash,
       option,
       address(auction),

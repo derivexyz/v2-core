@@ -7,8 +7,7 @@ import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/AccountStructs.sol";
-import "src/interfaces/ISpotFeeds.sol";
-import "src/interfaces/ISettlementFeed.sol";
+import "src/interfaces/IFutureFeed.sol";
 import "src/interfaces/IBaseManager.sol";
 
 import "src/libraries/IntLib.sol";
@@ -33,17 +32,27 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
   ///@dev Cash asset address
   ICashAsset public immutable cashAsset;
 
-  ///@dev Spot feed oracle to get spot price for each asset id
-  ISpotFeeds public immutable spotFeeds;
+  ///@dev Future feed oracle to get future price for an expiry
+  IFutureFeed public immutable futureFeed;
+
+  ///@dev Settlement feed oracle to get price fixed for settlement
+  ISettlementFeed public immutable settlementFeed;
 
   ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * spot
   uint public OIFeeRateBPS = 0.001e18; // 10 BPS
 
-  constructor(IAccounts _accounts, ISpotFeeds spotFeeds_, ICashAsset _cashAsset, IOption _option) {
+  constructor(
+    IAccounts _accounts,
+    IFutureFeed _futureFeed,
+    ISettlementFeed _settlementFeed,
+    ICashAsset _cashAsset,
+    IOption _option
+  ) {
     accounts = _accounts;
     option = _option;
     cashAsset = _cashAsset;
-    spotFeeds = spotFeeds_;
+    futureFeed = _futureFeed;
+    settlementFeed = _settlementFeed;
   }
 
   //////////////////////////
@@ -130,8 +139,9 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
       // if OI decreases, don't charge a fee
       if (oi <= oiBefore) continue;
 
-      uint spot = spotFeeds.getSpot(1); // todo [Josh]: create feedId setting methods
-      fee += assetDeltas[i].delta.abs().multiplyDecimal(spot).multiplyDecimal(OIFeeRateBPS);
+      (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
+      uint futurePrice = futureFeed.getFuturePrice(expiry);
+      fee += assetDeltas[i].delta.abs().multiplyDecimal(futurePrice).multiplyDecimal(OIFeeRateBPS);
     }
 
     if (fee > 0) {

@@ -2,13 +2,13 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/AccountStructs.sol";
 
 import "test/shared/mocks/MockManager.sol";
@@ -16,6 +16,7 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
+import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
@@ -23,12 +24,12 @@ import "test/risk-managers/mocks/MockDutchAuction.sol";
 contract PCRMTester is PCRM {
   constructor(
     IAccounts accounts_,
-    ISpotFeeds spotFeeds_,
+    IChainlinkSpotFeed feed_,
     ICashAsset cashAsset_,
     IOption option_,
     address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) PCRM(accounts_, spotFeeds_, cashAsset_, option_, auction_, spotJumpOracle_) {}
+  ) PCRM(accounts_, feed_, feed_, cashAsset_, option_, auction_, spotJumpOracle_) {}
 
   // function getTimeWeightedMarginParams(
   //   uint spotUpPercent,
@@ -73,17 +74,14 @@ contract UNIT_TimeWeightingPCRM is Test {
   MockAsset cash;
   MockERC20 usdc;
 
-  ChainlinkSpotFeeds spotFeeds; //todo: should replace with generic mock
+  MockFeed feed;
   MockSpotJumpOracle spotJumpOracle;
-  MockV3Aggregator aggregator;
   MockOption option;
 
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    feed = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
 
     option = new MockOption(account);
@@ -92,7 +90,7 @@ contract UNIT_TimeWeightingPCRM is Test {
 
     manager = new PCRMTester(
       account,
-      ISpotFeeds(address(spotFeeds)),
+      feed,
       ICashAsset(address(cash)),
       option,
       address(0),

@@ -6,7 +6,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
-import "src/interfaces/ISpotFeeds.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 
@@ -45,9 +44,13 @@ contract MLRM is BaseManager, IManager {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cashAsset_, IOption option_)
-    BaseManager(accounts_, spotFeeds_, cashAsset_, option_)
-  {}
+  constructor(
+    IAccounts accounts_,
+    IFutureFeed futureFeed_,
+    ISettlementFeed _settlementFeed,
+    ICashAsset cashAsset_,
+    IOption option_
+  ) BaseManager(accounts_, futureFeed_, _settlementFeed, cashAsset_, option_) {}
 
   /**
    * @notice Ensures asset is valid and Max Loss margin is met.
@@ -86,15 +89,6 @@ contract MLRM is BaseManager, IManager {
    * @return margin Amount by which account is over or under the required margin.
    */
   function _calcMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
-    // check if expired or not
-    int timeToExpiry = portfolio.expiry.toInt256() - block.timestamp.toInt256();
-    int spot;
-    if (timeToExpiry > 0) {
-      spot = spotFeeds.getSpot(1).toInt256(); // todo [Josh]: create feedId setting method
-    } else {
-      spot = spotFeeds.getSpot(1).toInt256(); // todo [Josh]: need to switch over to settled price if already expired
-    }
-
     // The portfolio payoff is evaluated at the strike price of each owned option.
     // This guarantees that the max loss of a portfolio can be found.
     bool zeroStrikeOwned;
