@@ -76,7 +76,6 @@ contract UNIT_TimeWeightingPCRM is Test {
 
   MockFeed feed;
   MockSpotJumpOracle spotJumpOracle;
-  MockV3Aggregator aggregator;
   MockOption option;
 
   function setUp() public {

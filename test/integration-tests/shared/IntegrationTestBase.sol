@@ -132,6 +132,9 @@ contract IntegrationTestBase is Test {
   }
 
   function _finishContractSetups() internal {
+    // set aggregator again to update "updatedAt" in oracle, avoid stale reverts
+    _setSpotPriceE18(ETH_PRICE);
+
     // whitelist setting in cash asset and option assert
     cash.setWhitelistManager(address(pcrm), true);
     option.setWhitelistManager(address(pcrm), true);
