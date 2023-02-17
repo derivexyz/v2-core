@@ -262,7 +262,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return margin Amount by which account is over or under the required margin.
    */
   function getInitialMargin(Portfolio memory portfolio) public view returns (int margin) {
-    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _applyTimeWeighting(
+    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = getTimeWeightedMarginParams(
       spotShockParams.upInitial,
       spotShockParams.downInitial,
       spotShockParams.timeSlope,
@@ -284,7 +284,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return margin Amount by which account is over or under the required margin.
    */
   function getMaintenanceMargin(Portfolio memory portfolio) public view returns (int margin) {
-    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = _applyTimeWeighting(
+    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = getTimeWeightedMarginParams(
       spotShockParams.upMaintenance,
       spotShockParams.downMaintenance,
       spotShockParams.timeSlope,
@@ -450,27 +450,27 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return spotDown Shocked down spot.
    * @return portfolioDiscount Portfolio-wide static discount
    */
-  function _applyTimeWeighting(
+  function getTimeWeightedMarginParams(
     uint spotUpPercent,
     uint spotDownPercent,
     uint spotTimeSlope,
     uint portfolioDiscountFactor,
     int timeToExpiry
-  ) internal view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
+  ) public view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
     // Can return zero params as settled options do not require these.
     if (timeToExpiry <= 0) {
       return (0, 0, 0, 0);
     }
 
-    vol = _timeWeightVol(timeToExpiry.toUint256());
+    vol = _applyTimeWeightToVol(timeToExpiry.toUint256());
 
     // Get spot shock
     uint spot = spotFeeds.getSpot(1); // todo [Josh]: use Anton's IFutureFeed
     (spotUp, spotDown) =
-      _timeWeightSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
+      _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 
     // Get portfolio-wide discount
-    portfolioDiscount = _timeWeightPortfolioDiscount(portfolioDiscountFactor, timeToExpiry.toUint256());
+    portfolioDiscount = _applyTimeWeightToPortfolioDiscount(portfolioDiscountFactor, timeToExpiry.toUint256());
   }
 
   /**
@@ -482,11 +482,13 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return up Shocked up spot.
    * @return down Shocked down spot.
    */
-  function _timeWeightSpotShocks(uint spot, uint spotUpPercent, uint spotDownPercent, uint timeSlope, uint timeToExpiry)
-    internal
-    pure
-    returns (uint up, uint down)
-  {
+  function _applyTimeWeightToSpotShocks(
+    uint spot,
+    uint spotUpPercent,
+    uint spotDownPercent,
+    uint timeSlope,
+    uint timeToExpiry
+  ) internal pure returns (uint up, uint down) {
     uint timeWeight = timeSlope.multiplyDecimal(timeToExpiry * 1e18 / 365 days);
 
     uint upShock = spotUpPercent + timeWeight;
@@ -501,7 +503,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param timeToExpiry Seconds till option expires.
    * @return vol Used to determine collateral requirements for shorts.
    */
-  function _timeWeightVol(uint timeToExpiry) internal view returns (uint vol) {
+  function _applyTimeWeightToVol(uint timeToExpiry) internal view returns (uint vol) {
     VolShockParams memory params = volShockParams;
     if (timeToExpiry <= params.timeA) {
       return params.maxVol;
@@ -521,7 +523,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param timeToExpiry Sec till option expires.
    * @return expiryDiscount Effective discount applied to the positive margin.
    */
-  function _timeWeightPortfolioDiscount(uint staticDiscount, uint timeToExpiry)
+  function _applyTimeWeightToPortfolioDiscount(uint staticDiscount, uint timeToExpiry)
     internal
     view
     returns (uint expiryDiscount)
