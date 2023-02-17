@@ -270,7 +270,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       spotShockParams.downInitial,
       spotShockParams.timeSlope,
       portfolioDiscountParams.initial,
-      portfolio.expiry.toInt256() - block.timestamp.toInt256()
+      portfolio.expiry
     );
 
     vol = vol.multiplyDecimal(
@@ -292,7 +292,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       spotShockParams.downMaintenance,
       spotShockParams.timeSlope,
       portfolioDiscountParams.maintenance,
-      portfolio.expiry.toInt256() - block.timestamp.toInt256()
+      portfolio.expiry
     );
 
     return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
@@ -447,7 +447,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario.
    * @param spotTimeSlope Rate at which to increase the shocks with larger `timeToExpiry`.
    * @param portfolioDiscountFactor Initial discouting factor applied when option margin > 0.
-   * @param timeToExpiry Seconds till option expires.
+   * @param expiry expiry of the portfolio
    * @return vol Volatility.
    * @return spotUp Shocked up spot.
    * @return spotDown Shocked down spot.
@@ -458,8 +458,9 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     uint spotDownPercent,
     uint spotTimeSlope,
     uint portfolioDiscountFactor,
-    int timeToExpiry
+    uint expiry
   ) public view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
+    int timeToExpiry = expiry.toInt256() - block.timestamp.toInt256();
     // Can return zero params as settled options do not require these.
     if (timeToExpiry <= 0) {
       return (0, 0, 0, 0);
@@ -468,7 +469,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     vol = _applyTimeWeightToVol(timeToExpiry.toUint256());
 
     // Get future price as spot, and apply shocks
-    uint spot = futureFeed.getFuturePrice(block.timestamp + uint(timeToExpiry));
+    uint spot = futureFeed.getFuturePrice(expiry);
     (spotUp, spotDown) =
       _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 
