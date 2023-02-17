@@ -1,8 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeed.sol";
+
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -15,17 +14,17 @@ import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
+import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 contract PCRMGroupingGasScript is Script {
   Accounts account;
   PCRM pcrm;
 
-  ChainlinkSpotFeed spotFeeds;
-  MockV3Aggregator aggregator;
   Option option;
   MockDutchAuction auction;
   CashAsset cash;
   MockFeed feed; // both future price & settlement price
+  MockSpotJumpOracle spotJumpOracle;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -117,25 +116,39 @@ contract PCRMGroupingGasScript is Script {
 
     cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)), rateModel, 0, address(auction));
 
+    spotJumpOracle = new MockSpotJumpOracle();
+
     pcrm = new PCRM(
       account,
       feed,
       feed,
       cash,
       option,
-      address(auction)
+      address(auction),
+      ISpotJumpOracle(address(spotJumpOracle))
     );
 
     pcrm.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
+      IPCRM.SpotShockParams({
+        upInitial: 1.25e18,
+        downInitial: 0.75e18,
+        upMaintenance: 1.1e18,
+        downMaintenance: 0.9e18,
+        timeSlope: 1e18
       }),
-      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+      IPCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 3e18,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      IPCRM.PortfolioDiscountParams({
+        maintenance: 0.9e18, // 90%
+        initial: 0.8e18, // 80%
+        riskFreeRate: 0.1e18 // 10%
+      })
     );
   }
 

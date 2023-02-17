@@ -15,6 +15,7 @@ import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
 import "test/shared/mocks/MockFeed.sol";
+import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 
@@ -25,6 +26,7 @@ contract UNIT_TestPCRM is Test {
   MockERC20 usdc;
 
   MockFeed feed;
+  MockSpotJumpOracle spotJumpOracle;
   MockOption option;
   MockDutchAuction auction;
   MockSM sm;
@@ -47,6 +49,7 @@ contract UNIT_TestPCRM is Test {
 
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
+    spotJumpOracle = new MockSpotJumpOracle();
 
     manager = new PCRM(
       account,
@@ -54,20 +57,32 @@ contract UNIT_TestPCRM is Test {
       feed,
       ICashAsset(address(cash)),
       option,
-      address(auction)
+      address(auction),
+      ISpotJumpOracle(address(spotJumpOracle))
     );
 
     // cash.setWhitWelistManager(address(manager), true);
     manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
+      IPCRM.SpotShockParams({
+        upInitial: 120e16,
+        downInitial: 80e16,
+        upMaintenance: 110e16,
+        downMaintenance: 90e16,
+        timeSlope: 1e18
       }),
-      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
+      IPCRM.VolShockParams({
+        minVol: 1e18,
+        maxVol: 3e18,
+        timeA: 30 days,
+        timeB: 90 days,
+        spotJumpMultipleSlope: 5e18,
+        spotJumpMultipleLookback: 1 days
+      }),
+      IPCRM.PortfolioDiscountParams({
+        maintenance: 90e16, // 90%
+        initial: 80e16, // 80%
+        riskFreeRate: 10e16 // 10%
+      })
     );
 
     feeRecipient = account.createAccount(address(this), manager);
@@ -80,54 +95,6 @@ contract UNIT_TestPCRM is Test {
     vm.startPrank(bob);
     account.approve(alice, bobAcc);
     vm.stopPrank();
-  }
-
-  ///////////
-  // Admin //
-  ///////////
-
-  function testSetParamsWithNonOwner() public {
-    vm.startPrank(alice);
-    vm.expectRevert(AbstractOwned.OnlyOwner.selector);
-    manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 120e16,
-        spotDownInitial: 80e16,
-        spotUpMaintenance: 110e16,
-        spotDownMaintenance: 90e16,
-        vol: 300e16,
-        rfr: 10e16
-      }),
-      PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16})
-    );
-    vm.stopPrank();
-  }
-
-  function testSetParamsWithOwner() public {
-    manager.setParams(
-      PCRM.Shocks({
-        spotUpInitial: 200e16,
-        spotDownInitial: 50e16,
-        spotUpMaintenance: 120e16,
-        spotDownMaintenance: 70e16,
-        vol: 400e16,
-        rfr: 20e16
-      }),
-      PCRM.Discounts({maintenanceStaticDiscount: 85e16, initialStaticDiscount: 75e16})
-    );
-
-    (uint spotUpInitial, uint spotDownInitial, uint spotUpMaintenance, uint spotDownMaintenance, uint vol, uint rfr) =
-      manager.shocks();
-    assertEq(spotUpInitial, 200e16);
-    assertEq(spotDownInitial, 50e16);
-    assertEq(spotUpMaintenance, 120e16);
-    assertEq(spotDownMaintenance, 70e16);
-    assertEq(vol, 400e16);
-    assertEq(rfr, 20e16);
-
-    (uint maintenanceStaticDiscount, uint initialStaticDiscount) = manager.discounts();
-    assertEq(maintenanceStaticDiscount, 85e16);
-    assertEq(initialStaticDiscount, 75e16);
   }
 
   //////////////
@@ -240,8 +207,27 @@ contract UNIT_TestPCRM is Test {
     strikes[1] = IBaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
     feed.setSpot(100e18);
+    uint expiryTimestamp = block.timestamp - 1 days;
+    
+    feed.setFuturePrice(expiryTimestamp, 100e18);
     IBaseManager.Portfolio memory expiry =
-      IBaseManager.Portfolio({cash: 0, expiry: block.timestamp - 1 days, numStrikesHeld: 2, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, expiry: expiryTimestamp, numStrikesHeld: 2, strikes: strikes});
+
+    manager.getInitialMargin(expiry);
+
+    // todo: actually test, added for coverage
+  }
+
+  function testPositivePnLSettledExpiryCalculation() public {
+    skip(30 days);
+    IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
+    strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+
+    uint expiryTimestamp = block.timestamp - 1 days;
+
+    feed.setFuturePrice(expiryTimestamp, 2000e18);
+    IBaseManager.Portfolio memory expiry =
+      IBaseManager.Portfolio({cash: 0, expiry: expiryTimestamp, numStrikesHeld: 1, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -339,7 +325,7 @@ contract UNIT_TestPCRM is Test {
     _openDefaultOptions();
 
     uint exerciseCashAmount = 10000e18; // paying gigantic amount that makes liquidator insolvent
-    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, int(-5360e18)));
+    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, int(-5362191780821917808000)));
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
   }

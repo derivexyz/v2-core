@@ -149,13 +149,13 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   ///@dev alice go short, bob go long
   function _tradeCall() public {
-    int premium = 500e18;
+    int premium = 2250e18;
     // alice send call to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, callId, amountOfContracts, bobAcc, cash, 0, premium);
   }
 
   function _tradePut() public {
-    int premium = 500e18;
+    int premium = 1750e18;
     // alice send put to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, putId, amountOfContracts, bobAcc, cash, 0, premium);
   }

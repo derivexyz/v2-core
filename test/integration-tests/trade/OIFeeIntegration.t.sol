@@ -11,7 +11,7 @@ import "src/libraries/OptionEncoding.sol";
  * @dev testing charge of OI fee in a real setting
  */
 contract INTEGRATION_OIFeeTest is IntegrationTestBase {
-  uint constant initCash = 200e18;
+  uint constant initCash = 2000e18;
 
   function setUp() public {
     _setupIntegrationTestComplete();
@@ -34,7 +34,7 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
     uint strike = spot + 1000e18;
     uint96 callToTrade = OptionEncoding.toSubId(expiry, strike, true);
     int amountOfContracts = 10e18;
-    int premium = 50e18;
+    int premium = 1750e18;
 
     // alice send option to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, callToTrade, amountOfContracts, bobAcc, cash, 0, premium);
@@ -53,7 +53,7 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
     uint strike = spot + 1000e18;
     uint96 callToTrade = OptionEncoding.toSubId(expiry, strike, true);
     int amountOfContracts = 10e18;
-    int premium = 50e18;
+    int premium = 1750e18;
 
     // open positions first
     _submitTrade(aliceAcc, option, callToTrade, amountOfContracts, bobAcc, cash, 0, premium);

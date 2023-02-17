@@ -13,7 +13,7 @@ import "src/interfaces/AccountStructs.sol";
 
 contract PCRMSpotJumpOracleGas is Script {
   Accounts account;
-  ChainlinkSpotFeed spotFeeds;
+  ChainlinkSpotFeed spotFeed;
   MockV3Aggregator aggregator;
   SpotJumpOracle oracle;
 
@@ -54,7 +54,8 @@ contract PCRMSpotJumpOracleGas is Script {
     // estimate tx cost when max jump is the first value to be read from the array
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetFirstJump:", initGas - gasleft());
   }
@@ -71,7 +72,8 @@ contract PCRMSpotJumpOracleGas is Script {
 
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetLastJump:", initGas - gasleft());
   }
@@ -102,9 +104,9 @@ contract PCRMSpotJumpOracleGas is Script {
   function _setup() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
     aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeed(aggregator, 1 hours);
+    spotFeed = new ChainlinkSpotFeed(aggregator, 1 hours);
 
-    SpotJumpOracle.JumpParams memory params = SpotJumpOracle.JumpParams({
+    SpotJumpOracle.JumpParams memory params = ISpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),
@@ -113,7 +115,7 @@ contract PCRMSpotJumpOracleGas is Script {
     });
 
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracle(address(spotFeeds), params, initialJumps);
+    oracle = new SpotJumpOracle(spotFeed, params, initialJumps);
   }
 
   function test() public {}
