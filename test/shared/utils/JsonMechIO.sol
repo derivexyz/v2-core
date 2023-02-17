@@ -28,40 +28,22 @@ contract JsonMechIO is Test {
 
   // assume the table is in the following format:
   //                   ColNameA       ColNameB  ...   ColNameY  ColNameZ
-  // "0"          -793886492748  1000000000000  ...          0         4
-  // "1"          -800422150756  1004507350350  ...          0         4
+  // 0            -793886492748  1000000000000  ...          0         4
+  // 1            -800422150756  1004507350350  ...          0         4
   // ...................................................................
-  // "N"                   -123            321  ...         49        69
-  // "numDecimals"           10             10  ...         10         0
+  // N                     -123            321  ...         49        69
   // 
-  // namely, the original python/pandas table has an integer index that has been converted to string
-  // and as its last row, the numer of decimals is included
-  // each row except the last one thus stores the test values
-  // e.g. value of -793886492748 with numDecimals of 10 means the real number was -79.3886492748
-  // and the value of 4 with numDecimals of 0 simply means the int should be treated as is
-  // (e.g. it's probably a timestamp)
-  // the table above is then assumed to be json'd via:
-  // df.to_json("/your-path-to-v2-core/v2-core/test/integration-tests/cashAsset/json/fileName.json")
+  // User must keep track of the decimals
   // 
   // Important:
   // 1) colimns must be sorted alphabetically
-  // 2) "numDecimals" must be the last row
-  // 3) the index strings ("0", "1",...) must also be sorted
-  // 4) everything is assumed to be an int
+  // 2) everything is assumed to be an int
   function readTableValue(string memory json, string memory col, uint index) public returns (int val) {
     string memory key = string.concat(".", col);
-    key = string.concat(key, ".");
+    key = string.concat(key, "[");
     key = string.concat(key, Strings.toString(index));
+    key = string.concat(key, "]");
     return json.readInt(key);
-  }
-
-  // read the "numDecimals" value for the given column
-  // allows us to have ints/timestamps in the dataframe mixed together with floats
-  // numDecimals can also be different for different cols, e.g. could be 6 for spot / strike, but 10 for utilization
-  function readColDecimals(string memory json, string memory col) public returns (uint decimals) {
-    string memory key = string.concat(".", col);
-    key = string.concat(key, ".numDecimals");
-    return json.readUint(key);
   }
 
   // searches for a value in a column, returning the index

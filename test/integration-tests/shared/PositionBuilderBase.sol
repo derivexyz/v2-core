@@ -54,7 +54,7 @@ contract PositionBuilderBase is IntegrationTestBase {
     //console2.log("short cash:", accounts.getBalance(shortAcc, IAsset(cash), 0)/1e18);
     //console2.log("SM balance:", accounts.getBalance(smAcc, IAsset(cash), 0)/1e18);
 
-    int longMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(longAcc)) * 99 / 100;
+    int longMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(longAcc));
     int shortMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(shortAcc));
 
     _withdrawCash(address(accounts.ownerOf(longAcc)), longAcc, uint(longMaxWithdraw));

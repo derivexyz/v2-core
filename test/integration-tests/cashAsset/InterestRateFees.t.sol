@@ -34,14 +34,16 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     string memory json = jsonParser.jsonFromRelPath(
       "/test/integration-tests/cashAsset/json/testInterestPaidForHighUtil.json"
       );
-    console2.log("parsing json...");
-    console2.log(jsonParser.readTableValue(json, "Account1", 1));
-    console2.log(jsonParser.readTableValue(json, "Account0", 0));
-    console2.log(jsonParser.readColDecimals(json, "Spot"));
-    console2.log(jsonParser.readColDecimals(json, "txType"));
+    // console2.log("parsing json...");
+    // console2.log(jsonParser.readTableValue(json, "Account1", 1));
+    // console2.log(jsonParser.readTableValue(json, "Account0", 0));
+    // console2.log(jsonParser.readTableValue(json, "borrowRate", 0));
 
-    uint i = jsonParser.findIndexForValue(json, "Time", 1209601);
-    console2.log(jsonParser.readTableValue(json, "SM", i));
+    // console2.log(jsonParser.readColDecimals(json, "Spot"));
+    // console2.log(jsonParser.readColDecimals(json, "txType"));
+
+    // uint i = jsonParser.findIndexForValue(json, "Time", 1209601);
+    // console2.log(jsonParser.readTableValue(json, "SM", i));
 
   }
 
@@ -151,7 +153,55 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
   function testInterestPaidForNormalUtilLongTerm() public {}
 
   // todo: test fees paid correct for high util on short time frame (suppliers, borrowers, sm)
-  function testInterestPaidForHighUtil() public {}
+  function testInterestPaidForHighUtil() public {
+    aliceAcc = accounts.createAccount(alice, pcrm);
+    bobAcc = accounts.createAccount(bob, pcrm);
+    /// check golden rule pre-trade
+    uint totalBorrow_creation = cash.totalBorrow();
+    uint totalSupply_creation = cash.totalSupply();
+    uint balanceOf_creation = usdc.balanceOf(address(cash));
+    assertEq(totalSupply_creation - totalBorrow_creation, balanceOf_creation);
+    // open trade
+    Position[] memory positions = _openBox(aliceAcc, bobAcc);
+
+    jsonParser = new JsonMechIO();
+    string memory json = jsonParser.jsonFromRelPath(
+      "/test/integration-tests/cashAsset/json/testInterestPaidForHighUtil.json"
+    );
+
+    uint stateIdx = 0;
+    uint maxDelta = 1e12; // 6 decimals accuracy (18 total decimals, allowing the last 6 to be wrong)
+    assertApproxEqAbs(int(getCashBalance(aliceAcc)), jsonParser.readTableValue(json, "Account0", stateIdx), maxDelta);
+    assertApproxEqAbs(int(getCashBalance(bobAcc)), jsonParser.readTableValue(json, "Account1", stateIdx), maxDelta);
+    assertApproxEqAbs(int(getCashBalance(smAcc)), jsonParser.readTableValue(json, "SM", stateIdx), maxDelta);
+    assertApproxEqAbs(int(usdc.balanceOf(address(cash))*1e12), jsonParser.readTableValue(json, "balanceOf", stateIdx), maxDelta);
+    assertApproxEqAbs(int(cash.totalSupply()), jsonParser.readTableValue(json, "totalSupply", stateIdx), maxDelta);
+    assertApproxEqAbs(int(cash.totalBorrow()), jsonParser.readTableValue(json, "totalBorrow", stateIdx), maxDelta);
+    assertApproxEqAbs(int(rateModel.getUtilRate(cash.totalSupply(), cash.totalBorrow())),
+     jsonParser.readTableValue(json, "Utilization", stateIdx) / 1e2, maxDelta);
+    assertApproxEqAbs(int(rateModel.getBorrowRate(cash.totalSupply(), cash.totalBorrow())), 
+     jsonParser.readTableValue(json, "borrowRate", stateIdx), maxDelta);
+
+    // warp and trigger state updates
+    vm.warp(block.timestamp + 14 days);
+    stateIdx = 1;
+    _setSpotPriceE18(2000e18);
+    // trigger cash updates
+    _depositCash(address(alice), aliceAcc, 0);
+    _depositCash(address(bob), bobAcc, 0);
+    _depositCash(address(securityModule), smAcc, 0);
+
+    assertApproxEqAbs(int(getCashBalance(aliceAcc)), jsonParser.readTableValue(json, "Account0", stateIdx), maxDelta);
+    assertApproxEqAbs(int(getCashBalance(bobAcc)), jsonParser.readTableValue(json, "Account1", stateIdx), maxDelta);
+    assertApproxEqAbs(int(getCashBalance(smAcc)), jsonParser.readTableValue(json, "SM", stateIdx), maxDelta);
+    assertApproxEqAbs(int(usdc.balanceOf(address(cash))*1e12), jsonParser.readTableValue(json, "balanceOf", stateIdx), maxDelta);
+    assertApproxEqAbs(int(cash.totalSupply()), jsonParser.readTableValue(json, "totalSupply", stateIdx), maxDelta);
+    assertApproxEqAbs(int(cash.totalBorrow()), jsonParser.readTableValue(json, "totalBorrow", stateIdx), maxDelta);
+    assertApproxEqAbs(int(rateModel.getUtilRate(cash.totalSupply(), cash.totalBorrow())),
+     jsonParser.readTableValue(json, "Utilization", stateIdx) / 1e2, maxDelta);
+    assertApproxEqAbs(int(rateModel.getBorrowRate(cash.totalSupply(), cash.totalBorrow())), 
+     jsonParser.readTableValue(json, "borrowRate", stateIdx), maxDelta);
+  }
 
   // todo: test fees paid correct for high util on long time frame (suppliers, borrowers, sm)
   function testInterestPaidForHighUtilLongTerm() public {}
