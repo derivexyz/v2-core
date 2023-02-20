@@ -50,18 +50,25 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     uint maxJump = spotJumpOracle.getMaxJump(1 days);
     assertEq(maxJump, 2500); // max jump is 25%
 
-    int im = getAccInitMargin(aliceAcc); // around -$8341
-    console2.log("im", im);
+    // IM is around -$8341
+    assertEq(getAccInitMargin(aliceAcc) / 1e18, -8391);
+    // IM(RV=0) is around -$4973
+    assertEq(getAccInitMarginRVZero(aliceAcc) / 1e18, -4973);
 
-    int imrv0 = getAccInitMarginRVZero(aliceAcc); // around -$4973
-    console2.log("imrv0", imrv0);
-
+    // can start this auction
     auction.startAuction(aliceAcc);
 
+    // can terminate auction if IM (RV = 0) > 0
+    _setSpotPriceE18(2040e18);
+    assertGt(getAccInitMarginRVZero(aliceAcc), 0);
+
+    // IM is still < 0
+    _updateJumps();
+    assertLt(getAccInitMargin(aliceAcc), 0);
+
+    auction.terminateAuction(aliceAcc);
     DutchAuction.Auction memory auction = auction.getAuction(aliceAcc);
-    console2.log("auction.upper", auction.upperBound);
-    // console2.log("auction.lower", lower);
-    // (int upper, int lower) = auction.getBounds(aliceAcc);
+    assertEq(auction.ongoing, false);
   }
 
   ///@dev alice go short, bob go long
@@ -69,11 +76,5 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     int premium = 2250e18;
     // alice send call to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, callId, amountOfContracts, bobAcc, cash, 0, premium);
-  }
-
-  function _tradePut() public {
-    int premium = 1750e18;
-    // alice send put to bob, bob send premium to alice
-    _submitTrade(aliceAcc, option, putId, amountOfContracts, bobAcc, cash, 0, premium);
   }
 }
