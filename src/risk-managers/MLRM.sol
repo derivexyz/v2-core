@@ -56,9 +56,9 @@ contract MLRM is BaseManager, IManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, address, AssetDelta[] calldata, bytes memory) public view override {
+  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory) public override {
     // todo [Josh]: whitelist check
-    // todo [Josh]: charge OI fee
+    _chargeOIFee(accountId, tradeId, assetDeltas);
 
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
