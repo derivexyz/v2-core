@@ -88,14 +88,18 @@ interface IPCRM is IBaseManager {
 
   function spotJumpOracle() external view returns (ISpotJumpOracle oracle);
 
+  /// @dev return the portfolio struct in memory for a given account
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio);
 
+  /// @dev executes a liquidation bid which exchange cash for a portion of the account's position
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee) external;
 
+  /// @dev returns the initial margin for a given portfolio
   function getInitialMargin(Portfolio memory portfolio) external view returns (int);
 
-  /// @dev temporary function place holder to return RV = 0
+  /// @dev return the initial margin for a given portfolio, assuming realized vol is 0
   function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int);
 
+  /// @dev returns the maintenance margin for a given portfolio
   function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int);
 }
