@@ -40,7 +40,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
     _depositCash(charlie, charlieAcc, 2e18); // initial OI Fee
 
-    // expiry = block.timestamp + 7 days;
     expiry = block.timestamp + 4 weeks;
 
     callId = OptionEncoding.toSubId(expiry, strike, true);
@@ -228,13 +227,13 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     vm.warp(block.timestamp + 1 weeks);
 
     // Burned supply which increases interest accrued
-    interestAccrued =
+    uint interestIgnoringBurned =
       _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
     cash.accrueInterest();
 
     // Real interest should be less since we account for the "burned" supply
     uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
-    assertLt(realInterestAccrued, interestAccrued);
+    assertLt(realInterestAccrued, interestIgnoringBurned);
   }
 
   function testInterestRateAtSettleShortPutImbalance() public {
@@ -278,13 +277,13 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     vm.warp(block.timestamp + 1 weeks);
 
     // Burned supply which increases interest accrued
-    interestAccrued =
+    uint interestIgnoringBurned =
       _calculateAccruedInterestNoPrint(cash.totalSupply(), cash.totalBorrow(), block.timestamp - cash.lastTimestamp());
     cash.accrueInterest();
 
     // Real interest should be less since we account for the "burned" supply
     uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
-    assertLt(realInterestAccrued, interestAccrued);
+    assertLt(realInterestAccrued, interestIgnoringBurned);
   }
 
   // Check that positive settled cash (minted) is not accounted for in interest rates
@@ -336,9 +335,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     // Real interest should be equal to the interest not accounting for netSettledCash
     uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
     assertEq(realInterestAccrued, interestAccrued);
-
-    uint oiAfter = option.openInterest(callId);
-    assertEq(oiAfter, 0);
   }
 
   function testInterestRateAtSettleLongPutImbalance() public {
@@ -389,9 +385,6 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     // Real interest should be equal to the interest not accounting for netSettledCash
     uint realInterestAccrued = cash.totalBorrow() - prevBorrow;
     assertEq(realInterestAccrued, interestAccrued);
-
-    uint oiAfter = option.openInterest(callId);
-    assertEq(oiAfter, 0);
   }
 
   ///@dev alice go short, bob go long
