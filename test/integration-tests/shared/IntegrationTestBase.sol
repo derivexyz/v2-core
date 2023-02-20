@@ -251,6 +251,13 @@ contract IntegrationTestBase is Test {
     feed.setSettlementPrice(expiry);
   }
 
+  /**
+   * @dev trigger jump update
+   */
+  function _updateJumps() internal {
+    spotJumpOracle.updateJumps();
+  }
+
   function _assertCashSolvent() internal {
     // exchange rate should be >= 1
     assertGe(cash.getCashToStableExchangeRate(), 1e18);

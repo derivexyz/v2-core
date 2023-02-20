@@ -25,7 +25,7 @@ interface ISecurityModule {
   /**
    * @dev Emitted when a module is added to / remove from the whitelist
    */
-  event ModuleWhitelisted(address module, bool iswhitelisted);
+  event ModuleWhitelisted(address module, bool isWhitelisted);
 
   /**
    * @dev Emitted when there is a pay out from the security module

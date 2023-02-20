@@ -36,22 +36,34 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     putId = OptionEncoding.toSubId(expiry, strike, false);
   }
 
-  // only settle alice's account at expiry
-  function testLiquidationIMLowerThan0() public {
+  // test auction starting price and bidding price
+  function testAuctionParameter() public {
     _tradeCall();
 
     // update price to make IM < 0
-    _setSpotPriceE18(3000e18);
+    vm.warp(block.timestamp + 12 hours);
+    _setSpotPriceE18(2200e18);
+    _updateJumps();
+    vm.warp(block.timestamp + 12 hours);
+    _setSpotPriceE18(2500e18);
+    _updateJumps();
+    (, IPCRM.VolShockParams memory vol,) = _getDefaultPCRMParams();
+    uint maxJump = spotJumpOracle.getMaxJump(vol.spotJumpMultipleLookback);
+    assertEq(maxJump, 2500); // max jump is 25%
 
-    int im = getAccInitMargin(aliceAcc); // around -$11140
+    int im = getAccInitMargin(aliceAcc); // around -$8341
     assertTrue(im < 0);
+    console2.log("im", im);
 
-    int imrv0 = getAccInitMarginRVZero(aliceAcc); // around -$11140
+    int imrv0 = getAccInitMarginRVZero(aliceAcc); // around -$4430
     console2.log("imrv0", imrv0);
 
     auction.startAuction(aliceAcc);
+
     DutchAuction.Auction memory auction = auction.getAuction(aliceAcc);
-    console2.log("auction", auction.upperBound);
+    console2.log("auction.upper", auction.upperBound);
+    // console2.log("auction.lower", lower);
+    // (int upper, int lower) = auction.getBounds(aliceAcc);
   }
 
   ///@dev alice go short, bob go long
