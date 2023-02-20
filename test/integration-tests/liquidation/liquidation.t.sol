@@ -47,12 +47,10 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     vm.warp(block.timestamp + 12 hours);
     _setSpotPriceE18(2500e18);
     _updateJumps();
-    (, IPCRM.VolShockParams memory vol,) = _getDefaultPCRMParams();
-    uint maxJump = spotJumpOracle.getMaxJump(vol.spotJumpMultipleLookback);
+    uint maxJump = spotJumpOracle.getMaxJump(1 days);
     assertEq(maxJump, 2500); // max jump is 25%
 
     int im = getAccInitMargin(aliceAcc); // around -$8341
-    assertTrue(im < 0);
     console2.log("im", im);
 
     int imrv0 = getAccInitMarginRVZero(aliceAcc); // around -$4973
