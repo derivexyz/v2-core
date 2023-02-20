@@ -261,12 +261,7 @@ contract UNIT_TestPCRM is Test {
   ////////////////////
 
   function testValidManagerChange() public {
-    MockManager newManager = new MockManager(address(account));
-
-    // todo: test change to valid manager
-    vm.startPrank(address(alice));
-    account.changeManager(aliceAcc, IManager(address(newManager)), "");
-    vm.stopPrank();
+    // fully tested in TestMLRM.t.sol due to identical implementation;
   }
 
   //////////////////

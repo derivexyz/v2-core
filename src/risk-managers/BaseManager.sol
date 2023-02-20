@@ -24,19 +24,19 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   // Variables //
   ///////////////
 
-  ///@dev Account contract address
+  /// @dev Account contract address
   IAccounts public immutable accounts;
 
-  ///@dev Option asset address
+  /// @dev Option asset address
   IOption public immutable option;
 
-  ///@dev Cash asset address
+  /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
-  ///@dev Future feed oracle to get future price for an expiry
+  /// @dev Future feed oracle to get future price for an expiry
   IFutureFeed public immutable futureFeed;
 
-  ///@dev Settlement feed oracle to get price fixed for settlement
+  /// @dev Settlement feed oracle to get price fixed for settlement
   ISettlementFeed public immutable settlementFeed;
 
   /// @dev account id that receive OI fee
@@ -44,6 +44,9 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
 
   ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * spot
   uint public OIFeeRateBPS = 0.001e18; // 10 BPS
+
+  /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
+  mapping(address => bool) public whitelistedManager;
 
   constructor(
     IAccounts _accounts,
@@ -81,9 +84,9 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     }
   }
 
-  ///////////
-  // Admin //
-  ///////////
+  //////////////////////////
+  // Owner-only Functions //
+  //////////////////////////
 
   /**
    * @dev Governance determined account to receive OI fee
@@ -105,6 +108,15 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     OIFeeRateBPS = newFeeRate;
 
     emit OIFeeRateSet(OIFeeRateBPS);
+  }
+
+  /**
+   * @notice Whitelist or un-whitelist a manager used in .changeManager()
+   * @param _manager manager address
+   * @param _whitelisted true to whitelist
+   */
+  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
+    whitelistedManager[_manager] = _whitelisted;
   }
 
   //////////////////////////
@@ -239,4 +251,5 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   ////////////
 
   error BM_OnlySingleExpiryPerAccount();
+  error BM_ManagerNotWhitelisted(uint accountId, address newManager);
 }

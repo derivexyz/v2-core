@@ -122,8 +122,10 @@ contract PCRM is BaseManager, IManager, IPCRM {
    * @param accountId Account for which to check trade.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint accountId, IManager newManager) external {
-    // todo [Josh]: nextManager whitelist check
+  function handleManagerChange(uint accountId, IManager newManager) external view {
+    if (!whitelistedManager[address(newManager)]) {
+      revert BM_ManagerNotWhitelisted(accountId, address(newManager));
+    }
   }
 
   ///////////
