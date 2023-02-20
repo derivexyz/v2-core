@@ -115,6 +115,8 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId The id of the account being liquidated
    */
   function startAuction(uint accountId) external {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
+
     if (getMaintenanceMarginForAccount(accountId) >= 0) {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
@@ -122,8 +124,6 @@ contract DutchAuction is IDutchAuction, Owned {
     if (auctions[accountId].ongoing) {
       revert DA_AuctionAlreadyStarted(accountId);
     }
-
-    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
 
     (int upperBound, int lowerBound) = _getBounds(accountId);
     // covers the case where an auction could start as insolvent, upper bound < 0
