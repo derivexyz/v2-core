@@ -16,7 +16,7 @@ import "src/assets/Option.sol";
 import "./BaseManager.sol";
 
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMGrouping.sol";
+import "src/libraries/StrikeGrouping.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 
@@ -56,9 +56,11 @@ contract MLRM is BaseManager, IManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, address, AssetDelta[] calldata, bytes memory) public view override {
-    // todo [Josh]: whitelist check
-    // todo [Josh]: charge OI fee
+  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
+    public
+    override
+  {
+    _chargeOIFee(accountId, tradeId, assetDeltas);
 
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
@@ -74,8 +76,10 @@ contract MLRM is BaseManager, IManager {
    * @param accountId Account for which to check trade.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint accountId, IManager newManager) external {
-    // todo [Josh]: nextManager whitelist check
+  function handleManagerChange(uint accountId, IManager newManager) external view {
+    if (!whitelistedManager[address(newManager)]) {
+      revert BM_ManagerNotWhitelisted(accountId, address(newManager));
+    }
   }
 
   //////////

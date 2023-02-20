@@ -16,7 +16,7 @@ import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
-contract PCRMGroupingGasScript is Script {
+contract StrikeGroupingGasScript is Script {
   Accounts account;
   PCRM pcrm;
 
@@ -147,6 +147,7 @@ contract PCRMGroupingGasScript is Script {
       IPCRM.PortfolioDiscountParams({
         maintenance: 0.9e18, // 90%
         initial: 0.8e18, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 0.1e18 // 10%
       })
     );

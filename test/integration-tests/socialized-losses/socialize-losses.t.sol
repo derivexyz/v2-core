@@ -30,8 +30,8 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     _setupIntegrationTestComplete();
 
     // init setup for both accounts
-    _depositCash(alice, aliceAcc, aliceCollat);
-    _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
+    _depositCash(alice, aliceAcc, aliceCollat + 50e18);
+    _depositCash(bob, bobAcc, DEFAULT_DEPOSIT + 50e18);
 
     expiry = block.timestamp + 7 days;
     callId = OptionEncoding.toSubId(expiry, strike, true);
@@ -67,7 +67,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     uint supplyBefore = cash.totalSupply();
 
     int bidPrice = auction.getCurrentBidPrice(aliceAcc);
-    assertEq(bidPrice / 1e18, -4257); // bidding now will require security module to pay out $3573
+    assertEq(bidPrice / 1e18, -4257); // bidding now will require security module to pay out -4257
 
     // bid from bob
     vm.prank(bob);
@@ -83,7 +83,8 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     assertEq(cash.temporaryWithdrawFeeEnabled(), true);
 
     // we printed "insolvent amount - sm fund" USD in cash
-    assertEq(supplyAfter - supplyBefore, uint(-bidPrice) - initSMFund);
+    (,, uint cashOffset,) = pcrm.portfolioDiscountParams();
+    assertEq(supplyAfter - supplyBefore, uint(-bidPrice) - initSMFund + cashOffset);
 
     uint socializedExchangeRate = cash.getCashToStableExchangeRate();
     assertLt(socializedExchangeRate, 1e18); // < 1, around 0.79

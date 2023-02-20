@@ -314,7 +314,16 @@ contract UNIT_TestMLRM is Test {
   function testValidManagerChange() public {
     MockManager newManager = new MockManager(address(account));
 
-    // todo: test nextManager whitelist once implemented.
+    // first fails the change
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(BaseManager.BM_ManagerNotWhitelisted.selector, aliceAcc, address(newManager))
+    );
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    vm.stopPrank();
+
+    // should pass once approved
+    mlrm.setWhitelistManager(address(newManager), true);
     vm.startPrank(alice);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();

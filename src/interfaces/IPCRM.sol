@@ -71,6 +71,8 @@ interface IPCRM is IBaseManager {
     uint maintenance;
     /// initial discount applied to whole expiry
     uint initial;
+    // static cash requirement on top of the usual initial margin requirement
+    uint initialStaticCashOffset;
     /// used when discounting to net present value by risk free rate
     uint riskFreeRate;
   }
@@ -78,6 +80,11 @@ interface IPCRM is IBaseManager {
   //////////////
   // External //
   //////////////
+
+  function portfolioDiscountParams()
+    external
+    view
+    returns (uint maintenance, uint initial, uint initialStaticCashOffset, uint riskFreeRate);
 
   function spotJumpOracle() external view returns (ISpotJumpOracle oracle);
 

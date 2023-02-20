@@ -81,6 +81,7 @@ contract UNIT_TestPCRM is Test {
       IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 10e16 // 10%
       })
     );
@@ -263,8 +264,17 @@ contract UNIT_TestPCRM is Test {
   function testValidManagerChange() public {
     MockManager newManager = new MockManager(address(account));
 
-    // todo: test change to valid manager
-    vm.startPrank(address(alice));
+    // first fails the change
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(BaseManager.BM_ManagerNotWhitelisted.selector, aliceAcc, address(newManager))
+    );
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    vm.stopPrank();
+
+    // should pass once approved
+    manager.setWhitelistManager(address(newManager), true);
+    vm.startPrank(alice);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
   }

@@ -16,9 +16,8 @@ import "src/interfaces/IPCRM.sol";
 import "src/assets/Option.sol";
 
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMGrouping.sol";
+import "src/libraries/StrikeGrouping.sol";
 import "src/libraries/Black76.sol";
-import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 
@@ -31,7 +30,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PCRM is BaseManager, IManager, Owned, IPCRM {
+contract PCRM is BaseManager, IManager, IPCRM {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for int;
@@ -46,9 +45,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
 
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
-
-  /// @dev account id that receive OI fee
-  uint public feeRecipientAcc;
 
   /// @dev spot shock parameters
   SpotShockParams public spotShockParams;
@@ -89,7 +85,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     IOption option_,
     address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_) Owned() {
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_) {
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }
@@ -106,18 +102,18 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     public
     override
   {
+    spotJumpOracle.updateJumps();
     // todo [Josh]: whitelist check
 
     // bypass the IM check if only adding cash
     if (assetDeltas.length == 1 && assetDeltas[0].asset == cashAsset && assetDeltas[0].delta >= 0) return;
 
-    _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
+    _chargeOIFee(accountId, tradeId, assetDeltas);
 
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     // check initial margin
-    spotJumpOracle.updateJumps();
     _checkInitialMargin(portfolio);
   }
 
@@ -126,8 +122,10 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @param accountId Account for which to check trade.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint accountId, IManager newManager) external {
-    // todo [Josh]: nextManager whitelist check
+  function handleManagerChange(uint accountId, IManager newManager) external view {
+    if (!whitelistedManager[address(newManager)]) {
+      revert BM_ManagerNotWhitelisted(accountId, address(newManager));
+    }
   }
 
   ///////////
@@ -166,28 +164,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    */
   function setSpotJumpOracle(ISpotJumpOracle spotJumpOracle_) external onlyOwner {
     spotJumpOracle = spotJumpOracle_;
-  }
-
-  /**
-   * @dev Governance determined account to receive OI fee
-   * @param _newAcc account id
-   */
-  function setFeeRecipient(uint _newAcc) external onlyOwner {
-    // this line will revert if the owner tries to set an invalid account
-    accounts.ownerOf(_newAcc);
-
-    feeRecipientAcc = _newAcc;
-  }
-
-  /**
-   * @notice Governance determined OI fee rate to be set
-   * @dev Charged fee = contract traded * OIFee * spot
-   * @param newFeeRate OI fee rate in BPS
-   */
-  function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
-    OIFeeRateBPS = newFeeRate;
-
-    emit OIFeeRateSet(OIFeeRateBPS);
   }
 
   //////////////////
@@ -265,6 +241,10 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
    * @return margin Amount by which account is over or under the required margin.
    */
   function getInitialMargin(Portfolio memory portfolio) public view returns (int margin) {
+    if (portfolio.numStrikesHeld == 0) {
+      return portfolio.cash;
+    }
+
     (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = getTimeWeightedMarginParams(
       spotShockParams.upInitial,
       spotShockParams.downInitial,
@@ -277,7 +257,9 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
       _getSpotJumpMultiple(volShockParams.spotJumpMultipleSlope, volShockParams.spotJumpMultipleLookback)
     );
 
-    return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
+    margin = _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
+
+    return margin - portfolioDiscountParams.initialStaticCashOffset.toInt256();
   }
 
   /**
@@ -577,7 +559,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
         strikeIndex = _addOption(portfolio, currentAsset);
 
         // if possible, combine calls and puts into forwards
-        PCRMGrouping.updateForwards(portfolio.strikes[strikeIndex]);
+        StrikeGrouping.updateForwards(portfolio.strikes[strikeIndex]);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       }

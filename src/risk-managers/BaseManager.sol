@@ -13,9 +13,10 @@ import "src/interfaces/IBaseManager.sol";
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMGrouping.sol";
+import "src/libraries/StrikeGrouping.sol";
+import "src/libraries/Owned.sol";
 
-abstract contract BaseManager is AccountStructs, IBaseManager {
+abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   using IntLib for int;
   using DecimalMath for uint;
 
@@ -23,23 +24,29 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
   // Variables //
   ///////////////
 
-  ///@dev Account contract address
+  /// @dev Account contract address
   IAccounts public immutable accounts;
 
-  ///@dev Option asset address
+  /// @dev Option asset address
   IOption public immutable option;
 
-  ///@dev Cash asset address
+  /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
-  ///@dev Future feed oracle to get future price for an expiry
+  /// @dev Future feed oracle to get future price for an expiry
   IFutureFeed public immutable futureFeed;
 
-  ///@dev Settlement feed oracle to get price fixed for settlement
+  /// @dev Settlement feed oracle to get price fixed for settlement
   ISettlementFeed public immutable settlementFeed;
+
+  /// @dev account id that receive OI fee
+  uint public feeRecipientAcc;
 
   ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * spot
   uint public OIFeeRateBPS = 0.001e18; // 10 BPS
+
+  /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
+  mapping(address => bool) public whitelistedManager;
 
   constructor(
     IAccounts _accounts,
@@ -47,7 +54,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
     ISettlementFeed _settlementFeed,
     ICashAsset _cashAsset,
     IOption _option
-  ) {
+  ) Owned() {
     accounts = _accounts;
     option = _option;
     cashAsset = _cashAsset;
@@ -75,6 +82,41 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
     for (uint i; i < accountIds.length; ++i) {
       _settleAccount(accountIds[i]);
     }
+  }
+
+  //////////////////////////
+  // Owner-only Functions //
+  //////////////////////////
+
+  /**
+   * @dev Governance determined account to receive OI fee
+   * @param _newAcc account id
+   */
+  function setFeeRecipient(uint _newAcc) external onlyOwner {
+    // this line will revert if the owner tries to set an invalid account
+    accounts.ownerOf(_newAcc);
+
+    feeRecipientAcc = _newAcc;
+  }
+
+  /**
+   * @notice Governance determined OI fee rate to be set
+   * @dev Charged fee = contract traded * OIFee * spot
+   * @param newFeeRate OI fee rate in BPS
+   */
+  function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
+    OIFeeRateBPS = newFeeRate;
+
+    emit OIFeeRateSet(OIFeeRateBPS);
+  }
+
+  /**
+   * @notice Whitelist or un-whitelist a manager used in .changeManager()
+   * @param _manager manager address
+   * @param _whitelisted true to whitelist
+   */
+  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
+    whitelistedManager[_manager] = _whitelisted;
   }
 
   //////////////////////////
@@ -107,7 +149,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
 
     // add strike in-memory to portfolio
     (addedStrikeIndex, portfolio.numStrikesHeld) =
-      PCRMGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
+      StrikeGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
 
     // add call or put balance
     if (isCall) {
@@ -123,11 +165,10 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
   /**
    * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
    * @param accountId Account potentially to charge
-   * @param feeRecipientAcc Account of feeRecipient
    * @param tradeId ID of the trade informed by Accounts
    * @param assetDeltas Array of asset changes made to this account
    */
-  function _chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] calldata assetDeltas) internal {
+  function _chargeOIFee(uint accountId, uint tradeId, AssetDelta[] calldata assetDeltas) internal {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
@@ -210,4 +251,5 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
   ////////////
 
   error BM_OnlySingleExpiryPerAccount();
+  error BM_ManagerNotWhitelisted(uint accountId, address newManager);
 }

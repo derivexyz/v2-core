@@ -7,13 +7,12 @@ import "src/libraries/IntLib.sol";
 import "forge-std/console2.sol";
 
 /**
- * @title PCRMGrouping
+ * @title StrikeGrouping
  * @author Lyra
- * @notice util functions for sorting / filtering BaseManager account holdings
+ * @notice util functions for sorting / filtering BaseManager strike holdings
  */
 
-// todo [Josh]: change naming to just portfolio grouping
-library PCRMGrouping {
+library StrikeGrouping {
   //////////////
   // Forwards //
   //////////////
@@ -24,7 +23,7 @@ library PCRMGrouping {
    * @param strike BaseManager.Strike struct containing all holdings for a particular strike
    */
   function updateForwards(IBaseManager.Strike memory strike) internal pure {
-    int additionalFwds = PCRMGrouping.findForwards(strike.calls, strike.puts);
+    int additionalFwds = StrikeGrouping.findForwards(strike.calls, strike.puts);
     if (additionalFwds != 0) {
       strike.calls -= additionalFwds;
       strike.puts += additionalFwds;
