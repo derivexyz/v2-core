@@ -83,7 +83,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     assertEq(cash.temporaryWithdrawFeeEnabled(), true);
 
     // we printed "insolvent amount - sm fund" USD in cash
-    (,, uint cashOffset, ) = pcrm.portfolioDiscountParams();
+    (,, uint cashOffset,) = pcrm.portfolioDiscountParams();
     assertEq(supplyAfter - supplyBefore, uint(-bidPrice) - initSMFund + cashOffset);
 
     uint socializedExchangeRate = cash.getCashToStableExchangeRate();

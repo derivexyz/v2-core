@@ -81,12 +81,10 @@ interface IPCRM is IBaseManager {
   // External //
   //////////////
 
-  function portfolioDiscountParams() external view returns (
-    uint maintenance,
-    uint initial,
-    uint initialStaticCashOffset,
-    uint riskFreeRate
-  );
+  function portfolioDiscountParams()
+    external
+    view
+    returns (uint maintenance, uint initial, uint initialStaticCashOffset, uint riskFreeRate);
 
   function spotJumpOracle() external view returns (ISpotJumpOracle oracle);
 

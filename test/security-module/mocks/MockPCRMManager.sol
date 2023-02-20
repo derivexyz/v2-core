@@ -4,10 +4,10 @@ pragma solidity ^0.8.13;
 import "test/shared/mocks/MockManager.sol";
 
 contract MockPCRMManager is MockManager {
-
   constructor(address account_) MockManager(account_) {}
 
   uint public initialStaticCashOffset = 0;
+
   function setStaticOffset(uint offset) external {
     initialStaticCashOffset = offset;
   }
