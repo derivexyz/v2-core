@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/risk-managers/SpotJumpOracle.sol";
@@ -13,7 +13,7 @@ import "src/interfaces/AccountStructs.sol";
 
 contract PCRMSpotJumpOracleGas is Script {
   Accounts account;
-  ChainlinkSpotFeeds spotFeeds;
+  ChainlinkSpotFeed spotFeed;
   MockV3Aggregator aggregator;
   SpotJumpOracle oracle;
 
@@ -54,7 +54,8 @@ contract PCRMSpotJumpOracleGas is Script {
     // estimate tx cost when max jump is the first value to be read from the array
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetFirstJump:", initGas - gasleft());
   }
@@ -71,7 +72,8 @@ contract PCRMSpotJumpOracleGas is Script {
 
     uint initGas = gasleft();
 
-    oracle.updateAndGetMaxJump(uint32(10 days));
+    oracle.updateJumps();
+    oracle.getMaxJump(uint32(10 days));
 
     console.log("gas:updateAndGetLastJump:", initGas - gasleft());
   }
@@ -102,10 +104,9 @@ contract PCRMSpotJumpOracleGas is Script {
   function _setup() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
     aggregator = new MockV3Aggregator(18, 1000e18);
-    spotFeeds = new ChainlinkSpotFeeds();
-    spotFeeds.addFeed("ETH/USD", address(aggregator), 1 hours);
+    spotFeed = new ChainlinkSpotFeed(aggregator, 1 hours);
 
-    SpotJumpOracle.JumpParams memory params = SpotJumpOracle.JumpParams({
+    SpotJumpOracle.JumpParams memory params = ISpotJumpOracle.JumpParams({
       start: 100,
       width: 200,
       referenceUpdatedAt: uint32(block.timestamp),
@@ -114,7 +115,7 @@ contract PCRMSpotJumpOracleGas is Script {
     });
 
     uint32[16] memory initialJumps;
-    oracle = new SpotJumpOracle(address(spotFeeds), 1, params, initialJumps);
+    oracle = new SpotJumpOracle(spotFeed, params, initialJumps);
   }
 
   function test() public {}

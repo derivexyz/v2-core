@@ -7,7 +7,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
-import "src/interfaces/ISpotFeeds.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/AccountStructs.sol";
 
 import "src/Accounts.sol";
@@ -20,16 +20,20 @@ import "../../shared/mocks/MockOption.sol";
 import "../../auction/mocks/MockCashAsset.sol";
 
 contract BaseManagerTester is BaseManager {
-  constructor(IAccounts accounts_, ISpotFeeds spotFeeds_, ICashAsset cash_, IOption option_)
-    BaseManager(accounts_, spotFeeds_, cash_, option_)
-  {}
+  constructor(
+    IAccounts accounts_,
+    IFutureFeed futureFeed_,
+    ISettlementFeed settlementFeed_,
+    ICashAsset cash_,
+    IOption option_
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cash_, option_) {}
 
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 
-  function chargeOIFee(uint accountId, uint feeRecipientAcc, uint tradeId, AssetDelta[] calldata assetDeltas) external {
-    _chargeOIFee(accountId, feeRecipientAcc, tradeId, assetDeltas);
+  function chargeOIFee(uint accountId, uint tradeId, AssetDelta[] calldata assetDeltas) external {
+    _chargeOIFee(accountId, tradeId, assetDeltas);
   }
 
   function addOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
@@ -57,7 +61,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   BaseManagerTester tester;
 
   MockAsset mockAsset;
-  MockFeed spotFeeds;
+  MockFeed feed;
   MockERC20 usdc;
   MockOption option;
   MockCash cash;
@@ -72,12 +76,12 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   function setUp() public {
     accounts = new Accounts("Lyra Accounts", "LyraAccount");
 
-    spotFeeds = new MockFeed();
+    feed = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
     cash = new MockCash(usdc, accounts);
 
-    tester = new BaseManagerTester(accounts, spotFeeds, cash, option);
+    tester = new BaseManagerTester(accounts, feed, feed, cash, option);
 
     mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
 
@@ -86,6 +90,8 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     bobAcc = accounts.createAccount(bob, IManager(address(tester)));
 
     feeRecipientAcc = accounts.createAccount(address(this), IManager(address(tester)));
+
+    tester.setFeeRecipient(feeRecipientAcc);
   }
 
   function testTransferWithoutMarginPositiveAmount() public {
@@ -171,7 +177,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
 
   function testChargeFeeOn1SubIdIfOIIncreased() public {
     uint spot = 2000e18;
-    spotFeeds.setSpot(spot);
+    feed.setSpot(spot);
 
     uint96 subId = 1;
     uint tradeId = 5;
@@ -184,17 +190,17 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     AssetDelta[] memory assetDeltas = new AssetDelta[](1);
     assetDeltas[0] = AssetDelta(option, subId, amount);
 
-    int cashBefore = accounts.getBalance(feeRecipientAcc, cash, 0);
-    tester.chargeOIFee(aliceAcc, feeRecipientAcc, tradeId, assetDeltas);
+    int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
+    tester.chargeOIFee(aliceAcc, tradeId, assetDeltas);
 
-    int fee = accounts.getBalance(feeRecipientAcc, cash, 0) - cashBefore;
+    int fee = accounts.getBalance(tester.feeRecipientAcc(), cash, 0) - cashBefore;
     // fee = 1 * 0.1% * 2000;
     assertEq(fee, 2e18);
   }
 
   function testShouldNotChargeFeeIfOIDecrease() public {
     uint spot = 2000e18;
-    spotFeeds.setSpot(spot);
+    feed.setSpot(spot);
 
     uint96 subId = 1;
     uint tradeId = 5;
@@ -207,11 +213,11 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     AssetDelta[] memory assetDeltas = new AssetDelta[](1);
     assetDeltas[0] = AssetDelta(option, subId, amount);
 
-    int cashBefore = accounts.getBalance(feeRecipientAcc, cash, 0);
-    tester.chargeOIFee(aliceAcc, feeRecipientAcc, tradeId, assetDeltas);
+    int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
+    tester.chargeOIFee(aliceAcc, tradeId, assetDeltas);
 
     // no fee: balance stays the same
-    assertEq(accounts.getBalance(feeRecipientAcc, cash, 0), cashBefore);
+    assertEq(accounts.getBalance(tester.feeRecipientAcc(), cash, 0), cashBefore);
   }
 
   function testShouldNotChargeFeeOnOtherAssetsThenCash() public {
@@ -220,16 +226,16 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     AssetDelta[] memory assetDeltas = new AssetDelta[](1);
     assetDeltas[0] = AssetDelta(cash, 0, amount);
 
-    int cashBefore = accounts.getBalance(feeRecipientAcc, cash, 0);
-    tester.chargeOIFee(aliceAcc, feeRecipientAcc, 0, assetDeltas);
+    int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
+    tester.chargeOIFee(aliceAcc, 0, assetDeltas);
 
     // no fee: balance stays the same
-    assertEq(accounts.getBalance(feeRecipientAcc, cash, 0), cashBefore);
+    assertEq(accounts.getBalance(tester.feeRecipientAcc(), cash, 0), cashBefore);
   }
 
   function testOnlyChargeFeeOnSubIDWIthOIIncreased() public {
     uint spot = 2000e18;
-    spotFeeds.setSpot(spot);
+    feed.setSpot(spot);
 
     (uint96 subId1, uint96 subId2, uint96 subId3) = (1, 2, 3);
     uint tradeId = 5;
@@ -244,11 +250,11 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     assetDeltas[1] = AssetDelta(option, subId2, -amount);
     assetDeltas[2] = AssetDelta(option, subId3, amount);
 
-    int cashBefore = accounts.getBalance(feeRecipientAcc, cash, 0);
-    tester.chargeOIFee(aliceAcc, feeRecipientAcc, tradeId, assetDeltas);
+    int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
+    tester.chargeOIFee(aliceAcc, tradeId, assetDeltas);
 
     // no fee: balance stays the same
-    int fee = accounts.getBalance(feeRecipientAcc, cash, 0) - cashBefore;
+    int fee = accounts.getBalance(tester.feeRecipientAcc(), cash, 0) - cashBefore;
     // fee for each subId2 = 10 * 0.1% * 2000 = 20;
     // fee for each subId3 = 10 * 0.1% * 2000 = 20;
     assertEq(fee, 40e18);
