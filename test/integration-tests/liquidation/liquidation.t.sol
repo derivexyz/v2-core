@@ -55,7 +55,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     assertTrue(im < 0);
     console2.log("im", im);
 
-    int imrv0 = getAccInitMarginRVZero(aliceAcc); // around -$4430
+    int imrv0 = getAccInitMarginRVZero(aliceAcc); // around -$4973
     console2.log("imrv0", imrv0);
 
     auction.startAuction(aliceAcc);

@@ -284,7 +284,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
    * @return margin Amount by which account is over or under the required margin.
    */
   function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int margin) {
-    (, uint spotUp, uint spotDown, uint portfolioDiscount) = getTimeWeightedMarginParams(
+    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = getTimeWeightedMarginParams(
       spotShockParams.upInitial,
       spotShockParams.downInitial,
       spotShockParams.timeSlope,
@@ -292,8 +292,8 @@ contract PCRM is BaseManager, IManager, IPCRM {
       portfolio.expiry
     );
 
-    // feed vol = 0 into the calculation
-    return _calcMargin(portfolio, 0, spotUp, spotDown, portfolioDiscount);
+    // use static vol derived from time to expiry directly, without applying spot jump multiplier
+    return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
   }
 
   /**
