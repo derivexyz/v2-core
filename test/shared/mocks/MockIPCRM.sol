@@ -152,5 +152,14 @@ contract MockIPCRM is IPCRM, IManager {
     revertGetMargin = true;
   }
 
+  function portfolioDiscountParams() external view returns (
+    uint maintenance,
+    uint initial,
+    uint initialStaticCashOffset,
+    uint riskFreeRate
+  ) {
+    return (80e16, 70e16, 50e18, 10e16);
+  }
+
   function test() public {}
 }

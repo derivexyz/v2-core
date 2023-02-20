@@ -4,8 +4,8 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
-import "../../shared/mocks/MockManager.sol";
 import "../mocks/MockCash.sol";
+import "../mocks/MockPCRMManager.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
@@ -22,7 +22,7 @@ contract UNIT_SecurityModule is Test {
 
   MockCashAssetWithExchangeRate mockCash;
   MockERC20 usdc;
-  MockManager manager;
+  MockPCRMManager manager;
   Accounts accounts;
   SecurityModule securityModule;
 
@@ -32,7 +32,7 @@ contract UNIT_SecurityModule is Test {
   function setUp() public {
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(accounts));
+    manager = new MockPCRMManager(address(accounts));
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
@@ -41,7 +41,7 @@ contract UNIT_SecurityModule is Test {
     mockCash = new MockCashAssetWithExchangeRate(accounts, usdc);
     mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
-    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, manager);
+    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, IPCRM(address(manager)));
 
     smAccId = securityModule.accountId();
 

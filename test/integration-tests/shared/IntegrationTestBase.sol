@@ -126,7 +126,7 @@ contract IntegrationTestBase is Test {
     assertEq(address(auction), auctionAddr);
 
     // nonce: 11 => Deploy SM
-    securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
+    securityModule = new SecurityModule(accounts, cash, usdc, IPCRM(address(pcrm)));
 
     assertEq(securityModule.accountId(), smAcc);
   }
@@ -330,7 +330,7 @@ contract IntegrationTestBase is Test {
     discount = IPCRM.PortfolioDiscountParams({
       maintenance: 0.9e18, // 90%
       initial: 0.8e18, // 80%
-      initialStaticCashOffset: 0,
+      initialStaticCashOffset: 50e18, //$50
       riskFreeRate: 0.1e18 // 10%
     });
   }

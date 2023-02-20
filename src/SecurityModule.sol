@@ -8,6 +8,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 
 import "./interfaces/IAsset.sol";
 import "./interfaces/IAccounts.sol";
+import "./interfaces/IPCRM.sol";
 import "./interfaces/ICashAsset.sol";
 import "./interfaces/ISecurityModule.sol";
 import "./interfaces/AccountStructs.sol";
@@ -30,6 +31,9 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   ///@dev Cash Asset contract address
   IAccounts public immutable accounts;
 
+  ///@dev PCRM manager
+  IPCRM public immutable pcrm;
+
   ///@dev Cash Asset contract address
   ICashAsset public immutable cashAsset;
 
@@ -45,15 +49,16 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
   ///@dev Mapping of (address => isWhitelistedModule)
   mapping(address => bool) public isWhitelisted;
 
-  constructor(IAccounts _accounts, ICashAsset _cashAsset, IERC20Metadata _stableAsset, IManager _manager)
+  constructor(IAccounts _accounts, ICashAsset _cashAsset, IERC20Metadata _stableAsset, IPCRM _manager)
     ERC20("Lyra USDC Security Module Share", "lsUSD")
   {
     accounts = _accounts;
+    pcrm = _manager;
     stableAsset = _stableAsset;
     cashAsset = _cashAsset;
     stableDecimals = _stableAsset.decimals();
 
-    accountId = IAccounts(_accounts).createAccount(address(this), _manager);
+    accountId = IAccounts(_accounts).createAccount(address(this), IManager(address(_manager)));
     _stableAsset.safeApprove(address(_cashAsset), type(uint).max);
   }
 
@@ -110,9 +115,19 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
     returns (uint cashAmountPaid)
   {
     // check if the security module has enough fund. Cap the payout at min(balance, cashAmount)
-    uint cashBalance = accounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
-    if (cashBalance < cashAmountNeeded) {
-      cashAmountPaid = cashBalance;
+    uint useableCash = accounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
+    (,, uint staticCashOffset,) = pcrm.portfolioDiscountParams();
+
+    // To ensure socialized losses can never be blocked, 
+    // ensuring the SM never gives more than the staticCashOffset imposed by the PCRM.
+    if (useableCash < staticCashOffset) {
+      revert SM_BalanceBelowPCRMStaticCashOffset(useableCash, staticCashOffset);
+    }
+    useableCash -= staticCashOffset;
+
+    // payout up to useable cash
+    if (useableCash < cashAmountNeeded) {
+      cashAmountPaid = useableCash;
     } else {
       cashAmountPaid = cashAmountNeeded;
     }
@@ -188,4 +203,10 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
 
     _;
   }
+  
+  ////////////
+  // Errors //
+  ////////////
+
+  error SM_BalanceBelowPCRMStaticCashOffset(uint cashBalance, uint staticCashOffset);
 }
