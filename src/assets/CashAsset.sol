@@ -422,12 +422,12 @@ contract CashAsset is ICashAsset, Owned {
 
     // Calculate interest since last timestamp using compounded interest rate
     uint realSupply = totalSupply; // include netSettledCash in the totalSupply
-    
-    // Only if we have "burned" supply from an asymmetric settlement, we add that amount to prevent 
+
+    // Only if we have "burned" supply from an asymmetric settlement, we add that amount to prevent
     // interest rate from spiking. Ignore "minted" supply since that only decreases interest rate.
     if (netSettledCash < 0) {
-      realSupply += (-netSettledCash).toUint256();  // util = totalBorrow/(totalSupply + netBurned)
-    } 
+      realSupply += (-netSettledCash).toUint256(); // util = totalBorrow/(totalSupply + netBurned)
+    }
 
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
