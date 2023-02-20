@@ -275,6 +275,11 @@ contract IntegrationTestBase is Test {
     return pcrm.getInitialMargin(portfolio);
   }
 
+  function getAccInitMarginRVZero(uint acc) public view returns (int) {
+    PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
+    return pcrm.getInitialMarginRVZero(portfolio);
+  }
+
   function getAccMaintenanceMargin(uint acc) public view returns (int) {
     PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
     return pcrm.getMaintenanceMargin(portfolio);
