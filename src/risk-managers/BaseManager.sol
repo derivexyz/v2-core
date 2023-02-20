@@ -13,7 +13,7 @@ import "src/interfaces/IBaseManager.sol";
 import "src/libraries/IntLib.sol";
 import "src/libraries/DecimalMath.sol";
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMGrouping.sol";
+import "src/libraries/StrikeGrouping.sol";
 
 abstract contract BaseManager is AccountStructs, IBaseManager {
   using IntLib for int;
@@ -107,7 +107,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager {
 
     // add strike in-memory to portfolio
     (addedStrikeIndex, portfolio.numStrikesHeld) =
-      PCRMGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
+      StrikeGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
 
     // add call or put balance
     if (isCall) {

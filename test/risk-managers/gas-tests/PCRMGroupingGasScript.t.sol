@@ -16,7 +16,7 @@ import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
-contract PCRMGroupingGasScript is Script {
+contract StrikeGroupingGasScript is Script {
   Accounts account;
   PCRM pcrm;
 

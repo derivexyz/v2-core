@@ -16,7 +16,7 @@ import "src/interfaces/IPCRM.sol";
 import "src/assets/Option.sol";
 
 import "src/libraries/OptionEncoding.sol";
-import "src/libraries/PCRMGrouping.sol";
+import "src/libraries/StrikeGrouping.sol";
 import "src/libraries/Black76.sol";
 import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
@@ -106,6 +106,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     public
     override
   {
+    spotJumpOracle.updateJumps();
     // todo [Josh]: whitelist check
 
     // bypass the IM check if only adding cash
@@ -117,7 +118,6 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     // check initial margin
-    spotJumpOracle.updateJumps();
     _checkInitialMargin(portfolio);
   }
 
@@ -577,7 +577,7 @@ contract PCRM is BaseManager, IManager, Owned, IPCRM {
         strikeIndex = _addOption(portfolio, currentAsset);
 
         // if possible, combine calls and puts into forwards
-        PCRMGrouping.updateForwards(portfolio.strikes[strikeIndex]);
+        StrikeGrouping.updateForwards(portfolio.strikes[strikeIndex]);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       }
