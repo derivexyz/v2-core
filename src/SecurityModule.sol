@@ -203,10 +203,4 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
 
     _;
   }
-
-  ////////////
-  // Errors //
-  ////////////
-
-  error SM_BalanceBelowPCRMStaticCashOffset(uint cashBalance, uint staticCashOffset);
 }

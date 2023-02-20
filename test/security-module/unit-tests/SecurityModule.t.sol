@@ -62,7 +62,7 @@ contract UNIT_SecurityModule is Test {
 
     // even $1 payout should revert
     vm.startPrank(liquidation);
-    vm.expectRevert(abi.encodeWithSelector(SecurityModule.SM_BalanceBelowPCRMStaticCashOffset.selector, 40e18, 50e18));
+    vm.expectRevert(abi.encodeWithSelector(ISecurityModule.SM_BalanceBelowPCRMStaticCashOffset.selector, 40e18, 50e18));
     securityModule.requestPayout(accountId, 1e18);
     vm.stopPrank();
   }

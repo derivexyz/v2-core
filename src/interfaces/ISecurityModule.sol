@@ -37,4 +37,5 @@ interface ISecurityModule {
   ////////////
 
   error SM_NotWhitelisted();
+  error SM_BalanceBelowPCRMStaticCashOffset(uint cashBalance, uint staticCashOffset);
 }
