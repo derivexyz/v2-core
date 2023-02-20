@@ -52,6 +52,21 @@ contract UNIT_SecurityModule is Test {
     accountId = accounts.createAccount(address(this), manager);
   }
 
+  function testRequestPayoutWhenCashBelowOffset() public {
+    // deposit below the PCRM static offset
+    manager.setStaticOffset(50e18); // $50 in cashAsset decimals
+    securityModule.deposit(40e6); // $40 in USDC decimals
+
+    // allow liquidation to call .requestPayout()
+    securityModule.setWhitelistModule(liquidation, true);
+
+    // even $1 payout should revert
+    vm.startPrank(liquidation);
+    vm.expectRevert(abi.encodeWithSelector(SecurityModule.SM_BalanceBelowPCRMStaticCashOffset.selector, 40e18, 50e18));
+    securityModule.requestPayout(accountId, 1e18);
+    vm.stopPrank();
+  }
+
   function testDepositIntoSM() public {
     uint depositAmount = 1000e6;
 

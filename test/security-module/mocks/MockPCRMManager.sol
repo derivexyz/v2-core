@@ -15,4 +15,7 @@ contract MockPCRMManager is MockManager {
   function portfolioDiscountParams() external view returns (uint, uint, uint, uint) {
     return (0, 0, initialStaticCashOffset, 0);
   }
+
+  // add in a function prefixed with test here to prevent coverage from picking it up.
+  function test() public override {}
 }
