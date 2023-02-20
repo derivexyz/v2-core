@@ -253,7 +253,9 @@ contract PCRM is BaseManager, IManager, IPCRM {
       _getSpotJumpMultiple(volShockParams.spotJumpMultipleSlope, volShockParams.spotJumpMultipleLookback)
     );
 
-    return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
+    margin = _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
+
+    return margin - portfolioDiscountParams.initialStaticCashOffset.toInt256();
   }
 
   /**

@@ -147,6 +147,7 @@ contract StrikeGroupingGasScript is Script {
       IPCRM.PortfolioDiscountParams({
         maintenance: 0.9e18, // 90%
         initial: 0.8e18, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 0.1e18 // 10%
       })
     );

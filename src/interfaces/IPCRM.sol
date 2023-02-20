@@ -71,6 +71,8 @@ interface IPCRM is IBaseManager {
     uint maintenance;
     /// initial discount applied to whole expiry
     uint initial;
+    // static cash requirement on top of the usual initial margin requirement
+    uint initialStaticCashOffset;
     /// used when discounting to net present value by risk free rate
     uint riskFreeRate;
   }

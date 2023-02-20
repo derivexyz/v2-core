@@ -97,6 +97,7 @@ contract UNIT_TestPCRM is Test {
       IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 10e16 // 10%
       })
     );
@@ -139,6 +140,7 @@ contract UNIT_TestPCRM is Test {
       IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 10e16 // 10%
       })
     );
@@ -165,6 +167,7 @@ contract UNIT_TestPCRM is Test {
       IPCRM.PortfolioDiscountParams({
         maintenance: 85e16, // 90%
         initial: 75e16, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 20e16 // 10%
       })
     );
@@ -180,9 +183,11 @@ contract UNIT_TestPCRM is Test {
     assertEq(minVol, 1e18);
     assertEq(maxVol, 400e16);
 
-    (uint maintenance, uint initial, uint riskFreeRate) = manager.portfolioDiscountParams();
+    (uint maintenance, uint initial, uint initialStaticCashOffset, uint riskFreeRate) =
+      manager.portfolioDiscountParams();
     assertEq(maintenance, 85e16);
     assertEq(initial, 75e16);
+    assertEq(initialStaticCashOffset, 0);
     assertEq(riskFreeRate, 20e16);
   }
 
@@ -207,6 +212,7 @@ contract UNIT_TestPCRM is Test {
     IPCRM.PortfolioDiscountParams memory validPortfolioParam = IPCRM.PortfolioDiscountParams({
       maintenance: 90e16, // 90%
       initial: 80e16, // 80%
+      initialStaticCashOffset: 0,
       riskFreeRate: 10e16 // 10%
     });
 

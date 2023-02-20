@@ -31,16 +31,6 @@ contract PCRMTester is PCRM {
     ISpotJumpOracle spotJumpOracle_
   ) PCRM(accounts_, feed_, feed_, cashAsset_, option_, auction_, spotJumpOracle_) {}
 
-  // function getTimeWeightedMarginParams(
-  //   uint spotUpPercent,
-  //   uint spotDownPercent,
-  //   uint spotTimeSlope,
-  //   uint portfolioDiscountFactor,
-  //   int timeToExpiry
-  // ) external view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
-  //   return getTimeWeightedMarginParams(spotUpPercent, spotDownPercent, spotTimeSlope, portfolioDiscountFactor, timeToExpiry);
-  // }
-
   function applyTimeWeightToSpotShocks(
     uint spot,
     uint spotUpPercent,
@@ -117,6 +107,7 @@ contract UNIT_TimeWeightingPCRM is Test {
       IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 10e16 // 10%
       })
     );

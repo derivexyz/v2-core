@@ -81,6 +81,7 @@ contract UNIT_TestPCRM is Test {
       IPCRM.PortfolioDiscountParams({
         maintenance: 90e16, // 90%
         initial: 80e16, // 80%
+        initialStaticCashOffset: 0,
         riskFreeRate: 10e16 // 10%
       })
     );
