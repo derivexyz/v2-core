@@ -69,8 +69,6 @@ contract UNIT_BidAuction is Test {
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
       stepInterval: 2,
       lengthOfAuction: 200,
-      portfolioModifier: 1e18,
-      inversePortfolioModifier: 1e18,
       secBetweenSteps: 0,
       liquidatorFeeRate: 0.05e18
     });

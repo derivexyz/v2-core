@@ -355,8 +355,6 @@ contract IntegrationTestBase is Test {
     param = DutchAuction.DutchAuctionParameters({
       stepInterval: 2,
       lengthOfAuction: 200,
-      portfolioModifier: 1e18,
-      inversePortfolioModifier: 1e18,
       secBetweenSteps: 1, // cool down
       liquidatorFeeRate: 0.05e18
     });

@@ -71,10 +71,6 @@ contract DutchAuction is IDutchAuction, Owned {
     uint stepInterval;
     /// Big number: Total length of an auction in seconds
     uint lengthOfAuction;
-    // Big number: portfolio modifier
-    int portfolioModifier;
-    // Big number: inversed modifier
-    int inversePortfolioModifier;
     // Number, Amount of time between steps when the auction is insolvent
     uint secBetweenSteps;
     // Liquidator fee rate in percentage, 1e18 = 100%
@@ -470,8 +466,8 @@ contract DutchAuction is IDutchAuction, Owned {
     _inversePortfolio(portfolio);
 
     // get the initial margin for the inversed portfolio
-    upperBound = getInitMarginForInversedPortfolio(accountId).multiplyDecimal(parameters.portfolioModifier);
-    lowerBound = getInitMarginForAccount(accountId).multiplyDecimal(parameters.inversePortfolioModifier);
+    upperBound = getInitMarginForInversedPortfolio(accountId);
+    lowerBound = getInitMarginForAccount(accountId);
   }
 
   /**
