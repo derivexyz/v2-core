@@ -262,7 +262,21 @@ contract UNIT_TestPCRM is Test {
   ////////////////////
 
   function testValidManagerChange() public {
-    // fully tested in TestMLRM.t.sol due to identical implementation;
+    MockManager newManager = new MockManager(address(account));
+
+    // first fails the change
+    vm.startPrank(alice);
+    vm.expectRevert(
+      abi.encodeWithSelector(BaseManager.BM_ManagerNotWhitelisted.selector, aliceAcc, address(newManager))
+    );
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    vm.stopPrank();
+
+    // should pass once approved
+    manager.setWhitelistManager(address(newManager), true);
+    vm.startPrank(alice);
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    vm.stopPrank();
   }
 
   //////////////////
