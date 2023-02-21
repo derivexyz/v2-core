@@ -196,6 +196,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     int fee = accounts.getBalance(tester.feeRecipientAcc(), cash, 0) - cashBefore;
     // fee = 1 * 0.1% * 2000;
     assertEq(fee, 2e18);
+    assertEq(tester.feeCharged(tradeId, aliceAcc), uint(fee));
   }
 
   function testShouldNotChargeFeeIfOIDecrease() public {
