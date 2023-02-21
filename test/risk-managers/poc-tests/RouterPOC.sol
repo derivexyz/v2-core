@@ -6,7 +6,6 @@ import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/IPCRM.sol";
 
 contract OrderRouter {
-
   IAccounts immutable accounts;
   IAsset immutable cashAsset;
   IPCRM immutable pcrm;
@@ -21,7 +20,7 @@ contract OrderRouter {
     ownAcc = accounts.createAccount(address(this), IManager(address(_pcrm)));
   }
 
-function submitOrders(AccountStructs.AssetTransfer[] memory transfers) external {
+  function submitOrders(AccountStructs.AssetTransfer[] memory transfers) external {
     // validate order signature, etc
 
     // transfer funds with accounts
@@ -30,7 +29,7 @@ function submitOrders(AccountStructs.AssetTransfer[] memory transfers) external 
     // get fee from pcrm (Base manager)
     uint accountA = transfers[0].fromAcc;
     uint fee = pcrm.feeCharged(tradeId, accountA);
-    
+
     // refund fee to accountA
     AccountStructs.AssetTransfer[] memory refunds = new AccountStructs.AssetTransfer[](1);
     refunds[0] = AccountStructs.AssetTransfer({
@@ -42,12 +41,8 @@ function submitOrders(AccountStructs.AssetTransfer[] memory transfers) external 
       assetData: ""
     });
     accounts.submitTransfers(refunds, "");
-
-
   }
 
   // add this to be excluded from coverage report
-  function test() public {
-
-  }
+  function test() public {}
 }

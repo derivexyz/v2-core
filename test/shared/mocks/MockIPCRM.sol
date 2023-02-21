@@ -160,7 +160,7 @@ contract MockIPCRM is IPCRM, IManager {
     return (80e16, 70e16, 50e18, 10e16);
   }
 
-  function feeCharged(uint /*tradeId*/, uint /*account*/) external pure returns (uint) {
+  function feeCharged(uint, /*tradeId*/ uint /*account*/ ) external pure returns (uint) {
     return 0;
   }
 
