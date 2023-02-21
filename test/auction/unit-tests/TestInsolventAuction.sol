@@ -29,8 +29,6 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
       DutchAuction.DutchAuctionParameters({
         stepInterval: 2,
         lengthOfAuction: 200,
-        portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18,
         secBetweenSteps: 0,
         liquidatorFeeRate: 0.05e18
       })
@@ -136,8 +134,6 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
       DutchAuction.DutchAuctionParameters({
         stepInterval: 2,
         lengthOfAuction: 2,
-        portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18,
         liquidatorFeeRate: 0.05e18,
         secBetweenSteps: 0 // cool down is 0
       })
@@ -156,8 +152,6 @@ contract UNIT_TestInvolventAuction is DutchAuctionBase {
       DutchAuction.DutchAuctionParameters({
         stepInterval: 2,
         lengthOfAuction: 200,
-        portfolioModifier: 1e18,
-        inversePortfolioModifier: 1e18,
         liquidatorFeeRate: 0.05e18,
         secBetweenSteps: 100
       })

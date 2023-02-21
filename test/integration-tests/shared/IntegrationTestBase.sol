@@ -251,6 +251,13 @@ contract IntegrationTestBase is Test {
     feed.setSettlementPrice(expiry);
   }
 
+  /**
+   * @dev trigger jump update
+   */
+  function _updateJumps() internal {
+    spotJumpOracle.updateJumps();
+  }
+
   function _assertCashSolvent() internal {
     // exchange rate should be >= 1
     assertGe(cash.getCashToStableExchangeRate(), 1e18);
@@ -273,6 +280,11 @@ contract IntegrationTestBase is Test {
   function getAccInitMargin(uint acc) public view returns (int) {
     PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
     return pcrm.getInitialMargin(portfolio);
+  }
+
+  function getAccInitMarginRVZero(uint acc) public view returns (int) {
+    PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
+    return pcrm.getInitialMarginWithoutJumpMultiple(portfolio);
   }
 
   function getAccMaintenanceMargin(uint acc) public view returns (int) {
@@ -355,8 +367,6 @@ contract IntegrationTestBase is Test {
     param = DutchAuction.DutchAuctionParameters({
       stepInterval: 2,
       lengthOfAuction: 200,
-      portfolioModifier: 1e18,
-      inversePortfolioModifier: 1e18,
       secBetweenSteps: 1, // cool down
       liquidatorFeeRate: 0.05e18
     });
