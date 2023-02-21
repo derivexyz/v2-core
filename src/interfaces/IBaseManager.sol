@@ -6,6 +6,8 @@ interface IBaseManager {
   // Structs //
   /////////////
 
+  function feeCharged(uint tradeId, uint account) external view returns (uint);
+
   struct Portfolio {
     /// cash amount or debt
     int cash;
