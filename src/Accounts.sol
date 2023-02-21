@@ -282,8 +282,11 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to managers of both accounts
    */
-  function submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData) external {
-    _submitTransfer(assetTransfer, managerData);
+  function submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData)
+    external
+    returns (uint tradeId)
+  {
+    return _submitTransfer(assetTransfer, managerData);
   }
 
   /**
@@ -293,8 +296,11 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to every manager involved in trade
    */
-  function submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData) external {
-    _submitTransfers(assetTransfers, managerData);
+  function submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData)
+    external
+    returns (uint tradeId)
+  {
+    return _submitTransfers(assetTransfers, managerData);
   }
 
   /**
@@ -309,9 +315,9 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     bytes calldata managerData,
     PermitAllowance calldata allowancePermit,
     bytes calldata signature
-  ) external {
+  ) external returns (uint tradeId) {
     _permit(allowancePermit, signature);
-    _submitTransfer(assetTransfer, managerData);
+    return _submitTransfer(assetTransfer, managerData);
   }
 
   /**
@@ -326,11 +332,11 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     bytes calldata managerData,
     PermitAllowance[] calldata allowancePermits,
     bytes[] calldata signatures
-  ) external {
+  ) external returns (uint tradeId) {
     for (uint i; i < allowancePermits.length; ++i) {
       _permit(allowancePermits[i], signatures[i]);
     }
-    _submitTransfers(assetTransfers, managerData);
+    return _submitTransfers(assetTransfers, managerData);
   }
 
   /**
@@ -338,8 +344,11 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param assetTransfer Detail struct (fromAcc, toAcc, asset, subId, amount)
    * @param managerData Data passed to managers of both accounts
    */
-  function _submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData) internal {
-    uint tradeId = ++lastTradeId;
+  function _submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData)
+    internal
+    returns (uint tradeId)
+  {
+    tradeId = ++lastTradeId;
     (int fromDelta, int toDelta) = _transferAsset(assetTransfer, tradeId);
     _managerHook(
       assetTransfer.fromAcc,
@@ -364,7 +373,10 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param assetTransfers Array of (fromAcc, toAcc, asset, subId, amount)
    * @param managerData Data passed to every manager involved in trade
    */
-  function _submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData) internal {
+  function _submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData)
+    internal
+    returns (uint tradeId)
+  {
     // keep track of seen accounts to assess risk once per account
     uint[] memory seenAccounts = new uint[](assetTransfers.length * 2);
 
@@ -373,7 +385,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     AssetDeltaArrayCache[] memory assetDeltas = new AssetDeltaArrayCache[](assetTransfers.length * 2);
 
     uint nextSeenId = 0;
-    uint tradeId = ++lastTradeId;
+    tradeId = ++lastTradeId;
 
     for (uint i; i < assetTransfers.length; ++i) {
       // if from or to account is not seens before, add to seenAccounts in memory
