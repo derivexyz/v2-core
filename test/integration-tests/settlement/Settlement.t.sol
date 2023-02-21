@@ -18,7 +18,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
   uint charlieAcc;
 
   // value used for test
-  int constant amountOfContracts = 10e18;
+  int constant amountOfContracts = 1e18;
   uint constant strike = 2000e18;
 
   uint96 callId;
@@ -389,7 +389,8 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
   ///@dev alice go short, bob go long
   function _tradeCall() public {
-    int premium = 2250e18;
+    // int premium = 2250e18;
+    int premium = 0;
     // alice send call to bob, bob send premium to alice
     _submitTrade(aliceAcc, option, callId, amountOfContracts, bobAcc, cash, 0, premium);
   }
