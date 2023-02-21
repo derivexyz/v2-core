@@ -227,11 +227,14 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     AssetDelta[] memory assetDeltas = new AssetDelta[](1);
     assetDeltas[0] = AssetDelta(cash, 0, amount);
 
+    uint tradeId = 1;
+
     int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
-    tester.chargeOIFee(aliceAcc, 0, assetDeltas);
+    tester.chargeOIFee(aliceAcc, tradeId, assetDeltas);
 
     // no fee: balance stays the same
     assertEq(accounts.getBalance(tester.feeRecipientAcc(), cash, 0), cashBefore);
+    assertEq(tester.feeCharged(tradeId, aliceAcc), 0);
   }
 
   function testOnlyChargeFeeOnSubIDWIthOIIncreased() public {
