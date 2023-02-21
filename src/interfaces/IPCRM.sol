@@ -97,8 +97,8 @@ interface IPCRM is IBaseManager {
   /// @dev returns the initial margin for a given portfolio
   function getInitialMargin(Portfolio memory portfolio) external view returns (int);
 
-  /// @dev return the initial margin for a given portfolio, assuming realized vol is 0
-  function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int);
+  /// @dev return the initial margin for a given portfolio, assuming realized vol is 0 (not applying spot jump multiple)
+  function getInitialMarginWithoutJumpMultiple(Portfolio memory portfolio) external view returns (int);
 
   /// @dev returns the maintenance margin for a given portfolio
   function getMaintenanceMargin(Portfolio memory portfolio) external view returns (int);

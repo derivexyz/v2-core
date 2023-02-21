@@ -34,7 +34,7 @@ contract MockIPCRM is IPCRM, IManager {
   // next maintenance margin that should be returned when calling getMaintenanceMargin
   int public mockedMaintenanceMarginForPortfolio;
 
-  // next margin that should be returned when calling getInitialMarginRVZero
+  // next margin that should be returned when calling getInitialMarginWithoutJumpMultiple
   int public mockedInitMarginZeroRV;
 
   Portfolio public userAcc; // just a result that can be set to be returned when testing
@@ -143,7 +143,7 @@ contract MockIPCRM is IPCRM, IManager {
     return mockedMaintenanceMarginForPortfolio;
   }
 
-  function getInitialMarginRVZero(IPCRM.Portfolio memory) external view returns (int) {
+  function getInitialMarginWithoutJumpMultiple(IPCRM.Portfolio memory) external view returns (int) {
     if (revertGetMargin) revert("mocked revert");
     return mockedInitMarginZeroRV;
   }

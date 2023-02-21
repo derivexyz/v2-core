@@ -283,7 +283,7 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   function getInitMarginForAccountRVZero(uint accountId) public view returns (int) {
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
-    return riskManager.getInitialMarginRVZero(portfolio);
+    return riskManager.getInitialMarginWithoutJumpMultiple(portfolio);
   }
 
   /**

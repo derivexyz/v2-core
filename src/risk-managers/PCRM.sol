@@ -283,7 +283,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
    * @param portfolio Cash + arranged option portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int margin) {
+  function getInitialMarginWithoutJumpMultiple(Portfolio memory portfolio) external view returns (int margin) {
     (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = getTimeWeightedMarginParams(
       spotShockParams.upInitial,
       spotShockParams.downInitial,
