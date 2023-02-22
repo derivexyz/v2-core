@@ -6,7 +6,6 @@ import "forge-std/StdJson.sol";
 import "openzeppelin/utils/Strings.sol";
 import "forge-std/console2.sol";
 
-
 // for more info on json parsing:
 // https://book.getfoundry.sh/cheatcodes/parse-json#decoding-json-objects-into-solidity-structs
 contract JsonMechIO is Test {
@@ -32,9 +31,9 @@ contract JsonMechIO is Test {
   // 1            -800422150756  1004507350350  ...          0         4
   // ...................................................................
   // N                     -123            321  ...         49        69
-  // 
+  //
   // User must keep track of the decimals
-  // 
+  //
   // Important:
   // 1) colimns must be sorted alphabetically
   // 2) everything is assumed to be an int
@@ -45,27 +44,4 @@ contract JsonMechIO is Test {
     key = string.concat(key, "]");
     return json.readInt(key);
   }
-
-  // searches for a value in a column, returning the index
-  // useful when there's a column such as "Time", and you want to look-up say spot price recorded at some time
-  // searches the column in the order of increasing index
-  // returns the first match, and reverts if match was not found
-  function findIndexForValue(string memory json, string memory col, int value) public returns (uint index) {
-    uint i = 0;
-    // int ithValue;
-    string memory key;
-    while (true) {
-      key = string.concat(".", col);
-      key = string.concat(key, ".");
-      key = string.concat(key, Strings.toString(i));
-      try vm.parseJsonInt(json, key) returns (int ithValue) {
-        if (ithValue == value) return i;
-        else i++;
-      } catch {
-        revert JsonMechOI_ValueNotFound(col, value);
-      }
-    }
-  }
-
-  error JsonMechOI_ValueNotFound(string, int);
 }
