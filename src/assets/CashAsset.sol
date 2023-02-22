@@ -12,7 +12,6 @@ import "src/libraries/ConvertDecimals.sol";
 import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
-import "forge-std/console2.sol";
 
 /**
  * @title Cash asset with built-in lending feature.

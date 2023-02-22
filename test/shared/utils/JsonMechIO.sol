@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "openzeppelin/utils/Strings.sol";
-import "forge-std/console2.sol";
 
 // for more info on json parsing:
 // https://book.getfoundry.sh/cheatcodes/parse-json#decoding-json-objects-into-solidity-structs

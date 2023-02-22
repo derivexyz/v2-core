@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "forge-std/console2.sol";
 
 import "../shared/IntegrationTestBase.sol";
 import "src/interfaces/IManager.sol";
