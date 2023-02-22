@@ -28,7 +28,7 @@ interface ICashAsset is IAsset {
    * @param lossAmountInCash Total amount of cash loss
    * @param accountToReceive Account to receive the new printed amount
    */
-  function socializeLoss(uint128 lossAmountInCash, uint accountToReceive) external;
+  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external;
 
   /**
    * @notice Returns latest balance without updating accounts but will update indexes
@@ -47,7 +47,7 @@ interface ICashAsset is IAsset {
    * @dev Required to track printed cash for asymmetric settlements
    * @param amountCash Amount of cash printed or burned
    */
-  function updateSettledCash(int128 amountCash) external;
+  function updateSettledCash(int amountCash) external;
 
   ////////////////
   //   Events   //

@@ -23,7 +23,7 @@ contract MockCash is ICashAsset, MockAsset {
 
   constructor(IERC20 token_, IAccounts accounts_) MockAsset(token_, accounts_, true) {}
 
-  function socializeLoss(uint128 lossAmountInCash, uint accountToReceive) external {
+  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
     isSocialized = true;
     account.assetAdjustment(
       AccountStructs.AssetAdjustment({
@@ -84,7 +84,7 @@ contract MockCash is ICashAsset, MockAsset {
     mockedExchangeRate = rate;
   }
 
-  function updateSettledCash(int128 amountCash) external {
+  function updateSettledCash(int amountCash) external {
     netSettledCash += amountCash;
   }
 

@@ -25,6 +25,7 @@ contract CashAsset is ICashAsset, Owned {
   using ConvertDecimals for uint;
   using SafeCast for uint;
   using SafeCast for uint128;
+  using SafeCast for int;
   using SafeCast for int128;
   using SignedDecimalMath for int128;
   using SignedDecimalMath for int;
@@ -335,11 +336,11 @@ contract CashAsset is ICashAsset, Owned {
    * @param lossAmountInCash Total amount of cash loss
    * @param accountToReceive Account to receive the new printed amount
    */
-  function socializeLoss(uint128 lossAmountInCash, uint accountToReceive) external onlyLiquidation {
+  function socializeLoss(uint lossAmountInCash, uint accountToReceive) external onlyLiquidation {
     // accruedSmFees cover as much of the insolvency as possible
     // totalSupply/Borrow will be updated in the following adjustment
     if (lossAmountInCash <= accruedSmFees) {
-      accruedSmFees -= lossAmountInCash;
+      accruedSmFees -= lossAmountInCash.toUint128();
     } else {
       accruedSmFees = 0;
     }
@@ -373,9 +374,9 @@ contract CashAsset is ICashAsset, Owned {
    * @dev Required to track printed cash for asymmetric settlements
    * @param amountCash Amount of cash printed or burned
    */
-  function updateSettledCash(int128 amountCash) external {
+  function updateSettledCash(int amountCash) external {
     _checkManager(address(msg.sender));
-    netSettledCash += amountCash;
+    netSettledCash += amountCash.toInt128();
 
     emit SettledCashUpdated(amountCash, netSettledCash);
   }
@@ -433,15 +434,16 @@ contract CashAsset is ICashAsset, Owned {
     }
 
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
-    uint128 borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
-    uint128 interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
+    uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
+    uint128 interestAccrued = (totalBorrow.multiplyDecimal(borrowInterestFactor)).toUint128();
+
 
     // Update totalBorrow with interestAccrued
     uint128 prevBorrow = totalBorrow;
     totalBorrow += interestAccrued;
 
     // Take security module fee cut from total interest accrued
-    uint128 smFeeCut = interestAccrued.multiplyDecimal(smFeePercentage);
+    uint128 smFeeCut = (interestAccrued.multiplyDecimal(smFeePercentage)).toUint128();
     accruedSmFees += smFeeCut;
 
     // Update total supply with interestAccrued - smFeeCut
@@ -460,7 +462,8 @@ contract CashAsset is ICashAsset, Owned {
    * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
-    uint totalCash = (int(totalSupply) + int(accruedSmFees) - int(totalBorrow) - netSettledCash).toUint256();
+    // uint totalCash = (int(totalSupply) + int(accruedSmFees) - int(totalBorrow) - netSettledCash).toUint256();
+    uint totalCash = ((totalSupply).toInt256() + (accruedSmFees).toInt256() - (totalBorrow).toInt256() - netSettledCash).toUint256();
 
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
@@ -472,8 +475,12 @@ contract CashAsset is ICashAsset, Owned {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    totalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
-    totalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
+    // totalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
+    // totalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
+    uint qtotalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
+    uint qtotalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
+    totalSupply = qtotalSupply.toUint128();
+    totalBorrow = qtotalBorrow.toUint128();
   }
 
   ///////////////////
