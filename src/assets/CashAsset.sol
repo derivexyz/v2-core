@@ -475,12 +475,10 @@ contract CashAsset is ICashAsset, Owned {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    // totalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
-    // totalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
-    uint qtotalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
-    uint qtotalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
-    totalSupply = qtotalSupply.toUint128();
-    totalBorrow = qtotalBorrow.toUint128();
+    uint newtotalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
+    uint nwetotalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
+    totalSupply = newtotalSupply.toUint128();
+    totalBorrow = nwetotalBorrow.toUint128();
   }
 
   ///////////////////
