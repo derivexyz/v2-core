@@ -24,8 +24,12 @@ contract CashAsset is ICashAsset, Owned {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
+  using SafeCast for uint128;
   using SafeCast for int;
+  using SafeCast for int128;
+  using SignedDecimalMath for int128;
   using SignedDecimalMath for int;
+  using DecimalMath for uint128;
   using DecimalMath for uint;
 
   ///@dev Account contract address
@@ -43,24 +47,21 @@ contract CashAsset is ICashAsset, Owned {
   ///@dev The security module accountId used for collecting a portion of fees
   uint public immutable smId;
 
-  ///@dev Store stable coin decimal as immutable
-  uint8 private immutable stableDecimals;
-
   /////////////////////////
   //   State Variables   //
   /////////////////////////
 
   ///@dev Total amount of positive balances
-  uint public totalSupply;
+  uint128 public totalSupply;
 
   ///@dev Total amount of negative balances
-  uint public totalBorrow;
+  uint128 public totalBorrow;
 
   ///@dev Net amount of cash printed/burned due to settlement
-  int public netSettledCash;
+  int128 public netSettledCash;
 
   ///@dev Total accrued fees for the security module
-  uint public accruedSmFees;
+  uint128 public accruedSmFees;
 
   ///@dev Represents the growth of $1 of debt since deploy
   uint public borrowIndex = DecimalMath.UNIT;
@@ -80,6 +81,9 @@ contract CashAsset is ICashAsset, Owned {
   ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
   ///     In which case we turn on the withdraw fee to prevent bank-run
   bool public temporaryWithdrawFeeEnabled;
+
+  ///@dev Store stable coin decimal as immutable
+  uint8 private immutable stableDecimals;
 
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
@@ -336,7 +340,7 @@ contract CashAsset is ICashAsset, Owned {
     // accruedSmFees cover as much of the insolvency as possible
     // totalSupply/Borrow will be updated in the following adjustment
     if (lossAmountInCash <= accruedSmFees) {
-      accruedSmFees -= lossAmountInCash;
+      accruedSmFees -= lossAmountInCash.toUint128();
     } else {
       accruedSmFees = 0;
     }
@@ -372,7 +376,7 @@ contract CashAsset is ICashAsset, Owned {
    */
   function updateSettledCash(int amountCash) external {
     _checkManager(address(msg.sender));
-    netSettledCash += amountCash;
+    netSettledCash += amountCash.toInt128();
 
     emit SettledCashUpdated(amountCash, netSettledCash);
   }
@@ -431,18 +435,18 @@ contract CashAsset is ICashAsset, Owned {
 
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
-    uint interestAccrued = totalBorrow.multiplyDecimal(borrowInterestFactor);
+    uint128 interestAccrued = (totalBorrow.multiplyDecimal(borrowInterestFactor)).toUint128();
 
     // Update totalBorrow with interestAccrued
-    uint prevBorrow = totalBorrow;
+    uint128 prevBorrow = totalBorrow;
     totalBorrow += interestAccrued;
 
     // Take security module fee cut from total interest accrued
-    uint smFeeCut = interestAccrued.multiplyDecimal(smFeePercentage);
+    uint128 smFeeCut = (interestAccrued.multiplyDecimal(smFeePercentage)).toUint128();
     accruedSmFees += smFeeCut;
 
     // Update total supply with interestAccrued - smFeeCut
-    uint prevSupply = totalSupply;
+    uint128 prevSupply = totalSupply;
     totalSupply += (interestAccrued - smFeeCut);
 
     // Update borrow/supply index by calculating the % change of total * current borrow/supply index
@@ -457,7 +461,9 @@ contract CashAsset is ICashAsset, Owned {
    * @dev This value should be 1 unless there's an insolvency
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
-    uint totalCash = (int(totalSupply) + int(accruedSmFees) - int(totalBorrow) - netSettledCash).toUint256();
+    // uint totalCash = (int(totalSupply) + int(accruedSmFees) - int(totalBorrow) - netSettledCash).toUint256();
+    uint totalCash =
+      ((totalSupply).toInt256() + (accruedSmFees).toInt256() - (totalBorrow).toInt256() - netSettledCash).toUint256();
 
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
@@ -469,8 +475,12 @@ contract CashAsset is ICashAsset, Owned {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    totalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
-    totalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
+    uint newtotalSupply =
+      (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
+    uint nwetotalBorrow =
+      (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
+    totalSupply = newtotalSupply.toUint128();
+    totalBorrow = nwetotalBorrow.toUint128();
   }
 
   ///////////////////
