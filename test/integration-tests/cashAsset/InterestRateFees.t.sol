@@ -29,6 +29,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
 
     // todo: move the SM fee to the IntegrationTestBase?
     cash.setSmFee(0.2e18);
+    pcrm.setFeeRecipient(smAcc);
   }
 
   // to do single test, in terminal run: `forge test --match-test testNoInterestPaidForNoBorrow -vvvv`
@@ -61,7 +62,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     uint balanceOf_creation = usdc.balanceOf(address(cash));
     assertEq(totalSupply_creation - totalBorrow_creation, balanceOf_creation);
     // open trade
-    Position[] memory positions = _openBox(aliceAcc, bobAcc);
+    Position[] memory positions = _openBox(aliceAcc, bobAcc, 1000e18);
 
     jsonParser = new JsonMechIO();
     string memory json =
@@ -93,7 +94,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     stateIdx = 1;
     _setSpotPriceE18(2000e18);
     // trigger cash updates, deposit $1 to alice to bypass an IM revert due to accrued interest
-    _depositCash(address(alice), aliceAcc, 1e18);
+    _depositCash(address(alice), aliceAcc, 10e18);
     cash.transferSmFees();
     _depositCash(address(bob), bobAcc, 0);
     _depositCash(address(securityModule), smAcc, 0);

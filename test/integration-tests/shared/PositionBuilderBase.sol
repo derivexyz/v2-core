@@ -81,17 +81,17 @@ contract PositionBuilderBase is IntegrationTestBase {
   /**
    * @dev opens a max leveraged box (4 week expiry, 1 unit @ strike1 = spot and strike2 = spot + $100)
    */
-  function _openBox(uint longAcc, uint shortAcc) internal returns (Position[] memory positions) {
+  function _openBox(uint longAcc, uint shortAcc, uint notional) internal returns (Position[] memory positions) {
     // set up long and short accounts to hold leveraged box against one another
     uint expiry = block.timestamp + 4 weeks;
     uint strike1 = feed.getFuturePrice(expiry);
     uint strike2 = feed.getFuturePrice(expiry) + 100e18;
-
+    int numBoxes = int(notional) * 1e18 / 100e18;
     positions = new Position[](4);
-    positions[0] = Position({subId: uint96(option.getSubId(expiry, strike1, true)), amount: 1e18});
-    positions[1] = Position({subId: uint96(option.getSubId(expiry, strike1, false)), amount: -1e18});
-    positions[2] = Position({subId: uint96(option.getSubId(expiry, strike2, true)), amount: -1e18});
-    positions[3] = Position({subId: uint96(option.getSubId(expiry, strike2, false)), amount: 1e18});
+    positions[0] = Position({subId: uint96(option.getSubId(expiry, strike1, true)), amount: numBoxes});
+    positions[1] = Position({subId: uint96(option.getSubId(expiry, strike1, false)), amount: -numBoxes});
+    positions[2] = Position({subId: uint96(option.getSubId(expiry, strike2, true)), amount: -numBoxes});
+    positions[3] = Position({subId: uint96(option.getSubId(expiry, strike2, false)), amount: numBoxes});
     _openStrategy(longAcc, shortAcc, positions);
     return positions;
   }
