@@ -171,7 +171,7 @@ contract UNIT_TestPCRM is Test {
 
     manager.getInitialMargin(portfolio);
 
-    manager.getInitialMarginRVZero(portfolio);
+    manager.getInitialMarginWithoutJumpMultiple(portfolio);
 
     // todo: actually test
   }

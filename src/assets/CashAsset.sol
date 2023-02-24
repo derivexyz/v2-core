@@ -437,7 +437,6 @@ contract CashAsset is ICashAsset, Owned {
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
     uint128 interestAccrued = (totalBorrow.multiplyDecimal(borrowInterestFactor)).toUint128();
 
-
     // Update totalBorrow with interestAccrued
     uint128 prevBorrow = totalBorrow;
     totalBorrow += interestAccrued;
@@ -463,7 +462,8 @@ contract CashAsset is ICashAsset, Owned {
    */
   function _getExchangeRate() internal view returns (uint exchangeRate) {
     // uint totalCash = (int(totalSupply) + int(accruedSmFees) - int(totalBorrow) - netSettledCash).toUint256();
-    uint totalCash = ((totalSupply).toInt256() + (accruedSmFees).toInt256() - (totalBorrow).toInt256() - netSettledCash).toUint256();
+    uint totalCash =
+      ((totalSupply).toInt256() + (accruedSmFees).toInt256() - (totalBorrow).toInt256() - netSettledCash).toUint256();
 
     uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
@@ -475,8 +475,10 @@ contract CashAsset is ICashAsset, Owned {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    uint newtotalSupply = (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
-    uint nwetotalBorrow = (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
+    uint newtotalSupply =
+      (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
+    uint nwetotalBorrow =
+      (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
     totalSupply = newtotalSupply.toUint128();
     totalBorrow = nwetotalBorrow.toUint128();
   }

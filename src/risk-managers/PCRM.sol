@@ -13,8 +13,6 @@ import "src/interfaces/ISecurityModule.sol";
 import "src/interfaces/ISpotJumpOracle.sol";
 import "src/interfaces/IPCRM.sol";
 
-import "src/assets/Option.sol";
-
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/StrikeGrouping.sol";
 import "src/libraries/Black76.sol";
@@ -281,6 +279,24 @@ contract PCRM is BaseManager, IManager, IPCRM {
   }
 
   /**
+   * @notice Calculate the initial margin of account, but use rv = 0
+   * @param portfolio Cash + arranged option portfolio.
+   * @return margin Amount by which account is over or under the required margin.
+   */
+  function getInitialMarginWithoutJumpMultiple(Portfolio memory portfolio) external view returns (int margin) {
+    (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) = getTimeWeightedMarginParams(
+      spotShockParams.upInitial,
+      spotShockParams.downInitial,
+      spotShockParams.timeSlope,
+      portfolioDiscountParams.initial,
+      portfolio.expiry
+    );
+
+    // use static vol derived from time to expiry directly, without applying spot jump multiplier
+    return _calcMargin(portfolio, vol, spotUp, spotDown, portfolioDiscount);
+  }
+
+  /**
    * @notice Calculate the initial or maintenance margin of account.
    *         A positive value means the account is X amount over the required margin.
    * @param portfolio Account portfolio.
@@ -428,7 +444,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
    * @param spotUpPercent Percent by which to multiply spot to get the `up` scenario.
    * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario.
    * @param spotTimeSlope Rate at which to increase the shocks with larger `timeToExpiry`.
-   * @param portfolioDiscountFactor Initial discouting factor applied when option margin > 0.
+   * @param portfolioDiscountFactor Initial discounting factor applied when option margin > 0.
    * @param expiry expiry of the portfolio
    * @return vol Volatility.
    * @return spotUp Shocked up spot.
@@ -580,11 +596,6 @@ contract PCRM is BaseManager, IManager, IPCRM {
    */
   function getPortfolio(uint accountId) external view returns (Portfolio memory portfolio) {
     return _arrangePortfolio(accounts.getAccountBalances(accountId));
-  }
-
-  // @todo: update to real implementation
-  function getInitialMarginRVZero(Portfolio memory portfolio) external view returns (int margin) {
-    return getInitialMargin(portfolio);
   }
 
   ////////////

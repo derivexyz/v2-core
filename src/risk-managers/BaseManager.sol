@@ -48,6 +48,9 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
   mapping(address => bool) public whitelistedManager;
 
+  /// @dev mapping of tradeId => accountId => fee charged
+  mapping(uint => mapping(uint => uint)) public feeCharged;
+
   constructor(
     IAccounts _accounts,
     IFutureFeed _futureFeed,
@@ -186,6 +189,9 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     }
 
     if (fee > 0) {
+      // keep track of OI Fee
+      feeCharged[tradeId][accountId] = fee;
+
       // transfer cash to fee recipient account
       _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
     }
