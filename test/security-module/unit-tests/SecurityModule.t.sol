@@ -4,8 +4,8 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
-import "../../shared/mocks/MockManager.sol";
 import "../mocks/MockCash.sol";
+import "../mocks/MockPCRMManager.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
@@ -22,7 +22,7 @@ contract UNIT_SecurityModule is Test {
 
   MockCashAssetWithExchangeRate mockCash;
   MockERC20 usdc;
-  MockManager manager;
+  MockPCRMManager manager;
   Accounts accounts;
   SecurityModule securityModule;
 
@@ -32,7 +32,7 @@ contract UNIT_SecurityModule is Test {
   function setUp() public {
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(accounts));
+    manager = new MockPCRMManager(address(accounts));
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
@@ -41,7 +41,7 @@ contract UNIT_SecurityModule is Test {
     mockCash = new MockCashAssetWithExchangeRate(accounts, usdc);
     mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
-    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, manager);
+    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, IPCRM(address(manager)));
 
     smAccId = securityModule.accountId();
 
@@ -50,6 +50,21 @@ contract UNIT_SecurityModule is Test {
     usdc.approve(address(securityModule), type(uint).max);
 
     accountId = accounts.createAccount(address(this), manager);
+  }
+
+  function testRequestPayoutWhenCashBelowOffset() public {
+    // deposit below the PCRM static offset
+    manager.setStaticOffset(50e18); // $50 in cashAsset decimals
+    securityModule.deposit(40e6); // $40 in USDC decimals
+
+    // allow liquidation to call .requestPayout()
+    securityModule.setWhitelistModule(liquidation, true);
+
+    // even $1 payout should revert
+    vm.startPrank(liquidation);
+    vm.expectRevert(abi.encodeWithSelector(ISecurityModule.SM_BalanceBelowPCRMStaticCashOffset.selector, 40e18, 50e18));
+    securityModule.requestPayout(accountId, 1e18);
+    vm.stopPrank();
   }
 
   function testDepositIntoSM() public {

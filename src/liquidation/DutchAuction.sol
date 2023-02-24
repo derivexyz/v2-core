@@ -7,6 +7,7 @@ import "../interfaces/IBaseManager.sol";
 import "../interfaces/ISecurityModule.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IDutchAuction.sol";
+import "../interfaces/ISpotJumpOracle.sol";
 import "../Accounts.sol";
 
 // inherited
@@ -35,15 +36,6 @@ contract DutchAuction is IDutchAuction, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-  struct AuctionDetails {
-    /// the accountId that is being liquidated
-    uint accountId;
-    /// The upperBound(starting price) of the auction in cash asset
-    int upperBound;
-    /// The lowerBound(ending price) of the auction in cash asset
-    int lowerBound;
-  }
-
   struct Auction {
     /// the accountId that is being liquidated
     uint accountId;
@@ -70,10 +62,6 @@ contract DutchAuction is IDutchAuction, Owned {
     uint stepInterval;
     /// Big number: Total length of an auction in seconds
     uint lengthOfAuction;
-    // Big number: portfolio modifier
-    int portfolioModifier;
-    // Big number: inversed modifier
-    int inversePortfolioModifier;
     // Number, Amount of time between steps when the auction is insolvent
     uint secBetweenSteps;
     // Liquidator fee rate in percentage, 1e18 = 100%
@@ -127,6 +115,8 @@ contract DutchAuction is IDutchAuction, Owned {
    * @param accountId The id of the account being liquidated
    */
   function startAuction(uint accountId) external {
+    ISpotJumpOracle(riskManager.spotJumpOracle()).updateJumps();
+
     if (getMaintenanceMarginForAccount(accountId) >= 0) {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
@@ -293,7 +283,7 @@ contract DutchAuction is IDutchAuction, Owned {
    */
   function getInitMarginForAccountRVZero(uint accountId) public view returns (int) {
     IPCRM.Portfolio memory portfolio = riskManager.getPortfolio(accountId);
-    return riskManager.getInitialMarginRVZero(portfolio);
+    return riskManager.getInitialMarginWithoutJumpMultiple(portfolio);
   }
 
   /**
@@ -466,8 +456,8 @@ contract DutchAuction is IDutchAuction, Owned {
     _inversePortfolio(portfolio);
 
     // get the initial margin for the inversed portfolio
-    upperBound = getInitMarginForInversedPortfolio(accountId).multiplyDecimal(parameters.portfolioModifier);
-    lowerBound = getInitMarginForAccount(accountId).multiplyDecimal(parameters.inversePortfolioModifier);
+    upperBound = getInitMarginForInversedPortfolio(accountId);
+    lowerBound = getInitMarginForAccount(accountId);
   }
 
   /**

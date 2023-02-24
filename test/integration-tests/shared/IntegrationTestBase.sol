@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 
-import "src/feeds/ChainlinkSpotFeeds.sol";
+import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/SecurityModule.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/CashAsset.sol";
@@ -13,6 +13,7 @@ import "src/assets/Option.sol";
 import "src/assets/InterestRateModel.sol";
 import "src/liquidation/DutchAuction.sol";
 import "src/Accounts.sol";
+import "src/risk-managers/SpotJumpOracle.sol";
 
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
@@ -39,14 +40,12 @@ contract IntegrationTestBase is Test {
   MockERC20 usdc;
   Option option;
   PCRM pcrm;
+  SpotJumpOracle spotJumpOracle;
   SecurityModule securityModule;
   InterestRateModel rateModel;
-  ChainlinkSpotFeeds feed;
   DutchAuction auction;
+  ChainlinkSpotFeed feed;
   MockV3Aggregator aggregator;
-
-  // feedId of the aggregator
-  uint feedId = 1;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
@@ -91,53 +90,61 @@ contract IntegrationTestBase is Test {
     // function call: doesn't increase deployment nonce
     usdc.setDecimals(6);
 
-    // nonce: 3  => Deploy Feed
-    feed = new ChainlinkSpotFeeds();
-    address addr3 = _predictAddress(address(this), 3);
-    assertEq(addr3, address(feed));
+    // nonce: 3  => Deploy Chainlink aggregator
+    aggregator = new MockV3Aggregator(8, 2000e8);
 
-    // nonce: 4 => Deploy RateModel
+    // nonce: 4 => Deploy Feed that will be used as future price and settlement price
+    feed = new ChainlinkSpotFeed(aggregator, 1 hours);
+
+    // nonce: 5 => Deploy RateModel
     // deploy rate model
     (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModelParam();
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    // nonce: 5 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 8);
+    // nonce: 6 => Deploy CashAsset
+    address auctionAddr = _predictAddress(address(this), 10);
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
-    // nonce: 6 => Deploy OptionAsset
-    option = new Option(accounts, address(feed), feedId);
+    // nonce: 7 => Deploy OptionAsset
+    option = new Option(accounts, address(feed));
 
-    // nonce: 7 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, cash, option, auctionAddr);
+    // nonce: 8 => deploy SpotJumpOracle
+    (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) =
+      _getDefaultSpotJumpParams(SafeCast.toUint256(ETH_PRICE));
+    spotJumpOracle = new SpotJumpOracle(feed, params, initialJumps);
 
-    // nonce: 8 => Deploy Auction
-    address smAddr = _predictAddress(address(this), 9);
-    auction = new DutchAuction(pcrm, accounts, ISecurityModule(smAddr), cash);
+    skip(7 days); // skip to make jumps stale
+
+    // nonce: 9 => Deploy Manager
+    pcrm = new PCRM(accounts, feed, feed, cash, option, auctionAddr, spotJumpOracle);
+
+    // nonce: 10 => Deploy Auction
+    // todo: remove IPCRM(address())
+    address smAddr = _predictAddress(address(this), 11);
+    auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
 
     assertEq(address(auction), auctionAddr);
 
-    // nonce: 9 => Deploy SM
-    securityModule = new SecurityModule(accounts, cash, usdc, IManager(address(pcrm)));
+    // nonce: 11 => Deploy SM
+    securityModule = new SecurityModule(accounts, cash, usdc, IPCRM(address(pcrm)));
 
     assertEq(securityModule.accountId(), smAcc);
   }
 
   function _finishContractSetups() internal {
+    // set aggregator again to update "updatedAt" in oracle, avoid stale reverts
+    _setSpotPriceE18(ETH_PRICE);
+
     // whitelist setting in cash asset and option assert
     cash.setWhitelistManager(address(pcrm), true);
     option.setWhitelistManager(address(pcrm), true);
 
     // PCRM setups
     pcrmFeeAcc = accounts.createAccount(address(this), pcrm);
-    pcrm.setFeeRecipient(smAcc);
-
-    pcrm.setParams(_getDefaultPCRMShocks(), _getDefaultPCRMDiscount());
-
-    // add aggregator to feed
-    aggregator = new MockV3Aggregator(8, 2000e8);
-    uint _feedId = feed.addFeed("ETH/USD", address(aggregator), 1 hours);
-    assertEq(feedId, _feedId);
+    pcrm.setFeeRecipient(pcrmFeeAcc);
+    (IPCRM.SpotShockParams memory spot, IPCRM.VolShockParams memory vol, IPCRM.PortfolioDiscountParams memory discount)
+    = _getDefaultPCRMParams();
+    pcrm.setParams(spot, vol, discount);
 
     // set parameter for auction
     auction.setDutchAuctionParameters(_getDefaultAuctionParam());
@@ -226,12 +233,29 @@ contract IntegrationTestBase is Test {
   }
 
   /**
+   * @dev set future price for feed
+   * @param price price in 18 decimals
+   */
+  function _setFuturePrice(uint, /*expiry*/ int price) internal {
+    // currently the same as set spot price
+    _setSpotPriceE18(price);
+  }
+
+  /**
    * @dev set current price of aggregator, and report as settlement price at {expiry}
    * @param price price in 18 decimals
    */
   function _setSpotPriceAndSubmitForExpiry(int price, uint expiry) internal {
     _setSpotPriceE18(price);
-    option.setSettlementPrice(expiry);
+
+    feed.setSettlementPrice(expiry);
+  }
+
+  /**
+   * @dev trigger jump update
+   */
+  function _updateJumps() internal {
+    spotJumpOracle.updateJumps();
   }
 
   function _assertCashSolvent() internal {
@@ -256,6 +280,11 @@ contract IntegrationTestBase is Test {
   function getAccInitMargin(uint acc) public view returns (int) {
     PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
     return pcrm.getInitialMargin(portfolio);
+  }
+
+  function getAccInitMarginRVZero(uint acc) public view returns (int) {
+    PCRM.Portfolio memory portfolio = pcrm.getPortfolio(acc);
+    return pcrm.getInitialMarginWithoutJumpMultiple(portfolio);
   }
 
   function getAccMaintenanceMargin(uint acc) public view returns (int) {
@@ -284,27 +313,60 @@ contract IntegrationTestBase is Test {
     optimalUtil = 0.6 * 1e18;
   }
 
-  function _getDefaultPCRMShocks() internal pure returns (PCRM.Shocks memory) {
-    return PCRM.Shocks({
-      spotUpInitial: 120e16,
-      spotDownInitial: 80e16,
-      spotUpMaintenance: 110e16,
-      spotDownMaintenance: 90e16,
-      vol: 300e16,
-      rfr: 10e16
+  function _getDefaultPCRMParams()
+    internal
+    pure
+    returns (
+      IPCRM.SpotShockParams memory spot,
+      IPCRM.VolShockParams memory vol,
+      IPCRM.PortfolioDiscountParams memory discount
+    )
+  {
+    spot = IPCRM.SpotShockParams({
+      upInitial: 1.25e18,
+      downInitial: 0.75e18,
+      upMaintenance: 1.1e18,
+      downMaintenance: 0.9e18,
+      timeSlope: 1e18
+    });
+
+    vol = IPCRM.VolShockParams({
+      minVol: 1e18,
+      maxVol: 3e18,
+      timeA: 30 days,
+      timeB: 90 days,
+      spotJumpMultipleSlope: 5e18,
+      spotJumpMultipleLookback: 1 days
+    });
+
+    discount = IPCRM.PortfolioDiscountParams({
+      maintenance: 0.9e18, // 90%
+      initial: 0.8e18, // 80%
+      initialStaticCashOffset: 50e18, //$50
+      riskFreeRate: 0.1e18 // 10%
     });
   }
 
-  function _getDefaultPCRMDiscount() internal pure returns (PCRM.Discounts memory) {
-    return PCRM.Discounts({maintenanceStaticDiscount: 90e16, initialStaticDiscount: 80e16});
+  function _getDefaultSpotJumpParams(uint initialSpot)
+    internal
+    pure
+    returns (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps)
+  {
+    params = ISpotJumpOracle.JumpParams({
+      start: 500,
+      width: 250,
+      referenceUpdatedAt: 0,
+      secToReferenceStale: 1 days,
+      referencePrice: SafeCast.toUint128(initialSpot)
+    });
+
+    return (params, initialJumps);
   }
 
   function _getDefaultAuctionParam() internal pure returns (DutchAuction.DutchAuctionParameters memory param) {
     param = DutchAuction.DutchAuctionParameters({
       stepInterval: 2,
       lengthOfAuction: 200,
-      portfolioModifier: 1e18,
-      inversePortfolioModifier: 1e18,
       secBetweenSteps: 1, // cool down
       liquidatorFeeRate: 0.05e18
     });

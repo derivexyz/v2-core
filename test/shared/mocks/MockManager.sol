@@ -65,7 +65,7 @@ contract MockManager is IManager {
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
-  function test() public {}
+  function test() public virtual {}
 
   function getSpot() external view returns (uint) {
     return mockedSpot;

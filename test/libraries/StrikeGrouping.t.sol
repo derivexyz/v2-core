@@ -4,16 +4,16 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../src/libraries/PCRMGrouping.sol";
+import "../../src/libraries/StrikeGrouping.sol";
 
-contract PCRMGroupingTester {
+contract StrikeGroupingTester {
   function updateForwards(IBaseManager.Strike memory strike) external pure returns (IBaseManager.Strike memory) {
-    PCRMGrouping.updateForwards(strike);
+    StrikeGrouping.updateForwards(strike);
     return strike;
   }
 
   function findForwards(int calls, int puts) external pure returns (int newForwards) {
-    newForwards = PCRMGrouping.findForwards(calls, puts);
+    newForwards = StrikeGrouping.findForwards(calls, puts);
   }
 
   function findOrAddStrike(IBaseManager.Strike[] memory strikes, uint newStrike, uint numStrikesHeld)
@@ -21,7 +21,7 @@ contract PCRMGroupingTester {
     pure
     returns (uint, uint)
   {
-    (uint strikeIndex, uint newArrayLen) = PCRMGrouping.findOrAddStrike(strikes, newStrike, numStrikesHeld);
+    (uint strikeIndex, uint newArrayLen) = StrikeGrouping.findOrAddStrike(strikes, newStrike, numStrikesHeld);
 
     // had to inline error checks here since array modified via reference and getting stack overflow errors
     if (strikes[strikeIndex].strike != newStrike) {
@@ -36,11 +36,11 @@ contract PCRMGroupingTester {
   }
 }
 
-contract PCRMGroupingTest is Test {
-  PCRMGroupingTester tester;
+contract StrikeGroupingTest is Test {
+  StrikeGroupingTester tester;
 
   function setUp() public {
-    tester = new PCRMGroupingTester();
+    tester = new StrikeGroupingTester();
   }
 
   ///////////////////////

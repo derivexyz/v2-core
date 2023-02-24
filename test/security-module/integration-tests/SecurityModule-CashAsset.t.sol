@@ -55,7 +55,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
     cashAsset.setWhitelistManager(address(manager), true);
 
-    securityModule = new SecurityModule(accounts, cashAsset, usdc, manager);
+    securityModule = new SecurityModule(accounts, cashAsset, usdc, IPCRM(address(manager)));
 
     smAccId = securityModule.accountId();
 
