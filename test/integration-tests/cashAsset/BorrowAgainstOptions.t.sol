@@ -19,12 +19,6 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
   function setUp() public {
     _setupIntegrationTestComplete();
 
-    vm.prank(alice);
-    accounts.setApprovalForAll(address(this), true);
-
-    vm.prank(bob);
-    accounts.setApprovalForAll(address(this), true);
-
     vm.prank(charlie);
     accounts.setApprovalForAll(address(this), true);
   }
