@@ -25,7 +25,7 @@ contract UNIT_TestOptionBasics is Test {
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    option = new Option(account, address(0), 0);
+    option = new Option(account, address(0));
     manager = new MockManager(address(account));
 
     vm.startPrank(alice);
@@ -43,6 +43,8 @@ contract UNIT_TestOptionBasics is Test {
   //////////////
 
   function testWhitelistedManagerCheck() public {
+    option.setWhitelistManager(address(manager), true);
+
     vm.startPrank(alice);
     AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -52,6 +54,22 @@ contract UNIT_TestOptionBasics is Test {
       amount: 1e18,
       assetData: ""
     });
+    account.submitTransfer(assetTransfer, "");
+    vm.stopPrank();
+  }
+
+  function testUnWhitelistedManagerCheck() public {
+    vm.startPrank(alice);
+    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: 1,
+      amount: 1e18,
+      assetData: ""
+    });
+
+    vm.expectRevert(IOption.OA_UnknownManager.selector);
     account.submitTransfer(assetTransfer, "");
     vm.stopPrank();
   }
@@ -66,6 +84,33 @@ contract UNIT_TestOptionBasics is Test {
 
   function testValidManagerChange() public {
     /* ensure account holds asset before manager changed*/
+    option.setWhitelistManager(address(manager), true);
+
+    vm.startPrank(alice);
+    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: 1,
+      amount: 1e18,
+      assetData: ""
+    });
+    account.submitTransfer(assetTransfer, "");
+    vm.stopPrank();
+
+    MockManager newManager = new MockManager(address(account));
+
+    // whitelist new manager
+    option.setWhitelistManager(address(newManager), true);
+
+    vm.startPrank(alice);
+    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+  }
+
+  function testInvalidManagerChange() public {
+    /* ensure account holds asset before manager changed*/
+    option.setWhitelistManager(address(manager), true);
+
     vm.startPrank(alice);
     AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
       fromAcc: bobAcc,
@@ -78,7 +123,8 @@ contract UNIT_TestOptionBasics is Test {
     account.submitTransfer(assetTransfer, "");
     MockManager newManager = new MockManager(address(account));
 
-    // todo: test change to valid manager
+    // new manager not whitelisted
+    vm.expectRevert(IOption.OA_UnknownManager.selector);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
   }

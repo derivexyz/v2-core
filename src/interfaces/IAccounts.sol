@@ -72,7 +72,7 @@ interface IAccounts is AccountStructs, IERC721 {
    * @param assetTransfer (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to managers of both accounts
    */
-  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external;
+  function submitTransfer(AssetTransfer memory assetTransfer, bytes memory managerData) external returns (uint tradeId);
 
   /**
    * @notice Batch several transfers
@@ -81,7 +81,9 @@ interface IAccounts is AccountStructs, IERC721 {
    * @param assetTransfers array of (fromAcc, toAcc, asset, subId, amount)
    * @param managerData data passed to every manager involved in trade
    */
-  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData) external;
+  function submitTransfers(AssetTransfer[] memory assetTransfers, bytes memory managerData)
+    external
+    returns (uint tradeId);
 
   /**
    * @notice Asymmetric balance adjustment reserved for assets

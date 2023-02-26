@@ -2,17 +2,17 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/AccountStructs.sol";
-import "src/risk-managers/PCRM.sol";
+import "src/interfaces/IBaseManager.sol";
 import "src/libraries/IntLib.sol";
 import "forge-std/console2.sol";
 
 /**
- * @title PCRMGrouping
+ * @title StrikeGrouping
  * @author Lyra
- * @notice util functions for sorting / filtering PCRM account holdings
+ * @notice util functions for sorting / filtering BaseManager strike holdings
  */
 
-library PCRMGrouping {
+library StrikeGrouping {
   //////////////
   // Forwards //
   //////////////
@@ -20,10 +20,10 @@ library PCRMGrouping {
   /**
    * @notice Take in a strike holding and update holding in-place with forwards
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
-   * @param strike PCRM.Strike struct containing all holdings for a particular strike
+   * @param strike BaseManager.Strike struct containing all holdings for a particular strike
    */
-  function updateForwards(PCRM.Strike memory strike) internal pure {
-    int additionalFwds = PCRMGrouping.findForwards(strike.calls, strike.puts);
+  function updateForwards(IBaseManager.Strike memory strike) internal pure {
+    int additionalFwds = StrikeGrouping.findForwards(strike.calls, strike.puts);
     if (additionalFwds != 0) {
       strike.calls -= additionalFwds;
       strike.puts += additionalFwds;
@@ -54,13 +54,13 @@ library PCRMGrouping {
 
   /**
    * @notice Adds new strike struct if not present in holdings
-   * @param strikes All holdings for a given expiry. Refer to PCRM.sol
+   * @param strikes All holdings for a given expiry. Refer to IBaseManager.sol
    * @param newStrike strike price
    * @param arrayLen # of strikes already active
    * @return strikeIndex index of existing or added strike struct
    * @return newArrayLen new # of strikes post addition
    */
-  function findOrAddStrike(PCRM.Strike[] memory strikes, uint newStrike, uint arrayLen)
+  function findOrAddStrike(IBaseManager.Strike[] memory strikes, uint newStrike, uint arrayLen)
     internal
     pure
     returns (uint, uint)
@@ -74,20 +74,20 @@ library PCRMGrouping {
     // return index if found or add new entry
     if (found == false) {
       strikeIndex = arrayLen++;
-      strikes[strikeIndex] = PCRM.Strike({strike: newStrike, calls: 0, puts: 0, forwards: 0});
+      strikes[strikeIndex] = IBaseManager.Strike({strike: newStrike, calls: 0, puts: 0, forwards: 0});
     }
     return (strikeIndex, arrayLen);
   }
 
   /**
    * @dev return if an expiry exists in an array of expiry holdings
-   * @param strikes All holdings for a given expiry. Refer to PCRM.sol
+   * @param strikes All holdings for a given expiry. Refer to BaseManager.sol
    * @param strikeToFind  strike to find
    * @param arrayLen # of strikes already active
    * @return index index of the found element. 0 if not found
    * @return found true if found
    */
-  function findInArray(PCRM.Strike[] memory strikes, uint strikeToFind, uint arrayLen)
+  function findInArray(IBaseManager.Strike[] memory strikes, uint strikeToFind, uint arrayLen)
     internal
     pure
     returns (uint index, bool found)

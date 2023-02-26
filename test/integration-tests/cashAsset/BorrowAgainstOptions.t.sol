@@ -10,22 +10,14 @@ import "src/interfaces/IManager.sol";
 /**
  * @dev testing charge of OI fee in a real setting
  */
-contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
-  address alice = address(0xace);
-  address bob = address(0xb0b);
+contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
+  using DecimalMath for uint;
+
   address charlie = address(0xca1e);
-  uint aliceAcc;
-  uint bobAcc;
   uint charlieAcc;
 
   function setUp() public {
     _setupIntegrationTestComplete();
-
-    vm.prank(alice);
-    accounts.setApprovalForAll(address(this), true);
-
-    vm.prank(bob);
-    accounts.setApprovalForAll(address(this), true);
 
     vm.prank(charlie);
     accounts.setApprovalForAll(address(this), true);
@@ -33,10 +25,7 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
 
   function testBorrowAgainstITMCall() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-
-    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
@@ -52,33 +41,30 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     assertEq(cash.supplyIndex(), 1e18);
 
     // Borrow against the option
-    _withdrawCash(charlie, charlieAcc, 500e18);
+    uint borrowAmount = 500e18;
+    _withdrawCash(charlie, charlieAcc, borrowAmount);
+
+    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(feed.getFuturePrice(callExpiry));
 
     // Charlie balance should be negative
-    assertLt(getCashBalance(charlieAcc), 0);
-    // todo: check why this number
-    assertEq(getCashBalance(charlieAcc), -502e18);
+    assertEq(getCashBalance(charlieAcc), -int(borrowAmount + oiFee));
 
     vm.warp(block.timestamp + 1 weeks);
     _setSpotPriceE18(2000e18); // after 1 week jump, need to set time again otherwise it revert with "Stale Spot"
 
     cash.accrueInterest();
-
-    //todo: check exact numbers
-    assertGt(cash.borrowIndex(), 1e18);
-    assertGt(cash.supplyIndex(), 1e18);
+    assertEq(cash.borrowIndex(), 1001344096864415691);
+    assertEq(cash.supplyIndex(), 1000067460170559555);
   }
 
   function testCannotBorrowAgainstOTMCall() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-
-    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
     _depositCash(address(charlie), charlieAcc, 2e18); // deposit $2 to pay init OI fee
+    _depositCash(address(charlie), charlieAcc, 50e18); // deposit $50 for min offset
 
     // OTM Call
     uint callExpiry = block.timestamp + 1;
@@ -89,16 +75,13 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     _submitTrade(aliceAcc, option, uint96(callId), 1e18, charlieAcc, cash, 0, 0);
 
     // Fails to borrow against the OTM call (charlie now has net init margin == 0)
-    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, -50e18));
-    _withdrawCash(charlie, charlieAcc, 50e18);
+    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, -10e18));
+    _withdrawCash(charlie, charlieAcc, 10e18);
   }
 
   function testBorrowAgainstITMPut() public {
     // Alice and Bob deposit cash into the system
-    aliceAcc = accounts.createAccount(alice, pcrm);
     _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-
-    bobAcc = accounts.createAccount(bob, pcrm);
     _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 
     charlieAcc = accounts.createAccount(charlie, pcrm);
@@ -108,7 +91,7 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     uint putStrike = 3000e18;
     uint96 putId = option.getSubId(putExpiry, putStrike, false);
 
-    _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 50e18);
+    _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 0);
 
     assertEq(cash.borrowIndex(), 1e18);
     assertEq(cash.supplyIndex(), 1e18);
@@ -116,13 +99,36 @@ contract INTEGRATION_InterestRatesTest is IntegrationTestBase {
     // Borrow against the option
     _withdrawCash(charlie, charlieAcc, 50e18);
 
-    // Charlie balance should be -1000
-    assertLt(accounts.getBalance(charlieAcc, cash, 0), 0);
+    // Charlie balance should be -borrowed amount + oiFee
+    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(feed.getFuturePrice(putExpiry));
+    assertEq(accounts.getBalance(charlieAcc, cash, 0), -int(50e18 + oiFee));
 
     vm.warp(block.timestamp + 1 weeks);
     cash.accrueInterest();
 
-    assertGt(cash.borrowIndex(), 1e18);
-    assertGt(cash.supplyIndex(), 1e18);
+    assertEq(cash.borrowIndex(), 1001171311598975475);
+    assertEq(cash.supplyIndex(), 1000006089602394193);
+  }
+
+  function testCannotBorrowAgainstOTMPut() public {
+    // Alice and Bob deposit cash into the system
+    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
+    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
+
+    charlieAcc = accounts.createAccount(charlie, pcrm);
+    _depositCash(address(charlie), charlieAcc, 2e18); // deposit $2 to pay init OI fee
+    _depositCash(address(charlie), charlieAcc, 50e18); // deposit $50 to pay init OI fee
+
+    // OTM Put
+    uint putExpiry = block.timestamp + 1;
+    uint putStrike = 200e18;
+    uint putId = option.getSubId(putExpiry, putStrike, false);
+
+    // charlie pays 0 for the put
+    _submitTrade(aliceAcc, option, uint96(putId), 1e18, charlieAcc, cash, 0, 0);
+
+    // Fails to borrow against the OTM put (charlie now has net init margin == 0)
+    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, -10e18));
+    _withdrawCash(charlie, charlieAcc, 10e18);
   }
 }
