@@ -76,8 +76,8 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     assertApproxEqAbs(
       int(usdc.balanceOf(address(cash)) * 1e12), jsonParser.readTableValue(json, "balanceOf", stateIdx), maxDelta
     );
-    assertApproxEqAbs(int(cash.totalSupply()), jsonParser.readTableValue(json, "totalSupply", stateIdx), maxDelta);
-    assertApproxEqAbs(int(cash.totalBorrow()), jsonParser.readTableValue(json, "totalBorrow", stateIdx), maxDelta);
+    assertApproxEqAbs(int(uint(cash.totalSupply())), jsonParser.readTableValue(json, "totalSupply", stateIdx), maxDelta);
+    assertApproxEqAbs(int(uint(cash.totalBorrow())), jsonParser.readTableValue(json, "totalBorrow", stateIdx), maxDelta);
     assertApproxEqAbs(
       int(rateModel.getUtilRate(cash.totalSupply(), cash.totalBorrow())),
       jsonParser.readTableValue(json, "Utilization", stateIdx) / 1e2,
@@ -105,8 +105,8 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     assertApproxEqAbs(
       int(usdc.balanceOf(address(cash)) * 1e12), jsonParser.readTableValue(json, "balanceOf", stateIdx), maxDelta
     );
-    assertApproxEqAbs(int(cash.totalSupply()), jsonParser.readTableValue(json, "totalSupply", stateIdx), maxDelta);
-    assertApproxEqAbs(int(cash.totalBorrow()), jsonParser.readTableValue(json, "totalBorrow", stateIdx), maxDelta);
+    assertApproxEqAbs(int(uint(cash.totalSupply())), jsonParser.readTableValue(json, "totalSupply", stateIdx), maxDelta);
+    assertApproxEqAbs(int(uint(cash.totalBorrow())), jsonParser.readTableValue(json, "totalBorrow", stateIdx), maxDelta);
     assertApproxEqAbs(
       int(rateModel.getUtilRate(cash.totalSupply(), cash.totalBorrow())),
       jsonParser.readTableValue(json, "Utilization", stateIdx) / 1e2,
