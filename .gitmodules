@@ -12,3 +12,6 @@
 	path = lib/openzeppelin-contracts-upgradeable
 	url = https://github.com/openzeppelin/openzeppelin-contracts-upgradeable
 	branch = v4.8.1
+[submodule "lib/lyra-utils"]
+	path = lib/lyra-utils
+	url = https://github.com/lyra-finance/lyra-utils
