@@ -15,3 +15,4 @@
 [submodule "lib/lyra-utils"]
 	path = lib/lyra-utils
 	url = https://github.com/lyra-finance/lyra-utils
+	branch = v0.2.1
