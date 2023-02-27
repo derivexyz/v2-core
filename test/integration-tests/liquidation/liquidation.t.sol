@@ -13,7 +13,6 @@ import "src/libraries/OptionEncoding.sol";
  */
 contract INTEGRATION_Liquidation is IntegrationTestBase {
   // value used for test
-  uint constant initCash = 5000e18;
   int constant amountOfContracts = 10e18;
   uint constant strike = 2000e18;
 
@@ -27,8 +26,8 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     _setupIntegrationTestComplete();
 
     // init setup for both accounts
-    _depositCash(alice, aliceAcc, initCash);
-    _depositCash(bob, bobAcc, initCash);
+    _depositCash(alice, aliceAcc, DEFAULT_DEPOSIT);
+    _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
 
     expiry = block.timestamp + 7 days;
 
