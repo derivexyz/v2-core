@@ -2,7 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "src/libraries/DecimalMath.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+
 import "../../../../src/interfaces/IInterestRateModel.sol";
 
 /**

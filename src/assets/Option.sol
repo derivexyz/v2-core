@@ -3,16 +3,15 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "lyra-utils/decimals/SignedDecimalMath.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
+import "lyra-utils/ownership/Owned.sol";
+import "lyra-utils/math/IntLib.sol";
 
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ISettlementFeed.sol";
-
-import "src/libraries/Owned.sol";
-import "src/libraries/OptionEncoding.sol";
-import "src/libraries/SignedDecimalMath.sol";
-import "src/libraries/IntLib.sol";
 
 /**
  * @title Option

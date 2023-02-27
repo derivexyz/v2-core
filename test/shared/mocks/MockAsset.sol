@@ -2,9 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccounts.sol";
-import "src/libraries/DecimalMath.sol";
+
 /**
  * @title MockAsset is the easiest Asset wrapper that wraps ERC20 into account system.
  * @dev   deployer can set MockAsset to not allow balance go negative.

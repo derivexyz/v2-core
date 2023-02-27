@@ -2,9 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "src/libraries/DecimalMath.sol";
-import "src/libraries/SignedDecimalMath.sol";
-import "src/libraries/FixedPointMathLib.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+import "lyra-utils/decimals/SignedDecimalMath.sol";
+import "lyra-utils/math/FixedPointMathLib.sol";
 
 import "./InterestRateModel.sol";
 import "forge-std/console2.sol";
