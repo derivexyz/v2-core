@@ -538,7 +538,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
       delta,
       preBalance,
       postBalance
-      );
+    );
   }
 
   ////////////////////////////
