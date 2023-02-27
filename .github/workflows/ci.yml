@@ -11,15 +11,12 @@ jobs:
   ci-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          ssh-key: ${{ secrets.LYRA_UTILS }}
-          ssh-known-hosts: github.com
+      - uses: actions/checkout@v3
 
-      # - name: Setup SSH
-      #   env: 
-      #     LYRA_UTILS_SSH: ${{secrets.LYRA_UTILS}}
-      #   run: mkdir $HOME/.ssh && echo "$LYRA_UTILS_SSH" > $HOME/.ssh/id_rsa && chmod 600 $HOME/.ssh/id_rsa
+      - name: Setup SSH
+        env: 
+          LYRA_UTILS_SSH: ${{secrets.LYRA_UTILS}}
+        run: mkdir $HOME/.ssh && echo "$LYRA_UTILS_SSH" > $HOME/.ssh/id_rsa && chmod 600 $HOME/.ssh/id_rsa
 
       - name: Install Submodules
         run: git submodule update --init --recursive
