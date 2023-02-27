@@ -36,15 +36,15 @@ contract INTEGRATION_PCRMInvariants is IntegrationTestBase {
   // test auction starting price and bidding price
   function testFuzzIMAndMM(uint spot_) public {
     int spot = int(spot_); // wrap into int here, specifying int as input will have too many invalid inputs
-    
+
     vm.assume(spot < 10000e18);
     vm.assume(spot > 1e18);
 
     _tradeCall();
-    
+
     _setSpotPriceE18(spot);
     _updateJumps();
-    
+
     int im = getAccInitMargin(aliceAcc);
     int imNoJump = getAccInitMarginRVZero(aliceAcc);
     int mm = getAccMaintenanceMargin(aliceAcc);
@@ -53,7 +53,6 @@ contract INTEGRATION_PCRMInvariants is IntegrationTestBase {
 
     assertGt(mm, im);
   }
-
 
   ///@dev alice go short, bob go long
   function _tradeCall() public {
