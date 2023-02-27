@@ -13,7 +13,6 @@ import "src/libraries/OptionEncoding.sol";
  */
 contract INTEGRATION_Liquidation is IntegrationTestBase {
   // value used for test
-  uint constant initCash = 5000e18;
   int constant amountOfContracts = 10e18;
   uint constant strike = 2000e18;
 
@@ -27,8 +26,8 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     _setupIntegrationTestComplete();
 
     // init setup for both accounts
-    _depositCash(alice, aliceAcc, initCash);
-    _depositCash(bob, bobAcc, initCash);
+    _depositCash(alice, aliceAcc, DEFAULT_DEPOSIT);
+    _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
 
     expiry = block.timestamp + 7 days;
 
@@ -67,8 +66,48 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     assertLt(getAccInitMargin(aliceAcc), 0);
 
     auction.terminateAuction(aliceAcc);
-    DutchAuction.Auction memory auction = auction.getAuction(aliceAcc);
-    assertEq(auction.ongoing, false);
+    DutchAuction.Auction memory auctionInfo = auction.getAuction(aliceAcc);
+    assertEq(auctionInfo.ongoing, false);
+
+    // cannot start auction again
+    vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
+    auction.startAuction(aliceAcc);
+  }
+
+  function testFuzzAuctionCannotRestartAfterTermination(uint newSpot_) public {
+    int newSpot = int(newSpot_); // wrap into int here, specifying int as input will have too many invalid inputs
+    vm.assume(newSpot > 1000e18);
+    vm.assume(newSpot < 2100e18); // price where it got mark as liquidatable
+
+    // as long as an auction is terminate-able when price is back to {newSpot}
+    // it cannot be restart immediate after termination
+
+    // alice is short 10 calls
+    _tradeCall();
+
+    // update price to make IM < 0
+    vm.warp(block.timestamp + 12 hours);
+    _setSpotPriceE18(2500e18);
+    _updateJumps();
+
+    // account is liquidatable at this point
+    auction.startAuction(aliceAcc);
+
+    // can terminate auction if IM (RV = 0) > 0
+    _setSpotPriceE18(newSpot);
+
+    // if account IM(rv) > 0, it can be terminated
+    if (getAccInitMarginRVZero(aliceAcc) > 0) {
+      // if it's terminate-able, terminate and cannot restart
+      auction.terminateAuction(aliceAcc);
+
+      vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
+      auction.startAuction(aliceAcc);
+    } else {
+      // cannot terminate
+      vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionCannotTerminate.selector, aliceAcc));
+      auction.terminateAuction(aliceAcc);
+    }
   }
 
   ///@dev alice go short, bob go long
