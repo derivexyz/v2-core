@@ -77,7 +77,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
   function testFuzzAuctionCannotRestartAfterTermination(uint newSpot_) public {
     int newSpot = int(newSpot_); // wrap into int here, specifying int as input will have too many invalid inputs
-    vm.assume(newSpot > 1000e18); 
+    vm.assume(newSpot > 1000e18);
     vm.assume(newSpot < 2100e18); // price where it got mark as liquidatable
 
     // as long as an auction is terminate-able when price is back to {newSpot}
@@ -98,10 +98,10 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     _setSpotPriceE18(newSpot);
 
     // if account IM(rv) > 0, it can be terminated
-    if(getAccInitMarginRVZero(aliceAcc) > 0) {
+    if (getAccInitMarginRVZero(aliceAcc) > 0) {
       // if it's terminate-able, terminate and cannot restart
       auction.terminateAuction(aliceAcc);
-    
+
       vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
       auction.startAuction(aliceAcc);
     } else {
