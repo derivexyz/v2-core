@@ -56,7 +56,7 @@ contract PositionBuilderBase is IntegrationTestBase {
   function _openLeveragedZSC(uint longAcc, uint shortAcc) internal returns (Position[] memory positions) {
     // set up long and short accounts to hold leveraged ZSCs against one another
     uint callId = option.getSubId(block.timestamp + 4 weeks, 0, true);
-    Position[] memory positions = new Position[](1);
+    positions = new Position[](1);
     positions[0] = Position({subId: uint96(callId), amount: 1e18});
     _openStrategy(longAcc, shortAcc, positions);
     return positions;
