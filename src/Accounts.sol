@@ -388,6 +388,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     tradeId = ++lastTradeId;
 
     for (uint i; i < assetTransfers.length; ++i) {
+      if (assetTransfers[i].fromAcc == 0 && assetTransfers[i].toAcc == 0) continue;
       // if from or to account is not seens before, add to seenAccounts in memory
       (uint fromIndex, uint toIndex) = (0, 0);
       (nextSeenId, fromIndex) =
