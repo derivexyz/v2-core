@@ -6,11 +6,11 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "./interfaces/IAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
+import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import "./interfaces/IAsset.sol";
 import "./interfaces/IManager.sol";
 import "./Allowances.sol";
-import "./libraries/ArrayLib.sol";
 import "./libraries/AssetDeltaLib.sol";
 import "./libraries/PermitAllowanceLib.sol";
 
@@ -390,8 +390,9 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     for (uint i; i < assetTransfers.length; ++i) {
       // if from or to account is not seens before, add to seenAccounts in memory
       (uint fromIndex, uint toIndex) = (0, 0);
-      (nextSeenId, fromIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
-      (nextSeenId, toIndex) = ArrayLib.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
+      (nextSeenId, fromIndex) =
+        UnorderedMemoryArray.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);
+      (nextSeenId, toIndex) = UnorderedMemoryArray.addUniqueToArray(seenAccounts, assetTransfers[i].toAcc, nextSeenId);
 
       (int fromDelta, int toDelta) = _transferAsset(assetTransfers[i], tradeId);
 
@@ -639,7 +640,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     uniqueAssets = new address[](assets.length);
 
     for (uint i; i < assets.length; ++i) {
-      length = ArrayLib.addUniqueToArray(uniqueAssets, address(assets[i].asset), length);
+      length = UnorderedMemoryArray.addUniqueToArray(uniqueAssets, address(assets[i].asset), length);
     }
   }
 

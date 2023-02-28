@@ -9,7 +9,7 @@ import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 
-import "src/libraries/OptionEncoding.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 
 contract UNIT_TestOptionBasics is Test {
   Accounts account;

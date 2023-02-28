@@ -1,6 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
@@ -10,14 +11,11 @@ import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 
-import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
-
-import "src/libraries/OptionEncoding.sol";
 
 contract UNIT_TestPCRMOIFee is Test, AccountStructs {
   Accounts accounts;

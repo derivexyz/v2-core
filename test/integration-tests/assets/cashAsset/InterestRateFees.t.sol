@@ -62,7 +62,7 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     uint balanceOf_creation = usdc.balanceOf(address(cash));
     assertEq(totalSupply_creation - totalBorrow_creation, balanceOf_creation);
     // open trade
-    Position[] memory positions = _openBox(aliceAcc, bobAcc, 1000e18);
+    _openBox(aliceAcc, bobAcc, 1000e18);
 
     jsonParser = new JsonMechIO();
     string memory json =

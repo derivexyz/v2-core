@@ -16,6 +16,8 @@ import "../mocks/assets/lending/Lending.sol";
 import "../mocks/assets/lending/ContinuousJumpRateModel.sol";
 import "../mocks/assets/lending/InterestRateModel.sol";
 import "../mocks/managers/PortfolioRiskPOCManager.sol";
+import "../mocks/assets/lending/Lending.sol";
+
 import "../../shared/mocks/MockERC20.sol";
 
 abstract contract AccountPOCHelper is Test {
