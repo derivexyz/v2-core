@@ -172,7 +172,6 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @param assetDeltas Array of asset changes made to this account
    */
   function _chargeOIFee(uint accountId, uint tradeId, AssetDelta[] calldata assetDeltas) internal {
-    console2.log("--- CHARGE OI FEE for ", accountId);
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
@@ -190,6 +189,8 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     }
 
     if (fee > 0) {
+      console2.log("FEE IS", fee);
+      console2.log("FOR ID", accountId);
       // keep track of OI Fee
       feeCharged[tradeId][accountId] = fee;
 
