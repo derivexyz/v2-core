@@ -2,6 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
+import "lyra-utils/math/IntLib.sol";
+import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IOption.sol";
@@ -10,11 +14,7 @@ import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/IFutureFeed.sol";
 import "src/interfaces/IBaseManager.sol";
 
-import "src/libraries/IntLib.sol";
-import "src/libraries/DecimalMath.sol";
-import "src/libraries/OptionEncoding.sol";
 import "src/libraries/StrikeGrouping.sol";
-import "src/libraries/Owned.sol";
 
 abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   using IntLib for int;

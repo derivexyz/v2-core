@@ -2,10 +2,12 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IAccounts.sol";
 import "../../shared/mocks/MockAsset.sol";
-import "src/libraries/DecimalMath.sol";
+
 /**
  * @title MockCash
  */

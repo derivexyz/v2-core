@@ -14,10 +14,10 @@ import "../Accounts.sol";
 import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
-import "../libraries/DecimalMath.sol";
-import "../libraries/SignedDecimalMath.sol";
-import "../libraries/Owned.sol";
-import "../libraries/IntLib.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+import "lyra-utils/decimals/SignedDecimalMath.sol";
+import "lyra-utils/ownership/Owned.sol";
+import "lyra-utils/math/IntLib.sol";
 
 /**
  * @title Dutch Auction

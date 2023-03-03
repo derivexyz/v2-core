@@ -3,10 +3,10 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "../shared/IntegrationTestBase.sol";
 import "src/interfaces/IManager.sol";
-import "src/libraries/OptionEncoding.sol";
 
 /**
  * @dev insolvent auction leads to socialize losses

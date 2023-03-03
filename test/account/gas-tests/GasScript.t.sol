@@ -7,13 +7,11 @@ import "src/interfaces/AccountStructs.sol";
 import "../mocks/assets/OptionToken.sol";
 import "../mocks/assets/BaseWrapper.sol";
 import "../mocks/assets/QuoteWrapper.sol";
-import "../mocks/assets/lending/Lending.sol";
-import "../mocks/assets/lending/ContinuousJumpRateModel.sol";
 import "../mocks/assets/lending/InterestRateModel.sol";
 import "../mocks/managers/DumbManager.sol";
 
-import "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
+import "../../shared/mocks/MockAsset.sol";
 
 contract AccountGasScript is Script {
   uint ownAcc;
