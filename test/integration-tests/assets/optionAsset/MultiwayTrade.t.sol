@@ -69,8 +69,8 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
       assetData: bytes32(0)
     });
 
-     // Charlie transfer to Alice (closing the loop)
-     transferBatch[2] = AccountStructs.AssetTransfer({
+    // Charlie transfer to Alice (closing the loop)
+    transferBatch[2] = AccountStructs.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: aliceAcc,
       asset: option,
@@ -132,9 +132,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
-    assertEq(uint(aliceBal), DEFAULT_DEPOSIT-uint(priceIncrease) - oiFee);
+    assertEq(uint(aliceBal), DEFAULT_DEPOSIT - uint(priceIncrease) - oiFee);
     assertEq(uint(bobBal), DEFAULT_DEPOSIT);
-    assertEq(uint(charlieBal), DEFAULT_DEPOSIT+uint(priceIncrease) - oiFee);
+    assertEq(uint(charlieBal), DEFAULT_DEPOSIT + uint(priceIncrease) - oiFee);
   }
 
   function testThreeWayTradeITMPut() public {
@@ -182,9 +182,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
 
-    assertEq(uint(aliceBal), DEFAULT_DEPOSIT-uint(priceDecrease) - oiFee);
+    assertEq(uint(aliceBal), DEFAULT_DEPOSIT - uint(priceDecrease) - oiFee);
     assertEq(uint(bobBal), DEFAULT_DEPOSIT);
-    assertEq(uint(charlieBal), DEFAULT_DEPOSIT+uint(priceDecrease) - oiFee);
+    assertEq(uint(charlieBal), DEFAULT_DEPOSIT + uint(priceDecrease) - oiFee);
   }
 
   function testFourWayTradeITMCall() public {
@@ -242,10 +242,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
-    assertEq(uint(aliceBal), DEFAULT_DEPOSIT-uint(priceIncrease) - oiFee);
+    assertEq(uint(aliceBal), DEFAULT_DEPOSIT - uint(priceIncrease) - oiFee);
     assertEq(uint(bobBal), DEFAULT_DEPOSIT);
     assertEq(uint(charlieBal), DEFAULT_DEPOSIT);
-    assertEq(uint(daveBal), DEFAULT_DEPOSIT+uint(priceIncrease) - oiFee);
+    assertEq(uint(daveBal), DEFAULT_DEPOSIT + uint(priceIncrease) - oiFee);
   }
 
   function _getAllCashBalances() internal returns (int aliceBal, int bobBal, int charlieBal, int daveBal) {
