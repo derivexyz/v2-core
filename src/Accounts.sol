@@ -22,7 +22,6 @@ import "./libraries/PermitAllowanceLib.sol";
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-
 contract Accounts is Allowances, ERC721, EIP712, IAccounts {
   using SafeCast for int;
   using SafeCast for uint;
