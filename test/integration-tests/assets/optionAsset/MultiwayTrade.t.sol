@@ -245,7 +245,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     assertEq(uint(bobBal), DEFAULT_DEPOSIT);
     assertEq(uint(charlieBal), DEFAULT_DEPOSIT - uint(premium) - oiFee);
 
-    // Settle OTM 
+    // Settle OTM
     vm.warp(callExpiry);
     int priceDecrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE - priceDecrease, callExpiry);
@@ -318,7 +318,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     assertEq(uint(bobBal), DEFAULT_DEPOSIT);
     assertEq(uint(charlieBal), DEFAULT_DEPOSIT - uint(premium) - oiFee);
 
-    // Settle OTM 
+    // Settle OTM
     vm.warp(putExpiry);
     int priceIncrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, putExpiry);
