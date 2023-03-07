@@ -42,10 +42,6 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
     (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
-    console2.log("aliceBal  ", aliceBal);
-    console2.log("bobBal    ", bobBal);
-    console2.log("charlieBal", charlieBal);
-    console2.log("daveBal   ", daveBal);
 
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](3);
 

@@ -13,7 +13,7 @@ import "./interfaces/IManager.sol";
 import "./Allowances.sol";
 import "./libraries/AssetDeltaLib.sol";
 import "./libraries/PermitAllowanceLib.sol";
-import "forge-std/console2.sol";
+
 /**
  * @title Accounts
  * @author Lyra
@@ -426,8 +426,6 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     returns (int fromDelta, int toDelta)
   {
     if (assetTransfer.fromAcc == assetTransfer.toAcc) {
-      console2.log("from", assetTransfer.fromAcc);
-      console2.log("to  ", assetTransfer.toAcc);
       revert AC_CannotTransferAssetToOneself(msg.sender, assetTransfer.toAcc);
     }
 

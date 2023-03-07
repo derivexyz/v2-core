@@ -189,8 +189,6 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     }
 
     if (fee > 0) {
-      console2.log("FEE IS", fee);
-      console2.log("FOR ID", accountId);
       // keep track of OI Fee
       feeCharged[tradeId][accountId] = fee;
 
