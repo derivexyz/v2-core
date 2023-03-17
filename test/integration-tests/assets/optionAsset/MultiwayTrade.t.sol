@@ -193,7 +193,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
     // Record pre balance
-    (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
+    (int aliceBal, int bobBal, int charlieBal,) = _getAllCashBalances();
 
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](4);
 
@@ -266,7 +266,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     uint putId = option.getSubId(putExpiry, putStrike, false);
 
     // Record pre balance
-    (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
+    (int aliceBal, int bobBal, int charlieBal, ) = _getAllCashBalances();
 
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](4);
 
@@ -390,7 +390,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     assertEq(uint(daveBal), DEFAULT_DEPOSIT + uint(priceIncrease) - oiFee);
   }
 
-  function _getAllCashBalances() internal returns (int aliceBal, int bobBal, int charlieBal, int daveBal) {
+  function _getAllCashBalances() internal view returns (int aliceBal, int bobBal, int charlieBal, int daveBal) {
     aliceBal = getCashBalance(aliceAcc);
     bobBal = getCashBalance(bobAcc);
     charlieBal = getCashBalance(charlieAcc);
