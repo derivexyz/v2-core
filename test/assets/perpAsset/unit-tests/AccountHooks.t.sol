@@ -36,6 +36,17 @@ contract UNIT_PerpAssetHook is Test {
     perp.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
 
+  function testShouldReturnFinalBalance() public {
+    perp.setWhitelistManager(address(manager), true);
+    int preBalance = 0;
+    int amount = 100;
+    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, perp, 0, amount, 0x00);
+    vm.prank(account);
+    (int postBalance, bool needAllowance) = perp.handleAdjustment(adjustment, 0, preBalance, manager, address(this));
+    assertEq(postBalance, amount);
+    assertEq(needAllowance, false);
+  }
+
   function testWillNotRevertOnLegalManagerUpdate() public {
     perp.setWhitelistManager(address(manager), true);
 
