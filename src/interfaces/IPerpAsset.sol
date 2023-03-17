@@ -4,8 +4,6 @@ pragma solidity ^0.8.13;
 import "./IAsset.sol";
 
 interface IPerpAsset is IAsset {
-  
-
   ////////////////
   //   Errors   //
   ////////////////

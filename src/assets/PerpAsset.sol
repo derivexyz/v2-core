@@ -20,11 +20,11 @@ import "../interfaces/IPerpAsset.sol";
  */
 contract PerpAsset is IPerpAsset, Owned, TrustedAsset {
   using SafeERC20 for IERC20Metadata;
-  using SignedMath for int256;
-  using SafeCast for uint256;
-  using SafeCast for int256;
-  using SignedDecimalMath for int256;
-  using DecimalMath for uint256;
+  using SignedMath for int;
+  using SafeCast for uint;
+  using SafeCast for int;
+  using SignedDecimalMath for int;
+  using DecimalMath for uint;
 
   constructor(IAccounts _accounts) TrustedAsset(_accounts) {}
 
@@ -66,5 +66,3 @@ contract PerpAsset is IPerpAsset, Owned, TrustedAsset {
     _checkManager(address(newManager));
   }
 }
-
-  

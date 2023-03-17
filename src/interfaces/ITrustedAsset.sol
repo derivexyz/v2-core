@@ -2,14 +2,11 @@
 pragma solidity ^0.8.13;
 
 interface ITrustedAsset {
-  
-
   ////////////////
   //   Events   //
   ////////////////
 
   event WhitelistManagerSet(address _manager, bool _whitelisted);
-
 
   ////////////////
   //   Errors   //
@@ -20,5 +17,4 @@ interface ITrustedAsset {
 
   /// @dev revert when user trying to upgrade to a unknown manager
   error TA_UnknownManager();
-
 }

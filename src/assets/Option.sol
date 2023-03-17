@@ -15,7 +15,6 @@ import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ISettlementFeed.sol";
 
-
 /**
  * @title Option
  * @author Lyra
@@ -46,7 +45,6 @@ contract Option is IOption, Owned, TrustedAsset {
   constructor(IAccounts _accounts, address _settlementFeed) TrustedAsset(_accounts) {
     settlementFeed = ISettlementFeed(_settlementFeed);
   }
-
 
   ///////////////
   // Transfers //
@@ -158,5 +156,4 @@ contract Option is IOption, Owned, TrustedAsset {
       return 0;
     }
   }
-
 }

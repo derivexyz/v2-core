@@ -18,14 +18,12 @@ contract TrustedAsset is ITrustedAsset, Owned {
 
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
-  
+
   /////////////////////
   //   Constructor   //
   /////////////////////
 
-  constructor(
-    IAccounts _accounts
-  ) {
+  constructor(IAccounts _accounts) {
     accounts = _accounts;
   }
 
@@ -55,7 +53,6 @@ contract TrustedAsset is ITrustedAsset, Owned {
   function _checkManager(address manager) internal view {
     if (!whitelistedManager[manager]) revert TA_UnknownManager();
   }
-
 
   ///////////////////
   //   Modifiers   //
