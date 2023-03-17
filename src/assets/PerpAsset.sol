@@ -49,11 +49,9 @@ contract PerpAsset is IPerpAsset, Owned, TrustedAsset {
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
-    if (preBalance == 0 && adjustment.amount == 0) {
-      return (0, false);
-    }
 
     // settle the existing position for an user
+    // updating USDC in account again?
 
     // have a new position
   }
