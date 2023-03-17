@@ -56,7 +56,7 @@ contract PerpAsset is IPerpAsset, Owned, TrustedAsset {
     // have a new position
     finalBalance = preBalance + adjustment.amount;
 
-    needAllowance = adjustment.amount > 0;
+    needAllowance = adjustment.amount < 0;
   }
 
   /**
