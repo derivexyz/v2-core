@@ -266,7 +266,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     uint putId = option.getSubId(putExpiry, putStrike, false);
 
     // Record pre balance
-    (int aliceBal, int bobBal, int charlieBal, ) = _getAllCashBalances();
+    (int aliceBal, int bobBal, int charlieBal,) = _getAllCashBalances();
 
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](4);
 
