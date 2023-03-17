@@ -6,11 +6,11 @@ import "../../../src/interfaces/IManager.sol";
 import "../../../src/interfaces/IAsset.sol";
 import "../../../src/interfaces/IAccounts.sol";
 
-import "../../../src/libraries/DecimalMath.sol";
 import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
 
 // forge testing
 import "forge-std/Test.sol";

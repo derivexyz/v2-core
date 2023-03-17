@@ -15,8 +15,7 @@ import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockIPCRM.sol";
 
 // Math library
-import "src/libraries/DecimalMath.sol";
-
+import "lyra-utils/decimals/DecimalMath.sol";
 import "forge-std/console2.sol";
 
 contract UNIT_BidAuction is Test {

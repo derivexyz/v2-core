@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/interfaces/AccountStructs.sol";
-import "src/interfaces/IBaseManager.sol";
-import "src/libraries/IntLib.sol";
+import "lyra-utils/math/IntLib.sol";
 import "forge-std/console2.sol";
 
+import "src/interfaces/AccountStructs.sol";
+import "src/interfaces/IBaseManager.sol";
 /**
  * @title StrikeGrouping
  * @author Lyra

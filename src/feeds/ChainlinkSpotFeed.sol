@@ -3,9 +3,10 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "lyra-utils/decimals/SignedDecimalMath.sol";
+import "lyra-utils/decimals/ConvertDecimals.sol";
+
 import "src/interfaces/IChainlinkSpotFeed.sol";
-import "src/libraries/ConvertDecimals.sol";
-import "src/libraries/SignedDecimalMath.sol";
 
 /**
  * @title ChainlinkSpotFeed
