@@ -8,6 +8,8 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/ownership/Owned.sol";
 import "lyra-utils/math/IntLib.sol";
 
+import "./ManagerWhitelist.sol";
+
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/IAccounts.sol";
@@ -18,13 +20,10 @@ import "src/interfaces/ISettlementFeed.sol";
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, Owned {
+contract Option is IOption, Owned, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
-
-  /// @dev Address of the Account module
-  IAccounts immutable accounts;
 
   /// @dev Contract to get spot prices which are locked in at settlement
   ISettlementFeed public settlementFeed;
@@ -39,31 +38,12 @@ contract Option is IOption, Owned {
   ///@dev OI for a subId. OI is the sum of all positive balance
   mapping(uint => uint) public openInterest;
 
-  ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
-  mapping(address => bool) public whitelistedManager;
-
   ////////////////////////
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts, address _settlementFeed) {
-    accounts = _accounts;
+  constructor(IAccounts _accounts, address _settlementFeed) ManagerWhitelist(_accounts) {
     settlementFeed = ISettlementFeed(_settlementFeed);
-  }
-
-  //////////////////////////////
-  //   Owner-only Functions   //
-  //////////////////////////////
-
-  /**
-   * @notice Whitelist or un-whitelist a manager
-   * @param _manager manager address
-   * @param _whitelisted true to whitelist
-   */
-  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
-    whitelistedManager[_manager] = _whitelisted;
-
-    emit WhitelistManagerSet(_manager, _whitelisted);
   }
 
   ///////////////
@@ -148,14 +128,6 @@ contract Option is IOption, Owned {
   //////////////
 
   /**
-   * @dev Revert if manager address is not whitelisted by this contract
-   * @param manager manager address
-   */
-  function _checkManager(address manager) internal view {
-    if (!whitelistedManager[manager]) revert OA_UnknownManager();
-  }
-
-  /**
    * @dev update global OI for an subId, base on adjustment of a single account
    * @param preBalance Account balance before an adjustment
    * @param change Change of balance
@@ -183,14 +155,5 @@ contract Option is IOption, Owned {
       // OTM
       return 0;
     }
-  }
-
-  /////////////////
-  //  Modifiers  //
-  /////////////////
-
-  modifier onlyAccount() {
-    if (msg.sender != address(accounts)) revert OA_NotAccounts();
-    _;
   }
 }

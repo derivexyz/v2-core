@@ -62,9 +62,6 @@ interface ICashAsset is IAsset {
   /// @dev Emitted when a new interest rate model is set
   event InterestRateModelSet(IInterestRateModel rateModel);
 
-  /// @dev Emitted when a manager address is whitelisted or unwhitelisted
-  event WhitelistManagerSet(address manager, bool whitelisted);
-
   /// @dev emitted when a user deposits to an account
   event Deposit(uint accountId, address from, uint amountCashMinted, uint stableAssetDeposited);
 
