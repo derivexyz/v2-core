@@ -4,15 +4,15 @@ pragma solidity ^0.8.13;
 import "lyra-utils/ownership/Owned.sol";
 
 import "../interfaces/IAccounts.sol";
-import "../interfaces/ITrustedAsset.sol";
+import "../interfaces/IManagerWhitelist.sol";
 
 /**
- * @title TrustedAsset
- * @dev   Abstract contract for assets to share common functions.
+ * @title ManagerWhitelist
+ * @dev   Abstract contract for assets to control whitelisted managers.
  * @author Lyra
  */
 
-contract TrustedAsset is ITrustedAsset, Owned {
+contract ManagerWhitelist is IManagerWhitelist, Owned {
   ///@dev Account contract address
   IAccounts public immutable accounts;
 
@@ -51,7 +51,7 @@ contract TrustedAsset is ITrustedAsset, Owned {
    * @param manager manager address
    */
   function _checkManager(address manager) internal view {
-    if (!whitelistedManager[manager]) revert TA_UnknownManager();
+    if (!whitelistedManager[manager]) revert MW_UnknownManager();
   }
 
   ///////////////////
@@ -59,7 +59,7 @@ contract TrustedAsset is ITrustedAsset, Owned {
   ///////////////////
 
   modifier onlyAccount() {
-    if (msg.sender != address(accounts)) revert TA_NotAccount();
+    if (msg.sender != address(accounts)) revert MW_NotAccount();
     _;
   }
 }

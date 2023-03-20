@@ -9,7 +9,7 @@ import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/ownership/Owned.sol";
 
-import "./TrustedAsset.sol";
+import "./ManagerWhitelist.sol";
 
 import "../interfaces/IAccounts.sol";
 import "../interfaces/IPerpAsset.sol";
@@ -18,7 +18,7 @@ import "../interfaces/IPerpAsset.sol";
  * @title PerpAsset
  * @author Lyra
  */
-contract PerpAsset is IPerpAsset, Owned, TrustedAsset {
+contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using SignedMath for int;
   using SafeCast for uint;
@@ -26,7 +26,7 @@ contract PerpAsset is IPerpAsset, Owned, TrustedAsset {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-  constructor(IAccounts _accounts) TrustedAsset(_accounts) {}
+  constructor(IAccounts _accounts) ManagerWhitelist(_accounts) {}
 
   //////////////////////////
   //    Account Hooks     //

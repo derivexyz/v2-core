@@ -69,7 +69,7 @@ contract UNIT_CashAssetWithdraw is Test {
 
   function testCannotWithdrawFromAccountNotControlledByTrustedManager() public {
     uint badAccount = account.createAccount(address(this), badManager);
-    vm.expectRevert(ITrustedAsset.TA_UnknownManager.selector);
+    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     cashAsset.withdraw(badAccount, 100 ether, address(this));
   }
 

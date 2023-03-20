@@ -14,7 +14,7 @@ import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
 
-import "./TrustedAsset.sol";
+import "./ManagerWhitelist.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
@@ -23,7 +23,7 @@ import "./TrustedAsset.sol";
  * @author Lyra
  */
 
-contract CashAsset is ICashAsset, Owned, TrustedAsset {
+contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
@@ -98,7 +98,7 @@ contract CashAsset is ICashAsset, Owned, TrustedAsset {
     IInterestRateModel _rateModel,
     uint _smId,
     address _liquidationModule
-  ) TrustedAsset(_accounts) {
+  ) ManagerWhitelist(_accounts) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     smId = _smId;

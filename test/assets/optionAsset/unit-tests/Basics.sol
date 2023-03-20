@@ -69,7 +69,7 @@ contract UNIT_TestOptionBasics is Test {
       assetData: ""
     });
 
-    vm.expectRevert(ITrustedAsset.TA_UnknownManager.selector);
+    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     account.submitTransfer(assetTransfer, "");
     vm.stopPrank();
   }
@@ -124,7 +124,7 @@ contract UNIT_TestOptionBasics is Test {
     MockManager newManager = new MockManager(address(account));
 
     // new manager not whitelisted
-    vm.expectRevert(ITrustedAsset.TA_UnknownManager.selector);
+    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
   }
