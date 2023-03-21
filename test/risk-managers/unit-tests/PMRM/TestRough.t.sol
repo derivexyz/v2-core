@@ -75,37 +75,10 @@ contract UNIT_TestPMRM is Test {
 
     //    PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestSmall());
     PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
-
-    console2.log("cash balance:", portfolio.cash);
-    console2.log("\nOTHER ASSETS");
-    console2.log("count:", uint(portfolio.otherAssets.length));
-    for (uint i=0; i<portfolio.otherAssets.length; i++) {
-      console2.log("- asset:", portfolio.otherAssets[i].asset);
-      console2.log("- balance:", portfolio.otherAssets[i].amount);
-      console2.log("----");
-    }
-    console2.log("\n");
-    console2.log("expiryLen", uint(portfolio.expiries.length));
-    for (uint i=0; i<portfolio.expiries.length; i++) {
-      PMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
-      console2.log("- expiry:", expiry.expiry);
-      console2.log("- CALLS:", expiry.calls.length);
-      for (uint i=0; i<expiry.calls.length; i++) {
-        console2.log("-- strike:", expiry.calls[i].strike);
-        console2.log("-- balance:", expiry.calls[i].amount);
-        console2.log("====");
-      }
-
-      console2.log("- PUTS:", expiry.puts.length);
-      for (uint i=0; i<expiry.puts.length; i++) {
-        console2.log("-- strike:", expiry.puts[i].strike);
-        console2.log("-- balance:", expiry.puts[i].amount);
-        console2.log("====");
-      }
-    }
+    _logPortfolio(portfolio);
   }
 
-  function getAssetBalancesForTestSmall() internal returns (AccountStructs.AssetBalance[] memory balances) {
+  function getAssetBalancesForTestSmall() internal view returns (AccountStructs.AssetBalance[] memory balances) {
     uint referenceTime = block.timestamp;
     balances = new AccountStructs.AssetBalance[](4);
     balances[0] = AccountStructs.AssetBalance({asset: IAsset(cash), subId: 0, balance: -1000});
@@ -129,8 +102,6 @@ contract UNIT_TestPMRM is Test {
   }
 
   function getAssetBalancesForTestLarge() internal returns (AccountStructs.AssetBalance[] memory balances) {
-    uint referenceTime = block.timestamp;
-
     jsonParser = new JsonMechIO();
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testPortfolio.json");
     int[] memory data = json.readIntArray(".Test1");
@@ -141,34 +112,90 @@ contract UNIT_TestPMRM is Test {
 
     balances = new AccountStructs.AssetBalance[](data.length / 4 + 3);
 
+    uint offset = 0;
     for (uint i = 0; i < data.length; i += 4) {
-      balances[i / 4] = AccountStructs.AssetBalance({
+      if (data[i + 3] == 0) {
+        offset++;
+        continue;
+      }
+      balances[i / 4 - offset] = AccountStructs.AssetBalance({
         asset: IAsset(option),
         subId: OptionEncoding.toSubId(
-          referenceTime + uint((data[i] * 1 days)), uint(data[i + 1] * 1e18), data[i + 2] == 1
+          uint(data[i]), uint(data[i + 1] * 1e18), data[i + 2] == 1
           ),
         balance: data[i + 3] * 1e18
       });
     }
 
-    balances[balances.length - 3] = AccountStructs.AssetBalance({
+    balances[balances.length - 3 - offset] = AccountStructs.AssetBalance({
       asset: IAsset(cash),
       subId: 0,
       balance: 200000 ether
     });
-    balances[balances.length - 2] = AccountStructs.AssetBalance({
+    balances[balances.length - 2 - offset] = AccountStructs.AssetBalance({
       // I.e. perps
       asset: IAsset(address(0xf00f00)),
       subId: 0,
       balance: -200000 ether
     });
 
-    balances[balances.length - 1] = AccountStructs.AssetBalance({
+    balances[balances.length - 1 - offset] = AccountStructs.AssetBalance({
       // I.e. wrapped eth
       asset: IAsset(address(0xbaabaa)),
       subId: 0,
       balance: 200000 ether
     });
     return balances;
+  }
+
+  function _logPortfolio(PMRM.NewPortfolio memory portfolio) internal view {
+
+    console2.log("cash balance:", portfolio.cash);
+    console2.log("\nOTHER ASSETS");
+    console2.log("count:", uint(portfolio.otherAssets.length));
+    for (uint i=0; i<portfolio.otherAssets.length; i++) {
+      console2.log("- asset:", portfolio.otherAssets[i].asset);
+      console2.log("- balance:", portfolio.otherAssets[i].amount);
+      console2.log("----");
+    }
+    console2.log("\n");
+    console2.log("expiryLen", uint(portfolio.expiries.length));
+    for (uint i=0; i<portfolio.expiries.length; i++) {
+      PMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
+      console2.log("==========");
+      console2.log();
+      console2.log("=== EXPIRY:", expiry.expiry);
+      console2.log();
+      console2.log("== CALLS:", expiry.calls.length);
+      console2.log();
+      for (uint i=0; i<expiry.calls.length; i++) {
+        console2.log("- strike:", expiry.calls[i].strike / 1e18);
+        console2.log("- amount:", expiry.calls[i].amount / 1e18);
+        console2.log();
+      }
+      console2.log("== CALL SPREADS:", expiry.callSpreads.length);
+      console2.log();
+      for (uint i=0; i<expiry.callSpreads.length; i++) {
+        console2.log("- strikeLower:", expiry.callSpreads[i].strikeLower / 1e18);
+        console2.log("- strikeUpper:", expiry.callSpreads[i].strikeUpper / 1e18);
+        console2.log("- amount:", expiry.callSpreads[i].amount / 1e18);
+        console2.log();
+      }
+      console2.log("== PUTS:", expiry.puts.length);
+      console2.log();
+      for (uint i=0; i<expiry.puts.length; i++) {
+        console2.log("- strike:", expiry.puts[i].strike / 1e18);
+        console2.log("- balance:", expiry.puts[i].amount / 1e18);
+        console2.log();
+      }
+      console2.log("== PUT SPREADS:", expiry.putSpreads.length);
+      console2.log();
+      for (uint i=0; i<expiry.putSpreads.length; i++) {
+        console2.log("- strikeLower:", expiry.putSpreads[i].strikeLower / 1e18);
+        console2.log("- strikeUpper:", expiry.putSpreads[i].strikeUpper / 1e18);
+        console2.log("- amount:", expiry.putSpreads[i].amount / 1e18);
+        console2.log();
+      }
+    }
   }
 }

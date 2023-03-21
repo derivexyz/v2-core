@@ -30,6 +30,7 @@ import "forge-std/console2.sol";
  */
 
 contract PMRM {
+  using IntLib for int;
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for int;
@@ -51,12 +52,20 @@ contract PMRM {
   struct ExpiryHoldings {
     uint expiry;
     StrikeHolding[] calls;
+    SpreadHolding[] callSpreads;
     StrikeHolding[] puts;
+    SpreadHolding[] putSpreads;
   }
 
   struct StrikeHolding {
     /// strike price of held options
     uint strike;
+    int amount;
+  }
+
+  struct SpreadHolding {
+    uint strikeLower;
+    uint strikeUpper;
     int amount;
   }
 
@@ -146,7 +155,9 @@ contract PMRM {
       portfolio.expiries[i] = ExpiryHoldings({
         expiry: expiryCount[i].expiry,
         calls: new StrikeHolding[](expiryCount[i].callCount),
-        puts: new StrikeHolding[](expiryCount[i].putCount)
+        callSpreads: new SpreadHolding[](expiryCount[i].callCount > 1 ? expiryCount[i].callCount - 1 : 0),
+        puts: new StrikeHolding[](expiryCount[i].putCount),
+        putSpreads: new SpreadHolding[](expiryCount[i].putCount > 1 ? expiryCount[i].putCount - 1 : 0)
       });
     }
 
@@ -175,13 +186,13 @@ contract PMRM {
 
     for (uint i; i < seenExpiries; ++i) {
       ExpiryHoldings memory expiry = portfolio.expiries[i];
-      // TODO: does this sort in place in the greater portfolio?
       if (expiry.calls.length > 1) {
         _quickSortStrikes(expiry.calls, 0, int(expiry.calls.length - 1));
       }
       if (expiry.puts.length > 1) {
         _quickSortStrikes(expiry.puts, 0, int(expiry.puts.length - 1));
       }
+      _filterSpreads(expiry);
     }
 
     portfolio.otherAssets = new OtherAsset[](otherAssetCount);
@@ -237,6 +248,133 @@ contract PMRM {
     }
     if (i < right) {
       _quickSortStrikes(arr, i, right);
+    }
+  }
+
+  function _filterSpreads(ExpiryHoldings memory expiry) internal pure {
+    if (expiry.calls.length > 1) {
+      uint spreadsSeen = 0;
+      for (uint i=1;i<expiry.calls.length;i++) {
+        StrikeHolding memory strike1 = expiry.calls[i];
+        // TODO: start at i and go back to 0?
+        for (uint j=0; j<i; j++) {
+          StrikeHolding memory strike2 = expiry.calls[j];
+          // if the sign is the same; early exit as strike2 would've been used for spreads previously
+          if (strike1.amount * strike2.amount > 0) {
+            break;
+          }
+          // if amount is 0 (emptied already), skip
+          if (strike2.amount == 0) {
+            continue;
+          }
+          // now we know we have 2 strikes with inverted signs
+
+          // TODO: feels like this can be more concise
+          if (strike2.amount.abs() >= strike1.amount.abs()) {
+            // strike1 will fold into strike2 here
+            // strike1 is the higher strike
+            expiry.callSpreads[spreadsSeen++] = SpreadHolding({
+              strikeLower: strike2.strike,
+              strikeUpper: strike1.strike,
+              amount: -strike1.amount
+            });
+            strike2.amount += strike1.amount;
+            strike1.amount = 0;
+            // strike1 is empty, break
+            break;
+          } else {
+            expiry.callSpreads[spreadsSeen++] = SpreadHolding({
+              strikeLower: strike2.strike,
+              strikeUpper: strike1.strike,
+              amount: strike2.amount
+            });
+            strike1.amount += strike2.amount;
+            strike2.amount = 0;
+          }
+        }
+      }
+      trimArray(expiry.callSpreads, spreadsSeen);
+
+      // trim calls too
+      uint seen = 0;
+      for (uint i=0; i<expiry.calls.length; i++) {
+        if (expiry.calls[i].amount != 0) {
+          expiry.calls[seen++] = StrikeHolding({
+            strike: expiry.calls[i].strike,
+            amount: expiry.calls[i].amount
+          });
+        }
+      }
+      trimArray(expiry.calls, seen);
+    }
+
+    if (expiry.puts.length > 1) {
+      uint spreadsSeen = 0;
+      for (uint i=expiry.puts.length-1;i>0;i--) {
+        StrikeHolding memory strike1 = expiry.puts[i-1];
+        // TODO: start at i and go back to 0?
+        for (uint j=i; j<expiry.puts.length; j++) {
+          StrikeHolding memory strike2 = expiry.puts[j];
+          // if the sign is the same; early exit as strike2 would've been used for spreads previously
+          if (strike1.amount * strike2.amount > 0) {
+            break;
+          }
+          // if amount is 0 (emptied already), skip
+          if (strike2.amount == 0) {
+            continue;
+          }
+          // now we know we have 2 strikes with inverted signs
+
+          // TODO: feels like this can be more concise
+          if (strike2.amount.abs() >= strike1.amount.abs()) {
+            // strike1 will fold into strike2 here
+            // strike1 is the higher strike
+            expiry.putSpreads[spreadsSeen++] = SpreadHolding({
+              strikeLower: strike2.strike,
+              strikeUpper: strike1.strike,
+              amount: strike1.amount
+            });
+            strike2.amount += strike1.amount;
+            strike1.amount = 0;
+            // strike1 is empty, break
+            break;
+          } else {
+            expiry.putSpreads[spreadsSeen++] = SpreadHolding({
+              strikeLower: strike2.strike,
+              strikeUpper: strike1.strike,
+              amount: -strike2.amount
+            });
+            strike1.amount += strike2.amount;
+            strike2.amount = 0;
+          }
+        }
+      }
+      trimArray(expiry.putSpreads, spreadsSeen);
+
+      // trim puts too
+      uint seen = 0;
+      for (uint i=0; i<expiry.puts.length; i++) {
+        if (expiry.puts[i].amount != 0) {
+          expiry.puts[seen++] = StrikeHolding({
+            strike: expiry.puts[i].strike,
+            amount: expiry.puts[i].amount
+          });
+        }
+      }
+      trimArray(expiry.puts, seen);
+    }
+  }
+
+
+  function trimArray(SpreadHolding[] memory array, uint finalLength) internal pure {
+    assembly {
+      mstore(array, finalLength)
+    }
+  }
+
+  function trimArray(StrikeHolding[] memory array, uint finalLength) internal pure {
+    assembly {
+      mstore(array, finalLength)
     }
   }
 

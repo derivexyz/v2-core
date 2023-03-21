@@ -36,7 +36,7 @@ contract JsonMechIO is Test {
   // Important:
   // 1) colimns must be sorted alphabetically
   // 2) everything is assumed to be an int
-  function readTableValue(string memory json, string memory col, uint index) public returns (int val) {
+  function readTableValue(string memory json, string memory col, uint index) public pure returns (int val) {
     string memory key = string.concat(".", col);
     key = string.concat(key, "[");
     key = string.concat(key, Strings.toString(index));
