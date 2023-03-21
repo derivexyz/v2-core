@@ -4,6 +4,20 @@ pragma solidity ^0.8.13;
 import "./IAsset.sol";
 
 interface IPerpAsset is IAsset {
+
+
+  struct PositionDetail {
+    // uint margin;
+    // uint leverage;
+    int funding;
+    uint entryPrice;
+    // timestamp of the last funding
+    uint lastFundingPaid;
+
+    // 
+    uint lastUpdated;
+  }
+
   ////////////////
   //   Errors   //
   ////////////////
