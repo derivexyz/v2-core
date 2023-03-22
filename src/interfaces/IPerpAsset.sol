@@ -4,8 +4,6 @@ pragma solidity ^0.8.13;
 import "./IAsset.sol";
 
 interface IPerpAsset is IAsset {
-
-
   struct PositionDetail {
     // uint margin;
     // uint leverage;
@@ -13,10 +11,17 @@ interface IPerpAsset is IAsset {
     uint entryPrice;
     // timestamp of the last funding
     uint lastFundingPaid;
-
-    // 
+    //
     uint lastUpdated;
   }
+
+  //////////////////
+  //   Events     //
+  //////////////////
+
+  event ImpactPricesSet(int askPrice, int bidPrice);
+
+  event BotWhitelisted(address bot, bool isWhitelisted);
 
   ////////////////
   //   Errors   //
@@ -33,4 +38,6 @@ interface IPerpAsset is IAsset {
 
   /// @dev caller is not owner of the account
   error PA_OnlyAccountOwner();
+
+  error PA_ImpactPriceMustBePositive();
 }
