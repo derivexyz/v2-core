@@ -13,6 +13,7 @@ import "./ManagerWhitelist.sol";
 
 import "../interfaces/IAccounts.sol";
 import "../interfaces/IPerpAsset.sol";
+import "../interfaces/IChainlinkSpotFeed.sol";
 
 /**
  * @title PerpAsset
@@ -26,7 +27,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-  constructor(IAccounts _accounts) ManagerWhitelist(_accounts) {}
+  IChainlinkSpotFeed immutable spotFeed;
 
   ///@dev mapping from account to position
   mapping(uint => PositionDetail) public positions;
@@ -45,6 +46,15 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   int public impactAskPrice;
   int public impactBidPrice;
+
+  ///@dev latest aggregated funding rate
+  int public aggregatedFundingRate;
+  ///@dev last time aggregated funding rate was updated
+  uint public lastFundingPaidAt;
+
+  constructor(IAccounts _accounts, IChainlinkSpotFeed _feed) ManagerWhitelist(_accounts) {
+    spotFeed = _feed;
+  }
 
   //////////////////////////
   //    Account Hooks     //
@@ -69,12 +79,11 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     _checkManager(address(manager));
 
     // get market price
-    
+
     // calculate funding from the last period, reflect changes in position.funding
     // _updateFunding();
-    
+
     // update average entry price
-    
 
     // have a new position
     finalBalance = preBalance + adjustment.amount;
@@ -93,7 +102,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   /**
    * @notice This function is called by the keeper to update bid prices
-
    */
   function setImpactPrices(int _impactAskPrice, int _impactBidPrice) external onlyBot {
     if (_impactAskPrice < 0 || _impactBidPrice < 0) {
@@ -106,17 +114,37 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
+   * @dev Update funding rate, reflected on aggregatedFundingRate
+   */
+  function updateFundingRate() external {
+    _updateFundingRate();
+  }
+
+  /**
+   * @dev Update funding rate, reflected on aggregatedFundingRate
+   */
+  function _updateFundingRate() internal {
+    int indexPrice = spotFeed.getSpot().toInt256();
+
+    int fundingRate = _getFundingRate(indexPrice);
+
+    int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
+
+    aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
+  }
+
+  /**
    * @notice This function update funding for an account and apply to position detail
    * @param account Account Id
    */
-  function applyFunding(uint account) external {
-    _updateFunding(account);
+  function applyFundingOnAccount(uint account) external {
+    _applyFundingOnAccount(account);
   }
 
-  function _updateFunding(uint account) internal {
+  function _applyFundingOnAccount(uint account) internal {
     PositionDetail storage position = positions[account];
 
-    // get position
+    // todo: get account perp position
     int size = 1e18;
 
     // calculate funding from the last period
@@ -130,15 +158,15 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   /**
    * F = (-1) × S × P × R
    * Where:
-   * 
+   *
    * S is the size of the position (positive if long, negative if short)
    * P is the oracle (index) price for the market
    * R is the funding rate (as a 1-hour rate)
-   * 
+   *
    * @return funding in cash, 18 decimals
    */
   function _calculateFundingPayment(int position) internal returns (int) {
-    int indexPrice = 2100e18;
+    int indexPrice = spotFeed.getSpot().toInt256();
 
     int fundingRate = _getFundingRate(indexPrice);
 
@@ -180,8 +208,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
     return (impactBidPrice, impactAskPrice);
   }
-
-  
 
   /**
    * @notice Triggered when a user wants to migrate an account to a new manager

@@ -5,14 +5,11 @@ import "./IAsset.sol";
 
 interface IPerpAsset is IAsset {
   struct PositionDetail {
-    // uint margin;
-    // uint leverage;
-    int funding;
     uint entryPrice;
-    // timestamp of the last funding
-    uint lastFundingPaid;
-    //
-    uint lastUpdated;
+    int funding;
+    int lastAggregatedFundingRate;
+    uint lastPositionUpdated; // timestamp of the last time position was updated
+    uint lastFundingPaid; // timestamp of the last time funding was paid
   }
 
   //////////////////
