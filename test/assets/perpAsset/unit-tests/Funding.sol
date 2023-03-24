@@ -86,6 +86,40 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(perp.impactBidPrice(), 1520e18);
   }
 
+  function testPositiveFundingRate() public {
+    _setPricesPositiveFunding();
+
+    // this number * index = funding per 1 contract
+    assertEq(perp.getFundingRate(), 0.0005e18);
+  }
+
+  function testPositiveFundingRateCapped() public {
+    int iap = 1601e18;
+    int ibp = 1600e18;
+
+    vm.prank(bot);
+    perp.setImpactPrices(iap, ibp);
+
+    assertEq(perp.getFundingRate(), 0.0075e18);
+  }
+
+  function testNegativeFundingRate() public {
+    _setPricesNegativeFunding();
+
+    // this number * index = funding per 1 contract
+    assertEq(perp.getFundingRate(), -0.0005e18);
+  }
+
+  function testNegativeFundingRateCapped() public {
+    int iap = 1401e18;
+    int ibp = 1400e18;
+
+    vm.prank(bot);
+    perp.setImpactPrices(iap, ibp);
+
+    assertEq(perp.getFundingRate(), -0.0075e18);
+  }
+
   function testApplyZeroFundingNoTimeElapse() public {
     // apply funding
     perp.updateFundingRate();
@@ -113,8 +147,8 @@ contract UNIT_PerpAssetFunding is Test {
     // bob paid funding
     (, int bobFunding,,,) = perp.positions(bobAcc);
 
-    assertEq(aliceFunding, 2.25e18);
-    assertEq(bobFunding, -2.25e18);
+    assertEq(aliceFunding, 0.75e18);
+    assertEq(bobFunding, -0.75e18);
   }
 
   // short pay long when mark < index
@@ -141,8 +175,11 @@ contract UNIT_PerpAssetFunding is Test {
 
   function _setPricesPositiveFunding() internal returns (uint, int, int) {
     uint spot = 1500e18;
-    int iap = 1522e18;
-    int ibp = 1518e18;
+    int iap = 1512e18;
+    int ibp = 1506e18;
+
+    // expected premium: 6 / 8 = 0.75
+
     feed.setSpot(spot);
 
     vm.prank(bot);
@@ -154,6 +191,8 @@ contract UNIT_PerpAssetFunding is Test {
     uint spot = 1500e18;
     int iap = 1494e18;
     int ibp = 1488e18;
+
+    // expected premium -6 / 8 = -0.75
 
     feed.setSpot(spot);
     vm.prank(bot);

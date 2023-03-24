@@ -148,6 +148,14 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
+   * @notice return hourly funding rate
+   */
+  function getFundingRate() external view returns (int) {
+    int indexPrice = spotFeed.getSpot().toInt256();
+    return _getFundingRate(indexPrice);
+  }
+
+  /**
    * Funding per Hour = (-1) × S × P × R
    * Where:
    *
