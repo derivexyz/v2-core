@@ -141,37 +141,38 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     _applyFundingOnAccount(account);
   }
 
-  function _applyFundingOnAccount(uint account) internal {
-    PositionDetail storage position = positions[account];
-
-    // todo: get account perp position
-    int size = 1e18;
-
-    // calculate funding from the last period
-    int funding = _calculateFundingPayment(size);
-
-    // apply funding
-    position.funding += funding;
-    position.lastFundingPaid = block.timestamp;
-  }
-
   /**
-   * F = (-1) × S × P × R
+   * Funding per Hour = (-1) × S × P × R
    * Where:
    *
    * S is the size of the position (positive if long, negative if short)
    * P is the oracle (index) price for the market
    * R is the funding rate (as a 1-hour rate)
    *
-   * @return funding in cash, 18 decimals
+   *
    */
-  function _calculateFundingPayment(int position) internal returns (int) {
+  function _applyFundingOnAccount(uint accountId) internal {
+    PositionDetail storage position = positions[accountId];
+
+    int size = _getPositionSize(accountId);
+
+    // todo: get account perp position
+    int rateToPay = aggregatedFundingRate - position.lastAggregatedFundingRate;
+
     int indexPrice = spotFeed.getSpot().toInt256();
+    int funding = - size * indexPrice * rateToPay;
 
-    int fundingRate = _getFundingRate(indexPrice);
+    // apply funding
+    position.funding += funding;
+    position.lastFundingPaid = block.timestamp;
+    position.lastAggregatedFundingRate = aggregatedFundingRate;
+  }
 
-    // this is funding payment for the last hour
-    return -position * indexPrice * fundingRate;
+  /**
+   * @dev Get number of contracts open, with 18 decimals
+   */
+  function _getPositionSize(uint accountId) internal view returns (int) {
+    return accounts.getBalance(accountId, IPerpAsset(address(this)), 0);
   }
 
   function _getFundingRate(int indexPrice) internal view returns (int fundingRate) {
@@ -193,20 +194,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   function _getPremium(int indexPrice) internal view returns (int premium) {
     premium = (SignedMath.max(impactBidPrice - indexPrice, 0) - SignedMath.max(indexPrice - impactAskPrice, 0))
       .divideDecimal(indexPrice);
-  }
-
-  /**
-   * @dev Get IBP (Impact Bid Price) and IAP (Impact Ask Price)
-   * Impact Bid Price = Average execution price for a market sell of the impact notional value
-   * Impact Ask Price = Average execution price for a market buy of the impact notional value
-   */
-  function _getImpactPrices() internal view returns (int, int) {
-    uint marketPrice = 2000e18;
-    // todo: consider INA, or this from the oracle directly
-    int impactBidPrice = marketPrice.multiplyDecimal(1e18 - perpShock).toInt256();
-    int impactAskPrice = marketPrice.multiplyDecimal(1e18 + perpShock).toInt256();
-
-    return (impactBidPrice, impactAskPrice);
   }
 
   /**
