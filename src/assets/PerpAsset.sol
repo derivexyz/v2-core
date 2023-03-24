@@ -54,6 +54,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   constructor(IAccounts _accounts, IChainlinkSpotFeed _feed) ManagerWhitelist(_accounts) {
     spotFeed = _feed;
+    lastFundingPaidAt = block.timestamp;
   }
 
   //////////////////////////
@@ -75,13 +76,13 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external view onlyAccount returns (int finalBalance, bool needAllowance) {
+  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
 
     // get market price
 
     // calculate funding from the last period, reflect changes in position.funding
-    // _updateFunding();
+    _updateFundingRate();
 
     // update average entry price
 
@@ -94,7 +95,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   /**
    * @notice set bot address that can update impact prices
    */
-  function setWhitelistedBot(address bot, bool isWhitelisted) external onlyOwner {
+  function setWhitelistBot(address bot, bool isWhitelisted) external onlyOwner {
     isWhitelistedBot[bot] = isWhitelisted;
 
     emit BotWhitelisted(bot, isWhitelisted);
