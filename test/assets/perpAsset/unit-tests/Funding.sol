@@ -82,7 +82,8 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(funding, 0);
   }
 
-  function testApplyFunding() public {
+  // long pay short when mark > index
+  function testApplyPositiveFunding() public {
     vm.warp(block.timestamp + 1 hours);
     // apply funding
     perp.updateFundingRate();
@@ -101,12 +102,45 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(bobFunding, -2.25e18);
   }
 
+  // short pay long when mark < index
+  function testApplyNegativeFunding() public {
+    _setPricesNegativeFunding();
+
+    vm.warp(block.timestamp + 1 hours);
+    // apply funding
+    perp.updateFundingRate();
+
+    // alice is short, bob is long
+    perp.applyFundingOnAccount(aliceAcc);
+    perp.applyFundingOnAccount(bobAcc);
+
+    // alice paid funding
+    (, int aliceFunding,,,) = perp.positions(aliceAcc);
+
+    // bob received funding
+    (, int bobFunding,,,) = perp.positions(bobAcc);
+
+    assertEq(aliceFunding, -0.75e18);
+    assertEq(bobFunding, 0.75e18);
+  }
+
   function _setPricesPositiveFunding() internal returns (uint, int, int) {
     uint spot = 1500e18;
     int iap = 1522e18;
     int ibp = 1518e18;
     feed.setSpot(spot);
 
+    vm.prank(bot);
+    perp.setImpactPrices(iap, ibp);
+    return (spot, iap, ibp);
+  }
+
+  function _setPricesNegativeFunding() internal returns (uint, int, int) {
+    uint spot = 1500e18;
+    int iap = 1494e18;
+    int ibp = 1488e18;
+
+    feed.setSpot(spot);
     vm.prank(bot);
     perp.setImpactPrices(iap, ibp);
     return (spot, iap, ibp);
