@@ -160,7 +160,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     int rateToPay = aggregatedFundingRate - position.lastAggregatedFundingRate;
 
     int indexPrice = spotFeed.getSpot().toInt256();
-    int funding = - size * indexPrice * rateToPay;
+    int funding = -size * indexPrice * rateToPay;
 
     // apply funding
     position.funding += funding;
