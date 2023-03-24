@@ -59,16 +59,31 @@ contract UNIT_PerpAssetFunding is Test {
     account.submitTransfer(transfer, "");
   }
 
+  function testCannotSetNegativeImpactPrices() public {
+    vm.prank(bot);
+    vm.expectRevert(IPerpAsset.PA_ImpactPriceMustBePositive.selector);
+    perp.setImpactPrices(-1, 1);
+  }
+
+  function testCannotSetAskPriceLowerThanAskBid() public {
+    vm.prank(bot);
+    vm.expectRevert(IPerpAsset.PA_InvalidImpactPrices.selector);
+    perp.setImpactPrices(1, 2);
+  }
+
+  function testUnWhitelistBot() public {
+    perp.setWhitelistBot(bot, false);
+    vm.prank(bot);
+    vm.expectRevert(IPerpAsset.PA_OnlyBot.selector);
+    perp.setImpactPrices(1540e18, 1520e18);
+  }
+
   function testSetImpactPrices() public {
     // set impact price
     vm.prank(bot);
     perp.setImpactPrices(1540e18, 1520e18);
     assertEq(perp.impactAskPrice(), 1540e18);
     assertEq(perp.impactBidPrice(), 1520e18);
-  }
-
-  function testUpdateFundingRate() public {
-    perp.updateFundingRate();
   }
 
   function testApplyZeroFundingNoTimeElapse() public {

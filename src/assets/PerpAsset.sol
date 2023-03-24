@@ -110,6 +110,9 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     if (_impactAskPrice < 0 || _impactBidPrice < 0) {
       revert PA_ImpactPriceMustBePositive();
     }
+    if (_impactAskPrice < _impactBidPrice) {
+      revert PA_InvalidImpactPrices();
+    }
     impactAskPrice = _impactAskPrice;
     impactBidPrice = _impactBidPrice;
 
@@ -212,7 +215,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   //////////////////////////
 
   modifier onlyBot() {
-    require(isWhitelistedBot[msg.sender], "PerpAsset: only bot");
+    if (!isWhitelistedBot[msg.sender]) revert PA_OnlyBot();
     _;
   }
 }

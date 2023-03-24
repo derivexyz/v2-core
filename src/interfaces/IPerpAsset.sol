@@ -37,4 +37,10 @@ interface IPerpAsset is IAsset {
   error PA_OnlyAccountOwner();
 
   error PA_ImpactPriceMustBePositive();
+
+  /// @dev ask price must be higher than bid price
+  error PA_InvalidImpactPrices();
+
+  /// @dev Caller is not a whitelisted bot
+  error PA_OnlyBot();
 }
