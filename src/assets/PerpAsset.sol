@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "forge-std/console2.sol";
+
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
@@ -161,7 +163,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     int rateToPay = aggregatedFundingRate - position.lastAggregatedFundingRate;
 
     int indexPrice = spotFeed.getSpot().toInt256();
-    int funding = -size * indexPrice * rateToPay;
+    int funding = -size.multiplyDecimal(indexPrice).multiplyDecimal(rateToPay);
 
     // apply funding
     position.funding += funding;
