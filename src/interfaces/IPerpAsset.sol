@@ -5,7 +5,9 @@ import "./IAsset.sol";
 
 interface IPerpAsset is IAsset {
   struct PositionDetail {
+    // price that the position is opened at
     uint entryPrice;
+    // all unsettled funding payments
     int funding;
     int lastAggregatedFundingRate;
     uint lastPositionUpdated; // timestamp of the last time position was updated

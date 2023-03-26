@@ -87,6 +87,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     _updateFundingRate();
 
     // update average entry price
+    _updateEntryPrice(adjustment.acc, preBalance, adjustment.amount);
 
     // have a new position
     finalBalance = preBalance + adjustment.amount;
@@ -137,6 +138,36 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
     aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
+  }
+
+  /**
+   * @dev update the entry price of an account based on current index and last index price
+   */
+  function _updateEntryPrice(uint accountId, int preBalance, int delta) internal {
+    PositionDetail storage position = positions[accountId];
+
+    int indexPrice = spotFeed.getSpot().toInt256();
+
+    int entryPrice = position.entryPrice.toInt256();
+
+    // if position is empty, update entry price
+    if (preBalance == 0) {
+      position.entryPrice = uint(indexPrice);
+      return;
+    }
+
+    // if position is not empty, update entry price
+    if (preBalance > 0) {
+      // long position
+      // entryPrice = (entryPrice * preBalance + delta * indexPrice) / (preBalance + delta)
+      entryPrice = (entryPrice * preBalance + delta * indexPrice) / (preBalance + delta);
+    } else {
+      // short position
+      // entryPrice = (entryPrice * preBalance - delta * indexPrice) / (preBalance - delta)
+      entryPrice = (entryPrice * preBalance - delta * indexPrice) / (preBalance - delta);
+    }
+
+    position.entryPrice = uint(entryPrice);
   }
 
   /**
