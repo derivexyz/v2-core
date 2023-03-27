@@ -13,11 +13,11 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/ownership/Owned.sol";
 import "lyra-utils/math/IntLib.sol";
 
-import "./ManagerWhitelist.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/IPerpAsset.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 
-import "../interfaces/IAccounts.sol";
-import "../interfaces/IPerpAsset.sol";
-import "../interfaces/IChainlinkSpotFeed.sol";
+import "./ManagerWhitelist.sol";
 
 /**
  * @title PerpAsset
@@ -38,23 +38,20 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   ///@dev mapping from account to position
   mapping(uint => PositionDetail) public positions;
 
-  ///@dev mapping from account to last funding rate
+  ///@dev mapping from address to whitelisted to push impacted prices
   mapping(address => bool) public isWhitelistedBot;
 
-  ///@dev perp shock is 5%
-  uint constant perpShock = 0.05e18;
-
-  ///@dev INA stans for initial notional amount => 2500 contracts
-  uint constant INA = 2500e18;
-
-  int constant MAX_RATE_PER_HOUR = 0.0075e18; // 0.75% per hour
-  int constant MIN_RATE_PER_HOUR = -0.0075e18; // 0.75% per hour
+  /// @dev max hourly funding rate, 0.75%
+  int constant MAX_RATE_PER_HOUR = 0.0075e18;
+  /// @dev min hourly funding rate, -0.75%
+  int constant MIN_RATE_PER_HOUR = -0.0075e18;
 
   int public impactAskPrice;
   int public impactBidPrice;
 
   ///@dev latest aggregated funding rate
   int public aggregatedFundingRate;
+
   ///@dev last time aggregated funding rate was updated
   uint public lastFundingPaidAt;
 
@@ -84,8 +81,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     address /*caller*/
   ) external onlyAccount returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
-
-    // get market price
 
     // calculate funding from the last period, reflect changes in position.funding
     _updateFundingRate();
