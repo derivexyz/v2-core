@@ -50,7 +50,7 @@ contract UNIT_PerpAssetHook is Test {
     vm.prank(account);
     (int postBalance, bool needAllowance) = perp.handleAdjustment(adjustment, 0, preBalance, manager, address(this));
     assertEq(postBalance, amount);
-    assertEq(needAllowance, false);
+    assertEq(needAllowance, true);
   }
 
   function testWillNotRevertOnLegalManagerUpdate() public {

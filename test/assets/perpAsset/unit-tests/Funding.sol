@@ -41,13 +41,12 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setWhitelistBot(bot, true);
 
     // create account for alice and bob
-    aliceAcc = account.createAccount(alice, manager);
-    bobAcc = account.createAccount(bob, manager);
+    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
 
     _setPricesPositiveFunding();
 
     // open trades
-    vm.prank(alice);
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
