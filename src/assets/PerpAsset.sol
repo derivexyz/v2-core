@@ -178,17 +178,17 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   /**
    * @notice This function update funding for an account and apply to position detail
-   * @param account Account Id
+   * @param accountId Account Id
    */
-  function applyFundingOnAccount(uint account) external {
-    _applyFundingOnAccount(account);
+  function applyFundingOnAccount(uint accountId) external {
+    _applyFundingOnAccount(accountId);
   }
 
   /**
-   * @dev this function tells the user (manager how much cash the account own or owe)
-   * returns pending funding, PNL, and unrealized PNL based on the current spot price.
+   * @dev This function reflect how much cash should be mark "available" for an account
+   * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
    */
-  function getAccountUnsettledCash(uint accountId) external view returns (int totalCash) {
+  function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
     int size = _getPositionSize(accountId);
     int indexPrice = spotFeed.getSpot().toInt256();
 
@@ -208,8 +208,8 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   /**
    * @dev managers should use this function to clear pnl and funding, and print / burn cash
    */
-  function syncPendingPNLAndFunding(uint accountId) external returns (int netCash) {
-    _checkManager(msg.sender);
+  function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {
+    if(msg.sender != accounts.ownerOf(accountId)) revert PA_WrongManager();
 
     PositionDetail storage position = positions[accountId];
     netCash = position.funding + position.pnl;

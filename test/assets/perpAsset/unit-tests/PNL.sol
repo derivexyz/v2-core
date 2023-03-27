@@ -66,8 +66,8 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(alicePnl, 0);
     assertEq(bobPnl, 0);
 
-    assertEq(perp.getAccountUnsettledCash(aliceAcc), 0);
-    assertEq(perp.getAccountUnsettledCash(bobAcc), 0);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 0);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 0);
   }
 
   /* -------------------------- */
@@ -79,7 +79,7 @@ contract UNIT_PerpAssetPNL is Test {
     _setPrices(1600e18);
 
     // bob has $100 in unrealized PNL
-    assertEq(perp.getAccountUnsettledCash(bobAcc), 100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
 
     // bob trade with charlie to increase long position
     _tradePerpContract(charlieAcc, bobAcc, oneContract);
@@ -89,7 +89,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(pnl, 0);
 
     // still $100 in unrealized PNL
-    assertEq(perp.getAccountUnsettledCash(bobAcc), 100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
   }
 
   function testCloseLongPositionWithProfit() public {
@@ -103,7 +103,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is not updated
     assertEq(pnl, 100e18);
 
-    assertEq(perp.getAccountUnsettledCash(bobAcc), 100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
   }
 
   function testCloseLongPositionWithLosses() public {
@@ -117,7 +117,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is not updated
     assertEq(pnl, -100e18);
 
-    assertEq(perp.getAccountUnsettledCash(bobAcc), -100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
   }
 
   function testPartialCloseLongPositionWithProfit() public {
@@ -131,7 +131,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is still the initial entry price
     assertEq(pnl, 50e18);
 
-    assertEq(perp.getAccountUnsettledCash(bobAcc), 100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
   }
 
   function testPartialCloseLongPositionWithLosses() public {
@@ -145,7 +145,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is still the initial entry price
     assertEq(pnl, -50e18);
 
-    assertEq(perp.getAccountUnsettledCash(bobAcc), -100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
   }
 
   function testFromLongToShort() public {
@@ -160,7 +160,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, 1400e18); // entry price is updated
     assertEq(pnl, -100e18); // loss is realized
 
-    assertEq(perp.getAccountUnsettledCash(bobAcc), -100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
   }
 
   /* ------------------------------ */
@@ -179,7 +179,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(pnl, 0);
 
     // unrealized loss
-    assertEq(perp.getAccountUnsettledCash(aliceAcc), -100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), -100e18);
   }
 
   function testCloseShortPositionWithProfit() public {
@@ -193,7 +193,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is not updated
     assertEq(pnl, 100e18);
 
-    assertEq(perp.getAccountUnsettledCash(aliceAcc), 100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 100e18);
   }
 
   function testCloseShortPositionWithLosses() public {
@@ -207,7 +207,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is not updated
     assertEq(pnl, -100e18);
 
-    assertEq(perp.getAccountUnsettledCash(aliceAcc), -100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), -100e18);
   }
 
   function testPartialCloseShortPositionWithProfit() public {
@@ -221,7 +221,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is still the initial entry price
     assertEq(pnl, 50e18);
 
-    assertEq(perp.getAccountUnsettledCash(aliceAcc), 100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 100e18);
   }
 
   function testPartialCloseShortPositionWithLosses() public {
@@ -235,7 +235,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is still the initial entry price
     assertEq(pnl, -50e18);
 
-    assertEq(perp.getAccountUnsettledCash(aliceAcc), -100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), -100e18);
   }
 
   function testFromShortToLong() public {

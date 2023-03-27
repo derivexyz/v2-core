@@ -36,6 +36,9 @@ interface IPerpAsset is IAsset {
   /// @dev revert when user trying to upgrade to a unknown manager
   error PA_UnknownManager();
 
+  /// @dev settlement can only be initiated by the manager of the account
+  error PA_WrongManager();
+
   /// @dev caller is not owner of the account
   error PA_OnlyAccountOwner();
 
