@@ -3,16 +3,22 @@ pragma solidity ^0.8.13;
 
 import "./IAsset.sol";
 
+/**
+ * @title IPerpAsset
+ * @notice Interface for a perpetual asset contract that extends the IAsset interface.
+ */
 interface IPerpAsset is IAsset {
   struct PositionDetail {
-    // price that the position is opened at
+    // Price that the position was opened at
     uint entryPrice;
-    // all unsettled funding payments
+    // All funding, not yet settled as cash in Accounts
     int funding;
-    // pnl
+    // Realized pnl, not yet settled as cash in Accounts
     int pnl;
+    // Last aggregated funding rate applied to this position
     int lastAggregatedFundingRate;
-    uint lastFundingPaid; // timestamp of the last time funding was paid
+    // Timestamp of the last time funding was applied
+    uint lastFundingPaid;
   }
 
   //////////////////
@@ -27,26 +33,27 @@ interface IPerpAsset is IAsset {
   //   Errors   //
   ////////////////
 
-  /// @dev caller is not account
+  /// @dev Caller is not the Account contract
   error PA_NotAccount();
 
-  /// @dev caller is not the liquidation module
+  /// @dev Caller is not the liquidation module
   error PA_NotLiquidationModule();
 
-  /// @dev revert when user trying to upgrade to a unknown manager
+  /// @dev Revert when user trying to upgrade to an unknown manager
   error PA_UnknownManager();
 
-  /// @dev settlement can only be initiated by the manager of the account
+  /// @dev Settlement can only be initiated by the manager of the account
   error PA_WrongManager();
 
-  /// @dev caller is not owner of the account
+  /// @dev Caller is not the owner of the account
   error PA_OnlyAccountOwner();
 
+  /// @dev Impact price must be positive
   error PA_ImpactPriceMustBePositive();
 
-  /// @dev ask price must be higher than bid price
+  /// @dev Ask price must be higher than bid price
   error PA_InvalidImpactPrices();
 
-  /// @dev Caller is not a whitelisted bot
-  error PA_OnlyBot();
+  /// @dev Caller is not the impact price oracle address
+  error PA_OnlyImpactPriceOracle();
 }

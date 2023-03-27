@@ -18,8 +18,8 @@ contract UNIT_PerpAssetPNL is Test {
   Accounts account;
   MockFeed feed;
 
-  // bot address to set impact prices
-  address bot = address(0xb0ba);
+  // keeper address to set impact prices
+  address keeper = address(0xb0ba);
   // users
   address alice = address(0xaaaa);
   address bob = address(0xbbbb);
@@ -40,9 +40,8 @@ contract UNIT_PerpAssetPNL is Test {
     manager = new MockManager(address(account));
     perp = new PerpAsset(IAccounts(account), feed);
 
-    // whitelist bots
     perp.setWhitelistManager(address(manager), true);
-    perp.setImpactPriceOracle(bot);
+    perp.setImpactPriceOracle(keeper);
 
     // create account for alice, bob, charlie
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
@@ -290,7 +289,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function _setPrices(uint price) internal {
     feed.setSpot(price);
-    vm.prank(bot);
+    vm.prank(keeper);
     perp.setImpactPrices(int(price), int(price));
   }
 

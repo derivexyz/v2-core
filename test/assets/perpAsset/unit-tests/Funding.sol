@@ -18,8 +18,8 @@ contract UNIT_PerpAssetFunding is Test {
   Accounts account;
   MockFeed feed;
 
-  // bot address to set impact prices
-  address bot = address(0xb0ba);
+  // keeper address to set impact prices
+  address keeper = address(0xb0ba);
   // users
   address alice = address(0xaaaa);
   address bob = address(0xbbbb);
@@ -36,9 +36,9 @@ contract UNIT_PerpAssetFunding is Test {
     manager = new MockManager(address(account));
     perp = new PerpAsset(IAccounts(account), feed);
 
-    // whitelist bots
+    // whitelist keepers
     perp.setWhitelistManager(address(manager), true);
-    perp.setImpactPriceOracle(bot);
+    perp.setImpactPriceOracle(keeper);
 
     // create account for alice and bob
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
@@ -59,27 +59,27 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testCannotSetNegativeImpactPrices() public {
-    vm.prank(bot);
+    vm.prank(keeper);
     vm.expectRevert(IPerpAsset.PA_ImpactPriceMustBePositive.selector);
     perp.setImpactPrices(-1, 1);
   }
 
   function testCannotSetAskPriceLowerThanAskBid() public {
-    vm.prank(bot);
+    vm.prank(keeper);
     vm.expectRevert(IPerpAsset.PA_InvalidImpactPrices.selector);
     perp.setImpactPrices(1, 2);
   }
 
   function testUnWhitelistBot() public {
     perp.setImpactPriceOracle(address(this));
-    vm.prank(bot);
-    vm.expectRevert(IPerpAsset.PA_OnlyBot.selector);
+    vm.prank(keeper);
+    vm.expectRevert(IPerpAsset.PA_OnlyImpactPriceOracle.selector);
     perp.setImpactPrices(1540e18, 1520e18);
   }
 
   function testSetImpactPrices() public {
     // set impact price
-    vm.prank(bot);
+    vm.prank(keeper);
     perp.setImpactPrices(1540e18, 1520e18);
     assertEq(perp.impactAskPrice(), 1540e18);
     assertEq(perp.impactBidPrice(), 1520e18);
@@ -96,7 +96,7 @@ contract UNIT_PerpAssetFunding is Test {
     int iap = 1601e18;
     int ibp = 1600e18;
 
-    vm.prank(bot);
+    vm.prank(keeper);
     perp.setImpactPrices(iap, ibp);
 
     assertEq(perp.getFundingRate(), 0.0075e18);
@@ -113,7 +113,7 @@ contract UNIT_PerpAssetFunding is Test {
     int iap = 1401e18;
     int ibp = 1400e18;
 
-    vm.prank(bot);
+    vm.prank(keeper);
     perp.setImpactPrices(iap, ibp);
 
     assertEq(perp.getFundingRate(), -0.0075e18);
@@ -181,7 +181,7 @@ contract UNIT_PerpAssetFunding is Test {
 
     feed.setSpot(spot);
 
-    vm.prank(bot);
+    vm.prank(keeper);
     perp.setImpactPrices(iap, ibp);
     return (spot, iap, ibp);
   }
@@ -194,7 +194,7 @@ contract UNIT_PerpAssetFunding is Test {
     // expected premium -6 / 8 = -0.75
 
     feed.setSpot(spot);
-    vm.prank(bot);
+    vm.prank(keeper);
     perp.setImpactPrices(iap, ibp);
     return (spot, iap, ibp);
   }
