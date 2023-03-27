@@ -22,6 +22,8 @@ import "../interfaces/IChainlinkSpotFeed.sol";
 /**
  * @title PerpAsset
  * @author Lyra
+ * @dev settlement refers to the action initiate by the manager that print / burn cash based on accounts' PNL and funding
+ *      this contract keep track of users' pending funding and PNL, and update them when settlement is called
  */
 contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
@@ -183,11 +185,38 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
+   * @dev this function tells the user (manager how much cash the account own or owe)
+   * returns pending funding, PNL, and unrealized PNL based on the current spot price.
+   */
+  function getAccountUnsettledCash(uint accountId) external view returns (int totalCash) {
+    int size = _getPositionSize(accountId);
+    int indexPrice = spotFeed.getSpot().toInt256();
+
+    int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
+    int unrealizedPnl = _getUnrealizedPnl(accountId, size, indexPrice);
+    return unrealizedFunding + unrealizedPnl + positions[accountId].funding + positions[accountId].pnl;
+  }
+
+  /**
    * @notice return hourly funding rate
    */
   function getFundingRate() external view returns (int) {
     int indexPrice = spotFeed.getSpot().toInt256();
     return _getFundingRate(indexPrice);
+  }
+
+
+  /**
+   * @dev managers should use this function to clear pnl and funding, and print / burn cash
+   */
+  function syncPendingPNLAndFunding(uint accountId) external returns (int netCash) {
+    _checkManager(msg.sender);
+
+    PositionDetail storage position = positions[accountId];
+    netCash = position.funding + position.pnl;
+
+    position.funding = 0;
+    position.pnl = 0;
   }
 
   /**
@@ -197,23 +226,33 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * S is the size of the position (positive if long, negative if short)
    * P is the oracle (index) price for the market
    * R is the funding rate (as a 1-hour rate)
-   *
-   *
    */
   function _applyFundingOnAccount(uint accountId) internal {
+    
+    int size = _getPositionSize(accountId);
+    int indexPrice = spotFeed.getSpot().toInt256();
+
+    int funding = _getUnrealizedFunding(accountId, size, indexPrice);
+    // apply funding
+    positions[accountId].funding += funding;
+    positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
+  }
+
+  function _getUnrealizedFunding(uint accountId, int size, int indexPrice) internal view returns (int funding) {
     PositionDetail storage position = positions[accountId];
 
-    int size = _getPositionSize(accountId);
-
-    // todo: get account perp position
     int rateToPay = aggregatedFundingRate - position.lastAggregatedFundingRate;
 
-    int indexPrice = spotFeed.getSpot().toInt256();
-    int funding = -size.multiplyDecimal(indexPrice).multiplyDecimal(rateToPay);
+    funding = -size.multiplyDecimal(indexPrice).multiplyDecimal(rateToPay);
+  }
 
-    // apply funding
-    position.funding += funding;
-    position.lastAggregatedFundingRate = aggregatedFundingRate;
+  /**
+   * @dev Get unrealized PNL if the position is closed at the current spot price
+   */
+  function _getUnrealizedPnl(uint accountId, int size, int indexPrice) internal view returns (int) {
+    int entryPrice = positions[accountId].entryPrice.toInt256();
+
+    return (indexPrice - entryPrice).multiplyDecimal(size);
   }
 
   /**
