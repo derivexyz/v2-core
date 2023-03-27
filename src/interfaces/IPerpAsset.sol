@@ -9,8 +9,9 @@ interface IPerpAsset is IAsset {
     uint entryPrice;
     // all unsettled funding payments
     int funding;
+    // pnl
+    int pnl;
     int lastAggregatedFundingRate;
-    uint lastPositionUpdated; // timestamp of the last time position was updated
     uint lastFundingPaid; // timestamp of the last time funding was paid
   }
 

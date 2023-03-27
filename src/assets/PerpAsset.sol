@@ -7,9 +7,11 @@ import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/ownership/Owned.sol";
+import "lyra-utils/math/IntLib.sol";
 
 import "./ManagerWhitelist.sol";
 
@@ -87,7 +89,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     _updateFundingRate();
 
     // update average entry price
-    _updateEntryPrice(adjustment.acc, preBalance, adjustment.amount);
+    _updateEntryPriceAndPnl(adjustment.acc, preBalance, adjustment.amount);
 
     // have a new position
     finalBalance = preBalance + adjustment.amount;
@@ -141,33 +143,36 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @dev update the entry price of an account based on current index and last index price
+   * @dev update the entry price if an account is increased
+   *      and update the PnL if the position is closed
    */
-  function _updateEntryPrice(uint accountId, int preBalance, int delta) internal {
+  function _updateEntryPriceAndPnl(uint accountId, int preBalance, int delta) internal {
     PositionDetail storage position = positions[accountId];
 
     int indexPrice = spotFeed.getSpot().toInt256();
 
     int entryPrice = position.entryPrice.toInt256();
 
-    // if position is empty, update entry price
-    if (preBalance == 0) {
-      position.entryPrice = uint(indexPrice);
-      return;
-    }
+    int pnl;
 
-    // if position is not empty, update entry price
-    if (preBalance > 0) {
-      // long position
-      // entryPrice = (entryPrice * preBalance + delta * indexPrice) / (preBalance + delta)
+    if (preBalance == 0) {
+      // if position was empty, update entry price
+      entryPrice = indexPrice;
+    } else if (preBalance * delta > 0) {
+      // pre-balance and delta has the same sign: increase position
+      // if position increases: modify entry price
       entryPrice = (entryPrice * preBalance + delta * indexPrice) / (preBalance + delta);
+    } else if (preBalance.abs() >= delta.abs()) {
+      // if position is closed: 
+      pnl = (entryPrice - indexPrice) * delta;
     } else {
-      // short position
-      // entryPrice = (entryPrice * preBalance - delta * indexPrice) / (preBalance - delta)
-      entryPrice = (entryPrice * preBalance - delta * indexPrice) / (preBalance - delta);
+      // position flipped from + to -, or - to +
+      pnl = (indexPrice - entryPrice) * preBalance;
+      entryPrice = indexPrice;
     }
 
     position.entryPrice = uint(entryPrice);
+    position.pnl += pnl;
   }
 
   /**
@@ -209,7 +214,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
     // apply funding
     position.funding += funding;
-    position.lastFundingPaid = block.timestamp;
     position.lastAggregatedFundingRate = aggregatedFundingRate;
   }
 
