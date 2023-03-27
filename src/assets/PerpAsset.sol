@@ -209,7 +209,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @dev managers should use this function to clear pnl and funding, and print / burn cash
    */
   function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {
-    if(msg.sender != accounts.ownerOf(accountId)) revert PA_WrongManager();
+    if (msg.sender != accounts.ownerOf(accountId)) revert PA_WrongManager();
 
     PositionDetail storage position = positions[accountId];
     netCash = position.funding + position.pnl;
