@@ -205,7 +205,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     return _getFundingRate(indexPrice);
   }
 
-
   /**
    * @dev managers should use this function to clear pnl and funding, and print / burn cash
    */
@@ -228,7 +227,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * R is the funding rate (as a 1-hour rate)
    */
   function _applyFundingOnAccount(uint accountId) internal {
-    
     int size = _getPositionSize(accountId);
     int indexPrice = spotFeed.getSpot().toInt256();
 
