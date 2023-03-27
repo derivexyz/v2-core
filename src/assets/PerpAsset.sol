@@ -39,7 +39,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   mapping(uint => PositionDetail) public positions;
 
   ///@dev mapping from address to whitelisted to push impacted prices
-  mapping(address => bool) public isWhitelistedBot;
+  address public impactPriceOracle;
 
   /// @dev max hourly funding rate, 0.75%
   int constant MAX_RATE_PER_HOUR = 0.0075e18;
@@ -95,18 +95,18 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @notice set bot address that can update impact prices
+   * @notice set impact price oracle address that can update impact prices
    */
-  function setWhitelistBot(address bot, bool isWhitelisted) external onlyOwner {
-    isWhitelistedBot[bot] = isWhitelisted;
+  function setImpactPriceOracle(address _oracle) external onlyOwner {
+    impactPriceOracle = _oracle;
 
-    emit BotWhitelisted(bot, isWhitelisted);
+    emit ImpactPriceOracleUpdated(_oracle);
   }
 
   /**
    * @notice This function is called by the keeper to update bid prices
    */
-  function setImpactPrices(int _impactAskPrice, int _impactBidPrice) external onlyBot {
+  function setImpactPrices(int _impactAskPrice, int _impactBidPrice) external onlyImpactPriceOracle {
     if (_impactAskPrice < 0 || _impactBidPrice < 0) {
       revert PA_ImpactPriceMustBePositive();
     }
@@ -288,8 +288,8 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   //     Modifiers        //
   //////////////////////////
 
-  modifier onlyBot() {
-    if (!isWhitelistedBot[msg.sender]) revert PA_OnlyBot();
+  modifier onlyImpactPriceOracle() {
+    if (msg.sender != impactPriceOracle) revert PA_OnlyBot();
     _;
   }
 }

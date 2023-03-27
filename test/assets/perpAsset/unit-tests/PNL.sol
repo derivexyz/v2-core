@@ -42,7 +42,7 @@ contract UNIT_PerpAssetPNL is Test {
 
     // whitelist bots
     perp.setWhitelistManager(address(manager), true);
-    perp.setWhitelistBot(bot, true);
+    perp.setImpactPriceOracle(bot);
 
     // create account for alice, bob, charlie
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);

@@ -38,7 +38,7 @@ contract UNIT_PerpAssetFunding is Test {
 
     // whitelist bots
     perp.setWhitelistManager(address(manager), true);
-    perp.setWhitelistBot(bot, true);
+    perp.setImpactPriceOracle(bot);
 
     // create account for alice and bob
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
@@ -71,7 +71,7 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testUnWhitelistBot() public {
-    perp.setWhitelistBot(bot, false);
+    perp.setImpactPriceOracle(address(this));
     vm.prank(bot);
     vm.expectRevert(IPerpAsset.PA_OnlyBot.selector);
     perp.setImpactPrices(1540e18, 1520e18);

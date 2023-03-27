@@ -21,7 +21,7 @@ interface IPerpAsset is IAsset {
 
   event ImpactPricesSet(int askPrice, int bidPrice);
 
-  event BotWhitelisted(address bot, bool isWhitelisted);
+  event ImpactPriceOracleUpdated(address oracle);
 
   ////////////////
   //   Errors   //
