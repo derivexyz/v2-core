@@ -251,6 +251,43 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(pnl, -100e18); // loss is realized
   }
 
+  /* ------------------ */
+  /*   Test settlement  */
+  /* ------------------ */
+
+  function testCannotSettleWithArbitraryAccount() public {
+    vm.expectRevert(IPerpAsset.PA_WrongManager.selector);
+    perp.settleRealizedPNLAndFunding(bobAcc);
+  }
+
+  function testMockSettleBob() public {
+    // price decrease, against of Bob's position
+    _setPrices(1400e18);
+
+    // bob trade with charlie to completely close his long position
+    _tradePerpContract(bobAcc, charlieAcc, oneContract);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
+
+    // mock settle
+    vm.prank(address(manager));
+    perp.settleRealizedPNLAndFunding(bobAcc);
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 0);
+  }
+
+  function testMockSettleAlice() public {
+    // price decreased, in favor of alice's position
+    _setPrices(1400e18);
+
+    // alice trade with charlie to completely close her short position
+    _tradePerpContract(charlieAcc, aliceAcc, oneContract);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 100e18);
+
+    // mock settle
+    vm.prank(address(manager));
+    perp.settleRealizedPNLAndFunding(aliceAcc);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 0);
+  }
+
   function _setPrices(uint price) internal {
     feed.setSpot(price);
     vm.prank(bot);
