@@ -135,7 +135,7 @@ contract UNIT_PerpAssetPNL is Test {
     // price decrease, against of Bob's position
     _setPrices(1400e18);
 
-    // bob trade with charlie to close his long position 
+    // bob trade with charlie to close his long position
     // + and open a short position
     _tradePerpContract(bobAcc, charlieAcc, 2 * oneContract);
 
@@ -171,7 +171,7 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(entryPrice, initPrice); // entry price is not updated
     assertEq(pnl, 100e18);
   }
-  
+
   function testCloseShortPositionWithLosses() public {
     // price increase, against of alice's position
     _setPrices(1600e18);
@@ -212,7 +212,7 @@ contract UNIT_PerpAssetPNL is Test {
     // price increase, against of alice's position
     _setPrices(1600e18);
 
-    // alice trade with charlie to close her short position 
+    // alice trade with charlie to close her short position
     // + and open a long position
     _tradePerpContract(charlieAcc, aliceAcc, 2 * oneContract);
 
@@ -233,15 +233,14 @@ contract UNIT_PerpAssetPNL is Test {
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
-    AccountStructs.AssetTransfer memory transfer =
-      AccountStructs.AssetTransfer({
-        fromAcc: fromAcc, 
-        toAcc: toAcc, 
-        asset: perp, 
-        subId: 0, 
-        amount: amount, 
-        assetData: ""
-      });
+    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+      fromAcc: fromAcc,
+      toAcc: toAcc,
+      asset: perp,
+      subId: 0,
+      amount: amount,
+      assetData: ""
+    });
     account.submitTransfer(transfer, "");
   }
 }
