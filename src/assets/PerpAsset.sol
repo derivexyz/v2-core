@@ -23,7 +23,8 @@ import "./ManagerWhitelist.sol";
  * @title PerpAsset
  * @author Lyra
  * @dev settlement refers to the action initiate by the manager that print / burn cash based on accounts' PNL and funding
- *      this contract keep track of users' pending funding and PNL, and update them when settlement is called
+ *      this contract keep track of users' pending funding and PNL, during trades
+ *      and update them when settlement is called
  */
 contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
@@ -96,6 +97,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   /**
    * @notice set impact price oracle address that can update impact prices
+   * @param _oracle address of the new impact price oracle
    */
   function setImpactPriceOracle(address _oracle) external onlyOwner {
     impactPriceOracle = _oracle;
@@ -231,6 +233,9 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
   }
 
+  /**
+   * @dev Get unrealized funding if applyFunding is called now
+   */
   function _getUnrealizedFunding(uint accountId, int size, int indexPrice) internal view returns (int funding) {
     PositionDetail storage position = positions[accountId];
 
@@ -255,6 +260,9 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     return accounts.getBalance(accountId, IPerpAsset(address(this)), 0);
   }
 
+  /**
+   * @dev Get the hourly funding rate based on index price and impact market prices
+   */
   function _getFundingRate(int indexPrice) internal view returns (int fundingRate) {
     int premium = _getPremium(indexPrice);
     fundingRate = premium / 8; // todo: plus interest rate
@@ -289,7 +297,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   //////////////////////////
 
   modifier onlyImpactPriceOracle() {
-    if (msg.sender != impactPriceOracle) revert PA_OnlyBot();
+    if (msg.sender != impactPriceOracle) revert PA_OnlyImpactPriceOracle();
     _;
   }
 }
