@@ -161,13 +161,12 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     } else if (preBalance * delta > 0) {
       // pre-balance and delta has the same sign: increase position
       // if position increases: modify entry price
-      entryPrice = (entryPrice * preBalance + delta * indexPrice) / (preBalance + delta);
+      entryPrice = (entryPrice * preBalance + indexPrice * delta) / (preBalance + delta);
     } else if (preBalance.abs() >= delta.abs()) {
-      // if position is closed: 
-      pnl = (entryPrice - indexPrice) * delta;
+      pnl = (entryPrice - indexPrice).multiplyDecimal(delta);
     } else {
       // position flipped from + to -, or - to +
-      pnl = (indexPrice - entryPrice) * preBalance;
+      pnl = (indexPrice - entryPrice).multiplyDecimal(preBalance);
       entryPrice = indexPrice;
     }
 

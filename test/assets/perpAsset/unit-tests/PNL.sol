@@ -29,7 +29,7 @@ contract UNIT_PerpAssetPNL is Test {
   uint bobAcc;
   uint charlieAcc;
 
-  int defaultPosition = 1e18;
+  int oneContract = 1e18;
 
   uint initPrice = 1500e18;
 
@@ -51,16 +51,8 @@ contract UNIT_PerpAssetPNL is Test {
 
     _setPrices(initPrice);
 
-    // open trades
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
-      fromAcc: aliceAcc,
-      toAcc: bobAcc,
-      asset: perp,
-      subId: 0,
-      amount: defaultPosition,
-      assetData: ""
-    });
-    account.submitTransfer(transfer, "");
+    // open trades: Alice is Short, Bob is Long
+    _tradePerpContract(aliceAcc, bobAcc, oneContract);
   }
 
   function testInitState() public {
@@ -75,48 +67,181 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(bobPnl, 0);
   }
 
-  // function testIncreasePosition() public {
-  //   // alice increase position
-  //   vm.prank(alice);
-  //   perp.increasePosition(aliceAcc, defaultPosition, "");
+  /* -------------------------- */
+  /* Test Long position on Bob  */
+  /* -------------------------- */
 
-  //   // alice's position should be 2
-  //   (int alicePosition,,,,) = perp.positions(aliceAcc);
-  //   assertEq(alicePosition, 2e18);
-  // }
+  function testIncreaseLongPosition() public {
+    // price increase, in favor of Bob's position
+    _setPrices(1600e18);
 
-  // // short pay long when mark < index
-  // function testApplyNegativeFunding() public {
-  //   _setPricesNegativeFunding();
+    // bob trade with charlie to increase long position
+    _tradePerpContract(charlieAcc, bobAcc, oneContract);
 
-  //   vm.warp(block.timestamp + 1 hours);
-  //   // apply funding
-  //   perp.updateFundingRate();
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(bobAcc);
+    assertEq(entryPrice, 1550e18);
+    assertEq(pnl, 0);
+  }
 
-  //   // alice is short, bob is long
-  //   perp.applyFundingOnAccount(aliceAcc);
-  //   perp.applyFundingOnAccount(bobAcc);
+  function testCloseLongPositionWithProfit() public {
+    // price increase, in favor of Bob's position
+    _setPrices(1600e18);
 
-  //   // alice paid funding
-  //   (, int aliceFunding,,,) = perp.positions(aliceAcc);
+    // bob trade with charlie to completely close his long position
+    _tradePerpContract(bobAcc, charlieAcc, oneContract);
 
-  //   // bob received funding
-  //   (, int bobFunding,,,) = perp.positions(bobAcc);
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(bobAcc);
+    assertEq(entryPrice, initPrice); // entry price is not updated
+    assertEq(pnl, 100e18);
+  }
 
-  //   assertEq(aliceFunding, -0.75e18);
-  //   assertEq(bobFunding, 0.75e18);
-  // }
+  function testCloseLongPositionWithLosses() public {
+    // price decrease, against of Bob's position
+    _setPrices(1400e18);
+
+    // bob trade with charlie to completely close his long position
+    _tradePerpContract(bobAcc, charlieAcc, oneContract);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(bobAcc);
+    assertEq(entryPrice, initPrice); // entry price is not updated
+    assertEq(pnl, -100e18);
+  }
+
+  function testPartialCloseLongPositionWithProfit() public {
+    // price increase, in favor of Bob's position
+    _setPrices(1600e18);
+
+    // bob trade with charlie to close half of his long position
+    _tradePerpContract(bobAcc, charlieAcc, oneContract / 2);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(bobAcc);
+    assertEq(entryPrice, initPrice); // entry price is still the initial entry price
+    assertEq(pnl, 50e18);
+  }
+
+  function testPartialCloseLongPositionWithLosses() public {
+    // price decrease, against of Bob's position
+    _setPrices(1400e18);
+
+    // bob trade with charlie to close half of his long position
+    _tradePerpContract(bobAcc, charlieAcc, oneContract / 2);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(bobAcc);
+    assertEq(entryPrice, initPrice); // entry price is still the initial entry price
+    assertEq(pnl, -50e18);
+  }
+
+  function testFromLongToShort() public {
+    // price decrease, against of Bob's position
+    _setPrices(1400e18);
+
+    // bob trade with charlie to close his long position 
+    // + and open a short position
+    _tradePerpContract(bobAcc, charlieAcc, 2 * oneContract);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(bobAcc);
+    assertEq(entryPrice, 1400e18); // entry price is updated
+    assertEq(pnl, -100e18); // loss is realized
+  }
+
+  /* ------------------------------ */
+  /*  Test Short position on Alice  */
+  /* ------------------------------ */
+
+  function testIncreaseShortPosition() public {
+    // price increase, again alice's position
+    _setPrices(1600e18);
+
+    // alice trade with charlie to increase short position
+    _tradePerpContract(aliceAcc, charlieAcc, oneContract);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(aliceAcc);
+    assertEq(entryPrice, 1550e18);
+    assertEq(pnl, 0);
+  }
+
+  function testCloseShortPositionWithProfit() public {
+    // price decrease, in favor of alice's position
+    _setPrices(1400e18);
+
+    // alice trade with charlie to completely close her short position
+    _tradePerpContract(charlieAcc, aliceAcc, oneContract);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(aliceAcc);
+    assertEq(entryPrice, initPrice); // entry price is not updated
+    assertEq(pnl, 100e18);
+  }
+  
+  function testCloseShortPositionWithLosses() public {
+    // price increase, against of alice's position
+    _setPrices(1600e18);
+
+    // alice trade with charlie to completely close her short position
+    _tradePerpContract(charlieAcc, aliceAcc, oneContract);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(aliceAcc);
+    assertEq(entryPrice, initPrice); // entry price is not updated
+    assertEq(pnl, -100e18);
+  }
+
+  function testPartialCloseShortPositionWithProfit() public {
+    // price decrease, in favor of alice's position
+    _setPrices(1400e18);
+
+    // alice trade with charlie to close half of her short position
+    _tradePerpContract(charlieAcc, aliceAcc, oneContract / 2);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(aliceAcc);
+    assertEq(entryPrice, initPrice); // entry price is still the initial entry price
+    assertEq(pnl, 50e18);
+  }
+
+  function testPartialCloseShortPositionWithLosses() public {
+    // price increase, against of alice's position
+    _setPrices(1600e18);
+
+    // alice trade with charlie to close half of her short position
+    _tradePerpContract(charlieAcc, aliceAcc, oneContract / 2);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(aliceAcc);
+    assertEq(entryPrice, initPrice); // entry price is still the initial entry price
+    assertEq(pnl, -50e18);
+  }
+
+  function testFromShortToLong() public {
+    // price increase, against of alice's position
+    _setPrices(1600e18);
+
+    // alice trade with charlie to close her short position 
+    // + and open a long position
+    _tradePerpContract(charlieAcc, aliceAcc, 2 * oneContract);
+
+    (uint entryPrice, int pnl) = _getEntryPriceAndPNL(aliceAcc);
+    assertEq(entryPrice, 1600e18); // entry price is updated
+    assertEq(pnl, -100e18); // loss is realized
+  }
 
   function _setPrices(uint price) internal {
-    uint spot = 1500e18;
-    feed.setSpot(spot);
+    feed.setSpot(price);
     vm.prank(bot);
     perp.setImpactPrices(int(price), int(price));
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {
-    (uint entryPrice, , int pnl, , ) = perp.positions(acc);
+    (uint entryPrice,, int pnl,,) = perp.positions(acc);
     return (entryPrice, pnl);
   }
 
+  function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
+    AccountStructs.AssetTransfer memory transfer =
+      AccountStructs.AssetTransfer({
+        fromAcc: fromAcc, 
+        toAcc: toAcc, 
+        asset: perp, 
+        subId: 0, 
+        amount: amount, 
+        assetData: ""
+      });
+    account.submitTransfer(transfer, "");
+  }
 }
