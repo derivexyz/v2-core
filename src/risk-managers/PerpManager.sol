@@ -52,12 +52,7 @@ contract PerpManager is IPerpManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(
-    IAccounts accounts_,
-    ICashAsset cashAsset_,
-    IPerpAsset perp_,
-    ISettlementFeed feed_
-  ) {
+  constructor(IAccounts accounts_, ICashAsset cashAsset_, IPerpAsset perp_, ISettlementFeed feed_) {
     accounts = accounts_;
     cashAsset = cashAsset_;
     perp = perp_;
@@ -84,9 +79,7 @@ contract PerpManager is IPerpManager, Owned {
   function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
     override
-  {
-   
-  }
+  {}
 
   /**
    * @notice Ensures new manager is valid.
@@ -102,6 +95,4 @@ contract PerpManager is IPerpManager, Owned {
   //////////
   // View //
   //////////
-
-  
 }
