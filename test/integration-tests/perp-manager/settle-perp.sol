@@ -9,7 +9,6 @@ import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../assets/cashAsset/mocks/MockInterestRateModel.sol";
 
-
 import "src/Accounts.sol";
 import "src/risk-managers/PerpManager.sol";
 import "src/assets/PerpAsset.sol";
@@ -28,7 +27,6 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   MockFeed feed;
   MockERC20 usdc;
   MockInterestRateModel rateModel;
-  
 
   // keeper address to set impact prices
   address keeper = address(0xb0ba);
@@ -49,15 +47,17 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     // deploy contracts
     account = new Accounts("Lyra", "LYRA");
     feed = new MockFeed();
-    
+
     usdc = new MockERC20("USDC", "USDC");
 
     rateModel = new MockInterestRateModel(1e18);
     cash = new CashAsset(account, usdc, rateModel, 0, address(0));
 
+    perp = new PerpAsset(IAccounts(account), feed);
+
     manager = new PerpManager(account, cash, perp, feed);
 
-    perp = new PerpAsset(IAccounts(account), feed);
+    cash.setWhitelistManager(address(manager), true);
 
     perp.setWhitelistManager(address(manager), true);
     perp.setImpactPriceOracle(keeper);
@@ -73,19 +73,38 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     _tradePerpContract(aliceAcc, bobAcc, oneContract);
   }
 
-  function testInitState() public {
+  function testSettleLongPosition() public {
+    int cashBefore = _getCashBalance(bobAcc);
+
+    _setPrices(1600e18);
+
+    // bobAcc close his position and has $100 in PNL
+    _tradePerpContract(bobAcc, aliceAcc, oneContract);
+
+    manager.settleAccount(bobAcc);
+
+    int cashAfter = _getCashBalance(bobAcc);
+
+    // bob has $100 in PNL
+    assertEq(cashBefore + 100e18, cashAfter);
+  }
+
+
+  function testSettleShortPosition() public {
+    int cashBefore = _getCashBalance(aliceAcc);
+
     // alice is short, bob is long
-    (uint aliceEntryPrice, int alicePnl) = _getEntryPriceAndPNL(aliceAcc);
-    (uint bobEntryPrice, int bobPnl) = _getEntryPriceAndPNL(bobAcc);
+    _setPrices(1600e18);
 
-    assertEq(aliceEntryPrice, initPrice);
-    assertEq(bobEntryPrice, initPrice);
+    // alice close his position and has $100 in PNL
+    _tradePerpContract(bobAcc, aliceAcc, oneContract);
 
-    assertEq(alicePnl, 0);
-    assertEq(bobPnl, 0);
+    manager.settleAccount(aliceAcc);
 
-    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 0);
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 0);
+    int cashAfter = _getCashBalance(aliceAcc);
+
+    // alice has lost $100
+    assertEq(cashBefore - 100e18, cashAfter);
   }
 
   /* -------------------------- */
@@ -133,4 +152,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     account.submitTransfer(transfer, "");
   }
 
+  function _getCashBalance(uint acc) public view returns (int) {
+    return account.getBalance(acc, cash, 0);
+  }
 }

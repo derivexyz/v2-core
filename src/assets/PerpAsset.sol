@@ -213,6 +213,8 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
     position.funding = 0;
     position.pnl = 0;
+
+    return netCash;
   }
 
   /**

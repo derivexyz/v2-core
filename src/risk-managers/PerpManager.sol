@@ -82,16 +82,15 @@ contract PerpManager is IPerpManager, Owned {
   {
     // check the call is from Accounts
 
-
-
     // check assets are only cash and perp
+    return;
   }
 
   /**
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint /*accountId*/, IManager newManager) external view {
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
       revert PM_NotWhitelistManager();
     }
@@ -101,7 +100,6 @@ contract PerpManager is IPerpManager, Owned {
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
   function settleAccount(uint accountId) external {
-
     perp.updateFundingRate();
     perp.applyFundingOnAccount(accountId);
     int netCash = perp.settleRealizedPNLAndFunding(accountId);
