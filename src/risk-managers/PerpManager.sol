@@ -2,11 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "openzeppelin/utils/math/SignedMath.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IManager.sol";
@@ -83,7 +81,6 @@ contract PerpManager is IPerpManager, Owned {
     // check the call is from Accounts
 
     // check assets are only cash and perp
-    return;
   }
 
   /**
