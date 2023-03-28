@@ -89,7 +89,6 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     assertEq(cashBefore + 100e18, cashAfter);
   }
 
-
   function testSettleShortPosition() public {
     int cashBefore = _getCashBalance(aliceAcc);
 
