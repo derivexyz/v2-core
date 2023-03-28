@@ -17,4 +17,10 @@ interface IPerpManager is AccountStructs, IManager {
 
   error PM_UnsupportedAsset(address asset);
   error PM_PortfolioBelowMargin(uint accountId, int margin);
+
+  ///////////////////
+  //    Events     //
+  ///////////////////
+
+  event AccountSettled(uint accountId, int netCash);
 }

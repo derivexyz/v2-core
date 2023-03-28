@@ -79,17 +79,39 @@ contract PerpManager is IPerpManager, Owned {
   function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
     override
-  {}
+  {
+    // check the call is from Accounts
+
+
+
+    // check assets are only cash and perp
+  }
 
   /**
    * @notice Ensures new manager is valid.
-   * @param accountId Account for which to check trade.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint accountId, IManager newManager) external view {
+  function handleManagerChange(uint /*accountId*/, IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
       revert PM_NotWhitelistManager();
     }
+  }
+
+  /**
+   * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
+   */
+  function settleAccount(uint accountId) external {
+
+    perp.updateFundingRate();
+    perp.applyFundingOnAccount(accountId);
+    int netCash = perp.settleRealizedPNLAndFunding(accountId);
+
+    cashAsset.updateSettledCash(netCash);
+
+    // update user cash amount
+    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
+
+    emit AccountSettled(accountId, netCash);
   }
 
   //////////
