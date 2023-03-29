@@ -21,6 +21,19 @@ interface IPerpAsset is IAsset {
     uint lastFundingPaid;
   }
 
+  function updateFundingRate() external;
+
+  /**
+   * @notice This function update funding for an account and apply to position detail
+   * @param accountId Account Id
+   */
+  function applyFundingOnAccount(uint accountId) external;
+
+  /**
+   * @dev manager-only function to clear pnl and funding during settlement
+   */
+  function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash);
+
   //////////////////
   //   Events     //
   //////////////////

@@ -203,7 +203,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @dev managers should use this function to clear pnl and funding, and print / burn cash
+   * @dev manager-only function to clear pnl and funding during settlement
    */
   function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {
     if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
@@ -213,6 +213,8 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
     position.funding = 0;
     position.pnl = 0;
+
+    return netCash;
   }
 
   /**
