@@ -1,28 +1,32 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../../lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "../../lib/openzeppelin-contracts/contracts/utils/math/SignedMath.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 
-import "../interfaces/IManager.sol";
-import "../interfaces/IAccounts.sol";
-import "../interfaces/IDutchAuction.sol";
-import "../interfaces/ICashAsset.sol";
-import "../interfaces/IOption.sol";
-import "../interfaces/ISecurityModule.sol";
-import "../interfaces/ISpotJumpOracle.sol";
-import "../interfaces/IPCRM.sol";
-import "../interfaces/IFutureFeed.sol";
+import "src/interfaces/IManager.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/IDutchAuction.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IOption.sol";
+import "src/interfaces/ISecurityModule.sol";
+import "src/interfaces/ISpotJumpOracle.sol";
+import "src/interfaces/IPCRM.sol";
+import "src/interfaces/IFutureFeed.sol";
 
-import "../libraries/OptionEncoding.sol";
-import "../libraries/StrikeGrouping.sol";
-import "../libraries/Black76.sol";
-import "../libraries/SignedDecimalMath.sol";
-import "../libraries/DecimalMath.sol";
+import "src/libraries/OptionEncoding.sol";
+import "src/libraries/StrikeGrouping.sol";
+import "src/libraries/Black76.sol";
+import "src/libraries/SignedDecimalMath.sol";
+import "src/libraries/DecimalMath.sol";
 
 import "./BaseManager.sol";
 
 import "forge-std/console2.sol";
+// TODO: interface
+import "src/feeds/MTMCache.sol";
+import "../interfaces/IChainlinkSpotFeed.sol";
+
 /**
  * @title PortfolioMarginRiskManager
  * @author Lyra
@@ -37,11 +41,18 @@ contract PMRM {
   using SafeCast for uint;
 
   struct NewPortfolio {
+    uint spotPrice;
+
     /// cash amount or debt
     int cash;
     OtherAsset[] otherAssets;
     /// option holdings per expiry
     ExpiryHoldings[] expiries;
+
+    // Calculated values
+    int mtm;
+    int fwdLosses;
+    int shortOptionContingency;
   }
 
   struct OtherAsset {
@@ -52,14 +63,14 @@ contract PMRM {
   struct ExpiryHoldings {
     uint expiry;
     StrikeHolding[] calls;
-    SpreadHolding[] callSpreads;
     StrikeHolding[] puts;
-    SpreadHolding[] putSpreads;
+    uint forwardPrice;
   }
 
   struct StrikeHolding {
     /// strike price of held options
     uint strike;
+    uint vol;
     int amount;
   }
 
@@ -75,6 +86,11 @@ contract PMRM {
     uint putCount;
   }
 
+  struct Scenario {
+    uint spotShock; // i.e. 1.2e18 = 20% spot shock up
+    uint volShock; // i.e. 0.7e18 = 30% vol down
+  }
+
   ///////////////
   // Variables //
   ///////////////
@@ -88,7 +104,11 @@ contract PMRM {
   ICashAsset public immutable cashAsset;
   IFutureFeed public immutable futureFeed;
   ISettlementFeed public immutable settlementFeed;
+  IChainlinkSpotFeed public immutable spotFeed;
   ISpotJumpOracle public spotJumpOracle;
+  MTMCache public mtmCache;
+
+  Scenario[] public scenarios;
 
   ////////////////////////
   //    Constructor     //
@@ -98,17 +118,38 @@ contract PMRM {
     IAccounts accounts_,
     IFutureFeed futureFeed_,
     ISettlementFeed settlementFeed_,
+    IChainlinkSpotFeed spotFeed_,
     ICashAsset cashAsset_,
     IOption option_,
-    ISpotJumpOracle spotJumpOracle_
+    ISpotJumpOracle spotJumpOracle_,
+    MTMCache mtmCache_
   ) {
     accounts = accounts_;
     futureFeed = futureFeed_;
     settlementFeed = settlementFeed_;
+    spotFeed = spotFeed_;
     cashAsset = cashAsset_;
     option = option_;
     spotJumpOracle = spotJumpOracle_;
+    mtmCache = mtmCache_;
   }
+
+  function setScenarios(Scenario[] memory _scenarios) external {
+    for (uint i=0; i<_scenarios.length; i++) {
+      if (scenarios.length <= i) {
+        scenarios.push(_scenarios[i]);
+      } else {
+        scenarios[i] = _scenarios[i];
+      }
+    }
+    for (uint i=_scenarios.length; i<scenarios.length; i++) {
+      delete scenarios[i];
+    }
+  }
+
+  ///////////////////////
+  // Arrange Portfolio //
+  ///////////////////////
 
   /**
    * @notice Arrange portfolio into cash + arranged
@@ -150,15 +191,14 @@ contract PMRM {
     }
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
-
+    portfolio.spotPrice = spotFeed.getSpot();
     for (uint i = 0; i < seenExpiries; ++i) {
       portfolio.expiries[i] = ExpiryHoldings({
         expiry: expiryCount[i].expiry,
         calls: new StrikeHolding[](expiryCount[i].callCount),
-        callSpreads: new SpreadHolding[](expiryCount[i].callCount > 1 ? expiryCount[i].callCount - 1 : 0),
         puts: new StrikeHolding[](expiryCount[i].putCount),
-        putSpreads: new SpreadHolding[](expiryCount[i].putCount > 1 ? expiryCount[i].putCount - 1 : 0)
-      });
+        forwardPrice: futureFeed.getFuturePrice(expiryCount[i].expiry)
+    });
     }
 
     uint otherAssetCount = 0;
@@ -172,27 +212,24 @@ contract PMRM {
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
         if (isCall) {
           expiry.calls[--expiryCount[expiryIndex].callCount] =
-            StrikeHolding({strike: strike, amount: currentAsset.balance});
+            StrikeHolding({
+              strike: strike,
+              vol: 1e18, // TODO: vol feed
+              amount: currentAsset.balance
+            });
         } else {
           expiry.puts[--expiryCount[expiryIndex].putCount] =
-            StrikeHolding({strike: strike, amount: currentAsset.balance});
+            StrikeHolding({
+              strike: strike,
+              vol: 1e18, // TODO: vol feed
+              amount: currentAsset.balance
+            });
         }
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       } else {
         otherAssetCount++;
       }
-    }
-
-    for (uint i; i < seenExpiries; ++i) {
-      ExpiryHoldings memory expiry = portfolio.expiries[i];
-      if (expiry.calls.length > 1) {
-        _quickSortStrikes(expiry.calls, 0, int(expiry.calls.length - 1));
-      }
-      if (expiry.puts.length > 1) {
-        _quickSortStrikes(expiry.puts, 0, int(expiry.puts.length - 1));
-      }
-      _filterSpreads(expiry);
     }
 
     portfolio.otherAssets = new OtherAsset[](otherAssetCount);
@@ -223,159 +260,146 @@ contract PMRM {
     }
   }
 
-  function _quickSortStrikes(StrikeHolding[] memory arr, int left, int right) internal pure {
-    int i = left;
-    int j = right;
-    if (i == j) {
-      return;
-    }
-    uint pivot = arr[uint(left + (right - left) / 2)].strike;
-    while (i <= j) {
-      while (arr[uint(i)].strike < pivot) {
-        i++;
-      }
-      while (pivot < arr[uint(j)].strike) {
-        j--;
-      }
-      if (i <= j) {
-        (arr[uint(i)], arr[uint(j)]) = (arr[uint(j)], arr[uint(i)]);
-        i++;
-        j--;
-      }
-    }
-    if (left < j) {
-      _quickSortStrikes(arr, left, j);
-    }
-    if (i < right) {
-      _quickSortStrikes(arr, i, right);
+  /////////////////////////////////
+  // Scenario independent values //
+  /////////////////////////////////
+
+  uint constant epsilon = 0.05e18;
+  uint constant fwdStep = 0.01e18;
+
+  function _addSIVs(NewPortfolio memory portfolio) internal view {
+    for (uint i=0; i<portfolio.expiries.length; ++i) {
+      ExpiryHoldings memory expiry = portfolio.expiries[i];
+      // Get MtM
+      int expiryMTM = _getExpiryShockedMTM(expiry, Scenario({spotShock: 1e18, volShock: 1e18}));
+      portfolio.mtm += expiryMTM;
+      // TODO: 1.05 == epsilon
+      int fwdUp = _getExpiryShockedMTM(expiry, Scenario({spotShock: DecimalMath.UNIT + epsilon, volShock: 1e18}));
+      portfolio.fwdLosses += -int(IntLib.abs(fwdUp - expiryMTM) * fwdStep / epsilon);
+      portfolio.shortOptionContingency += _calcShortOptionContingency(expiry);
     }
   }
 
-  function _filterSpreads(ExpiryHoldings memory expiry) internal pure {
-    if (expiry.calls.length > 1) {
-      uint spreadsSeen = 0;
-      for (uint i=1;i<expiry.calls.length;i++) {
-        StrikeHolding memory strike1 = expiry.calls[i];
-        // TODO: start at i and go back to 0?
-        for (uint j=0; j<i; j++) {
-          StrikeHolding memory strike2 = expiry.calls[j];
-          // if the sign is the same; early exit as strike2 would've been used for spreads previously
-          if (strike1.amount * strike2.amount > 0) {
-            break;
-          }
-          // if amount is 0 (emptied already), skip
-          if (strike2.amount == 0) {
-            continue;
-          }
-          // now we know we have 2 strikes with inverted signs
+  int constant netPosScalar = 0.01e18;
 
-          // TODO: feels like this can be more concise
-          if (strike2.amount.abs() >= strike1.amount.abs()) {
-            // strike1 will fold into strike2 here
-            // strike1 is the higher strike
-            expiry.callSpreads[spreadsSeen++] = SpreadHolding({
-              strikeLower: strike2.strike,
-              strikeUpper: strike1.strike,
-              amount: -strike1.amount
-            });
-            strike2.amount += strike1.amount;
-            strike1.amount = 0;
-            // strike1 is empty, break
-            break;
-          } else {
-            expiry.callSpreads[spreadsSeen++] = SpreadHolding({
-              strikeLower: strike2.strike,
-              strikeUpper: strike1.strike,
-              amount: strike2.amount
-            });
-            strike1.amount += strike2.amount;
-            strike2.amount = 0;
-          }
+  function _calcShortOptionContingency(ExpiryHoldings memory expiry) internal view returns (int) {
+    int netShortPosPerStrike = 0;
+    bool[] memory seenPuts = new bool[](expiry.puts.length);
+    for (uint i=0; i<expiry.calls.length; ++i) {
+      StrikeHolding memory call = expiry.calls[i];
+      for (uint j=0; j<expiry.puts.length; ++j) {
+        StrikeHolding memory put = expiry.puts[j];
+        if (put.strike == call.strike) {
+          seenPuts[j] = true;
+          int tot = call.amount + put.amount;
+          netShortPosPerStrike += tot < 0 ? tot : int(0);
         }
       }
-      trimArray(expiry.callSpreads, spreadsSeen);
+    }
+    return netShortPosPerStrike * netPosScalar / 1e18 * int(expiry.forwardPrice) / 1e18;
+  }
 
-      // trim calls too
-      uint seen = 0;
-      for (uint i=0; i<expiry.calls.length; i++) {
-        if (expiry.calls[i].amount != 0) {
-          expiry.calls[seen++] = StrikeHolding({
-            strike: expiry.calls[i].strike,
-            amount: expiry.calls[i].amount
-          });
+  ////////////////////////
+  // get Initial Margin //
+  ////////////////////////
+
+  // TODO: exponential and time to expiry
+  int constant staticDiscount = 0.9e18;
+  int constant lossFactor = 1.3e18;
+
+  function _getIM(NewPortfolio memory portfolio) internal view returns (int) {
+    int minMargin = type(int).max;
+    for (uint i=0; i<scenarios.length; ++i) {
+      Scenario memory scenario = scenarios[i];
+
+      int scenarioMTM = 0;
+
+      // todo: use portfolio.mtm for scenario == 0 spot, 0 vol shock
+      if (scenario.volShock == 1e18 && scenario.spotShock == 1e18) {
+        scenarioMTM += _applyMTMDiscount(portfolio.mtm);
+      } else {
+        for (uint j=0; j<portfolio.expiries.length; ++j) {
+          ExpiryHoldings memory expiry = portfolio.expiries[j];
+          scenarioMTM += _applyMTMDiscount(_getExpiryShockedMTM(expiry, scenario));
         }
       }
-      trimArray(expiry.calls, seen);
+
+      int scenarioLoss = (scenarioMTM - portfolio.mtm + portfolio.fwdLosses + portfolio.shortOptionContingency) * lossFactor / 1e18;
+
+      int otherAssetValue;
+      for (uint j=0; j<portfolio.otherAssets.length; ++j) {
+        OtherAsset memory otherAsset = portfolio.otherAssets[j];
+        if (otherAsset.asset == address(0xf00f00)) {
+          // PERPS
+          // TODO: unrealised pnl too when possible to get
+          int pnl = int(portfolio.spotPrice * scenario.spotShock / 1e18) - int(portfolio.spotPrice);
+          otherAssetValue += otherAsset.amount * pnl / 1e18;
+        } else if (otherAsset.asset == address(0xbaabaa)) {
+          // wETH
+          int value = int(portfolio.spotPrice * scenario.spotShock / 1e18);
+          otherAssetValue += otherAsset.amount * value / 1e18;
+        } else {
+          revert("invalid other asset");
+        }
+      }
+      scenarioMTM += otherAssetValue + scenarioLoss;
+
+      if (scenarioMTM < minMargin) {
+        minMargin = scenarioMTM;
+      }
     }
 
-    if (expiry.puts.length > 1) {
-      uint spreadsSeen = 0;
-      for (uint i=expiry.puts.length-1;i>0;i--) {
-        StrikeHolding memory strike1 = expiry.puts[i-1];
-        // TODO: start at i and go back to 0?
-        for (uint j=i; j<expiry.puts.length; j++) {
-          StrikeHolding memory strike2 = expiry.puts[j];
-          // if the sign is the same; early exit as strike2 would've been used for spreads previously
-          if (strike1.amount * strike2.amount > 0) {
-            break;
-          }
-          // if amount is 0 (emptied already), skip
-          if (strike2.amount == 0) {
-            continue;
-          }
-          // now we know we have 2 strikes with inverted signs
+    if (minMargin > 0) {
+      return 0;
+    }
+    return minMargin;
+  }
 
-          // TODO: feels like this can be more concise
-          if (strike2.amount.abs() >= strike1.amount.abs()) {
-            // strike1 will fold into strike2 here
-            // strike1 is the higher strike
-            expiry.putSpreads[spreadsSeen++] = SpreadHolding({
-              strikeLower: strike2.strike,
-              strikeUpper: strike1.strike,
-              amount: strike1.amount
-            });
-            strike2.amount += strike1.amount;
-            strike1.amount = 0;
-            // strike1 is empty, break
-            break;
-          } else {
-            expiry.putSpreads[spreadsSeen++] = SpreadHolding({
-              strikeLower: strike2.strike,
-              strikeUpper: strike1.strike,
-              amount: -strike2.amount
-            });
-            strike1.amount += strike2.amount;
-            strike2.amount = 0;
-          }
-        }
-      }
-      trimArray(expiry.putSpreads, spreadsSeen);
-
-      // trim puts too
-      uint seen = 0;
-      for (uint i=0; i<expiry.puts.length; i++) {
-        if (expiry.puts[i].amount != 0) {
-          expiry.puts[seen++] = StrikeHolding({
-            strike: expiry.puts[i].strike,
-            amount: expiry.puts[i].amount
-          });
-        }
-      }
-      trimArray(expiry.puts, seen);
+  function _applyMTMDiscount(int expiryMTM) internal pure returns (int) {
+    if (expiryMTM > 0) {
+      return expiryMTM * staticDiscount / 1e18;
+    } else {
+      return expiryMTM;
     }
   }
 
+  /////////////
+  // Helpers //
+  /////////////
 
-  function trimArray(SpreadHolding[] memory array, uint finalLength) internal pure {
-    assembly {
-      mstore(array, finalLength)
+  // calculate MTM with given shock
+  function _getExpiryShockedMTM(ExpiryHoldings memory expiry, Scenario memory scenario) internal view returns (int mtm) {
+    mtm = 0;
+    // Iterate over all the calls in the expiry
+    for (uint i=0; i<expiry.calls.length; i++) {
+      StrikeHolding memory call = expiry.calls[i];
+      // Calculate the black scholes value of the call
+      mtm += mtmCache.getMTM(
+        call.strike,
+        expiry.expiry,
+        expiry.forwardPrice,
+        call.vol,
+        0.06e18, // TODO: interest rate feed
+        call.amount,
+        true
+      );
     }
-  }
 
-  function trimArray(StrikeHolding[] memory array, uint finalLength) internal pure {
-    assembly {
-      mstore(array, finalLength)
+    // Iterate over all the puts in the expiry
+    for (uint i=0; i<expiry.puts.length; i++) {
+      StrikeHolding memory put = expiry.puts[i];
+      // Calculate the black scholes value of the put
+      mtm += mtmCache.getMTM(
+        put.strike,
+        expiry.expiry,
+        expiry.forwardPrice,
+        put.vol,
+        0.06e18, // TODO: interest rate feed
+        put.amount,
+        false
+      );
     }
+    console2.log("mtm", mtm);
   }
 
   //////////
@@ -388,6 +412,14 @@ contract PMRM {
     returns (NewPortfolio memory portfolio)
   {
     return _arrangePortfolio(assets);
+  }
+
+  function getIM(IAccounts.AssetBalance[] memory assets) external view returns (int) {
+    console2.log("total assets", assets.length);
+    NewPortfolio memory portfolio = _arrangePortfolio(assets);
+    console2.log("arranged!");
+    _addSIVs(portfolio);
+    return _getIM(portfolio);
   }
 
   ////////////

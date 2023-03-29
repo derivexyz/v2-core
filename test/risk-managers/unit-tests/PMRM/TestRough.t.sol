@@ -18,7 +18,9 @@ import "test/shared/mocks/MockIPCRM.sol";
 import "test/shared/mocks/MockFeed.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
-import "../../../shared/utils/JsonMechIO.sol";
+import "test/shared/utils/JsonMechIO.sol";
+
+import "forge-std/console2.sol";
 
 contract UNIT_TestPMRM is Test {
   using stdJson for string;
@@ -35,6 +37,7 @@ contract UNIT_TestPMRM is Test {
   MockSM sm;
   MockFeed feed;
   uint feeRecipient;
+  MTMCache mtmCache;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -47,16 +50,20 @@ contract UNIT_TestPMRM is Test {
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(account);
     cash = new MockAsset(usdc, account, true);
+    mtmCache = new MTMCache();
 
     feed = new MockFeed();
+    feed.setSpot(1500e18);
 
     pmrm = new PMRM(
       account,
       feed,
       feed,
+      feed,
       ICashAsset(address(cash)),
       option,
-      ISpotJumpOracle(address(0))
+      ISpotJumpOracle(address(0)),
+      mtmCache
     );
   }
 
@@ -73,9 +80,13 @@ contract UNIT_TestPMRM is Test {
     //    int balance;
     //    }
 
+
     //    PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestSmall());
-    PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
-    _logPortfolio(portfolio);
+    //    PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
+    //    _logPortfolio(portfolio);
+    addScenarios();
+
+    pmrm.getIM(getAssetBalancesForTestLarge());
   }
 
   function getAssetBalancesForTestSmall() internal view returns (AccountStructs.AssetBalance[] memory balances) {
@@ -102,6 +113,7 @@ contract UNIT_TestPMRM is Test {
   }
 
   function getAssetBalancesForTestLarge() internal returns (AccountStructs.AssetBalance[] memory balances) {
+    uint referenceTime = block.timestamp;
     jsonParser = new JsonMechIO();
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testPortfolio.json");
     int[] memory data = json.readIntArray(".Test1");
@@ -112,38 +124,33 @@ contract UNIT_TestPMRM is Test {
 
     balances = new AccountStructs.AssetBalance[](data.length / 4 + 3);
 
-    uint offset = 0;
     for (uint i = 0; i < data.length; i += 4) {
-      if (data[i + 3] == 0) {
-        offset++;
-        continue;
-      }
-      balances[i / 4 - offset] = AccountStructs.AssetBalance({
+      balances[i / 4] = AccountStructs.AssetBalance({
         asset: IAsset(option),
         subId: OptionEncoding.toSubId(
-          uint(data[i]), uint(data[i + 1] * 1e18), data[i + 2] == 1
+          referenceTime + uint(data[i]) * 1 weeks, uint(data[i + 1] * 1e18), data[i + 2] == 1
           ),
         balance: data[i + 3] * 1e18
       });
     }
 
-    balances[balances.length - 3 - offset] = AccountStructs.AssetBalance({
+    balances[balances.length - 3] = AccountStructs.AssetBalance({
       asset: IAsset(cash),
       subId: 0,
       balance: 200000 ether
     });
-    balances[balances.length - 2 - offset] = AccountStructs.AssetBalance({
+    balances[balances.length - 2] = AccountStructs.AssetBalance({
       // I.e. perps
       asset: IAsset(address(0xf00f00)),
       subId: 0,
-      balance: -200000 ether
+      balance: -2000 ether
     });
 
-    balances[balances.length - 1 - offset] = AccountStructs.AssetBalance({
+    balances[balances.length - 1] = AccountStructs.AssetBalance({
       // I.e. wrapped eth
       asset: IAsset(address(0xbaabaa)),
       subId: 0,
-      balance: 200000 ether
+      balance: 200 ether
     });
     return balances;
   }
@@ -173,14 +180,6 @@ contract UNIT_TestPMRM is Test {
         console2.log("- amount:", expiry.calls[i].amount / 1e18);
         console2.log();
       }
-      console2.log("== CALL SPREADS:", expiry.callSpreads.length);
-      console2.log();
-      for (uint i=0; i<expiry.callSpreads.length; i++) {
-        console2.log("- strikeLower:", expiry.callSpreads[i].strikeLower / 1e18);
-        console2.log("- strikeUpper:", expiry.callSpreads[i].strikeUpper / 1e18);
-        console2.log("- amount:", expiry.callSpreads[i].amount / 1e18);
-        console2.log();
-      }
       console2.log("== PUTS:", expiry.puts.length);
       console2.log();
       for (uint i=0; i<expiry.puts.length; i++) {
@@ -188,14 +187,44 @@ contract UNIT_TestPMRM is Test {
         console2.log("- balance:", expiry.puts[i].amount / 1e18);
         console2.log();
       }
-      console2.log("== PUT SPREADS:", expiry.putSpreads.length);
-      console2.log();
-      for (uint i=0; i<expiry.putSpreads.length; i++) {
-        console2.log("- strikeLower:", expiry.putSpreads[i].strikeLower / 1e18);
-        console2.log("- strikeUpper:", expiry.putSpreads[i].strikeUpper / 1e18);
-        console2.log("- amount:", expiry.putSpreads[i].amount / 1e18);
-        console2.log();
-      }
     }
+  }
+
+  function addScenarios() internal {
+    // Scenario Number	Spot Shock (of max)	Vol Shock (of max)
+
+    PMRM.Scenario[] memory scenarios = new PMRM.Scenario[](27);
+
+    // add these 27 scenarios to the array
+    scenarios[0] = PMRM.Scenario({spotShock: 1.2e18, volShock: 1.2e18});
+    scenarios[1] = PMRM.Scenario({spotShock: 1.2e18, volShock: 1e18});
+    scenarios[2] = PMRM.Scenario({spotShock: 1.2e18, volShock: 0.8e18});
+    scenarios[3] = PMRM.Scenario({spotShock: 1.15e18, volShock: 1.2e18});
+    scenarios[4] = PMRM.Scenario({spotShock: 1.15e18, volShock: 1e18});
+    scenarios[5] = PMRM.Scenario({spotShock: 1.15e18, volShock: 0.8e18});
+    scenarios[6] = PMRM.Scenario({spotShock: 1.1e18, volShock: 1.2e18});
+    scenarios[7] = PMRM.Scenario({spotShock: 1.1e18, volShock: 1e18});
+    scenarios[8] = PMRM.Scenario({spotShock: 1.1e18, volShock: 0.8e18});
+    scenarios[9] = PMRM.Scenario({spotShock: 1.05e18, volShock: 1.2e18});
+    scenarios[10] = PMRM.Scenario({spotShock: 1.05e18, volShock: 1e18});
+    scenarios[11] = PMRM.Scenario({spotShock: 1.05e18, volShock: 0.8e18});
+    scenarios[12] = PMRM.Scenario({spotShock: 1e18, volShock: 1.2e18});
+    scenarios[13] = PMRM.Scenario({spotShock: 1e18, volShock: 1e18});
+    scenarios[14] = PMRM.Scenario({spotShock: 1e18, volShock: 0.8e18});
+    scenarios[15] = PMRM.Scenario({spotShock: 0.95e18, volShock: 1.2e18});
+    scenarios[16] = PMRM.Scenario({spotShock: 0.95e18, volShock: 1e18});
+    scenarios[17] = PMRM.Scenario({spotShock: 0.95e18, volShock: 0.8e18});
+    scenarios[18] = PMRM.Scenario({spotShock: 0.9e18, volShock: 1.2e18});
+    scenarios[19] = PMRM.Scenario({spotShock: 0.9e18, volShock: 1e18});
+    scenarios[20] = PMRM.Scenario({spotShock: 0.9e18, volShock: 0.8e18});
+    scenarios[21] = PMRM.Scenario({spotShock: 0.85e18, volShock: 1.2e18});
+    scenarios[22] = PMRM.Scenario({spotShock: 0.85e18, volShock: 1e18});
+    scenarios[23] = PMRM.Scenario({spotShock: 0.85e18, volShock: 0.8e18});
+    scenarios[24] = PMRM.Scenario({spotShock: 0.8e18, volShock: 1.2e18});
+    scenarios[25] = PMRM.Scenario({spotShock: 0.8e18, volShock: 1e18});
+    scenarios[26] = PMRM.Scenario({spotShock: 0.8e18, volShock: 0.8e18});
+
+    pmrm.setScenarios(scenarios);
+
   }
 }
