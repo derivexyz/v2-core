@@ -49,6 +49,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     feed = new MockFeed();
 
     usdc = new MockERC20("USDC", "USDC");
+    usdc.setDecimals(6);
 
     rateModel = new MockInterestRateModel(1e18);
     cash = new CashAsset(account, usdc, rateModel, 0, address(0));
@@ -68,6 +69,12 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     charlieAcc = account.createAccountWithApproval(charlie, address(this), manager);
 
     _setPrices(initPrice);
+
+    usdc.mint(address(this), 120_000e6);
+    usdc.approve(address(cash), 120_000e6);
+    cash.deposit(aliceAcc, 40_000e6);
+    cash.deposit(bobAcc, 40_000e6);
+    cash.deposit(charlieAcc, 40_000e6);
 
     // open trades: Alice is Short, Bob is Long
     _tradePerpContract(aliceAcc, bobAcc, oneContract);

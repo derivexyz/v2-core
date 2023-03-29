@@ -15,12 +15,15 @@ interface IPerpManager is AccountStructs, IManager {
   /// @dev Not whitelist manager
   error PM_NotWhitelistManager();
 
-  error PM_UnsupportedAsset(address asset);
+  error PM_UnsupportedAsset();
   error PM_PortfolioBelowMargin(uint accountId, int margin);
+  error PM_InvalidMarginRequirement();
 
   ///////////////////
   //    Events     //
   ///////////////////
 
   event AccountSettled(uint accountId, int netCash);
+
+  event MarginRequirementsSet(uint maintenanceMarginRequirement, uint initialMarginRequirement);
 }
