@@ -167,5 +167,4 @@ contract UNIT_TestPerpManager is Test {
   function _getCashBalance(uint acc) public view returns (int) {
     return account.getBalance(acc, cash, 0);
   }
-
 }
