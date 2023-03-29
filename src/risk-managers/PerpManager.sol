@@ -85,8 +85,8 @@ contract PerpManager is IPerpManager, Owned {
    */
   function setMarginRequirements(uint _mmRequirement, uint _imRequirement) external onlyOwner {
     if (_mmRequirement > _imRequirement) revert PM_InvalidMarginRequirement();
-    if (_mmRequirement == 0 || _mmRequirement > 1e18) revert PM_InvalidMarginRequirement();
-    if (_imRequirement == 0 || _imRequirement > 1e18) revert PM_InvalidMarginRequirement();
+    if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert PM_InvalidMarginRequirement();
+    if (_imRequirement >= 1e18) revert PM_InvalidMarginRequirement();
 
     maintenanceMarginRequirement = _mmRequirement;
     initialMarginRequirement = _imRequirement;
@@ -102,8 +102,9 @@ contract PerpManager is IPerpManager, Owned {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint /*tradeId*/, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
+    view
     override
   {
     // check the call is from Accounts

@@ -113,28 +113,6 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     assertEq(cashBefore - 100e18, cashAfter);
   }
 
-  /* -------------------------- */
-  /* Test Long position on Bob  */
-  /* -------------------------- */
-
-  // function testIncreaseLongPosition() public {
-  //   // price increase, in favor of Bob's position
-  //   _setPrices(1600e18);
-
-  //   // bob has $100 in unrealized PNL
-  //   assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
-
-  //   // bob trade with charlie to increase long position
-  //   _tradePerpContract(charlieAcc, bobAcc, oneContract);
-
-  //   (uint entryPrice, int pnl) = _getEntryPriceAndPNL(bobAcc);
-  //   assertEq(entryPrice, 1550e18);
-  //   assertEq(pnl, 0);
-
-  //   // still $100 in unrealized PNL
-  //   assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
-  // }
-
   function _setPrices(uint price) internal {
     feed.setSpot(price);
     vm.prank(keeper);
