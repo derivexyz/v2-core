@@ -12,6 +12,7 @@ import "src/interfaces/AccountStructs.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
+import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
 
 contract UNIT_TestSimpleManager is Test {
@@ -20,6 +21,7 @@ contract UNIT_TestSimpleManager is Test {
   MockAsset cash;
   MockERC20 usdc;
   MockPerp perp;
+  MockOption option;
 
   MockFeed feed;
 
@@ -37,11 +39,14 @@ contract UNIT_TestSimpleManager is Test {
 
     perp = new MockPerp(account);
 
+    option = new MockOption(account);
+
     feed = new MockFeed();
 
     manager = new SimpleManager(
       account,
       ICashAsset(address(cash)),
+      option,
       perp,
       feed
     );

@@ -13,6 +13,7 @@ import "src/Accounts.sol";
 import "src/risk-managers/SimpleManager.sol";
 import "src/assets/PerpAsset.sol";
 import "src/assets/CashAsset.sol";
+import "src/assets/Option.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
@@ -21,6 +22,7 @@ import "src/interfaces/IPerpAsset.sol";
  */
 contract INTEGRATION_PerpAssetSettlement is Test {
   PerpAsset perp;
+  Option option;
   SimpleManager manager;
   CashAsset cash;
   Accounts account;
@@ -54,9 +56,11 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     rateModel = new MockInterestRateModel(1e18);
     cash = new CashAsset(account, usdc, rateModel, 0, address(0));
 
-    perp = new PerpAsset(IAccounts(account), feed);
+    perp = new PerpAsset(account, feed);
 
-    manager = new SimpleManager(account, cash, perp, feed);
+    option = new Option(account, address(feed));
+
+    manager = new SimpleManager(account, ICashAsset(cash), option, perp, feed);
 
     cash.setWhitelistManager(address(manager), true);
 

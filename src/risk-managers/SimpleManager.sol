@@ -12,6 +12,7 @@ import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IPerpAsset.sol";
+import "src/interfaces/IOption.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/ISimpleManager.sol";
 
@@ -20,7 +21,7 @@ import "forge-std/console2.sol";
 /**
  * @title SimpleManager
  * @author Lyra
- * @notice Risk Manager that controls transfer and margin requirements
+ * @notice Risk Manager that margin in perp, cash and option in isolation.
  */
 
 contract SimpleManager is ISimpleManager, Owned {
@@ -38,6 +39,9 @@ contract SimpleManager is ISimpleManager, Owned {
 
   /// @dev Perp asset address
   IPerpAsset public immutable perp;
+
+  /// @dev Option asset address
+  IOption public immutable option;
 
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
@@ -58,9 +62,10 @@ contract SimpleManager is ISimpleManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ICashAsset cashAsset_, IPerpAsset perp_, IChainlinkSpotFeed feed_) {
+  constructor(IAccounts accounts_, ICashAsset cashAsset_, IOption option_, IPerpAsset perp_, IChainlinkSpotFeed feed_) {
     accounts = accounts_;
     cashAsset = cashAsset_;
+    option = option_;
     perp = perp_;
     feed = feed_;
   }
