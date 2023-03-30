@@ -38,7 +38,7 @@ interface IPerpAsset is IAsset {
   //   Events     //
   //////////////////
 
-  event ImpactPricesSet(int askPrice, int bidPrice);
+  event PremiumUpdated(uint impactBidDiff, uint impactAskDiff, int premium);
 
   event ImpactPriceOracleUpdated(address oracle);
 

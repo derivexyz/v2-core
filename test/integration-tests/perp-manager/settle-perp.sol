@@ -115,8 +115,6 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
   function _setPrices(uint price) internal {
     feed.setSpot(price);
-    vm.prank(keeper);
-    perp.setImpactPrices(int(price), int(price));
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {

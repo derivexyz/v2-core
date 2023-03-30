@@ -58,31 +58,18 @@ contract UNIT_PerpAssetFunding is Test {
     account.submitTransfer(transfer, "");
   }
 
-  function testCannotSetNegativeImpactPrices() public {
-    vm.prank(keeper);
-    vm.expectRevert(IPerpAsset.PA_ImpactPriceMustBePositive.selector);
-    perp.setImpactPrices(-1, 1);
-  }
-
-  function testCannotSetAskPriceLowerThanAskBid() public {
-    vm.prank(keeper);
-    vm.expectRevert(IPerpAsset.PA_InvalidImpactPrices.selector);
-    perp.setImpactPrices(1, 2);
-  }
-
   function testUnWhitelistBot() public {
     perp.setImpactPriceOracle(address(this));
     vm.prank(keeper);
     vm.expectRevert(IPerpAsset.PA_OnlyImpactPriceOracle.selector);
-    perp.setImpactPrices(1540e18, 1520e18);
+    perp.setPremium(1e18, 2e18);
   }
 
   function testSetImpactPrices() public {
     // set impact price
     vm.prank(keeper);
-    perp.setImpactPrices(1540e18, 1520e18);
-    assertEq(perp.impactAskPrice(), 1540e18);
-    assertEq(perp.impactBidPrice(), 1520e18);
+    perp.setPremium(2e18, 0e18);
+    assertEq(perp.premium(), 2e18);
   }
 
   function testPositiveFundingRate() public {
@@ -93,11 +80,8 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testPositiveFundingRateCapped() public {
-    int iap = 1601e18;
-    int ibp = 1600e18;
-
     vm.prank(keeper);
-    perp.setImpactPrices(iap, ibp);
+    perp.setPremium(5e18, 0);
 
     assertEq(perp.getFundingRate(), 0.0075e18);
   }
@@ -110,11 +94,8 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testNegativeFundingRateCapped() public {
-    int iap = 1401e18;
-    int ibp = 1400e18;
-
     vm.prank(keeper);
-    perp.setImpactPrices(iap, ibp);
+    perp.setPremium(0, 1e18);
 
     assertEq(perp.getFundingRate(), -0.0075e18);
   }
@@ -172,30 +153,22 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(bobFunding, 0.75e18);
   }
 
-  function _setPricesPositiveFunding() internal returns (uint, int, int) {
+  function _setPricesPositiveFunding() internal {
     uint spot = 1500e18;
-    int iap = 1512e18;
-    int ibp = 1506e18;
 
     // expected premium: 6 / 8 = 0.75
 
     feed.setSpot(spot);
 
     vm.prank(keeper);
-    perp.setImpactPrices(iap, ibp);
-    return (spot, iap, ibp);
+    perp.setPremium(0.004e18, 0);
   }
 
-  function _setPricesNegativeFunding() internal returns (uint, int, int) {
+  function _setPricesNegativeFunding() internal {
     uint spot = 1500e18;
-    int iap = 1494e18;
-    int ibp = 1488e18;
-
-    // expected premium -6 / 8 = -0.75
-
     feed.setSpot(spot);
+
     vm.prank(keeper);
-    perp.setImpactPrices(iap, ibp);
-    return (spot, iap, ibp);
+    perp.setPremium(0, 0.004e18);
   }
 }

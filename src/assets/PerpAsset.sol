@@ -47,8 +47,8 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   /// @dev min hourly funding rate, -0.75%
   int constant MIN_RATE_PER_HOUR = -0.0075e18;
 
-  int public impactAskPrice;
-  int public impactBidPrice;
+  /// @dev current premium rate
+  int public premium;
 
   ///@dev latest aggregated funding rate
   int public aggregatedFundingRate;
@@ -107,18 +107,13 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   /**
    * @notice This function is called by the keeper to update bid prices
+   * @param _impactBidDiff  max(IBP - index, 0) / spot, in percentage
+   * @param _impactBidDiff  max(index - IAP, 0) / spot, in percentage
    */
-  function setImpactPrices(int _impactAskPrice, int _impactBidPrice) external onlyImpactPriceOracle {
-    if (_impactAskPrice < 0 || _impactBidPrice < 0) {
-      revert PA_ImpactPriceMustBePositive();
-    }
-    if (_impactAskPrice < _impactBidPrice) {
-      revert PA_InvalidImpactPrices();
-    }
-    impactAskPrice = _impactAskPrice;
-    impactBidPrice = _impactBidPrice;
+  function setPremium(uint _impactBidDiff, uint _impactAskDiff) external onlyImpactPriceOracle {
+    premium = _impactBidDiff.toInt256() - _impactAskDiff.toInt256();
 
-    emit ImpactPricesSet(_impactAskPrice, _impactBidPrice);
+    emit PremiumUpdated(_impactBidDiff, _impactAskDiff, premium);
   }
 
   /**
@@ -132,9 +127,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @dev Update funding rate, reflected on aggregatedFundingRate
    */
   function _updateFundingRate() internal {
-    int indexPrice = spotFeed.getSpot().toInt256();
-
-    int fundingRate = _getFundingRate(indexPrice);
+    int fundingRate = _getFundingRate();
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
@@ -198,8 +191,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @notice return hourly funding rate
    */
   function getFundingRate() external view returns (int) {
-    int indexPrice = spotFeed.getSpot().toInt256();
-    return _getFundingRate(indexPrice);
+    return _getFundingRate();
   }
 
   /**
@@ -265,8 +257,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   /**
    * @dev Get the hourly funding rate based on index price and impact market prices
    */
-  function _getFundingRate(int indexPrice) internal view returns (int fundingRate) {
-    int premium = _getPremium(indexPrice);
+  function _getFundingRate() internal view returns (int fundingRate) {
     fundingRate = premium / 8; // todo: plus interest rate
 
     // capped at max / min
@@ -275,15 +266,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     } else if (fundingRate < MIN_RATE_PER_HOUR) {
       fundingRate = MIN_RATE_PER_HOUR;
     }
-  }
-
-  /**
-   * @dev get premium to calculate funding rate
-   * Premium = (Max(0, Impact Bid Price - Index Price) - Max(0, Index Price - Impact Ask Price)) / Index Price
-   */
-  function _getPremium(int indexPrice) internal view returns (int premium) {
-    premium = (SignedMath.max(impactBidPrice - indexPrice, 0) - SignedMath.max(indexPrice - impactAskPrice, 0))
-      .divideDecimal(indexPrice);
   }
 
   /**
