@@ -86,12 +86,12 @@ contract UNIT_TestSimpleManager is Test {
   function testCannotSetMarginRequirementFromNonOwner() public {
     vm.startPrank(alice);
     vm.expectRevert();
-    manager.setMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
     vm.stopPrank();
   }
 
-  function setMarginRequirementsRatios() public {
-    manager.setMarginRequirements(0.05e18, 0.1e18);
+  function setPerpMarginRequirementsRatios() public {
+    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
 
     assertEq(manager.maintenanceMarginRequirement(), 0.1e18);
     assertEq(manager.initialMarginRequirement(), 0.05e18);
@@ -99,20 +99,20 @@ contract UNIT_TestSimpleManager is Test {
 
   function testCannotSetMMLargerThanIM() public {
     vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setMarginRequirements(0.1e18, 0.05e18);
+    manager.setPerpMarginRequirements(0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidMarginRequirement() public {
     vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setMarginRequirements(0.1e18, 0);
+    manager.setPerpMarginRequirements(0.1e18, 0);
 
     vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setMarginRequirements(0.1e18, 1e18);
+    manager.setPerpMarginRequirements(0.1e18, 1e18);
 
     vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setMarginRequirements(1e18, 0.1e18);
+    manager.setPerpMarginRequirements(1e18, 0.1e18);
     vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setMarginRequirements(0, 0.1e18);
+    manager.setPerpMarginRequirements(0, 0.1e18);
   }
 
   ////////////////////
@@ -134,7 +134,7 @@ contract UNIT_TestSimpleManager is Test {
   }
 
   function testCanTradeWithEnoughMargin() public {
-    manager.setMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1500e18);
@@ -145,7 +145,7 @@ contract UNIT_TestSimpleManager is Test {
   }
 
   function testCannotTradeWithInsufficientMargin() public {
-    manager.setMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1499e18);

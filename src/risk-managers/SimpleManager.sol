@@ -88,7 +88,7 @@ contract SimpleManager is ISimpleManager, Owned {
    * @param _mmRequirement new maintenance margin requirement
    * @param _imRequirement new initial margin requirement
    */
-  function setMarginRequirements(uint _mmRequirement, uint _imRequirement) external onlyOwner {
+  function setPerpMarginRequirements(uint _mmRequirement, uint _imRequirement) external onlyOwner {
     if (_mmRequirement > _imRequirement) revert PM_InvalidMarginRequirement();
     if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert PM_InvalidMarginRequirement();
     if (_imRequirement >= 1e18) revert PM_InvalidMarginRequirement();
@@ -121,17 +121,21 @@ contract SimpleManager is ISimpleManager, Owned {
       }
     }
 
-    // get notional and cash balance
     int indexPrice = feed.getSpot().toInt256();
-    uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
 
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
-    int marginRequired = notional.multiplyDecimal(initialMarginRequirement).toInt256();
+    int perpMargin = _getPerpMargin(accountId, indexPrice);
 
-    if (cashBalance < marginRequired) {
-      revert PM_PortfolioBelowMargin(accountId, marginRequired);
+    if (cashBalance < perpMargin) {
+      revert PM_PortfolioBelowMargin(accountId, perpMargin);
     }
+  }
+
+  function _getPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
+    uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
+    int marginRequired = notional.multiplyDecimal(initialMarginRequirement).toInt256();
+    return marginRequired;
   }
 
   /**
