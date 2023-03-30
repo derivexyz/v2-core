@@ -13,17 +13,17 @@ import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IPerpAsset.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
-import "src/interfaces/IPerpManager.sol";
+import "src/interfaces/ISimpleManager.sol";
 
 import "forge-std/console2.sol";
 
 /**
- * @title PerpManager
+ * @title SimpleManager
  * @author Lyra
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PerpManager is IPerpManager, Owned {
+contract SimpleManager is ISimpleManager, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;

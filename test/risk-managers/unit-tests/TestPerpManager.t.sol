@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/PerpManager.sol";
+import "src/risk-managers/SimpleManager.sol";
 
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
@@ -14,9 +14,9 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockFeed.sol";
 
-contract UNIT_TestPerpManager is Test {
+contract UNIT_TestSimpleManager is Test {
   Accounts account;
-  PerpManager manager;
+  SimpleManager manager;
   MockAsset cash;
   MockERC20 usdc;
   MockPerp perp;
@@ -39,7 +39,7 @@ contract UNIT_TestPerpManager is Test {
 
     feed = new MockFeed();
 
-    manager = new PerpManager(
+    manager = new SimpleManager(
       account,
       ICashAsset(address(cash)),
       perp,
@@ -64,7 +64,7 @@ contract UNIT_TestPerpManager is Test {
 
     // first fails the change
     vm.startPrank(alice);
-    vm.expectRevert(IPerpManager.PM_NotWhitelistManager.selector);
+    vm.expectRevert(ISimpleManager.PM_NotWhitelistManager.selector);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
 
@@ -93,20 +93,20 @@ contract UNIT_TestPerpManager is Test {
   }
 
   function testCannotSetMMLargerThanIM() public {
-    vm.expectRevert(IPerpManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
     manager.setMarginRequirements(0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidMarginRequirement() public {
-    vm.expectRevert(IPerpManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
     manager.setMarginRequirements(0.1e18, 0);
 
-    vm.expectRevert(IPerpManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
     manager.setMarginRequirements(0.1e18, 1e18);
 
-    vm.expectRevert(IPerpManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
     manager.setMarginRequirements(1e18, 0.1e18);
-    vm.expectRevert(IPerpManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
     manager.setMarginRequirements(0, 0.1e18);
   }
 
@@ -116,7 +116,7 @@ contract UNIT_TestPerpManager is Test {
 
   function testCannotHaveUnrecognizedAsset() public {
     MockAsset badAsset = new MockAsset(usdc, account, true);
-    vm.expectRevert(IPerpManager.PM_UnsupportedAsset.selector);
+    vm.expectRevert(ISimpleManager.PM_UnsupportedAsset.selector);
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
@@ -147,7 +147,7 @@ contract UNIT_TestPerpManager is Test {
     cash.deposit(bobAcc, 1499e18);
 
     // trade cannot go through
-    vm.expectRevert(abi.encodeWithSelector(IPerpManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
+    vm.expectRevert(abi.encodeWithSelector(ISimpleManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
     vm.stopPrank();
   }

@@ -10,18 +10,18 @@ import "../../shared/mocks/MockERC20.sol";
 import "../../assets/cashAsset/mocks/MockInterestRateModel.sol";
 
 import "src/Accounts.sol";
-import "src/risk-managers/PerpManager.sol";
+import "src/risk-managers/SimpleManager.sol";
 import "src/assets/PerpAsset.sol";
 import "src/assets/CashAsset.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 /**
- * This test use the real PerpManager & PerpAsset to test the settlement flow
+ * This test use the real SimpleManager & PerpAsset to test the settlement flow
  */
 contract INTEGRATION_PerpAssetSettlement is Test {
   PerpAsset perp;
-  PerpManager manager;
+  SimpleManager manager;
   CashAsset cash;
   Accounts account;
   MockFeed feed;
@@ -56,7 +56,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
     perp = new PerpAsset(IAccounts(account), feed);
 
-    manager = new PerpManager(account, cash, perp, feed);
+    manager = new SimpleManager(account, cash, perp, feed);
 
     cash.setWhitelistManager(address(manager), true);
 
