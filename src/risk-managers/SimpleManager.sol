@@ -116,7 +116,11 @@ contract SimpleManager is ISimpleManager, Owned {
 
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != perp) {
+      if (
+        assetDeltas[i].asset != cashAsset && 
+        assetDeltas[i].asset != perp && 
+        assetDeltas[i].asset != option
+      ) {
         revert PM_UnsupportedAsset();
       }
     }
@@ -132,6 +136,10 @@ contract SimpleManager is ISimpleManager, Owned {
     }
   }
 
+  /**
+   * @notice get the margin required for the perp position
+   * @param accountId Account Id for which to check
+   */
   function _getPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
     uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
     int marginRequired = notional.multiplyDecimal(initialMarginRequirement).toInt256();
