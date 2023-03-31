@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
@@ -12,9 +13,12 @@ import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IPerpAsset.sol";
+import "src/interfaces/IBaseManager.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/ISimpleManager.sol";
+
+import "./BaseManager.sol";
 
 import "forge-std/console2.sol";
 
@@ -24,7 +28,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that margin in perp, cash and option in isolation.
  */
 
-contract SimpleManager is ISimpleManager, Owned {
+contract SimpleManager is ISimpleManager, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -34,23 +38,13 @@ contract SimpleManager is ISimpleManager, Owned {
   // Variables //
   ///////////////
 
-  /// @dev Account contract address
-  IAccounts public immutable accounts;
+  uint constant MAX_STRIKES = 64;
 
   /// @dev Perp asset address
   IPerpAsset public immutable perp;
 
-  /// @dev Option asset address
-  IOption public immutable option;
-
-  /// @dev Cash asset address
-  ICashAsset public immutable cashAsset;
-
   /// @dev Future feed oracle to get future price for an expiry
   IChainlinkSpotFeed public immutable feed;
-
-  /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
-  mapping(address => bool) public whitelistedManager;
 
   /// @dev Maintenance margin requirement: min percentage of notional value to avoid liquidation
   uint public maintenanceMarginRequirement = 0.03e18;
@@ -62,10 +56,9 @@ contract SimpleManager is ISimpleManager, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ICashAsset cashAsset_, IOption option_, IPerpAsset perp_, IChainlinkSpotFeed feed_) {
-    accounts = accounts_;
-    cashAsset = cashAsset_;
-    option = option_;
+  constructor(IAccounts accounts_, ICashAsset cashAsset_, IOption option_, IPerpAsset perp_, IChainlinkSpotFeed feed_)
+    BaseManager(accounts_, feed_, feed_, cashAsset_, option_)
+  {
     perp = perp_;
     feed = feed_;
   }
@@ -73,15 +66,6 @@ contract SimpleManager is ISimpleManager, Owned {
   ////////////////////////
   //    Admin-Only     //
   ///////////////////////
-
-  /**
-   * @notice Whitelist or un-whitelist a manager used in .changeManager()
-   * @param _manager manager address
-   * @param _whitelisted true to whitelist
-   */
-  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
-    whitelistedManager[_manager] = _whitelisted;
-  }
 
   /**
    * @notice Set the maintenance margin requirement
@@ -161,7 +145,7 @@ contract SimpleManager is ISimpleManager, Owned {
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
-  function settleAccount(uint accountId) external {
+  function settleFullAccount(uint accountId) external {
     perp.updateFundingRate();
     perp.applyFundingOnAccount(accountId);
 
@@ -176,6 +160,93 @@ contract SimpleManager is ISimpleManager, Owned {
     accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
 
     emit AccountSettled(accountId, netCash);
+  }
+
+  /**
+   * @notice Arrange portfolio into cash + arranged
+   *         array of [strikes][calls / puts].
+   *         Unlike PCRM, the forwards are purposefully not filtered.
+   * @param assets Array of balances for given asset and subId.
+   * @return portfolio Cash + option holdings.
+   */
+  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
+    internal
+    view
+    returns (IBaseManager.Portfolio memory portfolio)
+  {
+    // note: differs from PCRM._arrangePortfolio since forwards aren't filtered
+    // todo: [Josh] can just combine with PCRM _arrangePortfolio and remove struct
+    portfolio.strikes = new IBaseManager.Strike[](
+      MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
+    );
+
+    AccountStructs.AssetBalance memory currentAsset;
+    for (uint i; i < assets.length; ++i) {
+      currentAsset = assets[i];
+      if (address(currentAsset.asset) == address(option)) {
+        _addOption(portfolio, currentAsset);
+      } else if (address(currentAsset.asset) == address(cashAsset)) {
+        if (currentAsset.balance < 0) revert("Negative Cash");
+
+        portfolio.cash = currentAsset.balance;
+      } else if (currentAsset.asset == perp) {
+        portfolio.perp = currentAsset.balance;
+      } else {
+        revert("WHAT");
+      }
+    }
+  }
+
+  /**
+   * @notice Calculate the required margin of the account using the Max Loss method.
+   *         A positive value means the account is X amount over the required margin.
+   * @param portfolio Account portfolio.
+   * @return margin Amount by which account is over or under the required margin.
+   */
+  function _calcMaxLossMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+    // The portfolio payoff is evaluated at the strike price of each owned option.
+    // This guarantees that the max loss of a portfolio can be found.
+    bool zeroStrikeOwned;
+    int netCalls;
+    for (uint i; i < portfolio.numStrikesHeld; i++) {
+      uint scenarioPrice = portfolio.strikes[i].strike;
+      margin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), margin);
+
+      netCalls += portfolio.strikes[i].calls;
+
+      if (scenarioPrice == 0) {
+        zeroStrikeOwned = true;
+      }
+    }
+
+    // Ensure $0 scenario is always evaluated.
+    if (!zeroStrikeOwned) {
+      margin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
+    }
+
+    // Add cash balance.
+    margin += portfolio.cash;
+
+    // Max loss cannot be calculated when netCalls below zero,
+    // since short calls have an unbounded payoff.
+    if (netCalls < 0) {
+      // should not use net calls
+    }
+  }
+
+  /**
+   * @notice Calculate the full portfolio payoff at a given settlement price.
+   *         This is used in '_calcMargin()' calculated the max loss of a given portfolio.
+   * @param portfolio Account portfolio.
+   * @param price Assumed scenario price.
+   * @return payoff Net $ profit or loss of the portfolio given a settlement price.
+   */
+  function _calcPayoffAtPrice(IBaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
+    for (uint i; i < portfolio.numStrikesHeld; i++) {
+      IBaseManager.Strike memory currentStrike = portfolio.strikes[i];
+      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
+      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
+    }
   }
 
   //////////

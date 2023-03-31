@@ -74,7 +74,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @dev This function can be called by anyone
    */
   function settleAccount(uint accountId) external {
-    _settleAccount(accountId);
+    _settleAccountOptions(accountId);
   }
 
   /**
@@ -83,7 +83,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    */
   function batchSettleAccounts(uint[] calldata accountIds) external {
     for (uint i; i < accountIds.length; ++i) {
-      _settleAccount(accountIds[i]);
+      _settleAccountOptions(accountIds[i]);
     }
   }
 
@@ -201,7 +201,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @dev settle an account by removing all expired option positions and adjust cash balance
    * @param accountId Account Id to settle
    */
-  function _settleAccount(uint accountId) internal {
+  function _settleAccountOptions(uint accountId) internal {
     AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
