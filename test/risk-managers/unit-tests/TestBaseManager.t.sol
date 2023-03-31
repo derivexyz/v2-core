@@ -119,7 +119,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
     strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     IBaseManager.Portfolio memory portfolio =
-      IBaseManager.Portfolio({cash: 0, expiry: 1 days, numStrikesHeld: 1, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: 1 days, numStrikesHeld: 1, strikes: strikes});
 
     // construct asset
     AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({
@@ -140,7 +140,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     strikes[1] = IBaseManager.Strike({strike: 2000e18, calls: -1e18, puts: 0, forwards: 0});
     strikes[2] = IBaseManager.Strike({strike: 3000e18, calls: 10e18, puts: 5e18, forwards: 0});
     BaseManager.Portfolio memory portfolio =
-      IBaseManager.Portfolio({cash: 0, expiry: expiry, numStrikesHeld: 3, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiry, numStrikesHeld: 3, strikes: strikes});
 
     // add call to existing strike
     AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({

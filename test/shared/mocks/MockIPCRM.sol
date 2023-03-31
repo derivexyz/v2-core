@@ -72,7 +72,7 @@ contract MockIPCRM is IPCRM, IManager {
       strikeHoldings[2] = Strike(3000, 4, -2, 1);
       strikeHoldings[3] = Strike(4000, 5, 10, 1);
 
-      portfolio = Portfolio(0, block.timestamp + 2 weeks, 4, strikeHoldings);
+      portfolio = Portfolio(0, 0, block.timestamp + 2 weeks, 4, strikeHoldings);
     }
   }
 

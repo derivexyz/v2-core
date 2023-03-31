@@ -117,7 +117,7 @@ contract StrikeGroupingTest is Test {
 
     // all expiries
     IBaseManager.Portfolio memory portfolio =
-      IBaseManager.Portfolio({cash: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
 
     return portfolio;
   }
