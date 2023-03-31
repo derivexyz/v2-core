@@ -116,11 +116,7 @@ contract SimpleManager is ISimpleManager, Owned {
 
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
-      if (
-        assetDeltas[i].asset != cashAsset && 
-        assetDeltas[i].asset != perp && 
-        assetDeltas[i].asset != option
-      ) {
+      if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != perp && assetDeltas[i].asset != option) {
         revert PM_UnsupportedAsset();
       }
     }
@@ -146,6 +142,12 @@ contract SimpleManager is ISimpleManager, Owned {
     return marginRequired;
   }
 
+  function _getOptionMargin(uint accountId, int indexPrice) internal view returns (int) {
+    // compute net call
+
+    // 
+  }
+
   /**
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
@@ -162,7 +164,11 @@ contract SimpleManager is ISimpleManager, Owned {
   function settleAccount(uint accountId) external {
     perp.updateFundingRate();
     perp.applyFundingOnAccount(accountId);
+
+    // settle perp
     int netCash = perp.settleRealizedPNLAndFunding(accountId);
+
+    // todo: settle option
 
     cashAsset.updateSettledCash(netCash);
 
