@@ -3,16 +3,18 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "src/interfaces/IAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IManager.sol";
-import "src/Allowances.sol";
-import "src/libraries/ArrayLib.sol";
-import "src/libraries/AssetDeltaLib.sol";
-import "src/libraries/PermitAllowanceLib.sol";
+import "./interfaces/IAccounts.sol";
+import "./interfaces/IAsset.sol";
+import "./interfaces/IManager.sol";
+
+import "./libraries/ArrayLib.sol";
+import "./libraries/AssetDeltaLib.sol";
+import "./libraries/PermitAllowanceLib.sol";
+
+import "./Allowances.sol";
 
 /**
  * @title Accounts

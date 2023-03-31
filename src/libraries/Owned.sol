@@ -22,7 +22,7 @@
 
 pragma solidity ^0.8.9;
 
-import "src/libraries/AbstractOwned.sol";
+import "./AbstractOwned.sol";
 
 /**
  * @title Owned

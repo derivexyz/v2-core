@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/interfaces/IBaseManager.sol";
-import "src/interfaces/ISpotJumpOracle.sol";
+import "./IBaseManager.sol";
+import "./ISpotJumpOracle.sol";
 
 /**
  * @title PartialCollateralRiskManager

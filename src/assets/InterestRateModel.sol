@@ -2,10 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
-import "src/libraries/ConvertDecimals.sol";
-import "src/libraries/FixedPointMathLib.sol";
-import "src/libraries/DecimalMath.sol";
-import "src/interfaces/IInterestRateModel.sol";
+import "../libraries/ConvertDecimals.sol";
+import "../libraries/FixedPointMathLib.sol";
+import "../libraries/DecimalMath.sol";
+import "../interfaces/IInterestRateModel.sol";
 
 /**
  * @title Interest Rate Model

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/interfaces/AccountStructs.sol";
-import "src/interfaces/IBaseManager.sol";
-import "src/libraries/IntLib.sol";
+import "../interfaces/AccountStructs.sol";
+import "../interfaces/IBaseManager.sol";
+import "./IntLib.sol";
+
 import "forge-std/console2.sol";
 
 /**

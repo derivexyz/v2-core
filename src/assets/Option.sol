@@ -4,15 +4,15 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
-import "src/interfaces/IOption.sol";
-import "src/interfaces/IChainlinkSpotFeed.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/ISettlementFeed.sol";
+import "../interfaces/IOption.sol";
+import "../interfaces/IChainlinkSpotFeed.sol";
+import "../interfaces/IAccounts.sol";
+import "../interfaces/ISettlementFeed.sol";
 
-import "src/libraries/Owned.sol";
-import "src/libraries/OptionEncoding.sol";
-import "src/libraries/SignedDecimalMath.sol";
-import "src/libraries/IntLib.sol";
+import "../libraries/Owned.sol";
+import "../libraries/OptionEncoding.sol";
+import "../libraries/SignedDecimalMath.sol";
+import "../libraries/IntLib.sol";
 
 /**
  * @title Option

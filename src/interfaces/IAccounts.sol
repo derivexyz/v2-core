@@ -2,10 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC721/IERC721.sol";
-import "src/interfaces/IAllowances.sol";
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/AccountStructs.sol";
+import "./IAllowances.sol";
+import "./IAsset.sol";
+import "./IManager.sol";
+import "./AccountStructs.sol";
 
 // For full documentation refer to src/Accounts.sol";
 interface IAccounts is AccountStructs, IERC721 {

@@ -6,16 +6,16 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/token/ERC20/ERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IPCRM.sol";
-import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/ISecurityModule.sol";
-import "src/interfaces/AccountStructs.sol";
+import "./interfaces/IAsset.sol";
+import "./interfaces/IAccounts.sol";
+import "./interfaces/IPCRM.sol";
+import "./interfaces/ICashAsset.sol";
+import "./interfaces/ISecurityModule.sol";
+import "./interfaces/AccountStructs.sol";
 
-import "src/libraries/ConvertDecimals.sol";
-import "src/libraries/Owned.sol";
-import "src/libraries/DecimalMath.sol";
+import "./libraries/ConvertDecimals.sol";
+import "./libraries/Owned.sol";
+import "./libraries/DecimalMath.sol";
 
 /**
  * @title SecurityModule

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/libraries/Black76.sol";
+import "../libraries/Black76.sol";
 
 import "forge-std/console2.sol";
 

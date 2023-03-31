@@ -2,9 +2,9 @@
 pragma solidity ^0.8.13;
 
 // Libraries
-import "src/libraries/SignedDecimalMath.sol";
-import "src/libraries/DecimalMath.sol";
-import "src/libraries/FixedPointMathLib.sol";
+import "../libraries/SignedDecimalMath.sol";
+import "../libraries/DecimalMath.sol";
+import "../libraries/FixedPointMathLib.sol";
 
 /**
  * @title Black76
