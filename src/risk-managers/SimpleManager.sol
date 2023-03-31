@@ -145,7 +145,7 @@ contract SimpleManager is ISimpleManager, Owned {
   function _getOptionMargin(uint accountId, int indexPrice) internal view returns (int) {
     // compute net call
 
-    // 
+    //
   }
 
   /**
