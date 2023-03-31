@@ -13,7 +13,7 @@ import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/assets/Option.sol";
 
-import "./BaseManager.sol";
+import "src/risk-managers/BaseManager.sol";
 
 import "src/libraries/OptionEncoding.sol";
 import "src/libraries/StrikeGrouping.sol";

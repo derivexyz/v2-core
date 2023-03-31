@@ -9,9 +9,9 @@ import "src/libraries/Owned.sol";
 import "src/libraries/SignedDecimalMath.sol";
 import "src/libraries/DecimalMath.sol";
 import "src/libraries/ConvertDecimals.sol";
-import "../interfaces/IAccounts.sol";
-import "../interfaces/ICashAsset.sol";
-import "../interfaces/IInterestRateModel.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IInterestRateModel.sol";
 
 /**
  * @title Cash asset with built-in lending feature.

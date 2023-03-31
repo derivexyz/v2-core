@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./IFutureFeed.sol";
-import "./ISettlementFeed.sol";
+import "src/interfaces/IFutureFeed.sol";
+import "src/interfaces/ISettlementFeed.sol";
 
 /**
  * @title IChainlinkSpotFeed

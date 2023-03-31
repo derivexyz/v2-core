@@ -25,7 +25,7 @@ import "./BaseManager.sol";
 import "forge-std/console2.sol";
 // TODO: interface
 import "src/feeds/MTMCache.sol";
-import "../interfaces/IChainlinkSpotFeed.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 
 /**
  * @title PortfolioMarginRiskManager
