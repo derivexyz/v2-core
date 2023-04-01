@@ -230,7 +230,7 @@ contract SimpleManager is ISimpleManager, BaseManager {
     // Max loss cannot be calculated when netCalls below zero,
     // since short calls have an unbounded payoff.
     if (netCalls < 0) {
-      // should not use net calls
+      // todo: should use isolated margin
     }
   }
 
