@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../interfaces/AccountStructs.sol";
+import "src/interfaces/AccountStructs.sol";
 
 /**
  * @title PermitAllowanceLib
