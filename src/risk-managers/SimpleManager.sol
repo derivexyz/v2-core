@@ -240,7 +240,11 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @param portfolio Account portfolio.
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio, int indexPrice) internal view returns (int margin) {
+  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio, int indexPrice)
+    internal
+    view
+    returns (int margin)
+  {
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
@@ -263,15 +267,14 @@ contract SimpleManager is ISimpleManager, BaseManager {
       }
 
       // calculate isolated margin for this strike, aggregate to isolatedMargin
-      isolatedMargin +=
-        _getIsolatedMargin(
-          portfolio.strikes[i].strike, 
-          portfolio.expiry, 
-          portfolio.strikes[i].calls, 
-          portfolio.strikes[i].puts, 
-          indexPrice,
-          false // is maintenance = false
-        );
+      isolatedMargin += _getIsolatedMargin(
+        portfolio.strikes[i].strike,
+        portfolio.expiry,
+        portfolio.strikes[i].calls,
+        portfolio.strikes[i].puts,
+        indexPrice,
+        false // is maintenance = false
+      );
     }
 
     // Ensure $0 scenario is always evaluated.
@@ -318,12 +321,10 @@ contract SimpleManager is ISimpleManager, BaseManager {
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike.toInt256()).divideDecimal(index);
 
-    int extraMargin =
-      SignedMath.min(
-        SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin).multiplyDecimal(index),
-        strike.toInt256().multiplyDecimal(minPutMarginInStrike)
-      ).multiplyDecimal(amount);
-      
+    int extraMargin = SignedMath.min(
+      SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin).multiplyDecimal(index),
+      strike.toInt256().multiplyDecimal(minPutMarginInStrike)
+    ).multiplyDecimal(amount);
 
     int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
 
