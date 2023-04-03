@@ -261,12 +261,8 @@ contract SimpleManager is ISimpleManager, BaseManager {
       }
 
       // calculate isolated margin for this strike, aggregate to isolatedMargin
-      isolatedMargin += _getIsolatedMargin(
-        portfolio.strikes[i].strike,
-        portfolio.expiry,
-        portfolio.strikes[i].puts,
-        indexPrice
-      );
+      isolatedMargin +=
+        _getIsolatedMargin(portfolio.strikes[i].strike, portfolio.expiry, portfolio.strikes[i].puts, indexPrice);
     }
 
     // Ensure $0 scenario is always evaluated.
@@ -277,22 +273,30 @@ contract SimpleManager is ISimpleManager, BaseManager {
     return SignedMath.min(isolatedMargin, maxLossMargin);
   }
 
-  function _getIsolatedMargin(uint strike, uint expiry, int calls, int puts, int indexPrice) internal view returns (int margin) {
+  function _getIsolatedMargin(uint strike, uint expiry, int calls, int puts, int indexPrice)
+    internal
+    view
+    returns (int margin)
+  {
     int margin;
     if (calls < 0) {
       margin += _getIsolatedMarginForCall(strike, expiry, calls, indexPrice);
-    } 
+    }
     if (puts < 0) {
       margin += _getIsolatedMarginForPut(strike, expiry, puts, indexPrice);
-    } 
+    }
   }
 
   /**
    * @dev calculate isolated margin requirement for a call option
    * @dev Maintenance margin: is 7.5% of the max of (index price, mtm)
-   * @dev Initial margin: 
+   * @dev Initial margin:
    */
-  function _getIsolatedMarginForCall(uint strike, uint expiry, int amount, int index, bool isMaintenance) internal view returns (int) {
+  function _getIsolatedMarginForCall(uint strike, uint expiry, int amount, int index, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
     // mtm = pricing.getMTM(strike, expiry, amount, false).toInt256();
 
     // int otmAmount = strike - indexPrice > 0 ? strike - indexPrice : 0;
@@ -304,21 +308,22 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @dev calculate isolated margin requirement for a put option
    * @param amount expected a negative number, representing amount of shorts
    */
-  function _getIsolatedMarginForPut(uint strike, uint expiry, int amount, int index, bool isMaintenance) internal view returns (int) {
-
+  function _getIsolatedMarginForPut(uint strike, uint expiry, int amount, int index, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
     uint baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike - index).divideDecimal(index);
 
-    int extraMargin = SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin)
-          .multiplyDecimal(index)
-          .multiplyDecimal(amount);
+    int extraMargin =
+      SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin).multiplyDecimal(index).multiplyDecimal(amount);
 
     int mtm = pricing.getMTM(strike, expiry, -amount, true).toInt256();
 
     return -mtm + extraMargin;
-
   }
 
   /**
