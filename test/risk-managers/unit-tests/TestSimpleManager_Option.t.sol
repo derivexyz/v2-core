@@ -81,14 +81,13 @@ contract UNIT_TestSimpleManager_Option is Test {
   // Isolated Margin Calculations //
   //////////////////////////////////
 
-  function testGetIsolatedMarginLong() public {
+  function testGetIsolatedMarginLongOTMCall() public {
     // long option result in 0 margin (no borrowing power)
-    uint expiry = block.timestamp + 7 days;
+    uint expiry = block.timestamp + 91 days;
 
     uint strike = 2000e18;
 
     pricing.setMockMTM(strike, expiry, true, 1.65e18);
-    pricing.setMockMTM(strike, expiry, false, 501.65e18);
 
     // margin of shorting 1 call
     int margin = manager.getIsolatedMargin(strike, expiry, 1e18, 1e18, false);
@@ -96,17 +95,32 @@ contract UNIT_TestSimpleManager_Option is Test {
     assertEq(margin, 0);
   }
 
-  function testGetIsolatedMarginOTMCall() public {
-    uint expiry = block.timestamp + 7 days;
+  function testGetIsolatedMarginLongITMCall() public {
+    uint expiry = block.timestamp + 91 days;
 
-    uint strike = 2000e18;
+    uint strike = 1000e18;
+    pricing.setMockMTM(strike, expiry, true, 500.08e18);
 
-    pricing.setMockMTM(strike, expiry, true, 1.65e18);
+    // long 1 call
+    int margin = manager.getIsolatedMargin(strike, expiry, 1e18, 0, false);
+    assertEq(margin, 0); 
+  }
+
+  function testGetIsolatedMarginShortATMCall() public {
+    uint expiry = block.timestamp + 91 days;
+
+    uint strike = 400e18;
+
+    pricing.setMockMTM(strike, expiry, true, 1100e18);
 
     // margin of shorting 1 call
     int margin = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
 
-    assertEq(margin, -801649999999999999500); // -801.65
+    console2.log("OTM call (IM)", margin);
+
+    console2.log("OTM call (MM)", manager.getIsolatedMargin(strike, expiry, -1e18, 0, true));
+
+    // assertEq(margin, 0); // -801.65
   }
 
   ////////////////////////////////

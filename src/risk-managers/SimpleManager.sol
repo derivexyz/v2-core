@@ -66,9 +66,11 @@ contract SimpleManager is ISimpleManager, BaseManager {
   int public baselineOptionMM = 0.1e18;
 
   /// @dev todo: add descriptions
-  int public minStaticSimpleMargin = 0.125e18;
+  int public minStaticMMMargin = 0.125e18;
 
-  int public minPutMarginInStrike = 0.5e18;
+  int public minStaticIMMargin = 0.08e18;
+
+  // int public minPutMarginInStrike = 0.5e18;
 
   ////////////////////////
   //    Constructor     //
@@ -308,32 +310,8 @@ contract SimpleManager is ISimpleManager, BaseManager {
   }
 
   /**
-   * @dev calculate isolated margin requirement for a call option
-   * @dev expected to return a negative number
-   */
-  function _getIsolatedMarginForCall(uint strike, uint expiry, int amount, int index, bool isMaintenance)
-    internal
-    view
-    returns (int)
-  {
-    int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
-
-    // this ratio become negative if option is ITM
-    int otmRatio = (index - strike.toInt256()).divideDecimal(index);
-
-    int extraMargin = SignedMath.min(
-      SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin).multiplyDecimal(index),
-      strike.toInt256().multiplyDecimal(minPutMarginInStrike)
-    ).multiplyDecimal(amount);
-
-    int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
-
-    return mtm + extraMargin;
-  }
-
-  /**
    * @dev calculate isolated margin requirement for a put option
-   * @param amount expected a negative number, representing amount of shorts
+   * @dev expected to return a negative number
    */
   function _getIsolatedMarginForPut(uint strike, uint expiry, int amount, int index, bool isMaintenance)
     internal
@@ -341,16 +319,45 @@ contract SimpleManager is ISimpleManager, BaseManager {
     returns (int)
   {
     int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
+    int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
+
+    // this ratio become negative if option is ITM
+    int otmRatio = (index - strike.toInt256()).divideDecimal(index);
+
+    int extraMargin = SignedMath.min(
+      SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index),
+      0
+      // strike.toInt256().multiplyDecimal(minPutMarginInStrike)
+    ).multiplyDecimal(amount);
+
+    // int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
+
+    return extraMargin;
+  }
+
+  /**
+   * @dev calculate isolated margin requirement for a call option
+   * @param amount expected a negative number, representing amount of shorts
+   */
+  function _getIsolatedMarginForCall(uint strike, uint expiry, int amount, int index, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
+    int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
+    int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike.toInt256() - index).divideDecimal(index);
 
     int extraMargin =
-      SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin).multiplyDecimal(index).multiplyDecimal(amount);
+      SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index).multiplyDecimal(amount);
 
-    int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
+    console2.log('extraMargin', extraMargin);
 
-    return mtm + extraMargin;
+    // int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
+
+    return extraMargin;
   }
 
   /**
