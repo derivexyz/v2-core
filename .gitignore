@@ -8,3 +8,16 @@ node_modules
 yarn-error.log
 .husky
 .vscode
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+
+# Hardhat files
+cache
+artifacts
+cache_hardhat
+artifacts_hardhat

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "lyra-utils/math/IntLib.sol";
+
 import "./interfaces/IAsset.sol";
 import "./interfaces/AccountStructs.sol";
-import "./libraries/IntLib.sol";
 
 /**
  * @title Allowacne

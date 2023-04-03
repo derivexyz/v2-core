@@ -19,7 +19,7 @@ contract JsonMechIO is Test {
     return json.readUintArray(key);
   }
 
-  function jsonFromRelPath(string memory dirRelativeToRoot) public returns (string memory json) {
+  function jsonFromRelPath(string memory dirRelativeToRoot) public view returns (string memory json) {
     string memory path = string.concat(vm.projectRoot(), dirRelativeToRoot);
     json = vm.readFile(path);
   }

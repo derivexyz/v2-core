@@ -2,12 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+import "lyra-utils/math/IntLib.sol";
 
-import "../interfaces/IChainlinkSpotFeed.sol";
-import "../interfaces/ISpotJumpOracle.sol";
-
-import "../libraries/IntLib.sol";
-import "../libraries/DecimalMath.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
+import "src/interfaces/ISpotJumpOracle.sol";
 
 import "forge-std/console2.sol";
 

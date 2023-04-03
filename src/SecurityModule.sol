@@ -5,6 +5,9 @@ import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/token/ERC20/ERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+import "lyra-utils/decimals/ConvertDecimals.sol";
+import "lyra-utils/ownership/Owned.sol";
 
 import "./interfaces/IAsset.sol";
 import "./interfaces/IAccounts.sol";
@@ -12,10 +15,6 @@ import "./interfaces/IPCRM.sol";
 import "./interfaces/ICashAsset.sol";
 import "./interfaces/ISecurityModule.sol";
 import "./interfaces/AccountStructs.sol";
-
-import "./libraries/ConvertDecimals.sol";
-import "./libraries/Owned.sol";
-import "./libraries/DecimalMath.sol";
 
 /**
  * @title SecurityModule

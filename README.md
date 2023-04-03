@@ -64,3 +64,10 @@ Make sure to triage all findings introduced by new PR. They should be appended t
 ```shell
 slither src --triage-mode
 ```
+
+## Deployment
+
+```shell
+yarn
+yarn deploy
+```

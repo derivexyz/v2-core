@@ -6,8 +6,8 @@ import "forge-std/console2.sol";
 
 import "test/shared/utils/JsonMechIO.sol";
 
-import "../shared/IntegrationTestBase.sol";
-import "../shared/PositionBuilderBase.sol";
+import "../../shared/IntegrationTestBase.sol";
+import "../../shared/PositionBuilderBase.sol";
 
 /**
  * @dev Tests to verify correct fees paid and received by suppliers and borrowers
@@ -62,11 +62,11 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
     uint balanceOf_creation = usdc.balanceOf(address(cash));
     assertEq(totalSupply_creation - totalBorrow_creation, balanceOf_creation);
     // open trade
-    Position[] memory positions = _openBox(aliceAcc, bobAcc, 1000e18);
+    _openBox(aliceAcc, bobAcc, 1000e18);
 
     jsonParser = new JsonMechIO();
     string memory json =
-      jsonParser.jsonFromRelPath("/test/integration-tests/cashAsset/json/testInterestPaidForHighUtil.json");
+      jsonParser.jsonFromRelPath("/test/integration-tests/assets/cashAsset/json/testInterestPaidForHighUtil.json");
 
     uint stateIdx = 0;
     uint maxDelta = 1e12; // 6 decimals accuracy (18 total decimals, allowing the last 6 to be wrong)
