@@ -9,5 +9,5 @@ pragma solidity ^0.8.13;
  * @notice Interface for option pricing
  */
 interface IOptionPricing {
-  function getMTM(uint strike, uint expiry, uint amount, bool isCall) external view returns (uint);
+  function getMTM(uint strike, uint expiry, bool isCall) external view returns (uint);
 }

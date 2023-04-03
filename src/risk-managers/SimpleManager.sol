@@ -57,16 +57,18 @@ contract SimpleManager is ISimpleManager, BaseManager {
   uint public perpIMRequirement = 0.05e18;
 
   /// @dev Option Maintenance margin requirement: min percentage of spot + mark to market
-  uint public optionStaticMMRequirement = 0.075e18;
+  int public optionStaticMMRequirement = 0.075e18;
 
   /// @dev todo: add descriptions
-  uint public baselineOptionIM = 0.2e18;
+  int public baselineOptionIM = 0.2e18;
 
   /// @dev todo: add descriptions
-  uint public baselineOptionMM = 0.1e18;
+  int public baselineOptionMM = 0.1e18;
 
   /// @dev todo: add descriptions
-  uint public minStaticSimpleMargin = 0.125e18;
+  int public minStaticSimpleMargin = 0.125e18;
+
+  int public minPutMarginInStrike = 0.5e18;
 
   ////////////////////////
   //    Constructor     //
@@ -135,7 +137,9 @@ contract SimpleManager is ISimpleManager, BaseManager {
 
     int perpMargin = _getPerpMargin(accountId, indexPrice);
 
-    if (cashBalance < perpMargin) {
+    int optionMargin = _getOptionMargin(accountId, indexPrice);
+
+    if (cashBalance < perpMargin + optionMargin) {
       revert PM_PortfolioBelowMargin(accountId, perpMargin);
     }
   }
@@ -154,12 +158,12 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @notice get the margin required for the option positions
    * @param accountId Account Id for which to check
    */
-  function _getOptionMargin(uint accountId, int indexPrice) internal view returns (int) {
+  function _getOptionMargin(uint accountId, int indexPrice) internal view returns (int margin) {
     // compute net call
 
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
-    int margin = _calcSimpleMargin(portfolio);
+    margin = _calcSimpleMargin(portfolio, indexPrice);
   }
 
   /**
@@ -236,7 +240,7 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @param portfolio Account portfolio.
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio, int indexPrice) internal view returns (int margin) {
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
@@ -247,8 +251,6 @@ contract SimpleManager is ISimpleManager, BaseManager {
     int maxLossMargin = 0;
     int isolatedMargin = 0;
     bool zeroStrikeOwned;
-
-    int indexPrice = feed.getSpot().toInt256();
 
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       // only calculate the max loss margin if loss is bounded (net calls > 0)
@@ -262,7 +264,14 @@ contract SimpleManager is ISimpleManager, BaseManager {
 
       // calculate isolated margin for this strike, aggregate to isolatedMargin
       isolatedMargin +=
-        _getIsolatedMargin(portfolio.strikes[i].strike, portfolio.expiry, portfolio.strikes[i].puts, indexPrice);
+        _getIsolatedMargin(
+          portfolio.strikes[i].strike, 
+          portfolio.expiry, 
+          portfolio.strikes[i].calls, 
+          portfolio.strikes[i].puts, 
+          indexPrice,
+          false // is maintenance = false
+        );
     }
 
     // Ensure $0 scenario is always evaluated.
@@ -273,35 +282,52 @@ contract SimpleManager is ISimpleManager, BaseManager {
     return SignedMath.min(isolatedMargin, maxLossMargin);
   }
 
-  function _getIsolatedMargin(uint strike, uint expiry, int calls, int puts, int indexPrice)
+  function getIsolatedMargin(uint strike, uint expiry, int calls, int puts, bool isMaintenance)
+    external
+    view
+    returns (int)
+  {
+    int indexPrice = feed.getSpot().toInt256();
+    return _getIsolatedMargin(strike, expiry, calls, puts, indexPrice, isMaintenance);
+  }
+
+  function _getIsolatedMargin(uint strike, uint expiry, int calls, int puts, int indexPrice, bool isMaintenance)
     internal
     view
     returns (int margin)
   {
-    int margin;
     if (calls < 0) {
-      margin += _getIsolatedMarginForCall(strike, expiry, calls, indexPrice);
+      margin += _getIsolatedMarginForCall(strike, expiry, calls, indexPrice, isMaintenance);
     }
     if (puts < 0) {
-      margin += _getIsolatedMarginForPut(strike, expiry, puts, indexPrice);
+      margin += _getIsolatedMarginForPut(strike, expiry, puts, indexPrice, isMaintenance);
     }
   }
 
   /**
    * @dev calculate isolated margin requirement for a call option
-   * @dev Maintenance margin: is 7.5% of the max of (index price, mtm)
-   * @dev Initial margin:
+   * @dev expected to return a negative number
    */
   function _getIsolatedMarginForCall(uint strike, uint expiry, int amount, int index, bool isMaintenance)
     internal
     view
     returns (int)
   {
-    // mtm = pricing.getMTM(strike, expiry, amount, false).toInt256();
+    int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
 
-    // int otmAmount = strike - indexPrice > 0 ? strike - indexPrice : 0;
+    // this ratio become negative if option is ITM
+    int otmRatio = (index - strike.toInt256()).divideDecimal(index);
 
-    // uint baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
+    int extraMargin =
+      SignedMath.min(
+        SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin).multiplyDecimal(index),
+        strike.toInt256().multiplyDecimal(minPutMarginInStrike)
+      ).multiplyDecimal(amount);
+      
+
+    int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
+
+    return mtm + extraMargin;
   }
 
   /**
@@ -313,17 +339,17 @@ contract SimpleManager is ISimpleManager, BaseManager {
     view
     returns (int)
   {
-    uint baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
+    int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
 
     // this ratio become negative if option is ITM
-    int otmRatio = (strike - index).divideDecimal(index);
+    int otmRatio = (strike.toInt256() - index).divideDecimal(index);
 
     int extraMargin =
       SignedMath.max(baseLine - otmRatio, minStaticSimpleMargin).multiplyDecimal(index).multiplyDecimal(amount);
 
-    int mtm = pricing.getMTM(strike, expiry, -amount, true).toInt256();
+    int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
 
-    return -mtm + extraMargin;
+    return mtm + extraMargin;
   }
 
   /**

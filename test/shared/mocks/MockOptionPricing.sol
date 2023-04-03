@@ -10,8 +10,8 @@ contract MockOptionPricing is IOptionPricing {
   // mocked strike => expiry => mock value
   mapping(uint => mapping(uint => uint)) public mockMTM;
 
-  function getMTM(uint strike, uint expiry, uint amount, bool /*isCall*/ ) external view override returns (uint) {
-    return mockMTM[strike][expiry].multiplyDecimal(amount);
+  function getMTM(uint strike, uint expiry, bool /*isCall*/ ) external view override returns (uint) {
+    return mockMTM[strike][expiry];
   }
 
   // set mock value
