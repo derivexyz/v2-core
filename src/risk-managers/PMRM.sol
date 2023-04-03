@@ -4,28 +4,27 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 
-import "../interfaces/IManager.sol";
-import "../interfaces/IAccounts.sol";
-import "../interfaces/IDutchAuction.sol";
-import "../interfaces/ICashAsset.sol";
-import "../interfaces/IOption.sol";
-import "../interfaces/ISecurityModule.sol";
-import "../interfaces/ISpotJumpOracle.sol";
-import "../interfaces/IPCRM.sol";
-import "../interfaces/IFutureFeed.sol";
+import "src/interfaces/IManager.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/IDutchAuction.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IOption.sol";
+import "src/interfaces/ISecurityModule.sol";
+import "src/interfaces/ISpotJumpOracle.sol";
+import "src/interfaces/IPCRM.sol";
+import "src/interfaces/IFutureFeed.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
-import "../libraries/StrikeGrouping.sol";
+import "src/libraries/StrikeGrouping.sol";
 import "lyra-utils/math/Black76.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-import "./BaseManager.sol";
+import "src/risk-managers/BaseManager.sol";
 
-import "forge-std/console2.sol";
 // TODO: interface
-import "../feeds/MTMCache.sol";
-import "../interfaces/IChainlinkSpotFeed.sol";
+import "src/feeds/MTMCache.sol";
 
 /**
  * @title PortfolioMarginRiskManager
@@ -433,10 +432,8 @@ contract PMRM is BaseManager {
   }
 
   function getIM(IAccounts.AssetBalance[] memory assets) external view returns (int) {
-    console2.log("total assets", assets.length);
     NewPortfolio memory portfolio = _arrangePortfolio(assets);
     int im = _getIM(portfolio);
-    console2.log("im", im);
     return im;
   }
 
