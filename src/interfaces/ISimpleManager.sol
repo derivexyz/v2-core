@@ -25,5 +25,5 @@ interface ISimpleManager is AccountStructs, IManager {
 
   event AccountSettled(uint accountId, int netCash);
 
-  event MarginRequirementsSet(uint maintenanceMarginRequirement, uint initialMarginRequirement);
+  event MarginRequirementsSet(uint perpMMRequirement, uint perpIMRequirement);
 }
