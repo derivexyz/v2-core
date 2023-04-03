@@ -126,10 +126,18 @@ contract SimpleManager is ISimpleManager, BaseManager {
     return marginRequired;
   }
 
+  /**
+   * @notice get the margin required for the option positions
+    * @param accountId Account Id for which to check
+   */
   function _getOptionMargin(uint accountId, int indexPrice) internal view returns (int) {
     // compute net call
 
-    //
+
+
+    IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+
+    int margin = _calcSimpleMargin(portfolio);
   }
 
   /**
@@ -198,45 +206,59 @@ contract SimpleManager is ISimpleManager, BaseManager {
   }
 
   /**
-   * @notice Calculate the required margin of the account using the Max Loss method.
-   *         A positive value means the account is X amount over the required margin.
+   * @notice Calculate the required margin of the account. 
+   *      If the account's option require 10K cash, this function will return -10K
+   *
+   * @dev If an account's max loss is bounded, return min (max loss margin, isolated margin)
+   *      If an account's max loss is unbounded, return isolated margin
    * @param portfolio Account portfolio.
-   * @return margin Amount by which account is over or under the required margin.
+   * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcMaxLossMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
-    // The portfolio payoff is evaluated at the strike price of each owned option.
-    // This guarantees that the max loss of a portfolio can be found.
-    bool zeroStrikeOwned;
+  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+    // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      uint scenarioPrice = portfolio.strikes[i].strike;
-      margin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), margin);
-
       netCalls += portfolio.strikes[i].calls;
-
-      if (scenarioPrice == 0) {
-        zeroStrikeOwned = true;
-      }
     }
+    bool lossBounded = netCalls > 0;
 
+    int maxLossMargin = 0;
+    int isolatedMargin = 0;
+    bool zeroStrikeOwned;
+
+    for (uint i; i < portfolio.numStrikesHeld; i++) {
+      // only calculate the max loss margin if loss is bounded (net calls > 0)
+      if (lossBounded) {
+        uint scenarioPrice = portfolio.strikes[i].strike;
+        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), maxLossMargin);
+
+        if (scenarioPrice == 0) {
+          zeroStrikeOwned = true;
+        }
+      }
+
+      // calculate isolated margin for this strike, aggregate to isolatedMargin
+      if (portfolio.strikes[i].calls < 0) {
+        isolatedMargin += 0;
+      }
+      if (portfolio.strikes[i].puts < 0) {
+        isolatedMargin += 0;
+      }
+
+      return SignedMath.min(isolatedMargin, maxLossMargin);
+
+    }
     // Ensure $0 scenario is always evaluated.
     if (!zeroStrikeOwned) {
-      margin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
+      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), maxLossMargin);
     }
 
-    // Add cash balance.
-    margin += portfolio.cash;
-
-    // Max loss cannot be calculated when netCalls below zero,
-    // since short calls have an unbounded payoff.
-    if (netCalls < 0) {
-      // todo: should use isolated margin
-    }
+    
   }
 
   /**
    * @notice Calculate the full portfolio payoff at a given settlement price.
-   *         This is used in '_calcMargin()' calculated the max loss of a given portfolio.
+   *         This is used in '_calcMaxLossMargin()' calculated the max loss of a given portfolio.
    * @param portfolio Account portfolio.
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
