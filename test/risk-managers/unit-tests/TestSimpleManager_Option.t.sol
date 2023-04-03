@@ -14,14 +14,19 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
+import "test/shared/mocks/MockOptionPricing.sol";
 
-contract UNIT_TestSimpleManager is Test {
+/**
+ * Focusing on the margin rules for options
+ */
+contract UNIT_TestSimpleManager_Option is Test {
   Accounts account;
   SimpleManager manager;
   MockAsset cash;
   MockERC20 usdc;
   MockPerp perp;
   MockOption option;
+  MockOptionPricing pricing;
 
   MockFeed feed;
 
@@ -43,6 +48,8 @@ contract UNIT_TestSimpleManager is Test {
 
     feed = new MockFeed();
 
+    pricing = new MockOptionPricing();
+
     manager = new SimpleManager(
       account,
       ICashAsset(address(cash)),
@@ -50,6 +57,8 @@ contract UNIT_TestSimpleManager is Test {
       perp,
       feed
     );
+
+    manager.setPricingModule(pricing);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -60,64 +69,9 @@ contract UNIT_TestSimpleManager is Test {
     usdc.approve(address(cash), type(uint).max);
   }
 
-  ////////////////////
-  // Manager Change //
-  ////////////////////
-
-  function testValidManagerChange() public {
-    MockManager newManager = new MockManager(address(account));
-
-    // first fails the change
-    vm.startPrank(alice);
-    vm.expectRevert(ISimpleManager.PM_NotWhitelistManager.selector);
-    account.changeManager(aliceAcc, IManager(address(newManager)), "");
-    vm.stopPrank();
-
-    manager.setWhitelistManager(address(newManager), true);
-    vm.startPrank(alice);
-    account.changeManager(aliceAcc, IManager(address(newManager)), "");
-    vm.stopPrank();
-  }
-
-  ////////////////////////////
-  // Set Margin Requirement //
-  ////////////////////////////
-
-  function testCannotSetMarginRequirementFromNonOwner() public {
-    vm.startPrank(alice);
-    vm.expectRevert();
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
-    vm.stopPrank();
-  }
-
-  function setPerpMarginRequirementsRatios() public {
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
-
-    assertEq(manager.perpMMRequirement(), 0.1e18);
-    assertEq(manager.perpIMRequirement(), 0.05e18);
-  }
-
-  function testCannotSetMMLargerThanIM() public {
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0.1e18, 0.05e18);
-  }
-
-  function testCannotSetInvalidMarginRequirement() public {
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0.1e18, 0);
-
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0.1e18, 1e18);
-
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(1e18, 0.1e18);
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0, 0.1e18);
-  }
-
-  ////////////////////
-  //  Margin Checks //
-  ////////////////////
+  ////////////////////////////////
+  //  Margin Checks for Options //
+  ////////////////////////////////
 
   function testCannotHaveUnrecognizedAsset() public {
     MockAsset badAsset = new MockAsset(usdc, account, true);
@@ -133,7 +87,7 @@ contract UNIT_TestSimpleManager is Test {
     account.submitTransfer(transfer, "");
   }
 
-  function testCanTradeWithEnoughMargin() public {
+  function testCanTradePerpWithEnoughMargin() public {
     manager.setPerpMarginRequirements(0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
@@ -144,7 +98,7 @@ contract UNIT_TestSimpleManager is Test {
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 
-  function testCannotTradeWithInsufficientMargin() public {
+  function testCannotTradePerpWithInsufficientMargin() public {
     manager.setPerpMarginRequirements(0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
