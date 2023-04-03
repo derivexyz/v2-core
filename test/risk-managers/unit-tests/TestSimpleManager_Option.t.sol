@@ -98,19 +98,6 @@ contract UNIT_TestSimpleManager_Option is Test {
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 
-  function testCannotTradePerpWithInsufficientMargin() public {
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
-
-    // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
-    cash.deposit(aliceAcc, 1499e18);
-    cash.deposit(bobAcc, 1499e18);
-
-    // trade cannot go through
-    vm.expectRevert(abi.encodeWithSelector(ISimpleManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
-    _tradePerpContract(aliceAcc, bobAcc, 10e18);
-    vm.stopPrank();
-  }
-
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,

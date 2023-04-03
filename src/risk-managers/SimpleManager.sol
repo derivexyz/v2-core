@@ -135,6 +135,8 @@ contract SimpleManager is ISimpleManager, BaseManager {
 
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
+    // todo: don't allow borrowing cash
+
     int perpMargin = _getPerpMargin(accountId, indexPrice);
 
     int optionMargin = _getOptionMargin(accountId, indexPrice);
@@ -185,8 +187,6 @@ contract SimpleManager is ISimpleManager, BaseManager {
 
     // settle perp
     int netCash = perp.settleRealizedPNLAndFunding(accountId);
-
-    // todo: settle option
 
     cashAsset.updateSettledCash(netCash);
 
