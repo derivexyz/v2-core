@@ -4,6 +4,8 @@ import "forge-std/Test.sol";
 
 import "src/risk-managers/SimpleManager.sol";
 
+import "lyra-utils/encoding/OptionEncoding.sol";
+
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
@@ -65,45 +67,69 @@ contract UNIT_TestSimpleManager_Option is Test {
 
     feed.setSpot(1500e18);
 
-    usdc.mint(address(this), 10000e18);
+    usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
+
+    // set init perp trading parameters
+    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+
+    cash.deposit(aliceAcc, 10000e18);
+    cash.deposit(bobAcc, 10000e18);
+  }
+
+  //////////////////////////////////
+  // Isolated Margin Calculations //
+  //////////////////////////////////
+
+  function testGetIsolatedMarginLong() public {
+    // long option result in 0 margin (no borrowing power)
+    uint expiry = block.timestamp + 7 days;
+
+    uint strike = 2000e18;
+
+    pricing.setMockMTM(strike, expiry, true, 1.65e18);
+    pricing.setMockMTM(strike, expiry, false, 501.65e18);
+
+    // margin of shorting 1 call
+    int margin = manager.getIsolatedMargin(strike, expiry, 1e18, 1e18, false);
+
+    assertEq(margin, 0);
+  }
+
+  function testGetIsolatedMarginOTMCall() public {
+    uint expiry = block.timestamp + 7 days;
+
+    uint strike = 2000e18;
+
+    pricing.setMockMTM(strike, expiry, true, 1.65e18);
+
+    // margin of shorting 1 call
+    int margin = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
+
+    assertEq(margin, -801649999999999999500); // -801.65
   }
 
   ////////////////////////////////
   //  Margin Checks for Options //
   ////////////////////////////////
 
-  function testCannotHaveUnrecognizedAsset() public {
-    MockAsset badAsset = new MockAsset(usdc, account, true);
-    vm.expectRevert(ISimpleManager.PM_UnsupportedAsset.selector);
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
-      fromAcc: aliceAcc,
-      toAcc: bobAcc,
-      asset: badAsset,
-      subId: 0,
-      amount: 1e18,
-      assetData: ""
-    });
-    account.submitTransfer(transfer, "");
+  function testCanTradeOptionWithEnoughMargin() public {
+    uint expiry = block.timestamp + 7 days;
+
+    uint strike = 2000e18;
+
+    pricing.setMockMTM(strike, expiry, true, 1.65e18);
+
+    // alice short 1 2000-ETH CALL.
+    _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
   }
 
-  function testCanTradePerpWithEnoughMargin() public {
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
-
-    // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
-    cash.deposit(aliceAcc, 1500e18);
-    cash.deposit(bobAcc, 1500e18);
-
-    // trade can go through
-    _tradePerpContract(aliceAcc, bobAcc, 10e18);
-  }
-
-  function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
+  function _tradeOption(uint fromAcc, uint toAcc, int amount, uint expiry, uint strike, bool isCall) internal {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
-      asset: perp,
-      subId: 0,
+      asset: option,
+      subId: OptionEncoding.toSubId(expiry, strike, isCall),
       amount: amount,
       assetData: ""
     });
