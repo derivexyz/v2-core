@@ -73,7 +73,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @notice Settle expired option positions in an account.
    * @dev This function can be called by anyone
    */
-  function settleAccount(uint accountId) external {
+  function settleOptions(uint accountId) external {
     _settleAccountOptions(accountId);
   }
 

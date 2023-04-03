@@ -145,7 +145,7 @@ contract SimpleManager is ISimpleManager, BaseManager {
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
-  function settleFullAccount(uint accountId) external {
+  function settlePerps(uint accountId) external {
     perp.updateFundingRate();
     perp.applyFundingOnAccount(accountId);
 

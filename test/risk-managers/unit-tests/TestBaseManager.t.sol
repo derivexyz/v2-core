@@ -273,7 +273,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedTotalSettlementValue(callId, -500e18);
     option.setMockedTotalSettlementValue(putId, 1000e18);
 
-    tester.settleAccount(aliceAcc);
+    tester.settleOptions(aliceAcc);
 
     assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
     assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
@@ -291,7 +291,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedTotalSettlementValue(callId, -1500e18);
     option.setMockedTotalSettlementValue(putId, 200e18);
 
-    tester.settleAccount(aliceAcc);
+    tester.settleOptions(aliceAcc);
 
     assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
     assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
@@ -310,7 +310,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedTotalSettlementValue(callId, -500e18);
     option.setMockedTotalSettlementValue(putId, 1000e18);
 
-    tester.settleAccount(aliceAcc);
+    tester.settleOptions(aliceAcc);
 
     assertEq(accounts.getBalance(aliceAcc, option, callId), callBalanceBefore);
     assertEq(accounts.getBalance(aliceAcc, option, putId), putBalanceBefore);
