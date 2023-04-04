@@ -164,17 +164,11 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testCanTradeSpreadWithMaxLoss() public {
+    // Only require $100 to short call spread
     uint aliceShortLeg = 1500e18;
     uint aliceLongLeg = 1600e18;
 
     cash.deposit(aliceAcc, 100e18);
-    _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
-  }
-
-  function testCanTradeZeroStrikeSpreadWithMaxLoss() public {
-    uint aliceShortLeg = 0;
-    uint aliceLongLeg = 400e18;
-    cash.deposit(aliceAcc, 400e18);
     _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
@@ -188,6 +182,13 @@ contract UNIT_TestBasicManager_Option is Test {
       abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100)
     );
     _tradeSpread(aliceAcc, bobAcc, 1e18 + 1, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  function testCanTradeZeroStrikeSpreadWithMaxLoss() public {
+    uint aliceShortLeg = 0;
+    uint aliceLongLeg = 400e18;
+    cash.deposit(aliceAcc, 400e18);
+    _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
   /////////////
