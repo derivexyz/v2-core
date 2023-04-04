@@ -59,16 +59,16 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Option Maintenance margin requirement: min percentage of spot + mark to market
   int public optionStaticMMRequirement = 0.075e18;
 
-  /// @dev todo: add descriptions
+  /// @dev Base line for initial margin
   int public baselineOptionIM = 0.2e18;
 
-  /// @dev todo: add descriptions
+  /// @dev Base line for maintenance margin
   int public baselineOptionMM = 0.1e18;
 
   /// @dev todo: add descriptions
-  int public minStaticMMMargin = 0.08e18;
+  int public minStaticMMRatio = 0.08e18;
 
-  int public minStaticIMMargin = 0.125e18;
+  int public minStaticIMRatio = 0.125e18;
 
   ////////////////////////
   //    Constructor     //
@@ -209,8 +209,7 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (IBaseManager.Portfolio memory portfolio)
   {
-    // note: differs from PCRM._arrangePortfolio since forwards aren't filtered
-    // todo: [Josh] can just combine with PCRM _arrangePortfolio and remove struct
+    // note: Same logic with from MLRM
     portfolio.strikes = new IBaseManager.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
@@ -310,16 +309,22 @@ contract BasicManager is IBasicManager, BaseManager {
 
   /**
    * @dev calculate isolated margin requirement for a put option
+   * Basic Margin formula for Put:
+   *     size * min(strike, max((B - OTM_amount/index), STATIC) * index)
+   *     where:
+   *        B is base line margin ratio.
+   *        OTM_amount is index - strike
+   *        STATIC is min static ratio.
    * @dev expected to return a negative number
    */
   function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
     int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
-    int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
+    int minStaticRatio = isMaintenance ? minStaticMMRatio : minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike).divideDecimal(index);
 
-    int margin = SignedMath.min(SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index), strike)
+    int margin = SignedMath.min(SignedMath.max(baseLine - otmRatio, minStaticRatio).multiplyDecimal(index), strike)
       .multiplyDecimal(amount);
 
     return margin;
@@ -327,16 +332,22 @@ contract BasicManager is IBasicManager, BaseManager {
 
   /**
    * @dev calculate isolated margin requirement for a call option
+   * Basic Margin formula for Call:
+   *     size * max((B - OTM_amount / index), STATIC) * index
+   *     where:
+   *        B is base line margin ratio.
+   *        OTM_amount is strike - index
+   *        STATIC is min static ratio.
    * @param amount expected a negative number, representing amount of shorts
    */
   function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
     int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
-    int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
+    int minStaticRatio = isMaintenance ? minStaticMMRatio : minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike - index).divideDecimal(index);
 
-    int margin = SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index).multiplyDecimal(amount);
+    int margin = SignedMath.max(baseLine - otmRatio, minStaticRatio).multiplyDecimal(index).multiplyDecimal(amount);
 
     return margin;
   }
