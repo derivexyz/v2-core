@@ -195,8 +195,10 @@ contract UNIT_TestBasicManager_Option is Test {
     account.submitTransfer(transfer, "");
   }
 
-  function _tradeSpread(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike1, uint strike2, bool isCall) internal {
-    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2); 
+  function _tradeSpread(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike1, uint strike2, bool isCall)
+    internal
+  {
+    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
     transfers[0] = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
