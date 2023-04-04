@@ -84,9 +84,6 @@ contract IntegrationTestBase is Test {
     // nonce: 2 => Deploy USDC
     usdc = new MockERC20("USDC", "USDC");
 
-    // address addr2 = _predictAddress(address(this), 2);
-    // assertEq(addr2, address(usdc));
-
     // function call: doesn't increase deployment nonce
     usdc.setDecimals(6);
 
@@ -102,7 +99,6 @@ contract IntegrationTestBase is Test {
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // nonce: 6 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 10);
     cash = new CashAsset(accounts, usdc, rateModel, smAcc);
 
     // nonce: 7 => Deploy OptionAsset
@@ -116,21 +112,20 @@ contract IntegrationTestBase is Test {
     skip(7 days); // skip to make jumps stale
 
     // nonce: 9 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, feed, cash, option, auctionAddr, spotJumpOracle);
+    pcrm = new PCRM(accounts, feed, feed, cash, option, spotJumpOracle);
 
     // nonce: 10 => Deploy Auction
-    // todo: remove IPCRM(address())
-    address smAddr = _predictAddress(address(this), 11);
-    auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
+    auction = new DutchAuction(pcrm, accounts, cash);
 
     cash.setLiquidationModule(address(auction));
 
-    assertEq(address(auction), auctionAddr);
+    pcrm.setLiquidationModule(auction);
+    pcrm.setSpotJumpOracle(spotJumpOracle);
 
     // nonce: 11 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IPCRM(address(pcrm)));
 
-    assertEq(securityModule.accountId(), smAcc);
+    auction.setSecurityModule(securityModule);
   }
 
   function _finishContractSetups() internal {

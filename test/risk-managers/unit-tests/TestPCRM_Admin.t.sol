@@ -28,9 +28,8 @@ contract PCRMTester is PCRM {
     IChainlinkSpotFeed feed_,
     ICashAsset cashAsset_,
     IOption option_,
-    address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) PCRM(accounts_, feed_, feed_, cashAsset_, option_, auction_, spotJumpOracle_) {}
+  ) PCRM(accounts_, feed_, feed_, cashAsset_, option_, spotJumpOracle_) {}
 
   function getSpotJumpMultiple(uint spotJumpSlope, uint32 lookbackLength) external view returns (uint multiple) {
     return _getSpotJumpMultiple(spotJumpSlope, lookbackLength);
@@ -72,9 +71,10 @@ contract UNIT_TestPCRM is Test {
       feed,
       ICashAsset(address(cash)),
       option,
-      address(auction),
       ISpotJumpOracle(address(spotJumpOracle))
     );
+
+    manager.setLiquidationModule(auction);
 
     // cash.setWhitWelistManager(address(manager), true);
     manager.setParams(

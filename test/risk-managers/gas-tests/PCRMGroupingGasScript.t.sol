@@ -124,9 +124,10 @@ contract StrikeGroupingGasScript is Script {
       feed,
       cash,
       option,
-      address(auction),
       ISpotJumpOracle(address(spotJumpOracle))
     );
+
+    pcrm.setLiquidationModule(auction);
 
     pcrm.setParams(
       IPCRM.SpotShockParams({

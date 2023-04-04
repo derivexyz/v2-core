@@ -35,7 +35,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
   ///////////////
 
   /// @dev dutch auction contract used to auction liquidatable accounts
-  IDutchAuction public immutable dutchAuction;
+  IDutchAuction public dutchAuction;
 
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
@@ -77,10 +77,8 @@ contract PCRM is BaseManager, IManager, IPCRM {
     ISettlementFeed settlementFeed_,
     ICashAsset cashAsset_,
     IOption option_,
-    address auction_,
     ISpotJumpOracle spotJumpOracle_
   ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_) {
-    dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }
 
@@ -150,6 +148,13 @@ contract PCRM is BaseManager, IManager, IPCRM {
     spotShockParams = _spotShock;
     volShockParams = _volShock;
     portfolioDiscountParams = _discount;
+  }
+
+  /**
+   * @notice Governance determined dutch auction contract for liquidating accounts
+   */
+  function setLiquidationModule(IDutchAuction dutchAuction_) external onlyOwner {
+    dutchAuction = dutchAuction_;
   }
 
   /**

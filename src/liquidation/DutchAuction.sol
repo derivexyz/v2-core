@@ -75,7 +75,7 @@ contract DutchAuction is IDutchAuction, Owned {
   IPCRM public immutable riskManager;
 
   /// @dev The security module that will help pay out for insolvent auctions
-  ISecurityModule public immutable securityModule;
+  ISecurityModule public securityModule;
 
   /// @dev The cash asset address, will be used to socialize losses when there's systematic insolvency
   ICashAsset public immutable cash;
@@ -90,11 +90,17 @@ contract DutchAuction is IDutchAuction, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IPCRM _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Owned() {
+  constructor(IPCRM _riskManager, Accounts _accounts, ICashAsset _cash) Owned() {
     riskManager = _riskManager;
     accounts = _accounts;
-    securityModule = _securityModule;
     cash = _cash;
+  }
+
+  /**
+   * @notice Sets the security module
+   */
+  function setSecurityModule(ISecurityModule _securityModule) external onlyOwner {
+    securityModule = _securityModule;
   }
 
   /**

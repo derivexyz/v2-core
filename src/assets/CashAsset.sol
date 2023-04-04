@@ -96,12 +96,7 @@ contract CashAsset is ICashAsset, Owned {
   //   Constructor   //
   /////////////////////
 
-  constructor(
-    IAccounts _accounts,
-    IERC20Metadata _stableAsset,
-    IInterestRateModel _rateModel,
-    uint _smId
-  ) {
+  constructor(IAccounts _accounts, IERC20Metadata _stableAsset, IInterestRateModel _rateModel, uint _smId) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     accounts = _accounts;
