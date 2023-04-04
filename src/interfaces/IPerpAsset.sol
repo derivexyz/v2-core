@@ -42,6 +42,8 @@ interface IPerpAsset is IAsset {
 
   event ImpactPriceOracleUpdated(address oracle);
 
+  event SpotFeedUpdated(address spotFeed);
+
   ////////////////
   //   Errors   //
   ////////////////

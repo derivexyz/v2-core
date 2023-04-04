@@ -34,7 +34,9 @@ contract UNIT_PerpAssetFunding is Test {
     account = new Accounts("Lyra", "LYRA");
     feed = new MockFeed();
     manager = new MockManager(address(account));
-    perp = new PerpAsset(IAccounts(account), feed);
+    perp = new PerpAsset(IAccounts(account));
+
+    perp.setSpotFeed(feed);
 
     // whitelist keepers
     perp.setWhitelistManager(address(manager), true);
@@ -56,6 +58,17 @@ contract UNIT_PerpAssetFunding is Test {
       assetData: ""
     });
     account.submitTransfer(transfer, "");
+  }
+
+  function testSetSpotFeed() public {
+    perp.setSpotFeed(IChainlinkSpotFeed(address(0)));
+    assertEq(address(perp.spotFeed()), address(0));
+  }
+
+  function testCannotSetSpotFeedFromNonOwner() public {
+    vm.prank(alice);
+    vm.expectRevert(AbstractOwned.OnlyOwner.selector);
+    perp.setSpotFeed(IChainlinkSpotFeed(address(0)));
   }
 
   function testUnWhitelistBot() public {

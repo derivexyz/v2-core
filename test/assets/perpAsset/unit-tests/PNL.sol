@@ -38,7 +38,9 @@ contract UNIT_PerpAssetPNL is Test {
     account = new Accounts("Lyra", "LYRA");
     feed = new MockFeed();
     manager = new MockManager(address(account));
-    perp = new PerpAsset(IAccounts(account), feed);
+    perp = new PerpAsset(IAccounts(account));
+
+    perp.setSpotFeed(feed);
 
     perp.setWhitelistManager(address(manager), true);
     perp.setImpactPriceOracle(keeper);

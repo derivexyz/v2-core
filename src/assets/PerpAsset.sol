@@ -34,7 +34,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-  IChainlinkSpotFeed immutable spotFeed;
+  IChainlinkSpotFeed public spotFeed;
 
   ///@dev mapping from account to position
   mapping(uint => PositionDetail) public positions;
@@ -56,8 +56,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   ///@dev last time aggregated funding rate was updated
   uint public lastFundingPaidAt;
 
-  constructor(IAccounts _accounts, IChainlinkSpotFeed _feed) ManagerWhitelist(_accounts) {
-    spotFeed = _feed;
+  constructor(IAccounts _accounts) ManagerWhitelist(_accounts) {
     lastFundingPaidAt = block.timestamp;
   }
 
@@ -95,8 +94,22 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     needAllowance = true;
   }
 
+  //////////////////////////
+  // Admin Only Functions //
+  //////////////////////////
+
   /**
-   * @notice set impact price oracle address that can update impact prices
+   * @notice Set new spot feed address
+   * @param _spotFeed address of the new spot feed
+   */
+  function setSpotFeed(IChainlinkSpotFeed _spotFeed) external onlyOwner {
+    spotFeed = _spotFeed;
+
+    emit SpotFeedUpdated(address(_spotFeed));
+  }
+
+  /**
+   * @notice Set impact price oracle address that can update impact prices
    * @param _oracle address of the new impact price oracle
    */
   function setImpactPriceOracle(address _oracle) external onlyOwner {
@@ -115,6 +128,10 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
     emit PremiumUpdated(_impactBidDiff, _impactAskDiff, premium);
   }
+
+  //////////////////////
+  // Public Functions //
+  //////////////////////
 
   /**
    * @dev Update funding rate, reflected on aggregatedFundingRate

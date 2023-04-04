@@ -56,7 +56,9 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     rateModel = new MockInterestRateModel(1e18);
     cash = new CashAsset(account, usdc, rateModel, 0, address(0));
 
-    perp = new PerpAsset(account, feed);
+    perp = new PerpAsset(account);
+
+    perp.setSpotFeed(feed);
 
     option = new Option(account, address(feed));
 
