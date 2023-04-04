@@ -139,35 +139,35 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // todo: don't allow borrowing cash
 
-    int perpMargin = _getPerpMargin(accountId, indexPrice);
 
-    int optionMargin = _getOptionMargin(accountId);
+    int netPerpMargin = _getNetPerpMargin(accountId, indexPrice);
+    int netOptionMargin = _getNetOptionMargin(accountId);
 
-    if (cashBalance < perpMargin + optionMargin) {
-      revert PM_PortfolioBelowMargin(accountId, perpMargin);
+    // cash deposited has to cover net option margin + net perp margin
+    if (cashBalance + netPerpMargin + netOptionMargin < 0) {
+      revert PM_PortfolioBelowMargin(accountId, netPerpMargin);
     }
   }
 
   /**
    * @notice get the margin required for the perp position
    * @param accountId Account Id for which to check
+   * @return net margin for a perp position, always negative
    */
-  function _getPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
+  function _getNetPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
     uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
     int marginRequired = notional.multiplyDecimal(perpIMRequirement).toInt256();
-    return marginRequired;
+    return -marginRequired;
   }
 
   /**
-   * @notice get the margin required for the option positions
+   * @notice get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
    */
-  function _getOptionMargin(uint accountId) internal view returns (int margin) {
-    // compute net call
-
+  function _getNetOptionMargin(uint accountId) internal view returns (int margin) {
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
-    margin = _calcSimpleMargin(portfolio);
+    margin = _calcNetBasicMargin(portfolio);
   }
 
   /**
@@ -238,7 +238,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param portfolio Account portfolio.
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+  function _calcNetBasicMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {

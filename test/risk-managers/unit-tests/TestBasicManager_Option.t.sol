@@ -75,14 +75,11 @@ contract UNIT_TestBasicManager_Option is Test {
 
     // set init perp trading parameters
     manager.setPerpMarginRequirements(0.05e18, 0.1e18);
-
-    cash.deposit(aliceAcc, 10000e18);
-    cash.deposit(bobAcc, 10000e18);
   }
 
-  //////////////////////////////////
-  // Isolated Margin Calculations //
-  //////////////////////////////////
+  ////////////////////////////////////////////////////
+  // Isolated Margin Calculations For Naked Options //
+  ////////////////////////////////////////////////////
 
   ///////////////
   // For Calls //
@@ -154,15 +151,16 @@ contract UNIT_TestBasicManager_Option is Test {
     assertEq(mm / 1e18, -121);
   }
 
-  ////////////////////////////////
-  //  Margin Checks for Options //
-  ////////////////////////////////
+  ////////////////////
+  //  Margin Checks //
+  ////////////////////
 
   function testCanTradeOptionWithEnoughMargin() public {
     uint strike = 2000e18;
 
-    // alice short 1 2000-ETH CALL.
-    _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
+    // alice short 1 2000-ETH CALL with 190 USDC as margin
+    cash.deposit(aliceAcc, 190e18);
+    _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);    
   }
 
   function _tradeOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
