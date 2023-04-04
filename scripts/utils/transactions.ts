@@ -7,14 +7,13 @@ import {
   loadExternalContractData,
   loadLyraContractData,
 } from './parseFiles';
-import { etherscanVerification } from './verification';
-import {DeploymentContext} from "../../env/deploymentContext";
+import {DeploymentContext} from "./env/deploymentContext";
 
 
 export function getLyraContract(dc: DeploymentContext, contractName: string): Contract {
   const data = loadLyraContractData(dc, contractName);
 
-  return new Contract(data.target.address, data.source.abi, dc.deployer);
+  return new Contract(data.address, data.abi, dc.deployer);
 }
 
 export function getExternalContract(
@@ -23,12 +22,12 @@ export function getExternalContract(
   contractAbiOverride?: string
 ): Contract {
   const data = loadExternalContractData(dc, contractName);
-  let abi = data.source.abi;
+  let abi = data.abi;
   if (contractAbiOverride) {
     const overrideData = loadExternalContractData(dc, contractAbiOverride);
-    abi = overrideData.source.abi;
+    abi = overrideData.abi;
   }
-  return new Contract(data.target.address, abi, dc.deployer);
+  return new Contract(data.address, abi, dc.deployer);
 }
 
 export async function deployLyraContract(
@@ -37,7 +36,7 @@ export async function deployLyraContract(
   source: string,
   args: any[]
 ): Promise<Contract> {
-  const contract = await deployContract(name, dc.deployer, undefined, ...args);
+  const contract = await deployContract(source, dc.deployer, undefined, ...args);
   addContract(dc, name, source, contract);
   return contract;
 }
@@ -57,11 +56,11 @@ export async function deployLyraContractWithLibraries(
 export async function deployExternalContract(
   dc: DeploymentContext,
   name: string,
-  contractName: string,
+  source: string,
   args: any[]
 ): Promise<Contract> {
-  const contract = await deployContract(contractName, dc.deployer, undefined, ...args);
-  addExternalContract(dc, name, contractName, contract);
+  const contract = await deployContract(source, dc.deployer, undefined, ...args);
+  addExternalContract(dc, name, source, contract);
   return contract;
 }
 
@@ -133,25 +132,11 @@ export async function deployContract(
   console.log('= Size:', contract.deployTransaction.data.length);
   console.log('='.repeat(24));
 
-  if (!(global as any).pending) {
-    (global as any).pending = [];
-  }
-  (global as any).pending.push(etherscanVerification(contract.address, [...args]));
+  // if (!(global as any).pending) {
+  //   (global as any).pending = [];
+  // }
+  // (global as any).pending.push(etherscanVerification(contract.address, [...args]));
   return contract;
-}
-
-export async function populateLyraFunction(
-  dc: DeploymentContext,
-  contractName: string,
-  fn: string,
-  args: any[],
-  signer?: Signer,
-): Promise<PopulatedTransaction> {
-  let contract = getLyraContract(dc, contractName);
-  if (signer) {
-    contract = contract.connect(signer);
-  }
-  return contract.populateTransaction[fn](args);
 }
 
 export async function executeLyraFunction(

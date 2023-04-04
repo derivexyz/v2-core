@@ -10,7 +10,7 @@ export type NetworkEnv = {
 }
 
 export function getAllDeploymentEnvs() {
-  const rootPath = path.join(__dirname, '../../deployments');
+  const rootPath = path.join(__dirname, '../../../deployments');
   const res: {[key:string]: NetworkEnv} = {};
   for (const i of readdirSync(rootPath, { withFileTypes: true })) {
     if (i.isDirectory()) {

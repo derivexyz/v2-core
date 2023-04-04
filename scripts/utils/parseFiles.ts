@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { Contract } from 'ethers';
 import fs, {readdirSync} from 'fs';
 import path from 'path';
-import {DeploymentContext} from "../../env/deploymentContext";
+import {DeploymentContext} from "./env/deploymentContext";
 
 export type ContractData =  {
   contractName: string;
@@ -27,7 +27,7 @@ export function getContractData(c: Contract, name: string, source: string, abi: 
 }
 
 export function getContractArtifact(contractName: string) {
-  let artifactPath = path.join(__dirname, '../../../artifacts');
+  let artifactPath = path.join(__dirname, '../../artifacts');
   const found = getContractArtifactRecursive(contractName, artifactPath);
 
   if (found.length == 0) {
@@ -86,7 +86,7 @@ export function addContract(
 }
 
 function saveFile(network: string, data: ContractData, isExternal?: boolean) {
-  const rootPath = path.join(__dirname, "../../..", "deployments",  network);
+  const rootPath = path.join(__dirname, "../..", "deployments",  network);
 
   let filePath = path.join(rootPath, 'contracts');
 
@@ -111,16 +111,16 @@ function saveFile(network: string, data: ContractData, isExternal?: boolean) {
 export function loadLyraContractData(
   dc: DeploymentContext,
   name: string,
-) {
-  const filePath = path.join(__dirname, "../../../deployments",  dc.network, 'contracts', `${name}.json`);
+): ContractData {
+  const filePath = path.join(__dirname, "../../deployments",  dc.network, 'contracts', `${name}.json`);
   return require(filePath);
 }
 
 export function loadExternalContractData(
   dc: DeploymentContext,
   name: string,
-) {
-  const filePath = path.join(__dirname, "../../../deployments",  dc.network, 'contracts/external', `${name}.json`);
+): ContractData {
+  const filePath = path.join(__dirname, "../../deployments",  dc.network, 'contracts/external', `${name}.json`);
   return require(filePath);
 }
 

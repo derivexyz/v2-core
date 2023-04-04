@@ -6,6 +6,7 @@
   "author": "Lyra",
   "license": "MIT",
   "scripts": {
+    "build": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts"
   },
   "devDependencies": {

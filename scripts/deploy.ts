@@ -1,8 +1,8 @@
-import {getDeploymentContext} from "./env/deploymentContext";
+import {getDeploymentContext} from "./utils/env/deploymentContext";
 import {deploySystem} from "./deploy/deploySystem";
 
 async function main() {
-  const dc = getDeploymentContext();
+  const dc = await getDeploymentContext();
   await deploySystem(dc);
 }
 
