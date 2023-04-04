@@ -163,6 +163,26 @@ contract UNIT_TestBasicManager_Option is Test {
     _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
   }
 
+  function testCanTradeSpreadWithMaxLoss() public {
+    uint aliceShortLeg = 1500e18;
+    uint aliceLongLeg = 1600e18;
+
+    // alice short 1 2000-ETH CALL with 190 USDC as margin
+    cash.deposit(aliceAcc, 100e18);
+    _tradeSpread(aliceAcc, bobAcc, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  function testCanTradeZeroStrikeSpreadWithMaxLoss() public {
+    uint aliceShortLeg = 0;
+    uint aliceLongLeg = 400e18;
+    cash.deposit(aliceAcc, 400e18);
+    _tradeSpread(aliceAcc, bobAcc, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  /////////////
+  // Helpers //
+  /////////////
+
   function _tradeOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
@@ -173,6 +193,27 @@ contract UNIT_TestBasicManager_Option is Test {
       assetData: ""
     });
     account.submitTransfer(transfer, "");
+  }
+
+  function _tradeSpread(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike1, uint strike2, bool isCall) internal {
+    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2); 
+    transfers[0] = AccountStructs.AssetTransfer({
+      fromAcc: fromAcc,
+      toAcc: toAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(_expiry, strike1, isCall),
+      amount: amount,
+      assetData: ""
+    });
+    transfers[1] = AccountStructs.AssetTransfer({
+      fromAcc: toAcc,
+      toAcc: fromAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(_expiry, strike2, isCall),
+      amount: amount,
+      assetData: ""
+    });
+    account.submitTransfers(transfers, "");
   }
 
   function _getCashBalance(uint acc) public view returns (int) {

@@ -243,7 +243,7 @@ contract BasicManager is IBasicManager, BaseManager {
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       netCalls += portfolio.strikes[i].calls;
     }
-    bool lossBounded = netCalls > 0;
+    bool lossBounded = netCalls >= 0;
 
     int maxLossMargin = 0;
     int isolatedMargin = 0;
@@ -276,7 +276,11 @@ contract BasicManager is IBasicManager, BaseManager {
       maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), maxLossMargin);
     }
 
-    return SignedMath.min(isolatedMargin, maxLossMargin);
+    if (lossBounded) {
+      return SignedMath.max(isolatedMargin, maxLossMargin);
+    }
+
+    return isolatedMargin;
   }
 
   function getIsolatedMargin(uint strike, uint expiry, int calls, int puts, bool isMaintenance)
