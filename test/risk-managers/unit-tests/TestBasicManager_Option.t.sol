@@ -184,7 +184,9 @@ contract UNIT_TestBasicManager_Option is Test {
 
     cash.deposit(aliceAcc, 100e18);
     // shorting 1 wei more than long, breaking max loss and default to isolated margin
-    vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100));
+    vm.expectRevert(
+      abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100)
+    );
     _tradeSpread(aliceAcc, bobAcc, 1e18 + 1, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
