@@ -84,9 +84,6 @@ contract IntegrationTestBase is Test {
     // nonce: 2 => Deploy USDC
     usdc = new MockERC20("USDC", "USDC");
 
-    address addr2 = _predictAddress(address(this), 2);
-    assertEq(addr2, address(usdc));
-
     // function call: doesn't increase deployment nonce
     usdc.setDecimals(6);
 
@@ -102,8 +99,7 @@ contract IntegrationTestBase is Test {
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // nonce: 6 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 10);
-    cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
+    cash = new CashAsset(accounts, usdc, rateModel, smAcc);
 
     // nonce: 7 => Deploy OptionAsset
     option = new Option(accounts, address(feed));
@@ -116,19 +112,20 @@ contract IntegrationTestBase is Test {
     skip(7 days); // skip to make jumps stale
 
     // nonce: 9 => Deploy Manager
-    pcrm = new PCRM(accounts, feed, feed, cash, option, auctionAddr, spotJumpOracle);
+    pcrm = new PCRM(accounts, feed, feed, cash, option, spotJumpOracle);
 
     // nonce: 10 => Deploy Auction
-    // todo: remove IPCRM(address())
-    address smAddr = _predictAddress(address(this), 11);
-    auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
+    auction = new DutchAuction(pcrm, accounts, cash);
 
-    assertEq(address(auction), auctionAddr);
+    cash.setLiquidationModule(address(auction));
+
+    pcrm.setLiquidationModule(auction);
+    pcrm.setSpotJumpOracle(spotJumpOracle);
 
     // nonce: 11 => Deploy SM
     securityModule = new SecurityModule(accounts, cash, usdc, IPCRM(address(pcrm)));
 
-    assertEq(securityModule.accountId(), smAcc);
+    auction.setSecurityModule(securityModule);
   }
 
   function _finishContractSetups() internal {
@@ -370,36 +367,6 @@ contract IntegrationTestBase is Test {
       secBetweenSteps: 1, // cool down
       liquidatorFeeRate: 0.05e18
     });
-  }
-
-  /**
-   * @dev predict the address of the next contract being deployed
-   */
-  function _predictAddress(address _origin, uint _nonce) public pure returns (address) {
-    if (_nonce == 0x00) {
-      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80))))));
-    }
-    if (_nonce <= 0x7f) {
-      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, uint8(_nonce))))));
-    }
-    if (_nonce <= 0xff) {
-      return address(
-        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd7), bytes1(0x94), _origin, bytes1(0x81), uint8(_nonce)))))
-      );
-    }
-    if (_nonce <= 0xffff) {
-      return address(
-        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd8), bytes1(0x94), _origin, bytes1(0x82), uint16(_nonce)))))
-      );
-    }
-    if (_nonce <= 0xffffff) {
-      return address(
-        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd9), bytes1(0x94), _origin, bytes1(0x83), uint24(_nonce)))))
-      );
-    }
-    return address(
-      uint160(uint(keccak256(abi.encodePacked(bytes1(0xda), bytes1(0x94), _origin, bytes1(0x84), uint32(_nonce)))))
-    );
   }
 
   /**

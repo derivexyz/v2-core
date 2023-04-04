@@ -27,9 +27,8 @@ contract PCRMTester is PCRM {
     IChainlinkSpotFeed feed_,
     ICashAsset cashAsset_,
     IOption option_,
-    address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) PCRM(accounts_, feed_, feed_, cashAsset_, option_, auction_, spotJumpOracle_) {}
+  ) PCRM(accounts_, feed_, feed_, cashAsset_, option_, spotJumpOracle_) {}
 
   function applyTimeWeightToSpotShocks(
     uint spot,
@@ -83,7 +82,6 @@ contract UNIT_TimeWeightingPCRM is Test {
       feed,
       ICashAsset(address(cash)),
       option,
-      address(0),
       ISpotJumpOracle(address(spotJumpOracle))
     );
 

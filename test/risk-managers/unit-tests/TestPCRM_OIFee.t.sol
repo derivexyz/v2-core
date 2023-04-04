@@ -48,7 +48,6 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
       feed,
       ICashAsset(address(cash)),
       option,
-      address(0), // auction
       ISpotJumpOracle(address(spotJumpOracle))
     );
 

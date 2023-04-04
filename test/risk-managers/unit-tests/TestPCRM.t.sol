@@ -57,9 +57,10 @@ contract UNIT_TestPCRM is Test {
       feed,
       ICashAsset(address(cash)),
       option,
-      address(auction),
       ISpotJumpOracle(address(spotJumpOracle))
     );
+
+    manager.setLiquidationModule(auction);
 
     // cash.setWhitWelistManager(address(manager), true);
     manager.setParams(

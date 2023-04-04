@@ -60,8 +60,7 @@ contract UNIT_TestStartAuction is Test {
     /* Risk Manager */
     manager = new MockIPCRM(address(account));
 
-    dutchAuction =
-      dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
+    dutchAuction = dutchAuction = new DutchAuction(manager, account, ICashAsset(address(0)));
 
     dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
       stepInterval: 1,
