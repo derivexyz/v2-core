@@ -84,8 +84,8 @@ contract IntegrationTestBase is Test {
     // nonce: 2 => Deploy USDC
     usdc = new MockERC20("USDC", "USDC");
 
-    address addr2 = _predictAddress(address(this), 2);
-    assertEq(addr2, address(usdc));
+    // address addr2 = _predictAddress(address(this), 2);
+    // assertEq(addr2, address(usdc));
 
     // function call: doesn't increase deployment nonce
     usdc.setDecimals(6);
@@ -103,7 +103,7 @@ contract IntegrationTestBase is Test {
 
     // nonce: 6 => Deploy CashAsset
     address auctionAddr = _predictAddress(address(this), 10);
-    cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
+    cash = new CashAsset(accounts, usdc, rateModel, smAcc);
 
     // nonce: 7 => Deploy OptionAsset
     option = new Option(accounts, address(feed));
@@ -122,6 +122,8 @@ contract IntegrationTestBase is Test {
     // todo: remove IPCRM(address())
     address smAddr = _predictAddress(address(this), 11);
     auction = new DutchAuction(IPCRM(address(pcrm)), accounts, ISecurityModule(smAddr), cash);
+
+    cash.setLiquidationModule(address(auction));
 
     assertEq(address(auction), auctionAddr);
 

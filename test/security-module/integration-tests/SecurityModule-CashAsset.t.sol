@@ -51,7 +51,8 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     uint smAccountId;
 
     // security
-    cashAsset = new CashAsset(accounts, usdc, rateModel, smAccountId, liquidation);
+    cashAsset = new CashAsset(accounts, usdc, rateModel, smAccountId);
+    cashAsset.setLiquidationModule(liquidation);
 
     cashAsset.setWhitelistManager(address(manager), true);
 

@@ -37,7 +37,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     smAccount = account.createAccount(address(this), manager);
 
     rateModel = new MockInterestRateModel(0.5 * 1e18);
-    cashAsset = new CashAsset(account, usdc, rateModel, smAccount, address(0));
+    cashAsset = new CashAsset(account, usdc, rateModel, smAccount);
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
 

@@ -113,7 +113,8 @@ contract StrikeGroupingGasScript is Script {
     uint optimalUtil = 0.6 * 1e18;
     InterestRateModel rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)), rateModel, 0, address(auction));
+    cash = new CashAsset(IAccounts(account), IERC20Metadata(address(stable)), rateModel, 0);
+    cash.setLiquidationModule(address(auction));
 
     spotJumpOracle = new MockSpotJumpOracle();
 

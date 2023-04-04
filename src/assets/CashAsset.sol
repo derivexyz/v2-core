@@ -43,7 +43,7 @@ contract CashAsset is ICashAsset, Owned {
   IInterestRateModel public rateModel;
 
   ///@dev The address of liquidation module, which can trigger call of insolvency
-  address public immutable liquidationModule;
+  address public liquidationModule;
 
   ///@dev The security module accountId used for collecting a portion of fees
   uint public immutable smId;
@@ -100,8 +100,7 @@ contract CashAsset is ICashAsset, Owned {
     IAccounts _accounts,
     IERC20Metadata _stableAsset,
     IInterestRateModel _rateModel,
-    uint _smId,
-    address _liquidationModule
+    uint _smId
   ) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
@@ -110,12 +109,15 @@ contract CashAsset is ICashAsset, Owned {
 
     lastTimestamp = block.timestamp;
     rateModel = _rateModel;
-    liquidationModule = _liquidationModule;
   }
 
   //////////////////////////////
   //   Owner-only Functions   //
   //////////////////////////////
+
+  function setLiquidationModule(address _liquidationModule) external onlyOwner {
+    liquidationModule = _liquidationModule;
+  }
 
   /**
    * @notice Whitelist or un-whitelist a manager

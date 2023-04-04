@@ -31,7 +31,8 @@ contract UNIT_CashAssetWithdrawFee is Test {
     usdc = new MockERC20("USDC", "USDC");
 
     rateModel = new MockInterestRateModel(1e18);
-    cashAsset = new CashAsset(accounts, usdc, rateModel, 0, liquidationModule);
+    cashAsset = new CashAsset(accounts, usdc, rateModel, 0);
+    cashAsset.setLiquidationModule(liquidationModule);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
