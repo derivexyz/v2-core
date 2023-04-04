@@ -1,12 +1,9 @@
-import { ethers } from "hardhat";
+import {getDeploymentContext} from "./env/deploymentContext";
+import {deploySystem} from "./deploy/deploySystem";
 
 async function main() {
-  const Accounts = await ethers.getContractFactory("Accounts");
-  const account = await Accounts.deploy("Lyra Protocol Accounts", "LPA");
-
-  console.log(
-    `Accounts deployed to ${account.address}`
-  );
+  const dc = getDeploymentContext();
+  await deploySystem(dc);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

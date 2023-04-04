@@ -1,6 +1,8 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-foundry";
+import "@nomiclabs/hardhat-etherscan";
+import { getHardhatNetworkConfigs} from "./scripts/env/loadEnv";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -11,6 +13,12 @@ const config: HardhatUserConfig = {
         runs: 200,
       },
     },
+  },
+  networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
+    ...getHardhatNetworkConfigs(),
   },
 };
 
