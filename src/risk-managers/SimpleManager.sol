@@ -66,9 +66,9 @@ contract SimpleManager is ISimpleManager, BaseManager {
   int public baselineOptionMM = 0.1e18;
 
   /// @dev todo: add descriptions
-  int public minStaticMMMargin = 0.125e18;
+  int public minStaticMMMargin = 0.08e18;
 
-  int public minStaticIMMargin = 0.08e18;
+  int public minStaticIMMargin = 0.125e18;
 
   // int public minPutMarginInStrike = 0.5e18;
 
@@ -328,8 +328,6 @@ contract SimpleManager is ISimpleManager, BaseManager {
       // strike.toInt256().multiplyDecimal(minPutMarginInStrike)
       .multiplyDecimal(amount);
 
-    // int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
-
     return extraMargin;
   }
 
@@ -350,10 +348,6 @@ contract SimpleManager is ISimpleManager, BaseManager {
 
     int extraMargin =
       SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index).multiplyDecimal(amount);
-
-    console2.log("extraMargin", extraMargin);
-
-    // int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
 
     return extraMargin;
   }

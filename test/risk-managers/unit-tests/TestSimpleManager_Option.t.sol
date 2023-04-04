@@ -29,6 +29,7 @@ contract UNIT_TestSimpleManager_Option is Test {
   MockPerp perp;
   MockOption option;
   MockOptionPricing pricing;
+  uint expiry;
 
   MockFeed feed;
 
@@ -65,7 +66,9 @@ contract UNIT_TestSimpleManager_Option is Test {
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
 
-    feed.setSpot(1500e18);
+    // set a future price that will be used for 90 day options
+    expiry = block.timestamp + 91 days;
+    feed.setSpot(1513e18);
 
     usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
@@ -81,47 +84,44 @@ contract UNIT_TestSimpleManager_Option is Test {
   // Isolated Margin Calculations //
   //////////////////////////////////
 
-  function testGetIsolatedMarginLongOTMCall() public {
-    // long option result in 0 margin (no borrowing power)
-    uint expiry = block.timestamp + 91 days;
+  ///////////////
+  // For Calls //
+  ///////////////
 
-    uint strike = 2000e18;
-
-    pricing.setMockMTM(strike, expiry, true, 1.65e18);
-
-    // margin of shorting 1 call
-    int margin = manager.getIsolatedMargin(strike, expiry, 1e18, 1e18, false);
-
-    assertEq(margin, 0);
-  }
-
-  function testGetIsolatedMarginLongITMCall() public {
-    uint expiry = block.timestamp + 91 days;
-
-    uint strike = 1000e18;
-    pricing.setMockMTM(strike, expiry, true, 500.08e18);
-
-    // long 1 call
-    int margin = manager.getIsolatedMargin(strike, expiry, 1e18, 0, false);
-    assertEq(margin, 0);
+  function testGetIsolatedMarginLongCall() public {
+    int im = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, false);
+    int mm = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, false);
+    assertEq(im, 0);
+    assertEq(mm, 0);
   }
 
   function testGetIsolatedMarginShortATMCall() public {
-    uint expiry = block.timestamp + 91 days;
-
-    uint strike = 400e18;
-
-    pricing.setMockMTM(strike, expiry, true, 1100e18);
-
-    // margin of shorting 1 call
-    int margin = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
-
-    console2.log("OTM call (IM)", margin);
-
-    console2.log("OTM call (MM)", manager.getIsolatedMargin(strike, expiry, -1e18, 0, true));
-
-    // assertEq(margin, 0); // -801.65
+    uint strike = 1500e18;
+    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
+    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    assertEq(im / 1e18, -315);
+    assertEq(mm / 1e18, -164);
   }
+
+  function testGetIsolatedMarginShortITMCall() public {
+    uint strike = 400e18;
+    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
+    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    assertEq(im / 1e18, -1415);
+    assertEq(mm / 1e18, -1264);
+  }
+
+  function testGetIsolatedMarginShortOTMCall() public {
+    uint strike = 3000e18;
+    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
+    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    assertEq(im / 1e18, -189);
+    assertEq(mm / 1e18, -121);
+  }
+
+  //////////////
+  // For Puts //
+  //////////////
 
   ////////////////////////////////
   //  Margin Checks for Options //
