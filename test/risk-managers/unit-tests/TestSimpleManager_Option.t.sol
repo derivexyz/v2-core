@@ -169,12 +169,12 @@ contract UNIT_TestSimpleManager_Option is Test {
     _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
   }
 
-  function _tradeOption(uint fromAcc, uint toAcc, int amount, uint expiry, uint strike, bool isCall) internal {
+  function _tradeOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
-      subId: OptionEncoding.toSubId(expiry, strike, isCall),
+      subId: OptionEncoding.toSubId(_expiry, strike, isCall),
       amount: amount,
       assetData: ""
     });

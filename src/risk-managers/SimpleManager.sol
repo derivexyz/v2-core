@@ -139,7 +139,7 @@ contract SimpleManager is ISimpleManager, BaseManager {
 
     int perpMargin = _getPerpMargin(accountId, indexPrice);
 
-    int optionMargin = _getOptionMargin(accountId, indexPrice);
+    int optionMargin = _getOptionMargin(accountId);
 
     if (cashBalance < perpMargin + optionMargin) {
       revert PM_PortfolioBelowMargin(accountId, perpMargin);
@@ -160,12 +160,12 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @notice get the margin required for the option positions
    * @param accountId Account Id for which to check
    */
-  function _getOptionMargin(uint accountId, int indexPrice) internal view returns (int margin) {
+  function _getOptionMargin(uint accountId) internal view returns (int margin) {
     // compute net call
 
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
-    margin = _calcSimpleMargin(portfolio, indexPrice);
+    margin = _calcSimpleMargin(portfolio);
   }
 
   /**
@@ -240,11 +240,7 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @param portfolio Account portfolio.
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio, int indexPrice)
-    internal
-    view
-    returns (int margin)
-  {
+  function _calcSimpleMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
@@ -315,21 +311,14 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @dev calculate isolated margin requirement for a put option
    * @dev expected to return a negative number
    */
-  function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance)
-    internal
-    view
-    returns (int)
-  {
+  function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
     int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
     int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
 
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike).divideDecimal(index);
 
-    int margin = SignedMath.min(
-        SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index), 
-        strike
-      )
+    int margin = SignedMath.min(SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index), strike)
       .multiplyDecimal(amount);
 
     return margin;
@@ -339,19 +328,14 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @dev calculate isolated margin requirement for a call option
    * @param amount expected a negative number, representing amount of shorts
    */
-  function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance)
-    internal
-    view
-    returns (int)
-  {
+  function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
     int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
     int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike - index).divideDecimal(index);
 
-    int margin =
-      SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index).multiplyDecimal(amount);
+    int margin = SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index).multiplyDecimal(amount);
 
     return margin;
   }
