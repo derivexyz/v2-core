@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "./IManager.sol";
 import "./AccountStructs.sol";
 
-interface ISimpleManager is AccountStructs, IManager {
+interface IBasicManager is AccountStructs, IManager {
   ///////////////
   //   Errors  //
   ///////////////
@@ -22,6 +22,8 @@ interface ISimpleManager is AccountStructs, IManager {
   ///////////////////
   //    Events     //
   ///////////////////
+
+  event PricingModuleSet(address pricingModule);
 
   event AccountSettled(uint accountId, int netCash);
 

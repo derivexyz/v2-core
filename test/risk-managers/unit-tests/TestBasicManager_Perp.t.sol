@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/SimpleManager.sol";
+import "src/risk-managers/BasicManager.sol";
 
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
@@ -14,10 +14,11 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
+import "test/shared/mocks/MockOptionPricing.sol";
 
-contract UNIT_TestSimpleManager is Test {
+contract UNIT_TestBasicManager is Test {
   Accounts account;
-  SimpleManager manager;
+  BasicManager manager;
   MockAsset cash;
   MockERC20 usdc;
   MockPerp perp;
@@ -43,7 +44,7 @@ contract UNIT_TestSimpleManager is Test {
 
     feed = new MockFeed();
 
-    manager = new SimpleManager(
+    manager = new BasicManager(
       account,
       ICashAsset(address(cash)),
       option,
@@ -60,6 +61,16 @@ contract UNIT_TestSimpleManager is Test {
     usdc.approve(address(cash), type(uint).max);
   }
 
+  /////////////
+  // Setters //
+  /////////////
+
+  function testSetPricingModule() public {
+    MockOptionPricing pricing = new MockOptionPricing();
+    manager.setPricingModule(pricing);
+    assertEq(address(manager.pricing()), address(pricing));
+  }
+
   ////////////////////
   // Manager Change //
   ////////////////////
@@ -69,7 +80,7 @@ contract UNIT_TestSimpleManager is Test {
 
     // first fails the change
     vm.startPrank(alice);
-    vm.expectRevert(ISimpleManager.PM_NotWhitelistManager.selector);
+    vm.expectRevert(IBasicManager.PM_NotWhitelistManager.selector);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
 
@@ -98,20 +109,20 @@ contract UNIT_TestSimpleManager is Test {
   }
 
   function testCannotSetPerpMMLargerThanIM() public {
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidPerpMarginRequirement() public {
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(0.1e18, 0);
 
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(0.1e18, 1e18);
 
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1e18, 0.1e18);
-    vm.expectRevert(ISimpleManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(0, 0.1e18);
   }
 
@@ -121,7 +132,7 @@ contract UNIT_TestSimpleManager is Test {
 
   function testCannotHaveUnrecognizedAsset() public {
     MockAsset badAsset = new MockAsset(usdc, account, true);
-    vm.expectRevert(ISimpleManager.PM_UnsupportedAsset.selector);
+    vm.expectRevert(IBasicManager.PM_UnsupportedAsset.selector);
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
@@ -152,7 +163,7 @@ contract UNIT_TestSimpleManager is Test {
     cash.deposit(bobAcc, 1499e18);
 
     // trade cannot go through
-    vm.expectRevert(abi.encodeWithSelector(ISimpleManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
+    vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
     vm.stopPrank();
   }

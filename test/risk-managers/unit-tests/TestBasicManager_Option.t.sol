@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/SimpleManager.sol";
+import "src/risk-managers/BasicManager.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
@@ -21,9 +21,9 @@ import "test/shared/mocks/MockOptionPricing.sol";
 /**
  * Focusing on the margin rules for options
  */
-contract UNIT_TestSimpleManager_Option is Test {
+contract UNIT_TestBasicManager_Option is Test {
   Accounts account;
-  SimpleManager manager;
+  BasicManager manager;
   MockAsset cash;
   MockERC20 usdc;
   MockPerp perp;
@@ -53,7 +53,7 @@ contract UNIT_TestSimpleManager_Option is Test {
 
     pricing = new MockOptionPricing();
 
-    manager = new SimpleManager(
+    manager = new BasicManager(
       account,
       ICashAsset(address(cash)),
       option,

@@ -17,19 +17,19 @@ import "src/interfaces/IBaseManager.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IOptionPricing.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
-import "src/interfaces/ISimpleManager.sol";
+import "src/interfaces/IBasicManager.sol";
 
 import "./BaseManager.sol";
 
 import "forge-std/console2.sol";
 
 /**
- * @title SimpleManager
+ * @title BasicManager
  * @author Lyra
  * @notice Risk Manager that margin in perp, cash and option in isolation.
  */
 
-contract SimpleManager is ISimpleManager, BaseManager {
+contract BasicManager is IBasicManager, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -99,6 +99,16 @@ contract SimpleManager is ISimpleManager, BaseManager {
     perpIMRequirement = _imRequirement;
 
     emit MarginRequirementsSet(_mmRequirement, _imRequirement);
+  }
+
+  /**
+   * @notice Set the pricing module
+   * @param _pricing new pricing module
+   */
+  function setPricingModule(IOptionPricing _pricing) external onlyOwner {
+    pricing = IOptionPricing(_pricing);
+
+    emit PricingModuleSet(address(_pricing));
   }
 
   ////////////////////////
