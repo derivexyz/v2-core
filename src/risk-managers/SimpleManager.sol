@@ -70,8 +70,6 @@ contract SimpleManager is ISimpleManager, BaseManager {
 
   int public minStaticIMMargin = 0.125e18;
 
-  // int public minPutMarginInStrike = 0.5e18;
-
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -259,6 +257,8 @@ contract SimpleManager is ISimpleManager, BaseManager {
     bool zeroStrikeOwned;
 
     for (uint i; i < portfolio.numStrikesHeld; i++) {
+      int forwardPrice = feed.getFuturePrice(portfolio.expiry).toInt256();
+
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
         uint scenarioPrice = portfolio.strikes[i].strike;
@@ -271,10 +271,9 @@ contract SimpleManager is ISimpleManager, BaseManager {
       // calculate isolated margin for this strike, aggregate to isolatedMargin
       isolatedMargin += _getIsolatedMargin(
         portfolio.strikes[i].strike,
-        portfolio.expiry,
         portfolio.strikes[i].calls,
         portfolio.strikes[i].puts,
-        indexPrice,
+        forwardPrice,
         false // is maintenance = false
       );
     }
@@ -292,20 +291,23 @@ contract SimpleManager is ISimpleManager, BaseManager {
     view
     returns (int)
   {
-    int indexPrice = feed.getSpot().toInt256();
-    return _getIsolatedMargin(strike, expiry, calls, puts, indexPrice, isMaintenance);
+    int forwardPrice = feed.getFuturePrice(expiry).toInt256();
+    return _getIsolatedMargin(strike, calls, puts, forwardPrice, isMaintenance);
   }
 
-  function _getIsolatedMargin(uint strike, uint expiry, int calls, int puts, int indexPrice, bool isMaintenance)
+  /**
+   * @dev calculate isolated margin requirement for a given number of calls and puts
+   */
+  function _getIsolatedMargin(uint strike, int calls, int puts, int forwardPrice, bool isMaintenance)
     internal
     view
     returns (int margin)
   {
     if (calls < 0) {
-      margin += _getIsolatedMarginForCall(strike, expiry, calls, indexPrice, isMaintenance);
+      margin += _getIsolatedMarginForCall(strike.toInt256(), calls, forwardPrice, isMaintenance);
     }
     if (puts < 0) {
-      margin += _getIsolatedMarginForPut(strike, expiry, puts, indexPrice, isMaintenance);
+      margin += _getIsolatedMarginForPut(strike.toInt256(), puts, forwardPrice, isMaintenance);
     }
   }
 
@@ -313,7 +315,7 @@ contract SimpleManager is ISimpleManager, BaseManager {
    * @dev calculate isolated margin requirement for a put option
    * @dev expected to return a negative number
    */
-  function _getIsolatedMarginForPut(uint strike, uint expiry, int amount, int index, bool isMaintenance)
+  function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance)
     internal
     view
     returns (int)
@@ -322,20 +324,22 @@ contract SimpleManager is ISimpleManager, BaseManager {
     int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
 
     // this ratio become negative if option is ITM
-    int otmRatio = (index - strike.toInt256()).divideDecimal(index);
+    int otmRatio = (index - strike).divideDecimal(index);
 
-    int extraMargin = SignedMath.min(SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index), 0)
-      // strike.toInt256().multiplyDecimal(minPutMarginInStrike)
+    int margin = SignedMath.min(
+        SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index), 
+        strike
+      )
       .multiplyDecimal(amount);
 
-    return extraMargin;
+    return margin;
   }
 
   /**
    * @dev calculate isolated margin requirement for a call option
    * @param amount expected a negative number, representing amount of shorts
    */
-  function _getIsolatedMarginForCall(uint strike, uint expiry, int amount, int index, bool isMaintenance)
+  function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance)
     internal
     view
     returns (int)
@@ -344,12 +348,12 @@ contract SimpleManager is ISimpleManager, BaseManager {
     int minStaticMargin = isMaintenance ? minStaticMMMargin : minStaticIMMargin;
 
     // this ratio become negative if option is ITM
-    int otmRatio = (strike.toInt256() - index).divideDecimal(index);
+    int otmRatio = (strike - index).divideDecimal(index);
 
-    int extraMargin =
+    int margin =
       SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index).multiplyDecimal(amount);
 
-    return extraMargin;
+    return margin;
   }
 
   /**

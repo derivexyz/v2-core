@@ -90,7 +90,7 @@ contract UNIT_TestSimpleManager_Option is Test {
 
   function testGetIsolatedMarginLongCall() public {
     int im = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, false);
-    int mm = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, false);
+    int mm = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, true);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
@@ -122,6 +122,37 @@ contract UNIT_TestSimpleManager_Option is Test {
   //////////////
   // For Puts //
   //////////////
+
+  function testGetIsolatedMarginLongPut() public {
+    int im = manager.getIsolatedMargin(1000e18, expiry, 0, 1e18, false);
+    int mm = manager.getIsolatedMargin(1000e18, expiry, 0, 1e18, true);
+    assertEq(im, 0);
+    assertEq(mm, 0);
+  }
+
+  function testGetIsolatedMarginShortATMPut() public {
+    uint strike = 1500e18;
+    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
+    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    assertEq(im / 1e18, -289);
+    assertEq(mm / 1e18, -138);
+  }
+
+  function testGetIsolatedMarginShortITMPut() public {
+    uint strike = 3000e18;
+    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
+    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    assertEq(im / 1e18, -1789);
+    assertEq(mm / 1e18, -1638);
+  }
+
+  function testGetIsolatedMarginShortOTMPut() public {
+    uint strike = 400e18;
+    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
+    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    assertEq(im / 1e18, -189);
+    assertEq(mm / 1e18, -121);
+  }
 
   ////////////////////////////////
   //  Margin Checks for Options //
