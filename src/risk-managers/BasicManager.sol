@@ -59,15 +59,16 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Option Maintenance margin requirement: min percentage of spot + mark to market
   int public optionStaticMMRequirement = 0.075e18;
 
-  /// @dev Base line for initial margin
+  /// @dev Base line for initial margin. See getIsolatedMargin for how it is used in the formula
   int public baselineOptionIM = 0.2e18;
 
-  /// @dev Base line for maintenance margin
+  /// @dev Base line for maintenance margin. See getIsolatedMargin for how it is used in the formula
   int public baselineOptionMM = 0.1e18;
 
-  /// @dev todo: add descriptions
+  /// @dev Min static Ratio for maintenance margin. See getIsolatedMargin for how it is used in the formula
   int public minStaticMMRatio = 0.08e18;
 
+  /// @dev Min static Ratio for initial margin. See getIsolatedMargin for how it is used in the formula
   int public minStaticIMRatio = 0.125e18;
 
   ////////////////////////
