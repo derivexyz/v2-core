@@ -103,7 +103,7 @@ contract UNIT_TestSimpleManager_Option is Test {
 
     // long 1 call
     int margin = manager.getIsolatedMargin(strike, expiry, 1e18, 0, false);
-    assertEq(margin, 0); 
+    assertEq(margin, 0);
   }
 
   function testGetIsolatedMarginShortATMCall() public {

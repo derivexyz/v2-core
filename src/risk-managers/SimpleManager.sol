@@ -324,11 +324,9 @@ contract SimpleManager is ISimpleManager, BaseManager {
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike.toInt256()).divideDecimal(index);
 
-    int extraMargin = SignedMath.min(
-      SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index),
-      0
+    int extraMargin = SignedMath.min(SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index), 0)
       // strike.toInt256().multiplyDecimal(minPutMarginInStrike)
-    ).multiplyDecimal(amount);
+      .multiplyDecimal(amount);
 
     // int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
 
@@ -353,7 +351,7 @@ contract SimpleManager is ISimpleManager, BaseManager {
     int extraMargin =
       SignedMath.max(baseLine - otmRatio, minStaticMargin).multiplyDecimal(index).multiplyDecimal(amount);
 
-    console2.log('extraMargin', extraMargin);
+    console2.log("extraMargin", extraMargin);
 
     // int mtm = pricing.getMTM(strike, expiry, true).toInt256().multiplyDecimal(amount);
 
