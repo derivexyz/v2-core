@@ -163,7 +163,7 @@ contract UNIT_TestBasicManager is Test {
     cash.deposit(bobAcc, 1499e18);
 
     // trade cannot go through
-    vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, -1500e18));
+    vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
     vm.stopPrank();
   }

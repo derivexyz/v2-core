@@ -144,7 +144,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // cash deposited has to cover net option margin + net perp margin
     if (cashBalance + netPerpMargin + netOptionMargin < 0) {
-      revert PM_PortfolioBelowMargin(accountId, netPerpMargin);
+      revert PM_PortfolioBelowMargin(accountId, -(netPerpMargin + netOptionMargin));
     }
   }
 

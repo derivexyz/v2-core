@@ -167,16 +167,25 @@ contract UNIT_TestBasicManager_Option is Test {
     uint aliceShortLeg = 1500e18;
     uint aliceLongLeg = 1600e18;
 
-    // alice short 1 2000-ETH CALL with 190 USDC as margin
     cash.deposit(aliceAcc, 100e18);
-    _tradeSpread(aliceAcc, bobAcc, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+    _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
   function testCanTradeZeroStrikeSpreadWithMaxLoss() public {
     uint aliceShortLeg = 0;
     uint aliceLongLeg = 400e18;
     cash.deposit(aliceAcc, 400e18);
-    _tradeSpread(aliceAcc, bobAcc, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+    _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  function testDefaultToIsolatedMarginIfUnbounded() public {
+    uint aliceShortLeg = 1500e18;
+    uint aliceLongLeg = 1600e18;
+
+    cash.deposit(aliceAcc, 100e18);
+    // shorting 1 wei more than long, breaking max loss and default to isolated margin
+    vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100));
+    _tradeSpread(aliceAcc, bobAcc, 1e18 + 1, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
   /////////////
@@ -195,16 +204,23 @@ contract UNIT_TestBasicManager_Option is Test {
     account.submitTransfer(transfer, "");
   }
 
-  function _tradeSpread(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike1, uint strike2, bool isCall)
-    internal
-  {
+  function _tradeSpread(
+    uint fromAcc,
+    uint toAcc,
+    int shortAmount,
+    int longAmount,
+    uint _expiry,
+    uint strike1,
+    uint strike2,
+    bool isCall
+  ) internal {
     AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
     transfers[0] = AccountStructs.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
       subId: OptionEncoding.toSubId(_expiry, strike1, isCall),
-      amount: amount,
+      amount: shortAmount,
       assetData: ""
     });
     transfers[1] = AccountStructs.AssetTransfer({
@@ -212,7 +228,7 @@ contract UNIT_TestBasicManager_Option is Test {
       toAcc: fromAcc,
       asset: option,
       subId: OptionEncoding.toSubId(_expiry, strike2, isCall),
-      amount: amount,
+      amount: longAmount,
       assetData: ""
     });
     account.submitTransfers(transfers, "");
