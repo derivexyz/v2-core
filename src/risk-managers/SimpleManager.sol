@@ -101,14 +101,6 @@ contract SimpleManager is ISimpleManager, BaseManager {
     emit MarginRequirementsSet(_mmRequirement, _imRequirement);
   }
 
-  /**
-   * @notice Set the pricing module
-   * @param _pricing new pricing module
-   */
-  function setPricingModule(IOptionPricing _pricing) external onlyOwner {
-    pricing = IOptionPricing(_pricing);
-  }
-
   ////////////////////////
   //   Account Hooks   //
   ////////////////////////
@@ -220,13 +212,9 @@ contract SimpleManager is ISimpleManager, BaseManager {
       if (address(currentAsset.asset) == address(option)) {
         _addOption(portfolio, currentAsset);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
-        if (currentAsset.balance < 0) revert("Negative Cash");
-
         portfolio.cash = currentAsset.balance;
       } else if (currentAsset.asset == perp) {
         portfolio.perp = currentAsset.balance;
-      } else {
-        revert("WHAT");
       }
     }
   }

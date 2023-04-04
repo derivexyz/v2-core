@@ -159,11 +159,7 @@ contract UNIT_TestSimpleManager_Option is Test {
   ////////////////////////////////
 
   function testCanTradeOptionWithEnoughMargin() public {
-    uint expiry = block.timestamp + 7 days;
-
     uint strike = 2000e18;
-
-    pricing.setMockMTM(strike, expiry, true, 1.65e18);
 
     // alice short 1 2000-ETH CALL.
     _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
