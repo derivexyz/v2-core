@@ -110,6 +110,10 @@ contract CashAsset is ICashAsset, Owned {
   //   Owner-only Functions   //
   //////////////////////////////
 
+  /**
+   * @notice Allows owner to set the liquidation module address
+   * @param _liquidationModule Liquidation module address
+   */
   function setLiquidationModule(address _liquidationModule) external onlyOwner {
     liquidationModule = _liquidationModule;
   }
