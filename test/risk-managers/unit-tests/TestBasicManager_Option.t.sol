@@ -160,7 +160,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
     // alice short 1 2000-ETH CALL with 190 USDC as margin
     cash.deposit(aliceAcc, 190e18);
-    _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);    
+    _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
   }
 
   function _tradeOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {

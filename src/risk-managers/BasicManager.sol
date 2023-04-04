@@ -139,7 +139,6 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // todo: don't allow borrowing cash
 
-
     int netPerpMargin = _getNetPerpMargin(accountId, indexPrice);
     int netOptionMargin = _getNetOptionMargin(accountId);
 
