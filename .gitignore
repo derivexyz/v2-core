@@ -21,3 +21,4 @@ cache
 artifacts
 cache_hardhat
 artifacts_hardhat
+scripts/input/31337/*.json

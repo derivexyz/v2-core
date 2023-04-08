@@ -84,6 +84,8 @@ contract Deploy is Script {
     console2.log("Option deployed: ", address(option));
 
     // todo: finish all deployments
+
+    // todo: write to a file similar to how deploy-mocks does it
   }
 
   function _getDefaultInterestRateModel() internal pure returns (
