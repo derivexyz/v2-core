@@ -48,7 +48,7 @@ contract Deploy is Script {
     
 
     bytes memory usdcAddrRaw = vm.parseJson(file);
-    json memory config = abi.decode(usdcAddrRaw, (ConfigJson));
+    ConfigJson memory config = abi.decode(usdcAddrRaw, (ConfigJson));
 
     usdc = IERC20Metadata(config.usdc);
     aggregator = AggregatorV3Interface(config.ethAggregator);
@@ -57,13 +57,14 @@ contract Deploy is Script {
   ///@dev read input from json 
   ///@dev standard path: scripts/input/{chainId}/{input}.json, as defined in 
   ////    https://book.getfoundry.sh/tutorials/best-practices?highlight=script#scripts
-  function readInput(string memory input) internal returns (string memory) {
+  function readInput(string memory input) internal view returns (string memory) {
     string memory inputDir = string.concat(vm.projectRoot(), "/scripts/input/");
     string memory chainDir = string.concat(vm.toString(block.chainid), "/");
     string memory file = string.concat(input, ".json");
     return vm.readFile(string.concat(inputDir, chainDir, file));
   }
 
+  /// @dev deploy and initiate contracts
   function deployAndInitiateContracts(IERC20Metadata usdc, AggregatorV3Interface aggregator) internal {
     
     Accounts accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
@@ -85,7 +86,7 @@ contract Deploy is Script {
     // todo: finish all deployments
   }
 
-  function _getDefaultInterestRateModel() internal returns (
+  function _getDefaultInterestRateModel() internal pure returns (
     uint minRate, 
     uint rateMultiplier, 
     uint highRateMultiplier, 
