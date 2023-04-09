@@ -1,21 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
 import "test/feeds/mocks/MockV3Aggregator.sol";
 import "test/shared/mocks/MockERC20.sol";
-
 import "forge-std/console2.sol";
-import "forge-std/Script.sol";
 
-struct ConfigJson { 
-  address ethAggregator; 
-  address usdc;
-}
+import "./Utils.sol";
+import "./types.sol";
 
-contract Deploy is Script {
 
-  uint smAcc = 1;
+contract DeployMocks is Utils {
 
   /// @dev main function
   function run() external {
@@ -36,24 +30,9 @@ contract Deploy is Script {
     string memory finalObj = vm.serializeAddress(objKey, "usdc", address(usdc));
 
     // build path
-    string memory inputDir = string.concat(vm.projectRoot(), "/scripts/input/");
-    string memory chainDir = string.concat(vm.toString(block.chainid), "/");
-    string memory file = string.concat("config.json");
-    vm.writeJson(finalObj, string.concat(inputDir, chainDir, file));
-
-    console2.log("local mocked addresses stored at ", string.concat(inputDir, chainDir, file));
+    writeToInput("config", finalObj);
 
     vm.stopBroadcast();
-  }
-
-  ///@dev read input from json 
-  ///@dev standard path: scripts/input/{chainId}/{input}.json, as defined in 
-  ////    https://book.getfoundry.sh/tutorials/best-practices?highlight=script#scripts
-  function readInput(string memory input) internal view returns (string memory) {
-    string memory inputDir = string.concat(vm.projectRoot(), "/scripts/input/");
-    string memory chainDir = string.concat(vm.toString(block.chainid), "/");
-    string memory file = string.concat(input, ".json");
-    return vm.readFile(string.concat(inputDir, chainDir, file));
   }
 
   

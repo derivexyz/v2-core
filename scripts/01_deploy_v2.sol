@@ -15,10 +15,11 @@ import "chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "forge-std/console2.sol";
-import "forge-std/Script.sol";
+import "./utils.sol";
+import "./types.sol";
 
 
-contract Deploy is Script {
+contract Deploy is Utils {
 
   uint smAcc = 1;
 
@@ -37,16 +38,10 @@ contract Deploy is Script {
     vm.stopBroadcast();
   }
 
-  struct ConfigJson { 
-    address ethAggregator; 
-    address usdc;
-  }
-
   /// @dev get config from current chainId
   function _getConfig() internal returns (IERC20Metadata usdc, AggregatorV3Interface aggregator) {
     string memory file = readInput("config");
     
-
     bytes memory usdcAddrRaw = vm.parseJson(file);
     ConfigJson memory config = abi.decode(usdcAddrRaw, (ConfigJson));
 
@@ -54,15 +49,6 @@ contract Deploy is Script {
     aggregator = AggregatorV3Interface(config.ethAggregator);
   }
 
-  ///@dev read input from json 
-  ///@dev standard path: scripts/input/{chainId}/{input}.json, as defined in 
-  ////    https://book.getfoundry.sh/tutorials/best-practices?highlight=script#scripts
-  function readInput(string memory input) internal view returns (string memory) {
-    string memory inputDir = string.concat(vm.projectRoot(), "/scripts/input/");
-    string memory chainDir = string.concat(vm.toString(block.chainid), "/");
-    string memory file = string.concat(input, ".json");
-    return vm.readFile(string.concat(inputDir, chainDir, file));
-  }
 
   /// @dev deploy and initiate contracts
   function deployAndInitiateContracts(IERC20Metadata usdc, AggregatorV3Interface aggregator) internal {
@@ -86,6 +72,7 @@ contract Deploy is Script {
     // todo: finish all deployments
 
     // todo: write to a file similar to how deploy-mocks does it
+    // writeToDeployments()
   }
 
   function _getDefaultInterestRateModel() internal pure returns (
