@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { Contract } from 'ethers';
 import fs, {readdirSync} from 'fs';
 import path from 'path';
-import {DeploymentContext} from "./env/deploymentContext";
+import {SignerContext} from "../env/signerContext";
 
 export type ContractData =  {
   contractName: string;
@@ -27,7 +27,7 @@ export function getContractData(c: Contract, name: string, source: string, abi: 
 }
 
 export function getContractArtifact(contractName: string) {
-  let artifactPath = path.join(__dirname, '../../artifacts');
+  let artifactPath = path.join(__dirname, '../../../artifacts');
   const found = getContractArtifactRecursive(contractName, artifactPath);
 
   if (found.length == 0) {
@@ -64,29 +64,29 @@ export function getContractArtifactRecursive(contractName: string, artifactPath:
 
 
 export function addExternalContract(
-  dc: DeploymentContext,
+  sc: SignerContext,
   name: string,
   source: string,
   contract: Contract,
 ) {
   const artifact = getContractArtifact(source);
   let data: ContractData = getContractData(contract, name, source, artifact.abi, { ...artifact, abi: undefined });
-  saveFile(dc.network, data, true);
+  saveFile(sc.network, data, true);
 }
 
 export function addContract(
-  dc: DeploymentContext,
+  sc: SignerContext,
   name: string,
   source: string,
   contract: Contract,
 ) {
   const artifact = getContractArtifact(source);
   let data: ContractData = getContractData(contract, name, source, artifact.abi, { ...artifact, abi: undefined });
-  saveFile(dc.network, data);
+  saveFile(sc.network, data);
 }
 
 function saveFile(network: string, data: ContractData, isExternal?: boolean) {
-  const rootPath = path.join(__dirname, "../..", "deployments",  network);
+  const rootPath = path.join(__dirname, "../../..", "deployments",  network);
 
   let filePath = path.join(rootPath, 'contracts');
 
@@ -109,18 +109,18 @@ function saveFile(network: string, data: ContractData, isExternal?: boolean) {
 }
 
 export function loadLyraContractData(
-  dc: DeploymentContext,
+  sc: SignerContext,
   name: string,
 ): ContractData {
-  const filePath = path.join(__dirname, "../../deployments",  dc.network, 'contracts', `${name}.json`);
+  const filePath = path.join(__dirname, "../../../deployments",  sc.network, 'contracts', `${name}.json`);
   return require(filePath);
 }
 
 export function loadExternalContractData(
-  dc: DeploymentContext,
+  sc: SignerContext,
   name: string,
 ): ContractData {
-  const filePath = path.join(__dirname, "../../deployments",  dc.network, 'contracts/external', `${name}.json`);
+  const filePath = path.join(__dirname, "../../../deployments",  sc.network, 'contracts/external', `${name}.json`);
   return require(filePath);
 }
 

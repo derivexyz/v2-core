@@ -3,28 +3,29 @@ import {getAllDeploymentEnvs} from "./loadEnv";
 import {ethers, Signer, Wallet} from "ethers";
 import {JsonRpcProvider, JsonRpcSigner} from "@ethersproject/providers";
 
-export type DeploymentContext = {
+export type SignerContext = {
   network: string;
-  deployer: Signer;
+  signer: Signer;
   provider: JsonRpcProvider;
-  deployerAddress: string;
+  signerAddress: string;
 };
 
-export async function getDeploymentContext(): Promise<DeploymentContext> {
+export async function getSignerContext(signerId: number = 0): Promise<SignerContext> {
   const network = hre.network.name;
   const envs = getAllDeploymentEnvs();
   const provider = new ethers.providers.JsonRpcProvider(envs[network].RPC_URL);
-  const PK = envs[network].PRIVATE_KEY;
-  let deployer: Signer;
+
+  const PK = envs[network][`PRIVATE_KEY${signerId == 0 ? '': `_${signerId}`}`];
+  let signer: Signer;
   if (PK == undefined) {
-    deployer = provider.getSigner(0);
+    signer = provider.getSigner(signerId);
   } else {
-    deployer = new ethers.Wallet(PK, provider);
+    signer = new ethers.Wallet(PK, provider);
   }
   return {
-    deployer,
+    signer,
     network,
     provider,
-    deployerAddress: await deployer.getAddress()
+    signerAddress: await signer.getAddress()
   }
 }

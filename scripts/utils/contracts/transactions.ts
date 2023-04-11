@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { Contract, ContractTransaction, PopulatedTransaction, Signer } from 'ethers';
+import {BigNumber, Contract, ContractTransaction, PopulatedTransaction, Signer} from 'ethers';
 import { ethers } from 'hardhat';
 import {
   addContract,
@@ -7,87 +7,66 @@ import {
   loadExternalContractData,
   loadLyraContractData,
 } from './parseFiles';
-import {DeploymentContext} from "./env/deploymentContext";
+import {SignerContext} from "../env/signerContext";
 
 
-export function getLyraContract(dc: DeploymentContext, contractName: string): Contract {
-  const data = loadLyraContractData(dc, contractName);
-
-  return new Contract(data.address, data.abi, dc.deployer);
+export function getLyraContract(sc: SignerContext, contractName: string): Contract {
+  const data = loadLyraContractData(sc, contractName);
+  return new Contract(data.address, data.abi, sc.signer);
 }
 
 export function getExternalContract(
-  dc: DeploymentContext,
+  sc: SignerContext,
   contractName: string,
   contractAbiOverride?: string
 ): Contract {
-  const data = loadExternalContractData(dc, contractName);
+  const data = loadExternalContractData(sc, contractName);
   let abi = data.abi;
   if (contractAbiOverride) {
-    const overrideData = loadExternalContractData(dc, contractAbiOverride);
+    const overrideData = loadExternalContractData(sc, contractAbiOverride);
     abi = overrideData.abi;
   }
-  return new Contract(data.address, abi, dc.deployer);
+  return new Contract(data.address, abi, sc.signer);
 }
 
 export async function deployLyraContract(
-  dc: DeploymentContext,
+  sc: SignerContext,
   name: string,
   source: string,
-  args: any[]
+  args: any[],
+  overrides: any = {},
+  libs: any = {},
 ): Promise<Contract> {
-  const contract = await deployContract(source, dc.deployer, undefined, ...args);
-  addContract(dc, name, source, contract);
-  return contract;
-}
-
-export async function deployLyraContractWithLibraries(
-  dc: DeploymentContext,
-  name: string,
-  source: string,
-  libs: any,
-  args: any[]
-): Promise<Contract> {
-  const contract = await deployContract(name, dc.deployer, libs, ...args);
-  addContract(dc, name, source, contract);
+  const contract = await deployContract(source, sc.signer, args, overrides, libs);
+  addContract(sc, name, source, contract);
   return contract;
 }
 
 export async function deployExternalContract(
-  dc: DeploymentContext,
+  sc: SignerContext,
   name: string,
   source: string,
-  args: any[]
+  args: any[],
+  overrides: any = {},
+  libs: any = {},
 ): Promise<Contract> {
-  const contract = await deployContract(source, dc.deployer, undefined, ...args);
-  addExternalContract(dc, name, source, contract);
-  return contract;
-}
-
-export async function deployExternalContractWithLibraries(
-  dc: DeploymentContext,
-  name: string,
-  contractName: string,
-  libs: any,
-  args: any[]
-): Promise<Contract> {
-  const contract = await deployContract(contractName, dc.deployer, libs, ...args);
-  addExternalContract(dc, name, contractName, contract);
+  const contract = await deployContract(source, sc.signer, args, overrides, libs);
+  addExternalContract(sc, name, source, contract);
   return contract;
 }
 
 export async function deployContract(
   contractName: string,
   deployer: Signer,
+  args: any[],
+  overrides: any,
   libs?: any,
-  ...args: any
 ): Promise<Contract> {
   console.log('='.repeat(24));
   console.log(`= Deploying ${contractName}`);
   console.log(`= With args: ${args}`);
   let contract: Contract;
   let count = 0;
-  console.log('args', args);
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
@@ -99,8 +78,9 @@ export async function deployContract(
         .connect(deployer)
         .deploy(...args, {
           // TODO: remove hardcoded variables
-          gasLimit: 15000000,
-          gasPrice: 1000000000,
+          gasLimit: 15_000_000,
+          // gasPrice: toBN('2', 9),
+          ...overrides
         });
 
       console.log('= Address:', chalk.green(contract.address));
@@ -140,46 +120,45 @@ export async function deployContract(
 }
 
 export async function executeLyraFunction(
-  dc: DeploymentContext,
+  sc: SignerContext,
   contractName: string,
   fn: string,
   args: any[],
-  signer?: Signer,
   overrides?: any,
 ): Promise<ContractTransaction> {
-  const contract = getLyraContract(dc, contractName);
-  return await execute(signer ? contract.connect(signer) : contract, fn, args, overrides);
+  const contract = getLyraContract(sc, contractName);
+  return await execute(contract, fn, args, overrides);
 }
 
 export async function executeExternalFunction(
-  dc: DeploymentContext,
+  sc: SignerContext,
   contractName: string,
   fn: string,
   args: any[],
-  signer?: Signer,
+  overrides: any = {}
 ): Promise<ContractTransaction> {
-  const contract = getExternalContract(dc, contractName);
-  return await execute(signer ? contract.connect(signer) : contract, fn, args);
+  const contract = getExternalContract(sc, contractName);
+  return await execute(contract, fn, args, overrides);
 }
 
 export async function callLyraFunction(
-  dc: DeploymentContext,
+  sc: SignerContext,
   contractName: string,
   fn: string,
   args: any[],
 ): Promise<any> {
-  const contract = getLyraContract(dc, contractName);
+  const contract = getLyraContract(sc, contractName);
   console.log(chalk.grey(`Calling ${fn} on ${contract.address} with args ${args}`));
   return await contract[fn](...args);
 }
 
 export async function callExternalFunction(
-  dc: DeploymentContext,
+  sc: SignerContext,
   contractName: string,
   fn: string,
   args: any[],
 ): Promise<any> {
-  const contract = getExternalContract(dc, contractName);
+  const contract = getExternalContract(sc, contractName);
   console.log(chalk.grey(`Calling ${fn} on ${contract.address} with args ${args}`));
   return await contract[fn](...args);
 }
@@ -190,7 +169,11 @@ export async function execute(c: Contract, fn: string, args: any[], overrides: a
     try {
       console.log(chalk.grey(`Executing ${fn} on ${c.address} with args ${JSON.stringify(args)}`));
       // TODO: remove hardcoded gasLimit
-      overrides = { gasLimit: 15000000, ...overrides };
+      overrides = {
+        gasLimit: 15_000_000,
+        // gasPrice: toBN('2', 9),
+        ...overrides
+      };
       const tx = await c[fn](...args, overrides);
       while ((await ethers.provider.getTransactionReceipt(tx.hash)) == null) {
         await sleep(100);
