@@ -167,6 +167,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   /**
    * @dev manager-only function to clear pnl and funding during settlement
+   * @param accountId Account Id to settle
    */
   function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {
     if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
@@ -186,6 +187,8 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    */
   function setPremium(int _premium) external onlyImpactPriceOracle {
     premium = _premium;
+
+    _updateFundingRate();
 
     emit PremiumUpdated(premium);
   }
@@ -214,7 +217,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   /**
    * @notice This function update funding for an account and apply to position detail
-   * @param accountId Account Id
+   * @param accountId Account Id to apply funding
    */
   function applyFundingOnAccount(uint accountId) external {
     _applyFundingOnAccount(accountId);
@@ -227,6 +230,8 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * S is the size of the position (positive if long, negative if short)
    * P is the oracle (index) price for the market
    * R is the funding rate (as a 1-hour rate)
+   * 
+   * @param accountId Account Id to apply funding
    */
   function _applyFundingOnAccount(uint accountId) internal {
     int size = _getPositionSize(accountId);
