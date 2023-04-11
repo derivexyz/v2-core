@@ -86,6 +86,16 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(perp.premium(), 2e18);
   }
 
+  function testSetInterestRate() public {
+    perp.setStaticInterestRate(0.000125e16); // 0.0125%
+    assertEq(perp.staticInterestRate(), 0.000125e16);
+  }
+
+  function testCannotSetNegativeRate() public {
+    vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
+    perp.setStaticInterestRate(-0.000001e16);
+  }
+
   function testPositiveFundingRate() public {
     _setPricesPositiveFunding();
 

@@ -38,7 +38,9 @@ interface IPerpAsset is IAsset {
   //   Events     //
   //////////////////
 
-  event PremiumUpdated(int premium);
+  event PremiumUpdated(int128 premium);
+
+  event StaticUnderlyingInterestRateUpdated(int128 premium);
 
   event ImpactPriceOracleUpdated(address oracle);
 
@@ -66,8 +68,8 @@ interface IPerpAsset is IAsset {
   /// @dev Impact price must be positive
   error PA_ImpactPriceMustBePositive();
 
-  /// @dev Ask price must be higher than bid price
-  error PA_InvalidImpactPrices();
+  /// @dev Invalid static interest rate for base asset
+  error PA_InvalidStaticInterestRate();
 
   /// @dev Caller is not the impact price oracle address
   error PA_OnlyImpactPriceOracle();

@@ -42,13 +42,15 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   ///@dev mapping from address to whitelisted to push impacted prices
   address public impactPriceOracle;
 
-  /// @dev max hourly funding rate, 0.75%
+  /// @dev max hourly funding rate
   int immutable maxRatePerHour;
-  /// @dev min hourly funding rate, -0.75%
+  /// @dev min hourly funding rate
   int immutable minRatePerHour;
 
-  /// @dev current premium rate
-  int public premium;
+  /// @dev current hourly premium rate
+  int128 public premium;
+  /// @dev static hourly interest rate to borrow base asset, used to calculate funding
+  int128 public staticInterestRate;
 
   ///@dev latest aggregated funding rate
   int public aggregatedFundingRate;
@@ -85,6 +87,17 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     impactPriceOracle = _oracle;
 
     emit ImpactPriceOracleUpdated(_oracle);
+  }
+
+  /**
+   * @notice Set new static interest rate
+   * @param _staticInterestRate New static interest rate for the asset. Should be lower than
+   */
+  function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
+    if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
+    staticInterestRate = _staticInterestRate;
+
+    emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
   }
 
   //////////////////////////
@@ -185,7 +198,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @notice This function is called by the keeper to update premium used for funding rate
    * @param _premium premium rate: should be impacted bid diff - impact ask diff, 18 decimals
    */
-  function setPremium(int _premium) external onlyImpactPriceOracle {
+  function setPremium(int128 _premium) external onlyImpactPriceOracle {
     premium = _premium;
 
     _updateFundingRate();
@@ -230,7 +243,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * S is the size of the position (positive if long, negative if short)
    * P is the oracle (index) price for the market
    * R is the funding rate (as a 1-hour rate)
-   * 
+   *
    * @param accountId Account Id to apply funding
    */
   function _applyFundingOnAccount(uint accountId) internal {
@@ -294,7 +307,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @dev Get the hourly funding rate based on index price and impact market prices
    */
   function _getFundingRate() internal view returns (int fundingRate) {
-    fundingRate = premium / 8; // todo: plus interest rate
+    fundingRate = int(premium / 8 + staticInterestRate);
 
     // capped at max / min
     if (fundingRate > maxRatePerHour) {
