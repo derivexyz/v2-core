@@ -64,7 +64,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   //////////////////////////
-  // Admin Only Functions //
+  // Owner Only Functions //
   //////////////////////////
 
   /**
@@ -85,17 +85,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     impactPriceOracle = _oracle;
 
     emit ImpactPriceOracleUpdated(_oracle);
-  }
-
-  /**
-   * @notice This function is called by the keeper to update bid prices
-   * @param _impactBidDiff  max(IBP - index, 0) / spot, in percentage
-   * @param _impactBidDiff  max(index - IAP, 0) / spot, in percentage
-   */
-  function setPremium(uint _impactBidDiff, uint _impactAskDiff) external onlyImpactPriceOracle {
-    premium = _impactBidDiff.toInt256() - _impactAskDiff.toInt256();
-
-    emit PremiumUpdated(_impactBidDiff, _impactAskDiff, premium);
   }
 
   //////////////////////////
@@ -132,28 +121,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     needAllowance = true;
   }
 
-  //////////////////////
-  // Public Functions //
-  //////////////////////
-
-  /**
-   * @dev Update funding rate, reflected on aggregatedFundingRate
-   */
-  function updateFundingRate() external {
-    _updateFundingRate();
-  }
-
-  /**
-   * @dev Update funding rate, reflected on aggregatedFundingRate
-   */
-  function _updateFundingRate() internal {
-    int fundingRate = _getFundingRate();
-
-    int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
-
-    aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
-  }
-
   /**
    * @dev update the entry price if an account is increased
    *      and update the PnL if the position is closed
@@ -187,11 +154,88 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
+   * @notice Triggered when a user wants to migrate an account to a new manager
+   * @dev block update with non-whitelisted manager
+   */
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+    _checkManager(address(newManager));
+  }
+
+  //////////////////////////
+  // Privileged Functions //
+  //////////////////////////
+
+  /**
+   * @dev manager-only function to clear pnl and funding during settlement
+   */
+  function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {
+    if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
+
+    PositionDetail storage position = positions[accountId];
+    netCash = position.funding + position.pnl;
+
+    position.funding = 0;
+    position.pnl = 0;
+
+    return netCash;
+  }
+
+  /**
+   * @notice This function is called by the keeper to update premium used for funding rate
+   * @param _premium premium rate: should be impacted bid diff - impact ask diff, 18 decimals
+   */
+  function setPremium(int _premium) external onlyImpactPriceOracle {
+    premium = _premium;
+
+    emit PremiumUpdated(premium);
+  }
+
+  //////////////////////
+  // Public Functions //
+  //////////////////////
+
+  /**
+   * @dev Update funding rate, reflected on aggregatedFundingRate
+   */
+  function updateFundingRate() external {
+    _updateFundingRate();
+  }
+
+  /**
+   * @dev Update funding rate, reflected on aggregatedFundingRate
+   */
+  function _updateFundingRate() internal {
+    int fundingRate = _getFundingRate();
+
+    int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
+
+    aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
+  }
+
+  /**
    * @notice This function update funding for an account and apply to position detail
    * @param accountId Account Id
    */
   function applyFundingOnAccount(uint accountId) external {
     _applyFundingOnAccount(accountId);
+  }
+
+  /**
+   * Funding per Hour = (-1) × S × P × R
+   * Where:
+   *
+   * S is the size of the position (positive if long, negative if short)
+   * P is the oracle (index) price for the market
+   * R is the funding rate (as a 1-hour rate)
+   */
+  function _applyFundingOnAccount(uint accountId) internal {
+    int size = _getPositionSize(accountId);
+    int indexPrice = spotFeed.getSpot().toInt256();
+
+    int funding = _getUnrealizedFunding(accountId, size, indexPrice);
+    // apply funding
+    positions[accountId].funding += funding;
+    positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
   }
 
   /**
@@ -212,39 +256,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    */
   function getFundingRate() external view returns (int) {
     return _getFundingRate();
-  }
-
-  /**
-   * @dev manager-only function to clear pnl and funding during settlement
-   */
-  function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {
-    if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
-
-    PositionDetail storage position = positions[accountId];
-    netCash = position.funding + position.pnl;
-
-    position.funding = 0;
-    position.pnl = 0;
-
-    return netCash;
-  }
-
-  /**
-   * Funding per Hour = (-1) × S × P × R
-   * Where:
-   *
-   * S is the size of the position (positive if long, negative if short)
-   * P is the oracle (index) price for the market
-   * R is the funding rate (as a 1-hour rate)
-   */
-  function _applyFundingOnAccount(uint accountId) internal {
-    int size = _getPositionSize(accountId);
-    int indexPrice = spotFeed.getSpot().toInt256();
-
-    int funding = _getUnrealizedFunding(accountId, size, indexPrice);
-    // apply funding
-    positions[accountId].funding += funding;
-    positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
   }
 
   /**
@@ -286,14 +297,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     } else if (fundingRate < minRatePerHour) {
       fundingRate = minRatePerHour;
     }
-  }
-
-  /**
-   * @notice Triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
-   */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
-    _checkManager(address(newManager));
   }
 
   //////////////////////////

@@ -75,13 +75,14 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setImpactPriceOracle(address(this));
     vm.prank(keeper);
     vm.expectRevert(IPerpAsset.PA_OnlyImpactPriceOracle.selector);
-    perp.setPremium(1e18, 2e18);
+    perp.setPremium(1e18);
   }
 
-  function testSetImpactPrices() public {
-    // set impact price
+  function testSetPremium() public {
+    // set premium price
     vm.prank(keeper);
-    perp.setPremium(2e18, 0e18);
+
+    perp.setPremium(2e18);
     assertEq(perp.premium(), 2e18);
   }
 
@@ -94,7 +95,7 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testPositiveFundingRateCapped() public {
     vm.prank(keeper);
-    perp.setPremium(5e18, 0);
+    perp.setPremium(5e18);
 
     assertEq(perp.getFundingRate(), 0.0075e18);
   }
@@ -108,7 +109,7 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testNegativeFundingRateCapped() public {
     vm.prank(keeper);
-    perp.setPremium(0, 1e18);
+    perp.setPremium(-1e18);
 
     assertEq(perp.getFundingRate(), -0.0075e18);
   }
@@ -174,7 +175,7 @@ contract UNIT_PerpAssetFunding is Test {
     feed.setSpot(spot);
 
     vm.prank(keeper);
-    perp.setPremium(0.004e18, 0);
+    perp.setPremium(0.004e18);
   }
 
   function _setPricesNegativeFunding() internal {
@@ -182,6 +183,6 @@ contract UNIT_PerpAssetFunding is Test {
     feed.setSpot(spot);
 
     vm.prank(keeper);
-    perp.setPremium(0, 0.004e18);
+    perp.setPremium(-0.004e18);
   }
 }
