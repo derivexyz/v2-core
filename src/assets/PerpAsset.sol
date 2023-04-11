@@ -64,40 +64,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   //////////////////////////
-  //    Account Hooks     //
-  //////////////////////////
-
-  /**
-   * @notice This function is called by the Account contract whenever a PerpAsset balance is modified.
-   * @dev    This function will close existing positions, and open new ones based on new entry price
-   * @param adjustment Details about adjustment, containing account, subId, amount
-   * @param preBalance Balance before adjustment
-   * @param manager The manager contract that will verify the end state
-   * @return finalBalance The final balance to be recorded in the account
-   * @return needAllowance Return true if this adjustment should assume allowance in Account
-   */
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
-    uint, /*tradeId*/
-    int preBalance,
-    IManager manager,
-    address /*caller*/
-  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
-    _checkManager(address(manager));
-
-    // calculate funding from the last period, reflect changes in position.funding
-    _updateFundingRate();
-
-    // update average entry price
-    _updateEntryPriceAndPnl(adjustment.acc, preBalance, adjustment.amount);
-
-    // have a new position
-    finalBalance = preBalance + adjustment.amount;
-
-    needAllowance = true;
-  }
-
-  //////////////////////////
   // Admin Only Functions //
   //////////////////////////
 
@@ -130,6 +96,40 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     premium = _impactBidDiff.toInt256() - _impactAskDiff.toInt256();
 
     emit PremiumUpdated(_impactBidDiff, _impactAskDiff, premium);
+  }
+
+  //////////////////////////
+  //    Account Hooks     //
+  //////////////////////////
+
+  /**
+   * @notice This function is called by the Account contract whenever a PerpAsset balance is modified.
+   * @dev    This function will close existing positions, and open new ones based on new entry price
+   * @param adjustment Details about adjustment, containing account, subId, amount
+   * @param preBalance Balance before adjustment
+   * @param manager The manager contract that will verify the end state
+   * @return finalBalance The final balance to be recorded in the account
+   * @return needAllowance Return true if this adjustment should assume allowance in Account
+   */
+  function handleAdjustment(
+    AccountStructs.AssetAdjustment memory adjustment,
+    uint, /*tradeId*/
+    int preBalance,
+    IManager manager,
+    address /*caller*/
+  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+    _checkManager(address(manager));
+
+    // calculate funding from the last period, reflect changes in position.funding
+    _updateFundingRate();
+
+    // update average entry price
+    _updateEntryPriceAndPnl(adjustment.acc, preBalance, adjustment.amount);
+
+    // have a new position
+    finalBalance = preBalance + adjustment.amount;
+
+    needAllowance = true;
   }
 
   //////////////////////
