@@ -16,10 +16,12 @@ import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
 
+import "test/auction/mocks/MockCashAsset.sol";
+
 contract UNIT_TestBasicManager is Test {
   Accounts account;
   BasicManager manager;
-  MockAsset cash;
+  MockCash cash;
   MockERC20 usdc;
   MockPerp perp;
   MockOption option;
@@ -36,7 +38,7 @@ contract UNIT_TestBasicManager is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockAsset(usdc, account, true);
+    cash = new MockCash(usdc, account);
 
     perp = new MockPerp(account);
 

@@ -112,9 +112,19 @@ contract BasicManager is IBasicManager, BaseManager {
     emit PricingModuleSet(address(_pricing));
   }
 
-  ////////////////////////
+  ///////////////////////
   //   Account Hooks   //
-  ////////////////////////
+  ///////////////////////
+
+  /**
+   * @notice Ensures new manager is valid.
+   * @param newManager IManager to change account to.
+   */
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+    if (!whitelistedManager[address(newManager)]) {
+      revert PM_NotWhitelistManager();
+    }
+  }
 
   /**
    * @notice Ensures asset is valid and Max Loss margin is met.
@@ -122,14 +132,16 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
-    view
     override
   {
     // check the call is from Accounts
 
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != perp && assetDeltas[i].asset != option) {
+      if (assetDeltas[i].asset == perp) {
+        // settle perps if the user has perp position
+        _settlePerps(accountId);
+      } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
         revert PM_UnsupportedAsset();
       }
     }
@@ -147,6 +159,24 @@ contract BasicManager is IBasicManager, BaseManager {
     if (cashBalance + netPerpMargin + netOptionMargin < 0) {
       revert PM_PortfolioBelowMargin(accountId, -(netPerpMargin + netOptionMargin));
     }
+  }
+
+  /**
+   * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
+   */
+  function _settlePerps(uint accountId) internal {
+    perp.updateFundingRate();
+    perp.applyFundingOnAccount(accountId);
+
+    // settle perp
+    int netCash = perp.settleRealizedPNLAndFunding(accountId);
+
+    cashAsset.updateSettledCash(netCash);
+
+    // update user cash amount
+    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
+
+    emit AccountSettled(accountId, netCash);
   }
 
   /**
@@ -168,34 +198,6 @@ contract BasicManager is IBasicManager, BaseManager {
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     margin = _calcNetBasicMargin(portfolio);
-  }
-
-  /**
-   * @notice Ensures new manager is valid.
-   * @param newManager IManager to change account to.
-   */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
-    if (!whitelistedManager[address(newManager)]) {
-      revert PM_NotWhitelistManager();
-    }
-  }
-
-  /**
-   * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
-   */
-  function settlePerps(uint accountId) external {
-    perp.updateFundingRate();
-    perp.applyFundingOnAccount(accountId);
-
-    // settle perp
-    int netCash = perp.settleRealizedPNLAndFunding(accountId);
-
-    cashAsset.updateSettledCash(netCash);
-
-    // update user cash amount
-    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
-
-    emit AccountSettled(accountId, netCash);
   }
 
   /**
@@ -282,6 +284,10 @@ contract BasicManager is IBasicManager, BaseManager {
 
     return isolatedMargin;
   }
+
+  ////////////////////////
+  //   View Functions   //
+  ////////////////////////
 
   function getIsolatedMargin(uint strike, uint expiry, int calls, int puts, bool isMaintenance)
     external
