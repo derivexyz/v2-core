@@ -94,8 +94,6 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     // bobAcc close his position and has $100 in PNL
     _tradePerpContract(bobAcc, aliceAcc, oneContract);
 
-    // manager.settlePerps(bobAcc);
-
     int cashAfter = _getCashBalance(bobAcc);
 
     // bob has $100 in PNL
@@ -110,8 +108,6 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
     // alice close his position and has $100 in PNL
     _tradePerpContract(bobAcc, aliceAcc, oneContract);
-
-    // manager.settlePerps(aliceAcc);
 
     int cashAfter = _getCashBalance(aliceAcc);
 
