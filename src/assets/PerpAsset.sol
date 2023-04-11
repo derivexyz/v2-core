@@ -43,9 +43,9 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   address public impactPriceOracle;
 
   /// @dev max hourly funding rate, 0.75%
-  int constant MAX_RATE_PER_HOUR = 0.0075e18;
+  int immutable maxRatePerHour;
   /// @dev min hourly funding rate, -0.75%
-  int constant MIN_RATE_PER_HOUR = -0.0075e18;
+  int immutable minRatePerHour;
 
   /// @dev current premium rate
   int public premium;
@@ -56,8 +56,11 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   ///@dev last time aggregated funding rate was updated
   uint public lastFundingPaidAt;
 
-  constructor(IAccounts _accounts) ManagerWhitelist(_accounts) {
+  constructor(IAccounts _accounts, int maxAbsRatePerHour) ManagerWhitelist(_accounts) {
     lastFundingPaidAt = block.timestamp;
+
+    maxRatePerHour = maxAbsRatePerHour;
+    minRatePerHour = -maxAbsRatePerHour;
   }
 
   //////////////////////////
@@ -278,10 +281,10 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     fundingRate = premium / 8; // todo: plus interest rate
 
     // capped at max / min
-    if (fundingRate > MAX_RATE_PER_HOUR) {
-      fundingRate = MAX_RATE_PER_HOUR;
-    } else if (fundingRate < MIN_RATE_PER_HOUR) {
-      fundingRate = MIN_RATE_PER_HOUR;
+    if (fundingRate > maxRatePerHour) {
+      fundingRate = maxRatePerHour;
+    } else if (fundingRate < minRatePerHour) {
+      fundingRate = minRatePerHour;
     }
   }
 
