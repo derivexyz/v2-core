@@ -3,8 +3,6 @@ pragma solidity ^0.8.13;
 
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccounts.sol";
-import "forge-std/console2.sol";
-import "forge-std/console.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 

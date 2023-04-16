@@ -13,7 +13,7 @@ export const etherscanVerification = (contractAddress: string, args: (string | s
       constructorArguments: args,
     },
     4,
-    5000,
+    2000,
   );
 };
 
@@ -24,7 +24,6 @@ function delay(ms: number) {
 // Retry is needed because the contract was recently deployed and it hasn't propagated to the explorer backend yet
 export const runTaskWithRetry = async (task: string, params: any, times: number, msDelay: number) => {
   let counter = times;
-  await delay(msDelay);
 
   try {
     await hre.run(task, params);
@@ -43,7 +42,8 @@ export const runTaskWithRetry = async (task: string, params: any, times: number,
       counter--;
 
       if (counter > 0) {
-        console.log('Retrying...');
+        console.log('Retrying after 2sec...');
+        await delay(msDelay);
         await runTaskWithRetry(task, params, counter, msDelay);
       }
     }

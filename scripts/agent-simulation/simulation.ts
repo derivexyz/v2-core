@@ -2,14 +2,14 @@ import {BaseAgent} from "./agents/baseAgent";
 import {Market} from "./market/market";
 import {SignerContext, getSignerContext} from "../utils/env/signerContext";
 import {config} from "./config";
-import {MarketMakerAgent} from "./agents/marketMarker";
+import {MarketMakerAgent} from "./agents/marketMaker";
 import {TraderAgent} from "./agents/trader";
 import chalk from "chalk";
 import {fastForward} from "../utils/test";
 import {executeExternalFunction} from "../utils/contracts/transactions";
-import {getSpot} from "./utils/feeds";
 import {BigNumber} from "ethers";
 import {toBN} from "../utils";
+import hre from "hardhat";
 
 type SimulationConfig = {
   stepSizeSec: number;
@@ -49,11 +49,11 @@ export class Simulation {
     }
     // TODO: liquidator agent
 
-    console.log(chalk.green("Deploying contracts for simulation"))
-
     for (let agent of this.agents) {
       await agent.init(this.adminContext);
     }
+
+    await this.waitForAllTransactions();
   }
 
   async run() {
@@ -61,19 +61,25 @@ export class Simulation {
       await this._step();
       // await this._log();
       this.currentStep++;
-      await fastForward(this.config.stepSizeSec);
+      await this.skipTime();
     }
   }
 
   async _step() {
+    const startTime = Date.now();
+
     console.log(chalk.magenta(`Running step ${this.currentStep} of ${this.config.numSteps}`));
-    await this.updateCurrentTime();
 
     await this._setFeeds();
     await this.market.step();
     for (let agent of this.agents) {
       await agent.step();
     }
+
+    await this.waitForAllTransactions();
+
+    const endTime = Date.now();
+    console.log(chalk.magenta(`Step ${this.currentStep} of ${this.config.numSteps} took ${endTime - startTime} ms`));
   }
 
   async _log() {
@@ -103,5 +109,21 @@ export class Simulation {
 
   async getVol(boardId: string) {
     return toBN('0.6');
+  }
+
+  async waitForAllTransactions() {
+    for (let agent of this.agents) {
+      await agent.waitForPendingTxs();
+    }
+  }
+
+  async skipTime() {
+    if (hre.network.name !== "local") {
+      console.log(chalk.yellow("warning: Skipping time is only supported on local network"));
+      return;
+    }
+    const seconds = this.config.stepSizeSec;
+    await fastForward(seconds);
+    await this.updateCurrentTime();
   }
 }

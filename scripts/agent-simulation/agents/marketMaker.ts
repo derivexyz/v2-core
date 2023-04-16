@@ -6,7 +6,9 @@ import chalk from "chalk";
 import {Simulation} from "../simulation";
 import {getOptionParams} from "../../utils/options/optionEncoding";
 import {callPrice, optionPrices, putPrice, tAnnualised} from "../../utils/options/blackScholes";
-import {fromBN, toBN} from "../../utils";
+import {EMPTY_BYTES, fromBN, toBN} from "../../utils";
+import {executeLyraFunction} from "../../utils/contracts/transactions";
+import {Trade} from "../market/market";
 
 export type MarketMakerAgentConfig = {
   num: number;
@@ -24,6 +26,12 @@ export class MarketMakerAgent extends BaseAgent {
 
   async init(adminContext: SignerContext) {
     this.accountId = await seedPMRMAccount(adminContext, this.config.initialBalance, this.sc.signerAddress);
+    // hack to avoid needing signatures for now
+    let nonce = await this.sc.signer.getTransactionCount();
+    for (const agent of this.simulation.agents) {
+      if (agent === this) continue;
+      this.pendingTxs.push(executeLyraFunction(this.sc, 'Accounts', 'setApprovalForAll', [agent.sc.signerAddress, true], {nonce: nonce++}));
+    }
   }
 
   async step() {
@@ -40,6 +48,7 @@ export class MarketMakerAgent extends BaseAgent {
   async placeTradesOnMarket() {
     // get random boardId from market
     const allBoards = Object.keys(this.market.boards);
+    const trades: Trade[] = [];
     for (const boardId of allBoards) {
       const optionDetails = getOptionParams(BigNumber.from(boardId));
       let bsPrice;
@@ -61,30 +70,34 @@ export class MarketMakerAgent extends BaseAgent {
       }
 
       for (const step of [1, 2, 3, 4]) {
-        this.market.placeLimitOrder(
+        trades.push(...this.market.placeLimitOrder(
           boardId,
           {
             accountId: this.accountId,
             amount: toBN('5'),
             pricePerOption: toBN((bsPrice).toString()).mul(99 - step).div(100), // 95% of mark price
             collateralPerOption: toBN('0'),
-            signature: "0x"
+            signature: ""
           },
           true
-        )
+        ));
 
-        this.market.placeLimitOrder(
+        trades.push(...this.market.placeLimitOrder(
           boardId,
           {
             accountId: this.accountId,
             amount: toBN('5'),
             pricePerOption: toBN((bsPrice).toString()).mul(101 + step).div(100), // 105% of mark price
             collateralPerOption: toBN('1000'),
-            signature: "0x"
+            signature: ""
           },
           false
-        )
+        ));
       }
+    }
+
+    if (trades.length > 0) {
+      await executeLyraFunction(this.sc, 'Accounts', 'submitTransfers', [trades, EMPTY_BYTES]);
     }
   }
 }

@@ -18,7 +18,6 @@ import "./BaseManager.sol";
 
 import "src/libraries/StrikeGrouping.sol";
 
-import "forge-std/console2.sol";
 
 /**
  * @title MaxLossRiskManager

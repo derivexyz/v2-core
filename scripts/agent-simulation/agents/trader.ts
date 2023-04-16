@@ -4,8 +4,9 @@ import {SignerContext} from "../../utils/env/signerContext";
 import {seedPMRMAccount} from "../../seed/seedPMRMAccount";
 import chalk from "chalk";
 import {Simulation} from "../simulation";
-import {math} from "../../../typechain-types/lib/lyra-utils/src";
-import {toBN} from "../../utils";
+import {EMPTY_BYTES, toBN} from "../../utils";
+import {executeLyraFunction} from "../../utils/contracts/transactions";
+import {Trade} from "../market/market";
 
 export type TraderAgentConfig = {
   num: number;
@@ -24,6 +25,12 @@ export class TraderAgent extends BaseAgent {
 
   async init(adminContext: SignerContext) {
     this.accountId = await seedPMRMAccount(adminContext, this.config.initialBalance, this.sc.signerAddress);
+    // hack to avoid needing signatures for now
+    let nonce = await this.sc.signer.getTransactionCount();
+    for (const agent of this.simulation.agents) {
+      if (agent === this) continue;
+      this.pendingTxs.push(executeLyraFunction(this.sc, 'Accounts', 'setApprovalForAll', [agent.sc.signerAddress, true], {nonce: nonce++}));
+    }
   }
 
   async step() {
@@ -40,21 +47,28 @@ export class TraderAgent extends BaseAgent {
   async placeTradesOnMarket() {
     // get random boardId from market
     const allBoards = Object.keys(this.market.boards);
-    let trades = [];
+    let trades: Trade[] = [];
     for (let i = 0; i < this.config.numTrades; i++) {
       const boardId = allBoards[Math.floor(Math.random() * allBoards.length)];
       // random number between tradeSize params
       const tradeSize = (Math.random() * (+this.config.tradeSize[1] - +this.config.tradeSize[0])) + +this.config.tradeSize[0];
       const tradeSizeBN = toBN(tradeSize.toString());
       const isBuy = Math.random() > 0.5;
-      trades.push(...this.market.placeLimitOrder(boardId, {
-        accountId: this.accountId,
-        amount: tradeSizeBN,
-        pricePerOption: isBuy ? toBN('1000000') : toBN('0'), // max bid
-        collateralPerOption: isBuy ? toBN('0') : toBN('1000'),
-        signature: "0x"
-      }, isBuy));
+      trades.push(...this.market.placeLimitOrder(
+        boardId,
+        {
+          accountId: this.accountId,
+          amount: tradeSizeBN,
+          pricePerOption: isBuy ? toBN('1000000') : toBN('0'), // max bid
+          collateralPerOption: isBuy ? toBN('0') : toBN('1000'),
+          signature: ""
+        },
+        isBuy
+      ));
     }
-    console.log(trades);
+
+    if (trades.length > 0) {
+      this.pendingTxs.push(executeLyraFunction(this.sc, 'Accounts', 'submitTransfers', [trades, EMPTY_BYTES]));
+    }
   }
 }

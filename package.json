@@ -6,9 +6,10 @@
   "author": "Lyra",
   "license": "MIT",
   "scripts": {
-    "build": "hardhat compile",
+    "build": "hardhat clean && hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts",
-    "seed": "hardhat run scripts/seed.ts"
+    "seed": "hardhat run scripts/seed.ts",
+    "runSim": "yarn build && hardhat run scripts/agent-simulation/run.ts"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
@@ -22,12 +23,14 @@
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
+    "@types/fs-extra": "^11.0.1",
     "@types/mocha": ">=9.1.0",
     "@types/node": ">=12.0.0",
     "chai": "^4.2.0",
     "chalk": "<5.0.0",
     "dotenv": "^16.0.3",
     "ethers": "^5.4.7",
+    "fs-extra": "^11.1.1",
     "hardhat": "^2.13.0",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.0",

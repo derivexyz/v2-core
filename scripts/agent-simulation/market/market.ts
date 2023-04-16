@@ -4,7 +4,7 @@ import {SignerContext} from "../../utils/env/signerContext";
 import {getOptionParams, getOptionSubID} from "../../utils/options/optionEncoding";
 import {Simulation} from "../simulation";
 import chalk from "chalk";
-import {fromBN, toBN} from "../../utils";
+import {EMPTY_BYTES, fromBN, toBN} from "../../utils";
 
 
 export type MarketOrder = {
@@ -27,10 +27,11 @@ export type Trade = {
   asset: string;
   subId: BigNumberish;
   amount: BigNumberish;
-  assetData: string;
+  assetData: any;
 }
 
-const NUM_WEEKLIES = 4;
+const NUM_WEEKLIES = 8;
+const NUM_STRIKES = 9;
 
 const WEEK_SEC = 86400 * 7;
 const FRIDAY_MOD_OFFSET = 115200
@@ -97,8 +98,8 @@ export class Market {
       console.log(chalk.cyan(`Adding new expiry ${expiry}`));
       // generate new strikes around the current spot price
       const strikes = [];
-      for (let i=0; i<5; i++) {
-        const strike = this.simulation.spotPrice.mul(100 - (i*2-2)).div(100);
+      for (let i=0; i<NUM_STRIKES; i++) {
+        const strike = this.simulation.spotPrice.mul(100 - (i*2-Math.floor(NUM_STRIKES/2))).div(100);
         strikes.push(strike);
       }
       console.log(chalk.cyan(`- Strikes: ${strikes.map(fromBN)}`));
@@ -144,15 +145,15 @@ export class Market {
           asset: this.optionAsset,
           subId: subId,
           amount: sellOrder.amount,
-          assetData: "0x"
+          assetData: EMPTY_BYTES
         });
         trades.push({
           fromAcc: buyOrder.accountId,
           toAcc: sellOrder.accountId,
           asset: this.cashAsset,
-          subId: subId,
-          amount: sellOrder.amount.mul(sellOrder.pricePerOption),
-          assetData: "0x"
+          subId: 0,
+          amount: sellOrder.amount.mul(sellOrder.pricePerOption).div(toBN('1')),
+          assetData: EMPTY_BYTES
         });
         remainingAmount = remainingAmount.sub(sellOrder.amount);
         board.sellOrders.shift();
@@ -163,15 +164,15 @@ export class Market {
           asset: this.optionAsset,
           subId: subId,
           amount: remainingAmount,
-          assetData: "0x"
+          assetData: EMPTY_BYTES
         });
         trades.push({
           fromAcc: buyOrder.accountId,
           toAcc: sellOrder.accountId,
           asset: this.cashAsset,
-          subId: subId,
-          amount: remainingAmount.mul(sellOrder.pricePerOption),
-          assetData: "0x"
+          subId: 0,
+          amount: remainingAmount.mul(sellOrder.pricePerOption).div(toBN('1')),
+          assetData: EMPTY_BYTES
         });
         board.sellOrders[0].amount = sellOrder.amount.sub(remainingAmount);
         remainingAmount = BigNumber.from(0);
@@ -207,15 +208,15 @@ export class Market {
           asset: this.optionAsset,
           subId: subId,
           amount: buyOrder.amount,
-          assetData: "0x"
+          assetData: EMPTY_BYTES
         });
         trades.push({
           fromAcc: buyOrder.accountId,
           toAcc: sellOrder.accountId,
           asset: this.cashAsset,
-          subId: subId,
-          amount: buyOrder.amount.mul(buyOrder.pricePerOption),
-          assetData: "0x"
+          subId: 0,
+          amount: buyOrder.amount.mul(buyOrder.pricePerOption).div(toBN('1')),
+          assetData: EMPTY_BYTES
         });
         remainingAmount = remainingAmount.sub(buyOrder.amount);
         this.boards[subId].buyOrders.shift();
@@ -226,15 +227,15 @@ export class Market {
           asset: this.optionAsset,
           subId: subId,
           amount: remainingAmount,
-          assetData: "0x"
+          assetData: EMPTY_BYTES
         });
         trades.push({
           fromAcc: buyOrder.accountId,
           toAcc: sellOrder.accountId,
           asset: this.cashAsset,
-          subId: subId,
-          amount: remainingAmount.mul(buyOrder.pricePerOption),
-          assetData: "0x"
+          subId: 0,
+          amount: remainingAmount.mul(buyOrder.pricePerOption).div(toBN('1')),
+          assetData: EMPTY_BYTES
         });
         this.boards[subId].buyOrders[0].amount = buyOrder.amount.sub(remainingAmount);
         remainingAmount = BigNumber.from(0);

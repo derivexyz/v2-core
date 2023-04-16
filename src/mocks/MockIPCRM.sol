@@ -12,8 +12,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-// forge testing
-import "forge-std/Test.sol";
 
 contract MockIPCRM is IPCRM, IManager {
   using SafeCast for int;
@@ -163,6 +161,4 @@ contract MockIPCRM is IPCRM, IManager {
   function feeCharged(uint, /*tradeId*/ uint /*account*/ ) external pure returns (uint) {
     return 0;
   }
-
-  function test() public {}
 }

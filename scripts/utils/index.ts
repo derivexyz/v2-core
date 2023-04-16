@@ -7,6 +7,7 @@ export const DAY_SEC = 86400;
 export const WEEK_SEC = 604800;
 export const YEAR_SEC = 31536000;
 
+export const EMPTY_BYTES = ethers.utils.hexZeroPad("0x", 32);
 
 export function toBN(val: string, decimals: number = 18) {
   // multiplier is to handle decimals

@@ -8,6 +8,7 @@ import {
   loadLyraContractData,
 } from './parseFiles';
 import {SignerContext} from "../env/signerContext";
+import {etherscanVerification} from "./verification";
 
 
 export function getLyraContract(sc: SignerContext, contractName: string): Contract {
@@ -112,10 +113,8 @@ export async function deployContract(
   console.log('= Size:', contract.deployTransaction.data.length);
   console.log('='.repeat(24));
 
-  // if (!(global as any).pending) {
-  //   (global as any).pending = [];
-  // }
-  // (global as any).pending.push(etherscanVerification(contract.address, [...args]));
+  await etherscanVerification(contract.address, [...args]);
+
   return contract;
 }
 
@@ -167,7 +166,7 @@ export async function execute(c: Contract, fn: string, args: any[], overrides: a
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
-      console.log(chalk.grey(`Executing ${fn} on ${c.address} with args ${JSON.stringify(args)}`));
+      console.log(chalk.grey(`Executing ${fn} on ${c.address} with args ${JSON.stringify(args)} overrides ${JSON.stringify(overrides)}`));
       // TODO: remove hardcoded gasLimit
       overrides = {
         gasLimit: 15_000_000,
@@ -183,8 +182,10 @@ export async function execute(c: Contract, fn: string, args: any[], overrides: a
       return tx;
     } catch (e) {
       if (e instanceof Error) {
-        console.log(e.message.slice(0, 27));
+        console.log(chalk.red(e.message.slice(0, 100)));
         if (e.message.slice(0, 27) == 'nonce has already been used') {
+          continue;
+        } else if (e.message.slice(0, 12) == 'bad response') {
           continue;
         }
         throw e;

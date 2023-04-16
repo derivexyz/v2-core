@@ -8,8 +8,6 @@ import "lyra-utils/math/IntLib.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/interfaces/ISpotJumpOracle.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title SpotJumpOracle
  * @author Lyra

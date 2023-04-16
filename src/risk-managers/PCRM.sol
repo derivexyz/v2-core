@@ -17,7 +17,6 @@ import "src/interfaces/IPCRM.sol";
 import "src/libraries/StrikeGrouping.sol";
 import "src/risk-managers/BaseManager.sol";
 
-import "forge-std/console2.sol";
 /**
  * @title PartialCollateralRiskManager
  * @author Lyra

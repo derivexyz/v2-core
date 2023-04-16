@@ -1,11 +1,13 @@
 import {SignerContext} from "../../utils/env/signerContext";
 import {Simulation} from "../simulation";
 import {Market} from "../market/market";
+import {ContractTransaction} from "ethers";
 
 export class BaseAgent {
   simulation: Simulation;
   market: Market;
   sc: SignerContext;
+  pendingTxs: Promise<ContractTransaction>[] = [];
   constructor(sc: SignerContext, simulation: Simulation) {
     this.sc = sc;
     this.simulation = simulation;
@@ -18,6 +20,11 @@ export class BaseAgent {
 
   async step() {
     throw new Error('Not implemented');
+  }
+
+  async waitForPendingTxs() {
+    await Promise.all(this.pendingTxs);
+    this.pendingTxs = [];
   }
 
   async log() {}

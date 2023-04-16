@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "lyra-utils/math/IntLib.sol";
-import "forge-std/console2.sol";
 
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/IBaseManager.sol";

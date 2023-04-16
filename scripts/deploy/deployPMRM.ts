@@ -1,7 +1,8 @@
 import {
   deployExternalContract,
-  deployLyraContract, deployLyraContractWithLibraries,
-  executeExternalFunction, executeLyraFunction,
+  deployLyraContract,
+  executeExternalFunction,
+  executeLyraFunction,
   getExternalContract,
   getLyraContract
 } from "../utils/contracts/transactions";

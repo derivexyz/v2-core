@@ -1,18 +1,18 @@
 export const config = {
   simulationSettings: {
-    stepSizeSec: 93600,
-    numSteps: 2,
+    stepSizeSec: 3600,
+    numSteps: 10,
   },
   agents: {
     marketMakerConfig: {
-      num: 1,
-      initialBalance: "1000000"
+      num: 2,
+      initialBalance: "100000000"
     },
     traderConfig: {
-      num: 1,
-      initialBalance: "10000",
-      numTrades: 4,
-      tradeSize: ["1", "10"]
+      num: 10,
+      initialBalance: "100000000",
+      numTrades: 20,
+      tradeSize: ["0.1", "1"]
     }
   }
 }

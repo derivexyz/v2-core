@@ -20,6 +20,21 @@ const config: HardhatUserConfig = {
     },
     ...getHardhatNetworkConfigs(),
   },
+  etherscan: {
+    apiKey: {
+      "conduit-testnet": 'APIKeyNotNeeded'
+    },
+    customChains: [
+      {
+        network: "conduit-testnet",
+        chainId: 901,
+        urls: {
+          apiURL: "https://explorerl2-lyra-devnet.t.conduit.xyz/api",
+          browserURL: "https://explorerl2-lyra-devnet.t.conduit.xyz/"
+        }
+      }
+    ]
+  }
 };
 
 export default config;
