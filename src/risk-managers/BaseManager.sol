@@ -231,7 +231,6 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     cashAsset.updateSettledCash(cashDelta);
   }
 
-
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
