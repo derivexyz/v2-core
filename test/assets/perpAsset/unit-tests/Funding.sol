@@ -80,7 +80,6 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setFundingRate(0.075e18);
   }
 
-
   function testPositiveFundingRate() public {
     vm.prank(keeper);
     perp.setFundingRate(0.0005e18);

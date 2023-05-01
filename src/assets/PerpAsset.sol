@@ -181,7 +181,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @notice This function is called by the keeper to update funding rate
    * @param _funding the latest funding rate
    */
-  function setFundingRate(int256 _funding) external onlyImpactPriceOracle {
+  function setFundingRate(int _funding) external onlyImpactPriceOracle {
     // apply funding with the previous rate
     _updateFundingRate();
 
@@ -192,7 +192,6 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     }
 
     fundingRate = _funding;
-
 
     emit FundingRateUpdated(_funding);
   }
