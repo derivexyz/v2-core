@@ -132,7 +132,6 @@ contract UNIT_BidAuction is Test {
     createDefaultSolventAuction(aliceAcc);
 
     // bidding
-    vm.stopPrank();
     vm.startPrank(bob);
     vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_BidderNotOwner.selector, aliceAcc, bob));
     dutchAuction.bid(aliceAcc, aliceAcc, 1e18);
