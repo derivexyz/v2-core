@@ -1,4 +1,4 @@
-name: Slither Analysis (bypassed)
+name: Slither Analysis
 on: [push]
 jobs:
   analyze:
@@ -22,16 +22,16 @@ jobs:
       - name: Install dependencies
         run: forge install
 
-      # - name: Run Slither
-      #   uses: crytic/slither-action@v0.2.0
-      #   id: slither
-      #   with:
-      #     target: "src/"
-      #     sarif: results.sarif
-      #     fail-on: medium # fail if new issues are introduced
+      - name: Run Slither
+        uses: crytic/slither-action@v0.2.0
+        id: slither
+        with:
+          target: "src/"
+          sarif: results.sarif
+          fail-on: medium # fail if new issues are introduced
 
-      # # Disabled until we go public so we can integrate with code-scanning
-      # - name: Upload SARIF file 
-      #   uses: github/codeql-action/upload-sarif@v2
-      #   with:
-      #     sarif_file: ${{ steps.slither.outputs.sarif }}
+      # Disabled until we go public so we can integrate with code-scanning
+      - name: Upload SARIF file 
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
