@@ -67,7 +67,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     cash.setWhitelistManager(address(manager), true);
 
     perp.setWhitelistManager(address(manager), true);
-    perp.setImpactPriceOracle(keeper);
+    perp.setFundingRateOracle(keeper);
 
     // create account for alice, bob, charlie
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);

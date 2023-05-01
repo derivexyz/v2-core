@@ -37,16 +37,18 @@ contract UNIT_PerpAssetFunding is Test {
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
     perp.setSpotFeed(feed);
+    feed.setSpot(1500e18);
 
     // whitelist keepers
     perp.setWhitelistManager(address(manager), true);
-    perp.setImpactPriceOracle(keeper);
+    perp.setFundingRateOracle(keeper);
 
     // create account for alice and bob
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
 
-    _setPricesPositiveFunding();
+    vm.prank(keeper);
+    perp.setFundingRate(0.0005e18);
 
     // open trades
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
@@ -72,56 +74,37 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testUnWhitelistBot() public {
-    perp.setImpactPriceOracle(address(this));
+    perp.setFundingRateOracle(address(this));
     vm.prank(keeper);
     vm.expectRevert(IPerpAsset.PA_OnlyImpactPriceOracle.selector);
-    perp.setPremium(1e18);
+    perp.setFundingRate(0.075e18);
   }
 
-  function testSetPremium() public {
-    // set premium price
-    vm.prank(keeper);
-
-    perp.setPremium(2e18);
-    assertEq(perp.premium(), 2e18);
-  }
-
-  function testSetInterestRate() public {
-    perp.setStaticInterestRate(0.000125e16); // 0.0125%
-    assertEq(perp.staticInterestRate(), 0.000125e16);
-  }
-
-  function testCannotSetNegativeRate() public {
-    vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
-    perp.setStaticInterestRate(-0.000001e16);
-  }
 
   function testPositiveFundingRate() public {
-    _setPricesPositiveFunding();
+    vm.prank(keeper);
+    perp.setFundingRate(0.0005e18);
 
-    // this number * index = funding per 1 contract
-    assertEq(perp.getFundingRate(), 0.0005e18);
+    assertEq(perp.fundingRate(), 0.0005e18);
   }
 
   function testPositiveFundingRateCapped() public {
     vm.prank(keeper);
-    perp.setPremium(5e18);
-
-    assertEq(perp.getFundingRate(), 0.0075e18);
+    perp.setFundingRate(0.1e18);
+    assertEq(perp.fundingRate(), 0.0075e18);
   }
 
   function testNegativeFundingRate() public {
-    _setPricesNegativeFunding();
+    vm.prank(keeper);
+    perp.setFundingRate(-0.0005e18);
 
-    // this number * index = funding per 1 contract
-    assertEq(perp.getFundingRate(), -0.0005e18);
+    assertEq(perp.fundingRate(), -0.0005e18);
   }
 
   function testNegativeFundingRateCapped() public {
     vm.prank(keeper);
-    perp.setPremium(-1e18);
-
-    assertEq(perp.getFundingRate(), -0.0075e18);
+    perp.setFundingRate(-0.1e18);
+    assertEq(perp.fundingRate(), -0.0075e18);
   }
 
   function testApplyZeroFundingNoTimeElapse() public {
@@ -136,6 +119,9 @@ contract UNIT_PerpAssetFunding is Test {
 
   // long pay short when mark > index
   function testApplyPositiveFunding() public {
+    vm.prank(keeper);
+    perp.setFundingRate(0.0005e18);
+
     vm.warp(block.timestamp + 1 hours);
 
     // alice is short, bob is long
@@ -154,7 +140,8 @@ contract UNIT_PerpAssetFunding is Test {
 
   // short pay long when mark < index
   function testApplyNegativeFunding() public {
-    _setPricesNegativeFunding();
+    vm.prank(keeper);
+    perp.setFundingRate(-0.0005e18);
 
     vm.warp(block.timestamp + 1 hours);
 
@@ -170,24 +157,5 @@ contract UNIT_PerpAssetFunding is Test {
 
     assertEq(aliceFunding, -0.75e18);
     assertEq(bobFunding, 0.75e18);
-  }
-
-  function _setPricesPositiveFunding() internal {
-    uint spot = 1500e18;
-
-    // expected premium: 6 / 8 = 0.75
-
-    feed.setSpot(spot);
-
-    vm.prank(keeper);
-    perp.setPremium(0.004e18);
-  }
-
-  function _setPricesNegativeFunding() internal {
-    uint spot = 1500e18;
-    feed.setSpot(spot);
-
-    vm.prank(keeper);
-    perp.setPremium(-0.004e18);
   }
 }

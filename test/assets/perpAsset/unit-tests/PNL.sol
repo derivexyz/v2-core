@@ -43,7 +43,7 @@ contract UNIT_PerpAssetPNL is Test {
     perp.setSpotFeed(feed);
 
     perp.setWhitelistManager(address(manager), true);
-    perp.setImpactPriceOracle(keeper);
+    perp.setFundingRateOracle(keeper);
 
     // create account for alice, bob, charlie
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);

@@ -36,26 +36,22 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   IChainlinkSpotFeed public spotFeed;
 
-  ///@dev mapping from account to position
+  ///@dev Mapping from account to position
   mapping(uint => PositionDetail) public positions;
 
-  ///@dev mapping from address to whitelisted to push impacted prices
-  address public impactPriceOracle;
+  ///@dev Mapping from address to whitelisted to push impacted prices
+  address public fundingRateOracle;
 
-  /// @dev max hourly funding rate
+  /// @dev Max hourly funding rate
   int immutable maxRatePerHour;
-  /// @dev min hourly funding rate
+  /// @dev Min hourly funding rate
   int immutable minRatePerHour;
 
-  /// @dev current hourly premium rate
-  int128 public premium;
-  /// @dev static hourly interest rate to borrow base asset, used to calculate funding
-  int128 public staticInterestRate;
-
-  ///@dev latest aggregated funding rate
+  /// @dev Latest hourly funding rate, set by the oracle
+  int public fundingRate;
+  ///@dev Latest aggregated funding rate
   int public aggregatedFundingRate;
-
-  ///@dev last time aggregated funding rate was updated
+  ///@dev Last time aggregated funding rate was updated
   uint public lastFundingPaidAt;
 
   constructor(IAccounts _accounts, int maxAbsRatePerHour) ManagerWhitelist(_accounts) {
@@ -80,24 +76,13 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @notice Set impact price oracle address that can update impact prices
-   * @param _oracle address of the new impact price oracle
+   * @notice Set an oracle address that can update funding rate
+   * @param _oracle address of the new funding rate oracle
    */
-  function setImpactPriceOracle(address _oracle) external onlyOwner {
-    impactPriceOracle = _oracle;
+  function setFundingRateOracle(address _oracle) external onlyOwner {
+    fundingRateOracle = _oracle;
 
-    emit ImpactPriceOracleUpdated(_oracle);
-  }
-
-  /**
-   * @notice Set new static interest rate
-   * @param _staticInterestRate New static interest rate for the asset.
-   */
-  function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
-    if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
-    staticInterestRate = _staticInterestRate;
-
-    emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
+    emit FundingRateOracleUpdated(_oracle);
   }
 
   //////////////////////////
@@ -193,15 +178,23 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @notice This function is called by the keeper to update premium used for funding rate
-   * @param _premium premium rate: should be impacted bid diff - impact ask diff, 18 decimals
+   * @notice This function is called by the keeper to update funding rate
+   * @param _funding the latest funding rate
    */
-  function setPremium(int128 _premium) external onlyImpactPriceOracle {
+  function setFundingRate(int256 _funding) external onlyImpactPriceOracle {
+    // apply funding with the previous rate
     _updateFundingRate();
 
-    premium = _premium;
+    if (_funding > maxRatePerHour) {
+      _funding = maxRatePerHour;
+    } else if (_funding < minRatePerHour) {
+      _funding = minRatePerHour;
+    }
 
-    emit PremiumUpdated(premium);
+    fundingRate = _funding;
+
+
+    emit FundingRateUpdated(_funding);
   }
 
   //////////////////////
@@ -251,18 +244,9 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @notice return hourly funding rate
-   */
-  function getFundingRate() external view returns (int) {
-    return _getFundingRate();
-  }
-
-  /**
    * @dev Update funding rate, reflected on aggregatedFundingRate
    */
   function _updateFundingRate() internal {
-    int fundingRate = _getFundingRate();
-
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
     aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
@@ -297,26 +281,12 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     return accounts.getBalance(accountId, IPerpAsset(address(this)), 0);
   }
 
-  /**
-   * @dev Get the hourly funding rate based on index price and impact market prices
-   */
-  function _getFundingRate() internal view returns (int fundingRate) {
-    fundingRate = int(premium / 8 + staticInterestRate);
-
-    // capped at max / min
-    if (fundingRate > maxRatePerHour) {
-      fundingRate = maxRatePerHour;
-    } else if (fundingRate < minRatePerHour) {
-      fundingRate = minRatePerHour;
-    }
-  }
-
   //////////////////////////
   //     Modifiers        //
   //////////////////////////
 
   modifier onlyImpactPriceOracle() {
-    if (msg.sender != impactPriceOracle) revert PA_OnlyImpactPriceOracle();
+    if (msg.sender != fundingRateOracle) revert PA_OnlyImpactPriceOracle();
     _;
   }
 

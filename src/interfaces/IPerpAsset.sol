@@ -36,11 +36,11 @@ interface IPerpAsset is IAsset {
   //   Events     //
   //////////////////
 
-  event PremiumUpdated(int128 premium);
+  event FundingRateUpdated(int premium);
 
   event StaticUnderlyingInterestRateUpdated(int128 premium);
 
-  event ImpactPriceOracleUpdated(address oracle);
+  event FundingRateOracleUpdated(address oracle);
 
   event SpotFeedUpdated(address spotFeed);
 
