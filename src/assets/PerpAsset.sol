@@ -155,7 +155,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint /*accountId*/, IManager newManager) external view {
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
     _checkManager(address(newManager));
   }
 
@@ -164,7 +164,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   //////////////////////////
 
   /**
-   * @notice Manager-only function to clear pnl and funding during settlement. 
+   * @notice Manager-only function to clear pnl and funding during settlement.
    * @dev The manager should then update the cash balance of an account base on the returned netCash variable
    * @param accountId Account Id to settle
    */

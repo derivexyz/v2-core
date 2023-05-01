@@ -95,19 +95,10 @@ contract BasicManager is IBasicManager, BaseManager {
     int _minStaticMMRatio,
     int _minStaticIMRatio
   ) external onlyOwner {
-    optionMarginParameters = OptionMarginParameters(
-      _baselineOptionIM,
-      _baselineOptionMM,
-      _minStaticMMRatio,
-      _minStaticIMRatio
-    );
+    optionMarginParameters =
+      OptionMarginParameters(_baselineOptionIM, _baselineOptionMM, _minStaticMMRatio, _minStaticIMRatio);
 
-    emit OptionMarginParametersSet(
-      _baselineOptionIM,
-      _baselineOptionMM,
-      _minStaticMMRatio,
-      _minStaticIMRatio
-    );
+    emit OptionMarginParametersSet(_baselineOptionIM, _baselineOptionMM, _minStaticMMRatio, _minStaticIMRatio);
   }
 
   /**
@@ -128,7 +119,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint /*accountId*/, IManager newManager) external view {
+  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
       revert PM_NotWhitelistManager();
     }
@@ -316,7 +307,8 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
     int baseLine = isMaintenance ? optionMarginParameters.baselineOptionMM : optionMarginParameters.baselineOptionIM;
-    int minStaticRatio = isMaintenance ? optionMarginParameters.minStaticMMRatio : optionMarginParameters.minStaticIMRatio;
+    int minStaticRatio =
+      isMaintenance ? optionMarginParameters.minStaticMMRatio : optionMarginParameters.minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike).divideDecimal(index);
@@ -339,7 +331,8 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
     int baseLine = isMaintenance ? optionMarginParameters.baselineOptionMM : optionMarginParameters.baselineOptionIM;
-    int minStaticRatio = isMaintenance ? optionMarginParameters.minStaticMMRatio : optionMarginParameters.minStaticIMRatio;
+    int minStaticRatio =
+      isMaintenance ? optionMarginParameters.minStaticMMRatio : optionMarginParameters.minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike - index).divideDecimal(index);
