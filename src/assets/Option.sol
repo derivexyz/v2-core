@@ -77,7 +77,7 @@ contract Option is IOption, Owned, ManagerWhitelist {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view onlyAccount {
+  function handleManagerChange(uint, IManager newManager) external view onlyAccount {
     _checkManager(address(newManager));
   }
 

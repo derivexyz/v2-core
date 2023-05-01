@@ -119,7 +119,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+  function handleManagerChange(uint, IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
       revert PM_NotWhitelistManager();
     }
@@ -129,7 +129,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
     override
     onlyAccounts
