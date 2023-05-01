@@ -75,6 +75,8 @@ contract UNIT_TestBasicManager_Option is Test {
 
     // set init perp trading parameters
     manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+
+    manager.setOptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
   }
 
   ////////////////////////////////////////////////////

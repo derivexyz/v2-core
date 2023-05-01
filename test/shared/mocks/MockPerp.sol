@@ -14,8 +14,5 @@ contract MockPerp is MockAsset, IPerpAsset {
 
   function applyFundingOnAccount(uint accountId) external {}
 
-  /**
-   * @dev manager-only function to clear pnl and funding during settlement
-   */
   function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {}
 }

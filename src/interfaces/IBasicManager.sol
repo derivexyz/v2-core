@@ -5,6 +5,22 @@ import "./IManager.sol";
 import "./AccountStructs.sol";
 
 interface IBasicManager is AccountStructs, IManager {
+
+  ///@dev Struct for Perp Margin Requirements
+  struct PerpMarginRequirements {
+    uint mmRequirement;
+    uint imRequirement;
+  }
+
+  
+  ///@dev Struct for Option Margin Parameters
+  struct OptionMarginParameters {
+    int baselineOptionIM;
+    int baselineOptionMM;
+    int minStaticMMRatio;
+    int minStaticIMRatio;
+  }
+
   ///////////////
   //   Errors  //
   ///////////////
@@ -26,4 +42,11 @@ interface IBasicManager is AccountStructs, IManager {
   event PricingModuleSet(address pricingModule);
 
   event MarginRequirementsSet(uint perpMMRequirement, uint perpIMRequirement);
+
+  event OptionMarginParametersSet(
+    int baselineOptionIM,
+    int baselineOptionMM,
+    int minStaticMMRatio,
+    int minStaticIMRatio
+  );
 }

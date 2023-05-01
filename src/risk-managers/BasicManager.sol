@@ -47,26 +47,11 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public pricing;
 
-  /// @dev Perp Maintenance margin requirement: min percentage of notional value to avoid liquidation
-  uint public perpMMRequirement = 0.03e18;
+  /// @dev Perp Margin Requirements: maintenance and initial margin requirements
+  PerpMarginRequirements public perpMarginRequirements;
 
-  /// @dev Perp Initial margin requirement: min percentage of notional value to modify a position
-  uint public perpIMRequirement = 0.05e18;
-
-  /// @dev Option Maintenance margin requirement: min percentage of spot + mark to market
-  int public optionStaticMMRequirement = 0.075e18;
-
-  /// @dev Base line for initial margin. See getIsolatedMargin for how it is used in the formula
-  int public baselineOptionIM = 0.2e18;
-
-  /// @dev Base line for maintenance margin. See getIsolatedMargin for how it is used in the formula
-  int public baselineOptionMM = 0.1e18;
-
-  /// @dev Min static Ratio for maintenance margin. See getIsolatedMargin for how it is used in the formula
-  int public minStaticMMRatio = 0.08e18;
-
-  /// @dev Min static Ratio for initial margin. See getIsolatedMargin for how it is used in the formula
-  int public minStaticIMRatio = 0.125e18;
+  /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
+  OptionMarginParameters public optionMarginParameters;
 
   ////////////////////////
   //    Constructor     //
@@ -92,10 +77,37 @@ contract BasicManager is IBasicManager, BaseManager {
     if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert PM_InvalidMarginRequirement();
     if (_imRequirement >= 1e18) revert PM_InvalidMarginRequirement();
 
-    perpMMRequirement = _mmRequirement;
-    perpIMRequirement = _imRequirement;
+    perpMarginRequirements = PerpMarginRequirements(_mmRequirement, _imRequirement);
 
     emit MarginRequirementsSet(_mmRequirement, _imRequirement);
+  }
+
+  /**
+   * @notice Set the option margin parameters
+   * @param _baselineOptionIM new baselineOptionIM
+   * @param _baselineOptionMM new baselineOptionMM
+   * @param _minStaticMMRatio new minStaticMMRatio
+   * @param _minStaticIMRatio new minStaticIMRatio
+   */
+  function setOptionMarginParameters(
+    int _baselineOptionIM,
+    int _baselineOptionMM,
+    int _minStaticMMRatio,
+    int _minStaticIMRatio
+  ) external onlyOwner {
+    optionMarginParameters = OptionMarginParameters(
+      _baselineOptionIM,
+      _baselineOptionMM,
+      _minStaticMMRatio,
+      _minStaticIMRatio
+    );
+
+    emit OptionMarginParametersSet(
+      _baselineOptionIM,
+      _baselineOptionMM,
+      _minStaticMMRatio,
+      _minStaticIMRatio
+    );
   }
 
   /**
@@ -116,7 +128,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+  function handleManagerChange(uint /*accountId*/, IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
       revert PM_NotWhitelistManager();
     }
@@ -164,7 +176,7 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function _getNetPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
     uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
-    int marginRequired = notional.multiplyDecimal(perpIMRequirement).toInt256();
+    int marginRequired = notional.multiplyDecimal(perpMarginRequirements.imRequirement).toInt256();
     return -marginRequired;
   }
 
@@ -303,8 +315,8 @@ contract BasicManager is IBasicManager, BaseManager {
    * @dev expected to return a negative number
    */
   function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
-    int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
-    int minStaticRatio = isMaintenance ? minStaticMMRatio : minStaticIMRatio;
+    int baseLine = isMaintenance ? optionMarginParameters.baselineOptionMM : optionMarginParameters.baselineOptionIM;
+    int minStaticRatio = isMaintenance ? optionMarginParameters.minStaticMMRatio : optionMarginParameters.minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike).divideDecimal(index);
@@ -326,8 +338,8 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param amount expected a negative number, representing amount of shorts
    */
   function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
-    int baseLine = isMaintenance ? baselineOptionMM : baselineOptionIM;
-    int minStaticRatio = isMaintenance ? minStaticMMRatio : minStaticIMRatio;
+    int baseLine = isMaintenance ? optionMarginParameters.baselineOptionMM : optionMarginParameters.baselineOptionIM;
+    int minStaticRatio = isMaintenance ? optionMarginParameters.minStaticMMRatio : optionMarginParameters.minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike - index).divideDecimal(index);
@@ -351,8 +363,4 @@ contract BasicManager is IBasicManager, BaseManager {
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }
   }
-
-  //////////
-  // View //
-  //////////
 }

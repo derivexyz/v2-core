@@ -305,7 +305,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+  function handleManagerChange(uint /*accountId*/,  IManager newManager) external view {
     _checkManager(address(newManager));
   }
 

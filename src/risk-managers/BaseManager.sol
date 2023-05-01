@@ -235,9 +235,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
   function _settleAccountPerps(uint accountId) internal {
-    perp.applyFundingOnAccount(accountId);
-
-    // settle perp
+    // settle perp: update latest funding rate and settle
     int netCash = perp.settleRealizedPNLAndFunding(accountId);
 
     cashAsset.updateSettledCash(netCash);

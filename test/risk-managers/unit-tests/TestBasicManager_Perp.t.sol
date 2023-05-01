@@ -105,9 +105,10 @@ contract UNIT_TestBasicManager is Test {
 
   function setPerpMarginRequirementsRatios() public {
     manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+    (uint mmRequirement, uint imRequirement) = manager.perpMarginRequirements();
 
-    assertEq(manager.perpMMRequirement(), 0.1e18);
-    assertEq(manager.perpIMRequirement(), 0.05e18);
+    assertEq(mmRequirement, 0.1e18);
+    assertEq(imRequirement, 0.05e18);
   }
 
   function testCannotSetPerpMMLargerThanIM() public {

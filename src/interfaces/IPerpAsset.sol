@@ -28,7 +28,8 @@ interface IPerpAsset is IAsset {
   function applyFundingOnAccount(uint accountId) external;
 
   /**
-   * @dev manager-only function to clear pnl and funding during settlement
+   * @notice Manager-only function to clear pnl and funding during settlement
+   * @dev The manager should then update the cash balance of an account base on the returned netCash variable
    */
   function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash);
 
