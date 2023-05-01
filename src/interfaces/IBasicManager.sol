@@ -23,8 +23,8 @@ interface IBasicManager is AccountStructs, IManager {
   //   Errors  //
   ///////////////
 
-  /// @dev Caller is not the Account contract
-  error PM_NotAccount();
+  /// @dev Caller is not the Accounts contract
+  error PM_NotAccounts();
 
   /// @dev Not whitelist manager
   error PM_NotWhitelistManager();

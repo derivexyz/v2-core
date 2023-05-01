@@ -119,7 +119,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+  function handleManagerChange(uint /*accountId*/ , IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
       revert PM_NotWhitelistManager();
     }
@@ -129,11 +129,11 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint /*tradeId*/, address, AssetDelta[] calldata assetDeltas, bytes memory)
     public
+    onlyAccounts
     override
   {
-    // check the call is from Accounts
 
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -353,5 +353,14 @@ contract BasicManager is IBasicManager, BaseManager {
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }
+  }
+
+  ////////////////////////
+  //      Modifiers     //
+  ////////////////////////
+
+  modifier onlyAccounts {
+    if(msg.sender != address(accounts)) revert PM_NotAccounts();
+    _;
   }
 }
