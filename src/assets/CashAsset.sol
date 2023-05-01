@@ -275,7 +275,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+  ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);

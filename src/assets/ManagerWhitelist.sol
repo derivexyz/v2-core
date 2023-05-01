@@ -58,7 +58,7 @@ contract ManagerWhitelist is IManagerWhitelist, Owned {
   //   Modifiers   //
   ///////////////////
 
-  modifier onlyAccount() {
+  modifier onlyAccounts() {
     if (msg.sender != address(accounts)) revert MW_NotAccount();
     _;
   }

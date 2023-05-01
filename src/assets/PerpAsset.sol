@@ -47,7 +47,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external view onlyAccount returns (int finalBalance, bool needAllowance) {
+  ) external view onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
 
     // settle the existing position for an user
