@@ -126,7 +126,6 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testApplyZeroFundingNoTimeElapse() public {
     // apply funding
-    perp.updateFundingRate();
     perp.applyFundingOnAccount(aliceAcc);
     perp.applyFundingOnAccount(bobAcc);
 
@@ -138,8 +137,6 @@ contract UNIT_PerpAssetFunding is Test {
   // long pay short when mark > index
   function testApplyPositiveFunding() public {
     vm.warp(block.timestamp + 1 hours);
-    // apply funding
-    perp.updateFundingRate();
 
     // alice is short, bob is long
     perp.applyFundingOnAccount(aliceAcc);
@@ -160,8 +157,6 @@ contract UNIT_PerpAssetFunding is Test {
     _setPricesNegativeFunding();
 
     vm.warp(block.timestamp + 1 hours);
-    // apply funding
-    perp.updateFundingRate();
 
     // alice is short, bob is long
     perp.applyFundingOnAccount(aliceAcc);

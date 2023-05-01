@@ -165,7 +165,6 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
   function _settlePerps(uint accountId) internal {
-    perp.updateFundingRate();
     perp.applyFundingOnAccount(accountId);
 
     // settle perp

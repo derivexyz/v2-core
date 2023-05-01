@@ -91,7 +91,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   /**
    * @notice Set new static interest rate
-   * @param _staticInterestRate New static interest rate for the asset. Should be lower than
+   * @param _staticInterestRate New static interest rate for the asset.
    */
   function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
     if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
@@ -182,9 +182,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @dev manager-only function to clear pnl and funding during settlement
    * @param accountId Account Id to settle
    */
-  function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {
-    if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
-
+  function settleRealizedPNLAndFunding(uint accountId) external onlyManagerForAccount(accountId) returns (int netCash) {
     PositionDetail storage position = positions[accountId];
     netCash = position.funding + position.pnl;
 
@@ -199,9 +197,9 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @param _premium premium rate: should be impacted bid diff - impact ask diff, 18 decimals
    */
   function setPremium(int128 _premium) external onlyImpactPriceOracle {
-    premium = _premium;
-
     _updateFundingRate();
+
+    premium = _premium;
 
     emit PremiumUpdated(premium);
   }
@@ -211,28 +209,11 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   //////////////////////
 
   /**
-   * @dev Update funding rate, reflected on aggregatedFundingRate
-   */
-  function updateFundingRate() external {
-    _updateFundingRate();
-  }
-
-  /**
-   * @dev Update funding rate, reflected on aggregatedFundingRate
-   */
-  function _updateFundingRate() internal {
-    int fundingRate = _getFundingRate();
-
-    int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
-
-    aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
-  }
-
-  /**
    * @notice This function update funding for an account and apply to position detail
    * @param accountId Account Id to apply funding
    */
   function applyFundingOnAccount(uint accountId) external {
+    _updateFundingRate();
     _applyFundingOnAccount(accountId);
   }
 
@@ -274,6 +255,19 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    */
   function getFundingRate() external view returns (int) {
     return _getFundingRate();
+  }
+
+  /**
+   * @dev Update funding rate, reflected on aggregatedFundingRate
+   */
+  function _updateFundingRate() internal {
+    int fundingRate = _getFundingRate();
+
+    int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
+
+    aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
+
+    lastFundingPaidAt = block.timestamp;
   }
 
   /**
@@ -323,6 +317,11 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
 
   modifier onlyImpactPriceOracle() {
     if (msg.sender != impactPriceOracle) revert PA_OnlyImpactPriceOracle();
+    _;
+  }
+
+  modifier onlyManagerForAccount(uint accountId) {
+    if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
     _;
   }
 }

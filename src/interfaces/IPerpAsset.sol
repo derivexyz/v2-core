@@ -21,8 +21,6 @@ interface IPerpAsset is IAsset {
     uint lastFundingPaid;
   }
 
-  function updateFundingRate() external;
-
   /**
    * @notice This function update funding for an account and apply to position detail
    * @param accountId Account Id

@@ -167,7 +167,6 @@ contract UNIT_TestBasicManager is Test {
     // trade cannot go through
     vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
-    vm.stopPrank();
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
