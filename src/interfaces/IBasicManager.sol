@@ -25,7 +25,5 @@ interface IBasicManager is AccountStructs, IManager {
 
   event PricingModuleSet(address pricingModule);
 
-  event AccountSettled(uint accountId, int netCash);
-
   event MarginRequirementsSet(uint perpMMRequirement, uint perpIMRequirement);
 }

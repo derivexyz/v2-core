@@ -9,6 +9,7 @@ import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IOption.sol";
+import "src/interfaces/IPerpAsset.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/IFutureFeed.sol";
@@ -29,6 +30,9 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
 
   /// @dev Option asset address
   IOption public immutable option;
+
+  /// @dev Perp asset address
+  IPerpAsset public immutable perp;
 
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
@@ -56,10 +60,12 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     IFutureFeed _futureFeed,
     ISettlementFeed _settlementFeed,
     ICashAsset _cashAsset,
-    IOption _option
+    IOption _option,
+    IPerpAsset _perp
   ) Owned() {
     accounts = _accounts;
     option = _option;
+    perp = _perp;
     cashAsset = _cashAsset;
     futureFeed = _futureFeed;
     settlementFeed = _settlementFeed;
@@ -225,6 +231,24 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     cashAsset.updateSettledCash(cashDelta);
   }
 
+
+  /**
+   * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
+   */
+  function _settleAccountPerps(uint accountId) internal {
+    perp.applyFundingOnAccount(accountId);
+
+    // settle perp
+    int netCash = perp.settleRealizedPNLAndFunding(accountId);
+
+    cashAsset.updateSettledCash(netCash);
+
+    // update user cash amount
+    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
+
+    emit PerpSettled(accountId, netCash);
+  }
+
   /**
    * @dev transfer asset from one account to another without invoking manager hook
    * @param from Account id of the from account. Must be controlled by this manager
@@ -251,6 +275,8 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
 
   /// @dev Emitted when OI fee rate is set
   event OIFeeRateSet(uint oiFeeRate);
+
+  event PerpSettled(uint indexed accountId, int netCash);
 
   ////////////
   // Errors //

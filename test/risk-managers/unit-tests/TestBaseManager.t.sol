@@ -18,6 +18,7 @@ import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockOption.sol";
 import "../../auction/mocks/MockCashAsset.sol";
+import "../../shared/mocks/MockPerp.sol";
 
 contract BaseManagerTester is BaseManager {
   constructor(
@@ -25,8 +26,9 @@ contract BaseManagerTester is BaseManager {
     IFutureFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     ICashAsset cash_,
-    IOption option_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cash_, option_) {}
+    IOption option_,
+    IPerpAsset perp_
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cash_, option_, perp_) {}
 
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
@@ -65,6 +67,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   MockERC20 usdc;
   MockOption option;
   MockCash cash;
+  MockPerp perp;
 
   address alice = address(0xaa);
   address bob = address(0xb0ba);
@@ -79,9 +82,10 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     feed = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
+    perp = new MockPerp(accounts);
     cash = new MockCash(usdc, accounts);
 
-    tester = new BaseManagerTester(accounts, feed, feed, cash, option);
+    tester = new BaseManagerTester(accounts, feed, feed, cash, option, perp);
 
     mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
 

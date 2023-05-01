@@ -41,9 +41,6 @@ contract BasicManager is IBasicManager, BaseManager {
 
   uint constant MAX_STRIKES = 64;
 
-  /// @dev Perp asset address
-  IPerpAsset public immutable perp;
-
   /// @dev Future feed oracle to get future price for an expiry
   IChainlinkSpotFeed public immutable feed;
 
@@ -76,9 +73,8 @@ contract BasicManager is IBasicManager, BaseManager {
   ////////////////////////
 
   constructor(IAccounts accounts_, ICashAsset cashAsset_, IOption option_, IPerpAsset perp_, IChainlinkSpotFeed feed_)
-    BaseManager(accounts_, feed_, feed_, cashAsset_, option_)
+    BaseManager(accounts_, feed_, feed_, cashAsset_, option_, perp_)
   {
-    perp = perp_;
     feed = feed_;
   }
 
@@ -140,7 +136,7 @@ contract BasicManager is IBasicManager, BaseManager {
     for (uint i = 0; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == perp) {
         // settle perps if the user has perp position
-        _settlePerps(accountId);
+        _settleAccountPerps(accountId);
       } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
         revert PM_UnsupportedAsset();
       }
@@ -159,23 +155,6 @@ contract BasicManager is IBasicManager, BaseManager {
     if (cashBalance + netPerpMargin + netOptionMargin < 0) {
       revert PM_PortfolioBelowMargin(accountId, -(netPerpMargin + netOptionMargin));
     }
-  }
-
-  /**
-   * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
-   */
-  function _settlePerps(uint accountId) internal {
-    perp.applyFundingOnAccount(accountId);
-
-    // settle perp
-    int netCash = perp.settleRealizedPNLAndFunding(accountId);
-
-    cashAsset.updateSettledCash(netCash);
-
-    // update user cash amount
-    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
-
-    emit AccountSettled(accountId, netCash);
   }
 
   /**
