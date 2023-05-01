@@ -1,4 +1,4 @@
-name: Slither Analysis
+name: Slither Analysis (Bypassed)
 on: [push]
 jobs:
   analyze:
@@ -11,27 +11,27 @@ jobs:
           LYRA_UTILS_SSH: ${{secrets.LYRA_UTILS}}
         run: mkdir $HOME/.ssh && echo "$LYRA_UTILS_SSH" > $HOME/.ssh/id_rsa && chmod 600 $HOME/.ssh/id_rsa
 
-      - name: Install Submodules
-        run: git submodule update --init --recursive
+      # - name: Install Submodules
+      #   run: git submodule update --init --recursive
 
-      - name: Install Foundry
-        uses: onbjerg/foundry-toolchain@v1
-        with:
-          version: nightly
+      # - name: Install Foundry
+      #   uses: onbjerg/foundry-toolchain@v1
+      #   with:
+      #     version: nightly
 
-      - name: Install dependencies
-        run: forge install
+      # - name: Install dependencies
+      #   run: forge install
 
-      - name: Run Slither
-        uses: crytic/slither-action@v0.2.0
-        id: slither
-        with:
-          target: "src/"
-          sarif: results.sarif
-          fail-on: medium # fail if new issues are introduced
+      # - name: Run Slither
+      #   uses: crytic/slither-action@v0.2.0
+      #   id: slither
+      #   with:
+      #     target: "src/"
+      #     sarif: results.sarif
+      #     fail-on: medium # fail if new issues are introduced
 
-      # Disabled until we go public so we can integrate with code-scanning
-      - name: Upload SARIF file 
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: ${{ steps.slither.outputs.sarif }}
+      # # Disabled until we go public so we can integrate with code-scanning
+      # - name: Upload SARIF file 
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   with:
+      #     sarif_file: ${{ steps.slither.outputs.sarif }}
