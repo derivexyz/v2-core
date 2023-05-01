@@ -85,7 +85,8 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testSetOptionParameters() public {
     manager.setOptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
-    (int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio) = manager.optionMarginParams();
+    (int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio) =
+      manager.optionMarginParams();
     assertEq(baselineOptionIM, 0.5e18);
     assertEq(baselineOptionMM, 0.2e18);
     assertEq(minStaticMMRatio, 0.1e18);
