@@ -175,6 +175,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param accountId Account Id for which to check
    */
   function _getNetOptionMargin(uint accountId) internal view returns (int margin) {
+    // todo: group by expiry, don't use this logic from MLRM
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     margin = _calcNetBasicMargin(portfolio);
@@ -220,6 +221,8 @@ contract BasicManager is IBasicManager, BaseManager {
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
   function _calcNetBasicMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+    // todo: calculate each sub-portfolio with diff expiry and sum them all.
+
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {

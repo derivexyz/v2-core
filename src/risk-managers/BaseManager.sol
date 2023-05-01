@@ -46,7 +46,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
-  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * spot
+  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   uint public OIFeeRateBPS = 0.001e18; // 10 BPS
 
   /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
