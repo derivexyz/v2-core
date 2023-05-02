@@ -227,7 +227,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   function applyFundingOnAccount(uint accountId) external {
     _updateFundingRate();
     _applyFundingOnAccount(accountId);
-  }  
+  }
 
   /**
    * @dev This function reflect how much cash should be mark "available" for an account
@@ -292,7 +292,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    */
   function _getFundingRate(int indexPrice) internal view returns (int fundingRate) {
     int premium = _getPremium(indexPrice);
-    fundingRate = premium / 8 + staticInterestRate; 
+    fundingRate = premium / 8 + staticInterestRate;
 
     // capped at max / min
     if (fundingRate > maxRatePerHour) {

@@ -45,7 +45,7 @@ interface IPerpAsset is IAsset {
 
   event SpotFeedUpdated(address spotFeed);
 
-  event ImpactPricesSet(int256 impactAskPrice, int256 impactBidPrice);
+  event ImpactPricesSet(int impactAskPrice, int impactBidPrice);
 
   ////////////////
   //   Errors   //
