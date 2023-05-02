@@ -62,7 +62,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
     option = new Option(account, address(feed));
 
-    manager = new BasicManager(account, ICashAsset(cash), option, perp, feed);
+    manager = new BasicManager(account, ICashAsset(cash), option, perp, feed, feed, feed);
 
     cash.setWhitelistManager(address(manager), true);
 

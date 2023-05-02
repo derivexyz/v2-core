@@ -51,6 +51,8 @@ contract UNIT_TestBasicManager is Test {
       ICashAsset(address(cash)),
       option,
       perp,
+      feed,
+      feed,
       feed
     );
 

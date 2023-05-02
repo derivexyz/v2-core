@@ -58,6 +58,8 @@ contract UNIT_TestBasicManager_Option is Test {
       ICashAsset(address(cash)),
       option,
       perp,
+      feed,
+      feed,
       feed
     );
 
@@ -76,7 +78,10 @@ contract UNIT_TestBasicManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(0.05e18, 0.1e18);
 
-    manager.setOptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
+    IBasicManager.OptionMarginParameters memory params 
+      = IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
+
+    manager.setOptionMarginParameters(params);
   }
 
   ////////////////
@@ -84,7 +89,9 @@ contract UNIT_TestBasicManager_Option is Test {
   ////////////////
 
   function testSetOptionParameters() public {
-    manager.setOptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
+    IBasicManager.OptionMarginParameters memory params = 
+      IBasicManager.OptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
+    manager.setOptionMarginParameters(params);
     (int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio) =
       manager.optionMarginParams();
     assertEq(baselineOptionIM, 0.5e18);
