@@ -48,7 +48,15 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   int immutable minRatePerHour;
 
   /// @dev Latest hourly funding rate, set by the oracle
-  int public fundingRate;
+  // int public fundingRate;
+
+  /// @dev Impact ask price
+  int public impactAskPrice;
+  /// @dev Impact bid price
+  int public impactBidPrice;
+  /// @dev static hourly interest rate to borrow base asset, used to calculate funding
+  int128 public staticInterestRate;
+
   ///@dev Latest aggregated funding rate
   int public aggregatedFundingRate;
   ///@dev Last time aggregated funding rate was updated
@@ -182,22 +190,30 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @notice This function is called by the keeper to update funding rate
-   * @param _funding the latest funding rate
+   * @notice allow oracle to set impact prices
    */
-  function setFundingRate(int _funding) external onlyImpactPriceOracle {
-    // apply funding with the previous rate
-    _updateFundingRate();
-
-    if (_funding > maxRatePerHour) {
-      _funding = maxRatePerHour;
-    } else if (_funding < minRatePerHour) {
-      _funding = minRatePerHour;
+  function setImpactPrices(int _impactAskPrice, int _impactBidPrice) external onlyImpactPriceOracle {
+    if (_impactAskPrice < 0 || _impactBidPrice < 0) {
+      revert PA_ImpactPriceMustBePositive();
     }
+    if (_impactAskPrice < _impactBidPrice) {
+      revert PA_InvalidImpactPrices();
+    }
+    impactAskPrice = _impactAskPrice;
+    impactBidPrice = _impactBidPrice;
 
-    fundingRate = _funding;
+    emit ImpactPricesSet(_impactAskPrice, _impactBidPrice);
+  }
 
-    emit FundingRateUpdated(_funding);
+  /**
+   * @notice Set new static interest rate
+   * @param _staticInterestRate New static interest rate for the asset.
+   */
+  function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
+    if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
+    staticInterestRate = _staticInterestRate;
+
+    emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
   }
 
   //////////////////////
@@ -211,6 +227,27 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   function applyFundingOnAccount(uint accountId) external {
     _updateFundingRate();
     _applyFundingOnAccount(accountId);
+  }  
+
+  /**
+   * @dev This function reflect how much cash should be mark "available" for an account
+   * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
+   */
+  function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
+    int size = _getPositionSize(accountId);
+    int indexPrice = spotFeed.getSpot().toInt256();
+
+    int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
+    int unrealizedPnl = _getUnrealizedPnl(accountId, size, indexPrice);
+    return unrealizedFunding + unrealizedPnl + positions[accountId].funding + positions[accountId].pnl;
+  }
+
+  /**
+   * @dev Return the hourly funding rate for an account
+   */
+  function getFundingRate() external view returns (int fundingRate) {
+    int indexPrice = spotFeed.getSpot().toInt256();
+    fundingRate = _getFundingRate(indexPrice);
   }
 
   /**
@@ -234,29 +271,44 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
   }
 
   /**
-   * @dev This function reflect how much cash should be mark "available" for an account
-   * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
-   */
-  function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
-    int size = _getPositionSize(accountId);
-    int indexPrice = spotFeed.getSpot().toInt256();
-
-    int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
-    int unrealizedPnl = _getUnrealizedPnl(accountId, size, indexPrice);
-    return unrealizedFunding + unrealizedPnl + positions[accountId].funding + positions[accountId].pnl;
-  }
-
-  /**
    * @dev Update funding rate, reflected on aggregatedFundingRate
    */
   function _updateFundingRate() internal {
     if (block.timestamp == lastFundingPaidAt) return;
+
+    int indexPrice = spotFeed.getSpot().toInt256();
+
+    int fundingRate = _getFundingRate(indexPrice);
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
     aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
 
     lastFundingPaidAt = block.timestamp;
+  }
+
+  /**
+   * @dev return the hourly funding rate
+   */
+  function _getFundingRate(int indexPrice) internal view returns (int fundingRate) {
+    int premium = _getPremium(indexPrice);
+    fundingRate = premium / 8 + staticInterestRate; 
+
+    // capped at max / min
+    if (fundingRate > maxRatePerHour) {
+      fundingRate = maxRatePerHour;
+    } else if (fundingRate < minRatePerHour) {
+      fundingRate = minRatePerHour;
+    }
+  }
+
+  /**
+   * @dev get premium to calculate funding rate
+   * Premium = (Max(0, Impact Bid Price - Index Price) - Max(0, Index Price - Impact Ask Price)) / Index Price
+   */
+  function _getPremium(int indexPrice) internal view returns (int premium) {
+    premium = (SignedMath.max(impactBidPrice - indexPrice, 0) - SignedMath.max(indexPrice - impactAskPrice, 0))
+      .divideDecimal(indexPrice);
   }
 
   /**

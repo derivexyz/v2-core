@@ -28,6 +28,7 @@ contract UNIT_PerpAssetFunding is Test {
   uint bobAcc;
 
   int defaultPosition = 1e18;
+  int spot = 1500e18;
 
   function setUp() public {
     // deploy contracts
@@ -37,7 +38,7 @@ contract UNIT_PerpAssetFunding is Test {
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
     perp.setSpotFeed(feed);
-    feed.setSpot(1500e18);
+    feed.setSpot(uint(spot));
 
     // whitelist keepers
     perp.setWhitelistManager(address(manager), true);
@@ -48,7 +49,7 @@ contract UNIT_PerpAssetFunding is Test {
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
 
     vm.prank(keeper);
-    perp.setFundingRate(0.0005e18);
+    perp.setImpactPrices(spot, spot);
 
     // open trades
     AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
@@ -77,33 +78,63 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setFundingRateOracle(address(this));
     vm.prank(keeper);
     vm.expectRevert(IPerpAsset.PA_OnlyImpactPriceOracle.selector);
-    perp.setFundingRate(0.075e18);
+    perp.setImpactPrices(0, 0);
+  }
+
+  function testSetInterestRate() public {
+    perp.setStaticInterestRate(0.000125e16); // 0.0125%
+    assertEq(perp.staticInterestRate(), 0.000125e16);
+  }
+
+  function testCannotSetNegativeRate() public {
+    vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
+    perp.setStaticInterestRate(-0.000001e16);
+  }
+
+  function testCannotSetNegativeImpactPrices() public {
+    vm.prank(keeper);
+    vm.expectRevert(IPerpAsset.PA_ImpactPriceMustBePositive.selector);
+    perp.setImpactPrices(-1, 1);
+  }
+
+  function testCannotSetAskPriceLowerThanAskBid() public {
+    vm.prank(keeper);
+    vm.expectRevert(IPerpAsset.PA_InvalidImpactPrices.selector);
+    perp.setImpactPrices(1, 2);
+  }
+
+  function testSetImpactPrices() public {
+    // set impact price
+    vm.prank(keeper);
+    perp.setImpactPrices(1540e18, 1520e18);
+    assertEq(perp.impactAskPrice(), 1540e18);
+    assertEq(perp.impactBidPrice(), 1520e18);
   }
 
   function testPositiveFundingRate() public {
     vm.prank(keeper);
-    perp.setFundingRate(0.0005e18);
+    perp.setImpactPrices(spot + 6e18, spot + 6e18);
 
-    assertEq(perp.fundingRate(), 0.0005e18);
+    assertEq(perp.getFundingRate(), 0.0005e18);
   }
 
   function testPositiveFundingRateCapped() public {
     vm.prank(keeper);
-    perp.setFundingRate(0.1e18);
-    assertEq(perp.fundingRate(), 0.0075e18);
+    perp.setImpactPrices(spot + 200e18, spot + 200e18);
+    assertEq(perp.getFundingRate(), 0.0075e18);
   }
 
   function testNegativeFundingRate() public {
     vm.prank(keeper);
-    perp.setFundingRate(-0.0005e18);
+    perp.setImpactPrices(spot - 6e18, spot - 6e18);
 
-    assertEq(perp.fundingRate(), -0.0005e18);
+    assertEq(perp.getFundingRate(), -0.0005e18);
   }
 
   function testNegativeFundingRateCapped() public {
     vm.prank(keeper);
-    perp.setFundingRate(-0.1e18);
-    assertEq(perp.fundingRate(), -0.0075e18);
+    perp.setImpactPrices(spot - 200e18, spot - 200e18);
+    assertEq(perp.getFundingRate(), -0.0075e18);
   }
 
   function testApplyZeroFundingNoTimeElapse() public {
@@ -118,8 +149,7 @@ contract UNIT_PerpAssetFunding is Test {
 
   // long pay short when mark > index
   function testApplyPositiveFunding() public {
-    vm.prank(keeper);
-    perp.setFundingRate(0.0005e18);
+    _setPricesPositiveFunding();
 
     vm.warp(block.timestamp + 1 hours);
 
@@ -139,8 +169,7 @@ contract UNIT_PerpAssetFunding is Test {
 
   // short pay long when mark < index
   function testApplyNegativeFunding() public {
-    vm.prank(keeper);
-    perp.setFundingRate(-0.0005e18);
+    _setPricesNegativeFunding();
 
     vm.warp(block.timestamp + 1 hours);
 
@@ -156,5 +185,21 @@ contract UNIT_PerpAssetFunding is Test {
 
     assertEq(aliceFunding, -0.75e18);
     assertEq(bobFunding, 0.75e18);
+  }
+
+  function _setPricesPositiveFunding() internal {
+    int iap = spot + 6e18;
+    int ibp = spot + 6e18;
+
+    vm.prank(keeper);
+    perp.setImpactPrices(iap, ibp);
+  }
+
+  function _setPricesNegativeFunding() internal {
+    int iap = spot - 6e18;
+    int ibp = spot - 6e18;
+
+    vm.prank(keeper);
+    perp.setImpactPrices(iap, ibp);
   }
 }

@@ -45,6 +45,8 @@ interface IPerpAsset is IAsset {
 
   event SpotFeedUpdated(address spotFeed);
 
+  event ImpactPricesSet(int256 impactAskPrice, int256 impactBidPrice);
+
   ////////////////
   //   Errors   //
   ////////////////
@@ -60,6 +62,9 @@ interface IPerpAsset is IAsset {
 
   /// @dev Settlement can only be initiated by the manager of the account
   error PA_WrongManager();
+
+  /// @dev Impact prices are invalid: bids higher than ask or negative
+  error PA_InvalidImpactPrices();
 
   /// @dev Caller is not the owner of the account
   error PA_OnlyAccountOwner();
