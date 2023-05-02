@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -29,7 +29,6 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     // expect call to old manager
     vm.expectCall(address(dumbManager), abi.encodeCall(dumbManager.handleManagerChange, (aliceAcc, newManager)));
     account.changeManager(aliceAcc, newManager, "");
-    vm.stopPrank();
 
     // manager is updated
     assertEq(address(account.manager(aliceAcc)), address(newManager));
@@ -40,7 +39,6 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     vm.prank(alice);
     vm.expectRevert();
     account.changeManager(aliceAcc, newManager, "");
-    vm.stopPrank();
     vm.clearMockedCalls();
   }
 
@@ -52,14 +50,12 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     vm.prank(alice);
     vm.expectRevert();
     account.changeManager(aliceAcc, newManager, "");
-    vm.stopPrank();
   }
 
   function testCannotChangeToSameManager() public {
     vm.prank(alice);
     vm.expectRevert(abi.encodeWithSelector(IAccounts.AC_CannotChangeToSameManager.selector, alice, aliceAcc));
     account.changeManager(aliceAcc, dumbManager, "");
-    vm.stopPrank();
   }
 
   function testMigrationShouldNotMakeDuplicatedCallToAssets() public {

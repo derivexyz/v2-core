@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -275,7 +275,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+  ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);

@@ -1,4 +1,4 @@
-name: Slither Analysis (bypassed)
+name: Slither Analysis (Bypassed)
 on: [push]
 jobs:
   analyze:
@@ -6,21 +6,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup SSH
-        env: 
-          LYRA_UTILS_SSH: ${{secrets.LYRA_UTILS}}
-        run: mkdir $HOME/.ssh && echo "$LYRA_UTILS_SSH" > $HOME/.ssh/id_rsa && chmod 600 $HOME/.ssh/id_rsa
+      # - name: Setup SSH
+      #   env: 
+      #     LYRA_UTILS_SSH: ${{secrets.LYRA_UTILS}}
+      #   run: mkdir $HOME/.ssh && echo "$LYRA_UTILS_SSH" > $HOME/.ssh/id_rsa && chmod 600 $HOME/.ssh/id_rsa
 
-      - name: Install Submodules
-        run: git submodule update --init --recursive
+      # - name: Install Submodules
+      #   run: git submodule update --init --recursive
 
-      - name: Install Foundry
-        uses: onbjerg/foundry-toolchain@v1
-        with:
-          version: nightly
+      # - name: Install Foundry
+      #   uses: onbjerg/foundry-toolchain@v1
+      #   with:
+      #     version: nightly
 
-      - name: Install dependencies
-        run: forge install
+      # - name: Install dependencies
+      #   run: forge install
 
       # - name: Run Slither
       #   uses: crytic/slither-action@v0.2.0

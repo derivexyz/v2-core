@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -29,7 +29,7 @@ contract UNIT_CashAssetHook is Test {
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
-    vm.expectRevert(IManagerWhitelist.MW_NotAccount.selector);
+    vm.expectRevert(IManagerWhitelist.MW_OnlyAccounts.selector);
     AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
     cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
