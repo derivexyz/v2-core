@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
@@ -9,6 +9,7 @@ import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IOption.sol";
+import "src/interfaces/IPerpAsset.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/AccountStructs.sol";
 import "src/interfaces/IFutureFeed.sol";
@@ -30,6 +31,9 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   /// @dev Option asset address
   IOption public immutable option;
 
+  /// @dev Perp asset address
+  IPerpAsset public immutable perp;
+
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
@@ -42,7 +46,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
-  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * spot
+  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   uint public OIFeeRateBPS = 0.001e18; // 10 BPS
 
   /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
@@ -56,10 +60,12 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     IFutureFeed _futureFeed,
     ISettlementFeed _settlementFeed,
     ICashAsset _cashAsset,
-    IOption _option
+    IOption _option,
+    IPerpAsset _perp
   ) Owned() {
     accounts = _accounts;
     option = _option;
+    perp = _perp;
     cashAsset = _cashAsset;
     futureFeed = _futureFeed;
     settlementFeed = _settlementFeed;
@@ -73,8 +79,8 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @notice Settle expired option positions in an account.
    * @dev This function can be called by anyone
    */
-  function settleAccount(uint accountId) external {
-    _settleAccount(accountId);
+  function settleOptions(uint accountId) external {
+    _settleAccountOptions(accountId);
   }
 
   /**
@@ -83,7 +89,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    */
   function batchSettleAccounts(uint[] calldata accountIds) external {
     for (uint i; i < accountIds.length; ++i) {
-      _settleAccount(accountIds[i]);
+      _settleAccountOptions(accountIds[i]);
     }
   }
 
@@ -201,7 +207,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @dev settle an account by removing all expired option positions and adjust cash balance
    * @param accountId Account Id to settle
    */
-  function _settleAccount(uint accountId) internal {
+  function _settleAccountOptions(uint accountId) internal {
     AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
@@ -223,6 +229,21 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
     // report total print / burn to cash asset
     cashAsset.updateSettledCash(cashDelta);
+  }
+
+  /**
+   * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
+   */
+  function _settleAccountPerps(uint accountId) internal {
+    // settle perp: update latest funding rate and settle
+    int netCash = perp.settleRealizedPNLAndFunding(accountId);
+
+    cashAsset.updateSettledCash(netCash);
+
+    // update user cash amount
+    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
+
+    emit PerpSettled(accountId, netCash);
   }
 
   /**
@@ -251,6 +272,8 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
 
   /// @dev Emitted when OI fee rate is set
   event OIFeeRateSet(uint oiFeeRate);
+
+  event PerpSettled(uint indexed accountId, int netCash);
 
   ////////////
   // Errors //

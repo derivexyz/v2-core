@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
@@ -172,9 +172,6 @@ contract PortfolioRiskPOCManager is Owned, IManager {
       }
     }
   }
-
-  ////
-  // Views
 
   function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AccountStructs.AssetDelta[] memory, bytes memory)
     public

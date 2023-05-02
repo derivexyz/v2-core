@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -57,7 +57,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     int aliceCashBefore = getCashBalance(aliceAcc);
     uint oiBefore = option.openInterest(callId);
 
-    pcrm.settleAccount(aliceAcc);
+    pcrm.settleOptions(aliceAcc);
     int aliceCashAfter = getCashBalance(aliceAcc);
     uint oiAfter = option.openInterest(callId);
 
@@ -84,7 +84,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     int bobCashBefore = getCashBalance(bobAcc);
 
-    pcrm.settleAccount(bobAcc);
+    pcrm.settleOptions(bobAcc);
     int bobCashAfter = getCashBalance(bobAcc);
     uint oiAfter = option.openInterest(callId);
 
@@ -110,7 +110,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     int aliceCashBefore = getCashBalance(aliceAcc);
 
-    pcrm.settleAccount(aliceAcc);
+    pcrm.settleOptions(aliceAcc);
     int aliceCashAfter = getCashBalance(aliceAcc);
 
     // payout is 500 USDC per contract
@@ -134,7 +134,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     int bobCashBefore = getCashBalance(bobAcc);
 
-    pcrm.settleAccount(bobAcc);
+    pcrm.settleOptions(bobAcc);
     int bobCashAfter = getCashBalance(bobAcc);
     uint oiAfter = option.openInterest(putId);
 
@@ -163,7 +163,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     _setSpotPriceAndSubmitForExpiry(2500e18, expiry);
 
     // Settle Bob ITM first -> increase print
-    pcrm.settleAccount(bobAcc);
+    pcrm.settleOptions(bobAcc);
 
     // payout is 500 USDC per contract
     int expectedPayout = 500 * amountOfContracts;
@@ -173,12 +173,12 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
     _assertCashSolvent();
 
     // Negative due to burn for Alice OTM trade
-    pcrm.settleAccount(aliceAcc);
+    pcrm.settleOptions(aliceAcc);
     assertLt(cash.netSettledCash(), 0);
     _assertCashSolvent();
 
     // Should be 0 after all trades are settled (print for charlie ITM)
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(charlieAcc);
     assertEq(cash.netSettledCash(), 0);
     _assertCashSolvent();
 
@@ -204,7 +204,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     // Check that cash was burned to settle
     uint supplyBefore = cash.totalSupply();
-    pcrm.settleAccount(aliceAcc);
+    pcrm.settleOptions(aliceAcc);
 
     // Payout is 500 USDC per contract
     uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
@@ -254,7 +254,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     // Check that cash was burned to settle
     uint supplyBefore = cash.totalSupply();
-    pcrm.settleAccount(aliceAcc);
+    pcrm.settleOptions(aliceAcc);
 
     // Payout is 500 USDC per contract
     uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
@@ -305,7 +305,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     // Check that cash was printed to settle
     uint supplyBefore = cash.totalSupply();
-    pcrm.settleAccount(bobAcc);
+    pcrm.settleOptions(bobAcc);
 
     // Payout is 500 USDC per contract
     uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
@@ -355,7 +355,7 @@ contract INTEGRATION_Settlement is IntegrationTestBase {
 
     // Check that cash was printed to settle
     uint supplyBefore = cash.totalSupply();
-    pcrm.settleAccount(bobAcc);
+    pcrm.settleOptions(bobAcc);
 
     // Payout is 500 USDC per contract
     uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;

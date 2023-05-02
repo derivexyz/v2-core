@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "src/assets/Option.sol";
@@ -69,7 +69,7 @@ contract UNIT_TestOptionBasics is Test {
       assetData: ""
     });
 
-    vm.expectRevert(IOption.OA_UnknownManager.selector);
+    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     account.submitTransfer(assetTransfer, "");
     vm.stopPrank();
   }
@@ -124,7 +124,7 @@ contract UNIT_TestOptionBasics is Test {
     MockManager newManager = new MockManager(address(account));
 
     // new manager not whitelisted
-    vm.expectRevert(IOption.OA_UnknownManager.selector);
+    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
   }

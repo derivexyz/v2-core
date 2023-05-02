@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "./IAsset.sol";
 import "./IInterestRateModel.sol";
@@ -41,9 +41,6 @@ interface IOption is IAsset {
   ////////////////
   //   Events   //
   ////////////////
-
-  /// @dev Emitted when a manager address is whitelisted or unwhitelisted
-  event WhitelistManagerSet(address manager, bool whitelisted);
 
   /// @dev Emitted when interest related state variables are updated
   event SnapshotTaken(uint subId, uint tradeId, uint oi);

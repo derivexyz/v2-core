@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
@@ -48,7 +48,7 @@ contract MLRM is BaseManager, IManager {
     ISettlementFeed _settlementFeed,
     ICashAsset cashAsset_,
     IOption option_
-  ) BaseManager(accounts_, futureFeed_, _settlementFeed, cashAsset_, option_) {}
+  ) BaseManager(accounts_, futureFeed_, _settlementFeed, cashAsset_, option_, IPerpAsset(address(0))) {}
 
   /**
    * @notice Ensures asset is valid and Max Loss margin is met.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -117,7 +117,7 @@ contract StrikeGroupingTest is Test {
 
     // all expiries
     IBaseManager.Portfolio memory portfolio =
-      IBaseManager.Portfolio({cash: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
 
     return portfolio;
   }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/console2.sol";
 import "../../shared/IntegrationTestBase.sol";
@@ -122,9 +122,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(callExpiry);
     int priceIncrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, callExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
@@ -171,9 +171,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(putExpiry);
     int priceDecrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE - priceDecrease, putExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
@@ -193,7 +193,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     uint callId = option.getSubId(callExpiry, callStrike, true);
 
     // Record pre balance
-    (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
+    (int aliceBal, int bobBal, int charlieBal,) = _getAllCashBalances();
 
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](4);
 
@@ -245,9 +245,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(callExpiry);
     int priceDecrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE - priceDecrease, callExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Balances remain the same as options expire worthless
     (aliceBal, bobBal, charlieBal,) = _getAllCashBalances();
@@ -266,7 +266,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     uint putId = option.getSubId(putExpiry, putStrike, false);
 
     // Record pre balance
-    (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
+    (int aliceBal, int bobBal, int charlieBal,) = _getAllCashBalances();
 
     AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](4);
 
@@ -318,9 +318,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(putExpiry);
     int priceIncrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, putExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Balances remain the same as options expire worthless
     (aliceBal, bobBal, charlieBal,) = _getAllCashBalances();
@@ -377,10 +377,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(callExpiry);
     int priceIncrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, callExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
-    pcrm.settleAccount(daveAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
+    pcrm.settleOptions(daveAcc);
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
@@ -390,7 +390,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     assertEq(uint(daveBal), DEFAULT_DEPOSIT + uint(priceIncrease) - oiFee);
   }
 
-  function _getAllCashBalances() internal returns (int aliceBal, int bobBal, int charlieBal, int daveBal) {
+  function _getAllCashBalances() internal view returns (int aliceBal, int bobBal, int charlieBal, int daveBal) {
     aliceBal = getCashBalance(aliceAcc);
     bobBal = getCashBalance(bobAcc);
     charlieBal = getCashBalance(charlieAcc);

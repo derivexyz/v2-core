@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 
@@ -46,7 +46,7 @@ contract UNIT_CashAssetDeposit is Test {
   function testCannotDepositIntoWeirdAccount() public {
     uint badAccount = account.createAccount(address(this), badManager);
 
-    vm.expectRevert(ICashAsset.CA_UnknownManager.selector);
+    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     cashAsset.deposit(badAccount, 100 ether);
   }
 

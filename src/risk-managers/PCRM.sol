@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
@@ -79,7 +79,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
     IOption option_,
     address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_) {
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_, IPerpAsset(address(0))) {
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }

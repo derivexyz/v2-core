@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -14,6 +14,8 @@ import "../interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
 
+import "./ManagerWhitelist.sol";
+
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit USDC and credit this cash asset into their accounts.
@@ -21,7 +23,7 @@ import "../interfaces/IInterestRateModel.sol";
  * @author Lyra
  */
 
-contract CashAsset is ICashAsset, Owned {
+contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
@@ -32,9 +34,6 @@ contract CashAsset is ICashAsset, Owned {
   using SignedDecimalMath for int;
   using DecimalMath for uint128;
   using DecimalMath for uint;
-
-  ///@dev Account contract address
-  IAccounts public immutable accounts;
 
   ///@dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
@@ -86,9 +85,6 @@ contract CashAsset is ICashAsset, Owned {
   ///@dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
 
-  ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
-  mapping(address => bool) public whitelistedManager;
-
   ///@dev AccountId to previously stored borrow/supply index depending on a positive or debt position.
   mapping(uint => uint) public accountIdIndex;
 
@@ -102,10 +98,9 @@ contract CashAsset is ICashAsset, Owned {
     IInterestRateModel _rateModel,
     uint _smId,
     address _liquidationModule
-  ) {
+  ) ManagerWhitelist(_accounts) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
-    accounts = _accounts;
     smId = _smId;
 
     lastTimestamp = block.timestamp;
@@ -116,17 +111,6 @@ contract CashAsset is ICashAsset, Owned {
   //////////////////////////////
   //   Owner-only Functions   //
   //////////////////////////////
-
-  /**
-   * @notice Whitelist or un-whitelist a manager
-   * @param _manager manager address
-   * @param _whitelisted true to whitelist
-   */
-  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
-    whitelistedManager[_manager] = _whitelisted;
-
-    emit WhitelistManagerSet(_manager, _whitelisted);
-  }
 
   /**
    * @notice Allows owner to set InterestRateModel contract
@@ -291,7 +275,7 @@ contract CashAsset is ICashAsset, Owned {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+  ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
@@ -321,7 +305,7 @@ contract CashAsset is ICashAsset, Owned {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, /*accountId*/ IManager newManager) external view {
+  function handleManagerChange(uint, IManager newManager) external view {
     _checkManager(address(newManager));
   }
 
@@ -385,14 +369,6 @@ contract CashAsset is ICashAsset, Owned {
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
-
-  /**
-   * @dev Revert if manager address is not whitelisted by this contract
-   * @param manager manager address
-   */
-  function _checkManager(address manager) internal view {
-    if (!whitelistedManager[manager]) revert CA_UnknownManager();
-  }
 
   /**
    * @notice Accrues interest onto the balance provided
@@ -487,11 +463,6 @@ contract CashAsset is ICashAsset, Owned {
   ///////////////////
   //   Modifiers   //
   ///////////////////
-
-  modifier onlyAccount() {
-    if (msg.sender != address(accounts)) revert CA_NotAccount();
-    _;
-  }
 
   ///@dev revert if caller is not liquidation module
   modifier onlyLiquidation() {
