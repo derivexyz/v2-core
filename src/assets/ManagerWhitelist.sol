@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "lyra-utils/ownership/Owned.sol";
 
@@ -58,8 +58,8 @@ contract ManagerWhitelist is IManagerWhitelist, Owned {
   //   Modifiers   //
   ///////////////////
 
-  modifier onlyAccount() {
-    if (msg.sender != address(accounts)) revert MW_NotAccount();
+  modifier onlyAccounts() {
+    if (msg.sender != address(accounts)) revert MW_OnlyAccounts();
     _;
   }
 }

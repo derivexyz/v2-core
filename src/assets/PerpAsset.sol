@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/console2.sol";
 
@@ -104,7 +104,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external onlyAccount returns (int finalBalance, bool needAllowance) {
+  ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
 
     // calculate funding from the last period, reflect changes in position.funding

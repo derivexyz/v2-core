@@ -1,4 +1,4 @@
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "src/assets/Option.sol";
