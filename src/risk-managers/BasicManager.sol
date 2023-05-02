@@ -57,7 +57,15 @@ contract BasicManager is IBasicManager, BaseManager {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ICashAsset cashAsset_, IOption option_, IPerpAsset perp_, IFutureFeed futureFeed_, ISettlementFeed settlementFeed_, IChainlinkSpotFeed spotFeed_)
+  constructor(
+    IAccounts accounts_,
+    ICashAsset cashAsset_,
+    IOption option_,
+    IPerpAsset perp_,
+    IFutureFeed futureFeed_,
+    ISettlementFeed settlementFeed_,
+    IChainlinkSpotFeed spotFeed_
+  )
     // todo: update forward feed to use a new feed instead of spot
     BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_, perp_)
   {
@@ -87,10 +95,13 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Set the option margin parameters
    */
   function setOptionMarginParameters(OptionMarginParameters calldata params) external onlyOwner {
-    optionMarginParams =
-      OptionMarginParameters(params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio);
+    optionMarginParams = OptionMarginParameters(
+      params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
+    );
 
-    emit OptionMarginParametersSet(params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio);
+    emit OptionMarginParametersSet(
+      params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
+    );
   }
 
   /**
