@@ -173,9 +173,6 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     }
   }
 
-  ////
-  // Views
-
   function handleAdjustment(uint accountId, uint, /*tradeId*/ address, AccountStructs.AssetDelta[] memory, bytes memory)
     public
     override

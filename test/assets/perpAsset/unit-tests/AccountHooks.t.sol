@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockManager.sol";
+import "../../../shared/mocks/MockFeed.sol";
 
 import "../../../../src/assets/PerpAsset.sol";
 import "../../../../src/interfaces/IAccounts.sol";
@@ -12,13 +13,20 @@ contract UNIT_PerpAssetHook is Test {
   PerpAsset perp;
   MockManager manager;
   address account;
+  MockFeed feed;
 
   function setUp() public {
     account = address(0xaa);
 
+    feed = new MockFeed();
+
     manager = new MockManager(account);
 
-    perp = new PerpAsset(IAccounts(account));
+    perp = new PerpAsset(IAccounts(account), 0.0075e18);
+
+    perp.setSpotFeed(feed);
+
+    feed.setSpot(1500e18);
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
@@ -44,7 +52,7 @@ contract UNIT_PerpAssetHook is Test {
     vm.prank(account);
     (int postBalance, bool needAllowance) = perp.handleAdjustment(adjustment, 0, preBalance, manager, address(this));
     assertEq(postBalance, amount);
-    assertEq(needAllowance, false);
+    assertEq(needAllowance, true);
   }
 
   function testWillNotRevertOnLegalManagerUpdate() public {

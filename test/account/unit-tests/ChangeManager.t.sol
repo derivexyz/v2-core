@@ -39,6 +39,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     vm.prank(alice);
     vm.expectRevert();
     account.changeManager(aliceAcc, newManager, "");
+
     vm.clearMockedCalls();
   }
 

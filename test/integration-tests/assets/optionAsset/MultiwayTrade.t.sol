@@ -122,9 +122,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(callExpiry);
     int priceIncrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, callExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
@@ -171,9 +171,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(putExpiry);
     int priceDecrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE - priceDecrease, putExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();
@@ -245,9 +245,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(callExpiry);
     int priceDecrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE - priceDecrease, callExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Balances remain the same as options expire worthless
     (aliceBal, bobBal, charlieBal,) = _getAllCashBalances();
@@ -318,9 +318,9 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(putExpiry);
     int priceIncrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, putExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
 
     // Balances remain the same as options expire worthless
     (aliceBal, bobBal, charlieBal,) = _getAllCashBalances();
@@ -377,10 +377,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     vm.warp(callExpiry);
     int priceIncrease = 1000e18;
     _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, callExpiry);
-    pcrm.settleAccount(aliceAcc);
-    pcrm.settleAccount(bobAcc);
-    pcrm.settleAccount(charlieAcc);
-    pcrm.settleAccount(daveAcc);
+    pcrm.settleOptions(aliceAcc);
+    pcrm.settleOptions(bobAcc);
+    pcrm.settleOptions(charlieAcc);
+    pcrm.settleOptions(daveAcc);
 
     // Alice's loss should be charlies gain
     (aliceBal, bobBal, charlieBal, daveBal) = _getAllCashBalances();

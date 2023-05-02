@@ -11,6 +11,8 @@ interface IBaseManager {
   struct Portfolio {
     /// cash amount or debt
     int cash;
+    /// perp amount
+    int perp;
     /// timestamp of expiry for all strike holdings
     uint expiry;
     /// # of strikes with active balances

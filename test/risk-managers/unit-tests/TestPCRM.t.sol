@@ -167,7 +167,7 @@ contract UNIT_TestPCRM is Test {
     strikes[0] = IBaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
     IBaseManager.Portfolio memory portfolio =
-      IBaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getInitialMargin(portfolio);
 
@@ -181,7 +181,7 @@ contract UNIT_TestPCRM is Test {
     strikes[0] = IBaseManager.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
 
     IBaseManager.Portfolio memory expiry =
-      IBaseManager.Portfolio({cash: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
 
     manager.getMaintenanceMargin(expiry);
 
@@ -194,7 +194,7 @@ contract UNIT_TestPCRM is Test {
     strikes[1] = IBaseManager.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
     IBaseManager.Portfolio memory expiry =
-      IBaseManager.Portfolio({cash: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -212,7 +212,7 @@ contract UNIT_TestPCRM is Test {
 
     feed.setFuturePrice(expiryTimestamp, 100e18);
     IBaseManager.Portfolio memory expiry =
-      IBaseManager.Portfolio({cash: 0, expiry: expiryTimestamp, numStrikesHeld: 2, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiryTimestamp, numStrikesHeld: 2, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 
@@ -228,7 +228,7 @@ contract UNIT_TestPCRM is Test {
 
     feed.setFuturePrice(expiryTimestamp, 2000e18);
     IBaseManager.Portfolio memory expiry =
-      IBaseManager.Portfolio({cash: 0, expiry: expiryTimestamp, numStrikesHeld: 1, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiryTimestamp, numStrikesHeld: 1, strikes: strikes});
 
     manager.getInitialMargin(expiry);
 

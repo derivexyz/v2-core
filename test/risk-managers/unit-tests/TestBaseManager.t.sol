@@ -18,6 +18,7 @@ import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeed.sol";
 import "../../shared/mocks/MockOption.sol";
 import "../../auction/mocks/MockCashAsset.sol";
+import "../../shared/mocks/MockPerp.sol";
 
 contract BaseManagerTester is BaseManager {
   constructor(
@@ -25,8 +26,9 @@ contract BaseManagerTester is BaseManager {
     IFutureFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     ICashAsset cash_,
-    IOption option_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cash_, option_) {}
+    IOption option_,
+    IPerpAsset perp_
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cash_, option_, perp_) {}
 
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
@@ -65,6 +67,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   MockERC20 usdc;
   MockOption option;
   MockCash cash;
+  MockPerp perp;
 
   address alice = address(0xaa);
   address bob = address(0xb0ba);
@@ -79,9 +82,10 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     feed = new MockFeed();
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
+    perp = new MockPerp(accounts);
     cash = new MockCash(usdc, accounts);
 
-    tester = new BaseManagerTester(accounts, feed, feed, cash, option);
+    tester = new BaseManagerTester(accounts, feed, feed, cash, option, perp);
 
     mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
 
@@ -119,7 +123,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
     strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     IBaseManager.Portfolio memory portfolio =
-      IBaseManager.Portfolio({cash: 0, expiry: 1 days, numStrikesHeld: 1, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: 1 days, numStrikesHeld: 1, strikes: strikes});
 
     // construct asset
     AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({
@@ -140,7 +144,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     strikes[1] = IBaseManager.Strike({strike: 2000e18, calls: -1e18, puts: 0, forwards: 0});
     strikes[2] = IBaseManager.Strike({strike: 3000e18, calls: 10e18, puts: 5e18, forwards: 0});
     BaseManager.Portfolio memory portfolio =
-      IBaseManager.Portfolio({cash: 0, expiry: expiry, numStrikesHeld: 3, strikes: strikes});
+      IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiry, numStrikesHeld: 3, strikes: strikes});
 
     // add call to existing strike
     AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({
@@ -273,7 +277,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedTotalSettlementValue(callId, -500e18);
     option.setMockedTotalSettlementValue(putId, 1000e18);
 
-    tester.settleAccount(aliceAcc);
+    tester.settleOptions(aliceAcc);
 
     assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
     assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
@@ -291,7 +295,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedTotalSettlementValue(callId, -1500e18);
     option.setMockedTotalSettlementValue(putId, 200e18);
 
-    tester.settleAccount(aliceAcc);
+    tester.settleOptions(aliceAcc);
 
     assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
     assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
@@ -310,7 +314,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedTotalSettlementValue(callId, -500e18);
     option.setMockedTotalSettlementValue(putId, 1000e18);
 
-    tester.settleAccount(aliceAcc);
+    tester.settleOptions(aliceAcc);
 
     assertEq(accounts.getBalance(aliceAcc, option, callId), callBalanceBefore);
     assertEq(accounts.getBalance(aliceAcc, option, putId), putBalanceBefore);
