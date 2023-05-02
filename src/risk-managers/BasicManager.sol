@@ -58,6 +58,7 @@ contract BasicManager is IBasicManager, BaseManager {
   ////////////////////////
 
   constructor(IAccounts accounts_, ICashAsset cashAsset_, IOption option_, IPerpAsset perp_, IChainlinkSpotFeed feed_)
+    // todo: update forward feed to use a new feed instead of spot
     BaseManager(accounts_, feed_, feed_, cashAsset_, option_, perp_)
   {
     feed = feed_;
