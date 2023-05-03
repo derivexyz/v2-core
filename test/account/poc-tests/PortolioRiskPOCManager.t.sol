@@ -74,8 +74,8 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     setSettlementPrice(expiry);
 
     // settlment
-    AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
-    assets[0] = AccountStructs.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
+    IAccounts.HeldAsset[] memory assets = new IAccounts.HeldAsset[](1);
+    assets[0] = IAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
     rm.settleAssets(aliceAcc, assets);
     rm.settleAssets(bobAcc, assets);
 

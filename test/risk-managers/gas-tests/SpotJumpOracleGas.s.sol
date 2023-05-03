@@ -9,7 +9,6 @@ import "src/risk-managers/SpotJumpOracle.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
 
 contract PCRMSpotJumpOracleGas is Script {
   Accounts account;

@@ -76,7 +76,7 @@ contract AccountTestBase is Test {
     uint tokenASubId,
     uint tokenBSubId
   ) internal {
-    AccountStructs.AssetTransfer memory tokenATransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory tokenATransfer = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(assetA),
@@ -85,7 +85,7 @@ contract AccountTestBase is Test {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer memory tokenBTranser = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory tokenBTranser = IAccounts.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: IAsset(assetB),
@@ -94,7 +94,7 @@ contract AccountTestBase is Test {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = tokenATransfer;
     transferBatch[1] = tokenBTranser;
 
@@ -102,7 +102,7 @@ contract AccountTestBase is Test {
   }
 
   function transferToken(uint fromAcc, uint toAcc, IAsset asset, uint subId, int tokenAmounts) internal {
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: asset,

@@ -37,7 +37,7 @@ contract MockSM is ISecurityModule {
       cashAmountPaid = cashAmountNeeded;
     }
 
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: accountId,
       toAcc: targetAccount,
       asset: cash,

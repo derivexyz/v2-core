@@ -9,7 +9,7 @@ import "src/assets/InterestRateModel.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockDutchAuction.sol";
@@ -55,7 +55,7 @@ contract StrikeGroupingGasScript is Script {
   }
 
   function _gasSingleOption() public {
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -74,7 +74,7 @@ contract StrikeGroupingGasScript is Script {
   }
 
   function _gasMaxAssets() public {
-    AccountStructs.AssetTransfer[] memory assetTransfers = _composeMaxTransfers();
+    IAccounts.AssetTransfer[] memory assetTransfers = _composeMaxTransfers();
 
     // create account
     for (uint i; i < assetTransfers.length; i++) {
@@ -152,17 +152,17 @@ contract StrikeGroupingGasScript is Script {
     );
   }
 
-  function _composeMaxTransfers() public view returns (AccountStructs.AssetTransfer[] memory assetTransfers) {
+  function _composeMaxTransfers() public view returns (IAccounts.AssetTransfer[] memory assetTransfers) {
     //
     uint max_strikes = pcrm.MAX_STRIKES();
-    assetTransfers = new AccountStructs.AssetTransfer[](max_strikes);
+    assetTransfers = new IAccounts.AssetTransfer[](max_strikes);
 
     //
     uint baseExpiry = block.timestamp;
     uint baseStrike = 0;
     for (uint i; i < max_strikes; i++) {
       uint newSubId = OptionEncoding.toSubId(baseExpiry, baseStrike + i * 10e18, true);
-      assetTransfers[i] = AccountStructs.AssetTransfer({
+      assetTransfers[i] = IAccounts.AssetTransfer({
         fromAcc: aliceAcc,
         toAcc: bobAcc,
         asset: IAsset(option),

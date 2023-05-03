@@ -36,7 +36,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(optionAdapter),
@@ -45,7 +45,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(usdcAdapter),
@@ -54,7 +54,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
@@ -68,7 +68,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(optionAdapter),
@@ -77,7 +77,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(usdcAdapter),
@@ -86,7 +86,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](100);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](100);
 
     for (uint i; i < 50; i++) {
       transferBatch[i * 2] = optionTransfer;
@@ -103,10 +103,10 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer[] memory initialTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 5);
+    IAccounts.AssetTransfer[] memory initialTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 5);
     account.submitTransfers(initialTransfers, "");
 
-    AccountStructs.AssetTransfer[] memory finalTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18), 5);
+    IAccounts.AssetTransfer[] memory finalTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18), 5);
     account.submitTransfers(finalTransfers, "");
 
     vm.stopPrank();
@@ -118,12 +118,11 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer[] memory initialTransfers =
-      composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 100);
+    IAccounts.AssetTransfer[] memory initialTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 100);
     account.submitTransfers(initialTransfers, "");
 
-    AccountStructs.AssetTransfer[] memory singleTransfer = new AccountStructs.AssetTransfer[](1);
-    singleTransfer[0] = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer[] memory singleTransfer = new IAccounts.AssetTransfer[](1);
+    singleTransfer[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(optionAdapter),
@@ -138,12 +137,12 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
   function composeBulkUniqueTransfers(uint fromAcc, uint toAcc, int amount, uint numOfTransfers)
     internal
-    returns (AccountStructs.AssetTransfer[] memory transferBatch)
+    returns (IAccounts.AssetTransfer[] memory transferBatch)
   {
-    transferBatch = new AccountStructs.AssetTransfer[](numOfTransfers);
+    transferBatch = new IAccounts.AssetTransfer[](numOfTransfers);
 
     for (uint i; i < numOfTransfers; i++) {
-      transferBatch[i] = AccountStructs.AssetTransfer({
+      transferBatch[i] = IAccounts.AssetTransfer({
         fromAcc: fromAcc,
         toAcc: toAcc,
         asset: IAsset(optionAdapter),

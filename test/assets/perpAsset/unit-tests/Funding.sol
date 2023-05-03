@@ -52,7 +52,7 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setImpactPrices(spot, spot);
 
     // open trades
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: perp,

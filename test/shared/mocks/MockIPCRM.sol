@@ -80,7 +80,7 @@ contract MockIPCRM is IPCRM, IManager {
     uint, /*accountId*/
     uint, /*tradeId*/
     address, /*caller*/
-    AccountStructs.AssetDelta[] memory, /*deltas*/
+    IAccounts.AssetDelta[] memory, /*deltas*/
     bytes memory /*data*/
   ) external virtual {
     // TODO: filler code

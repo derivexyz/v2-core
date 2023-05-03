@@ -60,7 +60,7 @@ contract POC_Lending is Test, AccountPOCHelper {
 
     // charlie then transfers 10mln DAI to alice: borrowing Dai from system
     vm.startPrank(orderbook);
-    AccountStructs.AssetTransfer memory daiLoan = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory daiLoan = IAccounts.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: aliceAcc,
       asset: IAsset(daiLending),
@@ -103,8 +103,8 @@ contract POC_Lending is Test, AccountPOCHelper {
     assertApproxEqAbs(daiLending.supplyIndex(), 103e16, 1e18);
 
     // anyone can submit 0 transfers to trigger the asset hook and adjustbalance based on asset's logic.
-    AccountStructs.AssetTransfer[] memory triggerTxs = new AccountStructs.AssetTransfer[](2);
-    triggerTxs[0] = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer[] memory triggerTxs = new IAccounts.AssetTransfer[](2);
+    triggerTxs[0] = IAccounts.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: aliceAcc,
       asset: IAsset(daiLending),
@@ -112,7 +112,7 @@ contract POC_Lending is Test, AccountPOCHelper {
       amount: 0,
       assetData: bytes32(0)
     });
-    triggerTxs[1] = AccountStructs.AssetTransfer({
+    triggerTxs[1] = IAccounts.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: bobAcc,
       asset: IAsset(daiLending),

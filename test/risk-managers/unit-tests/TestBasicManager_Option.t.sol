@@ -9,7 +9,6 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -219,7 +218,7 @@ contract UNIT_TestBasicManager_Option is Test {
   /////////////
 
   function _tradeOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -240,8 +239,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike2,
     bool isCall
   ) internal {
-    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
-    transfers[0] = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
+    transfers[0] = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -249,7 +248,7 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: shortAmount,
       assetData: ""
     });
-    transfers[1] = AccountStructs.AssetTransfer({
+    transfers[1] = IAccounts.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: option,

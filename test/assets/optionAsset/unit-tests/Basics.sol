@@ -6,7 +6,7 @@ import "src/assets/Option.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+
 import "test/shared/mocks/MockManager.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
@@ -46,7 +46,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -60,7 +60,7 @@ contract UNIT_TestOptionBasics is Test {
 
   function testUnWhitelistedManagerCheck() public {
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -87,7 +87,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -112,7 +112,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),

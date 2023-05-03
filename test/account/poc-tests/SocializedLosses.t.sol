@@ -71,8 +71,8 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     uint settlementPrice = 3000e18;
     setPrices(1e18, 3000e18);
     setSettlementPrice(expiry);
-    AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](1);
-    assets[0] = AccountStructs.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
+    IAccounts.HeldAsset[] memory assets = new IAccounts.HeldAsset[](1);
+    assets[0] = IAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
     rm.settleAssets(bobNewAcc, assets);
 
     uint expectedInsolventAmount = settlementPrice - strike - bobUSDCAmount;
@@ -87,7 +87,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     daiLending.socializeLoss(bobNewAcc, expectedInsolventAmount);
 
     // trigger charlie's retirement account to update balance
-    AccountStructs.AssetTransfer memory triggerTx = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory triggerTx = IAccounts.AssetTransfer({
       fromAcc: retirementAcc,
       toAcc: aliceAcc,
       asset: IAsset(daiLending),
@@ -142,7 +142,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
   }
 
   function openCallOption(uint fromAcc, uint toAcc, int amount, uint subId) public {
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(optionAdapter),
@@ -151,7 +151,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
       amount: amount,
       assetData: bytes32(0)
     });
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](1);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](1);
     transferBatch[0] = optionTransfer;
     account.submitTransfers(transferBatch, "");
   }

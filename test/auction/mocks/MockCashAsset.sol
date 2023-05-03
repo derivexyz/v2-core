@@ -28,7 +28,7 @@ contract MockCash is ICashAsset, MockAsset {
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
     isSocialized = true;
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountToReceive,
         asset: IAsset(address(this)),
         subId: 0,
@@ -42,7 +42,7 @@ contract MockCash is ICashAsset, MockAsset {
 
   function deposit(uint recipientAccount, uint amount) external override(MockAsset, ICashAsset) {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -57,7 +57,7 @@ contract MockCash is ICashAsset, MockAsset {
 
   function withdraw(uint accountId, uint amount, address recipient) external override(MockAsset, ICashAsset) {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,

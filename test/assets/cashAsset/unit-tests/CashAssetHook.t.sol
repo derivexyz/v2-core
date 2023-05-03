@@ -30,13 +30,13 @@ contract UNIT_CashAssetHook is Test {
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
     vm.expectRevert(IManagerWhitelist.MW_OnlyAccounts.selector);
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
+    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
     cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
 
   function testCannotExecuteHandleAdjustmentIfManagerIsNotWhitelisted() public {
     /* this could happen if someone is trying to transfer our cash asset to an account controlled by malicious manager */
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
+    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
 
     vm.prank(account);
@@ -46,7 +46,7 @@ contract UNIT_CashAssetHook is Test {
   function testAssetHookAccurInterestOnPositiveAdjustment() public {
     cashAsset.setWhitelistManager(address(manager), true);
     int delta = 100;
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
+    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
 
     vm.prank(account);
     (int postBalance, bool needAllowance) = cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
@@ -60,7 +60,7 @@ contract UNIT_CashAssetHook is Test {
   function testAssetHookAccurInterestOnNegativeAdjustment() public {
     cashAsset.setWhitelistManager(address(manager), true);
     int delta = -100;
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
+    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
 
     // stimulate call from account
     vm.prank(account);

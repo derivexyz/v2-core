@@ -45,7 +45,7 @@ contract MockAsset is IAsset {
 
   function deposit(uint recipientAccount, uint subId, uint amount) external virtual {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: subId,
@@ -61,7 +61,7 @@ contract MockAsset is IAsset {
   // subid = 0
   function deposit(uint recipientAccount, uint amount) external virtual {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -76,7 +76,7 @@ contract MockAsset is IAsset {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external virtual {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -90,7 +90,7 @@ contract MockAsset is IAsset {
   }
 
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager _manager,

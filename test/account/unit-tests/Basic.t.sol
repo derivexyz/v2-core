@@ -45,8 +45,8 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     int aliceCoolBefore = account.getBalance(aliceAcc, coolAsset, tokenSubId);
     int bobCoolBefore = account.getBalance(bobAcc, coolAsset, tokenSubId);
 
-    AccountStructs.AssetBalance[] memory aliceBalances = account.getAccountBalances(aliceAcc);
-    AccountStructs.AssetBalance[] memory bobBalances = account.getAccountBalances(bobAcc);
+    IAccounts.AssetBalance[] memory aliceBalances = account.getAccountBalances(aliceAcc);
+    IAccounts.AssetBalance[] memory bobBalances = account.getAccountBalances(bobAcc);
     assertEq(aliceBalances.length, 1);
     assertEq(bobBalances.length, 1);
 
@@ -86,12 +86,12 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     vm.prank(alice);
     account.approve(address(this), aliceAcc);
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](101);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](101);
     int amount = 1e18;
     for (uint i; i < 101; i++) {
       mintAndDeposit(alice, aliceAcc, usdc, usdcAsset, i, uint(amount));
 
-      transferBatch[i] = AccountStructs.AssetTransfer({
+      transferBatch[i] = IAccounts.AssetTransfer({
         fromAcc: aliceAcc,
         toAcc: bobAcc,
         asset: IAsset(usdcAsset),
@@ -136,9 +136,9 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     // COOL this => alice
     // COOL aclie => bob
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](5);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](5);
 
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(usdcAsset),
@@ -147,7 +147,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: thisAcc,
       toAcc: bobAcc,
       asset: IAsset(usdcAsset),
@@ -156,7 +156,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[2] = AccountStructs.AssetTransfer({
+    transferBatch[2] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: thisAcc,
       asset: IAsset(coolAsset),
@@ -165,7 +165,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[3] = AccountStructs.AssetTransfer({
+    transferBatch[3] = IAccounts.AssetTransfer({
       fromAcc: thisAcc,
       toAcc: aliceAcc,
       asset: IAsset(coolAsset),
@@ -174,7 +174,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[4] = AccountStructs.AssetTransfer({
+    transferBatch[4] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(coolAsset),
@@ -222,13 +222,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
 
     vm.prank(address(dumbManager));
     account.managerAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: newAccount,
-        asset: usdcAsset,
-        subId: 0,
-        amount: amount,
-        assetData: bytes32(0)
-      })
+      IAccounts.AssetAdjustment({acc: newAccount, asset: usdcAsset, subId: 0, amount: amount, assetData: bytes32(0)})
     );
 
     assertEq(account.getBalance(newAccount, usdcAsset, 0), amount);
@@ -244,13 +238,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     vm.prank(address(dumbManager));
     vm.expectRevert();
     account.managerAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: newAccount,
-        asset: usdcAsset,
-        subId: 0,
-        amount: amount,
-        assetData: bytes32(0)
-      })
+      IAccounts.AssetAdjustment({acc: newAccount, asset: usdcAsset, subId: 0, amount: amount, assetData: bytes32(0)})
     );
   }
 
@@ -267,13 +255,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
     // assume calls from usdc
     vm.prank(address(usdcAsset));
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: newAccount,
-        asset: usdcAsset,
-        subId: 0,
-        amount: amount,
-        assetData: bytes32(0)
-      }),
+      IAccounts.AssetAdjustment({acc: newAccount, asset: usdcAsset, subId: 0, amount: amount, assetData: bytes32(0)}),
       false,
       ""
     );
@@ -290,13 +272,7 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
 
     vm.expectRevert(IAccounts.AC_OnlyAsset.selector);
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
-        acc: newAccount,
-        asset: usdcAsset,
-        subId: 0,
-        amount: amount,
-        assetData: bytes32(0)
-      }),
+      IAccounts.AssetAdjustment({acc: newAccount, asset: usdcAsset, subId: 0, amount: amount, assetData: bytes32(0)}),
       true,
       ""
     );

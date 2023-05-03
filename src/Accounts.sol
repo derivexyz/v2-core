@@ -167,7 +167,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances)
+  function setAssetAllowances(uint accountId, address delegate, IAllowances.AssetAllowance[] memory allowances)
     external
     onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
   {
@@ -409,7 +409,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     }
 
     for (uint i; i < nextSeenId; i++) {
-      AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
+      AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
       _managerHook(seenAccounts[i], tradeId, msg.sender, nonEmptyDeltas, managerData);
     }
   }

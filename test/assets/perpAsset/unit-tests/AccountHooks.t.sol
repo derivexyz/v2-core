@@ -31,13 +31,13 @@ contract UNIT_PerpAssetHook is Test {
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
     vm.expectRevert(IManagerWhitelist.MW_OnlyAccounts.selector);
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, perp, 0, 0, 0x00);
+    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, perp, 0, 0, 0x00);
     perp.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
 
   function testCannotExecuteHandleAdjustmentIfManagerIsNotWhitelisted() public {
     /* this could happen if someone is trying to transfer our cash asset to an account controlled by malicious manager */
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, perp, 0, 0, 0x00);
+    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, perp, 0, 0, 0x00);
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
 
     vm.prank(account);
@@ -48,7 +48,7 @@ contract UNIT_PerpAssetHook is Test {
     perp.setWhitelistManager(address(manager), true);
     int preBalance = 0;
     int amount = 100;
-    AccountStructs.AssetAdjustment memory adjustment = AccountStructs.AssetAdjustment(0, perp, 0, amount, 0x00);
+    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, perp, 0, amount, 0x00);
     vm.prank(account);
     (int postBalance, bool needAllowance) = perp.handleAdjustment(adjustment, 0, preBalance, manager, address(this));
     assertEq(postBalance, amount);

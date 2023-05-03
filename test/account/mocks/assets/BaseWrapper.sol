@@ -6,7 +6,7 @@ import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccounts.sol";
-import "src/interfaces/AccountStructs.sol";
+
 import "../feeds/PriceFeeds.sol";
 
 // TODO: safecast to int
@@ -24,7 +24,7 @@ contract BaseWrapper is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -39,7 +39,7 @@ contract BaseWrapper is IAsset, Owned {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     int postBalance = account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -53,7 +53,7 @@ contract BaseWrapper is IAsset, Owned {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, uint, int preBal, IManager, address)
+  function handleAdjustment(IAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager, address)
     external
     pure
     override

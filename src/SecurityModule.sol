@@ -14,7 +14,6 @@ import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPCRM.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/ISecurityModule.sol";
-import "src/interfaces/AccountStructs.sol";
 
 /**
  * @title SecurityModule
@@ -131,7 +130,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
       cashAmountPaid = cashAmountNeeded;
     }
 
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: accountId,
       toAcc: targetAccount,
       asset: IAsset(address(cashAsset)),

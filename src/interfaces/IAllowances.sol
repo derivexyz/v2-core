@@ -5,6 +5,39 @@ import "src/interfaces/IAsset.sol";
 
 // For full documentation refer to src/Allowances.sol";
 interface IAllowances {
+  ////////////////
+  // Allowances //
+  ////////////////
+
+  struct AssetAllowance {
+    IAsset asset;
+    uint positive;
+    uint negative;
+  }
+
+  struct SubIdAllowance {
+    IAsset asset;
+    uint subId;
+    uint positive;
+    uint negative;
+  }
+
+  struct PermitAllowance {
+    // who to approve
+    address delegate;
+    // nonce for each signer
+    uint nonce;
+    // access are granted on account bases. A signer can have multiple accounts and the signature cannot be
+    // applied to permit another account
+    uint accountId;
+    // deadline on the permit signature
+    uint deadline;
+    // array of "asset allowance" to set
+    IAllowances.AssetAllowance[] assetAllowances;
+    // array of "subid allowance" to set
+    SubIdAllowance[] subIdAllowances;
+  }
+
   ///////////
   // Views //
   ///////////

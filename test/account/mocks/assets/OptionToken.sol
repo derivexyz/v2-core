@@ -8,7 +8,7 @@ import "lyra-utils/math/IntLib.sol";
 import "forge-std/console2.sol";
 
 import "src/Accounts.sol";
-import "src/interfaces/AccountStructs.sol";
+
 import "src/interfaces/IAsset.sol";
 
 import "../assets/QuoteWrapper.sol";
@@ -66,7 +66,7 @@ contract OptionToken is IAsset, Owned {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager riskModel,
@@ -190,7 +190,7 @@ contract OptionToken is IAsset, Owned {
     // only shorts can be socialized
     // open interest modified during handleAdjustment
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: insolventAcc,
         asset: IAsset(address(this)),
         subId: subId,

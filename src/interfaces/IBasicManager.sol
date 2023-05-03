@@ -2,9 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "src/interfaces/IManager.sol";
-import "./AccountStructs.sol";
 
-interface IBasicManager is AccountStructs, IManager {
+interface IBasicManager is IManager {
   ///@dev Struct for Perp Margin Requirements
   struct PerpMarginRequirements {
     uint mmRequirement;

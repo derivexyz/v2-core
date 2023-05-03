@@ -43,7 +43,7 @@ contract MockOption is IOption {
   }
 
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager _manager,

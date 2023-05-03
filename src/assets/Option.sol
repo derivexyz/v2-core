@@ -51,7 +51,7 @@ contract Option is IOption, Owned, ManagerWhitelist {
   ///////////////
 
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint tradeId,
     int preBalance,
     IManager manager,

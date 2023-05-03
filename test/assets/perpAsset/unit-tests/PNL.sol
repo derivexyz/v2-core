@@ -299,14 +299,8 @@ contract UNIT_PerpAssetPNL is Test {
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
-      fromAcc: fromAcc,
-      toAcc: toAcc,
-      asset: perp,
-      subId: 0,
-      amount: amount,
-      assetData: ""
-    });
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
     account.submitTransfer(transfer, "");
   }
 }

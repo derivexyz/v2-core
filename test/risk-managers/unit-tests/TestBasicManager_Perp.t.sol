@@ -7,7 +7,6 @@ import "src/risk-managers/BasicManager.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -138,7 +137,7 @@ contract UNIT_TestBasicManager is Test {
   function testCannotHaveUnrecognizedAsset() public {
     MockAsset badAsset = new MockAsset(usdc, account, true);
     vm.expectRevert(IBasicManager.PM_UnsupportedAsset.selector);
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: badAsset,
@@ -173,14 +172,8 @@ contract UNIT_TestBasicManager is Test {
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
-      fromAcc: fromAcc,
-      toAcc: toAcc,
-      asset: perp,
-      subId: 0,
-      amount: amount,
-      assetData: ""
-    });
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
     account.submitTransfer(transfer, "");
   }
 
