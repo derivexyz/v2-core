@@ -10,9 +10,9 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/ownership/Owned.sol";
 
-import "../interfaces/IAccounts.sol";
-import "../interfaces/ICashAsset.sol";
-import "../interfaces/IInterestRateModel.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IInterestRateModel.sol";
 
 import "./ManagerWhitelist.sol";
 
@@ -149,7 +149,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
     uint amountInAccount = stableAmount.to18Decimals(stableDecimals);
 
     accounts.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -189,7 +189,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
     stableAsset.safeTransfer(recipient, stableAmount);
 
     accounts.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -236,7 +236,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
     accruedSmFees = 0;
 
     accounts.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: smId,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -270,7 +270,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBalance,
     IManager manager,
@@ -332,7 +332,7 @@ contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
 
     // mint this amount in target account
     accounts.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountToReceive,
         asset: ICashAsset(address(this)),
         subId: 0,

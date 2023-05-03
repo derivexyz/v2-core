@@ -9,12 +9,11 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/ownership/Owned.sol";
 
-import "./interfaces/IAsset.sol";
-import "./interfaces/IAccounts.sol";
-import "./interfaces/IPCRM.sol";
-import "./interfaces/ICashAsset.sol";
-import "./interfaces/ISecurityModule.sol";
-import "./interfaces/AccountStructs.sol";
+import "src/interfaces/IAsset.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/IPCRM.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/ISecurityModule.sol";
 
 /**
  * @title SecurityModule
@@ -131,7 +130,7 @@ contract SecurityModule is Owned, ERC20, ISecurityModule {
       cashAmountPaid = cashAmountNeeded;
     }
 
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: accountId,
       toAcc: targetAccount,
       asset: IAsset(address(cashAsset)),

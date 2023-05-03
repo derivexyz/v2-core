@@ -27,10 +27,10 @@ contract PositionBuilderBase is IntegrationTestBase {
     _depositCash(address(accounts.ownerOf(longAcc)), longAcc, DEFAULT_DEPOSIT);
     _depositCash(address(accounts.ownerOf(shortAcc)), shortAcc, DEFAULT_DEPOSIT);
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](positions.length);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](positions.length);
 
     for (uint i = 0; i < positions.length; i++) {
-      transferBatch[i] = AccountStructs.AssetTransfer({
+      transferBatch[i] = IAccounts.AssetTransfer({
         fromAcc: shortAcc,
         toAcc: longAcc,
         asset: option,

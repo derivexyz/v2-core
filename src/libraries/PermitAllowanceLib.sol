@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/interfaces/AccountStructs.sol";
+import "src/interfaces/IAllowances.sol";
 
 /**
  * @title PermitAllowanceLib
@@ -25,7 +25,7 @@ library PermitAllowanceLib {
    *      and also to be compliant to EIP712 standard
    * @param permit permit struct to be hashed
    */
-  function hash(AccountStructs.PermitAllowance memory permit) internal pure returns (bytes32) {
+  function hash(IAllowances.PermitAllowance memory permit) internal pure returns (bytes32) {
     uint assetPermits = permit.assetAllowances.length;
     uint subIdPermits = permit.subIdAllowances.length;
 
@@ -52,11 +52,11 @@ library PermitAllowanceLib {
     );
   }
 
-  function _hashAssetAllowance(AccountStructs.AssetAllowance memory allowance) private pure returns (bytes32) {
+  function _hashAssetAllowance(IAllowances.AssetAllowance memory allowance) private pure returns (bytes32) {
     return keccak256(abi.encode(_ASSET_ALLOWANCE_TYPEHASH, allowance));
   }
 
-  function _hashSubIdAllowance(AccountStructs.SubIdAllowance memory allowance) private pure returns (bytes32) {
+  function _hashSubIdAllowance(IAllowances.SubIdAllowance memory allowance) private pure returns (bytes32) {
     return keccak256(abi.encode(_SUBID_ALLOWANCE_TYPEHASH, allowance));
   }
 }

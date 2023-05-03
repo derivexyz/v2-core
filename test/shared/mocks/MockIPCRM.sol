@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../../../src/interfaces/IPCRM.sol";
-import "../../../src/interfaces/IManager.sol";
-import "../../../src/interfaces/IAsset.sol";
-import "../../../src/interfaces/IAccounts.sol";
+import "src/interfaces/IPCRM.sol";
+import "src/interfaces/IManager.sol";
+import "src/interfaces/IAsset.sol";
+import "src/interfaces/IAccounts.sol";
 
 import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
@@ -80,7 +80,7 @@ contract MockIPCRM is IPCRM, IManager {
     uint, /*accountId*/
     uint, /*tradeId*/
     address, /*caller*/
-    AccountStructs.AssetDelta[] memory, /*deltas*/
+    IAccounts.AssetDelta[] memory, /*deltas*/
     bytes memory /*data*/
   ) external virtual {
     // TODO: filler code

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../../../src/interfaces/ISecurityModule.sol";
-import "../../../src/interfaces/IAccounts.sol";
-import "../../../src/interfaces/IManager.sol";
-import "../../../src/interfaces/IAsset.sol";
+import "src/interfaces/ISecurityModule.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/IManager.sol";
+import "src/interfaces/IAsset.sol";
 
 contract MockSM is ISecurityModule {
   IAccounts public immutable accounts;
@@ -37,7 +37,7 @@ contract MockSM is ISecurityModule {
       cashAmountPaid = cashAmountNeeded;
     }
 
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: accountId,
       toAcc: targetAccount,
       asset: cash,

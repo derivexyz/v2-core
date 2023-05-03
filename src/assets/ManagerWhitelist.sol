@@ -3,8 +3,8 @@ pragma solidity ^0.8.18;
 
 import "lyra-utils/ownership/Owned.sol";
 
-import "../interfaces/IAccounts.sol";
-import "../interfaces/IManagerWhitelist.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/interfaces/IManagerWhitelist.sol";
 
 /**
  * @title ManagerWhitelist

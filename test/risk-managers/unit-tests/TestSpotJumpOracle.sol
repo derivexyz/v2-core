@@ -6,7 +6,7 @@ import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+
 import "test/shared/mocks/MockManager.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 

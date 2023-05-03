@@ -10,7 +10,6 @@ import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
-import "src/interfaces/AccountStructs.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";

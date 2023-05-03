@@ -107,7 +107,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBalance,
     IManager manager,

@@ -5,13 +5,12 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
-import "../../../src/interfaces/IAccounts.sol";
-import "../../../src/interfaces/AccountStructs.sol";
-import "../../../src/Allowances.sol";
-import "../../../src/Accounts.sol";
+import "src/interfaces/IAccounts.sol";
+import "src/Allowances.sol";
+import "src/Accounts.sol";
 import {AccountTestBase} from "./AccountTestBase.sol";
 
-contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
+contract UNIT_Allowances is Test, AccountTestBase {
   function setUp() public {
     setUpAccounts();
   }
@@ -24,7 +23,7 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
   }
 
   function testCannotSetAllowanceFromNonOwner() public {
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](0);
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](0);
     vm.expectRevert(
       abi.encodeWithSelector(
         IAccounts.AC_NotOwnerOrERC721Approved.selector, alice, bobAcc, bob, address(dumbManager), address(0)
@@ -37,7 +36,7 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
   function testCannotTransferNegativeAllowanceWithoutAllowance() public {
     int amount = 1e18;
     vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, alice, bobAcc, -1e18, 0, 0)
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector, alice, bobAcc, -1e18, 0, 0)
     );
     vm.startPrank(alice);
     transferToken(aliceAcc, bobAcc, coolAsset, tokenSubId, -amount);
@@ -48,7 +47,7 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
     // expect revert
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, alice, bobAcc, -1e18, 0, 0)
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector, alice, bobAcc, -1e18, 0, 0)
     );
     tradeTokens(aliceAcc, bobAcc, address(usdcAsset), address(coolAsset), 1e18, 1e18, 0, tokenSubId);
     vm.stopPrank();
@@ -59,8 +58,8 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount});
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    assetAllowances[0] = IAllowances.AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount});
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
     vm.stopPrank();
 
@@ -79,8 +78,9 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token
-    SubIdAllowance[] memory tokenSubIdAllowances = new SubIdAllowance[](1);
-    tokenSubIdAllowances[0] = SubIdAllowance({asset: coolAsset, subId: tokenSubId, positive: 0, negative: tradeAmount});
+    IAllowances.SubIdAllowance[] memory tokenSubIdAllowances = new IAllowances.SubIdAllowance[](1);
+    tokenSubIdAllowances[0] =
+      IAllowances.SubIdAllowance({asset: coolAsset, subId: tokenSubId, positive: 0, negative: tradeAmount});
     account.setSubIdAllowances(bobAcc, alice, tokenSubIdAllowances);
     vm.stopPrank();
 
@@ -99,13 +99,13 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token both on "asset" and "subIdAllowance"
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount / 2});
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    assetAllowances[0] = IAllowances.AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount / 2});
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    SubIdAllowance[] memory tokenSubIdAllowances = new SubIdAllowance[](1);
+    IAllowances.SubIdAllowance[] memory tokenSubIdAllowances = new IAllowances.SubIdAllowance[](1);
     tokenSubIdAllowances[0] =
-      SubIdAllowance({asset: coolAsset, subId: tokenSubId, positive: 0, negative: tradeAmount / 2});
+      IAllowances.SubIdAllowance({asset: coolAsset, subId: tokenSubId, positive: 0, negative: tradeAmount / 2});
     account.setSubIdAllowances(bobAcc, alice, tokenSubIdAllowances);
     vm.stopPrank();
 
@@ -122,12 +122,13 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
   function testCannotTradeWithInsufficientTotalAllowance() public {
     vm.startPrank(bob);
     // bob allow alice to move its cool token
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance({asset: coolAsset, positive: 0, negative: 5e17});
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    assetAllowances[0] = IAllowances.AssetAllowance({asset: coolAsset, positive: 0, negative: 5e17});
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
-    SubIdAllowance[] memory tokenSubIdAllowances = new SubIdAllowance[](1);
-    tokenSubIdAllowances[0] = SubIdAllowance({asset: coolAsset, subId: tokenSubId, positive: 0, negative: 4e17});
+    IAllowances.SubIdAllowance[] memory tokenSubIdAllowances = new IAllowances.SubIdAllowance[](1);
+    tokenSubIdAllowances[0] =
+      IAllowances.SubIdAllowance({asset: coolAsset, subId: tokenSubId, positive: 0, negative: 4e17});
     account.setSubIdAllowances(bobAcc, alice, tokenSubIdAllowances);
     vm.stopPrank();
 
@@ -135,7 +136,7 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(
-        Allowances.NotEnoughSubIdOrAssetAllowances.selector,
+        IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         alice,
         bobAcc,
         -1e18,
@@ -157,8 +158,8 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
 
     vm.startPrank(bob);
     // bob allow alice to move its cool token
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount});
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    assetAllowances[0] = IAllowances.AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount});
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
     vm.stopPrank();
 
@@ -166,7 +167,7 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(
-        Allowances.NotEnoughSubIdOrAssetAllowances.selector,
+        IAllowances.NotEnoughSubIdOrAssetAllowances.selector,
         alice,
         bobAcc,
         tradeAmount, // cannot increase amount!
@@ -184,9 +185,11 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
     address orderbook = address(0xb00c);
 
     // give orderbook allowance over both
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](2);
-    assetAllowances[0] = AssetAllowance({asset: coolAsset, positive: type(uint).max, negative: type(uint).max});
-    assetAllowances[1] = AssetAllowance({asset: usdcAsset, positive: type(uint).max, negative: type(uint).max});
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
+    assetAllowances[0] =
+      IAllowances.AssetAllowance({asset: coolAsset, positive: type(uint).max, negative: type(uint).max});
+    assetAllowances[1] =
+      IAllowances.AssetAllowance({asset: usdcAsset, positive: type(uint).max, negative: type(uint).max});
 
     vm.startPrank(bob);
     account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
@@ -216,14 +219,14 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
 
     // cannot transfer positive amount
     vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, alice, bobAcc, 1e18, 0, 0)
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector, alice, bobAcc, 1e18, 0, 0)
     );
     transferToken(aliceAcc, bobAcc, debtAsset, 0, amount);
     vm.stopPrank();
 
     // can transfer positive amount after setting positive allowance
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance({asset: debtAsset, positive: uint(amount), negative: 0});
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    assetAllowances[0] = IAllowances.AssetAllowance({asset: debtAsset, positive: uint(amount), negative: 0});
     vm.prank(bob);
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
 
@@ -237,8 +240,8 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
     uint tradeAmount = 1e18;
 
     vm.startPrank(bob);
-    AssetAllowance[] memory assetAllowances = new AssetAllowance[](1);
-    assetAllowances[0] = AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount});
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
+    assetAllowances[0] = IAllowances.AssetAllowance({asset: coolAsset, positive: 0, negative: tradeAmount});
     account.setAssetAllowances(bobAcc, alice, assetAllowances);
     account.transferFrom(bob, charlie, bobAcc); // transfer account to charlie
     vm.stopPrank();
@@ -248,7 +251,7 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
     // should revert because allowance is not transferred
     vm.startPrank(alice);
     vm.expectRevert(
-      abi.encodeWithSelector(Allowances.NotEnoughSubIdOrAssetAllowances.selector, alice, charlieAcc, -1e18, 0, 0)
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector, alice, charlieAcc, -1e18, 0, 0)
     );
     tradeTokens(aliceAcc, charlieAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);
     vm.stopPrank();
@@ -272,7 +275,7 @@ contract UNIT_Allowances is Test, AccountTestBase, AccountStructs {
     vm.startPrank(alice);
     vm.expectRevert(
       abi.encodeWithSelector(
-        Allowances.NotEnoughSubIdOrAssetAllowances.selector, address(alice), bobNewAcc, -int(tradeAmount), 0, 0
+        IAllowances.NotEnoughSubIdOrAssetAllowances.selector, address(alice), bobNewAcc, -int(tradeAmount), 0, 0
       )
     );
     tradeTokens(aliceAcc, bobNewAcc, address(usdcAsset), address(coolAsset), tradeAmount, tradeAmount, 0, tokenSubId);

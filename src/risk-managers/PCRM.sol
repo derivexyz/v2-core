@@ -92,10 +92,13 @@ contract PCRM is BaseManager, IManager, IPCRM {
    * @notice Ensures asset is valid and initial margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
-    public
-    override
-  {
+  function handleAdjustment(
+    uint accountId,
+    uint tradeId,
+    address,
+    IAccounts.AssetDelta[] calldata assetDeltas,
+    bytes memory
+  ) public override {
     spotJumpOracle.updateJumps();
     // todo [Josh]: whitelist check
 
@@ -191,7 +194,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
     onlyAuction
   {
     if (portion > DecimalMath.UNIT) revert PCRM_InvalidBidPortion();
-    AccountStructs.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
     // transfer liquidated account's asset to liquidator
     for (uint i; i < assetBalances.length; i++) {
@@ -557,12 +560,12 @@ contract PCRM is BaseManager, IManager, IPCRM {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
+  function _arrangePortfolio(IAccounts.AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
     portfolio.strikes = new PCRM.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
-    AssetBalance memory currentAsset;
+    IAccounts.AssetBalance memory currentAsset;
     uint strikeIndex;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];

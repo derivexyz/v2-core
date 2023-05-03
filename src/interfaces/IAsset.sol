@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "./IManager.sol";
+import "src/interfaces/IManager.sol";
 
 interface IAsset {
   /**
@@ -16,7 +16,7 @@ interface IAsset {
    * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
    */
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint tradeId,
     int preBalance,
     IManager manager,

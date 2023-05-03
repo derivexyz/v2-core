@@ -132,7 +132,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, address, AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint, address, IAccounts.AssetDelta[] calldata assetDeltas, bytes memory)
     public
     override
     onlyAccounts
@@ -191,7 +191,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
+  function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
     internal
     view
     returns (IBaseManager.Portfolio memory portfolio)
@@ -201,7 +201,7 @@ contract BasicManager is IBasicManager, BaseManager {
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
-    AccountStructs.AssetBalance memory currentAsset;
+    IAccounts.AssetBalance memory currentAsset;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {

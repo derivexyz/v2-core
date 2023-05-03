@@ -3,15 +3,16 @@ pragma solidity ^0.8.18;
 
 import "lyra-utils/math/IntLib.sol";
 
-import "./interfaces/IAsset.sol";
-import "./interfaces/AccountStructs.sol";
+import "src/interfaces/IAsset.sol";
+import "src/interfaces/IAllowances.sol";
+import "src/interfaces/IAccounts.sol";
 
 /**
  * @title Allowacne
  * @author Lyra
  * @notice Allow more granular alloance setting, supposed to be used by Account
  */
-contract Allowances {
+contract Allowances is IAllowances {
   using IntLib for int;
 
   ///////////////
@@ -46,7 +47,7 @@ contract Allowances {
     uint accountId,
     address owner,
     address delegate,
-    AccountStructs.AssetAllowance[] memory allowances
+    IAllowances.AssetAllowance[] memory allowances
   ) internal {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
@@ -66,7 +67,7 @@ contract Allowances {
     uint accountId,
     address owner,
     address delegate,
-    AccountStructs.SubIdAllowance[] memory allowances
+    IAllowances.SubIdAllowance[] memory allowances
   ) internal {
     uint allowancesLen = allowances.length;
     for (uint i; i < allowancesLen; i++) {
@@ -87,7 +88,7 @@ contract Allowances {
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param caller address of msg.sender initiating change
    */
-  function _spendAllowance(AccountStructs.AssetAdjustment memory adjustment, address owner, address caller) internal {
+  function _spendAllowance(IAccounts.AssetAdjustment memory adjustment, address owner, address caller) internal {
     /* Early return if amount == 0 */
     if (adjustment.amount == 0) {
       return;
@@ -143,12 +144,4 @@ contract Allowances {
       revert NotEnoughSubIdOrAssetAllowances(msg.sender, accountId, amount, subIdAllowance, assetAllowance);
     }
   }
-
-  ////////////
-  // Errors //
-  ////////////
-
-  error NotEnoughSubIdOrAssetAllowances(
-    address caller, uint accountId, int amount, uint subIdAllowance, uint assetAllowance
-  );
 }

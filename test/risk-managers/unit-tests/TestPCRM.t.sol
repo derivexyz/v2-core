@@ -7,7 +7,6 @@ import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -108,7 +107,7 @@ contract UNIT_TestPCRM is Test {
     // prepare trades
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
     uint longtermSubId = OptionEncoding.toSubId(block.timestamp + 365 days, 10e18, false);
-    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory callTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -116,7 +115,7 @@ contract UNIT_TestPCRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory longtermTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory longtermTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -137,7 +136,7 @@ contract UNIT_TestPCRM is Test {
 
   function testHandleAdjustment() public {
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -154,7 +153,7 @@ contract UNIT_TestPCRM is Test {
   function testCanHandleEmptyAdjustments() public {
     address caller = address(0xca11);
     vm.prank(address(account));
-    AccountStructs.AssetDelta[] memory emptyDeltas = new AccountStructs.AssetDelta[](0);
+    IAccounts.AssetDelta[] memory emptyDeltas = new IAccounts.AssetDelta[](0);
     manager.handleAdjustment(aliceAcc, 2, caller, emptyDeltas, "");
   }
 
@@ -374,7 +373,7 @@ contract UNIT_TestPCRM is Test {
 
   function _transferCash() internal {
     vm.startPrank(address(alice));
-    AccountStructs.AssetTransfer memory cashTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory cashTransfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(address(cash)),
@@ -395,9 +394,9 @@ contract UNIT_TestPCRM is Test {
     callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
     putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
 
-    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
 
-    transfers[0] = AccountStructs.AssetTransfer({
+    transfers[0] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -405,7 +404,7 @@ contract UNIT_TestPCRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    transfers[1] = AccountStructs.AssetTransfer({
+    transfers[1] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
