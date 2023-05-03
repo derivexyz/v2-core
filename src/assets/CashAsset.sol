@@ -11,8 +11,8 @@ import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IAccounts.sol";
-import "../interfaces/ICashAsset.sol";
-import "../interfaces/IInterestRateModel.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IInterestRateModel.sol";
 
 import "./ManagerWhitelist.sol";
 

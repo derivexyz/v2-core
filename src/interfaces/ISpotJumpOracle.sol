@@ -5,7 +5,6 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
 
-import "forge-std/console2.sol";
 
 /**
  * @title ISpotJumpOracle
