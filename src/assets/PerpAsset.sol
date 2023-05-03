@@ -10,7 +10,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
 import "src/interfaces/IAccounts.sol";
@@ -26,7 +26,7 @@ import "./ManagerWhitelist.sol";
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
  */
-contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
+contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using SignedMath for int;
   using SafeCast for uint;

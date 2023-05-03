@@ -118,7 +118,7 @@ contract UNIT_TestPCRM is Test {
 
   function testSetParamsWithNonOwner() public {
     vm.startPrank(alice);
-    vm.expectRevert(AbstractOwned.OnlyOwner.selector);
+    vm.expectRevert(bytes("Ownable: caller is not the owner"));
     manager.setParams(
       IPCRM.SpotShockParams({
         upInitial: 120e16,

@@ -96,7 +96,7 @@ contract MLRM is BaseManager, IManager {
   function _calcMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
     // The portfolio payoff is evaluated at the strike price of each owned option.
     // This guarantees that the max loss of a portfolio can be found.
-    bool zeroStrikeOwned;
+    bool zeroStrikeOwnable2Step;
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       uint scenarioPrice = portfolio.strikes[i].strike;
@@ -105,12 +105,12 @@ contract MLRM is BaseManager, IManager {
       netCalls += portfolio.strikes[i].calls;
 
       if (scenarioPrice == 0) {
-        zeroStrikeOwned = true;
+        zeroStrikeOwnable2Step = true;
       }
     }
 
     // Ensure $0 scenario is always evaluated.
-    if (!zeroStrikeOwned) {
+    if (!zeroStrikeOwnable2Step) {
       margin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
     }
 

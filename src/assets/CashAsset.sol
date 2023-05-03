@@ -8,7 +8,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/ICashAsset.sol";
@@ -23,7 +23,7 @@ import "./ManagerWhitelist.sol";
  * @author Lyra
  */
 
-contract CashAsset is ICashAsset, Owned, ManagerWhitelist {
+contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;

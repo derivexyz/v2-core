@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
@@ -13,7 +13,7 @@ import "src/interfaces/IAccounts.sol";
 
 import "forge-std/console2.sol";
 
-contract Lending is IAsset, Owned {
+contract Lending is IAsset, Ownable2Step {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -36,7 +36,7 @@ contract Lending is IAsset, Owned {
 
   mapping(uint => uint) public accountIndex; // could be borrow or supply index
 
-  constructor(IERC20 token_, IAccounts account_, InterestRateModel _interestRateModel) Owned() {
+  constructor(IERC20 token_, IAccounts account_, InterestRateModel _interestRateModel) Ownable2Step() {
     token = token_;
     account = account_;
 

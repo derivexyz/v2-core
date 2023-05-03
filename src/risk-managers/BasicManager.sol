@@ -7,7 +7,7 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
@@ -235,7 +235,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int maxLossMargin = 0;
     int isolatedMargin = 0;
-    bool zeroStrikeOwned;
+    bool zeroStrikeOwnable2Step;
 
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       int forwardPrice = feed.getFuturePrice(portfolio.expiry).toInt256();
@@ -245,7 +245,7 @@ contract BasicManager is IBasicManager, BaseManager {
         uint scenarioPrice = portfolio.strikes[i].strike;
         maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), maxLossMargin);
         if (scenarioPrice == 0) {
-          zeroStrikeOwned = true;
+          zeroStrikeOwnable2Step = true;
         }
       }
 
@@ -260,7 +260,7 @@ contract BasicManager is IBasicManager, BaseManager {
     }
 
     // Ensure $0 scenario is always evaluated.
-    if (lossBounded && !zeroStrikeOwned) {
+    if (lossBounded && !zeroStrikeOwnable2Step) {
       maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), maxLossMargin);
     }
 

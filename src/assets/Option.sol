@@ -5,7 +5,7 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
 import "./ManagerWhitelist.sol";
@@ -20,7 +20,7 @@ import "src/interfaces/ISettlementFeed.sol";
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, Owned, ManagerWhitelist {
+contract Option is IOption, Ownable2Step, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
