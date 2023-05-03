@@ -10,7 +10,7 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/ownership/Owned.sol";
 
-import "../interfaces/IAccounts.sol";
+import "src/interfaces/IAccounts.sol";
 import "../interfaces/ICashAsset.sol";
 import "../interfaces/IInterestRateModel.sol";
 
