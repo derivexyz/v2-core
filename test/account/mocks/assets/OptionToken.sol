@@ -9,7 +9,7 @@ import "forge-std/console2.sol";
 
 import "src/Accounts.sol";
 
-import "src/interfaces/IAsset.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "../assets/QuoteWrapper.sol";
 import "../feeds/SettlementPricer.sol";

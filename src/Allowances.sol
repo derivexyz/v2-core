@@ -3,9 +3,9 @@ pragma solidity ^0.8.18;
 
 import "lyra-utils/math/IntLib.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAllowances.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAllowances} from "src/interfaces/IAllowances.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 /**
  * @title Allowacne

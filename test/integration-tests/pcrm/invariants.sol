@@ -6,7 +6,7 @@ import "forge-std/console2.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "../shared/IntegrationTestBase.sol";
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 /**
  * @dev testing some properties of PCRM

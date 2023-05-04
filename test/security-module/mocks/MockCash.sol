@@ -7,8 +7,8 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/ICashAsset.sol";
 import "../../shared/mocks/MockAsset.sol";
 

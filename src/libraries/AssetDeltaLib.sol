@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 /**
  * @title ArrayDeltaLib

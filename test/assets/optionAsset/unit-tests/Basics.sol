@@ -4,8 +4,8 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "src/assets/Option.sol";
 import "src/Accounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "test/shared/mocks/MockManager.sol";
 

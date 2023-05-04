@@ -14,7 +14,7 @@ import "src/risk-managers/BasicManager.sol";
 import "src/assets/PerpAsset.sol";
 import "src/assets/CashAsset.sol";
 import "src/assets/Option.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 /**

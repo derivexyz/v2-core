@@ -9,7 +9,7 @@ import "../../../shared/mocks/MockFeed.sol";
 
 import "src/Accounts.sol";
 import "src/assets/PerpAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 contract UNIT_PerpAssetPNL is Test {

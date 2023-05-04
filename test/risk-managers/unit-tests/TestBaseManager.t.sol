@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";
 
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";

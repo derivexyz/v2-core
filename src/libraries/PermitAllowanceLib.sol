@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/interfaces/IAllowances.sol";
+import {IAllowances} from "src/interfaces/IAllowances.sol";
 
 /**
  * @title PermitAllowanceLib

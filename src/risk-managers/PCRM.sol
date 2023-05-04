@@ -6,8 +6,8 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/math/Black76.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";

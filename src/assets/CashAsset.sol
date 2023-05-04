@@ -10,9 +10,10 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/IInterestRateModel.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {ICashAsset} from "src/interfaces/ICashAsset.sol";
+import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
 
 import "./ManagerWhitelist.sol";
 
