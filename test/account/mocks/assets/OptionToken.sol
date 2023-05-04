@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/math/Black76.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 import "forge-std/console2.sol";
 
@@ -16,7 +16,7 @@ import "../feeds/SettlementPricer.sol";
 import "../feeds/PriceFeeds.sol";
 
 // Adapter condenses all deposited positions into a single position per subId
-contract OptionToken is IAsset, Owned {
+contract OptionToken is IAsset, Ownable2Step {
   using IntLib for int;
   using SignedDecimalMath for int;
   using Black76 for Black76.Black76Inputs;
@@ -45,7 +45,7 @@ contract OptionToken is IAsset, Owned {
 
   mapping(uint96 => Listing) public subIdToListing;
 
-  constructor(Accounts account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Owned() {
+  constructor(Accounts account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Ownable2Step() {
     account = account_;
     priceFeeds = feeds_;
     settlementPricer = settlementPricer_;

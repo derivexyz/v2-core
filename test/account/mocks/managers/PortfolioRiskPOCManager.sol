@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "forge-std/console2.sol";
 
@@ -18,7 +18,7 @@ import "./../assets/OptionToken.sol";
 import "./../assets/ISettleable.sol";
 import "./../assets/lending/Lending.sol";
 
-contract PortfolioRiskPOCManager is Owned, IManager {
+contract PortfolioRiskPOCManager is Ownable2Step, IManager {
   using DecimalMath for uint;
   using SafeCast for uint;
   using SignedDecimalMath for int;
@@ -55,7 +55,7 @@ contract PortfolioRiskPOCManager is Owned, IManager {
     BaseWrapper baseAsset_,
     OptionToken optionToken_,
     Lending lending_
-  ) Owned() {
+  ) Ownable2Step() {
     account = account_;
     priceFeeds = priceFeed_;
     quoteAsset = quoteAsset_;

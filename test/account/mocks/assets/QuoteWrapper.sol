@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "src/interfaces/IAsset.sol";
 import "src/Accounts.sol";
@@ -10,13 +10,13 @@ import "src/Accounts.sol";
 import "../feeds/PriceFeeds.sol";
 
 // TODO: interest rates, not really needed for account system PoC
-contract QuoteWrapper is IAsset, Owned {
+contract QuoteWrapper is IAsset, Ownable2Step {
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
   Accounts account;
   PriceFeeds priceFeeds;
 
-  constructor(IERC20 token_, Accounts account_, PriceFeeds feeds_, uint feedId) Owned() {
+  constructor(IERC20 token_, Accounts account_, PriceFeeds feeds_, uint feedId) Ownable2Step() {
     token = token_;
     account = account_;
     priceFeeds = feeds_;

@@ -5,7 +5,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/math/IntLib.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IOption.sol";
@@ -16,7 +16,7 @@ import "src/interfaces/IBaseManager.sol";
 
 import "src/libraries/StrikeGrouping.sol";
 
-abstract contract BaseManager is IBaseManager, Owned {
+abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
   using DecimalMath for uint;
 
@@ -61,7 +61,7 @@ abstract contract BaseManager is IBaseManager, Owned {
     ICashAsset _cashAsset,
     IOption _option,
     IPerpAsset _perp
-  ) Owned() {
+  ) Ownable2Step() {
     accounts = _accounts;
     option = _option;
     perp = _perp;

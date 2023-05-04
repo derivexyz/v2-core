@@ -14,5 +14,4 @@
 	branch = v4.8.1
 [submodule "lib/lyra-utils"]
 	path = lib/lyra-utils
-	url = git@github.com:lyra-finance/lyra-utils.git
-	branch = build/v2
+	url = https://github.com/lyra-finance/lyra-utils

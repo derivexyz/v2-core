@@ -70,7 +70,7 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testCannotSetSpotFeedFromNonOwner() public {
     vm.prank(alice);
-    vm.expectRevert(AbstractOwned.OnlyOwner.selector);
+    vm.expectRevert(bytes("Ownable: caller is not the owner"));
     perp.setSpotFeed(IChainlinkSpotFeed(address(0)));
   }
 

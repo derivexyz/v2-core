@@ -7,7 +7,7 @@ import "openzeppelin/token/ERC20/ERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "src/interfaces/IAsset.sol";
 import "src/interfaces/IAccounts.sol";
@@ -20,7 +20,7 @@ import "src/interfaces/ISecurityModule.sol";
  * @author Lyra
  * @notice Module used to store fund to bail out insolvent accounts
  */
-contract SecurityModule is Owned, ERC20, ISecurityModule {
+contract SecurityModule is Ownable2Step, ERC20, ISecurityModule {
   using SafeCast for int;
   using ConvertDecimals for uint;
   using SafeERC20 for IERC20Metadata;
