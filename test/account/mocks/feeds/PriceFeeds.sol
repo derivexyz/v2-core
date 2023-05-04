@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/access/Ownable2Step.sol";
-import "src/interfaces/IAsset.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 interface PriceFeeds {
   function assignFeedToAsset(IAsset asset, uint feedId) external;

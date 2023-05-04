@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "src/interfaces/ISecurityModule.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 contract MockSM is ISecurityModule {
   IAccounts public immutable accounts;

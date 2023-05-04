@@ -4,8 +4,8 @@ import "forge-std/Test.sol";
 import "src/risk-managers/SpotJumpOracle.sol";
 import "src/feeds/ChainlinkSpotFeed.sol";
 import "src/Accounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";

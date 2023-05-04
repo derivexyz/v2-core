@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "../../shared/mocks/MockAsset.sol";
 
 /**

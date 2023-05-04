@@ -9,11 +9,12 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IPCRM.sol";
-import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/ISecurityModule.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IPCRM} from "src/interfaces/IPCRM.sol";
+import {ICashAsset} from "src/interfaces/ICashAsset.sol";
+import {ISecurityModule} from "src/interfaces/ISecurityModule.sol";
 
 /**
  * @title SecurityModule

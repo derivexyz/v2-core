@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAsset.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 import "src/Accounts.sol";
 
 import "../feeds/PriceFeeds.sol";

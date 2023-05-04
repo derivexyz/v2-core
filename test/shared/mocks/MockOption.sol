@@ -6,7 +6,8 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
 import "src/interfaces/IOption.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 contract MockOption is IOption {
   using SafeCast for uint;

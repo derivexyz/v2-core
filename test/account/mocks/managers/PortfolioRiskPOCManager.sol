@@ -9,8 +9,8 @@ import "openzeppelin/access/Ownable2Step.sol";
 
 import "forge-std/console2.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 import "./../assets/QuoteWrapper.sol";
 import "./../assets/BaseWrapper.sol";

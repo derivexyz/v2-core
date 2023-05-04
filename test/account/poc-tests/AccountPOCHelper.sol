@@ -2,8 +2,8 @@
 pragma solidity ^0.8.18;
 
 import "src/Accounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";

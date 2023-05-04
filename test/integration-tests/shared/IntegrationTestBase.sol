@@ -18,7 +18,7 @@ import "src/risk-managers/SpotJumpOracle.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
 import "src/interfaces/IPCRM.sol";
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 /**
  * @dev real Accounts contract
