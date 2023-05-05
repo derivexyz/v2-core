@@ -7,13 +7,14 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
+import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
 import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
@@ -22,6 +23,8 @@ import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
 import {BaseManager} from "./BaseManager.sol";
+
+import "src/libraries/StrikeGrouping.sol";
 
 import "forge-std/console2.sol";
 
@@ -181,7 +184,7 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function _getNetOptionMargin(uint accountId) internal view returns (int margin) {
     // todo: group by expiry, don't use this logic from MLRM
-    IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+    ISingleExpiryPortfolio.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     margin = _calcNetBasicMargin(portfolio);
   }
@@ -196,10 +199,10 @@ contract BasicManager is IBasicManager, BaseManager {
   function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
     internal
     view
-    returns (IBaseManager.Portfolio memory portfolio)
+    returns (ISingleExpiryPortfolio.Portfolio memory portfolio)
   {
     // note: Same logic with from MLRM
-    portfolio.strikes = new IBaseManager.Strike[](
+    portfolio.strikes = new ISingleExpiryPortfolio.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
@@ -225,7 +228,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param portfolio Account portfolio.
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+  function _calcNetBasicMargin(ISingleExpiryPortfolio.Portfolio memory portfolio) internal view returns (int margin) {
     // todo: calculate each sub-portfolio with diff expiry and sum them all.
 
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
@@ -354,12 +357,47 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(IBaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
+  function _calcPayoffAtPrice(ISingleExpiryPortfolio.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      IBaseManager.Strike memory currentStrike = portfolio.strikes[i];
+      ISingleExpiryPortfolio.Strike memory currentStrike = portfolio.strikes[i];
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }
+  }
+
+  /**
+   * @notice Todo: change this function to work with multiple asset / expiries
+   */
+  function _addOption(ISingleExpiryPortfolio.Portfolio memory portfolio, IAccounts.AssetBalance memory asset)
+    internal
+    pure
+    returns (uint addedStrikeIndex)
+  {
+    // decode subId
+    (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(asset.subId));
+
+    // assume expiry = 0 means this is the first strike.
+    if (portfolio.expiry == 0) {
+      portfolio.expiry = expiry;
+    }
+
+    if (portfolio.expiry != expiry) {
+      revert ("basic manager portfolio: multiple expiry!");
+    }
+
+    // add strike in-memory to portfolio
+    (addedStrikeIndex, portfolio.numStrikesHeld) =
+      StrikeGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
+
+    // add call or put balance
+    if (isCall) {
+      portfolio.strikes[addedStrikeIndex].calls += asset.balance;
+    } else {
+      portfolio.strikes[addedStrikeIndex].puts += asset.balance;
+    }
+
+    // return the index of the strike which was just modified
+    return addedStrikeIndex;
   }
 
   ////////////////////////

@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "lyra-utils/math/IntLib.sol";
 import "forge-std/console2.sol";
 
-import "src/interfaces/IBaseManager.sol";
+import "src/interfaces/ISingleExpiryPortfolio.sol";
 /**
  * @title StrikeGrouping
  * @author Lyra
@@ -21,7 +21,7 @@ library StrikeGrouping {
    * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
    * @param strike BaseManager.Strike struct containing all holdings for a particular strike
    */
-  function updateForwards(IBaseManager.Strike memory strike) internal pure {
+  function updateForwards(ISingleExpiryPortfolio.Strike memory strike) internal pure {
     int additionalFwds = StrikeGrouping.findForwards(strike.calls, strike.puts);
     if (additionalFwds != 0) {
       strike.calls -= additionalFwds;
@@ -53,13 +53,13 @@ library StrikeGrouping {
 
   /**
    * @notice Adds new strike struct if not present in holdings
-   * @param strikes All holdings for a given expiry. Refer to IBaseManager.sol
+   * @param strikes All holdings for a given expiry. Refer to ISingleExpiryPortfolio.sol
    * @param newStrike strike price
    * @param arrayLen # of strikes already active
    * @return strikeIndex index of existing or added strike struct
    * @return newArrayLen new # of strikes post addition
    */
-  function findOrAddStrike(IBaseManager.Strike[] memory strikes, uint newStrike, uint arrayLen)
+  function findOrAddStrike(ISingleExpiryPortfolio.Strike[] memory strikes, uint newStrike, uint arrayLen)
     internal
     pure
     returns (uint, uint)
@@ -73,7 +73,7 @@ library StrikeGrouping {
     // return index if found or add new entry
     if (found == false) {
       strikeIndex = arrayLen++;
-      strikes[strikeIndex] = IBaseManager.Strike({strike: newStrike, calls: 0, puts: 0, forwards: 0});
+      strikes[strikeIndex] = ISingleExpiryPortfolio.Strike({strike: newStrike, calls: 0, puts: 0, forwards: 0});
     }
     return (strikeIndex, arrayLen);
   }
@@ -86,7 +86,7 @@ library StrikeGrouping {
    * @return index index of the found element. 0 if not found
    * @return found true if found
    */
-  function findInArray(IBaseManager.Strike[] memory strikes, uint strikeToFind, uint arrayLen)
+  function findInArray(ISingleExpiryPortfolio.Strike[] memory strikes, uint strikeToFind, uint arrayLen)
     internal
     pure
     returns (uint index, bool found)

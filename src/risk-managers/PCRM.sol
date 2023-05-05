@@ -16,6 +16,7 @@ import "src/interfaces/IPCRM.sol";
 
 import "src/libraries/StrikeGrouping.sol";
 import "src/risk-managers/BaseManager.sol";
+import "src/risk-managers/SingleExpiryPortfolio.sol";
 
 import "forge-std/console2.sol";
 /**
@@ -24,7 +25,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PCRM is BaseManager, IManager, IPCRM {
+contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for int;

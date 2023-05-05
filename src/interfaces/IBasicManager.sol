@@ -2,8 +2,20 @@
 pragma solidity ^0.8.13;
 
 import {IManager} from "src/interfaces/IManager.sol";
+import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 
 interface IBasicManager is IManager {
+
+  ///@dev contains portfolio struct for multi assets
+  struct CompletePortfolio {
+    AssetPortfolio[] assets;
+  }
+
+  ///@dev contains portfolio struct for single expiry assets
+  struct AssetPortfolio {
+    ISingleExpiryPortfolio.Portfolio [] expires;
+  }
+
   ///@dev Struct for Perp Margin Requirements
   struct PerpMarginRequirements {
     uint mmRequirement;
