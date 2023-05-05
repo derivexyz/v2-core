@@ -53,10 +53,6 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
   /// @dev finds max jump in spot during the last X days
   ISpotJumpOracle public spotJumpOracle;
 
-  ////////////
-  // Events //
-  ////////////
-
   ///////////////
   // Modifiers //
   ///////////////

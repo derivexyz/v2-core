@@ -18,7 +18,6 @@ import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
-
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
   using DecimalMath for uint;
@@ -133,7 +132,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
   //  Internal Functions  //
   //////////////////////////
-
 
   /**
    * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc

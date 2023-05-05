@@ -357,7 +357,11 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(ISingleExpiryPortfolio.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
+  function _calcPayoffAtPrice(ISingleExpiryPortfolio.Portfolio memory portfolio, uint price)
+    internal
+    view
+    returns (int payoff)
+  {
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       ISingleExpiryPortfolio.Strike memory currentStrike = portfolio.strikes[i];
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
@@ -382,7 +386,7 @@ contract BasicManager is IBasicManager, BaseManager {
     }
 
     if (portfolio.expiry != expiry) {
-      revert ("basic manager portfolio: multiple expiry!");
+      revert("basic manager portfolio: multiple expiry!");
     }
 
     // add strike in-memory to portfolio

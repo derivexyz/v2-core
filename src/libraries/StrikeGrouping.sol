@@ -64,9 +64,6 @@ library StrikeGrouping {
     pure
     returns (uint, uint)
   {
-    // todo: [Josh] can try make more efficient
-    // currently using ~5k gas per strike when 64 max strikes.
-
     // check if strike exists
     (uint strikeIndex, bool found) = findInArray(strikes, newStrike, arrayLen);
 

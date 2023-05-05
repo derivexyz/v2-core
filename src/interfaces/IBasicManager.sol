@@ -5,7 +5,6 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 
 interface IBasicManager is IManager {
-
   ///@dev contains portfolio struct for multi assets
   struct CompletePortfolio {
     AssetPortfolio[] assets;
@@ -13,7 +12,7 @@ interface IBasicManager is IManager {
 
   ///@dev contains portfolio struct for single expiry assets
   struct AssetPortfolio {
-    ISingleExpiryPortfolio.Portfolio [] expires;
+    ISingleExpiryPortfolio.Portfolio[] expires;
   }
 
   ///@dev Struct for Perp Margin Requirements

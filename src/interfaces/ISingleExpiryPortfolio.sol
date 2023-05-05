@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-interface ISingleExpiryPortfolio{
+interface ISingleExpiryPortfolio {
   struct Portfolio {
     /// cash amount or debt
     int cash;

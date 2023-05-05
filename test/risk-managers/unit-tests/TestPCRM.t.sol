@@ -193,8 +193,13 @@ contract UNIT_TestPCRM is Test {
     strikes[0] = ISingleExpiryPortfolio.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
     strikes[1] = ISingleExpiryPortfolio.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
 
-    ISingleExpiryPortfolio.Portfolio memory expiry =
-      ISingleExpiryPortfolio.Portfolio({cash: 0, perp: 0, expiry: block.timestamp + 1 days, numStrikesHeld: 2, strikes: strikes});
+    ISingleExpiryPortfolio.Portfolio memory expiry = ISingleExpiryPortfolio.Portfolio({
+      cash: 0,
+      perp: 0,
+      expiry: block.timestamp + 1 days,
+      numStrikesHeld: 2,
+      strikes: strikes
+    });
 
     manager.getInitialMargin(expiry);
 

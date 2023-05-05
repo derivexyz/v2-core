@@ -8,7 +8,11 @@ import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol"
 import "src/libraries/StrikeGrouping.sol";
 
 contract StrikeGroupingTester {
-  function updateForwards(ISingleExpiryPortfolio.Strike memory strike) external pure returns (ISingleExpiryPortfolio.Strike memory) {
+  function updateForwards(ISingleExpiryPortfolio.Strike memory strike)
+    external
+    pure
+    returns (ISingleExpiryPortfolio.Strike memory)
+  {
     StrikeGrouping.updateForwards(strike);
     return strike;
   }
@@ -117,8 +121,13 @@ contract StrikeGroupingTest is Test {
     strikes[1] = ISingleExpiryPortfolio.Strike({strike: 15e18, calls: 0, puts: -10, forwards: 5});
 
     // all expiries
-    ISingleExpiryPortfolio.Portfolio memory portfolio =
-      ISingleExpiryPortfolio.Portfolio({cash: 0, perp: 0, expiry: block.timestamp + 7 days, numStrikesHeld: 2, strikes: strikes});
+    ISingleExpiryPortfolio.Portfolio memory portfolio = ISingleExpiryPortfolio.Portfolio({
+      cash: 0,
+      perp: 0,
+      expiry: block.timestamp + 7 days,
+      numStrikesHeld: 2,
+      strikes: strikes
+    });
 
     return portfolio;
   }
