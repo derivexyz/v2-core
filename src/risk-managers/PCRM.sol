@@ -338,9 +338,9 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
       // calculate proceeds for forwards / calls / puts
       // todo [Josh]: need to figure out the order of settlement as this may affect cash supply / borrow
       if (pnl > 0) {
-        expiryValue += (strike.calls + strike.forwards).multiplyDecimal(pnl);
+        expiryValue += (strike.calls).multiplyDecimal(pnl);
       } else {
-        expiryValue += (strike.puts - strike.forwards).multiplyDecimal(-pnl);
+        expiryValue += (strike.puts).multiplyDecimal(-pnl);
       }
     }
   }
@@ -365,7 +365,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
 
     for (uint i; i < portfolio.strikes.length; i++) {
       // Solidity forces only static arrays in memory, so need to handle empty positions.
-      if (portfolio.strikes[i].calls == 0 && portfolio.strikes[i].puts == 0 && portfolio.strikes[i].forwards == 0) {
+      if (portfolio.strikes[i].calls == 0 && portfolio.strikes[i].puts == 0) {
         continue;
       }
       spotUpValue += _calcLiveStrikeValue(portfolio.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
@@ -398,11 +398,6 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     // Calculate both spot up and down payoffs.
     int markedDownCallValue = uint(spotDown).toInt256() - strikes.strike.toInt256();
     int markedDownPutValue = strikes.strike.toInt256() - uint(spotUp).toInt256();
-
-    // Add forward value.
-    strikeValue += (isCurrentScenarioUp)
-      ? strikes.forwards.multiplyDecimal(-markedDownPutValue)
-      : strikes.forwards.multiplyDecimal(markedDownCallValue);
 
     // Get BlackScholes price.
     (uint callValue, uint putValue) = (0, 0);
@@ -569,9 +564,6 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
       if (address(currentAsset.asset) == address(option)) {
         // add option balance to portfolio in-memory
         strikeIndex = _addOption(portfolio, currentAsset);
-
-        // if possible, combine calls and puts into forwards
-        StrikeGrouping.updateForwards(portfolio.strikes[strikeIndex]);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       }

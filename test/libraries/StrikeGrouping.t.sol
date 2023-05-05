@@ -8,19 +8,7 @@ import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol"
 import "src/libraries/StrikeGrouping.sol";
 
 contract StrikeGroupingTester {
-  function updateForwards(ISingleExpiryPortfolio.Strike memory strike)
-    external
-    pure
-    returns (ISingleExpiryPortfolio.Strike memory)
-  {
-    StrikeGrouping.updateForwards(strike);
-    return strike;
-  }
-
-  function findForwards(int calls, int puts) external pure returns (int newForwards) {
-    newForwards = StrikeGrouping.findForwards(calls, puts);
-  }
-
+  
   function findOrAddStrike(ISingleExpiryPortfolio.Strike[] memory strikes, uint newStrike, uint numStrikesHeld)
     external
     pure
@@ -46,45 +34,6 @@ contract StrikeGroupingTest is Test {
 
   function setUp() public {
     tester = new StrikeGroupingTester();
-  }
-
-  ///////////////////////
-  // Forward Filtering //
-  ///////////////////////
-
-  function testFindingForwardsWhenZeroBalance() public {
-    int newForwards = tester.findForwards(0, 0);
-    assertEq(newForwards, 0);
-  }
-
-  function testFindingForwardsWhenNoForwards() public {
-    int newForwards = tester.findForwards(10, 10);
-    assertEq(newForwards, 0);
-  }
-
-  function testFindingForwardsWhenLongForwardsPresent() public {
-    int newForwards = tester.findForwards(10, -7);
-    assertEq(newForwards, 7);
-  }
-
-  function testFindingForwardsWhenShortForwardsPresent() public {
-    int newForwards = tester.findForwards(-5, 10);
-    assertEq(newForwards, -5);
-  }
-
-  function testUpdateForwardsForStrike() public {
-    ISingleExpiryPortfolio.Portfolio memory portfolio = _getDefaultHoldings();
-
-    // check corrected filtering
-    ISingleExpiryPortfolio.Strike memory strike_0 = tester.updateForwards(portfolio.strikes[0]);
-    assertEq(strike_0.calls, 0);
-    assertEq(strike_0.puts, 0);
-    assertEq(strike_0.forwards, 11);
-
-    ISingleExpiryPortfolio.Strike memory strike_1 = tester.updateForwards(portfolio.strikes[1]);
-    assertEq(strike_1.calls, 0);
-    assertEq(strike_1.puts, -10);
-    assertEq(strike_1.forwards, 5);
   }
 
   //////////////////////////////
@@ -115,10 +64,10 @@ contract StrikeGroupingTest is Test {
     uint MAX_STRIKE = 64;
     ISingleExpiryPortfolio.Strike[] memory strikes = new ISingleExpiryPortfolio.Strike[](MAX_STRIKE);
     // strike 1
-    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 10e18, calls: 10, puts: -10, forwards: 1});
+    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 10e18, calls: 10, puts: -10});
 
     // strike 2
-    strikes[1] = ISingleExpiryPortfolio.Strike({strike: 15e18, calls: 0, puts: -10, forwards: 5});
+    strikes[1] = ISingleExpiryPortfolio.Strike({strike: 15e18, calls: 0, puts: -10});
 
     // all expiries
     ISingleExpiryPortfolio.Portfolio memory portfolio = ISingleExpiryPortfolio.Portfolio({

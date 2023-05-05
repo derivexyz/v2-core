@@ -22,8 +22,6 @@ interface ISingleExpiryPortfolio {
     int calls;
     /// number of puts held
     int puts;
-    /// number of forwards held
-    int forwards;
   }
 
   /// @dev throw when trying to add an option with different expiry

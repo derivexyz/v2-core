@@ -164,7 +164,7 @@ contract UNIT_TestPCRM is Test {
 
   function testEmptyInitialMarginCalculation() public view {
     ISingleExpiryPortfolio.Strike[] memory strikes = new ISingleExpiryPortfolio.Strike[](1);
-    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
+    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 0, calls: 0, puts: 0});
 
     ISingleExpiryPortfolio.Portfolio memory portfolio =
       ISingleExpiryPortfolio.Portfolio({cash: 0, perp: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
@@ -178,7 +178,7 @@ contract UNIT_TestPCRM is Test {
 
   function testEmptyMaintenanceMarginCalculation() public view {
     ISingleExpiryPortfolio.Strike[] memory strikes = new ISingleExpiryPortfolio.Strike[](1);
-    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 0, calls: 0, puts: 0, forwards: 0});
+    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 0, calls: 0, puts: 0});
 
     ISingleExpiryPortfolio.Portfolio memory expiry =
       ISingleExpiryPortfolio.Portfolio({cash: 0, perp: 0, expiry: 0, numStrikesHeld: 0, strikes: strikes});
@@ -190,8 +190,8 @@ contract UNIT_TestPCRM is Test {
 
   function testInitialMarginCalculation() public view {
     ISingleExpiryPortfolio.Strike[] memory strikes = new ISingleExpiryPortfolio.Strike[](2);
-    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-    strikes[1] = ISingleExpiryPortfolio.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 1000e18, calls: 1e18, puts: 0});
+    strikes[1] = ISingleExpiryPortfolio.Strike({strike: 0e18, calls: 1e18, puts: 0});
 
     ISingleExpiryPortfolio.Portfolio memory expiry = ISingleExpiryPortfolio.Portfolio({
       cash: 0,
@@ -209,8 +209,8 @@ contract UNIT_TestPCRM is Test {
   function testNegativePnLSettledExpiryCalculation() public {
     skip(30 days);
     ISingleExpiryPortfolio.Strike[] memory strikes = new ISingleExpiryPortfolio.Strike[](2);
-    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-    strikes[1] = ISingleExpiryPortfolio.Strike({strike: 0e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 1000e18, calls: 1e18, puts: 0});
+    strikes[1] = ISingleExpiryPortfolio.Strike({strike: 0e18, calls: 1e18, puts: 0});
 
     feed.setSpot(100e18);
     uint expiryTimestamp = block.timestamp - 1 days;
@@ -227,7 +227,7 @@ contract UNIT_TestPCRM is Test {
   function testPositivePnLSettledExpiryCalculation() public {
     skip(30 days);
     ISingleExpiryPortfolio.Strike[] memory strikes = new ISingleExpiryPortfolio.Strike[](1);
-    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
+    strikes[0] = ISingleExpiryPortfolio.Strike({strike: 1000e18, calls: 1e18, puts: 0});
 
     uint expiryTimestamp = block.timestamp - 1 days;
 
@@ -340,7 +340,7 @@ contract UNIT_TestPCRM is Test {
     _openDefaultOptions();
 
     uint exerciseCashAmount = 10000e18; // paying gigantic amount that makes liquidator insolvent
-    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, int(-5362191780821917808000)));
+    vm.expectRevert(abi.encodeWithSelector(PCRM.PCRM_MarginRequirementNotMet.selector, int(-5370298963529552714924)));
     vm.prank(address(auction));
     manager.executeBid(aliceAcc, bobAcc, 0.2e18, exerciseCashAmount, 0);
   }
@@ -372,9 +372,8 @@ contract UNIT_TestPCRM is Test {
 
     (ISingleExpiryPortfolio.Portfolio memory holding) = manager.getPortfolio(aliceAcc);
     assertEq(holding.strikes[0].strike, 1000e18);
-    assertEq(holding.strikes[0].calls, 0);
-    assertEq(holding.strikes[0].puts, -9e18);
-    assertEq(holding.strikes[0].forwards, 1e18);
+    assertEq(holding.strikes[0].calls, 1e18);
+    assertEq(holding.strikes[0].puts, -10e18);
   }
 
   function _transferCash() internal {

@@ -12,41 +12,6 @@ import "src/interfaces/ISingleExpiryPortfolio.sol";
  */
 
 library StrikeGrouping {
-  //////////////
-  // Forwards //
-  //////////////
-
-  /**
-   * @notice Take in a strike holding and update holding in-place with forwards
-   * @dev expiryHoldings is passed as a memory reference and thus is implicitly adjusted
-   * @param strike BaseManager.Strike struct containing all holdings for a particular strike
-   */
-  function updateForwards(ISingleExpiryPortfolio.Strike memory strike) internal pure {
-    int additionalFwds = StrikeGrouping.findForwards(strike.calls, strike.puts);
-    if (additionalFwds != 0) {
-      strike.calls -= additionalFwds;
-      strike.puts += additionalFwds;
-      strike.forwards += additionalFwds;
-    }
-  }
-
-  /**
-   * @notice Pairs off calls and puts of the same strike into forwards
-   *         Forward = Call - Put. Positive sign counts as a Long Forward
-   * @dev if not using updateForwards(), make sure to update calls and puts with additionalFwds
-   * @param calls # of call contracts
-   * @param puts # of put contracts
-   * @return additionalFwds # of forward contracts found
-   */
-  function findForwards(int calls, int puts) internal pure returns (int additionalFwds) {
-    // if calls and puts have opposing signs, forwards are present
-    if (calls * puts < 0) {
-      int fwdSign = (calls > 0) ? int(1) : -1;
-      return int(IntLib.absMin(calls, puts)) * fwdSign;
-    }
-    return (0);
-  }
-
   /////////////
   // Sorting //
   /////////////
@@ -70,7 +35,7 @@ library StrikeGrouping {
     // return index if found or add new entry
     if (found == false) {
       strikeIndex = arrayLen++;
-      strikes[strikeIndex] = ISingleExpiryPortfolio.Strike({strike: newStrike, calls: 0, puts: 0, forwards: 0});
+      strikes[strikeIndex] = ISingleExpiryPortfolio.Strike({strike: newStrike, calls: 0, puts: 0});
     }
     return (strikeIndex, arrayLen);
   }

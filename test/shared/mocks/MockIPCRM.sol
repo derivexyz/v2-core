@@ -67,10 +67,10 @@ contract MockIPCRM is IPCRM, IManager {
     if (accHasAssets[accountId]) {
       Strike[] memory strikeHoldings = new Strike[](4);
 
-      strikeHoldings[0] = Strike(1000, 1, 1, 1);
-      strikeHoldings[1] = Strike(2000, 3, -1, 1);
-      strikeHoldings[2] = Strike(3000, 4, -2, 1);
-      strikeHoldings[3] = Strike(4000, 5, 10, 1);
+      strikeHoldings[0] = Strike(1000, 1, 1);
+      strikeHoldings[1] = Strike(2000, 3, -1);
+      strikeHoldings[2] = Strike(3000, 4, -2);
+      strikeHoldings[3] = Strike(4000, 5, 10);
 
       portfolio = Portfolio(0, 0, block.timestamp + 2 weeks, 4, strikeHoldings);
     }
@@ -107,7 +107,6 @@ contract MockIPCRM is IPCRM, IManager {
       userAcc.strikes[i].strike = portfolio.strikes[i].strike;
       userAcc.strikes[i].calls = portfolio.strikes[i].calls;
       userAcc.strikes[i].puts = portfolio.strikes[i].puts;
-      userAcc.strikes[i].forwards = portfolio.strikes[i].forwards;
     }
   }
 

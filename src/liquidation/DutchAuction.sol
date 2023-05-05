@@ -469,7 +469,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     for (uint i; i < portfolio.strikes.length; ++i) {
       portfolio.strikes[i].calls = portfolio.strikes[i].calls * -1;
       portfolio.strikes[i].puts = portfolio.strikes[i].puts * -1;
-      portfolio.strikes[i].forwards = portfolio.strikes[i].forwards * -1;
     }
   }
 
