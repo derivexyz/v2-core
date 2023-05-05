@@ -8,7 +8,6 @@ import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol"
 import "src/libraries/StrikeGrouping.sol";
 
 contract StrikeGroupingTester {
-  
   function findOrAddStrike(ISingleExpiryPortfolio.Strike[] memory strikes, uint newStrike, uint numStrikesHeld)
     external
     pure
