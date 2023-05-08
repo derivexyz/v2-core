@@ -20,9 +20,9 @@ contract MockFeed is IChainlinkSpotFeed {
      */
     external
     view
-    returns (uint)
+    returns (uint, uint)
   {
-    return spot;
+    return (spot, 1e18);
   }
 
   function getSpot() external view returns (uint) {

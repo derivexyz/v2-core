@@ -42,7 +42,7 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
   // Get Prices //
   ////////////////
 
-  function getSettlementPrice(uint expiry) external view returns (uint) {
+  function getSettlementPrice(uint expiry) external view returns (uint settlementPrice) {
     return settlementPrices[expiry];
   }
 
@@ -51,8 +51,8 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
    * @dev For now we just return spot price as future price
    * @return futurePrice Future price with 18 decimal.
    */
-  function getFuturePrice(uint /*expiry*/ ) external view returns (uint futurePrice) {
-    return getSpot();
+  function getFuturePrice(uint /*expiry*/ ) external view returns (uint futurePrice, uint confidence) {
+    return (getSpot(), 1e18);
   }
 
   /**

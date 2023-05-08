@@ -22,6 +22,7 @@ import "src/interfaces/IBasicManager.sol";
 import "./BaseManager.sol";
 
 import "forge-std/console2.sol";
+import "../interfaces/ISpotFeed.sol";
 
 /**
  * @title BasicManager
@@ -238,7 +239,8 @@ contract BasicManager is IBasicManager, BaseManager {
     bool zeroStrikeOwned;
 
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      int forwardPrice = feed.getFuturePrice(portfolio.expiry).toInt256();
+      (uint futurePrice,) = feed.getFuturePrice(portfolio.expiry);
+      int forwardPrice = futurePrice.toInt256();
 
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
@@ -280,7 +282,8 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (int)
   {
-    int forwardPrice = feed.getFuturePrice(expiry).toInt256();
+    (uint futurePrice,) = feed.getFuturePrice(expiry);
+    int forwardPrice = futurePrice.toInt256();
     return _getIsolatedMargin(strike, calls, puts, forwardPrice, isMaintenance);
   }
 

@@ -402,6 +402,11 @@ contract IntegrationTestBase is Test {
     );
   }
 
+  function _getFuturePrice(uint expiry) internal returns (uint futurePrice) {
+    (futurePrice,) = feed.getFuturePrice(expiry);
+    return futurePrice;
+  }
+
   /**
    * for coverage to ignore
    */

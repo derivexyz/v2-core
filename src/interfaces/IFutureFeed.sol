@@ -12,5 +12,5 @@ interface IFutureFeed {
    * @notice Gets future price for a particular asset
    * @param expiry Future expiry to query
    */
-  function getFuturePrice(uint expiry) external view returns (uint futurePrice);
+  function getFuturePrice(uint expiry) external view returns (uint futurePrice, uint confidence);
 }
