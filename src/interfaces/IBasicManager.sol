@@ -26,11 +26,11 @@ interface IBasicManager is IManager {
     // option position detail
     IOption option;
     uint numExpiries;
-    OptionPortfolioSingleExpiry[] expiryHoldings;
+    ExpiryHolding[] expiryHoldings;
   }
 
   ///@dev contains portfolio struct for single expiry assets
-  struct OptionPortfolioSingleExpiry {
+  struct ExpiryHolding {
     uint expiry;
     /// # of strikes with active balances
     uint numStrikesHeld;

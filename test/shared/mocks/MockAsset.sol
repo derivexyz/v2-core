@@ -136,14 +136,14 @@ contract MockAsset is IAsset {
   /**
    * @dev returns the asset type, for managers to categorized them if needed
    */
-  function assetType() external pure returns (AssetType) {
+  function assetType() external pure virtual returns (AssetType) {
     return AssetType.Cash;
   }
 
   /**
    * @dev return underlying asset id, (e.g.: ETH = 0, BTC = 1)
    */
-  function underlyingId() external pure returns (uint) {
+  function underlyingId() external pure virtual returns (uint) {
     return 1;
   }
 

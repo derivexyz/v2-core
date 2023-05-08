@@ -15,4 +15,15 @@ contract MockPerp is MockAsset, IPerpAsset {
   function applyFundingOnAccount(uint accountId) external {}
 
   function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash) {}
+
+  function assetType() external pure override(IAsset, MockAsset) returns (AssetType) {
+    return AssetType.Perpetual;
+  }
+
+  /**
+   * @dev return underlying asset id, (e.g.: ETH = 0, BTC = 1)
+   */
+  function underlyingId() external pure override(IAsset, MockAsset) returns (uint) {
+    return 1;
+  }
 }

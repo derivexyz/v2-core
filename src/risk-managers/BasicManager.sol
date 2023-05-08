@@ -198,7 +198,7 @@ contract BasicManager is IBasicManager, BaseManager {
     int indexPrice = feed.getSpot().toInt256();
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice);
-    int netOptionMargin = _getNetOptionMargin(subAccount, indexPrice);
+    int netOptionMargin = _getNetOptionMargin(subAccount);
     return netPerpMargin + netOptionMargin;
   }
 
@@ -215,11 +215,7 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    */
-  function _getNetOptionMargin(BasicManagerSubAccount memory subAccount, int indexPrice)
-    internal
-    view
-    returns (int margin)
-  {
+  function _getNetOptionMargin(BasicManagerSubAccount memory subAccount) internal view returns (int margin) {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < subAccount.numExpiries; i++) {
       margin += _calcNetBasicMarginSingleExpiry(subAccount.option, subAccount.expiryHoldings[i]);
@@ -253,7 +249,9 @@ contract BasicManager is IBasicManager, BaseManager {
       if (assetType == IAsset.AssetType.Perpetual) {
         portfolio.addPerpToPortfolio(currentAsset.asset, underlyingId, currentAsset.balance);
       } else if (assetType == IAsset.AssetType.Option) {
-        portfolio.addOptionToPortfolio(underlyingId, uint96(currentAsset.subId), currentAsset.balance);
+        portfolio.addOptionToPortfolio(
+          currentAsset.asset, underlyingId, uint96(currentAsset.subId), currentAsset.balance
+        );
       }
     }
   }
@@ -267,7 +265,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param expiryHolding strikes for single expiry
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMarginSingleExpiry(IOption option, OptionPortfolioSingleExpiry memory expiryHolding)
+  function _calcNetBasicMarginSingleExpiry(IOption option, ExpiryHolding memory expiryHolding)
     internal
     view
     returns (int margin)
@@ -406,9 +404,9 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(IOption option, OptionPortfolioSingleExpiry memory expiryHolding, uint price)
+  function _calcPayoffAtPrice(IOption option, ExpiryHolding memory expiryHolding, uint price)
     internal
-    view
+    pure
     returns (int payoff)
   {
     for (uint i; i < expiryHolding.numStrikesHeld; i++) {
@@ -416,41 +414,6 @@ contract BasicManager is IBasicManager, BaseManager {
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }
-  }
-
-  /**
-   * @notice Todo: change this function to work with multiple asset / expiries
-   */
-  function _addOption(ISingleExpiryPortfolio.Portfolio memory portfolio, IAccounts.AssetBalance memory asset)
-    internal
-    pure
-    returns (uint addedStrikeIndex)
-  {
-    // decode subId
-    (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(asset.subId));
-
-    // assume expiry = 0 means this is the first strike.
-    if (portfolio.expiry == 0) {
-      portfolio.expiry = expiry;
-    }
-
-    if (portfolio.expiry != expiry) {
-      revert("basic manager portfolio: multiple expiry!");
-    }
-
-    // add strike in-memory to portfolio
-    (addedStrikeIndex, portfolio.numStrikesHeld) =
-      StrikeGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
-
-    // add call or put balance
-    if (isCall) {
-      portfolio.strikes[addedStrikeIndex].calls += asset.balance;
-    } else {
-      portfolio.strikes[addedStrikeIndex].puts += asset.balance;
-    }
-
-    // return the index of the strike which was just modified
-    return addedStrikeIndex;
   }
 
   ////////////////////////
