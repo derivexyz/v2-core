@@ -166,41 +166,64 @@ contract BasicManager is IBasicManager, BaseManager {
       }
     }
 
-    int indexPrice = feed.getSpot().toInt256();
-
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
     // todo: don't allow borrowing cash
 
-    int netPerpMargin = _getNetPerpMargin(accountId, indexPrice);
-    int netOptionMargin = _getNetOptionMargin(accountId);
+    int margin = _getMargin(accountId);
 
     // cash deposited has to cover net option margin + net perp margin
-    if (cashBalance + netPerpMargin + netOptionMargin < 0) {
-      revert PM_PortfolioBelowMargin(accountId, -(netPerpMargin + netOptionMargin));
+    if (cashBalance + margin < 0) {
+      revert PM_PortfolioBelowMargin(accountId, -(margin));
     }
-  }
-
-  /**
-   * @notice get the margin required for the perp position
-   * @param accountId Account Id for which to check
-   * @return net margin for a perp position, always negative
-   */
-  function _getNetPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
-    // uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
-    // int marginRequired = notional.multiplyDecimal(perpMarginRequirements.imRequirement).toInt256();
-    // return -marginRequired;
   }
 
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
    */
-  function _getNetOptionMargin(uint accountId) internal view returns (int margin) {
-    BasicManagerPortfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+  function _getMargin(uint accountId) internal view returns (int margin) {
+    // get portfolio from array of balances
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
-    // margin = _calcNetBasicMargin(portfolio);
-    // todo: 2 arrays to calculate _calcNetBasicMarginSingleExpiry() for all expiry
+    // for each subAccount, get margin and sum it up
+    for (uint i = 0; i < portfolio.numSubAccounts; i++) {
+      margin += _getSubAccountMargin(portfolio.subAccounts[i]);
+    }
+  }
+
+  function _getSubAccountMargin(BasicManagerSubAccount memory subAccount) internal view returns (int) {
+    // todo: update index to get diff feed for each ID
+    int indexPrice = feed.getSpot().toInt256();
+
+    int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice);
+    int netOptionMargin = _getNetOptionMargin(subAccount, indexPrice);
+    return netPerpMargin + netOptionMargin;
+  }
+
+  /**
+   * @notice get the margin required for the perp position of an subAccount
+   * @return net margin for a perp position, always negative
+   */
+  function _getNetPerpMargin(BasicManagerSubAccount memory subAccount, int indexPrice) internal view returns (int) {
+    uint notional = subAccount.perpPosition.multiplyDecimal(indexPrice).abs();
+    int marginRequired = notional.multiplyDecimal(perpMarginRequirements.imRequirement).toInt256();
+    return -marginRequired;
+  }
+
+  /**
+   * @notice get the net margin for the option positions. This is expected to be negative
+   */
+  function _getNetOptionMargin(BasicManagerSubAccount memory subAccount, int indexPrice)
+    internal
+    view
+    returns (int margin)
+  {
+    // for each expiry, sum up the margin requirement
+    for (uint i = 0; i < subAccount.numExpiries; i++) {
+      margin += _calcNetBasicMarginSingleExpiry(subAccount.option, subAccount.expiryHoldings[i]);
+    }
   }
 
   /**
@@ -208,7 +231,6 @@ contract BasicManager is IBasicManager, BaseManager {
    *         array of [strikes][calls / puts].
    *         Unlike PCRM, the forwards are purposefully not filtered.
    * @param assets Array of balances for given asset and subId.
-   * @return portfolio Cash + option holdings.
    */
   function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
     internal
@@ -229,7 +251,7 @@ contract BasicManager is IBasicManager, BaseManager {
       uint underlyingId = currentAsset.asset.underlyingId();
 
       if (assetType == IAsset.AssetType.Perpetual) {
-        portfolio.addPerpToPortfolio(underlyingId, currentAsset.balance);
+        portfolio.addPerpToPortfolio(currentAsset.asset, underlyingId, currentAsset.balance);
       } else if (assetType == IAsset.AssetType.Option) {
         portfolio.addOptionToPortfolio(underlyingId, uint96(currentAsset.subId), currentAsset.balance);
       }

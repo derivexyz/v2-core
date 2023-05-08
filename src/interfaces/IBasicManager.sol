@@ -19,11 +19,11 @@ interface IBasicManager is IManager {
   }
 
   struct BasicManagerSubAccount {
-    uint assetId;
-    // perp position size
+    uint underlyingId;
+    // perp position detail
     IPerpAsset perp;
     int perpPosition;
-    // option position
+    // option position detail
     IOption option;
     uint numExpiries;
     OptionPortfolioSingleExpiry[] expiryHoldings;
