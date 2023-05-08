@@ -12,6 +12,7 @@ import "openzeppelin/access/Ownable2Step.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
@@ -25,6 +26,7 @@ import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {BaseManager} from "./BaseManager.sol";
 
 import "src/libraries/StrikeGrouping.sol";
+import "src/libraries/BasicManagerPortfolioLib.sol";
 
 import "forge-std/console2.sol";
 
@@ -39,6 +41,7 @@ contract BasicManager is IBasicManager, BaseManager {
   using DecimalMath for uint;
   using SafeCast for uint;
   using IntLib for int;
+  using BasicManagerPortfolioLib for BasicManagerPortfolio;
 
   ///////////////
   // Variables //
@@ -49,6 +52,12 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Future feed oracle to get future price for an expiry
   IChainlinkSpotFeed public immutable feed;
 
+  /// @dev Option asset address
+  IOption public immutable option;
+
+  /// @dev Perp asset address
+  IPerpAsset public immutable perp;
+
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public pricing;
 
@@ -57,6 +66,9 @@ contract BasicManager is IBasicManager, BaseManager {
 
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
   OptionMarginParameters public optionMarginParams;
+
+  /// @dev if an IAsset address is whitelisted. 
+  mapping(address => bool) public isWhitelisted;
 
   ////////////////////////
   //    Constructor     //
@@ -72,14 +84,21 @@ contract BasicManager is IBasicManager, BaseManager {
     IChainlinkSpotFeed spotFeed_
   )
     // todo: update forward feed to use a new feed instead of spot
-    BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_, perp_)
+    BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_)
   {
     feed = spotFeed_;
+    option = option_;
+    perp = perp_;
   }
 
   ////////////////////////
   //    Admin-Only     //
   ///////////////////////
+
+  function whitelistAsset(address _asset) external onlyOwner {
+    // registered asset
+    isWhitelisted[_asset] = true;
+  }
 
   /**
    * @notice Set the maintenance margin requirement
@@ -144,12 +163,14 @@ contract BasicManager is IBasicManager, BaseManager {
   {
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset == perp) {
+      if (!isWhitelisted[address(assetDeltas[i].asset)]) revert PM_UnsupportedAsset();
+
+      IAsset.AssetType assetType = assetDeltas[i].asset.assetType();
+
+      if (assetType == IAsset.AssetType.Perpetual) {
         // settle perps if the user has perp position
-        _settleAccountPerps(accountId);
-      } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
-        revert PM_UnsupportedAsset();
-      }
+        _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
+      } 
     }
 
     int indexPrice = feed.getSpot().toInt256();
@@ -183,10 +204,10 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param accountId Account Id for which to check
    */
   function _getNetOptionMargin(uint accountId) internal view returns (int margin) {
-    // todo: group by expiry, don't use this logic from MLRM
-    ISingleExpiryPortfolio.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+    BasicManagerPortfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
-    margin = _calcNetBasicMargin(portfolio);
+    // margin = _calcNetBasicMargin(portfolio);
+    // todo: 2 arrays to calculate _calcNetBasicMarginSingleExpiry() for all expiry
   }
 
   /**
@@ -199,22 +220,26 @@ contract BasicManager is IBasicManager, BaseManager {
   function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
     internal
     view
-    returns (ISingleExpiryPortfolio.Portfolio memory portfolio)
+    returns (BasicManagerPortfolio memory portfolio)
   {
-    // note: Same logic with from MLRM
-    portfolio.strikes = new ISingleExpiryPortfolio.Strike[](
-      MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
-    );
-
+    
     IAccounts.AssetBalance memory currentAsset;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
-      if (address(currentAsset.asset) == address(option)) {
-        _addOption(portfolio, currentAsset);
-      } else if (address(currentAsset.asset) == address(cashAsset)) {
+      // if asset is cash, update cash balance
+      if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
-      } else if (currentAsset.asset == perp) {
-        portfolio.perp = currentAsset.balance;
+        continue;
+      }
+
+      // else, it must be perp or option for one of the registered assets
+      IAsset.AssetType assetType = currentAsset.asset.assetType();
+      uint underlyingId = currentAsset.asset.underlyingId();
+      
+      if (assetType == IAsset.AssetType.Perpetual) {
+        portfolio.addPerpToPortfolio(underlyingId, currentAsset.balance);
+      } else if (assetType == IAsset.AssetType.Option) {
+        portfolio.addOptionToPortfolio(underlyingId, uint96(currentAsset.subId), currentAsset.balance);
       }
     }
   }
@@ -225,16 +250,16 @@ contract BasicManager is IBasicManager, BaseManager {
    *
    * @dev If an account's max loss is bounded, return min (max loss margin, isolated margin)
    *      If an account's max loss is unbounded, return isolated margin
-   * @param portfolio Account portfolio.
+   * @param expiryHolding strikes for single expiry
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMargin(ISingleExpiryPortfolio.Portfolio memory portfolio) internal view returns (int margin) {
+  function _calcNetBasicMarginSingleExpiry(OptionPortfolioSingleExpiry memory expiryHolding) internal view returns (int margin) {
     // todo: calculate each sub-portfolio with diff expiry and sum them all.
 
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
-    for (uint i; i < portfolio.numStrikesHeld; i++) {
-      netCalls += portfolio.strikes[i].calls;
+    for (uint i; i < expiryHolding.numStrikesHeld; i++) {
+      netCalls += expiryHolding.strikes[i].calls;
     }
     bool lossBounded = netCalls >= 0;
 
@@ -242,13 +267,13 @@ contract BasicManager is IBasicManager, BaseManager {
     int isolatedMargin = 0;
     bool zeroStrikeOwnable2Step;
 
-    for (uint i; i < portfolio.numStrikesHeld; i++) {
-      int forwardPrice = feed.getFuturePrice(portfolio.expiry).toInt256();
+    for (uint i; i < expiryHolding.numStrikesHeld; i++) {
+      int forwardPrice = feed.getFuturePrice(expiryHolding.expiry).toInt256();
 
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
-        uint scenarioPrice = portfolio.strikes[i].strike;
-        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), maxLossMargin);
+        uint scenarioPrice = expiryHolding.strikes[i].strike;
+        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(expiryHolding, scenarioPrice), maxLossMargin);
         if (scenarioPrice == 0) {
           zeroStrikeOwnable2Step = true;
         }
@@ -256,9 +281,9 @@ contract BasicManager is IBasicManager, BaseManager {
 
       // calculate isolated margin for this strike, aggregate to isolatedMargin
       isolatedMargin += _getIsolatedMargin(
-        portfolio.strikes[i].strike,
-        portfolio.strikes[i].calls,
-        portfolio.strikes[i].puts,
+        expiryHolding.strikes[i].strike,
+        expiryHolding.strikes[i].calls,
+        expiryHolding.strikes[i].puts,
         forwardPrice,
         false // is maintenance = false
       );
@@ -266,7 +291,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // Ensure $0 scenario is always evaluated.
     if (lossBounded && !zeroStrikeOwnable2Step) {
-      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), maxLossMargin);
+      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(expiryHolding, 0), maxLossMargin);
     }
 
     if (lossBounded) {
@@ -274,6 +299,24 @@ contract BasicManager is IBasicManager, BaseManager {
     }
 
     return isolatedMargin;
+  }
+
+  /**
+   * @notice Settle expired option positions in an account.
+   * @dev This function can be called by anyone
+   */
+  function settleOptions(uint accountId) external {
+    _settleAccountOptions(option, accountId);
+  }
+
+  /**
+   * @notice Settle accounts in batch
+   * @dev This function can be called by anyone
+   */
+  function batchSettleAccounts(uint[] calldata accountIds) external {
+    for (uint i; i < accountIds.length; ++i) {
+      _settleAccountOptions(option, accountIds[i]);
+    }
   }
 
   ////////////////////////
@@ -353,17 +396,16 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @notice Calculate the full portfolio payoff at a given settlement price.
    *         This is used in '_calcMaxLossMargin()' calculated the max loss of a given portfolio.
-   * @param portfolio Account portfolio.
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(ISingleExpiryPortfolio.Portfolio memory portfolio, uint price)
+  function _calcPayoffAtPrice(OptionPortfolioSingleExpiry memory expiryHolding, uint price)
     internal
     view
     returns (int payoff)
   {
-    for (uint i; i < portfolio.numStrikesHeld; i++) {
-      ISingleExpiryPortfolio.Strike memory currentStrike = portfolio.strikes[i];
+    for (uint i; i < expiryHolding.numStrikesHeld; i++) {
+      ISingleExpiryPortfolio.Strike memory currentStrike = expiryHolding.strikes[i];
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }

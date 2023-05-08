@@ -5,6 +5,14 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 interface IAsset {
+
+  enum AssetType {
+    Cash,
+    Option,
+    Perpetual,
+    BaseAsset // not used now
+  }
+
   /**
    * @notice triggered when an adjustment is triggered on the asset balance
    * @param adjustment details about adjustment, containing account, subId, amount
@@ -29,4 +37,14 @@ interface IAsset {
    * @dev an asset can block a migration to a un-trusted manager, e.g. a manager that does not take care of liquidation
    */
   function handleManagerChange(uint accountId, IManager newManager) external;
+
+  /**
+   * @dev returns the asset type, for managers to categorized them if needed
+   */
+  function assetType() external view returns (AssetType);
+
+  /**
+   * @dev return underlying asset id, (e.g.: ETH = 0, BTC = 1)
+   */
+  function underlyingId() external view returns (uint);
 }

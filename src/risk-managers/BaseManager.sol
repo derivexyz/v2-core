@@ -29,12 +29,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev Account contract address
   IAccounts public immutable accounts;
 
-  /// @dev Option asset address
-  IOption public immutable option;
-
-  /// @dev Perp asset address
-  IPerpAsset public immutable perp;
-
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
@@ -60,38 +54,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     IAccounts _accounts,
     IFutureFeed _futureFeed,
     ISettlementFeed _settlementFeed,
-    ICashAsset _cashAsset,
-    IOption _option,
-    IPerpAsset _perp
+    ICashAsset _cashAsset
   ) Ownable2Step() {
     accounts = _accounts;
-    option = _option;
-    perp = _perp;
     cashAsset = _cashAsset;
     futureFeed = _futureFeed;
     settlementFeed = _settlementFeed;
-  }
-
-  //////////////////////////
-  //  External Functions  //
-  //////////////////////////
-
-  /**
-   * @notice Settle expired option positions in an account.
-   * @dev This function can be called by anyone
-   */
-  function settleOptions(uint accountId) external {
-    _settleAccountOptions(accountId);
-  }
-
-  /**
-   * @notice Settle accounts in batch
-   * @dev This function can be called by anyone
-   */
-  function batchSettleAccounts(uint[] calldata accountIds) external {
-    for (uint i; i < accountIds.length; ++i) {
-      _settleAccountOptions(accountIds[i]);
-    }
   }
 
   //////////////////////////
@@ -139,7 +107,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param tradeId ID of the trade informed by Accounts
    * @param assetDeltas Array of asset changes made to this account
    */
-  function _chargeOIFee(uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
+  function _chargeOIFee(IOption option, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
@@ -169,7 +137,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev settle an account by removing all expired option positions and adjust cash balance
    * @param accountId Account Id to settle
    */
-  function _settleAccountOptions(uint accountId) internal {
+  function _settleAccountOptions(IOption option, uint accountId) internal {
     IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
@@ -196,7 +164,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
-  function _settleAccountPerps(uint accountId) internal {
+  function _settleAccountPerps(IPerpAsset perp, uint accountId) internal {
     // settle perp: update latest funding rate and settle
     int netCash = perp.settleRealizedPNLAndFunding(accountId);
 

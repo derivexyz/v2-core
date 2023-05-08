@@ -35,6 +35,9 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
   // Variables //
   ///////////////
 
+  /// @dev Option asset address
+  IOption public immutable option;
+
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
@@ -76,7 +79,10 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     IOption option_,
     address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_, IPerpAsset(address(0))) {
+  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_) {
+
+    option = option_;
+
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }
@@ -102,7 +108,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     // bypass the IM check if only adding cash
     if (assetDeltas.length == 1 && assetDeltas[0].asset == cashAsset && assetDeltas[0].delta >= 0) return;
 
-    _chargeOIFee(accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, accountId, tradeId, assetDeltas);
 
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
@@ -158,6 +164,28 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
    */
   function setSpotJumpOracle(ISpotJumpOracle spotJumpOracle_) external onlyOwner {
     spotJumpOracle = spotJumpOracle_;
+  }
+
+  //////////////////
+  //  Settlement  //
+  //////////////////
+
+  /**
+   * @notice Settle expired option positions in an account.
+   * @dev This function can be called by anyone
+   */
+  function settleOptions(uint accountId) external {
+    _settleAccountOptions(option, accountId);
+  }
+
+  /**
+   * @notice Settle accounts in batch
+   * @dev This function can be called by anyone
+   */
+  function batchSettleAccounts(uint[] calldata accountIds) external {
+    for (uint i; i < accountIds.length; ++i) {
+      _settleAccountOptions(option, accountIds[i]);
+    }
   }
 
   //////////////////

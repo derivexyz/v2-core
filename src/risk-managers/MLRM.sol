@@ -39,6 +39,9 @@ contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
 
+  /// @dev Option asset address
+  IOption public immutable option;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -49,7 +52,9 @@ contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
     ISettlementFeed _settlementFeed,
     ICashAsset cashAsset_,
     IOption option_
-  ) BaseManager(accounts_, futureFeed_, _settlementFeed, cashAsset_, option_, IPerpAsset(address(0))) {}
+  ) BaseManager(accounts_, futureFeed_, _settlementFeed, cashAsset_) {
+    option = option_;
+  }
 
   /**
    * @notice Ensures asset is valid and Max Loss margin is met.
@@ -62,7 +67,7 @@ contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
     IAccounts.AssetDelta[] calldata assetDeltas,
     bytes memory
   ) public override {
-    _chargeOIFee(accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, accountId, tradeId, assetDeltas);
 
     ISingleExpiryPortfolio.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
@@ -81,6 +86,28 @@ contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
   function handleManagerChange(uint accountId, IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
       revert BM_ManagerNotWhitelisted(accountId, address(newManager));
+    }
+  }
+
+  //////////////////////////
+  //  External Functions  //
+  //////////////////////////
+
+  /**
+   * @notice Settle expired option positions in an account.
+   * @dev This function can be called by anyone
+   */
+  function settleOptions(uint accountId) external {
+    _settleAccountOptions(option, accountId);
+  }
+
+  /**
+   * @notice Settle accounts in batch
+   * @dev This function can be called by anyone
+   */
+  function batchSettleAccounts(uint[] calldata accountIds) external {
+    for (uint i; i < accountIds.length; ++i) {
+      _settleAccountOptions(option, accountIds[i]);
     }
   }
 

@@ -5,14 +5,35 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 
 interface IBasicManager is IManager {
-  ///@dev contains portfolio struct for multi assets
-  struct CompletePortfolio {
-    AssetPortfolio[] assets;
+
+  
+  /**
+   * @dev a basic manager portfolio contains up to 5 subAccounts assets
+   * each subAccount contains multiple derivative type
+   */
+  struct BasicManagerPortfolio {
+    uint numSubAccounts;
+    // @dev each subAccount take care of 1 base asset, for example ETH and BTC.
+    BasicManagerSubAccount[5] subAccounts;
+    int cash;
+  }
+
+  struct BasicManagerSubAccount {
+    uint assetId;
+    // perp position size
+    int perpPosition;
+    // option position
+    uint numExpiries;
+    OptionPortfolioSingleExpiry[] expiryHoldings;
   }
 
   ///@dev contains portfolio struct for single expiry assets
-  struct AssetPortfolio {
-    ISingleExpiryPortfolio.Portfolio[] expires;
+  struct OptionPortfolioSingleExpiry {
+    uint expiry;
+    /// # of strikes with active balances
+    uint numStrikesHeld;
+    /// array of strike holding details
+    ISingleExpiryPortfolio.Strike[] strikes;
   }
 
   ///@dev Struct for Perp Margin Requirements

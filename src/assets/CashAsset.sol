@@ -262,6 +262,20 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   //////////////////////////
 
   /**
+   * @dev returns the asset type, for managers to categorized them if needed
+   */
+  function assetType() external pure returns (AssetType) {
+    return AssetType.Cash;
+  }
+
+  /**
+   * @dev return underlying asset id, (e.g.: ETH = 0, BTC = 1)
+   */
+  function underlyingId() external pure returns (uint) {
+    return 0;
+  }
+
+  /**
    * @notice This function is called by the Account contract whenever a CashAsset balance is modified.
    * @dev    This function will apply any interest to the balance and return the final balance. final balance can be positive or negative.
    * @param adjustment Details about adjustment, containing account, subId, amount

@@ -45,9 +45,12 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   address public fundingRateOracle;
 
   /// @dev Max hourly funding rate
-  int immutable maxRatePerHour;
+  int immutable public maxRatePerHour;
   /// @dev Min hourly funding rate
-  int immutable minRatePerHour;
+  int immutable public minRatePerHour;
+
+  /// @dev underlying asset id, (e.g.: ETH = 0, BTC = 1)
+  uint immutable public underlyingId;
 
   /// @dev Latest hourly funding rate, set by the oracle
   // int public fundingRate;
@@ -64,11 +67,20 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   ///@dev Last time aggregated funding rate was updated
   uint public lastFundingPaidAt;
 
-  constructor(IAccounts _accounts, int maxAbsRatePerHour) ManagerWhitelist(_accounts) {
+  constructor(IAccounts _accounts, int maxAbsRatePerHour, uint _underlyingId) ManagerWhitelist(_accounts) {
     lastFundingPaidAt = block.timestamp;
 
     maxRatePerHour = maxAbsRatePerHour;
     minRatePerHour = -maxAbsRatePerHour;
+
+    underlyingId = _underlyingId;
+  }
+
+  /**
+   * @dev returns the asset type, for managers to categorized them if needed
+   */
+  function assetType() external pure returns (AssetType) {
+    return AssetType.Perpetual;
   }
 
   //////////////////////////

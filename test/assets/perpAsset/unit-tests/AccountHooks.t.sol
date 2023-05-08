@@ -22,7 +22,7 @@ contract UNIT_PerpAssetHook is Test {
 
     manager = new MockManager(account);
 
-    perp = new PerpAsset(IAccounts(account), 0.0075e18);
+    perp = new PerpAsset(IAccounts(account), 0.0075e18, 1);
 
     perp.setSpotFeed(feed);
 
