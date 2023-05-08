@@ -5,7 +5,6 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 interface IAsset {
-
   enum AssetType {
     Cash,
     Option,

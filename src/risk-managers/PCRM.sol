@@ -80,7 +80,6 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     address auction_,
     ISpotJumpOracle spotJumpOracle_
   ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_) {
-
     option = option_;
 
     dutchAuction = IDutchAuction(auction_);

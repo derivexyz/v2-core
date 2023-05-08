@@ -5,8 +5,6 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 
 interface IBasicManager is IManager {
-
-  
   /**
    * @dev a basic manager portfolio contains up to 5 subAccounts assets
    * each subAccount contains multiple derivative type

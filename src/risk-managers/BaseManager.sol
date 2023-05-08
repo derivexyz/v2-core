@@ -50,12 +50,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
-  constructor(
-    IAccounts _accounts,
-    IFutureFeed _futureFeed,
-    ISettlementFeed _settlementFeed,
-    ICashAsset _cashAsset
-  ) Ownable2Step() {
+  constructor(IAccounts _accounts, IFutureFeed _futureFeed, ISettlementFeed _settlementFeed, ICashAsset _cashAsset)
+    Ownable2Step()
+  {
     accounts = _accounts;
     cashAsset = _cashAsset;
     futureFeed = _futureFeed;
@@ -107,7 +104,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param tradeId ID of the trade informed by Accounts
    * @param assetDeltas Array of asset changes made to this account
    */
-  function _chargeOIFee(IOption option, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
+  function _chargeOIFee(IOption option, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas)
+    internal
+  {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {

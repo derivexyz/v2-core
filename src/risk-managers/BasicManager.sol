@@ -67,7 +67,7 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
   OptionMarginParameters public optionMarginParams;
 
-  /// @dev if an IAsset address is whitelisted. 
+  /// @dev if an IAsset address is whitelisted.
   mapping(address => bool) public isWhitelisted;
 
   ////////////////////////
@@ -170,7 +170,7 @@ contract BasicManager is IBasicManager, BaseManager {
       if (assetType == IAsset.AssetType.Perpetual) {
         // settle perps if the user has perp position
         _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
-      } 
+      }
     }
 
     int indexPrice = feed.getSpot().toInt256();
@@ -222,7 +222,6 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (BasicManagerPortfolio memory portfolio)
   {
-    
     IAccounts.AssetBalance memory currentAsset;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
@@ -235,7 +234,7 @@ contract BasicManager is IBasicManager, BaseManager {
       // else, it must be perp or option for one of the registered assets
       IAsset.AssetType assetType = currentAsset.asset.assetType();
       uint underlyingId = currentAsset.asset.underlyingId();
-      
+
       if (assetType == IAsset.AssetType.Perpetual) {
         portfolio.addPerpToPortfolio(underlyingId, currentAsset.balance);
       } else if (assetType == IAsset.AssetType.Option) {
@@ -253,7 +252,11 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param expiryHolding strikes for single expiry
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMarginSingleExpiry(OptionPortfolioSingleExpiry memory expiryHolding) internal view returns (int margin) {
+  function _calcNetBasicMarginSingleExpiry(OptionPortfolioSingleExpiry memory expiryHolding)
+    internal
+    view
+    returns (int margin)
+  {
     // todo: calculate each sub-portfolio with diff expiry and sum them all.
 
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity

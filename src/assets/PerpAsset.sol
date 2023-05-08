@@ -45,12 +45,12 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   address public fundingRateOracle;
 
   /// @dev Max hourly funding rate
-  int immutable public maxRatePerHour;
+  int public immutable maxRatePerHour;
   /// @dev Min hourly funding rate
-  int immutable public minRatePerHour;
+  int public immutable minRatePerHour;
 
   /// @dev underlying asset id, (e.g.: ETH = 0, BTC = 1)
-  uint immutable public underlyingId;
+  uint public immutable underlyingId;
 
   /// @dev Latest hourly funding rate, set by the oracle
   // int public fundingRate;

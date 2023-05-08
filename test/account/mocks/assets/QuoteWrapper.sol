@@ -72,7 +72,6 @@ contract QuoteWrapper is IAsset, Ownable2Step {
 
   function handleManagerChange(uint, IManager) external pure override {}
 
-  
   function assetType() external pure returns (AssetType) {
     return AssetType.Cash;
   }
