@@ -55,14 +55,15 @@ contract UNIT_TestBasicManager_Option is Test {
     manager = new BasicManager(
       account,
       ICashAsset(address(cash)),
-      option,
-      perp,
       feed,
       feed,
       feed
     );
 
     manager.setPricingModule(pricing);
+
+    manager.whitelistAsset(perp);
+    manager.whitelistAsset(option);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);

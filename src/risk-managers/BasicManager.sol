@@ -52,12 +52,6 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Future feed oracle to get future price for an expiry
   IChainlinkSpotFeed public immutable feed;
 
-  /// @dev Option asset address
-  IOption public immutable option;
-
-  /// @dev Perp asset address
-  IPerpAsset public immutable perp;
-
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public pricing;
 
@@ -77,8 +71,6 @@ contract BasicManager is IBasicManager, BaseManager {
   constructor(
     IAccounts accounts_,
     ICashAsset cashAsset_,
-    IOption option_,
-    IPerpAsset perp_,
     IFutureFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     IChainlinkSpotFeed spotFeed_
@@ -87,17 +79,15 @@ contract BasicManager is IBasicManager, BaseManager {
     BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_)
   {
     feed = spotFeed_;
-    option = option_;
-    perp = perp_;
   }
 
   ////////////////////////
   //    Admin-Only     //
   ///////////////////////
 
-  function whitelistAsset(address _asset) external onlyOwner {
+  function whitelistAsset(IAsset _asset) external onlyOwner {
     // registered asset
-    isWhitelisted[_asset] = true;
+    isWhitelisted[address(_asset)] = true;
   }
 
   /**
@@ -163,6 +153,9 @@ contract BasicManager is IBasicManager, BaseManager {
   {
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
+      // allow cash
+      if (address(assetDeltas[i].asset) == address(cashAsset)) continue;
+
       if (!isWhitelisted[address(assetDeltas[i].asset)]) revert PM_UnsupportedAsset();
 
       IAsset.AssetType assetType = assetDeltas[i].asset.assetType();
@@ -194,9 +187,9 @@ contract BasicManager is IBasicManager, BaseManager {
    * @return net margin for a perp position, always negative
    */
   function _getNetPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
-    uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
-    int marginRequired = notional.multiplyDecimal(perpMarginRequirements.imRequirement).toInt256();
-    return -marginRequired;
+    // uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
+    // int marginRequired = notional.multiplyDecimal(perpMarginRequirements.imRequirement).toInt256();
+    // return -marginRequired;
   }
 
   /**
@@ -252,13 +245,11 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param expiryHolding strikes for single expiry
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMarginSingleExpiry(OptionPortfolioSingleExpiry memory expiryHolding)
+  function _calcNetBasicMarginSingleExpiry(IOption option, OptionPortfolioSingleExpiry memory expiryHolding)
     internal
     view
     returns (int margin)
   {
-    // todo: calculate each sub-portfolio with diff expiry and sum them all.
-
     // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
     int netCalls;
     for (uint i; i < expiryHolding.numStrikesHeld; i++) {
@@ -276,7 +267,7 @@ contract BasicManager is IBasicManager, BaseManager {
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
         uint scenarioPrice = expiryHolding.strikes[i].strike;
-        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(expiryHolding, scenarioPrice), maxLossMargin);
+        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, scenarioPrice), maxLossMargin);
         if (scenarioPrice == 0) {
           zeroStrikeOwnable2Step = true;
         }
@@ -294,7 +285,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // Ensure $0 scenario is always evaluated.
     if (lossBounded && !zeroStrikeOwnable2Step) {
-      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(expiryHolding, 0), maxLossMargin);
+      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, 0), maxLossMargin);
     }
 
     if (lossBounded) {
@@ -308,18 +299,9 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Settle expired option positions in an account.
    * @dev This function can be called by anyone
    */
-  function settleOptions(uint accountId) external {
+  function settleOptions(IOption option, uint accountId) external {
+    if (!isWhitelisted[address(option)]) revert PM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
-  }
-
-  /**
-   * @notice Settle accounts in batch
-   * @dev This function can be called by anyone
-   */
-  function batchSettleAccounts(uint[] calldata accountIds) external {
-    for (uint i; i < accountIds.length; ++i) {
-      _settleAccountOptions(option, accountIds[i]);
-    }
   }
 
   ////////////////////////
@@ -402,7 +384,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(OptionPortfolioSingleExpiry memory expiryHolding, uint price)
+  function _calcPayoffAtPrice(IOption option, OptionPortfolioSingleExpiry memory expiryHolding, uint price)
     internal
     view
     returns (int payoff)

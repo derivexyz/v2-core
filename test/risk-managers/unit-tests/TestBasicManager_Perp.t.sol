@@ -48,12 +48,13 @@ contract UNIT_TestBasicManager is Test {
     manager = new BasicManager(
       account,
       ICashAsset(address(cash)),
-      option,
-      perp,
       feed,
       feed,
       feed
     );
+
+    manager.whitelistAsset(perp);
+    manager.whitelistAsset(option);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
