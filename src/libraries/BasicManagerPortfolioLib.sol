@@ -21,28 +21,15 @@ import {StrikeGrouping} from "src/libraries/StrikeGrouping.sol";
  * @notice util functions for BasicManagerPortfolio structs
  */
 library BasicManagerPortfolioLib {
+
   function addPerpToPortfolio(
-    IBasicManager.BasicManagerPortfolio memory portfolio,
+    IBasicManager.BasicManagerSubAccount memory subAccount,
     IAsset perp,
-    uint marketId,
     int balance
   ) internal pure {
     // find the subAccount that has the same underlying id
-    for (uint i = 0; i < portfolio.subAccounts.length; i++) {
-      // found the place to insert this subAccount
-      if (portfolio.subAccounts[i].marketId == 0) {
-        portfolio.subAccounts[i].marketId = marketId;
-        portfolio.subAccounts[i].perp = IPerpAsset(address(perp));
-        portfolio.subAccounts[i].perpPosition = balance;
-        portfolio.numSubAccounts++;
-        return;
-      } else if (portfolio.subAccounts[i].marketId == marketId) {
-        portfolio.subAccounts[i].perp = IPerpAsset(address(perp));
-        portfolio.subAccounts[i].perpPosition = balance;
-        return;
-      }
-    }
-    revert("MAX_SUB_ACCOUNTS");
+    subAccount.perp = IPerpAsset(address(perp));
+    subAccount.perpPosition = balance;
   }
 
   function addOptionToPortfolio(

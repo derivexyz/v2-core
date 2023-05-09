@@ -49,6 +49,8 @@ contract BasicManager is IBasicManager, BaseManager {
   // Variables //
   ///////////////
 
+  uint immutable startingHour;
+
   uint constant MAX_STRIKES = 64;
 
   /// @dev Pricing module to get option mark-to-market price
@@ -71,7 +73,9 @@ contract BasicManager is IBasicManager, BaseManager {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_) {}
+  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_) {
+    startingHour = block.timestamp / 1 hours;
+  }
 
   ////////////////////////
   //    Admin-Only     //
@@ -235,28 +239,62 @@ contract BasicManager is IBasicManager, BaseManager {
   function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
     internal
     view
-    returns (BasicManagerPortfolio memory portfolio)
+    returns (BasicManagerPortfolio memory)
   {
     IAccounts.AssetBalance memory currentAsset;
-    for (uint i; i < assets.length; ++i) {
-      currentAsset = assets[i];
-      // if asset is cash, update cash balance
-      if (address(currentAsset.asset) == address(cashAsset)) {
-        portfolio.cash = currentAsset.balance;
-        continue;
+
+    (uint marketCount, int cashBalance, uint marketBitMap) = _countMarketsAndParseCash(assets);
+
+    BasicManagerPortfolio memory portfolio = BasicManagerPortfolio({
+      cash: cashBalance,
+      subAccounts: new BasicManagerSubAccount[](marketCount),
+      numSubAccounts: marketCount
+    });
+
+    // for each market, need to count how many expires there are
+    for (uint i; i < marketCount; i++) {
+      uint8 marketId;
+      // 1. find the first market id
+      for (uint8 id; id < 256; id++) {
+        if (marketBitMap & (1 << id) != 0) {
+          marketId = id;
+          // mark this market id as used => flip it back to 0 with xor
+          marketBitMap ^= (1 << id);
+          break;
+        }
+      }
+      portfolio.subAccounts[i].marketId = marketId;
+
+      // 2. filter through all balances and only find those which are perp or option for this market
+      uint numExpires;
+      uint expiryProducts = 1; // the product of all expiry - start block hour
+      for (uint j; j < assets.length; j++) {
+        currentAsset = assets[j];
+        if (currentAsset.asset == cashAsset) continue;
+
+        AssetDetail memory detail = assetDetails[currentAsset.asset];
+        if (detail.marketId != marketId) continue;
+
+        // if it's perp asset, update the perp position directly
+        if (detail.assetType == AssetType.Perpetual) {
+          BasicManagerPortfolioLib.addPerpToPortfolio(portfolio.subAccounts[i], currentAsset.asset, currentAsset.balance);
+        } else if (detail.assetType == AssetType.Option) {
+            (uint expiry, , ) = OptionEncoding.fromSubId(uint96(assets[j].subId));
+            uint expiryInHoursSinceStart = (expiry / 1 hours) - startingHour;
+            if (expiryProducts % expiryInHoursSinceStart != 0) {
+              numExpires++;
+              expiryProducts *= expiryInHoursSinceStart;
+            }
+        }
+
+        // initiate expiry holdings for each subAccount
+        portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
       }
 
-      // else, it must be perp or option for one of the registered assets
-      AssetDetail memory detail = assetDetails[assets[i].asset];
-
-      if (detail.assetType == AssetType.Perpetual) {
-        portfolio.addPerpToPortfolio(currentAsset.asset, detail.marketId, currentAsset.balance);
-      } else if (detail.assetType == AssetType.Option) {
-        portfolio.addOptionToPortfolio(
-          currentAsset.asset, detail.marketId, uint96(currentAsset.subId), currentAsset.balance
-        );
-      }
+      // loop through all subAccount / expiries again to find the match strikes
     }
+
+    return portfolio;
   }
 
   /**
@@ -340,6 +378,33 @@ contract BasicManager is IBasicManager, BaseManager {
   {
     int forwardPrice = futureFeeds[marketId].getFuturePrice(expiry).toInt256();
     return _getIsolatedMargin(strike, calls, puts, forwardPrice, isMaintenance);
+  }
+
+  /**
+   * @dev Count how many market the user has
+   */
+  function _countMarketsAndParseCash(IAccounts.AssetBalance[] memory userBalances) internal view returns (uint marketCount, int cashBalance, uint trackedMarketBitMap) {
+    IAccounts.AssetBalance memory currentAsset;
+    
+    // if marketId 1 is tracked, trackedMarketBitMap = 0000..00010
+    // if marketId 2 is tracked, trackedMarketBitMap = 0000..00100
+
+    // count how many unique markets there are
+    for (uint i; i < userBalances.length; ++i) {
+      currentAsset = userBalances[i];
+      if (address(currentAsset.asset) == address(cashAsset)) {
+        cashBalance = currentAsset.balance;
+        continue;
+      }
+
+      // else, it must be perp or option for one of the registered assets
+      AssetDetail memory detail = assetDetails[userBalances[i].asset];
+      uint marketBit = 1 << detail.marketId;
+      if (trackedMarketBitMap & marketBit == 0) {
+        marketCount++;
+        trackedMarketBitMap |= (1 << detail.marketId);
+      }
+    }
   }
 
   /**

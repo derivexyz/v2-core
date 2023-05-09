@@ -26,7 +26,7 @@ interface IBasicManager is IManager {
   struct BasicManagerPortfolio {
     uint numSubAccounts;
     // @dev each subAccount take care of 1 base asset, for example ETH and BTC.
-    BasicManagerSubAccount[5] subAccounts;
+    BasicManagerSubAccount[] subAccounts;
     int cash;
   }
 
