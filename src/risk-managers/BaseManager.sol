@@ -190,7 +190,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
       if (oi <= oiBefore) continue;
 
       (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
-      (uint futurePrice, ) = futureFeed.getFuturePrice(expiry);
+      (uint futurePrice,) = futureFeed.getFuturePrice(expiry);
       fee += assetDeltas[i].delta.abs().multiplyDecimal(futurePrice).multiplyDecimal(OIFeeRateBPS);
     }
 

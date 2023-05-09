@@ -9,7 +9,7 @@ contract StaticDiscountFactorFeed is Owned, IDiscountFactorFeed {
     emit DiscountFactorSet(discountFactor, 1e18);
   }
 
-  function getDiscountFactor(uint /* expiry */) external view override returns (uint64, uint64) {
+  function getDiscountFactor(uint /* expiry */ ) external view override returns (uint64, uint64) {
     return (discountFactor, 1e18);
   }
 }

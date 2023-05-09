@@ -463,7 +463,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
     vol = _applyTimeWeightToVol(timeToExpiry.toUint256());
 
     // Get future price as spot, and apply shocks
-    (uint spot, ) = futureFeed.getFuturePrice(expiry);
+    (uint spot,) = futureFeed.getFuturePrice(expiry);
     (spotUp, spotDown) =
       _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 

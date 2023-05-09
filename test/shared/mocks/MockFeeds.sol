@@ -58,5 +58,4 @@ contract MockFeeds is ISpotFeed, IVolFeed, IFutureFeed, IDiscountFactorFeed, ISe
   function getDiscountFactor(uint expiry) external view returns (uint64 discountFactor, uint64 confidence) {
     return (1e18, 1e18);
   }
-
 }

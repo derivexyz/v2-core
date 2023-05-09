@@ -7,38 +7,40 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/ownership/Owned.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
 
 import "src/interfaces/IAccounts.sol";
 import "src/interfaces/IMarginAsset.sol";
-import "../interfaces/ISpotFeed.sol";
+import "src/interfaces/IChainlinkSpotFeed.sol";
+import "src/assets/ManagerWhitelist.sol";
 
 /**
- * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into their accounts.
- *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
+ * @title Wrapped ERC20 Asset
+ * @dev   Users can deposit the given ERC20, and can only have positive balances.
+ *        The USD value of the asset can be computed for the given shocked scenario.
  * @author Lyra
  */
-
-contract WrappedERC20Asset is IMarginAsset, Owned {
+contract WrappedERC20Asset is IMarginAsset, ManagerWhitelist {
+  // TODO: IWrappedERC20Asset
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
   using SafeCast for uint128;
   using SafeCast for int;
   using SafeCast for int128;
+  using DecimalMath for uint;
 
-  ISpotFeed public spotFeed;
-  IAccounts public immutable accounts;
   ///@dev The token address for the wrapped asset
   IERC20Metadata public immutable wrappedAsset;
-  uint8 assetDecimals;
+  uint8 public immutable assetDecimals;
 
-  constructor(
-    IAccounts _accounts,
-    IERC20Metadata _wrappedAsset,
-    ISpotFeed _spotFeed
-  ) Owned() {
-    accounts = _accounts;
+  IChainlinkSpotFeed public spotFeed;
+  uint public OICap;
+  uint public OI;
+
+  constructor(IAccounts _accounts, IERC20Metadata _wrappedAsset, IChainlinkSpotFeed _spotFeed)
+    ManagerWhitelist(_accounts)
+  {
     wrappedAsset = _wrappedAsset;
     spotFeed = _spotFeed;
     assetDecimals = _wrappedAsset.decimals();
@@ -48,6 +50,13 @@ contract WrappedERC20Asset is IMarginAsset, Owned {
   //     Admin Functions    //
   ////////////////////////////
 
+  function setOICap(uint cap_) external onlyOwner {
+    OICap = cap_;
+  }
+
+  function setSpotFeed(IChainlinkSpotFeed _spotFeed) external onlyOwner {
+    spotFeed = _spotFeed;
+  }
 
   ////////////////////////////
   //   External Functions   //
@@ -60,19 +69,25 @@ contract WrappedERC20Asset is IMarginAsset, Owned {
    */
   function deposit(uint recipientAccount, uint assetAmount) external {
     wrappedAsset.safeTransferFrom(msg.sender, address(this), assetAmount);
-    uint amountInAccount = assetAmount.to18Decimals(assetDecimals);
+    uint adjustmentAmount = assetAmount.to18Decimals(assetDecimals);
 
     accounts.assetAdjustment(
       AccountStructs.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
-        amount: int(amountInAccount),
+        amount: int(adjustmentAmount),
         assetData: bytes32(0)
       }),
-      false,
+      true,
       ""
     );
+
+    OI += adjustmentAmount;
+    if (OI > OICap) {
+      revert("OI cap reached");
+    }
+
     // emit Deposit(accountId, msg.sender, cashAmount, stableAmount);
   }
 
@@ -99,9 +114,11 @@ contract WrappedERC20Asset is IMarginAsset, Owned {
         amount: -int(adjustmentAmount),
         assetData: bytes32(0)
       }),
-      false,
+      true,
       ""
     );
+
+    OI -= adjustmentAmount;
     // emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
   }
 
@@ -110,12 +127,15 @@ contract WrappedERC20Asset is IMarginAsset, Owned {
   //////////////////////////
 
   /// @dev Returns the USD value based on oracle data - does not price in terms of stable coins
-  function getValue(uint amount, uint spotShock, uint volShock) external view returns (uint value, uint confidence) {
-    // TODO: get spot and shock the value
+  function getValue(uint amount, uint spotShock, uint /* volShock */ )
+    external
+    view
+    returns (uint value, uint confidence)
+  {
+    uint assetValue = spotFeed.getSpot().multiplyDecimal(spotShock);
 
-    return (amount, 1e18);
+    return (amount.multiplyDecimal(assetValue), 1e18);
   }
-
 
   //////////////////////////
   //    Account Hooks     //
@@ -131,14 +151,14 @@ contract WrappedERC20Asset is IMarginAsset, Owned {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBalance,
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
-    if (preBalance == 0 && adjustment.amount == 0) {
-      return (0, false);
+    if (adjustment.amount == 0) {
+      return (preBalance, false);
     }
     if (preBalance + adjustment.amount < 0) {
       revert("Cannot have a negative balance");
@@ -150,14 +170,7 @@ contract WrappedERC20Asset is IMarginAsset, Owned {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, IManager newManager) external view {}
-
-  ///////////////////
-  //   Modifiers   //
-  ///////////////////
-
-  modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) revert("Only accounts");
-    _;
+  function handleManagerChange(uint, IManager newManager) external view {
+    _checkManager(address(newManager));
   }
 }
