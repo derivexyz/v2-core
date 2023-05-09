@@ -23,6 +23,8 @@ import {IBasicManager} from "src/interfaces/IBasicManager.sol";
 import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
+
 import {BaseManager} from "./BaseManager.sol";
 
 import "src/libraries/StrikeGrouping.sol";
@@ -49,9 +51,6 @@ contract BasicManager is IBasicManager, BaseManager {
 
   uint constant MAX_STRIKES = 64;
 
-  /// @dev Future feed oracle to get future price for an expiry
-  IChainlinkSpotFeed public immutable feed;
-
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public pricing;
 
@@ -64,22 +63,15 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev if an IAsset address is whitelisted.
   mapping(IAsset => AssetDetail) public assetDetails;
 
+  mapping(uint => ISpotFeed) public spotFeeds;
+  mapping(uint => ISettlementFeed) public settlementFeeds;
+  mapping(uint => IFutureFeed) public futureFeeds;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
 
-  constructor(
-    IAccounts accounts_,
-    ICashAsset cashAsset_,
-    IFutureFeed futureFeed_,
-    ISettlementFeed settlementFeed_,
-    IChainlinkSpotFeed spotFeed_
-  )
-    // todo: update forward feed to use a new feed instead of spot
-    BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_)
-  {
-    feed = spotFeed_;
-  }
+  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_) {}
 
   ////////////////////////
   //    Admin-Only     //
@@ -88,6 +80,18 @@ contract BasicManager is IBasicManager, BaseManager {
   function whitelistAsset(IAsset _asset, uint8 _marketId, AssetType _type) external onlyOwner {
     // registered asset
     assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
+  }
+
+  function setOraclesForMarket(
+    uint8 marketId,
+    ISpotFeed spotFeed,
+    ISettlementFeed settlementFeed,
+    IFutureFeed futureFeed
+  ) external onlyOwner {
+    // registered asset
+    spotFeeds[marketId] = spotFeed;
+    settlementFeeds[marketId] = settlementFeed;
+    futureFeeds[marketId] = futureFeed;
   }
 
   /**
@@ -195,7 +199,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
   function _getSubAccountMargin(BasicManagerSubAccount memory subAccount) internal view returns (int) {
     // todo: update index to get diff feed for each ID
-    int indexPrice = feed.getSpot().toInt256();
+    int indexPrice = spotFeeds[subAccount.marketId].getSpot().toInt256();
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice);
     int netOptionMargin = _getNetOptionMargin(subAccount);
@@ -218,7 +222,7 @@ contract BasicManager is IBasicManager, BaseManager {
   function _getNetOptionMargin(BasicManagerSubAccount memory subAccount) internal view returns (int margin) {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < subAccount.numExpiries; i++) {
-      margin += _calcNetBasicMarginSingleExpiry(subAccount.option, subAccount.expiryHoldings[i]);
+      margin += _calcNetBasicMarginSingleExpiry(subAccount.marketId, subAccount.option, subAccount.expiryHoldings[i]);
     }
   }
 
@@ -264,7 +268,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param expiryHolding strikes for single expiry
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMarginSingleExpiry(IOption option, ExpiryHolding memory expiryHolding)
+  function _calcNetBasicMarginSingleExpiry(uint marketId, IOption option, ExpiryHolding memory expiryHolding)
     internal
     view
     returns (int margin)
@@ -279,6 +283,8 @@ contract BasicManager is IBasicManager, BaseManager {
     int maxLossMargin = 0;
     int isolatedMargin = 0;
     bool zeroStrikeOwnable2Step;
+
+    IFutureFeed feed = futureFeeds[marketId];
 
     for (uint i; i < expiryHolding.numStrikesHeld; i++) {
       int forwardPrice = feed.getFuturePrice(expiryHolding.expiry).toInt256();
@@ -327,12 +333,12 @@ contract BasicManager is IBasicManager, BaseManager {
   //   View Functions   //
   ////////////////////////
 
-  function getIsolatedMargin(uint strike, uint expiry, int calls, int puts, bool isMaintenance)
+  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, int calls, int puts, bool isMaintenance)
     external
     view
     returns (int)
   {
-    int forwardPrice = feed.getFuturePrice(expiry).toInt256();
+    int forwardPrice = futureFeeds[marketId].getFuturePrice(expiry).toInt256();
     return _getIsolatedMargin(strike, calls, puts, forwardPrice, isMaintenance);
   }
 

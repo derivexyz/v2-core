@@ -15,7 +15,7 @@ import "lyra-utils/math/IntLib.sol";
 
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 
@@ -36,7 +36,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-  IChainlinkSpotFeed public spotFeed;
+  ISpotFeed public spotFeed;
 
   ///@dev Mapping from account to position
   mapping(uint => PositionDetail) public positions;
@@ -79,7 +79,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @notice Set new spot feed address
    * @param _spotFeed address of the new spot feed
    */
-  function setSpotFeed(IChainlinkSpotFeed _spotFeed) external onlyOwner {
+  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
     spotFeed = _spotFeed;
 
     emit SpotFeedUpdated(address(_spotFeed));

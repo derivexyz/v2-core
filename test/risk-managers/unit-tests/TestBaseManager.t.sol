@@ -22,6 +22,8 @@ import "../../shared/mocks/MockPerp.sol";
 contract BaseManagerTester is BaseManager {
   IOption public immutable option;
   IPerpAsset public immutable perp;
+  IFutureFeed public immutable futureFeed;
+  ISettlementFeed public immutable settlementFeed;
 
   constructor(
     IAccounts accounts_,
@@ -30,9 +32,11 @@ contract BaseManagerTester is BaseManager {
     ICashAsset cash_,
     IOption option_,
     IPerpAsset perp_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cash_) {
+  ) BaseManager(accounts_, cash_) {
     option = option_;
     perp = perp_;
+    futureFeed = futureFeed_;
+    settlementFeed = settlementFeed_;
   }
 
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
@@ -40,7 +44,7 @@ contract BaseManagerTester is BaseManager {
   }
 
   function chargeOIFee(uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) external {
-    _chargeOIFee(option, accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, futureFeed, accountId, tradeId, assetDeltas);
   }
 
   function settleOptions(uint accountId) external {

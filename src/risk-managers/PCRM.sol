@@ -38,6 +38,12 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
   /// @dev Option asset address
   IOption public immutable option;
 
+  /// @dev Future feed oracle to get future price for an expiry
+  IFutureFeed public immutable futureFeed;
+
+  /// @dev Settlement feed oracle to get price fixed for settlement
+  ISettlementFeed public immutable settlementFeed;
+
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
 
@@ -79,9 +85,10 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     IOption option_,
     address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_) {
+  ) BaseManager(accounts_, cashAsset_) {
     option = option_;
-
+    futureFeed = futureFeed_;
+    settlementFeed = settlementFeed_;
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }
@@ -107,7 +114,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     // bypass the IM check if only adding cash
     if (assetDeltas.length == 1 && assetDeltas[0].asset == cashAsset && assetDeltas[0].delta >= 0) return;
 
-    _chargeOIFee(option, accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, futureFeed, accountId, tradeId, assetDeltas);
 
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));

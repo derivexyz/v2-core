@@ -31,7 +31,7 @@ interface IBasicManager is IManager {
   }
 
   struct BasicManagerSubAccount {
-    uint underlyingId;
+    uint marketId;
     // perp position detail
     IPerpAsset perp;
     int perpPosition;

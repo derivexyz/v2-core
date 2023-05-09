@@ -24,19 +24,19 @@ library BasicManagerPortfolioLib {
   function addPerpToPortfolio(
     IBasicManager.BasicManagerPortfolio memory portfolio,
     IAsset perp,
-    uint underlyingId,
+    uint marketId,
     int balance
   ) internal pure {
     // find the subAccount that has the same underlying id
     for (uint i = 0; i < portfolio.subAccounts.length; i++) {
       // found the place to insert this subAccount
-      if (portfolio.subAccounts[i].underlyingId == 0) {
-        portfolio.subAccounts[i].underlyingId = underlyingId;
+      if (portfolio.subAccounts[i].marketId == 0) {
+        portfolio.subAccounts[i].marketId = marketId;
         portfolio.subAccounts[i].perp = IPerpAsset(address(perp));
         portfolio.subAccounts[i].perpPosition = balance;
         portfolio.numSubAccounts++;
         return;
-      } else if (portfolio.subAccounts[i].underlyingId == underlyingId) {
+      } else if (portfolio.subAccounts[i].marketId == marketId) {
         portfolio.subAccounts[i].perp = IPerpAsset(address(perp));
         portfolio.subAccounts[i].perpPosition = balance;
         return;
@@ -48,21 +48,21 @@ library BasicManagerPortfolioLib {
   function addOptionToPortfolio(
     IBasicManager.BasicManagerPortfolio memory portfolio,
     IAsset option,
-    uint underlyingId,
+    uint marketId,
     uint96 subId,
     int balance
   ) internal pure {
     // find the subAccount that has the same underlying id
     uint subAccountIndex;
     for (uint i = 0; i < portfolio.subAccounts.length; i++) {
-      if (portfolio.subAccounts[i].underlyingId == 0) {
+      if (portfolio.subAccounts[i].marketId == 0) {
         // no such subAccount exist before
-        portfolio.subAccounts[i].underlyingId = underlyingId;
+        portfolio.subAccounts[i].marketId = marketId;
         portfolio.subAccounts[i].option = IOption(address(option));
         portfolio.subAccounts[i].expiryHoldings = new IBasicManager.ExpiryHolding[](4);
         portfolio.numSubAccounts++;
         subAccountIndex = i;
-      } else if (portfolio.subAccounts[i].underlyingId == underlyingId) {
+      } else if (portfolio.subAccounts[i].marketId == marketId) {
         portfolio.subAccounts[i].option = IOption(address(option));
         subAccountIndex = i;
       }

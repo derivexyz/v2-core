@@ -47,14 +47,13 @@ contract UNIT_TestBasicManager is Test {
 
     manager = new BasicManager(
       account,
-      ICashAsset(address(cash)),
-      feed,
-      feed,
-      feed
+      ICashAsset(address(cash))
     );
 
     manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+
+    manager.setOraclesForMarket(1, feed, feed, feed);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);

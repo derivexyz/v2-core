@@ -32,12 +32,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
-  /// @dev Future feed oracle to get future price for an expiry
-  IFutureFeed public immutable futureFeed;
-
-  /// @dev Settlement feed oracle to get price fixed for settlement
-  ISettlementFeed public immutable settlementFeed;
-
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
@@ -50,13 +44,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
-  constructor(IAccounts _accounts, IFutureFeed _futureFeed, ISettlementFeed _settlementFeed, ICashAsset _cashAsset)
-    Ownable2Step()
-  {
+  constructor(IAccounts _accounts, ICashAsset _cashAsset) Ownable2Step() {
     accounts = _accounts;
     cashAsset = _cashAsset;
-    futureFeed = _futureFeed;
-    settlementFeed = _settlementFeed;
   }
 
   //////////////////////////
@@ -104,9 +94,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param tradeId ID of the trade informed by Accounts
    * @param assetDeltas Array of asset changes made to this account
    */
-  function _chargeOIFee(IOption option, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas)
-    internal
-  {
+  function _chargeOIFee(
+    IOption option,
+    IFutureFeed futureFeed,
+    uint accountId,
+    uint tradeId,
+    IAccounts.AssetDelta[] calldata assetDeltas
+  ) internal {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {

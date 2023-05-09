@@ -54,16 +54,15 @@ contract UNIT_TestBasicManager_Option is Test {
 
     manager = new BasicManager(
       account,
-      ICashAsset(address(cash)),
-      feed,
-      feed,
-      feed
+      ICashAsset(address(cash))
     );
 
     manager.setPricingModule(pricing);
 
     manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+
+    manager.setOraclesForMarket(1, feed, feed, feed);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -109,32 +108,32 @@ contract UNIT_TestBasicManager_Option is Test {
   ///////////////
 
   function testGetIsolatedMarginLongCall() public {
-    int im = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, false);
-    int mm = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, 1000e18, expiry, 1e18, 0, false);
+    int mm = manager.getIsolatedMargin(1, 1000e18, expiry, 1e18, 0, true);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
 
   function testGetIsolatedMarginShortATMCall() public {
     uint strike = 1500e18;
-    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, -1e18, 0, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, -1e18, 0, true);
     assertEq(im / 1e18, -315);
     assertEq(mm / 1e18, -164);
   }
 
   function testGetIsolatedMarginShortITMCall() public {
     uint strike = 400e18;
-    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, -1e18, 0, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, -1e18, 0, true);
     assertEq(im / 1e18, -1415);
     assertEq(mm / 1e18, -1264);
   }
 
   function testGetIsolatedMarginShortOTMCall() public {
     uint strike = 3000e18;
-    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, -1e18, 0, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, -1e18, 0, true);
     assertEq(im / 1e18, -189);
     assertEq(mm / 1e18, -121);
   }
@@ -144,32 +143,32 @@ contract UNIT_TestBasicManager_Option is Test {
   //////////////
 
   function testGetIsolatedMarginLongPut() public {
-    int im = manager.getIsolatedMargin(1000e18, expiry, 0, 1e18, false);
-    int mm = manager.getIsolatedMargin(1000e18, expiry, 0, 1e18, true);
+    int im = manager.getIsolatedMargin(1, 1000e18, expiry, 0, 1e18, false);
+    int mm = manager.getIsolatedMargin(1, 1000e18, expiry, 0, 1e18, true);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
 
   function testGetIsolatedMarginShortATMPut() public {
     uint strike = 1500e18;
-    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, 0, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, 0, -1e18, true);
     assertEq(im / 1e18, -289);
     assertEq(mm / 1e18, -138);
   }
 
   function testGetIsolatedMarginShortITMPut() public {
     uint strike = 3000e18;
-    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, 0, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, 0, -1e18, true);
     assertEq(im / 1e18, -1789);
     assertEq(mm / 1e18, -1638);
   }
 
   function testGetIsolatedMarginShortOTMPut() public {
     uint strike = 400e18;
-    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, 0, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, 0, -1e18, true);
     assertEq(im / 1e18, -189);
     assertEq(mm / 1e18, -121);
   }
