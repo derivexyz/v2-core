@@ -62,7 +62,7 @@ contract BasicManager is IBasicManager, BaseManager {
   OptionMarginParameters public optionMarginParams;
 
   /// @dev if an IAsset address is whitelisted.
-  mapping(address => bool) public isWhitelisted;
+  mapping(IAsset => AssetDetail) public assetDetails;
 
   ////////////////////////
   //    Constructor     //
@@ -85,9 +85,9 @@ contract BasicManager is IBasicManager, BaseManager {
   //    Admin-Only     //
   ///////////////////////
 
-  function whitelistAsset(IAsset _asset) external onlyOwner {
+  function whitelistAsset(IAsset _asset, uint8 _marketId, AssetType _type) external onlyOwner {
     // registered asset
-    isWhitelisted[address(_asset)] = true;
+    assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
   }
 
   /**
@@ -156,11 +156,11 @@ contract BasicManager is IBasicManager, BaseManager {
       // allow cash
       if (address(assetDeltas[i].asset) == address(cashAsset)) continue;
 
-      if (!isWhitelisted[address(assetDeltas[i].asset)]) revert PM_UnsupportedAsset();
+      AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
 
-      IAsset.AssetType assetType = assetDeltas[i].asset.assetType();
+      if (!detail.isWhitelisted) revert PM_UnsupportedAsset();
 
-      if (assetType == IAsset.AssetType.Perpetual) {
+      if (detail.assetType == AssetType.Perpetual) {
         // settle perps if the user has perp position
         _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
       }
@@ -243,14 +243,13 @@ contract BasicManager is IBasicManager, BaseManager {
       }
 
       // else, it must be perp or option for one of the registered assets
-      IAsset.AssetType assetType = currentAsset.asset.assetType();
-      uint underlyingId = currentAsset.asset.underlyingId();
+      AssetDetail memory detail = assetDetails[assets[i].asset];
 
-      if (assetType == IAsset.AssetType.Perpetual) {
-        portfolio.addPerpToPortfolio(currentAsset.asset, underlyingId, currentAsset.balance);
-      } else if (assetType == IAsset.AssetType.Option) {
+      if (detail.assetType == AssetType.Perpetual) {
+        portfolio.addPerpToPortfolio(currentAsset.asset, detail.marketId, currentAsset.balance);
+      } else if (detail.assetType == AssetType.Option) {
         portfolio.addOptionToPortfolio(
-          currentAsset.asset, underlyingId, uint96(currentAsset.subId), currentAsset.balance
+          currentAsset.asset, detail.marketId, uint96(currentAsset.subId), currentAsset.balance
         );
       }
     }
@@ -320,7 +319,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @dev This function can be called by anyone
    */
   function settleOptions(IOption option, uint accountId) external {
-    if (!isWhitelisted[address(option)]) revert PM_UnsupportedAsset();
+    if (!assetDetails[option].isWhitelisted) revert PM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
   }
 

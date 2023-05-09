@@ -56,16 +56,16 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     rateModel = new MockInterestRateModel(1e18);
     cash = new CashAsset(account, usdc, rateModel, 0, address(0));
 
-    perp = new PerpAsset(account, 0.0075e18, 1);
+    perp = new PerpAsset(account, 0.0075e18);
 
     perp.setSpotFeed(feed);
 
-    option = new Option(account, address(feed), 1);
+    option = new Option(account, address(feed));
 
     manager = new BasicManager(account, ICashAsset(cash), feed, feed, feed);
 
-    manager.whitelistAsset(perp);
-    manager.whitelistAsset(option);
+    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
 
     cash.setWhitelistManager(address(manager), true);
 

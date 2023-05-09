@@ -35,7 +35,7 @@ contract UNIT_PerpAssetFunding is Test {
     account = new Accounts("Lyra", "LYRA");
     feed = new MockFeed();
     manager = new MockManager(address(account));
-    perp = new PerpAsset(IAccounts(account), 0.0075e18, 1);
+    perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
     perp.setSpotFeed(feed);
     feed.setSpot(uint(spot));

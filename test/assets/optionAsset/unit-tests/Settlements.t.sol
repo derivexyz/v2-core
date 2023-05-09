@@ -33,7 +33,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeed();
-    option = new Option(account, address(feed), 1);
+    option = new Option(account, address(feed));
 
     callId = option.getSubId(setExpiry, strike, true);
     putId = option.getSubId(setExpiry, strike, false);

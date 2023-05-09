@@ -7,6 +7,18 @@ import {IOption} from "src/interfaces/IOption.sol";
 import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 
 interface IBasicManager is IManager {
+  enum AssetType {
+    NotSet,
+    Option,
+    Perpetual
+  }
+
+  struct AssetDetail {
+    bool isWhitelisted;
+    AssetType assetType;
+    uint8 marketId;
+  }
+
   /**
    * @dev a basic manager portfolio contains up to 5 subAccounts assets
    * each subAccount contains multiple derivative type

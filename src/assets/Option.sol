@@ -26,9 +26,6 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   using SafeCast for int;
   using SignedDecimalMath for int;
 
-  /// @dev underlying asset id (e.g.: ETH = 0, BTC = 1)
-  uint public immutable underlyingId;
-
   /// @dev Contract to get spot prices which are locked in at settlement
   ISettlementFeed public settlementFeed;
 
@@ -46,17 +43,8 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts, address _settlementFeed, uint _underlyingId) ManagerWhitelist(_accounts) {
+  constructor(IAccounts _accounts, address _settlementFeed) ManagerWhitelist(_accounts) {
     settlementFeed = ISettlementFeed(_settlementFeed);
-
-    underlyingId = _underlyingId;
-  }
-
-  /**
-   * @dev returns the asset type, for managers to categorized them if needed
-   */
-  function assetType() external pure returns (AssetType) {
-    return AssetType.Option;
   }
 
   ///////////////

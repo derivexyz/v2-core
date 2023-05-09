@@ -106,7 +106,7 @@ contract IntegrationTestBase is Test {
     cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
 
     // nonce: 7 => Deploy OptionAsset
-    option = new Option(accounts, address(feed), 1);
+    option = new Option(accounts, address(feed));
 
     // nonce: 8 => deploy SpotJumpOracle
     (ISpotJumpOracle.JumpParams memory params, uint32[16] memory initialJumps) =

@@ -133,20 +133,6 @@ contract MockAsset is IAsset {
     tokenToCashRate = rate;
   }
 
-  /**
-   * @dev returns the asset type, for managers to categorized them if needed
-   */
-  function assetType() external pure virtual returns (AssetType) {
-    return AssetType.Cash;
-  }
-
-  /**
-   * @dev return underlying asset id, (e.g.: ETH = 0, BTC = 1)
-   */
-  function underlyingId() external pure virtual returns (uint) {
-    return 1;
-  }
-
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
 }

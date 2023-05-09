@@ -62,8 +62,8 @@ contract UNIT_TestBasicManager_Option is Test {
 
     manager.setPricingModule(pricing);
 
-    manager.whitelistAsset(perp);
-    manager.whitelistAsset(option);
+    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
