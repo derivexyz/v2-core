@@ -72,7 +72,7 @@ contract WrappedERC20Asset is IMarginAsset, ManagerWhitelist {
     uint adjustmentAmount = assetAmount.to18Decimals(assetDecimals);
 
     accounts.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -107,7 +107,7 @@ contract WrappedERC20Asset is IMarginAsset, ManagerWhitelist {
     wrappedAsset.safeTransfer(recipient, assetAmount);
 
     accounts.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,

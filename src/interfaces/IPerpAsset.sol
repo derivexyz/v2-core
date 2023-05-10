@@ -33,6 +33,9 @@ interface IPerpAsset is IAsset {
    */
   function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash);
 
+  /// TODO: docs
+  function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash);
+
   //////////////////
   //   Events     //
   //////////////////

@@ -160,25 +160,25 @@ contract PMRM is IPMRM, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint tradeId, address, IAccounts.AssetDelta[] calldata assetDeltas, bytes memory)
     public
     onlyAccounts
   {
-    //   _chargeOIFee(accountId, tradeId, assetDeltas);
-    //
-    //    // check assets are only cash and perp
-    //   for (uint i = 0; i < assetDeltas.length; i++) {
-    //     if (assetDeltas[i].asset == perp) {
-    //       // settle perps if the user has perp position
-    //       _settleAccountPerps(accountId);
-    //     } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
-    //       revert("unsupported asset");
-    //     }
-    //   }
-    //
-    //   IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
-    //
-    //   _checkMargin(portfolio);
+     _chargeOIFee(accountId, tradeId, assetDeltas);
+
+      // check assets are only cash and perp
+     for (uint i = 0; i < assetDeltas.length; i++) {
+       if (assetDeltas[i].asset == perp) {
+         // settle perps if the user has perp position
+         _settleAccountPerps(accountId);
+       } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
+         revert("unsupported asset");
+       }
+     }
+
+     IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(accountId, accounts.getAccountBalances(accountId));
+
+     _checkMargin(portfolio);
   }
 
   ///////////////////////
@@ -191,7 +191,7 @@ contract PMRM is IPMRM, BaseManager {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
+  function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets)
     internal
     view
     returns (IPMRM.PMRM_Portfolio memory portfolio)
@@ -230,11 +230,12 @@ contract PMRM is IPMRM, BaseManager {
     }
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
-    (portfolio.spotPrice,) = feed.getSpot();
+    (portfolio.spotPrice, portfolio.minConfidence) = feed.getSpot();
     for (uint i = 0; i < seenExpiries; ++i) {
-      // TODO: confidence
       (uint forwardPrice, uint confidence1) = futureFeed.getFuturePrice(expiryCount[i].expiry);
       (uint64 discountFactor, uint confidence2) = discountFactorFeed.getDiscountFactor(expiryCount[i].expiry);
+      uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
+      minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;
 
       portfolio.expiries[i] = ExpiryHoldings({
         secToExpiry: SafeCast.toUint64(expiryCount[i].expiry - block.timestamp),
@@ -247,7 +248,8 @@ contract PMRM is IPMRM, BaseManager {
         fwdShock1MtM: 0,
         fwdShock2MtM: 0,
         staticDiscount: 0,
-        discountFactor: discountFactor
+        discountFactor: discountFactor,
+        minConfidence: minConfidence
       });
     }
 
@@ -269,14 +271,18 @@ contract PMRM is IPMRM, BaseManager {
           : expiry.options.length - (expiryCount[expiryIndex].putCount--); // start at the middle and go to length - 1
 
         (uint vol, uint confidence) = volFeed.getVol(SafeCast.toUint128(strike), SafeCast.toUint128(optionExpiry));
-        // TODO: confidence
-        expiry.options[index] = StrikeHolding({strike: strike, vol: vol, amount: currentAsset.balance, isCall: isCall});
+        expiry.options[index] = StrikeHolding({
+          strike: strike,
+          vol: vol,
+          amount: currentAsset.balance,
+          isCall: isCall,
+          minConfidence: confidence < expiry.minConfidence ? confidence : expiry.minConfidence
+        });
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       } else if (address(currentAsset.asset) == address(perp)) {
         portfolio.perpPosition = currentAsset.balance;
-        // TODO: unrealised perp value/funding
-        portfolio.totalMtM += 0;
+        portfolio.totalMtM += perp.getUnsettledAndUnrealizedCash(accountId);
       } else if (address(currentAsset.asset) == address(baseAsset)) {
         portfolio.basePosition = SafeCast.toUint256(currentAsset.balance);
 
@@ -413,10 +419,6 @@ contract PMRM is IPMRM, BaseManager {
 
     minSPAN += portfolio.totalMtM + portfolio.cash;
 
-    if (minSPAN > 0) {
-      return 0;
-    }
-
     return minSPAN;
   }
 
@@ -502,7 +504,6 @@ contract PMRM is IPMRM, BaseManager {
     view
     returns (int mtm)
   {
-    // TODO: this shock is out of date
     uint volShock = 1e18;
     if (volShockDirection == VolShockDirection.Up) {
       volShock = expiry.volShockUp;
@@ -536,11 +537,13 @@ contract PMRM is IPMRM, BaseManager {
     view
     returns (IPMRM.PMRM_Portfolio memory portfolio)
   {
-    return _arrangePortfolio(assets);
+    // TODO: pass in account Id
+    return _arrangePortfolio(0, assets);
   }
 
   function getMargin(IAccounts.AssetBalance[] memory assets, bool isInitial) external view returns (int) {
-    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(assets);
+    // TODO: pass in account Id
+    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(0, assets);
     int im = _getMargin(portfolio, isInitial);
     return im;
   }

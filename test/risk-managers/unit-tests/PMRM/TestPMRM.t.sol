@@ -7,7 +7,7 @@ import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+import "src/interfaces/IAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -22,6 +22,7 @@ import "test/shared/utils/JsonMechIO.sol";
 import "forge-std/console2.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
+import "../../../shared/mocks/MockPerp.sol";
 
 contract UNIT_TestPMRM is Test {
   using stdJson for string;
@@ -41,6 +42,7 @@ contract UNIT_TestPMRM is Test {
   MockFeeds feed;
   uint feeRecipient;
   MTMCache mtmCache;
+  MockPerp mockPerp;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -57,6 +59,7 @@ contract UNIT_TestPMRM is Test {
     weth = new MockERC20("weth", "weth");
     cash = new MockAsset(usdc, accounts, true);
     baseAsset = new WrappedERC20Asset(accounts, weth, IChainlinkSpotFeed(address(feed)));
+    mockPerp = new MockPerp(accounts);
 
     option = new MockOption(accounts);
     mtmCache = new MTMCache();
@@ -65,7 +68,7 @@ contract UNIT_TestPMRM is Test {
         accounts,
         ICashAsset(address(cash)),
         option,
-        IPerpAsset(address(0)),
+        IPerpAsset(address(mockPerp)),
         IFutureFeed(feed),
         ISettlementFeed(feed),
         ISpotFeed(feed),
@@ -106,28 +109,31 @@ contract UNIT_TestPMRM is Test {
     //    }
 
     //    PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestSmall());
-    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
-    _logPortfolio(portfolio);
+//    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
+//    _logPortfolio(portfolio);
 
-    console2.log("im", pmrm.getMargin(getAssetBalancesForTestLarge(), true));
+    IAccounts.AssetBalance[] memory balances = getAssetBalancesForTestLarge();
+
+    console.log(balances.length);
+    console2.log("im", pmrm.getMargin(balances, true));
   }
 
-  function getAssetBalancesForTestSmall() internal view returns (AccountStructs.AssetBalance[] memory balances) {
+  function getAssetBalancesForTestSmall() internal view returns (IAccounts.AssetBalance[] memory balances) {
     uint referenceTime = block.timestamp;
-    balances = new AccountStructs.AssetBalance[](4);
-    balances[0] = AccountStructs.AssetBalance({asset: IAsset(cash), subId: 0, balance: -1000});
-    balances[1] = AccountStructs.AssetBalance({
+    balances = new IAccounts.AssetBalance[](4);
+    balances[0] = IAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: -1000});
+    balances[1] = IAccounts.AssetBalance({
       asset: IAsset(option),
       subId: OptionEncoding.toSubId(referenceTime + 1 days, 1000e18, true),
       balance: -1000
     });
-    balances[2] = AccountStructs.AssetBalance({
+    balances[2] = IAccounts.AssetBalance({
       asset: IAsset(option),
       subId: OptionEncoding.toSubId(referenceTime + 1 days, 1000e18, false),
       balance: -1000
     });
 
-    balances[3] = AccountStructs.AssetBalance({
+    balances[3] = IAccounts.AssetBalance({
       asset: IAsset(option),
       subId: OptionEncoding.toSubId(referenceTime + 2 days, 1000e18, false),
       balance: -1000
@@ -135,7 +141,7 @@ contract UNIT_TestPMRM is Test {
     return balances;
   }
 
-  function getAssetBalancesForTestLarge() internal returns (AccountStructs.AssetBalance[] memory balances) {
+  function getAssetBalancesForTestLarge() internal returns (IAccounts.AssetBalance[] memory balances) {
     uint referenceTime = block.timestamp;
     jsonParser = new JsonMechIO();
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testPortfolio.json");
@@ -145,30 +151,30 @@ contract UNIT_TestPMRM is Test {
       revert("Invalid data");
     }
 
-    balances = new AccountStructs.AssetBalance[](data.length / 4 + 3);
+    balances = new IAccounts.AssetBalance[](data.length / 4 + 3);
 
     for (uint i = 0; i < data.length; i += 4) {
-      balances[i / 4] = AccountStructs.AssetBalance({
+      balances[i / 4] = IAccounts.AssetBalance({
         asset: IAsset(option),
         subId: OptionEncoding.toSubId(referenceTime + uint(data[i]) * 1 weeks, uint(data[i + 1] * 1e18), data[i + 2] == 1),
         balance: data[i + 3] * 1e18
       });
     }
 
-    balances[balances.length - 3] = AccountStructs.AssetBalance({asset: IAsset(cash), subId: 0, balance: 200000 ether});
-    //    balances[balances.length - 2] = AccountStructs.AssetBalance({
-    //    // I.e. perps
-    //    asset: IAsset(address(0xf00f00)),
-    //    subId: 0,
-    //    balance: -2000 ether
-    //    });
-    //
-    //    balances[balances.length - 1] = AccountStructs.AssetBalance({
-    //    // I.e. wrapped eth
-    //    asset: IAsset(address(0xbaabaa)),
-    //    subId: 0,
-    //    balance: 200 ether
-    //    });
+    balances[balances.length - 3] = IAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 200000 ether});
+    balances[balances.length - 2] = IAccounts.AssetBalance({
+      // I.e. perps
+      asset: IAsset(address(mockPerp)),
+      subId: 0,
+      balance: -2000 ether
+    });
+
+    balances[balances.length - 1] = IAccounts.AssetBalance({
+      // I.e. wrapped eth
+      asset: IAsset(address(baseAsset)),
+      subId: 0,
+      balance: 200 ether
+    });
     return balances;
   }
 
@@ -247,10 +253,10 @@ contract UNIT_TestPMRM is Test {
     uint subIdB,
     int amountB
   ) internal {
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
 
     // accA transfer asset A to accB
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: accA,
       toAcc: accB,
       asset: assetA,
@@ -260,7 +266,7 @@ contract UNIT_TestPMRM is Test {
     });
 
     // accB transfer asset B to accA
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: accB,
       toAcc: accA,
       asset: assetB,

@@ -56,6 +56,7 @@ interface IPMRM {
     int fwdContingency;
     // option + base + perp; excludes fwd/oracle
     int totalContingency;
+    uint minConfidence;
   }
 
   struct ExpiryHoldings {
@@ -69,6 +70,7 @@ interface IPMRM {
     int fwdShock2MtM;
     uint staticDiscount;
     uint64 discountFactor;
+    uint minConfidence;
   }
 
   struct StrikeHolding {
@@ -77,6 +79,7 @@ interface IPMRM {
     uint vol;
     int amount;
     bool isCall;
+    uint minConfidence;
   }
 
   struct PortfolioExpiryData {
