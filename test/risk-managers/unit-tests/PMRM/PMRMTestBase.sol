@@ -24,7 +24,6 @@ import "../../../shared/mocks/MockFeeds.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
 import "../../../shared/mocks/MockPerp.sol";
 
-
 contract PMRMTestBase is Test {
   using stdJson for string;
 
@@ -49,7 +48,6 @@ contract PMRMTestBase is Test {
   address bob = address(0xbb);
   uint aliceAcc;
   uint bobAcc;
-
 
   function setUp() public {
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
@@ -83,7 +81,6 @@ contract PMRMTestBase is Test {
     _setupAliceAndBob();
     addScenarios();
   }
-
 
   function _logPortfolio(IPMRM.PMRM_Portfolio memory portfolio) internal view {
     console2.log("cash balance:", portfolio.cash);
@@ -150,7 +147,6 @@ contract PMRMTestBase is Test {
     pmrm.setScenarios(scenarios);
   }
 
-
   function _setupAliceAndBob() internal {
     vm.label(alice, "alice");
     vm.label(bob, "bob");
@@ -187,27 +183,26 @@ contract PMRMTestBase is Test {
 
     // accA transfer asset A to accB
     transferBatch[0] = IAccounts.AssetTransfer({
-    fromAcc: accA,
-    toAcc: accB,
-    asset: assetA,
-    subId: subIdA,
-    amount: amountA,
-    assetData: bytes32(0)
+      fromAcc: accA,
+      toAcc: accB,
+      asset: assetA,
+      subId: subIdA,
+      amount: amountA,
+      assetData: bytes32(0)
     });
 
     // accB transfer asset B to accA
     transferBatch[1] = IAccounts.AssetTransfer({
-    fromAcc: accB,
-    toAcc: accA,
-    asset: assetB,
-    subId: subIdB,
-    amount: amountB,
-    assetData: bytes32(0)
+      fromAcc: accB,
+      toAcc: accA,
+      asset: assetB,
+      subId: subIdB,
+      amount: amountB,
+      assetData: bytes32(0)
     });
 
     accounts.submitTransfers(transferBatch, "");
   }
-
 
   struct OptionData {
     uint secToExpiry;
@@ -253,7 +248,7 @@ contract PMRMTestBase is Test {
     require(expiries.length == vols.length, "vols length mismatch");
     require(expiries.length == confidences.length, "confidences length mismatch");
 
-    for (uint i=0; i<expiries.length; ++i) {
+    for (uint i = 0; i < expiries.length; ++i) {
       data[i] = OptionData({
         secToExpiry: expiries[i],
         strike: strikes[i],
@@ -282,12 +277,7 @@ contract PMRMTestBase is Test {
       count++;
     }
 
-    return OtherAssets({
-      count: count,
-      cashAmount: cashAmount,
-      perpAmount: perpAmount,
-      baseAmount: baseAmount
-    });
+    return OtherAssets({count: count, cashAmount: cashAmount, perpAmount: perpAmount, baseAmount: baseAmount});
   }
 
   function readFeedData(string memory json, string memory testId) internal returns (FeedData memory) {
@@ -306,7 +296,7 @@ contract PMRMTestBase is Test {
     require(expiries.length == discounts.length, "discounts length mismatch");
     require(expiries.length == discountConfidences.length, "discountConfidences length mismatch");
 
-  return FeedData({
+    return FeedData({
       spotPrice: spotPrice,
       spotConfidence: spotConfidence,
       stableRate: stableRate,
@@ -319,7 +309,10 @@ contract PMRMTestBase is Test {
     });
   }
 
-  function setupTestScenarioAndGetAssetBalances(string memory testId) internal returns (IAccounts.AssetBalance[] memory balances) {
+  function setupTestScenarioAndGetAssetBalances(string memory testId)
+    internal
+    returns (IAccounts.AssetBalance[] memory balances)
+  {
     uint referenceTime = block.timestamp;
     jsonParser = new JsonMechIO();
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testScenarios.json");
@@ -331,7 +324,7 @@ contract PMRMTestBase is Test {
     /// Set feed values
 
     feed.setSpot(feedData.spotPrice, feedData.spotConfidence);
-    for (uint i=0 ; i<feedData.expiries.length; i++) {
+    for (uint i = 0; i < feedData.expiries.length; i++) {
       uint expiry = referenceTime + uint(feedData.expiries[i]);
       feed.setForwardPrice(expiry, feedData.forwards[i], feedData.forwardConfidences[i]);
       feed.setDiscountFactor(expiry, uint64(feedData.discounts[i]), uint64(feedData.discountConfidences[i]));
@@ -351,29 +344,22 @@ contract PMRMTestBase is Test {
         balance: optionData[i].amount
       });
 
-      feed.setVol(uint128(optionData[i].strike), uint128(expiry), uint128(optionData[i].vol), uint64(optionData[i].volConfidence));
+      feed.setVol(
+        uint128(optionData[i].strike), uint128(expiry), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
+      );
     }
 
     if (otherAssets.cashAmount != 0) {
-      balances[balances.length - otherAssets.count--] = IAccounts.AssetBalance({
-        asset: IAsset(address(cash)),
-        subId: 0,
-        balance: otherAssets.cashAmount
-      });
+      balances[balances.length - otherAssets.count--] =
+        IAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: otherAssets.cashAmount});
     }
     if (otherAssets.perpAmount != 0) {
-      balances[balances.length - otherAssets.count--] = IAccounts.AssetBalance({
-        asset: IAsset(address(mockPerp)),
-        subId: 0,
-        balance: otherAssets.perpAmount
-      });
+      balances[balances.length - otherAssets.count--] =
+        IAccounts.AssetBalance({asset: IAsset(address(mockPerp)), subId: 0, balance: otherAssets.perpAmount});
     }
     if (otherAssets.baseAmount != 0) {
-      balances[balances.length - otherAssets.count--] = IAccounts.AssetBalance({
-        asset: IAsset(address(baseAsset)),
-        subId: 0,
-        balance: int(otherAssets.baseAmount)
-      });
+      balances[balances.length - otherAssets.count--] =
+        IAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
     }
     return balances;
   }

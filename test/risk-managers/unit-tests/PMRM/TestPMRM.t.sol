@@ -55,37 +55,36 @@ contract UNIT_TestPMRM is PMRMTestBase {
     //    }
 
     //    PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestSmall());
-//    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
-//    _logPortfolio(portfolio);
-//
-//    IAccounts.AssetBalance[] memory balances = getAssetBalancesForTestLarge();
-//
-//    console.log(balances.length);
+    //    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
+    //    _logPortfolio(portfolio);
+    //
+    //    IAccounts.AssetBalance[] memory balances = getAssetBalancesForTestLarge();
+    //
+    //    console.log(balances.length);
     IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".T1");
     console2.log("im", pmrm.getMargin(balances, true));
   }
-//
-//  function getAssetBalancesForTestSmall() internal view returns (IAccounts.AssetBalance[] memory balances) {
-//    uint referenceTime = block.timestamp;
-//    balances = new IAccounts.AssetBalance[](4);
-//    balances[0] = IAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: -1000});
-//    balances[1] = IAccounts.AssetBalance({
-//      asset: IAsset(option),
-//      subId: OptionEncoding.toSubId(referenceTime + 1 days, 1000e18, true),
-//      balance: -1000
-//    });
-//    balances[2] = IAccounts.AssetBalance({
-//      asset: IAsset(option),
-//      subId: OptionEncoding.toSubId(referenceTime + 1 days, 1000e18, false),
-//      balance: -1000
-//    });
-//
-//    balances[3] = IAccounts.AssetBalance({
-//      asset: IAsset(option),
-//      subId: OptionEncoding.toSubId(referenceTime + 2 days, 1000e18, false),
-//      balance: -1000
-//    });
-//    return balances;
-//  }
-
+  //
+  //  function getAssetBalancesForTestSmall() internal view returns (IAccounts.AssetBalance[] memory balances) {
+  //    uint referenceTime = block.timestamp;
+  //    balances = new IAccounts.AssetBalance[](4);
+  //    balances[0] = IAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: -1000});
+  //    balances[1] = IAccounts.AssetBalance({
+  //      asset: IAsset(option),
+  //      subId: OptionEncoding.toSubId(referenceTime + 1 days, 1000e18, true),
+  //      balance: -1000
+  //    });
+  //    balances[2] = IAccounts.AssetBalance({
+  //      asset: IAsset(option),
+  //      subId: OptionEncoding.toSubId(referenceTime + 1 days, 1000e18, false),
+  //      balance: -1000
+  //    });
+  //
+  //    balances[3] = IAccounts.AssetBalance({
+  //      asset: IAsset(option),
+  //      subId: OptionEncoding.toSubId(referenceTime + 2 days, 1000e18, false),
+  //      balance: -1000
+  //    });
+  //    return balances;
+  //  }
 }

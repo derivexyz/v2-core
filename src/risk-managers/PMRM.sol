@@ -178,23 +178,26 @@ contract PMRM is IPMRM, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address caller, IAccounts.AssetDelta[] calldata assetDeltas, bytes memory)
-    public
-    onlyAccounts
-  {
-     _chargeOIFee(accountId, tradeId, assetDeltas);
+  function handleAdjustment(
+    uint accountId,
+    uint tradeId,
+    address caller,
+    IAccounts.AssetDelta[] calldata assetDeltas,
+    bytes memory
+  ) public onlyAccounts {
+    _chargeOIFee(accountId, tradeId, assetDeltas);
 
-      // check assets are only cash and perp
-     for (uint i = 0; i < assetDeltas.length; i++) {
-       if (assetDeltas[i].asset == perp) {
-         // settle perps if the user has perp position
-         _settleAccountPerps(accountId);
-       } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
-         revert("unsupported asset");
-       }
-     }
+    // check assets are only cash and perp
+    for (uint i = 0; i < assetDeltas.length; i++) {
+      if (assetDeltas[i].asset == perp) {
+        // settle perps if the user has perp position
+        _settleAccountPerps(accountId);
+      } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
+        revert("unsupported asset");
+      }
+    }
 
-     IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), true);
+    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), true);
 
     if (trustedRiskAssessor[caller]) {
       // TODO: bypass
