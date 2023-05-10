@@ -2,20 +2,21 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+
 import "../feeds/PriceFeeds.sol";
 
 // TODO: safecast to int
-contract BaseWrapper is IAsset, Owned {
+contract BaseWrapper is IAsset, Ownable2Step {
   IERC20 token;
   IAccounts account;
   PriceFeeds priceFeeds;
 
-  constructor(IERC20 token_, IAccounts account_, PriceFeeds feeds_, uint feedId) Owned() {
+  constructor(IERC20 token_, IAccounts account_, PriceFeeds feeds_, uint feedId) Ownable2Step() {
     token = token_;
     account = account_;
     priceFeeds = feeds_;
@@ -24,7 +25,7 @@ contract BaseWrapper is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -39,7 +40,7 @@ contract BaseWrapper is IAsset, Owned {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     int postBalance = account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -53,7 +54,7 @@ contract BaseWrapper is IAsset, Owned {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(AccountStructs.AssetAdjustment memory adjustment, uint, int preBal, IManager, address)
+  function handleAdjustment(IAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager, address)
     external
     pure
     override

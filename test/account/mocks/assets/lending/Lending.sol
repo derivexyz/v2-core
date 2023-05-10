@@ -5,15 +5,16 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAsset.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+
 import "forge-std/console2.sol";
 
-contract Lending is IAsset, Owned {
+contract Lending is IAsset, Ownable2Step {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -36,7 +37,7 @@ contract Lending is IAsset, Owned {
 
   mapping(uint => uint) public accountIndex; // could be borrow or supply index
 
-  constructor(IERC20 token_, IAccounts account_, InterestRateModel _interestRateModel) Owned() {
+  constructor(IERC20 token_, IAccounts account_, InterestRateModel _interestRateModel) Ownable2Step() {
     token = token_;
     account = account_;
 
@@ -50,13 +51,11 @@ contract Lending is IAsset, Owned {
   // Accounts Hooks //
   ////////////////////
 
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
-    uint,
-    int preBal,
-    IManager riskModel,
-    address
-  ) external override returns (int finalBal, bool needAdjustment) {
+  function handleAdjustment(IAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager riskModel, address)
+    external
+    override
+    returns (int finalBal, bool needAdjustment)
+  {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
 
     /* Makes a continuous compounding interest calculation.
@@ -113,7 +112,7 @@ contract Lending is IAsset, Owned {
   function updateBalance(uint accountId) external returns (int balance) {
     /* This will eventually call asset.handleAdjustment() and accrue interest */
     balance = account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -127,7 +126,7 @@ contract Lending is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -142,7 +141,7 @@ contract Lending is IAsset, Owned {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -242,7 +241,7 @@ contract Lending is IAsset, Owned {
 
     // update the account's balance
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,

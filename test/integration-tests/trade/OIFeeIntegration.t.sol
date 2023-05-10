@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "../shared/IntegrationTestBase.sol";
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 /**
  * @dev testing charge of OI fee in a real setting

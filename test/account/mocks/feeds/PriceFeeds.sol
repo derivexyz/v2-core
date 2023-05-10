@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "lyra-utils/ownership/Owned.sol";
-import "src/interfaces/IAsset.sol";
+import "openzeppelin/access/Ownable2Step.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 interface PriceFeeds {
   function assignFeedToAsset(IAsset asset, uint feedId) external;
@@ -13,11 +13,11 @@ interface PriceFeeds {
   function assetToFeedId(IAsset asset) external view returns (uint feedId);
 }
 
-contract TestPriceFeeds is PriceFeeds, Owned {
+contract TestPriceFeeds is PriceFeeds, Ownable2Step {
   mapping(IAsset => uint) public assetToFeedId; // asset => feedId;
   mapping(uint => uint) spotPrices; // feedId => spotPrice;
 
-  constructor() Owned() {}
+  constructor() Ownable2Step() {}
 
   function setSpotForFeed(uint feedId, uint spotPrice) external onlyOwner {
     spotPrices[feedId] = spotPrice;

@@ -14,7 +14,7 @@ import "src/risk-managers/BasicManager.sol";
 import "src/assets/PerpAsset.sol";
 import "src/assets/CashAsset.sol";
 import "src/assets/Option.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 /**
@@ -125,14 +125,8 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
-      fromAcc: fromAcc,
-      toAcc: toAcc,
-      asset: perp,
-      subId: 0,
-      amount: amount,
-      assetData: ""
-    });
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
     account.submitTransfer(transfer, "");
   }
 

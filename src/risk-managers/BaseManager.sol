@@ -5,19 +5,22 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/math/IntLib.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IOption.sol";
-import "src/interfaces/IPerpAsset.sol";
-import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/AccountStructs.sol";
-import "src/interfaces/IFutureFeed.sol";
-import "src/interfaces/IBaseManager.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IOption} from "src/interfaces/IOption.sol";
+import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
+import {ICashAsset} from "src/interfaces/ICashAsset.sol";
+import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IBaseManager} from "src/interfaces/IBaseManager.sol";
+
+import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
+import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "src/libraries/StrikeGrouping.sol";
 
-abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
+abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
   using DecimalMath for uint;
 
@@ -62,7 +65,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     ICashAsset _cashAsset,
     IOption _option,
     IPerpAsset _perp
-  ) Owned() {
+  ) Ownable2Step() {
     accounts = _accounts;
     option = _option;
     perp = _perp;
@@ -139,7 +142,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @param asset option asset to be added
    * @return addedStrikeIndex index of existing or added strike struct
    */
-  function _addOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
+  function _addOption(Portfolio memory portfolio, IAccounts.AssetBalance memory asset)
     internal
     pure
     returns (uint addedStrikeIndex)
@@ -177,7 +180,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @param tradeId ID of the trade informed by Accounts
    * @param assetDeltas Array of asset changes made to this account
    */
-  function _chargeOIFee(uint accountId, uint tradeId, AssetDelta[] calldata assetDeltas) internal {
+  function _chargeOIFee(uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
@@ -208,7 +211,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
    * @param accountId Account Id to settle
    */
   function _settleAccountOptions(uint accountId) internal {
-    AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+    IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
       // skip non option asset
@@ -221,12 +224,12 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
 
       // update user option balance
       accounts.managerAdjustment(
-        AccountStructs.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
+        IAccounts.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
       );
     }
 
     // update user cash amount
-    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
+    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
     // report total print / burn to cash asset
     cashAsset.updateSettledCash(cashDelta);
   }
@@ -241,7 +244,7 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
     cashAsset.updateSettledCash(netCash);
 
     // update user cash amount
-    accounts.managerAdjustment(AccountStructs.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
+    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
 
     emit PerpSettled(accountId, netCash);
   }
@@ -257,12 +260,12 @@ abstract contract BaseManager is AccountStructs, IBaseManager, Owned {
   function _symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) internal {
     // deduct amount in from account
     accounts.managerAdjustment(
-      AccountStructs.AssetAdjustment({acc: from, asset: asset, subId: subId, amount: -amount, assetData: bytes32(0)})
+      IAccounts.AssetAdjustment({acc: from, asset: asset, subId: subId, amount: -amount, assetData: bytes32(0)})
     );
 
     // increase "to" account
     accounts.managerAdjustment(
-      AccountStructs.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
+      IAccounts.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
     );
   }
 

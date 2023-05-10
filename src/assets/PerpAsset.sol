@@ -10,12 +10,14 @@ import "openzeppelin/utils/math/SafeCast.sol";
 
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IPerpAsset.sol";
-import "src/interfaces/IChainlinkSpotFeed.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
+import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
+
+import {IManager} from "src/interfaces/IManager.sol";
 
 import "./ManagerWhitelist.sol";
 
@@ -26,7 +28,7 @@ import "./ManagerWhitelist.sol";
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
  */
-contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
+contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using SignedMath for int;
   using SafeCast for uint;
@@ -107,7 +109,7 @@ contract PerpAsset is IPerpAsset, Owned, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBalance,
     IManager manager,

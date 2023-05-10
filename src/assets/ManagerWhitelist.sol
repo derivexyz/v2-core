@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
-import "../interfaces/IAccounts.sol";
-import "../interfaces/IManagerWhitelist.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import "src/interfaces/IManagerWhitelist.sol";
 
 /**
  * @title ManagerWhitelist
@@ -12,7 +12,7 @@ import "../interfaces/IManagerWhitelist.sol";
  * @author Lyra
  */
 
-contract ManagerWhitelist is IManagerWhitelist, Owned {
+contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
   ///@dev Account contract address
   IAccounts public immutable accounts;
 

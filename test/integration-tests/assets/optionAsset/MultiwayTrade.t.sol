@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/console2.sol";
 import "../../shared/IntegrationTestBase.sol";
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 /**
  * @dev testing charge of OI fee in a real setting
@@ -43,10 +43,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
 
     (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](3);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](3);
 
     // Alice transfer to Bob
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -56,7 +56,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Bob transfers to Charlie
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: charlieAcc,
       asset: option,
@@ -66,7 +66,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Charlie transfer to Alice (closing the loop)
-    transferBatch[2] = AccountStructs.AssetTransfer({
+    transferBatch[2] = IAccounts.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: aliceAcc,
       asset: option,
@@ -95,10 +95,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     // Record pre balance
     (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
 
     // Alice transfer to Bob
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -108,7 +108,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Bob transfers to Charlie
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: charlieAcc,
       asset: option,
@@ -144,10 +144,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     // Record pre balance
     (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
 
     // Alice transfer to Bob
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -157,7 +157,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Bob transfers to Charlie
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: charlieAcc,
       asset: option,
@@ -195,10 +195,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     // Record pre balance
     (int aliceBal, int bobBal, int charlieBal,) = _getAllCashBalances();
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](4);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](4);
 
     // Alice transfer option to Bob for premium
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -207,7 +207,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: cash,
@@ -217,7 +217,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Bob transfers same option to Charlie for premium
-    transferBatch[2] = AccountStructs.AssetTransfer({
+    transferBatch[2] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: charlieAcc,
       asset: option,
@@ -226,7 +226,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[3] = AccountStructs.AssetTransfer({
+    transferBatch[3] = IAccounts.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: bobAcc,
       asset: cash,
@@ -268,10 +268,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     // Record pre balance
     (int aliceBal, int bobBal, int charlieBal,) = _getAllCashBalances();
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](4);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](4);
 
     // Alice transfer option to Bob for premium
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -280,7 +280,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: cash,
@@ -290,7 +290,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Bob transfers same option to Charlie for premium
-    transferBatch[2] = AccountStructs.AssetTransfer({
+    transferBatch[2] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: charlieAcc,
       asset: option,
@@ -299,7 +299,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
       assetData: bytes32(0)
     });
 
-    transferBatch[3] = AccountStructs.AssetTransfer({
+    transferBatch[3] = IAccounts.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: bobAcc,
       asset: cash,
@@ -340,10 +340,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     // Record pre balance
     (int aliceBal, int bobBal, int charlieBal, int daveBal) = _getAllCashBalances();
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](3);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](3);
 
     // Alice transfer to Bob
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -353,7 +353,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Bob transfers to Charlie
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: charlieAcc,
       asset: option,
@@ -363,7 +363,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     });
 
     // Charlie transfers to Dave
-    transferBatch[2] = AccountStructs.AssetTransfer({
+    transferBatch[2] = IAccounts.AssetTransfer({
       fromAcc: charlieAcc,
       toAcc: daveAcc,
       asset: option,

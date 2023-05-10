@@ -9,7 +9,7 @@ import "../../../shared/mocks/MockFeed.sol";
 
 import "src/Accounts.sol";
 import "src/assets/PerpAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 contract UNIT_PerpAssetFunding is Test {
@@ -52,7 +52,7 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setImpactPrices(spot, spot);
 
     // open trades
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: perp,
@@ -70,7 +70,7 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testCannotSetSpotFeedFromNonOwner() public {
     vm.prank(alice);
-    vm.expectRevert(AbstractOwned.OnlyOwner.selector);
+    vm.expectRevert(bytes("Ownable: caller is not the owner"));
     perp.setSpotFeed(IChainlinkSpotFeed(address(0)));
   }
 

@@ -18,7 +18,7 @@ import "src/risk-managers/SpotJumpOracle.sol";
 import "test/feeds/mocks/MockV3Aggregator.sol";
 
 import "src/interfaces/IPCRM.sol";
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 /**
  * @dev real Accounts contract
@@ -186,10 +186,10 @@ contract IntegrationTestBase is Test {
     uint subIdB,
     int amountB
   ) internal {
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
 
     // accA transfer asset A to accB
-    transferBatch[0] = AccountStructs.AssetTransfer({
+    transferBatch[0] = IAccounts.AssetTransfer({
       fromAcc: accA,
       toAcc: accB,
       asset: assetA,
@@ -199,7 +199,7 @@ contract IntegrationTestBase is Test {
     });
 
     // accB transfer asset B to accA
-    transferBatch[1] = AccountStructs.AssetTransfer({
+    transferBatch[1] = IAccounts.AssetTransfer({
       fromAcc: accB,
       toAcc: accA,
       asset: assetB,

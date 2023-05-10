@@ -4,11 +4,10 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";
 
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
-import "src/interfaces/AccountStructs.sol";
 
 import "src/Accounts.sol";
 import "src/risk-managers/BaseManager.sol";
@@ -34,11 +33,11 @@ contract BaseManagerTester is BaseManager {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 
-  function chargeOIFee(uint accountId, uint tradeId, AssetDelta[] calldata assetDeltas) external {
+  function chargeOIFee(uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) external {
     _chargeOIFee(accountId, tradeId, assetDeltas);
   }
 
-  function addOption(Portfolio memory portfolio, AccountStructs.AssetBalance memory asset)
+  function addOption(Portfolio memory portfolio, IAccounts.AssetBalance memory asset)
     external
     pure
     returns (Portfolio memory updatedPortfolio)
@@ -51,14 +50,14 @@ contract BaseManagerTester is BaseManager {
     uint, /*accountId*/
     uint, /*tradeId*/
     address,
-    AssetDelta[] calldata, /*assetDeltas*/
+    IAccounts.AssetDelta[] calldata, /*assetDeltas*/
     bytes memory
   ) public {}
 
   function handleManagerChange(uint, IManager) external {}
 }
 
-contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
+contract UNIT_TestAbstractBaseManager is Test {
   Accounts accounts;
   BaseManagerTester tester;
 
@@ -126,7 +125,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
       IBaseManager.Portfolio({cash: 0, perp: 0, expiry: 1 days, numStrikesHeld: 1, strikes: strikes});
 
     // construct asset
-    AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({
+    IAccounts.AssetBalance memory assetBalance = IAccounts.AssetBalance({
       asset: IAsset(address(option)),
       subId: OptionEncoding.toSubId(block.timestamp + 1.2 days, 1000e18, true),
       balance: 10e18
@@ -147,7 +146,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
       IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiry, numStrikesHeld: 3, strikes: strikes});
 
     // add call to existing strike
-    AccountStructs.AssetBalance memory assetBalance = AccountStructs.AssetBalance({
+    IAccounts.AssetBalance memory assetBalance = IAccounts.AssetBalance({
       asset: IAsset(address(option)),
       subId: OptionEncoding.toSubId(expiry, 1000e18, true),
       balance: 10e18
@@ -156,7 +155,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     assertEq(updatedPortfolio.strikes[0].calls, 5e18);
 
     // add put to existing strike
-    assetBalance = AccountStructs.AssetBalance({
+    assetBalance = IAccounts.AssetBalance({
       asset: IAsset(address(option)),
       subId: OptionEncoding.toSubId(expiry, 2000e18, false),
       balance: -100e18
@@ -165,7 +164,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     assertEq(updatedPortfolio.strikes[1].puts, -100e18);
 
     // add put to new strike
-    assetBalance = AccountStructs.AssetBalance({
+    assetBalance = IAccounts.AssetBalance({
       asset: IAsset(address(option)),
       subId: OptionEncoding.toSubId(expiry, 20000e18, false),
       balance: 1e18
@@ -191,8 +190,8 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedOISnapshotBeforeTrade(subId, tradeId, 0);
     option.setMockedOI(subId, 100e18);
 
-    AssetDelta[] memory assetDeltas = new AssetDelta[](1);
-    assetDeltas[0] = AssetDelta(option, subId, amount);
+    IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](1);
+    assetDeltas[0] = IAccounts.AssetDelta(option, subId, amount);
 
     int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
     tester.chargeOIFee(aliceAcc, tradeId, assetDeltas);
@@ -215,8 +214,8 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedOISnapshotBeforeTrade(subId, tradeId, 100e18);
     option.setMockedOI(subId, 0);
 
-    AssetDelta[] memory assetDeltas = new AssetDelta[](1);
-    assetDeltas[0] = AssetDelta(option, subId, amount);
+    IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](1);
+    assetDeltas[0] = IAccounts.AssetDelta(option, subId, amount);
 
     int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
     tester.chargeOIFee(aliceAcc, tradeId, assetDeltas);
@@ -228,8 +227,8 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
   function testShouldNotChargeFeeOnOtherAssetsThenCash() public {
     int amount = -2000e18;
 
-    AssetDelta[] memory assetDeltas = new AssetDelta[](1);
-    assetDeltas[0] = AssetDelta(cash, 0, amount);
+    IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](1);
+    assetDeltas[0] = IAccounts.AssetDelta(cash, 0, amount);
 
     uint tradeId = 1;
 
@@ -253,10 +252,10 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     option.setMockedOI(subId2, 100e18);
     option.setMockedOI(subId3, 100e18);
 
-    AssetDelta[] memory assetDeltas = new AssetDelta[](3);
-    assetDeltas[0] = AssetDelta(option, subId1, amount);
-    assetDeltas[1] = AssetDelta(option, subId2, -amount);
-    assetDeltas[2] = AssetDelta(option, subId3, amount);
+    IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](3);
+    assetDeltas[0] = IAccounts.AssetDelta(option, subId1, amount);
+    assetDeltas[1] = IAccounts.AssetDelta(option, subId2, -amount);
+    assetDeltas[2] = IAccounts.AssetDelta(option, subId3, amount);
 
     int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
     tester.chargeOIFee(aliceAcc, tradeId, assetDeltas);
@@ -355,9 +354,9 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
     callSubId = 100;
     putSubId = 200;
 
-    AccountStructs.AssetTransfer[] memory transfers = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
 
-    transfers[0] = AccountStructs.AssetTransfer({
+    transfers[0] = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -365,7 +364,7 @@ contract UNIT_TestAbstractBaseManager is AccountStructs, Test {
       amount: 10e18,
       assetData: ""
     });
-    transfers[1] = AccountStructs.AssetTransfer({
+    transfers[1] = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
-import "forge-std/console2.sol";
-import "forge-std/console.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 
@@ -31,7 +30,7 @@ contract MockManager is IManager {
     account = IAccounts(account_);
   }
 
-  function handleAdjustment(uint acc, uint tradeId, address, AccountStructs.AssetDelta[] memory deltas, bytes memory)
+  function handleAdjustment(uint acc, uint tradeId, address, IAccounts.AssetDelta[] memory deltas, bytes memory)
     public
     virtual
   {

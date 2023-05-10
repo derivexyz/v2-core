@@ -4,9 +4,9 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "src/assets/Option.sol";
 import "src/Accounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+
 import "test/shared/mocks/MockManager.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
@@ -46,7 +46,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -60,7 +60,7 @@ contract UNIT_TestOptionBasics is Test {
 
   function testUnWhitelistedManagerCheck() public {
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -87,7 +87,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -112,7 +112,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    AccountStructs.AssetTransfer memory assetTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),

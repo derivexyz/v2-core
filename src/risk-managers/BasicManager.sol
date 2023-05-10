@@ -7,19 +7,21 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/IPerpAsset.sol";
-import "src/interfaces/IBaseManager.sol";
-import "src/interfaces/IOption.sol";
-import "src/interfaces/IOptionPricing.sol";
-import "src/interfaces/IChainlinkSpotFeed.sol";
-import "src/interfaces/IBasicManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ICashAsset} from "src/interfaces/ICashAsset.sol";
+import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
+import {IBaseManager} from "src/interfaces/IBaseManager.sol";
+import {IOption} from "src/interfaces/IOption.sol";
+import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
+import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
+import {IBasicManager} from "src/interfaces/IBasicManager.sol";
+import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
-import "./BaseManager.sol";
+import {BaseManager} from "./BaseManager.sol";
 
 import "forge-std/console2.sol";
 import "../interfaces/ISpotFeed.sol";
@@ -133,7 +135,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, address, AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint, address, IAccounts.AssetDelta[] calldata assetDeltas, bytes memory)
     public
     override
     onlyAccounts
@@ -192,7 +194,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
+  function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
     internal
     view
     returns (IBaseManager.Portfolio memory portfolio)
@@ -202,7 +204,7 @@ contract BasicManager is IBasicManager, BaseManager {
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
-    AccountStructs.AssetBalance memory currentAsset;
+    IAccounts.AssetBalance memory currentAsset;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
@@ -236,7 +238,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int maxLossMargin = 0;
     int isolatedMargin = 0;
-    bool zeroStrikeOwned;
+    bool zeroStrikeOwnable2Step;
 
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       (uint futurePrice,) = feed.getFuturePrice(portfolio.expiry);
@@ -247,7 +249,7 @@ contract BasicManager is IBasicManager, BaseManager {
         uint scenarioPrice = portfolio.strikes[i].strike;
         maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), maxLossMargin);
         if (scenarioPrice == 0) {
-          zeroStrikeOwned = true;
+          zeroStrikeOwnable2Step = true;
         }
       }
 
@@ -262,7 +264,7 @@ contract BasicManager is IBasicManager, BaseManager {
     }
 
     // Ensure $0 scenario is always evaluated.
-    if (lossBounded && !zeroStrikeOwned) {
+    if (lossBounded && !zeroStrikeOwnable2Step) {
       maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), maxLossMargin);
     }
 

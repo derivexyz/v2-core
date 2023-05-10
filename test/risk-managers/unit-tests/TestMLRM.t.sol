@@ -5,9 +5,8 @@ import "forge-std/Test.sol";
 import "src/risk-managers/MLRM.sol";
 import "src/assets/CashAsset.sol";
 import "src/Accounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -77,7 +76,7 @@ contract UNIT_TestMLRM is Test {
     // prepare trades
     feed.setSpot(1000e18);
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
-    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory callTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -85,7 +84,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory cashBorrow = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory cashBorrow = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(cash),
@@ -93,7 +92,7 @@ contract UNIT_TestMLRM is Test {
       amount: 5000e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = callTransfer;
     transferBatch[1] = cashBorrow;
 
@@ -110,7 +109,7 @@ contract UNIT_TestMLRM is Test {
 
     // prepare trades
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
-    AccountStructs.AssetTransfer memory invalidOption = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory invalidOption = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(unsupportedOption),
@@ -118,7 +117,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory validOption = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory validOption = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),
@@ -126,7 +125,7 @@ contract UNIT_TestMLRM is Test {
       amount: 5e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = validOption;
     transferBatch[1] = invalidOption;
 
@@ -144,7 +143,7 @@ contract UNIT_TestMLRM is Test {
   function testBlockIfUnbounded() public {
     // prepare trades
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, true);
-    AccountStructs.AssetTransfer memory validOption = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory validOption = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),
@@ -168,7 +167,7 @@ contract UNIT_TestMLRM is Test {
     _depositCash(bob, bobAcc, 100e18);
 
     uint putSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 500e18, false);
-    AccountStructs.AssetTransfer memory putTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory putTransfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),
@@ -176,7 +175,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(cash),
@@ -184,7 +183,7 @@ contract UNIT_TestMLRM is Test {
       amount: 100e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = putTransfer;
     transferBatch[1] = premiumTransfer;
 
@@ -198,7 +197,7 @@ contract UNIT_TestMLRM is Test {
   function testDoubleShortPutMargin() public {
     uint put1SubId = OptionEncoding.toSubId(block.timestamp + 1 days, 1000e18, false);
     uint put2SubId = OptionEncoding.toSubId(block.timestamp + 1 days, 2000e18, false);
-    AccountStructs.AssetTransfer memory putTransfer1 = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory putTransfer1 = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),
@@ -206,7 +205,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer memory putTransfer2 = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory putTransfer2 = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),
@@ -214,7 +213,7 @@ contract UNIT_TestMLRM is Test {
       amount: 1e18,
       assetData: ""
     });
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = putTransfer1;
     transferBatch[1] = putTransfer2;
 
@@ -236,7 +235,7 @@ contract UNIT_TestMLRM is Test {
 
     feed.setSpot(1000e18);
     uint callSubId = OptionEncoding.toSubId(block.timestamp + 1 days, 750e18, false);
-    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory callTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -251,7 +250,7 @@ contract UNIT_TestMLRM is Test {
     // uses settled price
     skip(3 days);
     feed.setSpot(800e18);
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(cash),
@@ -272,7 +271,7 @@ contract UNIT_TestMLRM is Test {
     feed.setSpot(1000e18);
     uint expiry = block.timestamp + 1 days;
     uint callSubId = OptionEncoding.toSubId(expiry, 0, true);
-    AccountStructs.AssetTransfer memory callTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory callTransfer = IAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -290,7 +289,7 @@ contract UNIT_TestMLRM is Test {
 
     // add short put
     uint putSubId = OptionEncoding.toSubId(expiry, 100e18, false);
-    AccountStructs.AssetTransfer memory putTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory putTransfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),

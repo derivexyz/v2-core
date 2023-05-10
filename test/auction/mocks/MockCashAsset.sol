@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "../../shared/mocks/MockAsset.sol";
 
 /**
@@ -28,7 +28,7 @@ contract MockCash is ICashAsset, MockAsset {
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
     isSocialized = true;
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountToReceive,
         asset: IAsset(address(this)),
         subId: 0,
@@ -42,7 +42,7 @@ contract MockCash is ICashAsset, MockAsset {
 
   function deposit(uint recipientAccount, uint amount) external override(MockAsset, ICashAsset) {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -57,7 +57,7 @@ contract MockCash is ICashAsset, MockAsset {
 
   function withdraw(uint accountId, uint amount, address recipient) external override(MockAsset, ICashAsset) {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,

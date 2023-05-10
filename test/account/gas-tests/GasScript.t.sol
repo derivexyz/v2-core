@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Script.sol";
-import "src/interfaces/AccountStructs.sol";
 
 import "../mocks/assets/OptionToken.sol";
 import "../mocks/assets/BaseWrapper.sol";
@@ -63,7 +62,7 @@ contract AccountGasScript is Script {
   function _gasSingleTransferUSDC() public {
     // setup: not counting gas
     uint amount = 50e18;
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: ownAcc,
       toAcc: 2,
       asset: IAsset(usdcAdapter),
@@ -83,11 +82,11 @@ contract AccountGasScript is Script {
   function _gasBulkTransferUSDC(uint counts) public {
     // setup: not counting gas
     uint amount = 50e18;
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](counts);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](counts);
 
     // in each round we use fresh from and to. So we test the worst cases when none of the storage is warmed
     for (uint i = 0; i < counts;) {
-      transferBatch[i] = AccountStructs.AssetTransfer({
+      transferBatch[i] = IAccounts.AssetTransfer({
         fromAcc: 2 * i + 1,
         toAcc: 2 * i + 2,
         asset: IAsset(usdcAdapter),
@@ -111,11 +110,11 @@ contract AccountGasScript is Script {
   function _gasSingleTradeUSDCWithOption() public {
     uint amount = 50e18;
     uint usdcAmount = 300e18;
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
 
     uint subId = block.timestamp;
 
-    transferBatch[0] = AccountStructs.AssetTransfer({ // short option and give it to another person
+    transferBatch[0] = IAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: ownAcc,
       toAcc: 2,
       asset: IAsset(optionAdapter),
@@ -123,7 +122,7 @@ contract AccountGasScript is Script {
       amount: int(amount),
       assetData: bytes32(0)
     });
-    transferBatch[1] = AccountStructs.AssetTransfer({ // premium
+    transferBatch[1] = IAccounts.AssetTransfer({ // premium
       fromAcc: 2,
       toAcc: ownAcc,
       asset: IAsset(usdcAdapter),
@@ -145,7 +144,7 @@ contract AccountGasScript is Script {
 
     // setup: not counting gas
     uint amount = 50e18;
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](counts);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](counts);
 
     uint fromAcc = 1;
     uint toAcc = 2;
@@ -153,7 +152,7 @@ contract AccountGasScript is Script {
     for (uint i = 0; i < counts;) {
       uint subId = i + 100;
 
-      transferBatch[i] = AccountStructs.AssetTransfer({ // short option and give it to another person
+      transferBatch[i] = IAccounts.AssetTransfer({ // short option and give it to another person
         fromAcc: fromAcc,
         toAcc: toAcc, // account 1 is the EOA. start from 2
         asset: IAsset(optionAdapter),
@@ -175,17 +174,17 @@ contract AccountGasScript is Script {
   }
 
   function _gasBulkSplitPosition(uint counts) public {
-    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
+    IAccounts.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
 
     if (counts > balances.length + 1) {
       revert("don't have this many asset to settle");
     }
 
     // select bunch of assets to settle
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](counts);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](counts);
 
     for (uint i = 0; i < counts;) {
-      transferBatch[i] = AccountStructs.AssetTransfer({
+      transferBatch[i] = IAccounts.AssetTransfer({
         fromAcc: ownAcc,
         toAcc: i + 2, // account 1 is the EOA. start from 2
         asset: IAsset(optionAdapter),
@@ -206,15 +205,14 @@ contract AccountGasScript is Script {
   }
 
   function _gasClearAccountBalances(uint counts) public {
-    AccountStructs.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
+    IAccounts.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
 
     if (counts > balances.length + 1) revert("don't have this many asset to settle");
 
     // select bunch of assets to settle
-    AccountStructs.HeldAsset[] memory assets = new AccountStructs.HeldAsset[](counts);
+    IAccounts.HeldAsset[] memory assets = new IAccounts.HeldAsset[](counts);
     for (uint i; i < counts; i++) {
-      assets[i] =
-        AccountStructs.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(balances[i + 1].subId)});
+      assets[i] = IAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(balances[i + 1].subId)});
     }
     uint initGas = gasleft();
     manager.clearBalances(ownAcc, assets);
@@ -222,7 +220,7 @@ contract AccountGasScript is Script {
 
     console.log("gas:ClearAccountBalances(", counts, "):", initGas - endGas);
 
-    // AccountStructs.AssetBalance[] memory balancesAfter = account.getAccountBalances(ownAcc);
+    // IAccounts.AssetBalance[] memory balancesAfter = account.getAccountBalances(ownAcc);
     // console.log("\t - asset left:", balancesAfter.length);
   }
 

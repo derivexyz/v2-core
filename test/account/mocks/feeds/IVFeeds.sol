@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "lyra-utils/ownership/Owned.sol";
-import "src/interfaces/IAsset.sol";
+import "openzeppelin/access/Ownable2Step.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 // simple single IV oracle
-contract IVFeeds is Owned {
+contract IVFeeds is Ownable2Step {
   mapping(IAsset => mapping(uint => uint)) public feedIds; // asset => subId => feedId;
   mapping(uint => uint) IVs; // feedId => iv;
 
-  constructor() Owned() {}
+  constructor() Ownable2Step() {}
 
   function setIVForFeed(uint feedId, uint iv) external onlyOwner {
     IVs[feedId] = iv;

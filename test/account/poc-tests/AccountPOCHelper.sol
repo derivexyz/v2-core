@@ -2,9 +2,8 @@
 pragma solidity ^0.8.18;
 
 import "src/Accounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -99,7 +98,7 @@ abstract contract AccountPOCHelper is Test {
   }
 
   function tradeCallOption(uint longAcc, uint shortAcc, uint amount, uint premium, uint optionSubId) public {
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
       asset: IAsset(optionAdapter),
@@ -108,7 +107,7 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
       asset: IAsset(usdcAdapter),
@@ -117,7 +116,7 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
@@ -175,11 +174,11 @@ abstract contract AccountPOCHelper is Test {
 
   function setupMaxAssetAllowancesForAll(address ownerAdd, uint ownerAcc, address delegate) internal {
     vm.startPrank(ownerAdd);
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
     assetAllowances[0] =
-      AccountStructs.AssetAllowance({asset: IAsset(optionAdapter), positive: type(uint).max, negative: type(uint).max});
+      IAllowances.AssetAllowance({asset: IAsset(optionAdapter), positive: type(uint).max, negative: type(uint).max});
     assetAllowances[1] =
-      AccountStructs.AssetAllowance({asset: IAsset(usdcAdapter), positive: type(uint).max, negative: type(uint).max});
+      IAllowances.AssetAllowance({asset: IAsset(usdcAdapter), positive: type(uint).max, negative: type(uint).max});
 
     account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
@@ -187,16 +186,16 @@ abstract contract AccountPOCHelper is Test {
 
   function setupMaxSingleAssetAllowance(address ownerAdd, uint ownerAcc, address delegate, IAsset asset) internal {
     vm.startPrank(ownerAdd);
-    AccountStructs.AssetAllowance[] memory assetAllowances = new AccountStructs.AssetAllowance[](2);
+    IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](2);
     assetAllowances[0] =
-      AccountStructs.AssetAllowance({asset: IAsset(asset), positive: type(uint).max, negative: type(uint).max});
+      IAllowances.AssetAllowance({asset: IAsset(asset), positive: type(uint).max, negative: type(uint).max});
 
     account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
   }
 
   function tradeOptionWithUSDC(uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId) internal {
-    AccountStructs.AssetTransfer memory optionTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(optionAdapter),
@@ -205,7 +204,7 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer memory premiumTransfer = AccountStructs.AssetTransfer({
+    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: IAsset(usdcAdapter),
@@ -214,7 +213,7 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](2);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 

@@ -4,8 +4,9 @@ pragma solidity ^0.8.18;
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 /**
  * @title MockAsset is the easiest Asset wrapper that wraps ERC20 into account system.
@@ -45,7 +46,7 @@ contract MockAsset is IAsset {
 
   function deposit(uint recipientAccount, uint subId, uint amount) external virtual {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: subId,
@@ -61,7 +62,7 @@ contract MockAsset is IAsset {
   // subid = 0
   function deposit(uint recipientAccount, uint amount) external virtual {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -76,7 +77,7 @@ contract MockAsset is IAsset {
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external virtual {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -90,7 +91,7 @@ contract MockAsset is IAsset {
   }
 
   function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
+    IAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager _manager,

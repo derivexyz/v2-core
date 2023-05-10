@@ -2,21 +2,21 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
-import "src/interfaces/IAsset.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 import "src/Accounts.sol";
-import "src/interfaces/AccountStructs.sol";
+
 import "../feeds/PriceFeeds.sol";
 
 // TODO: interest rates, not really needed for account system PoC
-contract QuoteWrapper is IAsset, Owned {
+contract QuoteWrapper is IAsset, Ownable2Step {
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
   Accounts account;
   PriceFeeds priceFeeds;
 
-  constructor(IERC20 token_, Accounts account_, PriceFeeds feeds_, uint feedId) Owned() {
+  constructor(IERC20 token_, Accounts account_, PriceFeeds feeds_, uint feedId) Ownable2Step() {
     token = token_;
     account = account_;
     priceFeeds = feeds_;
@@ -31,7 +31,7 @@ contract QuoteWrapper is IAsset, Owned {
 
   function deposit(uint recipientAccount, uint amount) external {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -47,7 +47,7 @@ contract QuoteWrapper is IAsset, Owned {
   // Note: balances can go negative for quote but not base
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
     account.assetAdjustment(
-      AccountStructs.AssetAdjustment({
+      IAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -60,13 +60,12 @@ contract QuoteWrapper is IAsset, Owned {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(
-    AccountStructs.AssetAdjustment memory adjustment,
-    uint,
-    int preBal,
-    IManager riskModel,
-    address
-  ) external view override returns (int finalBalance, bool needAllowance) {
+  function handleAdjustment(IAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager riskModel, address)
+    external
+    view
+    override
+    returns (int finalBalance, bool needAllowance)
+  {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
     return (preBal + adjustment.amount, adjustment.amount < 0);
   }

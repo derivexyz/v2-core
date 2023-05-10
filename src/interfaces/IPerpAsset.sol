@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "./IAsset.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 /**
  * @title IPerpAsset

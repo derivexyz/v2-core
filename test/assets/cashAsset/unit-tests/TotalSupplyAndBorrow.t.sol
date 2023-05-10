@@ -61,7 +61,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     uint emptyAccount = account.createAccount(address(this), manager);
 
     // transfer cash to an empty account.
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: emptyAccount,
       asset: IAsset(cashAsset),
@@ -93,7 +93,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     uint emptyAccount = account.createAccount(address(this), manager);
 
     // transfer cash to an empty account. (borrow account ended in negative balance)
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: borrowAccount,
       toAcc: emptyAccount,
       asset: IAsset(cashAsset),
@@ -129,7 +129,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     uint emptyAccount = account.createAccount(address(this), manager);
 
     // transfer cash to an empty account.
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: emptyAccount,
       asset: IAsset(cashAsset),
@@ -160,7 +160,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     uint totalBorrowBefore = cashAsset.totalBorrow();
 
     // transfer cash to an empty account.
-    AccountStructs.AssetTransfer memory transfer = AccountStructs.AssetTransfer({ // short option and give it to another person
+    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: borrowAccount,
       asset: IAsset(cashAsset),

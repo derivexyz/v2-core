@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 import "../../../shared/mocks/MockManager.sol";
 
@@ -13,12 +12,12 @@ contract DumbManager is MockManager {
   constructor(address account_) MockManager(account_) {}
 
   /// @dev used to estimate gas cost by setting balances to 0
-  function clearBalances(uint accountId, AccountStructs.HeldAsset[] memory assetsToSettle) external {
+  function clearBalances(uint accountId, IAccounts.HeldAsset[] memory assetsToSettle) external {
     uint assetLen = assetsToSettle.length;
     for (uint i; i < assetLen; i++) {
       int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
       account.managerAdjustment(
-        AccountStructs.AssetAdjustment({
+        IAccounts.AssetAdjustment({
           acc: accountId,
           asset: assetsToSettle[i].asset,
           subId: assetsToSettle[i].subId,
@@ -33,7 +32,7 @@ contract DumbManager is MockManager {
     uint accountId,
     uint tradeId,
     address sender,
-    AccountStructs.AssetDelta[] memory deltas,
+    IAccounts.AssetDelta[] memory deltas,
     bytes memory data
   ) public override {
     super.handleAdjustment(accountId, tradeId, sender, deltas, data);

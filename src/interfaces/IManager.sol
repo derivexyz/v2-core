@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "./AccountStructs.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 interface IManager {
   /**
@@ -15,7 +15,7 @@ interface IManager {
     uint accountId,
     uint tradeId,
     address caller,
-    AccountStructs.AssetDelta[] memory deltas,
+    IAccounts.AssetDelta[] memory deltas,
     bytes memory data
   ) external;
 

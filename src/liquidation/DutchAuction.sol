@@ -2,13 +2,13 @@
 pragma solidity ^0.8.18;
 
 // interfaces
-import "../interfaces/IPCRM.sol";
-import "../interfaces/IBaseManager.sol";
-import "../interfaces/ISecurityModule.sol";
-import "../interfaces/ICashAsset.sol";
-import "../interfaces/IDutchAuction.sol";
-import "../interfaces/ISpotJumpOracle.sol";
-import "../Accounts.sol";
+import "src/interfaces/IPCRM.sol";
+import "src/interfaces/IBaseManager.sol";
+import "src/interfaces/ISecurityModule.sol";
+import "src/interfaces/ICashAsset.sol";
+import "src/interfaces/IDutchAuction.sol";
+import "src/interfaces/ISpotJumpOracle.sol";
+import "src/Accounts.sol";
 
 // inherited
 import "openzeppelin/utils/math/SafeMath.sol";
@@ -16,7 +16,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/ownership/Owned.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
 /**
@@ -30,7 +30,7 @@ import "lyra-utils/math/IntLib.sol";
  *    where the security module will step into to handle the risk
  * @dev This contract has a 1 to 1 relationship with a particular risk manager.
  */
-contract DutchAuction is IDutchAuction, Owned {
+contract DutchAuction is IDutchAuction, Ownable2Step {
   using SafeCast for int;
   using SafeCast for uint;
   using SignedDecimalMath for int;
@@ -90,7 +90,7 @@ contract DutchAuction is IDutchAuction, Owned {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IPCRM _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Owned() {
+  constructor(IPCRM _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Ownable2Step() {
     riskManager = _riskManager;
     accounts = _accounts;
     securityModule = _securityModule;

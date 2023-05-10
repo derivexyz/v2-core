@@ -6,7 +6,7 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
 
-import "../interfaces/IInterestRateModel.sol";
+import "src/interfaces/IInterestRateModel.sol";
 
 /**
  * @title Interest Rate Model

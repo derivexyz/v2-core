@@ -7,9 +7,8 @@ import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/risk-managers/SpotJumpOracle.sol";
 import "src/Accounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 contract PCRMSpotJumpOracleGas is Script {
   Accounts account;

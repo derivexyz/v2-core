@@ -7,8 +7,8 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/ICashAsset.sol";
 
@@ -54,10 +54,13 @@ contract MLRM is BaseManager, IManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address, AssetDelta[] calldata assetDeltas, bytes memory)
-    public
-    override
-  {
+  function handleAdjustment(
+    uint accountId,
+    uint tradeId,
+    address,
+    IAccounts.AssetDelta[] calldata assetDeltas,
+    bytes memory
+  ) public override {
     _chargeOIFee(accountId, tradeId, assetDeltas);
 
     IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
@@ -93,7 +96,7 @@ contract MLRM is BaseManager, IManager {
   function _calcMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
     // The portfolio payoff is evaluated at the strike price of each owned option.
     // This guarantees that the max loss of a portfolio can be found.
-    bool zeroStrikeOwned;
+    bool zeroStrikeOwnable2Step;
     int netCalls;
     for (uint i; i < portfolio.numStrikesHeld; i++) {
       uint scenarioPrice = portfolio.strikes[i].strike;
@@ -102,12 +105,12 @@ contract MLRM is BaseManager, IManager {
       netCalls += portfolio.strikes[i].calls;
 
       if (scenarioPrice == 0) {
-        zeroStrikeOwned = true;
+        zeroStrikeOwnable2Step = true;
       }
     }
 
     // Ensure $0 scenario is always evaluated.
-    if (!zeroStrikeOwned) {
+    if (!zeroStrikeOwnable2Step) {
       margin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), margin);
     }
 
@@ -143,18 +146,14 @@ contract MLRM is BaseManager, IManager {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(AccountStructs.AssetBalance[] memory assets)
-    internal
-    view
-    returns (Portfolio memory portfolio)
-  {
+  function _arrangePortfolio(IAccounts.AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
     // note: differs from PCRM._arrangePortfolio since forwards aren't filtered
     // todo: [Josh] can just combine with PCRM _arrangePortfolio and remove struct
     portfolio.strikes = new IBaseManager.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 
-    AccountStructs.AssetBalance memory currentAsset;
+    IAccounts.AssetBalance memory currentAsset;
     for (uint i; i < assets.length; ++i) {
       currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {

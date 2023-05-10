@@ -3,13 +3,13 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "./interfaces/IAccounts.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-import "./interfaces/IAsset.sol";
-import "./interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 import "./Allowances.sol";
 import "./libraries/AssetDeltaLib.sol";
 import "./libraries/PermitAllowanceLib.sol";
@@ -167,7 +167,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances)
+  function setAssetAllowances(uint accountId, address delegate, IAllowances.AssetAllowance[] memory allowances)
     external
     onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
   {
@@ -409,7 +409,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
     }
 
     for (uint i; i < nextSeenId; i++) {
-      AccountStructs.AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
+      AssetDelta[] memory nonEmptyDeltas = AssetDeltaLib.getDeltasFromArrayCache(assetDeltas[i]);
       _managerHook(seenAccounts[i], tradeId, msg.sender, nonEmptyDeltas, managerData);
     }
   }

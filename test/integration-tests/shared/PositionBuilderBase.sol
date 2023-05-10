@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "../shared/IntegrationTestBase.sol";
-import "src/interfaces/IManager.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 /**
  * @dev a helper for building positions (e.g. leveraged boxes, zscs, etc.)
@@ -27,10 +27,10 @@ contract PositionBuilderBase is IntegrationTestBase {
     _depositCash(address(accounts.ownerOf(longAcc)), longAcc, DEFAULT_DEPOSIT);
     _depositCash(address(accounts.ownerOf(shortAcc)), shortAcc, DEFAULT_DEPOSIT);
 
-    AccountStructs.AssetTransfer[] memory transferBatch = new AccountStructs.AssetTransfer[](positions.length);
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](positions.length);
 
     for (uint i = 0; i < positions.length; i++) {
-      transferBatch[i] = AccountStructs.AssetTransfer({
+      transferBatch[i] = IAccounts.AssetTransfer({
         fromAcc: shortAcc,
         toAcc: longAcc,
         asset: option,

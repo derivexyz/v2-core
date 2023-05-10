@@ -7,9 +7,8 @@ import "src/assets/Option.sol";
 import "src/risk-managers/PCRM.sol";
 import "src/Accounts.sol";
 
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/AccountStructs.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
@@ -17,7 +16,7 @@ import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/risk-managers/mocks/MockSpotJumpOracle.sol";
 
-contract UNIT_TestPCRMOIFee is Test, AccountStructs {
+contract UNIT_TestPCRMOIFee is Test {
   Accounts accounts;
   PCRM manager;
   MockAsset cash;
@@ -124,10 +123,10 @@ contract UNIT_TestPCRMOIFee is Test, AccountStructs {
 
     int amount = 10e18;
     int premium = 2500e18;
-    AccountStructs.AssetTransfer[] memory transferBatch = new AssetTransfer[](3);
-    transferBatch[0] = AssetTransfer(aliceAcc, bobAcc, option, subId1, amount, bytes32(0));
-    transferBatch[1] = AssetTransfer(aliceAcc, bobAcc, option, subId2, amount, bytes32(0));
-    transferBatch[2] = AssetTransfer(bobAcc, aliceAcc, cash, 0, premium, bytes32(0));
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](3);
+    transferBatch[0] = IAccounts.AssetTransfer(aliceAcc, bobAcc, option, subId1, amount, bytes32(0));
+    transferBatch[1] = IAccounts.AssetTransfer(aliceAcc, bobAcc, option, subId2, amount, bytes32(0));
+    transferBatch[2] = IAccounts.AssetTransfer(bobAcc, aliceAcc, cash, 0, premium, bytes32(0));
 
     accounts.submitTransfers(transferBatch, "");
 

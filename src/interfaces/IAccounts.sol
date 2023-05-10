@@ -2,13 +2,75 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC721/IERC721.sol";
-import "./IAllowances.sol";
-import "./IAsset.sol";
-import "./IManager.sol";
-import "./AccountStructs.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+
+import {IAllowances} from "src/interfaces/IAllowances.sol";
 
 // For full documentation refer to src/Accounts.sol";
-interface IAccounts is AccountStructs, IERC721 {
+interface IAccounts is IERC721 {
+  struct BalanceAndOrder {
+    // balance of (asset, subId)
+    int240 balance;
+    // index in heldAssets() or getAccountBalances()
+    uint16 order;
+  }
+
+  struct HeldAsset {
+    IAsset asset;
+    uint96 subId;
+  }
+
+  struct AssetDelta {
+    IAsset asset;
+    uint96 subId;
+    int delta;
+  }
+
+  // the struct is used to easily manage 2 dimensional array
+  struct AssetDeltaArrayCache {
+    uint used;
+    AssetDelta[100] deltas;
+  }
+
+  /////////////////////////
+  // Memory-only Structs //
+  /////////////////////////
+
+  struct AssetBalance {
+    IAsset asset;
+    // adjustments will revert if > uint96
+    uint subId;
+    // base layer only stores up to int240
+    int balance;
+  }
+
+  struct AssetTransfer {
+    // credited by amount
+    uint fromAcc;
+    // debited by amount
+    uint toAcc;
+    // asset contract address
+    IAsset asset;
+    // adjustments will revert if >uint96
+    uint subId;
+    // reverts if transfer amount > uint240
+    int amount;
+    // data passed into asset.handleAdjustment()
+    bytes32 assetData;
+  }
+
+  struct AssetAdjustment {
+    uint acc;
+    IAsset asset;
+    // reverts for subIds > uint96
+    uint subId;
+    // reverts if transfer amount > uint240
+    int amount;
+    // data passed into asset.handleAdjustment()
+    bytes32 assetData;
+  }
+
   ///////////////////
   // Account Admin //
   ///////////////////
@@ -52,7 +114,8 @@ interface IAccounts is AccountStructs, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances) external;
+  function setAssetAllowances(uint accountId, address delegate, IAllowances.AssetAllowance[] memory allowances)
+    external;
 
   /**
    * @notice Sets bidirectional allowances for a specific subId.
@@ -61,7 +124,8 @@ interface IAccounts is AccountStructs, IERC721 {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each (asset, subId)
    */
-  function setSubIdAllowances(uint accountId, address delegate, SubIdAllowance[] memory allowances) external;
+  function setSubIdAllowances(uint accountId, address delegate, IAllowances.SubIdAllowance[] memory allowances)
+    external;
 
   /////////////////////////
   // Balance Adjustments //
