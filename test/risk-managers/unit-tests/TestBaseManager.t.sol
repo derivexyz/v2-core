@@ -22,7 +22,7 @@ import "../../shared/mocks/MockPerp.sol";
 contract BaseManagerTester is BaseManager {
   constructor(
     IAccounts accounts_,
-    IFutureFeed futureFeed_,
+    IForwardFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     ICashAsset cash_,
     IOption option_,

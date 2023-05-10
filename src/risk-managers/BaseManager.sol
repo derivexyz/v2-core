@@ -11,11 +11,11 @@ import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "src/libraries/StrikeGrouping.sol";
@@ -41,7 +41,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ICashAsset public immutable cashAsset;
 
   /// @dev Future feed oracle to get future price for an expiry
-  IFutureFeed public immutable futureFeed;
+  IForwardFeed public immutable futureFeed;
 
   /// @dev Settlement feed oracle to get price fixed for settlement
   ISettlementFeed public immutable settlementFeed;
@@ -60,7 +60,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   constructor(
     IAccounts _accounts,
-    IFutureFeed _futureFeed,
+    IForwardFeed _futureFeed,
     ISettlementFeed _settlementFeed,
     ICashAsset _cashAsset,
     IOption _option,
@@ -193,8 +193,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       if (oi <= oiBefore) continue;
 
       (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
-      (uint futurePrice,) = futureFeed.getFuturePrice(expiry);
-      fee += assetDeltas[i].delta.abs().multiplyDecimal(futurePrice).multiplyDecimal(OIFeeRateBPS);
+      (uint forwardPrice,) = futureFeed.getForwardPrice(expiry);
+      fee += assetDeltas[i].delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
     }
 
     if (fee > 0) {

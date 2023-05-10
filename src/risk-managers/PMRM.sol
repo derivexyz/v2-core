@@ -67,6 +67,8 @@ contract PMRM is IPMRM, BaseManager {
   IPMRM.ContingencyParameters public contingencyParams;
   IPMRM.Scenario[] public scenarios;
 
+  mapping(address => bool) public trustedRiskAssessor;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -76,7 +78,7 @@ contract PMRM is IPMRM, BaseManager {
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
-    IFutureFeed futureFeed_,
+    IForwardFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     ISpotFeed spotFeed_,
     MTMCache mtmCache_,
@@ -152,6 +154,22 @@ contract PMRM is IPMRM, BaseManager {
     mtmCache = _mtmCache;
   }
 
+  function setVolFeed(IVolFeed _volFeed) external onlyOwner {
+    volFeed = _volFeed;
+  }
+
+  function setVolShockParams(IPMRM.VolShockParameters memory _volShockParams) external onlyOwner {
+    volShockParams = _volShockParams;
+  }
+
+  function setContingencyParams(IPMRM.ContingencyParameters memory _contingencyParams) external onlyOwner {
+    contingencyParams = _contingencyParams;
+  }
+
+  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
+    trustedRiskAssessor[riskAssessor] = trusted;
+  }
+
   ///////////////////////
   //   Account Hooks   //
   ///////////////////////
@@ -160,7 +178,7 @@ contract PMRM is IPMRM, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint tradeId, address, IAccounts.AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint tradeId, address caller, IAccounts.AssetDelta[] calldata assetDeltas, bytes memory)
     public
     onlyAccounts
   {
@@ -176,9 +194,13 @@ contract PMRM is IPMRM, BaseManager {
        }
      }
 
-     IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(accountId, accounts.getAccountBalances(accountId));
+     IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), true);
 
-     _checkMargin(portfolio);
+    if (trustedRiskAssessor[caller]) {
+      // TODO: bypass
+    } else {
+      _checkMargin(portfolio);
+    }
   }
 
   ///////////////////////
@@ -191,7 +213,7 @@ contract PMRM is IPMRM, BaseManager {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets)
+  function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets, bool addForwardCont)
     internal
     view
     returns (IPMRM.PMRM_Portfolio memory portfolio)
@@ -232,7 +254,7 @@ contract PMRM is IPMRM, BaseManager {
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     (portfolio.spotPrice, portfolio.minConfidence) = feed.getSpot();
     for (uint i = 0; i < seenExpiries; ++i) {
-      (uint forwardPrice, uint confidence1) = futureFeed.getFuturePrice(expiryCount[i].expiry);
+      (uint forwardPrice, uint confidence1) = futureFeed.getForwardPrice(expiryCount[i].expiry);
       (uint64 discountFactor, uint confidence2) = discountFactorFeed.getDiscountFactor(expiryCount[i].expiry);
       uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
       minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;
@@ -295,7 +317,7 @@ contract PMRM is IPMRM, BaseManager {
       }
     }
 
-    _addPrecomputes(portfolio, false);
+    _addPrecomputes(portfolio, addForwardCont);
 
     return portfolio;
   }
@@ -319,7 +341,7 @@ contract PMRM is IPMRM, BaseManager {
   // Scenario independent values //
   /////////////////////////////////
 
-  function _addPrecomputes(IPMRM.PMRM_Portfolio memory portfolio, bool skipForwardCont) internal view {
+  function _addPrecomputes(IPMRM.PMRM_Portfolio memory portfolio, bool addForwardCont) internal view {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       ExpiryHoldings memory expiry = portfolio.expiries[i];
       // Current MtM and forward contingency MtMs
@@ -328,7 +350,7 @@ contract PMRM is IPMRM, BaseManager {
       expiry.mtm += expiryMTM;
       portfolio.totalMtM += expiryMTM;
 
-      if (!skipForwardCont) {
+      if (addForwardCont) {
         int fwd1expMTM = _getExpiryShockedMTM(expiry, contingencyParams.fwdSpotShock1, IPMRM.VolShockDirection.None);
         int fwd2expMTM = _getExpiryShockedMTM(expiry, contingencyParams.fwdSpotShock2, IPMRM.VolShockDirection.None);
 
@@ -358,7 +380,7 @@ contract PMRM is IPMRM, BaseManager {
       expiry.volShockDown = SafeCast.toUint256(int(1e18) - int(volShockParams.volRangeDown.multiplyDecimal(multShock)));
 
       // TODO: change to use discount feed value
-      expiry.staticDiscount = _getStaticDiscount(expiry.secToExpiry);
+      expiry.staticDiscount = _getStaticDiscount(expiry.secToExpiry, expiry.discountFactor);
     }
 
     int otherContingency = int(IntLib.abs(portfolio.perpPosition).multiplyDecimal(contingencyParams.perpPercent));
@@ -477,10 +499,11 @@ contract PMRM is IPMRM, BaseManager {
     }
   }
 
-  function _getStaticDiscount(uint secToExpiry) internal view returns (uint discountFactor) {
+  function _getStaticDiscount(uint secToExpiry, uint discountFactor) internal view returns (uint staticDiscount) {
     uint tAnnualised = secToExpiry * 1e18 / 365 days;
     // TODO: change
-    return FixedPointMathLib.exp(-SafeCast.toInt256(tAnnualised.multiplyDecimal(0.2e18)));
+    uint shockRFR = discountFactor.multiplyDecimal(4e18) + 0.05e18;
+    return 0.95e18 + FixedPointMathLib.exp(-SafeCast.toInt256(tAnnualised.multiplyDecimal(shockRFR)));
   }
 
   function _getShockedBaseAssetValue(uint position, uint spotPrice, uint spotShock) internal pure returns (uint) {
@@ -489,7 +512,6 @@ contract PMRM is IPMRM, BaseManager {
   }
 
   function _getShockedPerpValue(int position, uint spotPrice, uint spotShock) internal pure returns (int) {
-    // TODO: account for unrealised perpPnL and funding (in the portfolio arranging step)
     int value = (int(spotShock) - SignedDecimalMath.UNIT).multiplyDecimal(int(spotPrice));
     return position.multiplyDecimal(value);
   }
@@ -538,12 +560,12 @@ contract PMRM is IPMRM, BaseManager {
     returns (IPMRM.PMRM_Portfolio memory portfolio)
   {
     // TODO: pass in account Id
-    return _arrangePortfolio(0, assets);
+    return _arrangePortfolio(0, assets, true);
   }
 
   function getMargin(IAccounts.AssetBalance[] memory assets, bool isInitial) external view returns (int) {
     // TODO: pass in account Id
-    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(0, assets);
+    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(0, assets, true);
     int im = _getMargin(portfolio, isInitial);
     return im;
   }
@@ -590,7 +612,6 @@ contract PMRM is IPMRM, BaseManager {
   function min(int a, int b) internal pure returns (int) {
     return (a < b) ? a : b;
   }
-  // TODO: move to libs
 
   function min(uint a, uint b) internal pure returns (uint) {
     return (a < b) ? a : b;

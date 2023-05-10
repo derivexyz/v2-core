@@ -6,56 +6,67 @@ import "../../../src/interfaces/ISpotFeed.sol";
 import "../../../src/interfaces/IVolFeed.sol";
 import "../../../src/interfaces/IDiscountFactorFeed.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IFutureFeed, IDiscountFactorFeed, ISettlementFeed {
+contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IDiscountFactorFeed, ISettlementFeed {
   uint public spot;
-  uint public last = block.timestamp;
-  mapping(uint => uint) expiryPrice;
+  uint public spotConfidence;
+  mapping(uint => uint) forwardPrices;
+  mapping(uint => uint) forwardPriceConfidences;
+  mapping(uint => uint64) discountFactors;
+  mapping(uint => uint64) discountFactorConfidences;
   mapping(uint => uint) settlementPrice;
-  mapping(uint => mapping(uint => uint)) vols;
+  mapping(uint128 => mapping(uint128 => uint128)) vols;
+  mapping(uint128 => mapping(uint128 => uint64)) volConfidences;
 
-  function setSpot(uint _spot) external {
+  function setSpot(uint _spot, uint _confidence) external {
     spot = _spot;
-    last = block.timestamp;
-  }
-
-  function setExpiryPrice(uint expiry, uint price) external {
-    expiryPrice[expiry] = price;
+    spotConfidence = _confidence;
   }
 
   function setSettlementPrice(uint expiry, uint price) external {
     settlementPrice[expiry] = price;
   }
 
-  function setVol(uint strike, uint expiry, uint vol) external {
-    vols[strike][expiry] = vol;
+  function setVol(uint128 expiry, uint128 strike, uint128 vol, uint64 confidence) external {
+    vols[expiry][strike] = vol;
+    volConfidences[expiry][strike] = confidence;
+  }
+
+  function setForwardPrice(uint expiry, uint price, uint confidence) external {
+    forwardPrices[expiry] = price;
+    forwardPriceConfidences[expiry] = confidence;
+  }
+
+  function setDiscountFactor(uint expiry, uint64 factor, uint64 confidence) external {
+    discountFactors[expiry] = factor;
+    discountFactorConfidences[expiry] = confidence;
   }
 
   // ISpotFeed
 
   function getSpot() external view returns (uint, uint) {
-    return (spot, 1e18);
+    return (spot, spotConfidence);
   }
 
-  // IFutureFeed
+  // IForwardFeed
 
-  function getFuturePrice(uint expiry) external view returns (uint futurePrice, uint confidence) {
-    return (spot, 1e18);
+  function getForwardPrice(uint expiry) external view returns (uint forwardPrice, uint confidence) {
+    return (forwardPrices[expiry], forwardPriceConfidences[expiry]);
   }
 
   // ISettlementPrice
 
   function getSettlementPrice(uint expiry) external view returns (uint) {
-    return expiryPrice[expiry];
+    return settlementPrice[expiry];
   }
 
   // IVolFeed
 
   function getVol(uint128 strike, uint128 expiry) external view returns (uint128 vol, uint64 confidence) {
-    return (1e18, 1e18);
+    return (vols[expiry][strike], volConfidences[expiry][strike]);
   }
 
   // IDiscountFactorFeed
   function getDiscountFactor(uint expiry) external view returns (uint64 discountFactor, uint64 confidence) {
-    return (1e18, 1e18);
+    return (discountFactors[expiry], discountFactorConfidences[expiry]);
   }
 }

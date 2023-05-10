@@ -44,7 +44,7 @@ contract MLRM is BaseManager, IManager {
 
   constructor(
     IAccounts accounts_,
-    IFutureFeed futureFeed_,
+    IForwardFeed futureFeed_,
     ISettlementFeed _settlementFeed,
     ICashAsset cashAsset_,
     IOption option_

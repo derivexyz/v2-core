@@ -209,7 +209,7 @@ contract UNIT_TestPCRM is Test {
     feed.setSpot(100e18);
     uint expiryTimestamp = block.timestamp - 1 days;
 
-    feed.setFuturePrice(expiryTimestamp, 100e18);
+    feed.setForwardPrice(expiryTimestamp, 100e18);
     IBaseManager.Portfolio memory expiry =
       IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiryTimestamp, numStrikesHeld: 2, strikes: strikes});
 
@@ -225,7 +225,7 @@ contract UNIT_TestPCRM is Test {
 
     uint expiryTimestamp = block.timestamp - 1 days;
 
-    feed.setFuturePrice(expiryTimestamp, 2000e18);
+    feed.setForwardPrice(expiryTimestamp, 2000e18);
     IBaseManager.Portfolio memory expiry =
       IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiryTimestamp, numStrikesHeld: 1, strikes: strikes});
 

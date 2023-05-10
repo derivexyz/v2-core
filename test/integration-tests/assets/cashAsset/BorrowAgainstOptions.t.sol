@@ -44,7 +44,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     uint borrowAmount = 500e18;
     _withdrawCash(charlie, charlieAcc, borrowAmount);
 
-    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(_getFuturePrice(callExpiry));
+    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(_getForwardPrice(callExpiry));
 
     // Charlie balance should be negative
     assertEq(getCashBalance(charlieAcc), -int(borrowAmount + oiFee));
@@ -100,7 +100,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     _withdrawCash(charlie, charlieAcc, 50e18);
 
     // Charlie balance should be -borrowed amount + oiFee
-    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(_getFuturePrice(putExpiry));
+    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(_getForwardPrice(putExpiry));
     assertEq(accounts.getBalance(charlieAcc, cash, 0), -int(50e18 + oiFee));
 
     vm.warp(block.timestamp + 1 weeks);

@@ -73,7 +73,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
 
   constructor(
     IAccounts accounts_,
-    IFutureFeed futureFeed_,
+    IForwardFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     ICashAsset cashAsset_,
     IOption option_,
@@ -466,7 +466,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
     vol = _applyTimeWeightToVol(timeToExpiry.toUint256());
 
     // Get future price as spot, and apply shocks
-    (uint spot,) = futureFeed.getFuturePrice(expiry);
+    (uint spot,) = futureFeed.getForwardPrice(expiry);
     (spotUp, spotDown) =
       _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 

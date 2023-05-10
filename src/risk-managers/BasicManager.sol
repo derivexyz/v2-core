@@ -18,7 +18,7 @@ import {IOption} from "src/interfaces/IOption.sol";
 import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
 import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
 import {IBasicManager} from "src/interfaces/IBasicManager.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
 import {BaseManager} from "./BaseManager.sol";
@@ -65,7 +65,7 @@ contract BasicManager is IBasicManager, BaseManager {
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
-    IFutureFeed futureFeed_,
+    IForwardFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     IChainlinkSpotFeed spotFeed_
   )
@@ -241,8 +241,8 @@ contract BasicManager is IBasicManager, BaseManager {
     bool zeroStrikeOwnable2Step;
 
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      (uint futurePrice,) = feed.getFuturePrice(portfolio.expiry);
-      int forwardPrice = futurePrice.toInt256();
+      (uint fwdPrice,) = feed.getForwardPrice(portfolio.expiry);
+      int forwardPrice = fwdPrice.toInt256();
 
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
@@ -284,8 +284,8 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (int)
   {
-    (uint futurePrice,) = feed.getFuturePrice(expiry);
-    int forwardPrice = futurePrice.toInt256();
+    (uint fwdPrice,) = feed.getForwardPrice(expiry);
+    int forwardPrice = fwdPrice.toInt256();
     return _getIsolatedMargin(strike, calls, puts, forwardPrice, isMaintenance);
   }
 

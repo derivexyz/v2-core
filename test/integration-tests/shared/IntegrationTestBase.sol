@@ -236,7 +236,7 @@ contract IntegrationTestBase is Test {
    * @dev set future price for feed
    * @param price price in 18 decimals
    */
-  function _setFuturePrice(uint, /*expiry*/ int price) internal {
+  function _setForwardPrice(uint, /*expiry*/ int price) internal {
     // currently the same as set spot price
     _setSpotPriceE18(price);
   }
@@ -402,9 +402,9 @@ contract IntegrationTestBase is Test {
     );
   }
 
-  function _getFuturePrice(uint expiry) internal returns (uint futurePrice) {
-    (futurePrice,) = feed.getFuturePrice(expiry);
-    return futurePrice;
+  function _getForwardPrice(uint expiry) internal returns (uint forwardPrice) {
+    (forwardPrice,) = feed.getForwardPrice(expiry);
+    return forwardPrice;
   }
 
   /**

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
 /**
@@ -10,7 +10,7 @@ import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
  * @notice Spot feed adapter for Chainlink aggregators.
  *         NOTE: `spotPrice` always assumed to return 18 decimal place uint
  */
-interface IChainlinkSpotFeed is IFutureFeed, ISettlementFeed {
+interface IChainlinkSpotFeed is IForwardFeed, ISettlementFeed {
   /**
    * @notice Gets spot price
    * @return spotPrice 18 decimal price of trading pair.

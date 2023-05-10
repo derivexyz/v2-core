@@ -14,7 +14,7 @@ contract MockFeed is IChainlinkSpotFeed {
     return spot;
   }
 
-  function getFuturePrice(uint)
+  function getForwardPrice(uint)
     /**
      * expiry*
      */
@@ -37,7 +37,7 @@ contract MockFeed is IChainlinkSpotFeed {
     return expiryPrice[expiry];
   }
 
-  function setFuturePrice(uint expiry, uint price) external {
+  function setForwardPrice(uint expiry, uint price) external {
     expiryPrice[expiry] = price;
   }
 

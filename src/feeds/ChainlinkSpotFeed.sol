@@ -49,9 +49,9 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
   /**
    * @notice Return future price for an expiry
    * @dev For now we just return spot price as future price
-   * @return futurePrice Future price with 18 decimal.
+   * @return forwardPrice Future price with 18 decimal.
    */
-  function getFuturePrice(uint /*expiry*/ ) external view returns (uint futurePrice, uint confidence) {
+  function getForwardPrice(uint /*expiry*/ ) external view returns (uint forwardPrice, uint confidence) {
     return (getSpot(), 1e18);
   }
 
