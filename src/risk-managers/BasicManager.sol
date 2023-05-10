@@ -196,7 +196,7 @@ contract BasicManager is IBasicManager, BaseManager {
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
     // for each subAccount, get margin and sum it up
-    for (uint i = 0; i < portfolio.numSubAccounts; i++) {
+    for (uint i = 0; i < portfolio.subAccounts.length; i++) {
       margin += _getSubAccountMargin(portfolio.subAccounts[i]);
     }
   }
@@ -225,7 +225,7 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function _getNetOptionMargin(BasicManagerSubAccount memory subAccount) internal view returns (int margin) {
     // for each expiry, sum up the margin requirement
-    for (uint i = 0; i < subAccount.numExpiries; i++) {
+    for (uint i = 0; i < subAccount.expiryHoldings.length; i++) {
       margin += _calcNetBasicMarginSingleExpiry(subAccount.marketId, subAccount.option, subAccount.expiryHoldings[i]);
     }
   }
@@ -241,20 +241,16 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (BasicManagerPortfolio memory)
   {
-    IAccounts.AssetBalance memory currentAsset;
-
     (uint marketCount, int cashBalance, uint marketBitMap) = _countMarketsAndParseCash(assets);
 
-    BasicManagerPortfolio memory portfolio = BasicManagerPortfolio({
-      cash: cashBalance,
-      subAccounts: new BasicManagerSubAccount[](marketCount),
-      numSubAccounts: marketCount
-    });
+    BasicManagerPortfolio memory portfolio =
+      BasicManagerPortfolio({cash: cashBalance, subAccounts: new BasicManagerSubAccount[](marketCount)});
 
     // for each market, need to count how many expires there are
+    // and initiate a ExpiryHolding[] array in the corresponding
     for (uint i; i < marketCount; i++) {
-      uint8 marketId;
       // 1. find the first market id
+      uint8 marketId;
       for (uint8 id; id < 256; id++) {
         if (marketBitMap & (1 << id) != 0) {
           marketId = id;
@@ -265,11 +261,15 @@ contract BasicManager is IBasicManager, BaseManager {
       }
       portfolio.subAccounts[i].marketId = marketId;
 
-      // 2. filter through all balances and only find those which are perp or option for this market
+      // 2. filter through all balances and only find perp or option for this market
+
+      // temporary holding array,
+      ExpiryHolding[] memory tempHoldings = new ExpiryHolding[](assets.length);
       uint numExpires;
       uint expiryProducts = 1; // the product of all expiry - start block hour
+
       for (uint j; j < assets.length; j++) {
-        currentAsset = assets[j];
+        IAccounts.AssetBalance memory currentAsset = assets[j];
         if (currentAsset.asset == cashAsset) continue;
 
         AssetDetail memory detail = assetDetails[currentAsset.asset];
@@ -277,21 +277,50 @@ contract BasicManager is IBasicManager, BaseManager {
 
         // if it's perp asset, update the perp position directly
         if (detail.assetType == AssetType.Perpetual) {
-          BasicManagerPortfolioLib.addPerpToPortfolio(portfolio.subAccounts[i], currentAsset.asset, currentAsset.balance);
+          BasicManagerPortfolioLib.addPerpToPortfolio(
+            portfolio.subAccounts[i], currentAsset.asset, currentAsset.balance
+          );
         } else if (detail.assetType == AssetType.Option) {
-            (uint expiry, , ) = OptionEncoding.fromSubId(uint96(assets[j].subId));
-            uint expiryInHoursSinceStart = (expiry / 1 hours) - startingHour;
-            if (expiryProducts % expiryInHoursSinceStart != 0) {
-              numExpires++;
-              expiryProducts *= expiryInHoursSinceStart;
-            }
-        }
+          portfolio.subAccounts[i].option = IOption(address(currentAsset.asset));
+          (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+          uint expiryInHoursSinceStart = (expiry / 1 hours) - startingHour;
+          if (expiryProducts % expiryInHoursSinceStart != 0) {
+            // new expiry!
+            tempHoldings[numExpires].expiry = expiry;
+            tempHoldings[numExpires].strikes = new ISingleExpiryPortfolio.Strike[](32);
 
-        // initiate expiry holdings for each subAccount
-        portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
+            numExpires++;
+            expiryProducts *= expiryInHoursSinceStart;
+          }
+
+          // add strike to counter
+          // find the counter
+          for (uint k; k < numExpires; k++) {
+            if (tempHoldings[k].expiry == expiry) {
+              // find and add strike in expiry holding
+              BasicManagerPortfolioLib.addOptionToExpiry(tempHoldings[k], strike, isCall, currentAsset.balance);
+              break;
+            }
+          }
+        }
       }
 
-      // loop through all subAccount / expiries again to find the match strikes
+      // initiate expiry holdings for each subAccount
+      portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
+
+      // initiate expiry holdings
+      for (uint j; j < numExpires; j++) {
+        portfolio.subAccounts[i].expiryHoldings[j].strikes = new ISingleExpiryPortfolio.Strike[](
+          tempHoldings[j].numStrikesHeld
+        );
+
+        // copy value over
+        portfolio.subAccounts[i].expiryHoldings[j].expiry = tempHoldings[j].expiry;
+        portfolio.subAccounts[i].expiryHoldings[j].numStrikesHeld = tempHoldings[j].numStrikesHeld;
+        for (uint k; k < tempHoldings[j].numStrikesHeld; k++) {
+          portfolio.subAccounts[i].expiryHoldings[j].strikes[k] = tempHoldings[j].strikes[k];
+        }
+      }
     }
 
     return portfolio;
@@ -383,9 +412,13 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @dev Count how many market the user has
    */
-  function _countMarketsAndParseCash(IAccounts.AssetBalance[] memory userBalances) internal view returns (uint marketCount, int cashBalance, uint trackedMarketBitMap) {
+  function _countMarketsAndParseCash(IAccounts.AssetBalance[] memory userBalances)
+    internal
+    view
+    returns (uint marketCount, int cashBalance, uint trackedMarketBitMap)
+  {
     IAccounts.AssetBalance memory currentAsset;
-    
+
     // if marketId 1 is tracked, trackedMarketBitMap = 0000..00010
     // if marketId 2 is tracked, trackedMarketBitMap = 0000..00100
 

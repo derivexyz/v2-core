@@ -24,7 +24,6 @@ interface IBasicManager is IManager {
    * each subAccount contains multiple derivative type
    */
   struct BasicManagerPortfolio {
-    uint numSubAccounts;
     // @dev each subAccount take care of 1 base asset, for example ETH and BTC.
     BasicManagerSubAccount[] subAccounts;
     int cash;
@@ -37,7 +36,6 @@ interface IBasicManager is IManager {
     int perpPosition;
     // option position detail
     IOption option;
-    uint numExpiries;
     ExpiryHolding[] expiryHoldings;
   }
 

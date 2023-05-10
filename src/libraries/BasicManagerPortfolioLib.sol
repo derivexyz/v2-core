@@ -21,51 +21,13 @@ import {StrikeGrouping} from "src/libraries/StrikeGrouping.sol";
  * @notice util functions for BasicManagerPortfolio structs
  */
 library BasicManagerPortfolioLib {
-
-  function addPerpToPortfolio(
-    IBasicManager.BasicManagerSubAccount memory subAccount,
-    IAsset perp,
-    int balance
-  ) internal pure {
+  function addPerpToPortfolio(IBasicManager.BasicManagerSubAccount memory subAccount, IAsset perp, int balance)
+    internal
+    pure
+  {
     // find the subAccount that has the same underlying id
     subAccount.perp = IPerpAsset(address(perp));
     subAccount.perpPosition = balance;
-  }
-
-  function addOptionToPortfolio(
-    IBasicManager.BasicManagerPortfolio memory portfolio,
-    IAsset option,
-    uint marketId,
-    uint96 subId,
-    int balance
-  ) internal pure {
-    // find the subAccount that has the same underlying id
-    uint subAccountIndex;
-    for (uint i = 0; i < portfolio.subAccounts.length; i++) {
-      if (portfolio.subAccounts[i].marketId == 0) {
-        // no such subAccount exist before
-        portfolio.subAccounts[i].marketId = marketId;
-        portfolio.subAccounts[i].option = IOption(address(option));
-        portfolio.subAccounts[i].expiryHoldings = new IBasicManager.ExpiryHolding[](4);
-        portfolio.numSubAccounts++;
-        subAccountIndex = i;
-      } else if (portfolio.subAccounts[i].marketId == marketId) {
-        portfolio.subAccounts[i].option = IOption(address(option));
-        subAccountIndex = i;
-      }
-    }
-
-    // make sure expiry is in the subAccount
-    // add the option into this expiry
-    (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(subId);
-
-    (uint expiryIdx, uint newExpiryLen) = findOrAddExpiryHolding(
-      portfolio.subAccounts[subAccountIndex].expiryHoldings, expiry, portfolio.subAccounts[subAccountIndex].numExpiries
-    );
-
-    portfolio.subAccounts[subAccountIndex].numExpiries = newExpiryLen;
-
-    _addOptionToExpiry(portfolio.subAccounts[subAccountIndex].expiryHoldings[expiryIdx], strikePrice, isCall, balance);
   }
 
   function findOrAddExpiryHolding(IBasicManager.ExpiryHolding[] memory expires, uint newExpiry, uint arrayLen)
@@ -116,7 +78,7 @@ library BasicManagerPortfolioLib {
    * @dev This option arrangement is only additive, as portfolios are reconstructed for every trade
    * @return addedStrikeIndex index of existing or added strike struct
    */
-  function _addOptionToExpiry(IBasicManager.ExpiryHolding memory holdings, uint strikePrice, bool isCall, int balance)
+  function addOptionToExpiry(IBasicManager.ExpiryHolding memory holdings, uint strikePrice, bool isCall, int balance)
     internal
     pure
     returns (uint addedStrikeIndex)
