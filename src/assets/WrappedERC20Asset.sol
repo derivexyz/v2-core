@@ -10,7 +10,6 @@ import "lyra-utils/ownership/Owned.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IMarginAsset.sol";
 import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/assets/ManagerWhitelist.sol";
 
@@ -20,7 +19,7 @@ import "src/assets/ManagerWhitelist.sol";
  *        The USD value of the asset can be computed for the given shocked scenario.
  * @author Lyra
  */
-contract WrappedERC20Asset is IMarginAsset, ManagerWhitelist {
+contract WrappedERC20Asset is ManagerWhitelist {
   // TODO: IWrappedERC20Asset
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
@@ -34,15 +33,11 @@ contract WrappedERC20Asset is IMarginAsset, ManagerWhitelist {
   IERC20Metadata public immutable wrappedAsset;
   uint8 public immutable assetDecimals;
 
-  IChainlinkSpotFeed public spotFeed;
   uint public OICap;
   uint public OI;
 
-  constructor(IAccounts _accounts, IERC20Metadata _wrappedAsset, IChainlinkSpotFeed _spotFeed)
-    ManagerWhitelist(_accounts)
-  {
+  constructor(IAccounts _accounts, IERC20Metadata _wrappedAsset) ManagerWhitelist(_accounts) {
     wrappedAsset = _wrappedAsset;
-    spotFeed = _spotFeed;
     assetDecimals = _wrappedAsset.decimals();
   }
 
@@ -52,10 +47,6 @@ contract WrappedERC20Asset is IMarginAsset, ManagerWhitelist {
 
   function setOICap(uint cap_) external onlyOwner {
     OICap = cap_;
-  }
-
-  function setSpotFeed(IChainlinkSpotFeed _spotFeed) external onlyOwner {
-    spotFeed = _spotFeed;
   }
 
   ////////////////////////////
@@ -120,21 +111,6 @@ contract WrappedERC20Asset is IMarginAsset, ManagerWhitelist {
 
     OI -= adjustmentAmount;
     // emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
-  }
-
-  //////////////////////////
-  //   Asset value Calcs  //
-  //////////////////////////
-
-  /// @dev Returns the USD value based on oracle data - does not price in terms of stable coins
-  function getValue(uint amount, uint spotShock, uint /* volShock */ )
-    external
-    view
-    returns (uint value, uint confidence)
-  {
-    uint assetValue = spotFeed.getSpot().multiplyDecimal(spotShock);
-
-    return (amount.multiplyDecimal(assetValue), 1e18);
   }
 
   //////////////////////////

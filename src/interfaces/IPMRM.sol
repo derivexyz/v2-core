@@ -6,40 +6,7 @@ interface IPMRM {
   }
 
   struct PMRMParameters {
-    int lossFactor;
-    uint epsilon;
-    uint fwdStep;
-    int netPosScalar;
     uint pegLossFactor;
-    int rfrStaticDiscount;
-    uint rfrMultFactor;
-    uint rfrAdditiveFactor;
-  }
-
-  struct VolShockParameters {
-    uint volRangeUp;
-    uint volRangeDown;
-    uint shortTermPower;
-    uint longTermPower;
-  }
-
-  struct ContingencyParameters {
-    uint basePercent;
-    uint perpPercent;
-    uint optionPercent;
-    uint fwdSpotShock1;
-    uint fwdSpotShock2;
-    // <7 dte
-    uint fwdShortFactor;
-    // >7dte <28dte
-    uint fwdMediumFactor;
-    // >28dte
-    uint fwdLongFactor;
-    uint oracleConfMargin;
-    uint oracleSpotConfThreshold;
-    uint oracleVolConfThreshold;
-    uint oracleFutureConfThreshold;
-    uint oracleDiscountConfThreshold;
   }
 
   struct PMRM_Portfolio {
@@ -56,8 +23,10 @@ interface IPMRM {
     // Calculated values
     int fwdContingency;
     // option + base + perp; excludes fwd/oracle
-    int totalContingency;
+    uint staticContingency;
+    uint confidenceContingency;
     uint minConfidence;
+    int unrealisedPerpValue;
   }
 
   struct ExpiryHoldings {
@@ -73,6 +42,7 @@ interface IPMRM {
     uint64 rate;
     uint64 discountFactor;
     uint minConfidence;
+    uint netOptions;
   }
 
   struct StrikeHolding {
@@ -81,7 +51,6 @@ interface IPMRM {
     uint vol;
     int amount;
     bool isCall;
-    uint minConfidence;
     bool seenInFilter;
   }
 

@@ -41,6 +41,7 @@ contract PMRMTestBase is Test {
   MockDutchAuction auction;
   MockSM sm;
   MockFeeds feed;
+  MockFeeds stableFeed;
   uint feeRecipient;
   MTMCache mtmCache;
   MockPerp mockPerp;
@@ -54,12 +55,14 @@ contract PMRMTestBase is Test {
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeeds();
+    stableFeed = new MockFeeds();
     feed.setSpot(1500e18, 1e18);
+    stableFeed.setSpot(1e18, 1e18);
 
     usdc = new MockERC20("USDC", "USDC");
     weth = new MockERC20("weth", "weth");
     cash = new MockAsset(usdc, accounts, true);
-    baseAsset = new WrappedERC20Asset(accounts, weth, IChainlinkSpotFeed(address(feed)));
+    baseAsset = new WrappedERC20Asset(accounts, weth);
     mockPerp = new MockPerp(accounts);
 
     option = new MockOption(accounts);
@@ -76,7 +79,8 @@ contract PMRMTestBase is Test {
       IMTMCache(mtmCache),
       IInterestRateFeed(feed),
       IVolFeed(feed),
-      IMarginAsset(address(baseAsset))
+      baseAsset,
+      ISpotFeed(stableFeed)
     );
 
     _setupAliceAndBob();
@@ -102,7 +106,7 @@ contract PMRMTestBase is Test {
     console2.log("baseValue", portfolio.baseValue);
     console2.log("totalMtM", portfolio.totalMtM);
     console2.log("fwdContingency", portfolio.fwdContingency);
-    console2.log("totalContingency", portfolio.totalContingency);
+    console2.log("staticContingency", portfolio.staticContingency);
 
     console2.log("\n");
     console2.log("expiryLen", uint(portfolio.expiries.length));
