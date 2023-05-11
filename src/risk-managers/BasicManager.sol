@@ -389,13 +389,6 @@ contract BasicManager is IBasicManager, BaseManager {
         isMaintenance
       );
 
-      // check if this strike price is already checked before. If so, don't need to run this scenario for max loss again
-      uint strikeSimplified = expiryHolding.options[i].strike / 1e18;
-      if (strikeSimplified != 0) {
-        if (strikeChecker % strikeSimplified == 0) continue;
-        strikeChecker *= strikeSimplified;
-      }
-
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
         uint scenarioPrice = expiryHolding.options[i].strike;
