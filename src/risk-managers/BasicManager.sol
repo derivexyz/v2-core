@@ -116,9 +116,9 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param _imRequirement new initial margin requirement
    */
   function setPerpMarginRequirements(uint8 marketId, uint _mmRequirement, uint _imRequirement) external onlyOwner {
-    if (_mmRequirement > _imRequirement) revert PM_InvalidMarginRequirement();
-    if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert PM_InvalidMarginRequirement();
-    if (_imRequirement >= 1e18) revert PM_InvalidMarginRequirement();
+    if (_mmRequirement > _imRequirement) revert BM_InvalidMarginRequirement();
+    if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert BM_InvalidMarginRequirement();
+    if (_imRequirement >= 1e18) revert BM_InvalidMarginRequirement();
 
     perpMarginRequirements[marketId] = PerpMarginRequirements(_mmRequirement, _imRequirement);
 
@@ -159,7 +159,7 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function handleManagerChange(uint, IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
-      revert PM_NotWhitelistManager();
+      revert BM_NotWhitelistManager();
     }
   }
 
@@ -179,7 +179,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
       AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
 
-      if (!detail.isWhitelisted) revert PM_UnsupportedAsset();
+      if (!detail.isWhitelisted) revert BM_UnsupportedAsset();
 
       if (detail.assetType == AssetType.Perpetual) {
         // settle perps if the user has perp position
@@ -196,7 +196,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // cash deposited has to cover net option margin + net perp margin
     if (cashBalance + margin < 0) {
-      revert PM_PortfolioBelowMargin(accountId, -(margin));
+      revert BM_PortfolioBelowMargin(accountId, -(margin));
     }
   }
 
@@ -222,7 +222,7 @@ contract BasicManager is IBasicManager, BaseManager {
   {
     int indexPrice = spotFeeds[subAccount.marketId].getSpot().toInt256();
 
-    int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice);
+    int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isMaintenance);
     int netOptionMargin = _getNetOptionMargin(subAccount, isMaintenance);
     return netPerpMargin + netOptionMargin;
   }
@@ -231,9 +231,16 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice get the margin required for the perp position of an subAccount
    * @return net margin for a perp position, always negative
    */
-  function _getNetPerpMargin(BasicManagerSubAccount memory subAccount, int indexPrice) internal view returns (int) {
+  function _getNetPerpMargin(BasicManagerSubAccount memory subAccount, int indexPrice, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
     uint notional = subAccount.perpPosition.multiplyDecimal(indexPrice).abs();
-    int marginRequired = notional.multiplyDecimal(perpMarginRequirements[subAccount.marketId].imRequirement).toInt256();
+    uint requirement = isMaintenance
+      ? perpMarginRequirements[subAccount.marketId].mmRequirement
+      : perpMarginRequirements[subAccount.marketId].imRequirement;
+    int marginRequired = notional.multiplyDecimal(requirement).toInt256();
     return -marginRequired;
   }
 
@@ -300,7 +307,7 @@ contract BasicManager is IBasicManager, BaseManager {
         if (detail.assetType == AssetType.Perpetual) {
           portfolio.subAccounts[i].perp = IPerpAsset(address(currentAsset.asset));
           portfolio.subAccounts[i].perpPosition = currentAsset.balance;
-        } else if (detail.assetType == AssetType.Option) {
+        } else {
           portfolio.subAccounts[i].option = IOption(address(currentAsset.asset));
           (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
           uint expiryIndex;
@@ -416,7 +423,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @dev This function can be called by anyone
    */
   function settleOptions(IOption option, uint accountId) external {
-    if (!assetDetails[option].isWhitelisted) revert PM_UnsupportedAsset();
+    if (!assetDetails[option].isWhitelisted) revert BM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
   }
 
@@ -571,7 +578,7 @@ contract BasicManager is IBasicManager, BaseManager {
   ////////////////////////
 
   modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) revert PM_NotAccounts();
+    if (msg.sender != address(accounts)) revert BM_NotAccounts();
     _;
   }
 }

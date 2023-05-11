@@ -83,7 +83,7 @@ contract UNIT_TestBasicManager is Test {
 
     // first fails the change
     vm.startPrank(alice);
-    vm.expectRevert(IBasicManager.PM_NotWhitelistManager.selector);
+    vm.expectRevert(IBasicManager.BM_NotWhitelistManager.selector);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
 
@@ -113,20 +113,20 @@ contract UNIT_TestBasicManager is Test {
   }
 
   function testCannotSetPerpMMLargerThanIM() public {
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidPerpMarginRequirement() public {
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 0);
 
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 1e18);
 
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 1e18, 0.1e18);
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0, 0.1e18);
   }
 
@@ -136,7 +136,7 @@ contract UNIT_TestBasicManager is Test {
 
   function testCannotHaveUnrecognizedAsset() public {
     MockAsset badAsset = new MockAsset(usdc, account, true);
-    vm.expectRevert(IBasicManager.PM_UnsupportedAsset.selector);
+    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
     IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
@@ -167,7 +167,7 @@ contract UNIT_TestBasicManager is Test {
     cash.deposit(bobAcc, 1499e18);
 
     // trade cannot go through
-    vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
+    vm.expectRevert(abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 

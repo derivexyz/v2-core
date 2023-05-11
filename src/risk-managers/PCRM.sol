@@ -184,16 +184,6 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     _settleAccountOptions(option, accountId);
   }
 
-  /**
-   * @notice Settle accounts in batch
-   * @dev This function can be called by anyone
-   */
-  function batchSettleAccounts(uint[] calldata accountIds) external {
-    for (uint i; i < accountIds.length; ++i) {
-      _settleAccountOptions(option, accountIds[i]);
-    }
-  }
-
   //////////////////
   // Liquidations //
   //////////////////

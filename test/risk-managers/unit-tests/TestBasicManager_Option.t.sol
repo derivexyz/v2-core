@@ -17,13 +17,15 @@ import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
 
+import "test/auction/mocks/MockCashAsset.sol";
+
 /**
  * Focusing on the margin rules for options
  */
 contract UNIT_TestBasicManager_Option is Test {
   Accounts account;
   BasicManager manager;
-  MockAsset cash;
+  MockCash cash;
   MockERC20 usdc;
   MockPerp perp;
   MockOption option;
@@ -42,7 +44,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockAsset(usdc, account, true);
+    cash = new MockCash(IERC20(usdc), account);
 
     perp = new MockPerp(account);
 
@@ -223,7 +225,7 @@ contract UNIT_TestBasicManager_Option is Test {
     cash.deposit(aliceAcc, 100e18);
     // shorting 1 wei more than long, breaking max loss and default to isolated margin
     vm.expectRevert(
-      abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100)
+      abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100)
     );
     _tradeSpread(aliceAcc, bobAcc, 1e18 + 1, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
@@ -263,6 +265,39 @@ contract UNIT_TestBasicManager_Option is Test {
       assetData: ""
     });
     account.submitTransfers(transfers, "");
+  }
+
+  //////////////////////
+  //    Settlement    //
+  //////////////////////
+
+  function testCanSettleOptions() public {
+    uint strike = 2000e18;
+
+    // alice short 10 2000-ETH CALL with 2000 USDC as margin
+    cash.deposit(aliceAcc, 2000e18);
+    _tradeOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
+
+    int cashBefore = account.getBalance(aliceAcc, cash, 0);
+
+    vm.warp(expiry + 1);
+    uint subId = OptionEncoding.toSubId(expiry, strike, true);
+    option.setMockedSubIdSettled(subId, true);
+    option.setMockedTotalSettlementValue(subId, -500e18);
+
+    manager.settleOptions(option, aliceAcc);
+
+    int cashAfter = account.getBalance(aliceAcc, cash, 0);
+    assertEq(cashBefore - cashAfter, 500e18);
+  }
+
+  function testCannotSettleWeirdAsset() public {
+    MockOption badAsset = new MockOption(account);
+
+    vm.warp(expiry + 1);
+    feed.setSpot(2100e19);
+    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
+    manager.settleOptions(badAsset, aliceAcc);
   }
 
   /////////////

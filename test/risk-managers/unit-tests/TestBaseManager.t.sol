@@ -51,15 +51,6 @@ contract BaseManagerTester is BaseManager {
     _settleAccountOptions(option, accountId);
   }
 
-  // function addOption(Portfolio memory portfolio, IAccounts.AssetBalance memory asset)
-  //   external
-  //   pure
-  //   returns (Portfolio memory updatedPortfolio)
-  // {
-  //   _addOption(portfolio, asset);
-  //   return portfolio;
-  // }
-
   function handleAdjustment(
     uint, /*accountId*/
     uint, /*tradeId*/
@@ -130,63 +121,6 @@ contract UNIT_TestAbstractBaseManager is Test {
   /* ----------------------------- *
    *    Test Option Arrangement    *
    * ---------------------------- **/
-
-  // function testBlockTradeIfMultipleExpiries() public {
-  //   // initial portfolio
-  //   IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](1);
-  //   strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: 1e18, puts: 0, forwards: 0});
-  //   IBaseManager.Portfolio memory portfolio =
-  //     IBaseManager.Portfolio({cash: 0, perp: 0, expiry: 1 days, numStrikesHeld: 1, strikes: strikes});
-
-  //   // construct asset
-  //   IAccounts.AssetBalance memory assetBalance = IAccounts.AssetBalance({
-  //     asset: IAsset(address(option)),
-  //     subId: OptionEncoding.toSubId(block.timestamp + 1.2 days, 1000e18, true),
-  //     balance: 10e18
-  //   });
-
-  //   vm.expectRevert(ISingleExpiryPortfolio.SEP_OnlySingleExpiryPerAccount.selector);
-  //   tester.addOption(portfolio, assetBalance);
-  // }
-
-  // function testAddOption() public {
-  //   // initial portfolio
-  //   uint expiry = block.timestamp + 1 days;
-  //   IBaseManager.Strike[] memory strikes = new IBaseManager.Strike[](5);
-  //   strikes[0] = IBaseManager.Strike({strike: 1000e18, calls: -5e18, puts: 0, forwards: 0});
-  //   strikes[1] = IBaseManager.Strike({strike: 2000e18, calls: -1e18, puts: 0, forwards: 0});
-  //   strikes[2] = IBaseManager.Strike({strike: 3000e18, calls: 10e18, puts: 5e18, forwards: 0});
-  //   BaseManager.Portfolio memory portfolio =
-  //     IBaseManager.Portfolio({cash: 0, perp: 0, expiry: expiry, numStrikesHeld: 3, strikes: strikes});
-
-  //   // add call to existing strike
-  //   IAccounts.AssetBalance memory assetBalance = IAccounts.AssetBalance({
-  //     asset: IAsset(address(option)),
-  //     subId: OptionEncoding.toSubId(expiry, 1000e18, true),
-  //     balance: 10e18
-  //   });
-  //   IBaseManager.Portfolio memory updatedPortfolio = tester.addOption(portfolio, assetBalance);
-  //   assertEq(updatedPortfolio.strikes[0].calls, 5e18);
-
-  //   // add put to existing strike
-  //   assetBalance = IAccounts.AssetBalance({
-  //     asset: IAsset(address(option)),
-  //     subId: OptionEncoding.toSubId(expiry, 2000e18, false),
-  //     balance: -100e18
-  //   });
-  //   updatedPortfolio = tester.addOption(portfolio, assetBalance);
-  //   assertEq(updatedPortfolio.strikes[1].puts, -100e18);
-
-  //   // add put to new strike
-  //   assetBalance = IAccounts.AssetBalance({
-  //     asset: IAsset(address(option)),
-  //     subId: OptionEncoding.toSubId(expiry, 20000e18, false),
-  //     balance: 1e18
-  //   });
-  //   updatedPortfolio = tester.addOption(portfolio, assetBalance);
-  //   assertEq(updatedPortfolio.strikes[3].puts, 1e18);
-  //   assertEq(updatedPortfolio.numStrikesHeld, 4);
-  // }
 
   /* ----------------- *
    *    Test OI fee    *
@@ -334,31 +268,6 @@ contract UNIT_TestAbstractBaseManager is Test {
     // cash increase
     assertEq(accounts.getBalance(aliceAcc, cash, 0), 0);
   }
-
-  // function testSettlementBatch() external {
-  //   (uint callId, uint putId) = _openDefaultPositions();
-
-  //   // mock settlement value
-  //   option.setMockedSubIdSettled(callId, true);
-  //   option.setMockedSubIdSettled(putId, true);
-  //   option.setMockedTotalSettlementValue(callId, -500e18);
-  //   option.setMockedTotalSettlementValue(putId, 1000e18);
-
-  //   uint[] memory accountsToSettle = new uint[](2);
-  //   accountsToSettle[0] = aliceAcc;
-  //   accountsToSettle[1] = bobAcc;
-  //   tester.batchSettleAccounts(accountsToSettle);
-
-  //   assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
-  //   assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
-
-  //   assertEq(accounts.getBalance(bobAcc, option, callId), 0);
-  //   assertEq(accounts.getBalance(bobAcc, option, putId), 0);
-
-  //   // cash increase for both. (because the payout is mocked to be the same)
-  //   assertEq(accounts.getBalance(aliceAcc, cash, 0), 500e18);
-  //   assertEq(accounts.getBalance(bobAcc, cash, 0), 500e18);
-  // }
 
   // alice open 10 long call, 10 short put
   function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {

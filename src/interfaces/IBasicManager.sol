@@ -75,14 +75,19 @@ interface IBasicManager is IManager {
   ///////////////
 
   /// @dev Caller is not the Accounts contract
-  error PM_NotAccounts();
+  error BM_NotAccounts();
 
   /// @dev Not whitelist manager
-  error PM_NotWhitelistManager();
+  error BM_NotWhitelistManager();
 
-  error PM_UnsupportedAsset();
-  error PM_PortfolioBelowMargin(uint accountId, int margin);
-  error PM_InvalidMarginRequirement();
+  /// @dev Not supported asset
+  error BM_UnsupportedAsset();
+
+  /// @dev Account is under water, need more cash
+  error BM_PortfolioBelowMargin(uint accountId, int margin);
+
+  /// @dev Invalid Parameters for perp margin requirements
+  error BM_InvalidMarginRequirement();
 
   ///////////////////
   //    Events     //
