@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import "lyra-utils/math/IntLib.sol";
-import "forge-std/console2.sol";
 
 import "src/interfaces/ISingleExpiryPortfolio.sol";
 /**

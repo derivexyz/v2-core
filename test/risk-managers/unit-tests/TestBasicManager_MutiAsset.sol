@@ -124,7 +124,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[1] = Trade(btcOption, 1e18, expiry1, btcStrike, true);
     _submitMultipleTrades(aliceAcc, bobAcc, trades);
 
-    int requirement = manager.getMargin(aliceAcc);
+    int requirement = manager.getMargin(aliceAcc, false);
     assertEq(requirement, neededMargin);
   }
 
@@ -149,7 +149,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades);
 
-    int requirement = manager.getMargin(aliceAcc);
+    int requirement = manager.getMargin(aliceAcc, false);
     assertEq(requirement, neededMargin);
   }
 

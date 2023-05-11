@@ -30,7 +30,6 @@ import {BaseManager} from "./BaseManager.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import "src/libraries/StrikeGrouping.sol";
-import "src/libraries/BasicManagerPortfolioLib.sol";
 
 import "forge-std/console2.sol";
 
@@ -46,7 +45,6 @@ contract BasicManager is IBasicManager, BaseManager {
   using SafeCast for uint;
   using SafeCast for int;
   using IntLib for int;
-  using BasicManagerPortfolioLib for BasicManagerPortfolio;
   using UnorderedMemoryArray for uint[];
 
   ///////////////
@@ -193,7 +191,8 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // todo: don't allow borrowing cash
 
-    int margin = _getMargin(accountId);
+    // check initial margin met
+    int margin = _getMargin(accountId, false);
 
     // cash deposited has to cover net option margin + net perp margin
     if (cashBalance + margin < 0) {
@@ -205,22 +204,26 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
    */
-  function _getMargin(uint accountId) internal view returns (int margin) {
+  function _getMargin(uint accountId, bool isMaintenance) internal view returns (int margin) {
     // get portfolio from array of balances
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
     // for each subAccount, get margin and sum it up
     for (uint i = 0; i < portfolio.subAccounts.length; i++) {
-      margin += _getSubAccountMargin(portfolio.subAccounts[i]);
+      margin += _getSubAccountMargin(portfolio.subAccounts[i], isMaintenance);
     }
   }
 
-  function _getSubAccountMargin(BasicManagerSubAccount memory subAccount) internal view returns (int) {
+  function _getSubAccountMargin(BasicManagerSubAccount memory subAccount, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
     int indexPrice = spotFeeds[subAccount.marketId].getSpot().toInt256();
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice);
-    int netOptionMargin = _getNetOptionMargin(subAccount);
+    int netOptionMargin = _getNetOptionMargin(subAccount, isMaintenance);
     return netPerpMargin + netOptionMargin;
   }
 
@@ -237,10 +240,16 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    */
-  function _getNetOptionMargin(BasicManagerSubAccount memory subAccount) internal view returns (int margin) {
+  function _getNetOptionMargin(BasicManagerSubAccount memory subAccount, bool isMaintenance)
+    internal
+    view
+    returns (int margin)
+  {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < subAccount.expiryHoldings.length; i++) {
-      margin += _calcNetBasicMarginSingleExpiry(subAccount.marketId, subAccount.option, subAccount.expiryHoldings[i]);
+      margin += _calcNetBasicMarginSingleExpiry(
+        subAccount.marketId, subAccount.option, subAccount.expiryHoldings[i], isMaintenance
+      );
     }
   }
 
@@ -268,7 +277,6 @@ contract BasicManager is IBasicManager, BaseManager {
       for (uint8 id = 1; id < 256; id++) {
         uint masked = (1 << id);
         if (marketBitMap & masked == 0) continue;
-
         // mark this market id as used => flip it back to 0 with xor
         marketBitMap ^= masked;
         marketId = id;
@@ -277,11 +285,7 @@ contract BasicManager is IBasicManager, BaseManager {
       portfolio.subAccounts[i].marketId = marketId;
 
       // 2. filter through all balances and only find perp or option for this market
-
-      // temporary holding array,
-      // ExpiryHolding[] memory tempHoldings = new ExpiryHolding[](assets.length);
       uint numExpires;
-
       uint[] memory seenExpires = new uint[](assets.length);
       uint[] memory expiryOptionCounts = new uint[](assets.length);
 
@@ -294,9 +298,8 @@ contract BasicManager is IBasicManager, BaseManager {
 
         // if it's perp asset, update the perp position directly
         if (detail.assetType == AssetType.Perpetual) {
-          BasicManagerPortfolioLib.addPerpToPortfolio(
-            portfolio.subAccounts[i], currentAsset.asset, currentAsset.balance
-          );
+          portfolio.subAccounts[i].perp = IPerpAsset(address(currentAsset.asset));
+          portfolio.subAccounts[i].perpPosition = currentAsset.balance;
         } else if (detail.assetType == AssetType.Option) {
           portfolio.subAccounts[i].option = IOption(address(currentAsset.asset));
           (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
@@ -307,15 +310,14 @@ contract BasicManager is IBasicManager, BaseManager {
         }
       }
 
-      // initiate expiry holdings for each subAccount
+      // 3. initiate expiry holdings the subAccount
       portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
-
-      // initiate expiry holdings
+      // 4. initiate the option array in each expiry holding
       for (uint j; j < numExpires; j++) {
         portfolio.subAccounts[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
       }
 
-      // put options into expiry holdings
+      // 5. put options into expiry holdings
       for (uint j; j < assets.length; j++) {
         IAccounts.AssetBalance memory currentAsset = assets[j];
         if (currentAsset.asset == cashAsset) continue;
@@ -350,11 +352,12 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param expiryHolding strikes for single expiry
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMarginSingleExpiry(uint marketId, IOption option, ExpiryHolding memory expiryHolding)
-    internal
-    view
-    returns (int margin)
-  {
+  function _calcNetBasicMarginSingleExpiry(
+    uint marketId,
+    IOption option,
+    ExpiryHolding memory expiryHolding,
+    bool isMaintenance
+  ) internal view returns (int margin) {
     bool lossBounded = expiryHolding.netCalls >= 0;
 
     int maxLossMargin = 0;
@@ -376,7 +379,7 @@ contract BasicManager is IBasicManager, BaseManager {
         expiryHolding.options[i].isCall,
         expiryHolding.options[i].balance,
         forwardPrice,
-        false // is maintenance = false
+        isMaintenance
       );
 
       // check if this strike price is already checked before. If so, don't need to run this scenario for max loss again
@@ -396,7 +399,7 @@ contract BasicManager is IBasicManager, BaseManager {
       }
     }
 
-    // Ensure $0 scenario is always evaluated.
+    // Ensure price = 0 scenario is always evaluated.
     if (lossBounded && !zeroStrikeChecked) {
       maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, 0), maxLossMargin);
     }
@@ -424,8 +427,8 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @dev return the margin for an account, it means the account is insolvent
    */
-  function getMargin(uint accountId) external view returns (int) {
-    return _getMargin(accountId);
+  function getMargin(uint accountId, bool isMaintenance) external view returns (int) {
+    return _getMargin(accountId, isMaintenance);
   }
 
   function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isMaintenance)

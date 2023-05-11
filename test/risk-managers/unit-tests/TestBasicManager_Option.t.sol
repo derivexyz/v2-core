@@ -242,7 +242,7 @@ contract UNIT_TestBasicManager_Option is Test {
     int callMargin = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
     int putMargin = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
 
-    // the margin needed is the sum of 2 positions 
+    // the margin needed is the sum of 2 positions
     cash.deposit(aliceAcc, uint(-(callMargin + putMargin)));
 
     IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
