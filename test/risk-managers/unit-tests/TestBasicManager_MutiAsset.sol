@@ -17,13 +17,15 @@ import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
 
+import "test/auction/mocks/MockCashAsset.sol";
+
 /**
  * Focusing on the margin rules for options
  */
 contract UNIT_TestBasicManager_MultiAsset is Test {
   Accounts account;
   BasicManager manager;
-  MockAsset cash;
+  MockCash cash;
   MockERC20 usdc;
 
   MockPerp ethPerp;
@@ -45,11 +47,9 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   uint bobAcc;
 
   struct Trade {
-    IOption option;
+    IAsset asset;
     int amount;
-    uint expiry;
-    uint strike;
-    bool isCall;
+    uint subId;
   }
 
   function setUp() public {
@@ -57,7 +57,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockAsset(usdc, account, true);
+    cash = new MockCash(usdc, account);
 
     // Setup asset for ETH Markets
     ethPerp = new MockPerp(account);
@@ -101,6 +101,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     // set init perp trading parameters
     manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(2, 0.05e18, 0.1e18);
 
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
@@ -120,8 +121,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     // short 1 eth call + 1 btc call
     Trade[] memory trades = new Trade[](2);
-    trades[0] = Trade(ethOption, 1e18, expiry1, ethStrike, true);
-    trades[1] = Trade(btcOption, 1e18, expiry1, btcStrike, true);
+    trades[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, ethStrike, true));
+    trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
     _submitMultipleTrades(aliceAcc, bobAcc, trades);
 
     int requirement = manager.getMargin(aliceAcc, false);
@@ -141,10 +142,36 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     cash.deposit(aliceAcc, uint(-neededMargin));
 
     Trade[] memory trades = new Trade[](4);
-    trades[0] = Trade(ethOption, 1e18, expiry1, ethStrike, true);
-    trades[1] = Trade(btcOption, 1e18, expiry1, btcStrike, true);
-    trades[2] = Trade(ethOption, 1e18, expiry2, ethStrike, true);
-    trades[3] = Trade(btcOption, 1e18, expiry2, btcStrike, true);
+    trades[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, ethStrike, true));
+    trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
+    trades[2] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry2, ethStrike, true));
+    trades[3] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry2, btcStrike, true));
+
+    // short 1 eth call + 1 btc call
+    _submitMultipleTrades(aliceAcc, bobAcc, trades);
+
+    int requirement = manager.getMargin(aliceAcc, false);
+    assertEq(requirement, neededMargin);
+  }
+
+  function testCanTradeMultiMarketOptionPerps() public {
+    // summarize the initial margin for 2 options
+    uint ethStrike = 2000e18;
+    uint btcStrike = 30000e18;
+    int ethMargin1 = manager.getIsolatedMargin(1, ethStrike, expiry1, true, -1e18, false);
+    int btcMargin1 = manager.getIsolatedMargin(2, btcStrike, expiry1, true, -1e18, false);
+    int ethPerpMargin = -150e18;
+    int btcPerpMargin = -2000e18;
+    int neededMargin = ethMargin1 + btcMargin1 + ethPerpMargin + btcPerpMargin;
+
+    cash.deposit(aliceAcc, uint(-neededMargin));
+    cash.deposit(bobAcc, uint(-ethPerpMargin - btcPerpMargin));
+
+    Trade[] memory trades = new Trade[](4);
+    trades[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, ethStrike, true));
+    trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
+    trades[2] = Trade(ethPerp, 1e18, 0);
+    trades[3] = Trade(btcPerp, 1e18, 0);
 
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades);
@@ -163,30 +190,12 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
       transfers[i] = IAccounts.AssetTransfer({
         fromAcc: from,
         toAcc: to,
-        asset: trades[i].option,
-        subId: OptionEncoding.toSubId(trades[i].expiry, trades[i].strike, trades[i].isCall),
+        asset: trades[i].asset,
+        subId: trades[i].subId,
         amount: trades[i].amount,
         assetData: ""
       });
     }
     account.submitTransfers(transfers, "");
-  }
-
-  function _tradeOption(IOption option, uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall)
-    internal
-  {
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
-      fromAcc: fromAcc,
-      toAcc: toAcc,
-      asset: option,
-      subId: OptionEncoding.toSubId(_expiry, strike, isCall),
-      amount: amount,
-      assetData: ""
-    });
-    account.submitTransfer(transfer, "");
-  }
-
-  function _getCashBalance(uint acc) public view returns (int) {
-    return account.getBalance(acc, cash, 0);
   }
 }
