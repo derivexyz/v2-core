@@ -66,12 +66,17 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
   OptionMarginParameters public optionMarginParams;
 
-  /// @dev if an IAsset address is whitelisted.
-  mapping(IAsset => AssetDetail) public assetDetails;
+  /// @dev True if an IAsset address is whitelisted.
+  mapping(IAsset asset => AssetDetail) public assetDetails;
 
-  mapping(uint => ISpotFeed) public spotFeeds;
-  mapping(uint => ISettlementFeed) public settlementFeeds;
-  mapping(uint => IFutureFeed) public forwardFeeds;
+  /// @dev Mapping from marketId to spot price oracle
+  mapping(uint marketId => ISpotFeed) public spotFeeds;
+
+  /// @dev Mapping from marketId to settlement price oracle
+  mapping(uint marketId => ISettlementFeed) public settlementFeeds;
+
+  /// @dev Mapping from marketId to forward price oracle
+  mapping(uint marketId => IFutureFeed) public forwardFeeds;
 
   ////////////////////////
   //    Constructor     //

@@ -29,27 +29,4 @@ library BasicManagerPortfolioLib {
     subAccount.perp = IPerpAsset(address(perp));
     subAccount.perpPosition = balance;
   }
-
-  /**
-   * @dev return if an expiry exists in an array of expiry holdings
-   * @param expiryHoldings All holdings
-   * @param expiryToFind  strike to find
-   * @param arrayLen # of strikes already active
-   * @return index index of the found element. 0 if not found
-   * @return found true if found
-   */
-  function findExpiryInArray(IBasicManager.ExpiryHolding[] memory expiryHoldings, uint expiryToFind, uint arrayLen)
-    internal
-    pure
-    returns (uint index, bool found)
-  {
-    unchecked {
-      for (uint i; i < arrayLen; ++i) {
-        if (expiryHoldings[i].expiry == expiryToFind) {
-          return (i, true);
-        }
-      }
-      return (0, false);
-    }
-  }
 }

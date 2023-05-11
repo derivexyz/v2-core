@@ -87,6 +87,20 @@ contract UNIT_TestBasicManager_Option is Test {
   //   Setter   //
   ////////////////
 
+  function testWhitelistAsset() public {
+    manager.whitelistAsset(perp, 2, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 2, IBasicManager.AssetType.Option);
+    (bool isPerpWhitelisted, IBasicManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
+    (bool isOptionWhitelisted, IBasicManager.AssetType optionType, uint8 optionMarketId) = manager.assetDetails(option);
+    assertEq(isPerpWhitelisted, true);
+    assertEq(uint(perpType), uint(IBasicManager.AssetType.Perpetual));
+    assertEq(marketId, 2);
+
+    assertEq(isOptionWhitelisted, true);
+    assertEq(uint(optionType), uint(IBasicManager.AssetType.Option));
+    assertEq(optionMarketId, 2);
+  }
+
   function testSetOptionParameters() public {
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
@@ -97,6 +111,14 @@ contract UNIT_TestBasicManager_Option is Test {
     assertEq(baselineOptionMM, 0.2e18);
     assertEq(minStaticMMRatio, 0.1e18);
     assertEq(minStaticIMRatio, 0.2e18);
+  }
+
+  function testSetOracles() public {
+    MockFeed newFeed = new MockFeed();
+    manager.setOraclesForMarket(1, newFeed, newFeed, newFeed);
+    assertEq(address(manager.spotFeeds(1)), address(newFeed));
+    assertEq(address(manager.settlementFeeds(1)), address(newFeed));
+    assertEq(address(manager.forwardFeeds(1)), address(newFeed));
   }
 
   ////////////////////////////////////////////////////
