@@ -4,9 +4,9 @@ pragma solidity ^0.8.18;
 import "../../../src/interfaces/IChainlinkSpotFeed.sol";
 import "../../../src/interfaces/ISpotFeed.sol";
 import "../../../src/interfaces/IVolFeed.sol";
-import "../../../src/interfaces/IDiscountFactorFeed.sol";
+import "../../../src/interfaces/IInterestRateFeed.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IDiscountFactorFeed, ISettlementFeed {
+contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed {
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
@@ -36,7 +36,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IDiscountFactorFeed, IS
     forwardPriceConfidences[expiry] = confidence;
   }
 
-  function setDiscountFactor(uint expiry, uint64 factor, uint64 confidence) external {
+  function setInterestRate(uint expiry, uint64 factor, uint64 confidence) external {
     discountFactors[expiry] = factor;
     discountFactorConfidences[expiry] = confidence;
   }
@@ -65,8 +65,8 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IDiscountFactorFeed, IS
     return (vols[expiry][strike], volConfidences[expiry][strike]);
   }
 
-  // IDiscountFactorFeed
-  function getDiscountFactor(uint expiry) external view returns (uint64 discountFactor, uint64 confidence) {
+  // IInterestRateFeed
+  function getInterestRate(uint expiry) external view returns (uint64 discountFactor, uint64 confidence) {
     return (discountFactors[expiry], discountFactorConfidences[expiry]);
   }
 }

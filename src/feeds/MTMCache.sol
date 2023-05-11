@@ -1,6 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "lyra-utils/math/Black76.sol";
+import "forge-std/console2.sol";
 
 contract MTMCache {
   function getMTM(

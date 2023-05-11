@@ -6,12 +6,14 @@ interface IPMRM {
   }
 
   struct PMRMParameters {
-    int staticDiscount;
     int lossFactor;
     uint epsilon;
     uint fwdStep;
     int netPosScalar;
     uint pegLossFactor;
+    int rfrStaticDiscount;
+    uint rfrMultFactor;
+    uint rfrAdditiveFactor;
   }
 
   struct VolShockParameters {
@@ -27,7 +29,6 @@ interface IPMRM {
     uint optionPercent;
     uint fwdSpotShock1;
     uint fwdSpotShock2;
-    uint fwdScalingFactor;
     // <7 dte
     uint fwdShortFactor;
     // >7dte <28dte
@@ -69,6 +70,7 @@ interface IPMRM {
     int fwdShock1MtM;
     int fwdShock2MtM;
     uint staticDiscount;
+    uint64 rate;
     uint64 discountFactor;
     uint minConfidence;
   }
@@ -80,12 +82,12 @@ interface IPMRM {
     int amount;
     bool isCall;
     uint minConfidence;
+    bool seenInFilter;
   }
 
   struct PortfolioExpiryData {
     uint expiry;
-    uint callCount;
-    uint putCount;
+    uint optionCount;
   }
 
   struct Scenario {

@@ -443,7 +443,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
    * @param spotUpPercent Percent by which to multiply spot to get the `up` scenario.
    * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario.
    * @param spotTimeSlope Rate at which to increase the shocks with larger `timeToExpiry`.
-   * @param portfolioDiscountFactor Initial discounting factor applied when option margin > 0.
+   * @param portfolioInterestRate Initial discounting factor applied when option margin > 0.
    * @param expiry expiry of the portfolio
    * @return vol Volatility.
    * @return spotUp Shocked up spot.
@@ -454,7 +454,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
     uint spotUpPercent,
     uint spotDownPercent,
     uint spotTimeSlope,
-    uint portfolioDiscountFactor,
+    uint portfolioInterestRate,
     uint expiry
   ) public view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
     int timeToExpiry = expiry.toInt256() - block.timestamp.toInt256();
@@ -471,7 +471,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
       _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 
     // Get portfolio-wide discount
-    portfolioDiscount = _applyTimeWeightToPortfolioDiscount(portfolioDiscountFactor, timeToExpiry.toUint256());
+    portfolioDiscount = _applyTimeWeightToPortfolioDiscount(portfolioInterestRate, timeToExpiry.toUint256());
   }
 
   /**

@@ -73,7 +73,7 @@ contract PMRMTestBase is Test {
       ISettlementFeed(feed),
       ISpotFeed(feed),
       mtmCache,
-      IDiscountFactorFeed(feed),
+      IInterestRateFeed(feed),
       IVolFeed(feed),
       IMarginAsset(address(baseAsset))
     );
@@ -110,6 +110,18 @@ contract PMRMTestBase is Test {
     for (uint i = 0; i < portfolio.expiries.length; i++) {
       PMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
       console2.log("=== secToExpiry:", expiry.secToExpiry);
+      console2.log("params:");
+
+      console2.log("forwardPrice", expiry.forwardPrice);
+      console2.log("volShockUp", expiry.volShockUp);
+      console2.log("volShockDown", expiry.volShockDown);
+      console2.log("mtm", expiry.mtm);
+      console2.log("fwdShock1MtM", expiry.fwdShock1MtM);
+      console2.log("fwdShock2MtM", expiry.fwdShock2MtM);
+      console2.log("staticDiscount", expiry.staticDiscount);
+      console2.log("discountFactor", expiry.discountFactor);
+      console2.log("minConfidence", expiry.minConfidence);
+
       for (uint j = 0; j < expiry.options.length; j++) {
         console2.log(expiry.options[j].isCall ? "- CALL" : "- PUT");
         console2.log("- strike:", expiry.options[j].strike / 1e18);
@@ -121,28 +133,30 @@ contract PMRMTestBase is Test {
   function addScenarios() internal {
     // Scenario Number	Spot Shock (of max)	Vol Shock (of max)
 
-    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](19);
+    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](21);
 
     // add these 27 scenarios to the array
-    scenarios[0] = IPMRM.Scenario({spotShock: 1.2e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[2] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[3] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[5] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[6] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[7] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[8] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[9] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[11] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[12] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[14] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[15] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[17] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[18] = IPMRM.Scenario({spotShock: 0.8e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[0] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[3] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[6] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[7] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[8] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[9] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[12] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[15] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[17] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[18] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
 
     pmrm.setScenarios(scenarios);
   }
@@ -327,7 +341,7 @@ contract PMRMTestBase is Test {
     for (uint i = 0; i < feedData.expiries.length; i++) {
       uint expiry = referenceTime + uint(feedData.expiries[i]);
       feed.setForwardPrice(expiry, feedData.forwards[i], feedData.forwardConfidences[i]);
-      feed.setDiscountFactor(expiry, uint64(feedData.discounts[i]), uint64(feedData.discountConfidences[i]));
+      feed.setInterestRate(expiry, uint64(feedData.discounts[i]), uint64(feedData.discountConfidences[i]));
     }
 
     /// Get assets for user
@@ -345,7 +359,7 @@ contract PMRMTestBase is Test {
       });
 
       feed.setVol(
-        uint128(optionData[i].strike), uint128(expiry), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
+        uint128(expiry), uint128(optionData[i].strike), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
       );
     }
 

@@ -55,14 +55,16 @@ contract UNIT_TestPMRM is PMRMTestBase {
     //    }
 
     //    PMRM.NewPortfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestSmall());
-    //    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolio(getAssetBalancesForTestLarge());
-    //    _logPortfolio(portfolio);
+
     //
     //    IAccounts.AssetBalance[] memory balances = getAssetBalancesForTestLarge();
     //
     //    console.log(balances.length);
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".T1");
+    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".T8");
+    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolio(balances);
+    _logPortfolio(portfolio);
     console2.log("im", pmrm.getMargin(balances, true));
+    console2.log("mm", pmrm.getMargin(balances, false));
   }
   //
   //  function getAssetBalancesForTestSmall() internal view returns (IAccounts.AssetBalance[] memory balances) {

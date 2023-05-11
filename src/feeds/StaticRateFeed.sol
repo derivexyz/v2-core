@@ -1,15 +1,15 @@
 import "lyra-utils/ownership/Owned.sol";
-import "src/interfaces/IDiscountFactorFeed.sol";
+import "src/interfaces/IInterestRateFeed.sol";
 
-contract StaticDiscountFactorFeed is Owned, IDiscountFactorFeed {
-  uint64 public discountFactor;
+contract StaticInterestRateFeed is Owned, IInterestRateFeed {
+  uint64 public interestRate;
 
-  function setDiscountFactor(uint64 newDiscountFactor) external onlyOwner {
-    discountFactor = newDiscountFactor;
-    emit DiscountFactorSet(discountFactor, 1e18);
+  function setInterestRate(uint64 newInterestRate) external onlyOwner {
+    interestRate = newInterestRate;
+    emit InterestRateSet(interestRate, 1e18);
   }
 
-  function getDiscountFactor(uint /* expiry */ ) external view override returns (uint64, uint64) {
-    return (discountFactor, 1e18);
+  function getInterestRate(uint /* expiry */ ) external view override returns (uint64, uint64) {
+    return (interestRate, 1e18);
   }
 }
