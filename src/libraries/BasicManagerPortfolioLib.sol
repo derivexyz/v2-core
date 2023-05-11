@@ -30,26 +30,6 @@ library BasicManagerPortfolioLib {
     subAccount.perpPosition = balance;
   }
 
-  function findOrAddExpiryHolding(IBasicManager.ExpiryHolding[] memory expires, uint newExpiry, uint arrayLen)
-    internal
-    pure
-    returns (uint, uint)
-  {
-    // check if strike exists
-    (uint expiryIndex, bool found) = findExpiryInArray(expires, newExpiry, arrayLen);
-
-    // return index if found or add new entry
-    if (found == false) {
-      expiryIndex = arrayLen++;
-      expires[expiryIndex] = IBasicManager.ExpiryHolding({
-        expiry: newExpiry,
-        numStrikesHeld: 0,
-        strikes: new ISingleExpiryPortfolio.Strike[](32)
-      });
-    }
-    return (expiryIndex, arrayLen);
-  }
-
   /**
    * @dev return if an expiry exists in an array of expiry holdings
    * @param expiryHoldings All holdings
@@ -71,30 +51,5 @@ library BasicManagerPortfolioLib {
       }
       return (0, false);
     }
-  }
-
-  /**
-   * @notice Adds option to portfolio holdings.
-   * @dev This option arrangement is only additive, as portfolios are reconstructed for every trade
-   * @return addedStrikeIndex index of existing or added strike struct
-   */
-  function addOptionToExpiry(IBasicManager.ExpiryHolding memory holdings, uint strikePrice, bool isCall, int balance)
-    internal
-    pure
-    returns (uint addedStrikeIndex)
-  {
-    // add strike in-memory to portfolio
-    (addedStrikeIndex, holdings.numStrikesHeld) =
-      StrikeGrouping.findOrAddStrike(holdings.strikes, strikePrice, holdings.numStrikesHeld);
-
-    // add call or put balance
-    if (isCall) {
-      holdings.strikes[addedStrikeIndex].calls += balance;
-    } else {
-      holdings.strikes[addedStrikeIndex].puts += balance;
-    }
-
-    // return the index of the strike which was just modified
-    return addedStrikeIndex;
   }
 }

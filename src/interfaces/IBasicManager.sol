@@ -42,10 +42,18 @@ interface IBasicManager is IManager {
   ///@dev contains portfolio struct for single expiry assets
   struct ExpiryHolding {
     uint expiry;
-    /// # of strikes with active balances
-    uint numStrikesHeld;
+    /// temp variable to count how many options is used
+    uint numOptions;
     /// array of strike holding details
-    ISingleExpiryPortfolio.Strike[] strikes;
+    Option[] options;
+    /// sum of all call positions
+    int netCalls;
+  }
+
+  struct Option {
+    uint strike;
+    int balance;
+    bool isCall;
   }
 
   ///@dev Struct for Perp Margin Requirements
@@ -79,6 +87,10 @@ interface IBasicManager is IManager {
   ///////////////////
   //    Events     //
   ///////////////////
+
+  event AssetWhitelisted(address asset, uint8 marketId, AssetType assetType);
+
+  event OraclesSet(uint8 marketId, address spotOracle, address forwardOracle, address settlementOracle);
 
   event PricingModuleSet(address pricingModule);
 

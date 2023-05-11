@@ -25,12 +25,12 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   BasicManager manager;
   MockAsset cash;
   MockERC20 usdc;
-  
+
   MockPerp ethPerp;
   MockPerp btcPerp;
   MockOption ethOption;
   MockOption btcOption;
-  
+
   MockOptionPricing pricing;
   uint expiry;
 
@@ -75,7 +75,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.whitelistAsset(btcPerp, 2, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, 2, IBasicManager.AssetType.Option);
     manager.setOraclesForMarket(2, btcFeed, btcFeed, btcFeed);
-    
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -101,9 +100,9 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin = manager.getIsolatedMargin(1, ethStrike, expiry, -1e18, 0, false);
-    int btcMargin = manager.getIsolatedMargin(2, btcStrike, expiry, -1e18, 0, false);
-    
+    int ethMargin = manager.getIsolatedMargin(1, ethStrike, expiry, true, -1e18, false);
+    int btcMargin = manager.getIsolatedMargin(2, btcStrike, expiry, true, -1e18, false);
+
     int neededMargin = ethMargin + btcMargin;
     cash.deposit(aliceAcc, uint(-neededMargin));
 
@@ -115,12 +114,13 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     assertEq(requirement, neededMargin);
   }
 
-
   /////////////
   // Helpers //
   /////////////
 
-  function _tradeOption(IOption option, uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
+  function _tradeOption(IOption option, uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall)
+    internal
+  {
     IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,

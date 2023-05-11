@@ -27,6 +27,8 @@ import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 import {BaseManager} from "./BaseManager.sol";
 
+import "lyra-utils/arrays/UnorderedMemoryArray.sol";
+
 import "src/libraries/StrikeGrouping.sol";
 import "src/libraries/BasicManagerPortfolioLib.sol";
 
@@ -42,8 +44,10 @@ contract BasicManager is IBasicManager, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
+  using SafeCast for int;
   using IntLib for int;
   using BasicManagerPortfolioLib for BasicManagerPortfolio;
+  using UnorderedMemoryArray for uint[];
 
   ///////////////
   // Variables //
@@ -67,7 +71,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
   mapping(uint => ISpotFeed) public spotFeeds;
   mapping(uint => ISettlementFeed) public settlementFeeds;
-  mapping(uint => IFutureFeed) public futureFeeds;
+  mapping(uint => IFutureFeed) public forwardFeeds;
 
   ////////////////////////
   //    Constructor     //
@@ -81,21 +85,33 @@ contract BasicManager is IBasicManager, BaseManager {
   //    Admin-Only     //
   ///////////////////////
 
+  /**
+   * @notice Whitelist an asset to be used in Manager
+   * @dev the basic manager only support option asset & perp asset
+   */
   function whitelistAsset(IAsset _asset, uint8 _marketId, AssetType _type) external onlyOwner {
     // registered asset
     assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
+
+    emit AssetWhitelisted(address(_asset), _marketId, _type);
   }
 
+  /**
+   * @notice Set the oracles for a market id
+   *
+   */
   function setOraclesForMarket(
     uint8 marketId,
     ISpotFeed spotFeed,
-    ISettlementFeed settlementFeed,
-    IFutureFeed futureFeed
+    IFutureFeed forwardFeed,
+    ISettlementFeed settlementFeed
   ) external onlyOwner {
     // registered asset
     spotFeeds[marketId] = spotFeed;
+    forwardFeeds[marketId] = forwardFeed;
     settlementFeeds[marketId] = settlementFeed;
-    futureFeeds[marketId] = futureFeed;
+
+    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(settlementFeed));
   }
 
   /**
@@ -251,22 +267,25 @@ contract BasicManager is IBasicManager, BaseManager {
     for (uint i; i < marketCount; i++) {
       // 1. find the first market id
       uint8 marketId;
-      for (uint8 id; id < 256; id++) {
-        if (marketBitMap & (1 << id) != 0) {
-          marketId = id;
-          // mark this market id as used => flip it back to 0 with xor
-          marketBitMap ^= (1 << id);
-          break;
-        }
+      for (uint8 id = 1; id < 256; id++) {
+        uint masked = (1 << id);
+        if (marketBitMap & masked == 0) continue;
+
+        // mark this market id as used => flip it back to 0 with xor
+        marketBitMap ^= masked;
+        marketId = id;
+        break;
       }
       portfolio.subAccounts[i].marketId = marketId;
 
       // 2. filter through all balances and only find perp or option for this market
 
       // temporary holding array,
-      ExpiryHolding[] memory tempHoldings = new ExpiryHolding[](assets.length);
+      // ExpiryHolding[] memory tempHoldings = new ExpiryHolding[](assets.length);
       uint numExpires;
-      uint expiryProducts = 1; // the product of all expiry - start block hour
+
+      uint[] memory seenExpires = new uint[](assets.length);
+      uint[] memory expiryOptionCounts = new uint[](assets.length);
 
       for (uint j; j < assets.length; j++) {
         IAccounts.AssetBalance memory currentAsset = assets[j];
@@ -282,26 +301,11 @@ contract BasicManager is IBasicManager, BaseManager {
           );
         } else if (detail.assetType == AssetType.Option) {
           portfolio.subAccounts[i].option = IOption(address(currentAsset.asset));
-          (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
-          uint expiryInHoursSinceStart = (expiry / 1 hours) - startingHour;
-          if (expiryProducts % expiryInHoursSinceStart != 0) {
-            // new expiry!
-            tempHoldings[numExpires].expiry = expiry;
-            tempHoldings[numExpires].strikes = new ISingleExpiryPortfolio.Strike[](32);
-
-            numExpires++;
-            expiryProducts *= expiryInHoursSinceStart;
-          }
-
-          // add strike to counter
-          // find the counter
-          for (uint k; k < numExpires; k++) {
-            if (tempHoldings[k].expiry == expiry) {
-              // find and add strike in expiry holding
-              BasicManagerPortfolioLib.addOptionToExpiry(tempHoldings[k], strike, isCall, currentAsset.balance);
-              break;
-            }
-          }
+          (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+          uint expiryIndex;
+          (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);
+          // print all seen expiries
+          expiryOptionCounts[expiryIndex]++;
         }
       }
 
@@ -310,15 +314,28 @@ contract BasicManager is IBasicManager, BaseManager {
 
       // initiate expiry holdings
       for (uint j; j < numExpires; j++) {
-        portfolio.subAccounts[i].expiryHoldings[j].strikes = new ISingleExpiryPortfolio.Strike[](
-          tempHoldings[j].numStrikesHeld
-        );
+        portfolio.subAccounts[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
+      }
 
-        // copy value over
-        portfolio.subAccounts[i].expiryHoldings[j].expiry = tempHoldings[j].expiry;
-        portfolio.subAccounts[i].expiryHoldings[j].numStrikesHeld = tempHoldings[j].numStrikesHeld;
-        for (uint k; k < tempHoldings[j].numStrikesHeld; k++) {
-          portfolio.subAccounts[i].expiryHoldings[j].strikes[k] = tempHoldings[j].strikes[k];
+      // put options into expiry holdings
+      for (uint j; j < assets.length; j++) {
+        IAccounts.AssetBalance memory currentAsset = assets[j];
+        if (currentAsset.asset == cashAsset) continue;
+
+        AssetDetail memory detail = assetDetails[currentAsset.asset];
+        if (detail.marketId != marketId) continue;
+
+        if (detail.assetType == AssetType.Option) {
+          (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+          uint expiryIndex = seenExpires.findInArray(expiry, numExpires).toUint256();
+          uint nextIndex = portfolio.subAccounts[i].expiryHoldings[expiryIndex].numOptions;
+          portfolio.subAccounts[i].expiryHoldings[expiryIndex].options[nextIndex] =
+            Option({strike: strike, isCall: isCall, balance: currentAsset.balance});
+
+          portfolio.subAccounts[i].expiryHoldings[expiryIndex].numOptions++;
+          if (isCall) {
+            portfolio.subAccounts[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
+          }
         }
       }
     }
@@ -340,43 +357,48 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (int margin)
   {
-    // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
-    int netCalls;
-    for (uint i; i < expiryHolding.numStrikesHeld; i++) {
-      netCalls += expiryHolding.strikes[i].calls;
-    }
-    bool lossBounded = netCalls >= 0;
+    bool lossBounded = expiryHolding.netCalls >= 0;
 
     int maxLossMargin = 0;
     int isolatedMargin = 0;
-    bool zeroStrikeOwnable2Step;
+    bool zeroStrikeChecked;
 
-    IFutureFeed feed = futureFeeds[marketId];
+    IFutureFeed feed = forwardFeeds[marketId];
 
-    for (uint i; i < expiryHolding.numStrikesHeld; i++) {
-      int forwardPrice = feed.getFuturePrice(expiryHolding.expiry).toInt256();
+    // product of all checked strikes, if a strike is checked before, the strike price will be *= into strikeChecker
+    uint strikeChecker = 1;
+
+    int forwardPrice = feed.getFuturePrice(expiryHolding.expiry).toInt256();
+
+    for (uint i; i < expiryHolding.options.length; i++) {
+      // check if this strike price is already checked before.
+      uint strikeSimplified = expiryHolding.options[i].strike / 1e18;
+      if (strikeSimplified != 0) {
+        if (strikeChecker % strikeSimplified == 0) continue;
+        strikeChecker *= strikeSimplified;
+      }
 
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
-        uint scenarioPrice = expiryHolding.strikes[i].strike;
+        uint scenarioPrice = expiryHolding.options[i].strike;
         maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, scenarioPrice), maxLossMargin);
         if (scenarioPrice == 0) {
-          zeroStrikeOwnable2Step = true;
+          zeroStrikeChecked = true;
         }
       }
 
       // calculate isolated margin for this strike, aggregate to isolatedMargin
       isolatedMargin += _getIsolatedMargin(
-        expiryHolding.strikes[i].strike,
-        expiryHolding.strikes[i].calls,
-        expiryHolding.strikes[i].puts,
+        expiryHolding.options[i].strike,
+        expiryHolding.options[i].isCall,
+        expiryHolding.options[i].balance,
         forwardPrice,
         false // is maintenance = false
       );
     }
 
     // Ensure $0 scenario is always evaluated.
-    if (lossBounded && !zeroStrikeOwnable2Step) {
+    if (lossBounded && !zeroStrikeChecked) {
       maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, 0), maxLossMargin);
     }
 
@@ -407,13 +429,13 @@ contract BasicManager is IBasicManager, BaseManager {
     return _getMargin(accountId);
   }
 
-  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, int calls, int puts, bool isMaintenance)
+  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isMaintenance)
     external
     view
     returns (int)
   {
-    int forwardPrice = futureFeeds[marketId].getFuturePrice(expiry).toInt256();
-    return _getIsolatedMargin(strike, calls, puts, forwardPrice, isMaintenance);
+    int forwardPrice = forwardFeeds[marketId].getFuturePrice(expiry).toInt256();
+    return _getIsolatedMargin(strike, isCall, balance, forwardPrice, isMaintenance);
   }
 
   /**
@@ -426,9 +448,6 @@ contract BasicManager is IBasicManager, BaseManager {
   {
     IAccounts.AssetBalance memory currentAsset;
 
-    // if marketId 1 is tracked, trackedMarketBitMap = 0000..00010
-    // if marketId 2 is tracked, trackedMarketBitMap = 0000..00100
-
     // count how many unique markets there are
     for (uint i; i < userBalances.length; ++i) {
       currentAsset = userBalances[i];
@@ -438,11 +457,15 @@ contract BasicManager is IBasicManager, BaseManager {
       }
 
       // else, it must be perp or option for one of the registered assets
+
+      // if marketId 1 is tracked, trackedMarketBitMap    = 0000..00010
+      // if marketId 2 is tracked, trackedMarketBitMap    = 0000..00100
+      // if both markets are tracked, trackedMarketBitMap = 0000..00110
       AssetDetail memory detail = assetDetails[userBalances[i].asset];
       uint marketBit = 1 << detail.marketId;
       if (trackedMarketBitMap & marketBit == 0) {
         marketCount++;
-        trackedMarketBitMap |= (1 << detail.marketId);
+        trackedMarketBitMap |= marketBit;
       }
     }
   }
@@ -450,16 +473,16 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @dev calculate isolated margin requirement for a given number of calls and puts
    */
-  function _getIsolatedMargin(uint strike, int calls, int puts, int forwardPrice, bool isMaintenance)
+  function _getIsolatedMargin(uint strike, bool isCall, int balance, int forwardPrice, bool isMaintenance)
     internal
     view
     returns (int margin)
   {
-    if (calls < 0) {
-      margin += _getIsolatedMarginForCall(strike.toInt256(), calls, forwardPrice, isMaintenance);
-    }
-    if (puts < 0) {
-      margin += _getIsolatedMarginForPut(strike.toInt256(), puts, forwardPrice, isMaintenance);
+    if (balance > 0) return 0;
+    if (isCall) {
+      margin = _getIsolatedMarginForCall(strike.toInt256(), balance, forwardPrice, isMaintenance);
+    } else {
+      margin = _getIsolatedMarginForPut(strike.toInt256(), balance, forwardPrice, isMaintenance);
     }
   }
 
@@ -519,10 +542,10 @@ contract BasicManager is IBasicManager, BaseManager {
     pure
     returns (int payoff)
   {
-    for (uint i; i < expiryHolding.numStrikesHeld; i++) {
-      ISingleExpiryPortfolio.Strike memory currentStrike = expiryHolding.strikes[i];
-      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
-      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
+    for (uint i; i < expiryHolding.options.length; i++) {
+      payoff += option.getSettlementValue(
+        expiryHolding.options[i].strike, expiryHolding.options[i].balance, price, expiryHolding.options[i].isCall
+      );
     }
   }
 
