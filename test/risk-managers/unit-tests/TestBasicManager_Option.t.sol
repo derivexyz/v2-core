@@ -75,12 +75,12 @@ contract UNIT_TestBasicManager_Option is Test {
     usdc.approve(address(cash), type(uint).max);
 
     // set init perp trading parameters
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
 
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
 
-    manager.setOptionMarginParameters(params);
+    manager.setOptionMarginParameters(1, params);
   }
 
   ////////////////
@@ -104,9 +104,9 @@ contract UNIT_TestBasicManager_Option is Test {
   function testSetOptionParameters() public {
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
-    manager.setOptionMarginParameters(params);
+    manager.setOptionMarginParameters(1, params);
     (int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio) =
-      manager.optionMarginParams();
+      manager.optionMarginParams(1);
     assertEq(baselineOptionIM, 0.5e18);
     assertEq(baselineOptionMM, 0.2e18);
     assertEq(minStaticMMRatio, 0.1e18);
@@ -233,6 +233,36 @@ contract UNIT_TestBasicManager_Option is Test {
     uint aliceLongLeg = 400e18;
     cash.deposit(aliceAcc, 400e18);
     _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  function testShortStraddle() public {
+    uint strike = 1500e18;
+    int amount = 1e18;
+
+    int callMargin = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
+    int putMargin = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
+
+    // the margin needed is the sum of 2 positions 
+    cash.deposit(aliceAcc, uint(-(callMargin + putMargin)));
+
+    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
+    transfers[0] = IAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(expiry, strike, true),
+      amount: amount,
+      assetData: ""
+    });
+    transfers[1] = IAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(expiry, strike, false),
+      amount: amount,
+      assetData: ""
+    });
+    account.submitTransfers(transfers, "");
   }
 
   /////////////

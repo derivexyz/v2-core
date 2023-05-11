@@ -94,9 +94,9 @@ interface IBasicManager is IManager {
 
   event PricingModuleSet(address pricingModule);
 
-  event MarginRequirementsSet(uint perpMMRequirement, uint perpIMRequirement);
+  event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
   event OptionMarginParametersSet(
-    int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio
+    uint8 marketId, int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio
   );
 }

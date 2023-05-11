@@ -100,12 +100,12 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     usdc.approve(address(cash), type(uint).max);
 
     // set init perp trading parameters
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
 
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
 
-    manager.setOptionMarginParameters(params);
+    manager.setOptionMarginParameters(1, params);
   }
 
   function testCanTradeMultipleMarkets() public {

@@ -37,7 +37,7 @@ import "forge-std/console2.sol";
 /**
  * @title BasicManager
  * @author Lyra
- * @notice Risk Manager that margin in perp, cash and option in isolation.
+ * @notice Risk Manager that margin perp and option in isolation.
  */
 
 contract BasicManager is IBasicManager, BaseManager {
@@ -53,21 +53,17 @@ contract BasicManager is IBasicManager, BaseManager {
   // Variables //
   ///////////////
 
-  uint immutable startingHour;
-
-  uint constant MAX_STRIKES = 64;
-
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public pricing;
 
-  /// @dev Perp Margin Requirements: maintenance and initial margin requirements
-  PerpMarginRequirements public perpMarginRequirements;
-
-  /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
-  OptionMarginParameters public optionMarginParams;
-
   /// @dev True if an IAsset address is whitelisted.
   mapping(IAsset asset => AssetDetail) public assetDetails;
+
+  /// @dev Perp Margin Requirements: maintenance and initial margin requirements
+  mapping(uint marketId => PerpMarginRequirements) public perpMarginRequirements;
+
+  /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
+  mapping(uint marketId => OptionMarginParameters) public optionMarginParams;
 
   /// @dev Mapping from marketId to spot price oracle
   mapping(uint marketId => ISpotFeed) public spotFeeds;
@@ -82,9 +78,7 @@ contract BasicManager is IBasicManager, BaseManager {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_) {
-    startingHour = block.timestamp / 1 hours;
-  }
+  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_) {}
 
   ////////////////////////
   //    Admin-Only     //
@@ -103,7 +97,6 @@ contract BasicManager is IBasicManager, BaseManager {
 
   /**
    * @notice Set the oracles for a market id
-   *
    */
   function setOraclesForMarket(
     uint8 marketId,
@@ -120,30 +113,30 @@ contract BasicManager is IBasicManager, BaseManager {
   }
 
   /**
-   * @notice Set the maintenance margin requirement
+   * @notice Set perp maintenance margin requirement for an market
    * @param _mmRequirement new maintenance margin requirement
    * @param _imRequirement new initial margin requirement
    */
-  function setPerpMarginRequirements(uint _mmRequirement, uint _imRequirement) external onlyOwner {
+  function setPerpMarginRequirements(uint8 marketId, uint _mmRequirement, uint _imRequirement) external onlyOwner {
     if (_mmRequirement > _imRequirement) revert PM_InvalidMarginRequirement();
     if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert PM_InvalidMarginRequirement();
     if (_imRequirement >= 1e18) revert PM_InvalidMarginRequirement();
 
-    perpMarginRequirements = PerpMarginRequirements(_mmRequirement, _imRequirement);
+    perpMarginRequirements[marketId] = PerpMarginRequirements(_mmRequirement, _imRequirement);
 
-    emit MarginRequirementsSet(_mmRequirement, _imRequirement);
+    emit MarginRequirementsSet(marketId, _mmRequirement, _imRequirement);
   }
 
   /**
-   * @notice Set the option margin parameters
+   * @notice Set the option margin parameters for an market
    */
-  function setOptionMarginParameters(OptionMarginParameters calldata params) external onlyOwner {
-    optionMarginParams = OptionMarginParameters(
+  function setOptionMarginParameters(uint8 marketId, OptionMarginParameters calldata params) external onlyOwner {
+    optionMarginParams[marketId] = OptionMarginParameters(
       params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
     );
 
     emit OptionMarginParametersSet(
-      params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
+      marketId, params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
     );
   }
 
@@ -152,7 +145,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param _pricing new pricing module
    */
   function setPricingModule(IOptionPricing _pricing) external onlyOwner {
-    // todo: update to per-market, use for mark to market price
+    // todo: use this for mark-to-market
     pricing = IOptionPricing(_pricing);
 
     emit PricingModuleSet(address(_pricing));
@@ -237,7 +230,7 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function _getNetPerpMargin(BasicManagerSubAccount memory subAccount, int indexPrice) internal view returns (int) {
     uint notional = subAccount.perpPosition.multiplyDecimal(indexPrice).abs();
-    int marginRequired = notional.multiplyDecimal(perpMarginRequirements.imRequirement).toInt256();
+    int marginRequired = notional.multiplyDecimal(perpMarginRequirements[subAccount.marketId].imRequirement).toInt256();
     return -marginRequired;
   }
 
@@ -376,7 +369,17 @@ contract BasicManager is IBasicManager, BaseManager {
     int forwardPrice = feed.getFuturePrice(expiryHolding.expiry).toInt256();
 
     for (uint i; i < expiryHolding.options.length; i++) {
-      // check if this strike price is already checked before.
+      // calculate isolated margin for this strike, aggregate to isolatedMargin
+      isolatedMargin += _getIsolatedMargin(
+        marketId,
+        expiryHolding.options[i].strike,
+        expiryHolding.options[i].isCall,
+        expiryHolding.options[i].balance,
+        forwardPrice,
+        false // is maintenance = false
+      );
+
+      // check if this strike price is already checked before. If so, don't need to run this scenario for max loss again
       uint strikeSimplified = expiryHolding.options[i].strike / 1e18;
       if (strikeSimplified != 0) {
         if (strikeChecker % strikeSimplified == 0) continue;
@@ -391,15 +394,6 @@ contract BasicManager is IBasicManager, BaseManager {
           zeroStrikeChecked = true;
         }
       }
-
-      // calculate isolated margin for this strike, aggregate to isolatedMargin
-      isolatedMargin += _getIsolatedMargin(
-        expiryHolding.options[i].strike,
-        expiryHolding.options[i].isCall,
-        expiryHolding.options[i].balance,
-        forwardPrice,
-        false // is maintenance = false
-      );
     }
 
     // Ensure $0 scenario is always evaluated.
@@ -440,7 +434,7 @@ contract BasicManager is IBasicManager, BaseManager {
     returns (int)
   {
     int forwardPrice = forwardFeeds[marketId].getFuturePrice(expiry).toInt256();
-    return _getIsolatedMargin(strike, isCall, balance, forwardPrice, isMaintenance);
+    return _getIsolatedMargin(marketId, strike, isCall, balance, forwardPrice, isMaintenance);
   }
 
   /**
@@ -478,16 +472,19 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @dev calculate isolated margin requirement for a given number of calls and puts
    */
-  function _getIsolatedMargin(uint strike, bool isCall, int balance, int forwardPrice, bool isMaintenance)
-    internal
-    view
-    returns (int margin)
-  {
+  function _getIsolatedMargin(
+    uint marketId,
+    uint strike,
+    bool isCall,
+    int balance,
+    int forwardPrice,
+    bool isMaintenance
+  ) internal view returns (int margin) {
     if (balance > 0) return 0;
     if (isCall) {
-      margin = _getIsolatedMarginForCall(strike.toInt256(), balance, forwardPrice, isMaintenance);
+      margin = _getIsolatedMarginForCall(marketId, strike.toInt256(), balance, forwardPrice, isMaintenance);
     } else {
-      margin = _getIsolatedMarginForPut(strike.toInt256(), balance, forwardPrice, isMaintenance);
+      margin = _getIsolatedMarginForPut(marketId, strike.toInt256(), balance, forwardPrice, isMaintenance);
     }
   }
 
@@ -501,9 +498,15 @@ contract BasicManager is IBasicManager, BaseManager {
    *        STATIC is min static ratio.
    * @dev expected to return a negative number
    */
-  function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
-    int baseLine = isMaintenance ? optionMarginParams.baselineOptionMM : optionMarginParams.baselineOptionIM;
-    int minStaticRatio = isMaintenance ? optionMarginParams.minStaticMMRatio : optionMarginParams.minStaticIMRatio;
+  function _getIsolatedMarginForPut(uint marketId, int strike, int amount, int index, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
+    int baseLine =
+      isMaintenance ? optionMarginParams[marketId].baselineOptionMM : optionMarginParams[marketId].baselineOptionIM;
+    int minStaticRatio =
+      isMaintenance ? optionMarginParams[marketId].minStaticMMRatio : optionMarginParams[marketId].minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike).divideDecimal(index);
@@ -524,9 +527,15 @@ contract BasicManager is IBasicManager, BaseManager {
    *        STATIC is min static ratio.
    * @param amount expected a negative number, representing amount of shorts
    */
-  function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
-    int baseLine = isMaintenance ? optionMarginParams.baselineOptionMM : optionMarginParams.baselineOptionIM;
-    int minStaticRatio = isMaintenance ? optionMarginParams.minStaticMMRatio : optionMarginParams.minStaticIMRatio;
+  function _getIsolatedMarginForCall(uint marketId, int strike, int amount, int index, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
+    int baseLine =
+      isMaintenance ? optionMarginParams[marketId].baselineOptionMM : optionMarginParams[marketId].baselineOptionIM;
+    int minStaticRatio =
+      isMaintenance ? optionMarginParams[marketId].minStaticMMRatio : optionMarginParams[marketId].minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike - index).divideDecimal(index);
