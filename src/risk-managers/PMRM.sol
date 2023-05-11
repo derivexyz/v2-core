@@ -45,7 +45,6 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // Constants //
   ///////////////
   uint public constant MAX_EXPIRIES = 11;
-
   uint public constant MAX_ASSETS = 32;
 
   ///////////////
@@ -106,8 +105,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       }
     }
     for (uint i = _scenarios.length; i < marginScenarios.length; i++) {
-      // TODO: this probably breaks lol, should be tested
-      delete marginScenarios[i];
+      marginScenarios.pop();
     }
   }
 
@@ -159,58 +157,27 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     IPMRM.PMRM_Portfolio memory portfolio =
       _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), !isTrustedRiskAssessor);
 
-    _checkMargin(portfolio, marginScenarios);
+    if (isTrustedRiskAssessor) {
+      IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
+      scenarios[0] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
+      _checkMargin(portfolio, scenarios);
+    } else {
+      _checkMargin(portfolio, marginScenarios);
+    }
   }
 
   ///////////////////////
   // Arrange Portfolio //
   ///////////////////////
 
-  /**
-   * @notice Arrange portfolio into cash + arranged
-   *         array of [strikes][calls / puts / forwards].
-   * @param assets Array of balances for given asset and subId.
-   * @return portfolio Cash + option holdings.
-   */
-  function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets, bool addForwardCont)
+  function _initialiseExpiries(IPMRM.PMRM_Portfolio memory portfolio, PortfolioExpiryData[] memory expiryCount)
     internal
     view
-    returns (IPMRM.PMRM_Portfolio memory portfolio)
   {
-    uint assetLen = assets.length;
-    PortfolioExpiryData[] memory expiryCount =
-      new PortfolioExpiryData[](MAX_EXPIRIES > assetLen ? assetLen : MAX_EXPIRIES);
-    uint seenExpiries = 0;
-
-    // Just count the number of options per expiry
-    for (uint i = 0; i < assetLen; ++i) {
-      IAccounts.AssetBalance memory currentAsset = assets[i];
-      if (address(currentAsset.asset) == address(option)) {
-        (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
-        if (optionExpiry < block.timestamp) {
-          revert("option expired");
-        }
-
-        bool found = false;
-        for (uint j = 0; j < seenExpiries; j++) {
-          if (expiryCount[j].expiry == optionExpiry) {
-            expiryCount[j].optionCount++;
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: optionExpiry, optionCount: 1});
-        }
-      }
-    }
-
-    portfolio.expiries = new ExpiryHoldings[](seenExpiries);
-    (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
-    for (uint i = 0; i < seenExpiries; ++i) {
+    for (uint i = 0; i < portfolio.expiries.length; ++i) {
       (uint forwardPrice, uint confidence1) = futureFeed.getForwardPrice(expiryCount[i].expiry);
       // TODO: rate feed and convert to discount factor
-      (uint64 rate, uint confidence2) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
+      (int64 rate, uint confidence2) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
       uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
       minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;
 
@@ -226,12 +193,30 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         fwdShock1MtM: 0,
         fwdShock2MtM: 0,
         staticDiscount: 0,
-        rate: uint64(rate),
-        discountFactor: uint64(FixedPointMathLib.exp(-int(uint(rate)) * (int(secToExpiry) * 1e18 / 365 days) / 1e18)),
+        rate: int64(rate),
+        discountFactor: _getDiscountFactor(rate, secToExpiry),
         minConfidence: minConfidence,
         netOptions: 0
       });
     }
+  }
+
+  /**
+   * @notice Arrange portfolio into cash + arranged
+   *         array of [strikes][calls / puts / forwards].
+   * @param assets Array of balances for given asset and subId.
+   * @return portfolio Cash + option holdings.
+   */
+  function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets, bool addForwardCont)
+    internal
+    view
+    returns (IPMRM.PMRM_Portfolio memory portfolio)
+  {
+    (uint seenExpiries, PortfolioExpiryData[] memory expiryCount) = _countExpiriesAndOptions(assets);
+
+    portfolio.expiries = new ExpiryHoldings[](seenExpiries);
+    (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
+    _initialiseExpiries(portfolio, expiryCount);
 
     // TODO: stable confidence?
     // TODO: depeg contingency
@@ -271,6 +256,42 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     _addPrecomputes(portfolio, addForwardCont);
 
     return portfolio;
+  }
+
+  function _countExpiriesAndOptions(IAccounts.AssetBalance[] memory assets)
+    internal
+    view
+    returns (uint seenExpiries, IPMRM.PortfolioExpiryData[] memory expiryCount)
+  {
+    uint assetLen = assets.length;
+
+    seenExpiries = 0;
+    expiryCount = new IPMRM.PortfolioExpiryData[](MAX_EXPIRIES > assetLen ? assetLen : MAX_EXPIRIES);
+
+    // Just count the number of options per expiry
+    for (uint i = 0; i < assetLen; ++i) {
+      IAccounts.AssetBalance memory currentAsset = assets[i];
+      if (address(currentAsset.asset) == address(option)) {
+        (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+        if (optionExpiry < block.timestamp) {
+          revert("option expired");
+        }
+
+        bool found = false;
+        for (uint j = 0; j < seenExpiries; j++) {
+          if (expiryCount[j].expiry == optionExpiry) {
+            expiryCount[j].optionCount++;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: optionExpiry, optionCount: 1});
+        }
+      }
+    }
+
+    return (seenExpiries, expiryCount);
   }
 
   function findInArray(ExpiryHoldings[] memory expiryData, uint secToExpiryToFind, uint arrayLen)

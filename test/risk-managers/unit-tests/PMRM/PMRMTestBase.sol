@@ -247,7 +247,7 @@ contract PMRMTestBase is Test {
     uint[] expiries;
     uint[] forwards;
     uint[] forwardConfidences;
-    uint[] discounts;
+    int[] discounts;
     uint[] discountConfidences;
   }
 
@@ -307,7 +307,7 @@ contract PMRMTestBase is Test {
     uint[] memory expiries = json.readUintArray(string.concat(testId, ".FeedExpiries"));
     uint[] memory forwards = json.readUintArray(string.concat(testId, ".Forwards"));
     uint[] memory forwardConfidences = json.readUintArray(string.concat(testId, ".ForwardConfidences"));
-    uint[] memory discounts = json.readUintArray(string.concat(testId, ".Discounts"));
+    int[] memory discounts = json.readIntArray(string.concat(testId, ".Discounts"));
     uint[] memory discountConfidences = json.readUintArray(string.concat(testId, ".DiscountConfidences"));
 
     require(expiries.length == forwards.length, "forwards length mismatch");
@@ -323,6 +323,7 @@ contract PMRMTestBase is Test {
       expiries: expiries,
       forwards: forwards,
       forwardConfidences: forwardConfidences,
+      // TODO: rename to rate
       discounts: discounts,
       discountConfidences: discountConfidences
     });
@@ -346,7 +347,7 @@ contract PMRMTestBase is Test {
     for (uint i = 0; i < feedData.expiries.length; i++) {
       uint expiry = referenceTime + uint(feedData.expiries[i]);
       feed.setForwardPrice(expiry, feedData.forwards[i], feedData.forwardConfidences[i]);
-      feed.setInterestRate(expiry, uint64(feedData.discounts[i]), uint64(feedData.discountConfidences[i]));
+      feed.setInterestRate(expiry, int64(feedData.discounts[i]), uint64(feedData.discountConfidences[i]));
     }
 
     /// Get assets for user

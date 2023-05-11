@@ -7,6 +7,7 @@ import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "./TODO_MOVE_TO_LYRA_UTILS.sol";
 import "lyra-utils/math/IntLib.sol";
+import "../interfaces/IAccounts.sol";
 
 contract IPMRMLib {
   struct VolShockParameters {
@@ -110,7 +111,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     minSPAN -= SafeCast.toInt256(portfolio.staticContingency);
 
     if (isInitial) {
-      // TODO: confidence
+      minSPAN -= SafeCast.toInt256(portfolio.confidenceContingency);
 
       uint mFactor = 1.3e18;
       if (portfolio.stablePrice < otherContParams.pegLossThreshold) {
@@ -210,6 +211,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     return position.multiplyDecimal(spot).multiplyDecimal(spotShock).divideDecimal(stablePrice);
   }
 
+  function _getDiscountFactor(int rate, uint secToExpiry) internal view returns (uint64) {
+    return uint64(FixedPointMathLib.exp(-rate * (int(secToExpiry) * 1e18 / 365 days) / 1e18));
+  }
+
   /////////////////
   // Precomputes //
   /////////////////
@@ -245,7 +250,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function _addStaticDiscount(IPMRM.ExpiryHoldings memory expiry) internal view {
     uint tAnnualised = expiry.secToExpiry * 1e18 / 365 days;
-    uint shockRFR = uint(expiry.rate).multiplyDecimal(staticDiscountParams.rateMultiplicativeFactor)
+    uint cappedRate = expiry.rate < 0 ? 0 : uint(int(expiry.rate));
+    uint shockRFR = uint(cappedRate).multiplyDecimal(staticDiscountParams.rateMultiplicativeFactor)
       + staticDiscountParams.rateAdditiveFactor;
     expiry.staticDiscount = staticDiscountParams.baseStaticDiscount.multiplyDecimal(
       FixedPointMathLib.exp(-SafeCast.toInt256(tAnnualised.multiplyDecimal(shockRFR)))

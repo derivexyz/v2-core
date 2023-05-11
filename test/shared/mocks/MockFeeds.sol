@@ -11,8 +11,8 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
   mapping(uint => uint) forwardPriceConfidences;
-  mapping(uint => uint64) discountFactors;
-  mapping(uint => uint64) discountFactorConfidences;
+  mapping(uint => int64) interestRates;
+  mapping(uint => uint64) interestRateConfidences;
   mapping(uint => uint) settlementPrice;
   mapping(uint128 => mapping(uint128 => uint128)) vols;
   mapping(uint128 => mapping(uint128 => uint64)) volConfidences;
@@ -36,9 +36,9 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     forwardPriceConfidences[expiry] = confidence;
   }
 
-  function setInterestRate(uint expiry, uint64 factor, uint64 confidence) external {
-    discountFactors[expiry] = factor;
-    discountFactorConfidences[expiry] = confidence;
+  function setInterestRate(uint expiry, int64 factor, uint64 confidence) external {
+    interestRates[expiry] = factor;
+    interestRateConfidences[expiry] = confidence;
   }
 
   // ISpotFeed
@@ -66,7 +66,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   }
 
   // IInterestRateFeed
-  function getInterestRate(uint expiry) external view returns (uint64 discountFactor, uint64 confidence) {
-    return (discountFactors[expiry], discountFactorConfidences[expiry]);
+  function getInterestRate(uint expiry) external view returns (int64 interestRate, uint64 confidence) {
+    return (interestRates[expiry], interestRateConfidences[expiry]);
   }
 }

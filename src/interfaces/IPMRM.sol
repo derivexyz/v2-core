@@ -39,7 +39,7 @@ interface IPMRM {
     int fwdShock1MtM;
     int fwdShock2MtM;
     uint staticDiscount;
-    uint64 rate;
+    int64 rate;
     uint64 discountFactor;
     uint minConfidence;
     uint netOptions;
