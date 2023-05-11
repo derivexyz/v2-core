@@ -131,6 +131,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param _pricing new pricing module
    */
   function setPricingModule(IOptionPricing _pricing) external onlyOwner {
+    // todo: update to per-market, use for mark to market price
     pricing = IOptionPricing(_pricing);
 
     emit PricingModuleSet(address(_pricing));
@@ -202,7 +203,6 @@ contract BasicManager is IBasicManager, BaseManager {
   }
 
   function _getSubAccountMargin(BasicManagerSubAccount memory subAccount) internal view returns (int) {
-    // todo: update index to get diff feed for each ID
     int indexPrice = spotFeeds[subAccount.marketId].getSpot().toInt256();
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice);
@@ -399,6 +399,13 @@ contract BasicManager is IBasicManager, BaseManager {
   ////////////////////////
   //   View Functions   //
   ////////////////////////
+
+  /**
+   * @dev return the margin for an account, it means the account is insolvent
+   */
+  function getMargin(uint accountId) external view returns (int) {
+    return _getMargin(accountId);
+  }
 
   function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, int calls, int puts, bool isMaintenance)
     external
