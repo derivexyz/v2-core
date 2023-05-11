@@ -7,6 +7,7 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
+import "lyra-utils/math/FixedPointMathLib.sol";
 import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IManager.sol";
@@ -18,7 +19,7 @@ import "src/interfaces/IOption.sol";
 import "src/interfaces/IOptionPricing.sol";
 import "src/interfaces/ISpotFeed.sol";
 import "src/interfaces/IBasicManager.sol";
-import "src/feeds/MTMCache.sol";
+import "src/interfaces/IMTMCache.sol";
 import "src/interfaces/IVolFeed.sol";
 import "src/interfaces/IInterestRateFeed.sol";
 import "src/interfaces/IMarginAsset.sol";
@@ -59,7 +60,7 @@ contract PMRM is IPMRM, BaseManager {
   IMarginAsset public immutable baseAsset;
 
   /// @dev Pricing module to get option mark-to-market price
-  MTMCache public mtmCache;
+  IMTMCache public mtmCache;
 
   /// @dev Portfolio Margin Parameters: maintenance and initial margin requirements
   IPMRM.PMRMParameters public pmrmParams;
@@ -81,7 +82,7 @@ contract PMRM is IPMRM, BaseManager {
     IForwardFeed futureFeed_,
     ISettlementFeed settlementFeed_,
     ISpotFeed spotFeed_,
-    MTMCache mtmCache_,
+    IMTMCache mtmCache_,
     IInterestRateFeed interestRateFeed_,
     IVolFeed volFeed_,
     IMarginAsset baseAsset_
@@ -152,7 +153,7 @@ contract PMRM is IPMRM, BaseManager {
     interestRateFeed = _interestRateFeed;
   }
 
-  function setMTMCache(MTMCache _mtmCache) external onlyOwner {
+  function setMTMCache(IMTMCache _mtmCache) external onlyOwner {
     mtmCache = _mtmCache;
   }
 
@@ -550,22 +551,23 @@ contract PMRM is IPMRM, BaseManager {
       volShock = expiry.volShockDown;
     }
 
-    mtm = 0;
-    // Iterate over all the calls in the expiry
+    IMTMCache.Expiry memory expiryDetails = IMTMCache.Expiry({
+      secToExpiry: SafeCast.toUint64(expiry.secToExpiry),
+      forwardPrice: SafeCast.toUint128(expiry.forwardPrice.multiplyDecimal(spotShock)),
+      discountFactor: expiry.discountFactor
+    });
+
+    IMTMCache.Option[] memory optionDetails = new IMTMCache.Option[](expiry.options.length);
     for (uint i = 0; i < expiry.options.length; i++) {
       StrikeHolding memory option = expiry.options[i];
-
-      // Calculate the black scholes value of the call
-      mtm += mtmCache.getMTM(
-        SafeCast.toUint128(option.strike),
-        SafeCast.toUint64(expiry.secToExpiry),
-        SafeCast.toUint128(expiry.forwardPrice.multiplyDecimal(spotShock)),
-        SafeCast.toUint128(option.vol.multiplyDecimal(volShock)),
-        expiry.discountFactor,
-        option.amount,
-        option.isCall
-      );
+      optionDetails[i] = IMTMCache.Option({
+        strike: SafeCast.toUint128(option.strike),
+        vol: SafeCast.toUint128(option.vol.multiplyDecimal(volShock)),
+        amount: option.amount,
+        isCall: option.isCall
+      });
     }
+    return mtmCache.getExpiryMTM(expiryDetails, optionDetails);
   }
 
   //////////

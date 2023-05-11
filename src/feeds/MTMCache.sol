@@ -2,8 +2,25 @@ pragma solidity ^0.8.13;
 
 import "lyra-utils/math/Black76.sol";
 import "forge-std/console2.sol";
+import "../interfaces/IMTMCache.sol";
 
-contract MTMCache {
+contract MTMCache is IMTMCache {
+  function getExpiryMTM(Expiry memory expiryDetails, Option[] memory options) external view returns (int) {
+    int totalMTM;
+    for (uint i = 0; i < options.length; i++) {
+      totalMTM += getMTM(
+        options[i].strike,
+        expiryDetails.secToExpiry,
+        expiryDetails.forwardPrice,
+        options[i].vol,
+        expiryDetails.discountFactor,
+        options[i].amount,
+        options[i].isCall
+      );
+    }
+    return totalMTM;
+  }
+
   function getMTM(
     uint128 strike,
     uint64 secToExpiry,

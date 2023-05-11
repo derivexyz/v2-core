@@ -23,6 +23,7 @@ import "forge-std/console2.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
 import "../../../shared/mocks/MockPerp.sol";
+import "../../../../src/feeds/MTMCache.sol";
 
 contract PMRMTestBase is Test {
   using stdJson for string;
@@ -72,7 +73,7 @@ contract PMRMTestBase is Test {
       IForwardFeed(feed),
       ISettlementFeed(feed),
       ISpotFeed(feed),
-      mtmCache,
+      IMTMCache(mtmCache),
       IInterestRateFeed(feed),
       IVolFeed(feed),
       IMarginAsset(address(baseAsset))
