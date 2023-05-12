@@ -154,11 +154,14 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-  function handleAdjustment(uint accountId, uint, address, IAccounts.AssetDelta[] calldata assetDeltas, bytes memory)
+  function handleAdjustment(uint accountId, uint tradeId, address, IAccounts.AssetDelta[] calldata assetDeltas, bytes calldata managerData)
     public
     override
     onlyAccounts
   {
+    // send data to oracles if needed
+    _updateOracles(tradeId, managerData);
+
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
       // allow cash

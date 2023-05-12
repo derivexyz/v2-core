@@ -10,6 +10,8 @@ import "src/Accounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
+import {IBaseManager} from "src/interfaces/IBaseManager.sol";
+
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
@@ -134,7 +136,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     Trade[] memory trades = new Trade[](2);
     trades[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, ethStrike, true));
     trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
-    _submitMultipleTrades(aliceAcc, bobAcc, trades);
+    _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
     int requirement = manager.getMargin(aliceAcc, false);
     assertEq(requirement, neededMargin);
@@ -159,7 +161,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[3] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry2, btcStrike, true));
 
     // short 1 eth call + 1 btc call
-    _submitMultipleTrades(aliceAcc, bobAcc, trades);
+    _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
     int requirement = manager.getMargin(aliceAcc, false);
     assertEq(requirement, neededMargin);
@@ -185,11 +187,12 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[3] = Trade(btcPerp, 1e18, 0);
 
     // short 1 eth call + 1 btc call
-    _submitMultipleTrades(aliceAcc, bobAcc, trades);
+    _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
     int requirement = manager.getMargin(aliceAcc, false);
     assertEq(requirement, neededMargin);
   }
+
 
   function testCanTradeMultiMarketsNotInOrder() public {
     // Setup doge market
@@ -221,17 +224,39 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[2] = Trade(ethPerp, 1e18, 0);
     trades[3] = Trade(btcPerp, 1e18, 0);
 
-    _submitMultipleTrades(aliceAcc, bobAcc, trades);
+    _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
     int requirement = manager.getMargin(aliceAcc, false);
     assertEq(requirement, neededMargin);
+  }
+
+  function testPassMultipleOracleData() public {
+    cash.deposit(aliceAcc, 10000e18);
+
+    // oracle data
+    uint ethSpot = 2100e18;
+    uint btcSpot = 30100e18;
+    IBaseManager.OracleData[] memory oracleData = new IBaseManager.OracleData[](2);
+    oracleData[0] = IBaseManager.OracleData({oracle: address(ethFeed), data: abi.encode(ethSpot)});
+    oracleData[1] = IBaseManager.OracleData({oracle: address(btcFeed), data: abi.encode(btcSpot)});
+    bytes memory managerData = abi.encode(oracleData);
+
+    // build trades
+    uint strike = 2500e18;
+    Trade[] memory trades = new Trade[](1);
+    trades[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, strike, true));
+
+    _submitMultipleTrades(aliceAcc, bobAcc, trades, managerData);
+
+    assertEq(ethFeed.getSpot(), ethSpot);
+    assertEq(btcFeed.getSpot(), btcSpot);
   }
 
   /////////////
   // Helpers //
   /////////////
 
-  function _submitMultipleTrades(uint from, uint to, Trade[] memory trades) internal {
+  function _submitMultipleTrades(uint from, uint to, Trade[] memory trades, bytes memory managerData) internal {
     IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](trades.length);
     for (uint i = 0; i < trades.length; i++) {
       transfers[i] = IAccounts.AssetTransfer({
@@ -243,6 +268,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
         assetData: ""
       });
     }
-    account.submitTransfers(transfers, "");
+    account.submitTransfers(transfers, managerData);
   }
 }
