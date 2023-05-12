@@ -91,6 +91,42 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     mtmCache = _mtmCache;
   }
 
+  function setForwardContingencyParams(IPMRMLib.ForwardContingencyParameters memory _fwdContParams) external onlyOwner {
+    if (
+      _fwdContParams.spotShock1 >= 1e18 || _fwdContParams.spotShock2 <= 1e18
+        || _fwdContParams.multiplicativeFactor > 1e18
+    ) {
+      revert("Invalid Forward contingency parameters");
+    }
+    fwdContParams = _fwdContParams;
+  }
+
+  function setOtherContingencyParams(IPMRMLib.OtherContingencyParameters memory _otherContParams) external onlyOwner {
+    if (
+      _otherContParams.pegLossThreshold >= 1e18 || _otherContParams.pegLossFactor > 1e18
+        || _otherContParams.confidenceThreshold >= 1e18 || _otherContParams.confidenceFactor > 2e18
+        || _otherContParams.basePercent > 1e18 || _otherContParams.perpPercent > 1e18
+        || _otherContParams.optionPercent > 1e18
+    ) {
+      revert("Invalid Other contingency parameters");
+    }
+    otherContParams = _otherContParams;
+  }
+
+  function setStaticDiscountParams(IPMRMLib.StaticDiscountParameters memory _staticDiscountParams) external onlyOwner {
+    if (
+      _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 1e18
+        || _staticDiscountParams.rateAdditiveFactor > 1e18
+    ) {
+      revert("Invalid Static discount parameters");
+    }
+    staticDiscountParams = _staticDiscountParams;
+  }
+
+  function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
+    volShockParams = _volShockParams;
+  }
+
   //////////////////////
   // MTM calculations //
   //////////////////////

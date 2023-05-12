@@ -19,7 +19,7 @@ import "src/assets/ManagerWhitelist.sol";
  *        The USD value of the asset can be computed for the given shocked scenario.
  * @author Lyra
  */
-contract WrappedERC20Asset is ManagerWhitelist {
+contract WrappedERC20Asset is ManagerWhitelist, IAsset {
   // TODO: IWrappedERC20Asset
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;

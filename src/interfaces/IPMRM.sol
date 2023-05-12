@@ -5,10 +5,6 @@ interface IPMRM {
     Down
   }
 
-  struct PMRMParameters {
-    uint pegLossFactor;
-  }
-
   struct PMRM_Portfolio {
     uint spotPrice;
     uint stablePrice;
