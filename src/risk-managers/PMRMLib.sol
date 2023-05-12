@@ -9,6 +9,8 @@ import "./TODO_MOVE_TO_LYRA_UTILS.sol";
 import "lyra-utils/math/IntLib.sol";
 import "../interfaces/IAccounts.sol";
 
+import "forge-std/console2.sol";
+
 contract IPMRMLib {
   struct VolShockParameters {
     uint volRangeUp;
@@ -34,6 +36,7 @@ contract IPMRMLib {
     uint pegLossThreshold;
     uint pegLossFactor;
     uint confidenceThreshold;
+    uint confidenceFactor;
     uint basePercent;
     uint perpPercent;
     /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio
@@ -64,7 +67,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
     otherContParams.pegLossThreshold = 0.98e18;
     otherContParams.pegLossFactor = 0.01e18;
-    otherContParams.confidenceThreshold = 0.95e18;
+    otherContParams.confidenceThreshold = 0.6e18;
+    otherContParams.confidenceFactor = 0.5e18;
     otherContParams.basePercent = 0.02e18;
     otherContParams.perpPercent = 0.02e18;
     otherContParams.optionPercent = 0.01e18;
@@ -111,8 +115,6 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     minSPAN -= SafeCast.toInt256(portfolio.staticContingency);
 
     if (isInitial) {
-      minSPAN -= SafeCast.toInt256(portfolio.confidenceContingency);
-
       uint mFactor = 1.3e18;
       if (portfolio.stablePrice < otherContParams.pegLossThreshold) {
         mFactor +=
@@ -120,6 +122,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       }
 
       minSPAN = minSPAN.multiplyDecimal(int(mFactor));
+
+      minSPAN -= SafeCast.toInt256(portfolio.confidenceContingency);
     }
 
     minSPAN += portfolio.totalMtM + portfolio.cash;
@@ -228,6 +232,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     uint staticContingency = IntLib.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent);
     staticContingency += portfolio.basePosition.multiplyDecimal(otherContParams.basePercent);
     portfolio.staticContingency = staticContingency.multiplyDecimal(portfolio.spotPrice);
+    portfolio.confidenceContingency = _getConfidenceContingency(
+      portfolio.minConfidence, IntLib.abs(portfolio.perpPosition) + portfolio.basePosition, portfolio.spotPrice
+    );
+    console2.log("portfolio.confidenceContingency", portfolio.confidenceContingency);
 
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       IPMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
@@ -244,7 +252,12 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       _addStaticDiscount(expiry);
 
       portfolio.staticContingency += _getOptionContingency(expiry, portfolio.spotPrice);
-      portfolio.confidenceContingency += _getConfidenceContingency(expiry, portfolio.spotPrice);
+      console2.log(
+        "expiry.confidenceContingency",
+        _getConfidenceContingency(expiry.minConfidence, expiry.netOptions, portfolio.spotPrice)
+      );
+      portfolio.confidenceContingency +=
+        _getConfidenceContingency(expiry.minConfidence, expiry.netOptions, portfolio.spotPrice);
     }
   }
 
@@ -290,9 +303,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     portfolio.fwdContingency += fwdContingency.multiplyDecimal(fwdContingencyFactor);
   }
 
-  function _getConfidenceContingency(IPMRM.ExpiryHoldings memory expiry, uint spotPrice) internal view returns (uint) {
-    if (expiry.minConfidence < otherContParams.confidenceThreshold) {
-      return (1e18 - expiry.minConfidence).multiplyDecimal(expiry.netOptions);
+  function _getConfidenceContingency(uint minConfidence, uint amtAffected, uint spotPrice) internal view returns (uint) {
+    if (minConfidence < otherContParams.confidenceThreshold) {
+      return (1e18 - minConfidence).multiplyDecimal(otherContParams.confidenceFactor).multiplyDecimal(amtAffected)
+        .multiplyDecimal(spotPrice);
     }
     return 0;
   }

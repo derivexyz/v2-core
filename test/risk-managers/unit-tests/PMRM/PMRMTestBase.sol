@@ -107,6 +107,7 @@ contract PMRMTestBase is Test {
     console2.log("totalMtM", portfolio.totalMtM);
     console2.log("fwdContingency", portfolio.fwdContingency);
     console2.log("staticContingency", portfolio.staticContingency);
+    console2.log("confidenceContingency", portfolio.confidenceContingency);
 
     console2.log("\n");
     console2.log("expiryLen", uint(portfolio.expiries.length));
@@ -242,13 +243,13 @@ contract PMRMTestBase is Test {
   struct FeedData {
     uint spotPrice;
     uint spotConfidence;
-    uint stableRate;
+    uint stablePrice;
     uint stableConfidence;
     uint[] expiries;
     uint[] forwards;
     uint[] forwardConfidences;
-    int[] discounts;
-    uint[] discountConfidences;
+    int[] rates;
+    uint[] rateConfidences;
   }
 
   function readOptionData(string memory json, string memory testId) internal returns (OptionData[] memory) {
@@ -302,30 +303,29 @@ contract PMRMTestBase is Test {
   function readFeedData(string memory json, string memory testId) internal returns (FeedData memory) {
     uint spotPrice = json.readUint(string.concat(testId, ".SpotPrice"));
     uint spotConfidence = json.readUint(string.concat(testId, ".SpotConfidence"));
-    uint stableRate = json.readUint(string.concat(testId, ".StableRate"));
+    uint stablePrice = json.readUint(string.concat(testId, ".StablePrice"));
     uint stableConfidence = json.readUint(string.concat(testId, ".StableConfidence"));
     uint[] memory expiries = json.readUintArray(string.concat(testId, ".FeedExpiries"));
     uint[] memory forwards = json.readUintArray(string.concat(testId, ".Forwards"));
     uint[] memory forwardConfidences = json.readUintArray(string.concat(testId, ".ForwardConfidences"));
-    int[] memory discounts = json.readIntArray(string.concat(testId, ".Discounts"));
-    uint[] memory discountConfidences = json.readUintArray(string.concat(testId, ".DiscountConfidences"));
+    int[] memory rates = json.readIntArray(string.concat(testId, ".Rates"));
+    uint[] memory rateConfidences = json.readUintArray(string.concat(testId, ".RateConfidences"));
 
     require(expiries.length == forwards.length, "forwards length mismatch");
     require(expiries.length == forwardConfidences.length, "forwardConfidences length mismatch");
-    require(expiries.length == discounts.length, "discounts length mismatch");
-    require(expiries.length == discountConfidences.length, "discountConfidences length mismatch");
+    require(expiries.length == rates.length, "rates length mismatch");
+    require(expiries.length == rateConfidences.length, "rateConfidences length mismatch");
 
     return FeedData({
       spotPrice: spotPrice,
       spotConfidence: spotConfidence,
-      stableRate: stableRate,
+      stablePrice: stablePrice,
       stableConfidence: stableConfidence,
       expiries: expiries,
       forwards: forwards,
       forwardConfidences: forwardConfidences,
-      // TODO: rename to rate
-      discounts: discounts,
-      discountConfidences: discountConfidences
+      rates: rates,
+      rateConfidences: rateConfidences
     });
   }
 
@@ -342,13 +342,14 @@ contract PMRMTestBase is Test {
     OtherAssets memory otherAssets = readOtherAssetData(json, testId);
 
     /// Set feed values
-
     feed.setSpot(feedData.spotPrice, feedData.spotConfidence);
     for (uint i = 0; i < feedData.expiries.length; i++) {
       uint expiry = referenceTime + uint(feedData.expiries[i]);
       feed.setForwardPrice(expiry, feedData.forwards[i], feedData.forwardConfidences[i]);
-      feed.setInterestRate(expiry, int64(feedData.discounts[i]), uint64(feedData.discountConfidences[i]));
+      feed.setInterestRate(expiry, int64(feedData.rates[i]), uint64(feedData.rateConfidences[i]));
     }
+
+    stableFeed.setSpot(feedData.stablePrice, feedData.stableConfidence);
 
     /// Get assets for user
 
