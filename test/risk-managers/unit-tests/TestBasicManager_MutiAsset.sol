@@ -187,14 +187,13 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     dogeFeed.setSpot(0.0005e18);
     manager.whitelistAsset(dogeOption, 5, IBasicManager.AssetType.Option);
     manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed);
-    
 
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint dogeStrike = 0.0006e18;
     int ethMargin1 = manager.getIsolatedMargin(1, ethStrike, expiry1, true, -1e18, false);
     int dogeMargin1 = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, false);
-    
+
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
     int neededMargin = ethMargin1 + dogeMargin1 + ethPerpMargin + btcPerpMargin;
@@ -206,7 +205,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, ethStrike, true));
     trades[1] = Trade(dogeOption, 1000e18, OptionEncoding.toSubId(expiry1, dogeStrike, true));
     trades[2] = Trade(ethPerp, 1e18, 0);
-    trades[3] = Trade(btcPerp, 1e18, 0); 
+    trades[3] = Trade(btcPerp, 1e18, 0);
 
     _submitMultipleTrades(aliceAcc, bobAcc, trades);
 
