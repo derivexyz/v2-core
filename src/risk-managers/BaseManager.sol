@@ -25,6 +25,8 @@ import {IManager} from "src/interfaces/IManager.sol";
 
 import "forge-std/console2.sol";
 
+import "forge-std/console2.sol";
+
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
   using DecimalMath for uint;
