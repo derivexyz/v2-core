@@ -373,9 +373,6 @@ contract BasicManager is IBasicManager, BaseManager {
 
     IFutureFeed feed = forwardFeeds[marketId];
 
-    // product of all checked strikes, if a strike is checked before, the strike price will be *= into strikeChecker
-    uint strikeChecker = 1;
-
     int forwardPrice = feed.getFuturePrice(expiryHolding.expiry).toInt256();
 
     for (uint i; i < expiryHolding.options.length; i++) {
