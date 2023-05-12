@@ -193,7 +193,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     assertEq(requirement, neededMargin);
   }
 
-
   function testCanTradeMultiMarketsNotInOrder() public {
     // Setup doge market
     MockOption dogeOption = new MockOption(account);
