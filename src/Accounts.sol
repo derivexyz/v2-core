@@ -10,7 +10,7 @@ import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
-import "./Allowances.sol";
+import {Allowances} from "./Allowances.sol";
 import "./libraries/AssetDeltaLib.sol";
 import "./libraries/PermitAllowanceLib.sol";
 
