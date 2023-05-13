@@ -37,10 +37,10 @@ contract UNIT_TestPMRM is PMRMTestBase {
     //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".OracleContingency");
     IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".StableRate");
     //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BitOfEverything");
-    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolio(balances);
+    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
     _logPortfolio(portfolio);
-    console2.log("im", pmrm.getMargin(balances, true));
-    console2.log("mm", pmrm.getMargin(balances, false));
+    console2.log("im", pmrm.getMarginByBalances(balances, true));
+    console2.log("mm", pmrm.getMarginByBalances(balances, false));
   }
 
   function testSinglePerp() public {

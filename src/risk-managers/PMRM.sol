@@ -45,13 +45,12 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // Constants //
   ///////////////
   uint public constant MAX_EXPIRIES = 11;
-  uint public constant MAX_ASSETS = 32;
+  uint public constant MAX_ASSETS = 1024; // TODO: limit
 
   ///////////////
   // Variables //
   ///////////////
 
-  /// @dev Spot price oracle
   ISpotFeed public spotFeed;
   IInterestRateFeed public interestRateFeed;
   IVolFeed public volFeed;
@@ -234,7 +233,9 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
           }
         }
         if (!found) {
-          //todo: check seen expiries < max expiries
+          if (seenExpiries == MAX_EXPIRIES) {
+            revert("Too many expiries");
+          }
           expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: optionExpiry, optionCount: 1});
         }
       }
@@ -252,7 +253,6 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       (uint forwardPrice, uint confidence1) = futureFeed.getForwardPrice(expiryCount[i].expiry);
-      // TODO: rate feed and convert to discount factor
       (int64 rate, uint confidence2) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
       uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
       minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;
@@ -262,16 +262,16 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         secToExpiry: SafeCast.toUint64(secToExpiry),
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardPrice: forwardPrice,
+        rate: SafeCast.toInt64(rate),
+        minConfidence: minConfidence,
+        netOptions: 0,
         // vol shocks are added in addPrecomputes
-        volShockUp: 0,
-        volShockDown: 0,
         mtm: 0,
         fwdShock1MtM: 0,
         fwdShock2MtM: 0,
-        staticDiscount: 0,
-        rate: SafeCast.toInt64(rate),
-        minConfidence: minConfidence,
-        netOptions: 0
+        volShockUp: 0,
+        volShockDown: 0,
+        staticDiscount: 0
       });
     }
   }
@@ -329,10 +329,6 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
   }
 
-  //////
-  //
-  ////
-
   function _checkMargin(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
     int im = _getMargin(portfolio, true, scenarios);
     if (im < 0) {
@@ -340,26 +336,16 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
   }
 
-  /////////////
-  // Helpers //
-  /////////////
-
   //////////
   // View //
   //////////
 
-  function arrangePortfolio(IAccounts.AssetBalance[] memory assets)
-    external
-    view
-    returns (IPMRM.PMRM_Portfolio memory portfolio)
-  {
-    // TODO: pass in account Id
-    return _arrangePortfolio(0, assets, true);
+  function arrangePortfolio(uint accountId) external view returns (IPMRM.PMRM_Portfolio memory portfolio) {
+    return _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
   }
 
-  function getMargin(IAccounts.AssetBalance[] memory assets, bool isInitial) external view returns (int) {
-    // TODO: pass in account Id
-    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(0, assets, true);
+  function getMargin(uint accountId, bool isInitial) external view returns (int) {
+    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
     int im = _getMargin(portfolio, isInitial, marginScenarios);
     return im;
   }

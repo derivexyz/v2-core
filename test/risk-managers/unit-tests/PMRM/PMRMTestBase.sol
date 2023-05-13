@@ -24,12 +24,13 @@ import "../../../shared/mocks/MockFeeds.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
 import "../../../shared/mocks/MockPerp.sol";
 import "../../../../src/feeds/MTMCache.sol";
+import "./TEST_PMRM.sol";
 
 contract PMRMTestBase is Test {
   using stdJson for string;
 
   Accounts accounts;
-  PMRM pmrm;
+  TEST_PMRM pmrm;
   MockAsset cash;
   MockERC20 usdc;
   MockERC20 weth;
@@ -68,7 +69,7 @@ contract PMRMTestBase is Test {
     option = new MockOption(accounts);
     mtmCache = new MTMCache();
 
-    pmrm = new PMRM(
+    pmrm = new TEST_PMRM(
       accounts,
       ICashAsset(address(cash)),
       option,

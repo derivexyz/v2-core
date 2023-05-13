@@ -29,15 +29,15 @@ interface IPMRM {
     uint secToExpiry;
     StrikeHolding[] options;
     uint forwardPrice;
-    uint volShockUp;
-    uint volShockDown;
-    int mtm;
-    int fwdShock1MtM;
-    int fwdShock2MtM;
-    uint staticDiscount;
     int64 rate;
     uint minConfidence;
     uint netOptions;
+    int mtm;
+    int fwdShock1MtM;
+    int fwdShock2MtM;
+    uint volShockUp;
+    uint volShockDown;
+    uint staticDiscount;
   }
 
   struct StrikeHolding {
