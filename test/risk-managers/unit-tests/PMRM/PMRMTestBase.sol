@@ -125,7 +125,6 @@ contract PMRMTestBase is Test {
       console2.log("fwdShock1MtM", expiry.fwdShock1MtM);
       console2.log("fwdShock2MtM", expiry.fwdShock2MtM);
       console2.log("staticDiscount", expiry.staticDiscount);
-      console2.log("discountFactor", expiry.discountFactor);
       console2.log("minConfidence", expiry.minConfidence);
 
       for (uint j = 0; j < expiry.options.length; j++) {
@@ -177,10 +176,8 @@ contract PMRMTestBase is Test {
     // allow this contract to submit trades
     vm.prank(alice);
     accounts.setApprovalForAll(address(this), true);
-    vm.stopPrank();
     vm.prank(bob);
     accounts.setApprovalForAll(address(this), true);
-    vm.stopPrank();
 
     usdc.mint(address(this), 1_000_000_000 ether);
     usdc.approve(address(cash), 1_000_000_000 ether);

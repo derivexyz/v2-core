@@ -33,7 +33,6 @@ contract UNIT_TestPMRM is PMRMTestBase {
   ///////////////////////
 
   function testPMRM() public {
-    //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
     //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SingleBase");
     //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".OracleContingency");
     IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".StableRate");
@@ -42,5 +41,9 @@ contract UNIT_TestPMRM is PMRMTestBase {
     _logPortfolio(portfolio);
     console2.log("im", pmrm.getMargin(balances, true));
     console2.log("mm", pmrm.getMargin(balances, false));
+  }
+
+  function testSinglePerp() public {
+    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
   }
 }

@@ -136,6 +136,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     view
     returns (int margin)
   {
+    // TODO: if no fwdContingency this would be 0
     int minSPAN = portfolio.fwdContingency;
 
     for (uint i = 0; i < scenarios.length; ++i) {
@@ -162,9 +163,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       minSPAN -= SafeCast.toInt256(portfolio.confidenceContingency);
     }
 
-    minSPAN += portfolio.totalMtM + portfolio.cash;
-
-    return minSPAN;
+    return (minSPAN + portfolio.totalMtM + portfolio.cash);
   }
 
   function getScenarioMtM(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.Scenario memory scenario)
@@ -191,6 +190,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       }
 
       // we subtract expiry MtM as we only care about the difference from the current mtm at this stage
+      // TODO: do we use static discount the same for MM? seems a bit punishing
       scenarioMtM += _applyMTMDiscount(expiryMtM, expiry.staticDiscount) - expiry.mtm;
     }
 
@@ -215,10 +215,11 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       volShock = expiry.volShockDown;
     }
 
+    // TODO: maybe these structs should be precomputed? Test gas
     IMTMCache.Expiry memory expiryDetails = IMTMCache.Expiry({
       secToExpiry: SafeCast.toUint64(expiry.secToExpiry),
       forwardPrice: SafeCast.toUint128(expiry.forwardPrice.multiplyDecimal(spotShock)),
-      discountFactor: expiry.discountFactor
+      discountFactor: 1e18
     });
 
     IMTMCache.Option[] memory optionDetails = new IMTMCache.Option[](expiry.options.length);
@@ -231,6 +232,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
         isCall: option.isCall
       });
     }
+
     return mtmCache.getExpiryMTM(expiryDetails, optionDetails);
   }
 
@@ -251,16 +253,13 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     return position.multiplyDecimal(spot).multiplyDecimal(spotShock).divideDecimal(stablePrice);
   }
 
-  function _getDiscountFactor(int rate, uint secToExpiry) internal view returns (uint64) {
-    return uint64(FixedPointMathLib.exp(-rate * (int(secToExpiry) * 1e18 / 365 days) / 1e18));
-  }
-
   /////////////////
   // Precomputes //
   /////////////////
-  // Precomputes are values used within SPAN for all shocks, so we only calculate them once
 
+  // Precomputes are values used within SPAN for all shocks, so we only calculate them once
   function _addPrecomputes(IPMRM.PMRM_Portfolio memory portfolio, bool addForwardCont) internal view {
+    // TODO: baseValue seperate field??
     portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, 1e18);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
     portfolio.totalMtM += portfolio.unrealisedPerpValue;
@@ -268,15 +267,15 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     uint staticContingency = IntLib.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent);
     staticContingency += portfolio.basePosition.multiplyDecimal(otherContParams.basePercent);
     portfolio.staticContingency = staticContingency.multiplyDecimal(portfolio.spotPrice);
+
     portfolio.confidenceContingency = _getConfidenceContingency(
       portfolio.minConfidence, IntLib.abs(portfolio.perpPosition) + portfolio.basePosition, portfolio.spotPrice
     );
-    console2.log("portfolio.confidenceContingency", portfolio.confidenceContingency);
 
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       IPMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
-      // Current MtM and forward contingency MtMs
 
+      // Current MtM and forward contingency MtMs
       expiry.mtm = _getExpiryShockedMTM(expiry, 1e18, IPMRM.VolShockDirection.None);
       portfolio.totalMtM += expiry.mtm;
 
@@ -288,10 +287,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       _addStaticDiscount(expiry);
 
       portfolio.staticContingency += _getOptionContingency(expiry, portfolio.spotPrice);
-      console2.log(
-        "expiry.confidenceContingency",
-        _getConfidenceContingency(expiry.minConfidence, expiry.netOptions, portfolio.spotPrice)
-      );
+
       portfolio.confidenceContingency +=
         _getConfidenceContingency(expiry.minConfidence, expiry.netOptions, portfolio.spotPrice);
     }
@@ -308,6 +304,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function _addVolShocks(IPMRM.ExpiryHoldings memory expiry) internal view {
+    // TODO: "1 days" should be a param
     uint tao = 30 days * 1e18 / TODO_MOVE_TO_LYRA_UTILS.max(expiry.secToExpiry, 1 days);
     uint multShock = TODO_MOVE_TO_LYRA_UTILS.decPow(
       tao, expiry.secToExpiry <= 30 days ? volShockParams.shortTermPower : volShockParams.longTermPower
@@ -325,13 +322,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     internal
     view
   {
-    int fwd1expMTM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock1, IPMRM.VolShockDirection.None);
-    int fwd2expMTM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock2, IPMRM.VolShockDirection.None);
+    expiry.fwdShock1MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock1, IPMRM.VolShockDirection.None);
+    expiry.fwdShock2MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock2, IPMRM.VolShockDirection.None);
 
-    expiry.fwdShock1MtM += fwd1expMTM;
-    expiry.fwdShock2MtM += fwd2expMTM;
-
-    int fwdContingency = TODO_MOVE_TO_LYRA_UTILS.min(fwd1expMTM, fwd2expMTM) - expiry.mtm;
+    int fwdContingency = TODO_MOVE_TO_LYRA_UTILS.min(expiry.fwdShock1MtM, expiry.fwdShock2MtM) - expiry.mtm;
     int fwdContingencyFactor = int(
       fwdContParams.additiveFactor //
         + fwdContParams.multiplicativeFactor.multiplyDecimal(TODO_MOVE_TO_LYRA_UTILS.annualize(expiry.secToExpiry))

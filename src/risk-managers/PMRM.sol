@@ -192,7 +192,6 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
-    _initialiseExpiries(portfolio, expiryCount);
 
     (uint stablePrice, uint stableConfidence) = stableFeed.getSpot();
     if (stableConfidence < portfolio.minConfidence) {
@@ -200,46 +199,11 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
     portfolio.stablePrice = stablePrice;
 
+    _initialiseExpiries(portfolio, expiryCount);
     _arrangeOptions(accountId, portfolio, assets, expiryCount);
     _addPrecomputes(portfolio, addForwardCont);
 
     return portfolio;
-  }
-
-  function _arrangeOptions(
-    uint accountId,
-    IPMRM.PMRM_Portfolio memory portfolio,
-    IAccounts.AssetBalance[] memory assets,
-    PortfolioExpiryData[] memory expiryCount
-  ) internal view {
-    for (uint i = 0; i < assets.length; ++i) {
-      IAccounts.AssetBalance memory currentAsset = assets[i];
-      if (address(currentAsset.asset) == address(option)) {
-        (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
-
-        uint expiryIndex = findInArray(portfolio.expiries, optionExpiry - block.timestamp, portfolio.expiries.length);
-
-        ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
-
-        uint index = --expiryCount[expiryIndex].optionCount;
-        (uint vol, uint confidence) = volFeed.getVol(SafeCast.toUint128(strike), SafeCast.toUint128(optionExpiry));
-        expiry.netOptions += IntLib.abs(currentAsset.balance);
-        if (confidence < expiry.minConfidence) {
-          expiry.minConfidence = confidence;
-        }
-        expiry.options[index] =
-          StrikeHolding({strike: strike, vol: vol, amount: currentAsset.balance, isCall: isCall, seenInFilter: false});
-      } else if (address(currentAsset.asset) == address(cashAsset)) {
-        portfolio.cash = currentAsset.balance;
-      } else if (address(currentAsset.asset) == address(perp)) {
-        portfolio.perpPosition = currentAsset.balance;
-        portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
-      } else if (address(currentAsset.asset) == address(baseAsset)) {
-        portfolio.basePosition = SafeCast.toUint256(currentAsset.balance);
-      } else {
-        revert("Invalid asset type");
-      }
-    }
   }
 
   function _countExpiriesAndOptions(IAccounts.AssetBalance[] memory assets)
@@ -270,6 +234,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
           }
         }
         if (!found) {
+          //todo: check seen expiries < max expiries
           expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: optionExpiry, optionCount: 1});
         }
       }
@@ -305,10 +270,47 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         fwdShock2MtM: 0,
         staticDiscount: 0,
         rate: SafeCast.toInt64(rate),
-        discountFactor: _getDiscountFactor(rate, secToExpiry),
         minConfidence: minConfidence,
         netOptions: 0
       });
+    }
+  }
+
+  function _arrangeOptions(
+    uint accountId,
+    IPMRM.PMRM_Portfolio memory portfolio,
+    IAccounts.AssetBalance[] memory assets,
+    PortfolioExpiryData[] memory expiryCount
+  ) internal view {
+    for (uint i = 0; i < assets.length; ++i) {
+      IAccounts.AssetBalance memory currentAsset = assets[i];
+      if (address(currentAsset.asset) == address(option)) {
+        (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
+
+        uint expiryIndex = findInArray(portfolio.expiries, optionExpiry - block.timestamp, portfolio.expiries.length);
+
+        ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
+
+        (uint vol, uint confidence) = volFeed.getVol(SafeCast.toUint128(strike), SafeCast.toUint128(optionExpiry));
+        if (confidence < expiry.minConfidence) {
+          expiry.minConfidence = confidence;
+        }
+
+        expiry.netOptions += IntLib.abs(currentAsset.balance);
+
+        uint index = --expiryCount[expiryIndex].optionCount;
+        expiry.options[index] =
+          StrikeHolding({strike: strike, vol: vol, amount: currentAsset.balance, isCall: isCall, seenInFilter: false});
+      } else if (address(currentAsset.asset) == address(cashAsset)) {
+        portfolio.cash = currentAsset.balance;
+      } else if (address(currentAsset.asset) == address(perp)) {
+        portfolio.perpPosition = currentAsset.balance;
+        portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
+      } else if (address(currentAsset.asset) == address(baseAsset)) {
+        portfolio.basePosition = SafeCast.toUint256(currentAsset.balance);
+      } else {
+        revert("Invalid asset type");
+      }
     }
   }
 
@@ -333,8 +335,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
   function _checkMargin(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
     int im = _getMargin(portfolio, true, scenarios);
-    int margin = portfolio.cash + im;
-    if (margin < 0) {
+    if (im < 0) {
       revert("IM rules not satisfied");
     }
   }
