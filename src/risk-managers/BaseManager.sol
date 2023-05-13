@@ -18,8 +18,6 @@ import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
-import "src/libraries/StrikeGrouping.sol";
-
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
   using DecimalMath for uint;
@@ -31,20 +29,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev Account contract address
   IAccounts public immutable accounts;
 
-  /// @dev Option asset address
-  IOption public immutable option;
-
-  /// @dev Perp asset address
-  IPerpAsset public immutable perp;
-
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
-
-  /// @dev Future feed oracle to get future price for an expiry
-  IFutureFeed public immutable futureFeed;
-
-  /// @dev Settlement feed oracle to get price fixed for settlement
-  ISettlementFeed public immutable settlementFeed;
 
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
@@ -58,42 +44,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
-  constructor(
-    IAccounts _accounts,
-    IFutureFeed _futureFeed,
-    ISettlementFeed _settlementFeed,
-    ICashAsset _cashAsset,
-    IOption _option,
-    IPerpAsset _perp
-  ) Ownable2Step() {
+  constructor(IAccounts _accounts, ICashAsset _cashAsset) Ownable2Step() {
     accounts = _accounts;
-    option = _option;
-    perp = _perp;
     cashAsset = _cashAsset;
-    futureFeed = _futureFeed;
-    settlementFeed = _settlementFeed;
-  }
-
-  //////////////////////////
-  //  External Functions  //
-  //////////////////////////
-
-  /**
-   * @notice Settle expired option positions in an account.
-   * @dev This function can be called by anyone
-   */
-  function settleOptions(uint accountId) external {
-    _settleAccountOptions(accountId);
-  }
-
-  /**
-   * @notice Settle accounts in batch
-   * @dev This function can be called by anyone
-   */
-  function batchSettleAccounts(uint[] calldata accountIds) external {
-    for (uint i; i < accountIds.length; ++i) {
-      _settleAccountOptions(accountIds[i]);
-    }
   }
 
   //////////////////////////
@@ -136,51 +89,18 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
 
   /**
-   * @notice Adds option to portfolio holdings.
-   * @dev This option arrangement is only additive, as portfolios are reconstructed for every trade
-   * @param portfolio current portfolio of account
-   * @param asset option asset to be added
-   * @return addedStrikeIndex index of existing or added strike struct
-   */
-  function _addOption(Portfolio memory portfolio, IAccounts.AssetBalance memory asset)
-    internal
-    pure
-    returns (uint addedStrikeIndex)
-  {
-    // decode subId
-    (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(asset.subId));
-
-    // assume expiry = 0 means this is the first strike.
-    if (portfolio.expiry == 0) {
-      portfolio.expiry = expiry;
-    }
-
-    if (portfolio.expiry != expiry) {
-      revert BM_OnlySingleExpiryPerAccount();
-    }
-
-    // add strike in-memory to portfolio
-    (addedStrikeIndex, portfolio.numStrikesHeld) =
-      StrikeGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
-
-    // add call or put balance
-    if (isCall) {
-      portfolio.strikes[addedStrikeIndex].calls += asset.balance;
-    } else {
-      portfolio.strikes[addedStrikeIndex].puts += asset.balance;
-    }
-
-    // return the index of the strike which was just modified
-    return addedStrikeIndex;
-  }
-
-  /**
    * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
    * @param accountId Account potentially to charge
    * @param tradeId ID of the trade informed by Accounts
    * @param assetDeltas Array of asset changes made to this account
    */
-  function _chargeOIFee(uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
+  function _chargeOIFee(
+    IOption option,
+    IFutureFeed futureFeed,
+    uint accountId,
+    uint tradeId,
+    IAccounts.AssetDelta[] calldata assetDeltas
+  ) internal {
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
@@ -210,7 +130,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev settle an account by removing all expired option positions and adjust cash balance
    * @param accountId Account Id to settle
    */
-  function _settleAccountOptions(uint accountId) internal {
+  function _settleAccountOptions(IOption option, uint accountId) internal {
     IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
@@ -237,7 +157,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
-  function _settleAccountPerps(uint accountId) internal {
+  function _settleAccountPerps(IPerpAsset perp, uint accountId) internal {
     // settle perp: update latest funding rate and settle
     int netCash = perp.settleRealizedPNLAndFunding(accountId);
 
@@ -282,6 +202,5 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   // Errors //
   ////////////
 
-  error BM_OnlySingleExpiryPerAccount();
   error BM_ManagerNotWhitelisted(uint accountId, address newManager);
 }

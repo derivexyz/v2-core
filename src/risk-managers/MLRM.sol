@@ -15,6 +15,7 @@ import "src/interfaces/ICashAsset.sol";
 import "src/assets/Option.sol";
 
 import "./BaseManager.sol";
+import "./SingleExpiryPortfolio.sol";
 
 import "src/libraries/StrikeGrouping.sol";
 
@@ -26,7 +27,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract MLRM is BaseManager, IManager {
+contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -38,6 +39,15 @@ contract MLRM is BaseManager, IManager {
   /// @dev max number of strikes per expiry allowed to be held in one account
   uint public constant MAX_STRIKES = 64;
 
+  /// @dev Option asset address
+  IOption public immutable option;
+
+  /// @dev Future feed oracle to get future price for an expiry
+  IFutureFeed public immutable futureFeed;
+
+  /// @dev Settlement feed oracle to get price fixed for settlement
+  ISettlementFeed public immutable settlementFeed;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -48,7 +58,11 @@ contract MLRM is BaseManager, IManager {
     ISettlementFeed _settlementFeed,
     ICashAsset cashAsset_,
     IOption option_
-  ) BaseManager(accounts_, futureFeed_, _settlementFeed, cashAsset_, option_, IPerpAsset(address(0))) {}
+  ) BaseManager(accounts_, cashAsset_) {
+    option = option_;
+    futureFeed = futureFeed_;
+    settlementFeed = _settlementFeed;
+  }
 
   /**
    * @notice Ensures asset is valid and Max Loss margin is met.
@@ -61,9 +75,9 @@ contract MLRM is BaseManager, IManager {
     IAccounts.AssetDelta[] calldata assetDeltas,
     bytes memory
   ) public override {
-    _chargeOIFee(accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, futureFeed, accountId, tradeId, assetDeltas);
 
-    IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+    ISingleExpiryPortfolio.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 
     int margin = _calcMargin(portfolio);
 
@@ -83,6 +97,18 @@ contract MLRM is BaseManager, IManager {
     }
   }
 
+  //////////////////////////
+  //  External Functions  //
+  //////////////////////////
+
+  // /**
+  //  * @notice Settle expired option positions in an account.
+  //  * @dev This function can be called by anyone
+  //  */
+  // function settleOptions(uint accountId) external {
+  //   _settleAccountOptions(option, accountId);
+  // }
+
   //////////
   // Util //
   //////////
@@ -93,7 +119,7 @@ contract MLRM is BaseManager, IManager {
    * @param portfolio Account portfolio.
    * @return margin Amount by which account is over or under the required margin.
    */
-  function _calcMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
+  function _calcMargin(ISingleExpiryPortfolio.Portfolio memory portfolio) internal view returns (int margin) {
     // The portfolio payoff is evaluated at the strike price of each owned option.
     // This guarantees that the max loss of a portfolio can be found.
     bool zeroStrikeOwnable2Step;
@@ -131,9 +157,13 @@ contract MLRM is BaseManager, IManager {
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(IBaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
+  function _calcPayoffAtPrice(ISingleExpiryPortfolio.Portfolio memory portfolio, uint price)
+    internal
+    view
+    returns (int payoff)
+  {
     for (uint i; i < portfolio.numStrikesHeld; i++) {
-      IBaseManager.Strike memory currentStrike = portfolio.strikes[i];
+      ISingleExpiryPortfolio.Strike memory currentStrike = portfolio.strikes[i];
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
       payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
     }
@@ -149,7 +179,7 @@ contract MLRM is BaseManager, IManager {
   function _arrangePortfolio(IAccounts.AssetBalance[] memory assets) internal view returns (Portfolio memory portfolio) {
     // note: differs from PCRM._arrangePortfolio since forwards aren't filtered
     // todo: [Josh] can just combine with PCRM _arrangePortfolio and remove struct
-    portfolio.strikes = new IBaseManager.Strike[](
+    portfolio.strikes = new ISingleExpiryPortfolio.Strike[](
       MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
     );
 

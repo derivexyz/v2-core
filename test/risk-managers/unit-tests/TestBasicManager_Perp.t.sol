@@ -47,13 +47,13 @@ contract UNIT_TestBasicManager is Test {
 
     manager = new BasicManager(
       account,
-      ICashAsset(address(cash)),
-      option,
-      perp,
-      feed,
-      feed,
-      feed
+      ICashAsset(address(cash))
     );
+
+    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+
+    manager.setOraclesForMarket(1, feed, feed, feed);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -83,7 +83,7 @@ contract UNIT_TestBasicManager is Test {
 
     // first fails the change
     vm.startPrank(alice);
-    vm.expectRevert(IBasicManager.PM_NotWhitelistManager.selector);
+    vm.expectRevert(IBasicManager.BM_NotWhitelistManager.selector);
     account.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
 
@@ -100,34 +100,34 @@ contract UNIT_TestBasicManager is Test {
   function testCannotSetPerpMarginRequirementFromNonOwner() public {
     vm.startPrank(alice);
     vm.expectRevert();
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
     vm.stopPrank();
   }
 
   function setPerpMarginRequirementsRatios() public {
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
-    (uint mmRequirement, uint imRequirement) = manager.perpMarginRequirements();
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    (uint mmRequirement, uint imRequirement) = manager.perpMarginRequirements(1);
 
     assertEq(mmRequirement, 0.1e18);
     assertEq(imRequirement, 0.05e18);
   }
 
   function testCannotSetPerpMMLargerThanIM() public {
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0.1e18, 0.05e18);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    manager.setPerpMarginRequirements(1, 0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidPerpMarginRequirement() public {
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0.1e18, 0);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    manager.setPerpMarginRequirements(1, 0.1e18, 0);
 
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0.1e18, 1e18);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    manager.setPerpMarginRequirements(1, 0.1e18, 1e18);
 
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(1e18, 0.1e18);
-    vm.expectRevert(IBasicManager.PM_InvalidMarginRequirement.selector);
-    manager.setPerpMarginRequirements(0, 0.1e18);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    manager.setPerpMarginRequirements(1, 1e18, 0.1e18);
+    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    manager.setPerpMarginRequirements(1, 0, 0.1e18);
   }
 
   ////////////////////
@@ -136,7 +136,7 @@ contract UNIT_TestBasicManager is Test {
 
   function testCannotHaveUnrecognizedAsset() public {
     MockAsset badAsset = new MockAsset(usdc, account, true);
-    vm.expectRevert(IBasicManager.PM_UnsupportedAsset.selector);
+    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
     IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
@@ -149,7 +149,7 @@ contract UNIT_TestBasicManager is Test {
   }
 
   function testCanTradePerpWithEnoughMargin() public {
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1500e18);
@@ -160,14 +160,14 @@ contract UNIT_TestBasicManager is Test {
   }
 
   function testCannotTradePerpWithInsufficientMargin() public {
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1499e18);
     cash.deposit(bobAcc, 1499e18);
 
     // trade cannot go through
-    vm.expectRevert(abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
+    vm.expectRevert(abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 

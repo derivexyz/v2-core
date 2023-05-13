@@ -17,13 +17,15 @@ import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeed.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
 
+import "test/auction/mocks/MockCashAsset.sol";
+
 /**
  * Focusing on the margin rules for options
  */
 contract UNIT_TestBasicManager_Option is Test {
   Accounts account;
   BasicManager manager;
-  MockAsset cash;
+  MockCash cash;
   MockERC20 usdc;
   MockPerp perp;
   MockOption option;
@@ -42,7 +44,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockAsset(usdc, account, true);
+    cash = new MockCash(IERC20(usdc), account);
 
     perp = new MockPerp(account);
 
@@ -54,15 +56,15 @@ contract UNIT_TestBasicManager_Option is Test {
 
     manager = new BasicManager(
       account,
-      ICashAsset(address(cash)),
-      option,
-      perp,
-      feed,
-      feed,
-      feed
+      ICashAsset(address(cash))
     );
 
     manager.setPricingModule(pricing);
+
+    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+
+    manager.setOraclesForMarket(1, feed, feed, feed);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -75,28 +77,50 @@ contract UNIT_TestBasicManager_Option is Test {
     usdc.approve(address(cash), type(uint).max);
 
     // set init perp trading parameters
-    manager.setPerpMarginRequirements(0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
 
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
 
-    manager.setOptionMarginParameters(params);
+    manager.setOptionMarginParameters(1, params);
   }
 
   ////////////////
   //   Setter   //
   ////////////////
 
+  function testWhitelistAsset() public {
+    manager.whitelistAsset(perp, 2, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 2, IBasicManager.AssetType.Option);
+    (bool isPerpWhitelisted, IBasicManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
+    (bool isOptionWhitelisted, IBasicManager.AssetType optionType, uint8 optionMarketId) = manager.assetDetails(option);
+    assertEq(isPerpWhitelisted, true);
+    assertEq(uint(perpType), uint(IBasicManager.AssetType.Perpetual));
+    assertEq(marketId, 2);
+
+    assertEq(isOptionWhitelisted, true);
+    assertEq(uint(optionType), uint(IBasicManager.AssetType.Option));
+    assertEq(optionMarketId, 2);
+  }
+
   function testSetOptionParameters() public {
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
-    manager.setOptionMarginParameters(params);
+    manager.setOptionMarginParameters(1, params);
     (int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio) =
-      manager.optionMarginParams();
+      manager.optionMarginParams(1);
     assertEq(baselineOptionIM, 0.5e18);
     assertEq(baselineOptionMM, 0.2e18);
     assertEq(minStaticMMRatio, 0.1e18);
     assertEq(minStaticIMRatio, 0.2e18);
+  }
+
+  function testSetOracles() public {
+    MockFeed newFeed = new MockFeed();
+    manager.setOraclesForMarket(1, newFeed, newFeed, newFeed);
+    assertEq(address(manager.spotFeeds(1)), address(newFeed));
+    assertEq(address(manager.settlementFeeds(1)), address(newFeed));
+    assertEq(address(manager.forwardFeeds(1)), address(newFeed));
   }
 
   ////////////////////////////////////////////////////
@@ -108,32 +132,32 @@ contract UNIT_TestBasicManager_Option is Test {
   ///////////////
 
   function testGetIsolatedMarginLongCall() public {
-    int im = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, false);
-    int mm = manager.getIsolatedMargin(1000e18, expiry, 1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, 1000e18, expiry, true, 1e18, false);
+    int mm = manager.getIsolatedMargin(1, 1000e18, expiry, true, 1e18, true);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
 
   function testGetIsolatedMarginShortATMCall() public {
     uint strike = 1500e18;
-    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, true);
     assertEq(im / 1e18, -315);
     assertEq(mm / 1e18, -164);
   }
 
   function testGetIsolatedMarginShortITMCall() public {
     uint strike = 400e18;
-    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, true);
     assertEq(im / 1e18, -1415);
     assertEq(mm / 1e18, -1264);
   }
 
   function testGetIsolatedMarginShortOTMCall() public {
     uint strike = 3000e18;
-    int im = manager.getIsolatedMargin(strike, expiry, -1e18, 0, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, -1e18, 0, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, true);
     assertEq(im / 1e18, -189);
     assertEq(mm / 1e18, -121);
   }
@@ -143,32 +167,32 @@ contract UNIT_TestBasicManager_Option is Test {
   //////////////
 
   function testGetIsolatedMarginLongPut() public {
-    int im = manager.getIsolatedMargin(1000e18, expiry, 0, 1e18, false);
-    int mm = manager.getIsolatedMargin(1000e18, expiry, 0, 1e18, true);
+    int im = manager.getIsolatedMargin(1, 1000e18, expiry, false, 1e18, false);
+    int mm = manager.getIsolatedMargin(1, 1000e18, expiry, false, 1e18, true);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
 
   function testGetIsolatedMarginShortATMPut() public {
     uint strike = 1500e18;
-    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, true);
     assertEq(im / 1e18, -289);
     assertEq(mm / 1e18, -138);
   }
 
   function testGetIsolatedMarginShortITMPut() public {
     uint strike = 3000e18;
-    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, true);
     assertEq(im / 1e18, -1789);
     assertEq(mm / 1e18, -1638);
   }
 
   function testGetIsolatedMarginShortOTMPut() public {
     uint strike = 400e18;
-    int im = manager.getIsolatedMargin(strike, expiry, 0, -1e18, false);
-    int mm = manager.getIsolatedMargin(strike, expiry, 0, -1e18, true);
+    int im = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
+    int mm = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, true);
     assertEq(im / 1e18, -189);
     assertEq(mm / 1e18, -121);
   }
@@ -201,7 +225,7 @@ contract UNIT_TestBasicManager_Option is Test {
     cash.deposit(aliceAcc, 100e18);
     // shorting 1 wei more than long, breaking max loss and default to isolated margin
     vm.expectRevert(
-      abi.encodeWithSelector(IBasicManager.PM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100)
+      abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100)
     );
     _tradeSpread(aliceAcc, bobAcc, 1e18 + 1, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
@@ -211,6 +235,69 @@ contract UNIT_TestBasicManager_Option is Test {
     uint aliceLongLeg = 400e18;
     cash.deposit(aliceAcc, 400e18);
     _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  function testShortStraddle() public {
+    uint strike = 1500e18;
+    int amount = 1e18;
+
+    int callMargin = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
+    int putMargin = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
+
+    // the margin needed is the sum of 2 positions
+    cash.deposit(aliceAcc, uint(-(callMargin + putMargin)));
+
+    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
+    transfers[0] = IAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(expiry, strike, true),
+      amount: amount,
+      assetData: ""
+    });
+    transfers[1] = IAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(expiry, strike, false),
+      amount: amount,
+      assetData: ""
+    });
+    account.submitTransfers(transfers, "");
+  }
+
+  //////////////////////
+  //    Settlement    //
+  //////////////////////
+
+  function testCanSettleOptions() public {
+    uint strike = 2000e18;
+
+    // alice short 10 2000-ETH CALL with 2000 USDC as margin
+    cash.deposit(aliceAcc, 2000e18);
+    _tradeOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
+
+    int cashBefore = account.getBalance(aliceAcc, cash, 0);
+
+    vm.warp(expiry + 1);
+    uint subId = OptionEncoding.toSubId(expiry, strike, true);
+    option.setMockedSubIdSettled(subId, true);
+    option.setMockedTotalSettlementValue(subId, -500e18);
+
+    manager.settleOptions(option, aliceAcc);
+
+    int cashAfter = account.getBalance(aliceAcc, cash, 0);
+    assertEq(cashBefore - cashAfter, 500e18);
+  }
+
+  function testCannotSettleWeirdAsset() public {
+    MockOption badAsset = new MockOption(account);
+
+    vm.warp(expiry + 1);
+    feed.setSpot(2100e19);
+    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
+    manager.settleOptions(badAsset, aliceAcc);
   }
 
   /////////////

@@ -284,7 +284,7 @@ contract UNIT_TestMLRM is Test {
     vm.stopPrank();
 
     // ZSC valued at $0
-    IBaseManager.Portfolio memory portfolio = mlrm.getPortfolio(aliceAcc);
+    ISingleExpiryPortfolio.Portfolio memory portfolio = mlrm.getPortfolio(aliceAcc);
     assertEq(mlrm.getMargin(portfolio), 100e18);
 
     // add short put

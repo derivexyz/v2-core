@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/interfaces/IChainlinkSpotFeed.sol";
+import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
 
 contract MockFeed is IChainlinkSpotFeed {
   uint public spot;

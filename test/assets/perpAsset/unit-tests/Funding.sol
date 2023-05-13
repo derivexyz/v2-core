@@ -64,14 +64,14 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testSetSpotFeed() public {
-    perp.setSpotFeed(IChainlinkSpotFeed(address(0)));
+    perp.setSpotFeed(ISpotFeed(address(0)));
     assertEq(address(perp.spotFeed()), address(0));
   }
 
   function testCannotSetSpotFeedFromNonOwner() public {
     vm.prank(alice);
     vm.expectRevert(bytes("Ownable: caller is not the owner"));
-    perp.setSpotFeed(IChainlinkSpotFeed(address(0)));
+    perp.setSpotFeed(ISpotFeed(address(0)));
   }
 
   function testUnWhitelistBot() public {

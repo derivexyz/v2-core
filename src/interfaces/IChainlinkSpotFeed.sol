@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 /**
  * @title IChainlinkSpotFeed
@@ -10,13 +11,7 @@ import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
  * @notice Spot feed adapter for Chainlink aggregators.
  *         NOTE: `spotPrice` always assumed to return 18 decimal place uint
  */
-interface IChainlinkSpotFeed is IFutureFeed, ISettlementFeed {
-  /**
-   * @notice Gets spot price
-   * @return spotPrice 18 decimal price of trading pair.
-   */
-  function getSpot() external view returns (uint);
-
+interface IChainlinkSpotFeed is IFutureFeed, ISettlementFeed, ISpotFeed {
   /**
    * @notice Uses Chainlink aggregator V3 oracle to retrieve price
    * @return spotPrice 18 decimal price of trading pair
