@@ -85,7 +85,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeITMCall() public {
-    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(feed.getSpot());
+    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(_getSpot());
 
     // ATM Call
     uint callExpiry = block.timestamp + 4 weeks;
@@ -134,7 +134,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeITMPut() public {
-    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(feed.getSpot());
+    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(_getSpot());
 
     // ATM PUT
     uint putExpiry = block.timestamp + 4 weeks;
@@ -184,7 +184,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeOTMCall() public {
-    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(feed.getSpot());
+    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(_getSpot());
     int premium = 1000e18;
 
     // ATM Call
@@ -257,7 +257,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeOTMPut() public {
-    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(feed.getSpot());
+    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(_getSpot());
     int premium = 1000e18;
 
     // ATM Put
@@ -330,7 +330,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testFourWayTradeITMCall() public {
-    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(feed.getSpot());
+    uint oiFee = (pcrm.OIFeeRateBPS()).multiplyDecimal(_getSpot());
 
     // ATM Call
     uint callExpiry = block.timestamp + 4 weeks;
@@ -395,5 +395,10 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
     bobBal = getCashBalance(bobAcc);
     charlieBal = getCashBalance(charlieAcc);
     daveBal = getCashBalance(daveAcc);
+  }
+
+  function _getSpot() internal view returns (uint) {
+    (uint spot,)=feed.getSpot();
+    return spot;
   }
 }

@@ -55,6 +55,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   IInterestRateFeed public interestRateFeed;
   IVolFeed public volFeed;
   ISpotFeed public stableFeed;
+  IForwardFeed public forwardFeed;
+  ISettlementFeed public settlementFeed;
+  IOption public option;
+  IPerpAsset public perp;
 
   WrappedERC20Asset public immutable baseAsset;
 
@@ -71,7 +75,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
-    IForwardFeed futureFeed_,
+    IForwardFeed forwardFeed_,
     ISettlementFeed settlementFeed_,
     ISpotFeed spotFeed_,
     IMTMCache mtmCache_,
@@ -79,12 +83,16 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     IVolFeed volFeed_,
     WrappedERC20Asset baseAsset_,
     ISpotFeed stableFeed_
-  ) PMRMLib(mtmCache_) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_, perp_) {
+  ) PMRMLib(mtmCache_) BaseManager(accounts_, cashAsset_) {
     spotFeed = spotFeed_;
     interestRateFeed = interestRateFeed_;
     volFeed = volFeed_;
     baseAsset = baseAsset_;
     stableFeed = stableFeed_;
+    forwardFeed = forwardFeed_;
+    settlementFeed = settlementFeed_;
+    option = option_;
+    perp = perp_;
   }
 
   ////////////////////////
@@ -143,12 +151,12 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     IAccounts.AssetDelta[] calldata assetDeltas,
     bytes memory managerData
   ) public onlyAccounts {
-    _chargeOIFee(accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
     for (uint i = 0; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == perp) {
         // Settle perps if the user has a perp position
-        _settleAccountPerps(accountId);
+        _settleAccountPerps(perp, accountId);
       } else if (
         assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option && assetDeltas[i].asset != baseAsset
       ) {
@@ -252,7 +260,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     view
   {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
-      (uint forwardPrice, uint confidence1) = futureFeed.getForwardPrice(expiryCount[i].expiry);
+      (uint forwardPrice, uint confidence1) = forwardFeed.getForwardPrice(expiryCount[i].expiry);
       (int64 rate, uint confidence2) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
       uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
       minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;

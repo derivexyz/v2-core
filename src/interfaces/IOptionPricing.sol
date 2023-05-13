@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 /**
  * @title IOptionPricing
  * @dev this module abstract away reading oracle data.
- *      We should be able to get reliable vol, future price ...etc from the oracle in the contract,
+ *      We should be able to get reliable vol, forward price ...etc from the oracle in the contract,
  *      and feed them into BlackScholes or Black76 model to get option price.
  * @notice Interface for option pricing
  */

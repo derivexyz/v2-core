@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
+import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 import {ISpotJumpOracle} from "src/interfaces/ISpotJumpOracle.sol";
 
 /**
@@ -9,7 +10,7 @@ import {ISpotJumpOracle} from "src/interfaces/ISpotJumpOracle.sol";
  * @author Lyra
  * @notice Risk Manager that controls transfer and margin requirements
  */
-interface IPCRM is IBaseManager {
+interface IPCRM is ISingleExpiryPortfolio, IBaseManager {
   /////////////
   // Structs //
   /////////////

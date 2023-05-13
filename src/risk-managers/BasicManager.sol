@@ -7,13 +7,15 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
+import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
 import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
@@ -21,89 +23,118 @@ import {IBasicManager} from "src/interfaces/IBasicManager.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
+
 import {BaseManager} from "./BaseManager.sol";
 
+import "lyra-utils/arrays/UnorderedMemoryArray.sol";
+
+import "src/libraries/StrikeGrouping.sol";
+
 import "forge-std/console2.sol";
-import "../interfaces/ISpotFeed.sol";
 
 /**
  * @title BasicManager
  * @author Lyra
- * @notice Risk Manager that margin in perp, cash and option in isolation.
+ * @notice Risk Manager that margin perp and option in isolation.
  */
 
 contract BasicManager is IBasicManager, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
+  using SafeCast for int;
   using IntLib for int;
+  using UnorderedMemoryArray for uint[];
 
   ///////////////
   // Variables //
   ///////////////
 
-  uint constant MAX_STRIKES = 64;
-
-  /// @dev Future feed oracle to get future price for an expiry
-  IChainlinkSpotFeed public immutable feed;
-
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public pricing;
 
+  /// @dev True if an IAsset address is whitelisted.
+  mapping(IAsset asset => AssetDetail) public assetDetails;
+
   /// @dev Perp Margin Requirements: maintenance and initial margin requirements
-  PerpMarginRequirements public perpMarginRequirements;
+  mapping(uint marketId => PerpMarginRequirements) public perpMarginRequirements;
 
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
-  OptionMarginParameters public optionMarginParams;
+  mapping(uint marketId => OptionMarginParameters) public optionMarginParams;
+
+  /// @dev Mapping from marketId to spot price oracle
+  mapping(uint marketId => ISpotFeed) public spotFeeds;
+
+  /// @dev Mapping from marketId to settlement price oracle
+  mapping(uint marketId => ISettlementFeed) public settlementFeeds;
+
+  /// @dev Mapping from marketId to forward price oracle
+  mapping(uint marketId => IForwardFeed) public forwardFeeds;
 
   ////////////////////////
   //    Constructor     //
   ////////////////////////
 
-  constructor(
-    IAccounts accounts_,
-    ICashAsset cashAsset_,
-    IOption option_,
-    IPerpAsset perp_,
-    IForwardFeed futureFeed_,
-    ISettlementFeed settlementFeed_,
-    IChainlinkSpotFeed spotFeed_
-  )
-    // todo: update forward feed to use a new feed instead of spot
-    BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_, perp_)
-  {
-    feed = spotFeed_;
-  }
+  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_) {}
 
   ////////////////////////
   //    Admin-Only     //
   ///////////////////////
 
   /**
-   * @notice Set the maintenance margin requirement
-   * @param _mmRequirement new maintenance margin requirement
-   * @param _imRequirement new initial margin requirement
+   * @notice Whitelist an asset to be used in Manager
+   * @dev the basic manager only support option asset & perp asset
    */
-  function setPerpMarginRequirements(uint _mmRequirement, uint _imRequirement) external onlyOwner {
-    if (_mmRequirement > _imRequirement) revert PM_InvalidMarginRequirement();
-    if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert PM_InvalidMarginRequirement();
-    if (_imRequirement >= 1e18) revert PM_InvalidMarginRequirement();
+  function whitelistAsset(IAsset _asset, uint8 _marketId, AssetType _type) external onlyOwner {
+    // registered asset
+    assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
 
-    perpMarginRequirements = PerpMarginRequirements(_mmRequirement, _imRequirement);
-
-    emit MarginRequirementsSet(_mmRequirement, _imRequirement);
+    emit AssetWhitelisted(address(_asset), _marketId, _type);
   }
 
   /**
-   * @notice Set the option margin parameters
+   * @notice Set the oracles for a market id
    */
-  function setOptionMarginParameters(OptionMarginParameters calldata params) external onlyOwner {
-    optionMarginParams = OptionMarginParameters(
+  function setOraclesForMarket(
+    uint8 marketId,
+    ISpotFeed spotFeed,
+    IForwardFeed forwardFeed,
+    ISettlementFeed settlementFeed
+  ) external onlyOwner {
+    // registered asset
+    spotFeeds[marketId] = spotFeed;
+    forwardFeeds[marketId] = forwardFeed;
+    settlementFeeds[marketId] = settlementFeed;
+
+    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(settlementFeed));
+  }
+
+  /**
+   * @notice Set perp maintenance margin requirement for an market
+   * @param _mmRequirement new maintenance margin requirement
+   * @param _imRequirement new initial margin requirement
+   */
+  function setPerpMarginRequirements(uint8 marketId, uint _mmRequirement, uint _imRequirement) external onlyOwner {
+    if (_mmRequirement > _imRequirement) revert BM_InvalidMarginRequirement();
+    if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert BM_InvalidMarginRequirement();
+    if (_imRequirement >= 1e18) revert BM_InvalidMarginRequirement();
+
+    perpMarginRequirements[marketId] = PerpMarginRequirements(_mmRequirement, _imRequirement);
+
+    emit MarginRequirementsSet(marketId, _mmRequirement, _imRequirement);
+  }
+
+  /**
+   * @notice Set the option margin parameters for an market
+   */
+  function setOptionMarginParameters(uint8 marketId, OptionMarginParameters calldata params) external onlyOwner {
+    optionMarginParams[marketId] = OptionMarginParameters(
       params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
     );
 
     emit OptionMarginParametersSet(
-      params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
+      marketId, params.baselineOptionIM, params.baselineOptionMM, params.minStaticMMRatio, params.minStaticIMRatio
     );
   }
 
@@ -112,6 +143,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param _pricing new pricing module
    */
   function setPricingModule(IOptionPricing _pricing) external onlyOwner {
+    // todo: use this for mark-to-market
     pricing = IOptionPricing(_pricing);
 
     emit PricingModuleSet(address(_pricing));
@@ -127,7 +159,7 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function handleManagerChange(uint, IManager newManager) external view {
     if (!whitelistedManager[address(newManager)]) {
-      revert PM_NotWhitelistManager();
+      revert BM_NotWhitelistManager();
     }
   }
 
@@ -142,49 +174,91 @@ contract BasicManager is IBasicManager, BaseManager {
   {
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset == perp) {
+      // allow cash
+      if (address(assetDeltas[i].asset) == address(cashAsset)) continue;
+
+      AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
+
+      if (!detail.isWhitelisted) revert BM_UnsupportedAsset();
+
+      if (detail.assetType == AssetType.Perpetual) {
         // settle perps if the user has perp position
-        _settleAccountPerps(accountId);
-      } else if (assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option) {
-        revert PM_UnsupportedAsset();
+        _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
       }
     }
-
-    int indexPrice = feed.getSpot().toInt256();
 
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
     // todo: don't allow borrowing cash
 
-    int netPerpMargin = _getNetPerpMargin(accountId, indexPrice);
-    int netOptionMargin = _getNetOptionMargin(accountId);
+    // check initial margin met
+    int margin = _getMargin(accountId, false);
 
     // cash deposited has to cover net option margin + net perp margin
-    if (cashBalance + netPerpMargin + netOptionMargin < 0) {
-      revert PM_PortfolioBelowMargin(accountId, -(netPerpMargin + netOptionMargin));
+    if (cashBalance + margin < 0) {
+      revert BM_PortfolioBelowMargin(accountId, -(margin));
     }
-  }
-
-  /**
-   * @notice get the margin required for the perp position
-   * @param accountId Account Id for which to check
-   * @return net margin for a perp position, always negative
-   */
-  function _getNetPerpMargin(uint accountId, int indexPrice) internal view returns (int) {
-    uint notional = accounts.getBalance(accountId, perp, 0).multiplyDecimal(indexPrice).abs();
-    int marginRequired = notional.multiplyDecimal(perpMarginRequirements.imRequirement).toInt256();
-    return -marginRequired;
   }
 
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
    */
-  function _getNetOptionMargin(uint accountId) internal view returns (int margin) {
-    // todo: group by expiry, don't use this logic from MLRM
-    IBaseManager.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
+  function _getMargin(uint accountId, bool isMaintenance) internal view returns (int margin) {
+    // get portfolio from array of balances
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
-    margin = _calcNetBasicMargin(portfolio);
+    // for each subAccount, get margin and sum it up
+    for (uint i = 0; i < portfolio.subAccounts.length; i++) {
+      margin += _getSubAccountMargin(portfolio.subAccounts[i], isMaintenance);
+    }
+  }
+
+  function _getSubAccountMargin(BasicManagerSubAccount memory subAccount, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
+    (uint spot, ) = spotFeeds[subAccount.marketId].getSpot();
+    int indexPrice = spot.toInt256();
+
+    int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isMaintenance);
+    int netOptionMargin = _getNetOptionMargin(subAccount, isMaintenance);
+    return netPerpMargin + netOptionMargin;
+  }
+
+  /**
+   * @notice get the margin required for the perp position of an subAccount
+   * @return net margin for a perp position, always negative
+   */
+  function _getNetPerpMargin(BasicManagerSubAccount memory subAccount, int indexPrice, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
+    uint notional = subAccount.perpPosition.multiplyDecimal(indexPrice).abs();
+    uint requirement = isMaintenance
+      ? perpMarginRequirements[subAccount.marketId].mmRequirement
+      : perpMarginRequirements[subAccount.marketId].imRequirement;
+    int marginRequired = notional.multiplyDecimal(requirement).toInt256();
+    return -marginRequired;
+  }
+
+  /**
+   * @notice get the net margin for the option positions. This is expected to be negative
+   */
+  function _getNetOptionMargin(BasicManagerSubAccount memory subAccount, bool isMaintenance)
+    internal
+    view
+    returns (int margin)
+  {
+    // for each expiry, sum up the margin requirement
+    for (uint i = 0; i < subAccount.expiryHoldings.length; i++) {
+      margin += _calcNetBasicMarginSingleExpiry(
+        subAccount.marketId, subAccount.option, subAccount.expiryHoldings[i], isMaintenance
+      );
+    }
   }
 
   /**
@@ -192,29 +266,89 @@ contract BasicManager is IBasicManager, BaseManager {
    *         array of [strikes][calls / puts].
    *         Unlike PCRM, the forwards are purposefully not filtered.
    * @param assets Array of balances for given asset and subId.
-   * @return portfolio Cash + option holdings.
    */
   function _arrangePortfolio(IAccounts.AssetBalance[] memory assets)
     internal
     view
-    returns (IBaseManager.Portfolio memory portfolio)
+    returns (BasicManagerPortfolio memory)
   {
-    // note: Same logic with from MLRM
-    portfolio.strikes = new IBaseManager.Strike[](
-      MAX_STRIKES > assets.length ? assets.length : MAX_STRIKES
-    );
+    (uint marketCount, int cashBalance, uint marketBitMap) = _countMarketsAndParseCash(assets);
 
-    IAccounts.AssetBalance memory currentAsset;
-    for (uint i; i < assets.length; ++i) {
-      currentAsset = assets[i];
-      if (address(currentAsset.asset) == address(option)) {
-        _addOption(portfolio, currentAsset);
-      } else if (address(currentAsset.asset) == address(cashAsset)) {
-        portfolio.cash = currentAsset.balance;
-      } else if (currentAsset.asset == perp) {
-        portfolio.perp = currentAsset.balance;
+    BasicManagerPortfolio memory portfolio =
+      BasicManagerPortfolio({cash: cashBalance, subAccounts: new BasicManagerSubAccount[](marketCount)});
+
+    // for each market, need to count how many expires there are
+    // and initiate a ExpiryHolding[] array in the corresponding
+    for (uint i; i < marketCount; i++) {
+      // 1. find the first market id
+      uint8 marketId;
+      for (uint8 id = 1; id < 256; id++) {
+        uint masked = (1 << id);
+        if (marketBitMap & masked == 0) continue;
+        // mark this market id as used => flip it back to 0 with xor
+        marketBitMap ^= masked;
+        marketId = id;
+        break;
+      }
+      portfolio.subAccounts[i].marketId = marketId;
+
+      // 2. filter through all balances and only find perp or option for this market
+      uint numExpires;
+      uint[] memory seenExpires = new uint[](assets.length);
+      uint[] memory expiryOptionCounts = new uint[](assets.length);
+
+      for (uint j; j < assets.length; j++) {
+        IAccounts.AssetBalance memory currentAsset = assets[j];
+        if (currentAsset.asset == cashAsset) continue;
+
+        AssetDetail memory detail = assetDetails[currentAsset.asset];
+        if (detail.marketId != marketId) continue;
+
+        // if it's perp asset, update the perp position directly
+        if (detail.assetType == AssetType.Perpetual) {
+          portfolio.subAccounts[i].perp = IPerpAsset(address(currentAsset.asset));
+          portfolio.subAccounts[i].perpPosition = currentAsset.balance;
+        } else {
+          portfolio.subAccounts[i].option = IOption(address(currentAsset.asset));
+          (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+          uint expiryIndex;
+          (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);
+          // print all seen expiries
+          expiryOptionCounts[expiryIndex]++;
+        }
+      }
+
+      // 3. initiate expiry holdings the subAccount
+      portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
+      // 4. initiate the option array in each expiry holding
+      for (uint j; j < numExpires; j++) {
+        portfolio.subAccounts[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
+      }
+
+      // 5. put options into expiry holdings
+      for (uint j; j < assets.length; j++) {
+        IAccounts.AssetBalance memory currentAsset = assets[j];
+        if (currentAsset.asset == cashAsset) continue;
+
+        AssetDetail memory detail = assetDetails[currentAsset.asset];
+        if (detail.marketId != marketId) continue;
+
+        if (detail.assetType == AssetType.Option) {
+          (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+          uint expiryIndex = seenExpires.findInArray(expiry, numExpires).toUint256();
+          uint nextIndex = portfolio.subAccounts[i].expiryHoldings[expiryIndex].numOptions;
+          portfolio.subAccounts[i].expiryHoldings[expiryIndex].options[nextIndex] =
+            Option({strike: strike, isCall: isCall, balance: currentAsset.balance});
+
+          portfolio.subAccounts[i].expiryHoldings[expiryIndex].numOptions++;
+          if (isCall) {
+            portfolio.subAccounts[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
+          }
+        }
       }
     }
+
+    return portfolio;
   }
 
   /**
@@ -223,49 +357,47 @@ contract BasicManager is IBasicManager, BaseManager {
    *
    * @dev If an account's max loss is bounded, return min (max loss margin, isolated margin)
    *      If an account's max loss is unbounded, return isolated margin
-   * @param portfolio Account portfolio.
+   * @param expiryHolding strikes for single expiry
    * @return margin If the account's option require 10K cash, this function will return -10K
    */
-  function _calcNetBasicMargin(IBaseManager.Portfolio memory portfolio) internal view returns (int margin) {
-    // todo: calculate each sub-portfolio with diff expiry and sum them all.
-
-    // calculate total net calls. If net call > 0, then max loss is bounded when spot goes to infinity
-    int netCalls;
-    for (uint i; i < portfolio.numStrikesHeld; i++) {
-      netCalls += portfolio.strikes[i].calls;
-    }
-    bool lossBounded = netCalls >= 0;
+  function _calcNetBasicMarginSingleExpiry(
+    uint marketId,
+    IOption option,
+    ExpiryHolding memory expiryHolding,
+    bool isMaintenance
+  ) internal view returns (int margin) {
+    bool lossBounded = expiryHolding.netCalls >= 0;
 
     int maxLossMargin = 0;
     int isolatedMargin = 0;
-    bool zeroStrikeOwnable2Step;
+    bool zeroStrikeChecked;
 
-    for (uint i; i < portfolio.numStrikesHeld; i++) {
-      (uint fwdPrice,) = feed.getForwardPrice(portfolio.expiry);
-      int forwardPrice = fwdPrice.toInt256();
+    int forwardPrice = _getForwardPrice(marketId, expiryHolding.expiry);
+
+    for (uint i; i < expiryHolding.options.length; i++) {
+      // calculate isolated margin for this strike, aggregate to isolatedMargin
+      isolatedMargin += _getIsolatedMargin(
+        marketId,
+        expiryHolding.options[i].strike,
+        expiryHolding.options[i].isCall,
+        expiryHolding.options[i].balance,
+        forwardPrice,
+        isMaintenance
+      );
 
       // only calculate the max loss margin if loss is bounded (net calls > 0)
       if (lossBounded) {
-        uint scenarioPrice = portfolio.strikes[i].strike;
-        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, scenarioPrice), maxLossMargin);
+        uint scenarioPrice = expiryHolding.options[i].strike;
+        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, scenarioPrice), maxLossMargin);
         if (scenarioPrice == 0) {
-          zeroStrikeOwnable2Step = true;
+          zeroStrikeChecked = true;
         }
       }
-
-      // calculate isolated margin for this strike, aggregate to isolatedMargin
-      isolatedMargin += _getIsolatedMargin(
-        portfolio.strikes[i].strike,
-        portfolio.strikes[i].calls,
-        portfolio.strikes[i].puts,
-        forwardPrice,
-        false // is maintenance = false
-      );
     }
 
-    // Ensure $0 scenario is always evaluated.
-    if (lossBounded && !zeroStrikeOwnable2Step) {
-      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(portfolio, 0), maxLossMargin);
+    // Ensure price = 0 scenario is always evaluated.
+    if (lossBounded && !zeroStrikeChecked) {
+      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, 0), maxLossMargin);
     }
 
     if (lossBounded) {
@@ -275,33 +407,83 @@ contract BasicManager is IBasicManager, BaseManager {
     return isolatedMargin;
   }
 
+  /**
+   * @notice Settle expired option positions in an account.
+   * @dev This function can be called by anyone
+   */
+  function settleOptions(IOption option, uint accountId) external {
+    if (!assetDetails[option].isWhitelisted) revert BM_UnsupportedAsset();
+    _settleAccountOptions(option, accountId);
+  }
+
   ////////////////////////
   //   View Functions   //
   ////////////////////////
 
-  function getIsolatedMargin(uint strike, uint expiry, int calls, int puts, bool isMaintenance)
+  /**
+   * @dev return the margin for an account, it means the account is insolvent
+   */
+  function getMargin(uint accountId, bool isMaintenance) external view returns (int) {
+    return _getMargin(accountId, isMaintenance);
+  }
+
+  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isMaintenance)
     external
     view
     returns (int)
   {
-    (uint fwdPrice,) = feed.getForwardPrice(expiry);
-    int forwardPrice = fwdPrice.toInt256();
-    return _getIsolatedMargin(strike, calls, puts, forwardPrice, isMaintenance);
+    int forwardPrice = _getForwardPrice(marketId, expiry);
+    return _getIsolatedMargin(marketId, strike, isCall, balance, forwardPrice, isMaintenance);
+  }
+
+  /**
+   * @dev Count how many market the user has
+   */
+  function _countMarketsAndParseCash(IAccounts.AssetBalance[] memory userBalances)
+    internal
+    view
+    returns (uint marketCount, int cashBalance, uint trackedMarketBitMap)
+  {
+    IAccounts.AssetBalance memory currentAsset;
+
+    // count how many unique markets there are
+    for (uint i; i < userBalances.length; ++i) {
+      currentAsset = userBalances[i];
+      if (address(currentAsset.asset) == address(cashAsset)) {
+        cashBalance = currentAsset.balance;
+        continue;
+      }
+
+      // else, it must be perp or option for one of the registered assets
+
+      // if marketId 1 is tracked, trackedMarketBitMap    = 0000..00010
+      // if marketId 2 is tracked, trackedMarketBitMap    = 0000..00100
+      // if both markets are tracked, trackedMarketBitMap = 0000..00110
+      AssetDetail memory detail = assetDetails[userBalances[i].asset];
+      uint marketBit = 1 << detail.marketId;
+      if (trackedMarketBitMap & marketBit == 0) {
+        marketCount++;
+        trackedMarketBitMap |= marketBit;
+      }
+    }
   }
 
   /**
    * @dev calculate isolated margin requirement for a given number of calls and puts
    */
-  function _getIsolatedMargin(uint strike, int calls, int puts, int forwardPrice, bool isMaintenance)
-    internal
-    view
-    returns (int margin)
-  {
-    if (calls < 0) {
-      margin += _getIsolatedMarginForCall(strike.toInt256(), calls, forwardPrice, isMaintenance);
-    }
-    if (puts < 0) {
-      margin += _getIsolatedMarginForPut(strike.toInt256(), puts, forwardPrice, isMaintenance);
+  function _getIsolatedMargin(
+    uint marketId,
+    uint strike,
+    bool isCall,
+    int balance,
+    int forwardPrice,
+    bool isMaintenance
+  ) internal view returns (int margin) {
+    if (balance > 0) return 0;
+    if (isCall) {
+      margin = _getIsolatedMarginForCall(marketId, strike.toInt256(), balance, forwardPrice, isMaintenance);
+    } else {
+      margin = _getIsolatedMarginForPut(marketId, strike.toInt256(), balance, forwardPrice, isMaintenance);
     }
   }
 
@@ -315,9 +497,15 @@ contract BasicManager is IBasicManager, BaseManager {
    *        STATIC is min static ratio.
    * @dev expected to return a negative number
    */
-  function _getIsolatedMarginForPut(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
-    int baseLine = isMaintenance ? optionMarginParams.baselineOptionMM : optionMarginParams.baselineOptionIM;
-    int minStaticRatio = isMaintenance ? optionMarginParams.minStaticMMRatio : optionMarginParams.minStaticIMRatio;
+  function _getIsolatedMarginForPut(uint marketId, int strike, int amount, int index, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
+    int baseLine =
+      isMaintenance ? optionMarginParams[marketId].baselineOptionMM : optionMarginParams[marketId].baselineOptionIM;
+    int minStaticRatio =
+      isMaintenance ? optionMarginParams[marketId].minStaticMMRatio : optionMarginParams[marketId].minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (index - strike).divideDecimal(index);
@@ -338,9 +526,15 @@ contract BasicManager is IBasicManager, BaseManager {
    *        STATIC is min static ratio.
    * @param amount expected a negative number, representing amount of shorts
    */
-  function _getIsolatedMarginForCall(int strike, int amount, int index, bool isMaintenance) internal view returns (int) {
-    int baseLine = isMaintenance ? optionMarginParams.baselineOptionMM : optionMarginParams.baselineOptionIM;
-    int minStaticRatio = isMaintenance ? optionMarginParams.minStaticMMRatio : optionMarginParams.minStaticIMRatio;
+  function _getIsolatedMarginForCall(uint marketId, int strike, int amount, int index, bool isMaintenance)
+    internal
+    view
+    returns (int)
+  {
+    int baseLine =
+      isMaintenance ? optionMarginParams[marketId].baselineOptionMM : optionMarginParams[marketId].baselineOptionIM;
+    int minStaticRatio =
+      isMaintenance ? optionMarginParams[marketId].minStaticMMRatio : optionMarginParams[marketId].minStaticIMRatio;
 
     // this ratio become negative if option is ITM
     int otmRatio = (strike - index).divideDecimal(index);
@@ -353,16 +547,24 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @notice Calculate the full portfolio payoff at a given settlement price.
    *         This is used in '_calcMaxLossMargin()' calculated the max loss of a given portfolio.
-   * @param portfolio Account portfolio.
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(IBaseManager.Portfolio memory portfolio, uint price) internal view returns (int payoff) {
-    for (uint i; i < portfolio.numStrikesHeld; i++) {
-      IBaseManager.Strike memory currentStrike = portfolio.strikes[i];
-      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.calls, price, true);
-      payoff += option.getSettlementValue(currentStrike.strike, currentStrike.puts, price, false);
+  function _calcPayoffAtPrice(IOption option, ExpiryHolding memory expiryHolding, uint price)
+    internal
+    pure
+    returns (int payoff)
+  {
+    for (uint i; i < expiryHolding.options.length; i++) {
+      payoff += option.getSettlementValue(
+        expiryHolding.options[i].strike, expiryHolding.options[i].balance, price, expiryHolding.options[i].isCall
+      );
     }
+  }
+
+  function _getForwardPrice(uint marketId, uint expiry) internal view returns (int) {
+    (uint fwdPrice,) = forwardFeeds[marketId].getForwardPrice(expiry);
+    return fwdPrice.toInt256();
   }
 
   ////////////////////////
@@ -370,7 +572,7 @@ contract BasicManager is IBasicManager, BaseManager {
   ////////////////////////
 
   modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) revert PM_NotAccounts();
+    if (msg.sender != address(accounts)) revert BM_NotAccounts();
     _;
   }
 }

@@ -32,7 +32,7 @@ contract UNIT_TestChainlinkSpotFeed18Decimals is Test {
 
   function testGetSpot() public {
     /* get correct initial feed */
-    uint ethSpotPrice = feed.getSpot();
+    (uint ethSpotPrice,) = feed.getSpot();
     assertEq(ethSpotPrice, 1000e18);
   }
 
@@ -112,7 +112,7 @@ contract UNIT_TestChainlinkSpotFeed8Decimals is Test {
 
   function testGetSpot() public {
     /* get correct initial feed */
-    uint ethSpotPrice = feed.getSpot();
+    (uint ethSpotPrice,) = feed.getSpot();
     assertEq(ethSpotPrice, 1000e18);
   }
 }

@@ -16,6 +16,7 @@ import "src/interfaces/IPCRM.sol";
 
 import "src/libraries/StrikeGrouping.sol";
 import "src/risk-managers/BaseManager.sol";
+import "src/risk-managers/SingleExpiryPortfolio.sol";
 
 import "forge-std/console2.sol";
 /**
@@ -24,7 +25,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that controls transfer and margin requirements
  */
 
-contract PCRM is BaseManager, IManager, IPCRM {
+contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for int;
@@ -33,6 +34,15 @@ contract PCRM is BaseManager, IManager, IPCRM {
   ///////////////
   // Variables //
   ///////////////
+
+  /// @dev Option asset address
+  IOption public immutable option;
+
+  /// @dev Future feed oracle to get future price for an expiry
+  IForwardFeed public immutable forwardFeed;
+
+  /// @dev Settlement feed oracle to get price fixed for settlement
+  ISettlementFeed public immutable settlementFeed;
 
   /// @dev dutch auction contract used to auction liquidatable accounts
   IDutchAuction public immutable dutchAuction;
@@ -52,10 +62,6 @@ contract PCRM is BaseManager, IManager, IPCRM {
   /// @dev finds max jump in spot during the last X days
   ISpotJumpOracle public spotJumpOracle;
 
-  ////////////
-  // Events //
-  ////////////
-
   ///////////////
   // Modifiers //
   ///////////////
@@ -73,13 +79,16 @@ contract PCRM is BaseManager, IManager, IPCRM {
 
   constructor(
     IAccounts accounts_,
-    IForwardFeed futureFeed_,
+    IForwardFeed forwardFeed_,
     ISettlementFeed settlementFeed_,
     ICashAsset cashAsset_,
     IOption option_,
     address auction_,
     ISpotJumpOracle spotJumpOracle_
-  ) BaseManager(accounts_, futureFeed_, settlementFeed_, cashAsset_, option_, IPerpAsset(address(0))) {
+  ) BaseManager(accounts_, cashAsset_) {
+    option = option_;
+    forwardFeed = forwardFeed_;
+    settlementFeed = settlementFeed_;
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
   }
@@ -105,7 +114,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
     // bypass the IM check if only adding cash
     if (assetDeltas.length == 1 && assetDeltas[0].asset == cashAsset && assetDeltas[0].delta >= 0) return;
 
-    _chargeOIFee(accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
@@ -161,6 +170,18 @@ contract PCRM is BaseManager, IManager, IPCRM {
    */
   function setSpotJumpOracle(ISpotJumpOracle spotJumpOracle_) external onlyOwner {
     spotJumpOracle = spotJumpOracle_;
+  }
+
+  //////////////////
+  //  Settlement  //
+  //////////////////
+
+  /**
+   * @notice Settle expired option positions in an account.
+   * @dev This function can be called by anyone
+   */
+  function settleOptions(uint accountId) external {
+    _settleAccountOptions(option, accountId);
   }
 
   //////////////////
@@ -341,9 +362,9 @@ contract PCRM is BaseManager, IManager, IPCRM {
       // calculate proceeds for forwards / calls / puts
       // todo [Josh]: need to figure out the order of settlement as this may affect cash supply / borrow
       if (pnl > 0) {
-        expiryValue += (strike.calls + strike.forwards).multiplyDecimal(pnl);
+        expiryValue += (strike.calls).multiplyDecimal(pnl);
       } else {
-        expiryValue += (strike.puts - strike.forwards).multiplyDecimal(-pnl);
+        expiryValue += (strike.puts).multiplyDecimal(-pnl);
       }
     }
   }
@@ -368,7 +389,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
 
     for (uint i; i < portfolio.strikes.length; i++) {
       // Solidity forces only static arrays in memory, so need to handle empty positions.
-      if (portfolio.strikes[i].calls == 0 && portfolio.strikes[i].puts == 0 && portfolio.strikes[i].forwards == 0) {
+      if (portfolio.strikes[i].calls == 0 && portfolio.strikes[i].puts == 0) {
         continue;
       }
       spotUpValue += _calcLiveStrikeValue(portfolio.strikes[i], true, spotUp, spotDown, shockedVol, timeToExpiry);
@@ -401,11 +422,6 @@ contract PCRM is BaseManager, IManager, IPCRM {
     // Calculate both spot up and down payoffs.
     int markedDownCallValue = uint(spotDown).toInt256() - strikes.strike.toInt256();
     int markedDownPutValue = strikes.strike.toInt256() - uint(spotUp).toInt256();
-
-    // Add forward value.
-    strikeValue += (isCurrentScenarioUp)
-      ? strikes.forwards.multiplyDecimal(-markedDownPutValue)
-      : strikes.forwards.multiplyDecimal(markedDownCallValue);
 
     // Get BlackScholes price.
     (uint callValue, uint putValue) = (0, 0);
@@ -466,7 +482,7 @@ contract PCRM is BaseManager, IManager, IPCRM {
     vol = _applyTimeWeightToVol(timeToExpiry.toUint256());
 
     // Get future price as spot, and apply shocks
-    (uint spot,) = futureFeed.getForwardPrice(expiry);
+    (uint spot,) = forwardFeed.getForwardPrice(expiry);
     (spotUp, spotDown) =
       _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 
@@ -572,9 +588,6 @@ contract PCRM is BaseManager, IManager, IPCRM {
       if (address(currentAsset.asset) == address(option)) {
         // add option balance to portfolio in-memory
         strikeIndex = _addOption(portfolio, currentAsset);
-
-        // if possible, combine calls and puts into forwards
-        StrikeGrouping.updateForwards(portfolio.strikes[strikeIndex]);
       } else if (address(currentAsset.asset) == address(cashAsset)) {
         portfolio.cash = currentAsset.balance;
       }

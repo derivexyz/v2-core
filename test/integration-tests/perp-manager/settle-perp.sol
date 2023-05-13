@@ -62,7 +62,12 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
     option = new Option(account, address(feed));
 
-    manager = new BasicManager(account, ICashAsset(cash), option, perp, feed, feed, feed);
+    manager = new BasicManager(account, ICashAsset(cash));
+
+    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+
+    manager.setOraclesForMarket(1, feed, feed, feed);
 
     cash.setWhitelistManager(address(manager), true);
 
