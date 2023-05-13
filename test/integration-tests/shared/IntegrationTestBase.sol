@@ -402,7 +402,7 @@ contract IntegrationTestBase is Test {
     );
   }
 
-  function _getForwardPrice(uint expiry) internal returns (uint forwardPrice) {
+  function _getForwardPrice(uint expiry) internal view returns (uint forwardPrice) {
     (forwardPrice,) = feed.getForwardPrice(expiry);
     return forwardPrice;
   }
