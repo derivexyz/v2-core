@@ -98,7 +98,7 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
     if (settlementPrices[expiry] != 0) revert CF_SettlementPriceAlreadySet(expiry, settlementPrices[expiry]);
     if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
 
-    (settlementPrices[expiry], ) = getSpot();
+    (settlementPrices[expiry],) = getSpot();
     emit SettlementPriceSet(expiry, 0);
   }
 }

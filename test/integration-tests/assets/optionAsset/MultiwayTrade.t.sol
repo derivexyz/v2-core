@@ -398,7 +398,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function _getSpot() internal view returns (uint) {
-    (uint spot,)=feed.getSpot();
+    (uint spot,) = feed.getSpot();
     return spot;
   }
 }

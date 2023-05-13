@@ -239,7 +239,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     int size = _getPositionSize(accountId);
     int indexPrice = _getIndexPrice();
 
-  int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
+    int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
     int unrealizedPnl = _getUnrealizedPnl(accountId, size, indexPrice);
     return unrealizedFunding + unrealizedPnl + positions[accountId].funding + positions[accountId].pnl;
   }

@@ -220,7 +220,7 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (int)
   {
-    (uint spot, ) = spotFeeds[subAccount.marketId].getSpot();
+    (uint spot,) = spotFeeds[subAccount.marketId].getSpot();
     int indexPrice = spot.toInt256();
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isMaintenance);
