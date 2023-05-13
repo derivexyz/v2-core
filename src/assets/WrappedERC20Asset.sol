@@ -10,7 +10,6 @@ import "lyra-utils/ownership/Owned.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/assets/ManagerWhitelist.sol";
 
 /**

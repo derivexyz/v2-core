@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import "../../../shared/mocks/MockManager.sol";
-import "../../../shared/mocks/MockFeed.sol";
+import "../../../shared/mocks/MockFeeds.sol";
 
 import "src/Accounts.sol";
 import "src/assets/PerpAsset.sol";
@@ -16,7 +16,7 @@ contract UNIT_PerpAssetPNL is Test {
   PerpAsset perp;
   MockManager manager;
   Accounts account;
-  MockFeed feed;
+  MockFeeds feed;
 
   // keeper address to set impact prices
   address keeper = address(0xb0ba);
@@ -36,7 +36,7 @@ contract UNIT_PerpAssetPNL is Test {
   function setUp() public {
     // deploy contracts
     account = new Accounts("Lyra", "LYRA");
-    feed = new MockFeed();
+    feed = new MockFeeds();
     manager = new MockManager(address(account));
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
@@ -290,7 +290,7 @@ contract UNIT_PerpAssetPNL is Test {
   }
 
   function _setPrices(uint price) internal {
-    feed.setSpot(price);
+    feed.setSpot(price, 1e18);
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {

@@ -41,7 +41,7 @@ contract UNIT_SecurityModule is Test {
     mockCash = new MockCashAssetWithExchangeRate(accounts, usdc);
     mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
-    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, IPCRM(address(manager)));
+    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, IManager(manager));
 
     smAccId = securityModule.accountId();
 

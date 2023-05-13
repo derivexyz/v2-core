@@ -7,14 +7,13 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
-import "src/interfaces/IChainlinkSpotFeed.sol";
 
 import "src/Accounts.sol";
 import "src/risk-managers/BaseManager.sol";
 
 import "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
-import "../../shared/mocks/MockFeed.sol";
+import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockOption.sol";
 import "../../auction/mocks/MockCashAsset.sol";
 import "../../shared/mocks/MockPerp.sol";
@@ -32,7 +31,7 @@ contract BaseManagerTester is BaseManager {
     ICashAsset cash_,
     IOption option_,
     IPerpAsset perp_
-  ) BaseManager(accounts_, cash_) {
+  ) BaseManager(accounts_, cash_, IDutchAuction(address(0))) { // TODO: liquidations
     option = option_;
     perp = perp_;
     forwardFeed = forwardFeed_;
@@ -58,8 +57,6 @@ contract BaseManagerTester is BaseManager {
     IAccounts.AssetDelta[] calldata, /*assetDeltas*/
     bytes memory
   ) public {}
-
-  function handleManagerChange(uint, IManager) external {}
 }
 
 contract UNIT_TestAbstractBaseManager is Test {
@@ -67,7 +64,7 @@ contract UNIT_TestAbstractBaseManager is Test {
   BaseManagerTester tester;
 
   MockAsset mockAsset;
-  MockFeed feed;
+  MockFeeds feed;
   MockERC20 usdc;
   MockOption option;
   MockCash cash;
@@ -83,7 +80,7 @@ contract UNIT_TestAbstractBaseManager is Test {
   function setUp() public {
     accounts = new Accounts("Lyra Accounts", "LyraAccount");
 
-    feed = new MockFeed();
+    feed = new MockFeeds();
     usdc = new MockERC20("USDC", "USDC");
     option = new MockOption(accounts);
     perp = new MockPerp(accounts);
@@ -128,7 +125,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testChargeFeeOn1SubIdIfOIIncreased() public {
     uint spot = 2000e18;
-    feed.setSpot(spot);
+    feed.setSpot(spot, 1e18);
 
     uint96 subId = 1;
     uint tradeId = 5;
@@ -152,7 +149,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testShouldNotChargeFeeIfOIDecrease() public {
     uint spot = 2000e18;
-    feed.setSpot(spot);
+    feed.setSpot(spot, 1e18);
 
     uint96 subId = 1;
     uint tradeId = 5;
@@ -190,7 +187,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testOnlyChargeFeeOnSubIDWIthOIIncreased() public {
     uint spot = 2000e18;
-    feed.setSpot(spot);
+    feed.setSpot(spot, 1e18);
 
     (uint96 subId1, uint96 subId2, uint96 subId3) = (1, 2, 3);
     uint tradeId = 5;

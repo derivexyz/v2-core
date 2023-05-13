@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
+import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/math/IntLib.sol";
 import "openzeppelin/access/Ownable2Step.sol";
@@ -17,10 +18,13 @@ import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
+import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
   using DecimalMath for uint;
+  using SignedDecimalMath for int;
 
   ///////////////
   // Variables //
@@ -44,9 +48,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
-  constructor(IAccounts _accounts, ICashAsset _cashAsset) Ownable2Step() {
+  IDutchAuction public immutable liquidation;
+
+  constructor(IAccounts _accounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
     accounts = _accounts;
     cashAsset = _cashAsset;
+    liquidation = _liquidation;
   }
 
   //////////////////////////
@@ -82,6 +89,60 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
     whitelistedManager[_manager] = _whitelisted;
+  }
+
+  ///////
+  // Liquidations ///
+
+  /**
+   * @notice Confirm account is liquidatable and puts up for dutch auction.
+   * @param accountId Account for which to check trade.
+   */
+  function checkAndStartLiquidation(uint accountId) external {
+    liquidation.startAuction(accountId);
+    // todo [Cameron / Dom]: check that account is liquidatable / freeze account / call out to auction contract
+    // todo [Cameron / Dom]: add account Id to send reward for flagging liquidation
+  }
+
+  /**
+   * @notice Transfers portion of account to the liquidator.
+   *         Transfers cash to the liquidated account.
+   * @dev Auction contract can decide to either:
+   *      - revert / process bid
+   *      - continue / complete auction
+   * @param accountId ID of account which is being liquidated.
+   * @param liquidatorId Liquidator account ID.
+   * @param portion Portion of account that is requested to be liquidated.
+   * @param cashAmount Cash amount liquidator is offering for portion of account.
+   * @param liquidatorFee Cash amount liquidator will be paying the security module
+   */
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee)
+    external
+    onlyLiquidations
+  {
+    if (portion > DecimalMath.UNIT) {
+      revert ("PCRM_InvalidBidPortion");
+    }
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+
+    // transfer liquidated account's asset to liquidator
+    for (uint i; i < assetBalances.length; i++) {
+      _symmetricManagerAdjustment(
+        accountId,
+        liquidatorId,
+        assetBalances[i].asset,
+        uint96(assetBalances[i].subId),
+        assetBalances[i].balance.multiplyDecimal(int(portion))
+      );
+    }
+
+    // transfer cash (bid amount) to liquidated account
+    _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
+
+    // transfer fee to security module
+    _symmetricManagerAdjustment(liquidatorId, feeRecipientAcc, cashAsset, 0, int(liquidatorFee));
+
+    // TODO: check account risk on both sides
   }
 
   //////////////////////////
@@ -188,6 +249,41 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       IAccounts.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
     );
   }
+
+  ///////////////////
+  // Account Hooks //
+  ///////////////////
+
+  /**
+   * @notice Ensures new manager is valid.
+   * @param newManager IManager to change account to.
+   */
+  function handleManagerChange(uint, IManager newManager) external view override virtual {
+    // TODO: whitelist maybe
+//    if (!whitelistedManager[address(newManager)]) {
+//      revert BM_NotWhitelistManager();
+//    }
+  }
+
+
+  //////
+  // Modifier //
+  ///
+
+  modifier onlyLiquidations() {
+    if (msg.sender != address(liquidation)) {
+      revert("only liquidations");
+    }
+    _;
+  }
+
+  modifier onlyAccounts() {
+    if (msg.sender != address(accounts)) {
+      revert("only accounts");
+    }
+    _;
+  }
+
 
   ////////////////
   //   Events   //

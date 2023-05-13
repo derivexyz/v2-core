@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
-/**
- * @title IOptionPricing
- * @dev this module abstract away reading oracle data.
- *      We should be able to get reliable vol, forward price ...etc from the oracle in the contract,
- *      and feed them into BlackScholes or Black76 model to get option price.
- * @notice Interface for option pricing
- */
 interface IOptionPricing {
-  function getMTM(uint strike, uint expiry, bool isCall) external view returns (uint);
+  struct Expiry {
+    uint64 secToExpiry;
+    uint128 forwardPrice;
+    uint64 discountFactor;
+  }
+
+  struct Option {
+    uint128 strike;
+    uint128 vol;
+    int amount;
+    bool isCall;
+  }
+
+  function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external view returns (int);
+  function getOptionValue(Expiry memory expiryDetails, Option memory option) external view returns (int);
 }

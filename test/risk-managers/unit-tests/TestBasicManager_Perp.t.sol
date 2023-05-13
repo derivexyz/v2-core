@@ -12,7 +12,7 @@ import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
-import "test/shared/mocks/MockFeed.sol";
+import "test/shared/mocks/MockFeeds.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
 
 import "test/auction/mocks/MockCashAsset.sol";
@@ -25,7 +25,7 @@ contract UNIT_TestBasicManager is Test {
   MockPerp perp;
   MockOption option;
 
-  MockFeed feed;
+  MockFeeds feed;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -43,7 +43,7 @@ contract UNIT_TestBasicManager is Test {
 
     option = new MockOption(account);
 
-    feed = new MockFeed();
+    feed = new MockFeeds();
 
     manager = new BasicManager(
       account,
@@ -58,7 +58,7 @@ contract UNIT_TestBasicManager is Test {
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
 
-    feed.setSpot(1500e18);
+    feed.setSpot(1500e18, 1e18);
 
     usdc.mint(address(this), 10000e18);
     usdc.approve(address(cash), type(uint).max);
@@ -71,7 +71,7 @@ contract UNIT_TestBasicManager is Test {
   function testSetPricingModule() public {
     MockOptionPricing pricing = new MockOptionPricing();
     manager.setPricingModule(pricing);
-    assertEq(address(manager.pricing()), address(pricing));
+    assertEq(address(manager.optionPricing()), address(pricing));
   }
 
   ////////////////////

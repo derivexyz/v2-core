@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import "../../shared/mocks/MockManager.sol";
-import "../../shared/mocks/MockFeed.sol";
+import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../assets/cashAsset/mocks/MockInterestRateModel.sol";
 
@@ -26,7 +26,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   BasicManager manager;
   CashAsset cash;
   Accounts account;
-  MockFeed feed;
+  MockFeeds feed;
   MockERC20 usdc;
   MockInterestRateModel rateModel;
 
@@ -48,7 +48,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   function setUp() public {
     // deploy contracts
     account = new Accounts("Lyra", "LYRA");
-    feed = new MockFeed();
+    feed = new MockFeeds();
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
@@ -121,7 +121,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   }
 
   function _setPrices(uint price) internal {
-    feed.setSpot(price);
+    feed.setSpot(price, 1e18);
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {

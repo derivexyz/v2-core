@@ -1,5 +1,5 @@
 import "../interfaces/IPMRM.sol";
-import "../interfaces/IMTMCache.sol";
+import "../interfaces/IOptionPricing.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
@@ -50,15 +50,15 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   using SafeCast for uint;
 
   /// @dev Pricing module to get option mark-to-market price
-  IMTMCache public mtmCache;
+  IOptionPricing public optionPricing;
 
   IPMRMLib.ForwardContingencyParameters fwdContParams;
   IPMRMLib.OtherContingencyParameters otherContParams;
   IPMRMLib.StaticDiscountParameters staticDiscountParams;
   IPMRMLib.VolShockParameters volShockParams;
 
-  constructor(IMTMCache _mtmCache) Ownable2Step() {
-    mtmCache = _mtmCache;
+  constructor(IOptionPricing _optionPricing) Ownable2Step() {
+    optionPricing = _optionPricing;
 
     fwdContParams.spotShock1 = 0.95e18;
     fwdContParams.spotShock2 = 1.05e18;
@@ -87,8 +87,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // Admin //
   ///////////
 
-  function setMTMCache(IMTMCache _mtmCache) external onlyOwner {
-    mtmCache = _mtmCache;
+  function setOptionPricing(IOptionPricing _optionPricing) external onlyOwner {
+    optionPricing = _optionPricing;
   }
 
   function setForwardContingencyParams(IPMRMLib.ForwardContingencyParameters memory _fwdContParams) external onlyOwner {
@@ -131,7 +131,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // MTM calculations //
   //////////////////////
 
-  function _getMargin(IPMRM.PMRM_Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios)
+  function _getMargin(IPMRM.Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios)
     internal
     view
     returns (int margin)
@@ -166,7 +166,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     return (minSPAN + portfolio.totalMtM + portfolio.cash);
   }
 
-  function getScenarioMtM(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.Scenario memory scenario)
+  function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
     internal
     view
     returns (int scenarioMtM)
@@ -216,16 +216,16 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
 
     // TODO: maybe these structs should be precomputed? Test gas
-    IMTMCache.Expiry memory expiryDetails = IMTMCache.Expiry({
+    IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
       secToExpiry: SafeCast.toUint64(expiry.secToExpiry),
       forwardPrice: SafeCast.toUint128(expiry.forwardPrice.multiplyDecimal(spotShock)),
       discountFactor: 1e18
     });
 
-    IMTMCache.Option[] memory optionDetails = new IMTMCache.Option[](expiry.options.length);
+    IOptionPricing.Option[] memory optionDetails = new IOptionPricing.Option[](expiry.options.length);
     for (uint i = 0; i < expiry.options.length; i++) {
       IPMRM.StrikeHolding memory option = expiry.options[i];
-      optionDetails[i] = IMTMCache.Option({
+      optionDetails[i] = IOptionPricing.Option({
         strike: SafeCast.toUint128(option.strike),
         vol: SafeCast.toUint128(option.vol.multiplyDecimal(volShock)),
         amount: option.amount,
@@ -233,7 +233,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       });
     }
 
-    return mtmCache.getExpiryMTM(expiryDetails, optionDetails);
+    return optionPricing.getExpiryOptionsValue(expiryDetails, optionDetails);
   }
 
   function _applyMTMDiscount(int expiryMTM, uint staticDiscount) internal pure returns (int) {
@@ -258,7 +258,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   /////////////////
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
-  function _addPrecomputes(IPMRM.PMRM_Portfolio memory portfolio, bool addForwardCont) internal view {
+  function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addForwardCont) internal view {
     // TODO: baseValue seperate field??
     portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, 1e18);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
@@ -318,7 +318,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // Contingencies //
   ///////////////////
 
-  function _addForwardContingency(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry)
+  function _addForwardContingency(IPMRM.Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry)
     internal
     view
   {

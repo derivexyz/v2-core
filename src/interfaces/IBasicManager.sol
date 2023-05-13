@@ -4,9 +4,8 @@ pragma solidity ^0.8.13;
 import {IManager} from "src/interfaces/IManager.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {IOption} from "src/interfaces/IOption.sol";
-import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 
-interface IBasicManager is IManager {
+interface IBasicManager {
   enum AssetType {
     NotSet,
     Option,

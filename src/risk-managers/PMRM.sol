@@ -41,15 +41,6 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   using SafeCast for uint;
   using IntLib for int;
 
-  struct Feeds {
-    ISpotFeed spotFeed;
-    ISpotFeed stableFeed;
-    IForwardFeed forwardFeed;
-    IInterestRateFeed interestRateFeed;
-    IVolFeed volFeed;
-    ISettlementFeed settlementFeed;
-  }
-
   ///////////////
   // Constants //
   ///////////////
@@ -84,10 +75,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
-    IMTMCache mtmCache_,
+    IOptionPricing optionPricing_,
     WrappedERC20Asset baseAsset_,
     Feeds memory feeds_
-  ) PMRMLib(mtmCache_) BaseManager(accounts_, cashAsset_) {
+  ) PMRMLib(optionPricing_) BaseManager(accounts_, cashAsset_, IDutchAuction(address(0))) {
     spotFeed = feeds_.spotFeed;
     stableFeed = feeds_.stableFeed;
     forwardFeed = feeds_.forwardFeed;
@@ -171,7 +162,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
-    IPMRM.PMRM_Portfolio memory portfolio =
+    IPMRM.Portfolio memory portfolio =
       _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), !isTrustedRiskAssessor);
 
     if (isTrustedRiskAssessor) {
@@ -198,7 +189,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets, bool addForwardCont)
     internal
     view
-    returns (IPMRM.PMRM_Portfolio memory portfolio)
+    returns (IPMRM.Portfolio memory portfolio)
   {
     (uint seenExpiries, PortfolioExpiryData[] memory expiryCount) = _countExpiriesAndOptions(assets);
 
@@ -260,7 +251,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   /**
    *
    */
-  function _initialiseExpiries(IPMRM.PMRM_Portfolio memory portfolio, PortfolioExpiryData[] memory expiryCount)
+  function _initialiseExpiries(IPMRM.Portfolio memory portfolio, PortfolioExpiryData[] memory expiryCount)
     internal
     view
   {
@@ -291,7 +282,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
   function _arrangeOptions(
     uint accountId,
-    IPMRM.PMRM_Portfolio memory portfolio,
+    IPMRM.Portfolio memory portfolio,
     IAccounts.AssetBalance[] memory assets,
     PortfolioExpiryData[] memory expiryCount
   ) internal view {
@@ -342,7 +333,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
   }
 
-  function _checkMargin(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
+  function _checkMargin(IPMRM.Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
     int im = _getMargin(portfolio, true, scenarios);
     if (im < 0) {
       revert("IM rules not satisfied");
@@ -353,12 +344,12 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // View //
   //////////
 
-  function arrangePortfolio(uint accountId) external view returns (IPMRM.PMRM_Portfolio memory portfolio) {
+  function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
     return _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
   }
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
     int im = _getMargin(portfolio, isInitial, marginScenarios);
     return im;
   }
@@ -378,26 +369,5 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         );
       }
     }
-  }
-
-  ////////////////////////
-  //    Account Hooks   //
-  ////////////////////////
-
-  /**
-   * @notice Ensures new manager is valid.
-   * @param newManager IManager to change account to.
-   */
-  function handleManagerChange(uint, IManager newManager) external view {}
-
-  ////////////////////////
-  //      Modifiers     //
-  ////////////////////////
-
-  modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) {
-      revert("only accounts");
-    }
-    _;
   }
 }

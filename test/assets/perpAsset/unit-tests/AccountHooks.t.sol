@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockManager.sol";
-import "../../../shared/mocks/MockFeed.sol";
+import "../../../shared/mocks/MockFeeds.sol";
 
 import "../../../../src/assets/PerpAsset.sol";
 import "../../../../src/interfaces/IAccounts.sol";
@@ -13,12 +13,12 @@ contract UNIT_PerpAssetHook is Test {
   PerpAsset perp;
   MockManager manager;
   address account;
-  MockFeed feed;
+  MockFeeds feed;
 
   function setUp() public {
     account = address(0xaa);
 
-    feed = new MockFeed();
+    feed = new MockFeeds();
 
     manager = new MockManager(account);
 
@@ -26,7 +26,7 @@ contract UNIT_PerpAssetHook is Test {
 
     perp.setSpotFeed(feed);
 
-    feed.setSpot(1500e18);
+    feed.setSpot(1500e18, 1e18);
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {

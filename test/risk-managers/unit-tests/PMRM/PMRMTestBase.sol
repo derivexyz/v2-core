@@ -14,7 +14,7 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
-import "test/shared/mocks/MockFeed.sol";
+import "test/shared/mocks/MockFeeds.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 import "test/shared/utils/JsonMechIO.sol";
@@ -23,7 +23,7 @@ import "forge-std/console2.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
 import "../../../shared/mocks/MockPerp.sol";
-import "../../../../src/feeds/MTMCache.sol";
+import "../../../../src/feeds/OptionPricing.sol";
 import "./TEST_PMRM.sol";
 
 contract PMRMTestBase is Test {
@@ -44,7 +44,7 @@ contract PMRMTestBase is Test {
   MockFeeds feed;
   MockFeeds stableFeed;
   uint feeRecipient;
-  MTMCache mtmCache;
+  OptionPricing optionPricing;
   MockPerp mockPerp;
 
   address alice = address(0xaa);
@@ -67,16 +67,16 @@ contract PMRMTestBase is Test {
     mockPerp = new MockPerp(accounts);
 
     option = new MockOption(accounts);
-    mtmCache = new MTMCache();
+    optionPricing = new OptionPricing();
 
     pmrm = new TEST_PMRM(
       accounts,
       ICashAsset(address(cash)),
       option,
       IPerpAsset(address(mockPerp)),
-      IMTMCache(mtmCache),
+      IOptionPricing(optionPricing),
       baseAsset,
-      PMRM.Feeds({
+      IPMRM.Feeds({
         spotFeed: ISpotFeed(feed),
         stableFeed: ISpotFeed(stableFeed),
         forwardFeed: IForwardFeed(feed),
@@ -90,7 +90,7 @@ contract PMRMTestBase is Test {
     addScenarios();
   }
 
-  function _logPortfolio(IPMRM.PMRM_Portfolio memory portfolio) internal view {
+  function _logPortfolio(IPMRM.Portfolio memory portfolio) internal view {
     console2.log("cash balance:", portfolio.cash);
     console2.log("\nOTHER ASSETS");
     console2.log("TODO");
