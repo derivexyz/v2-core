@@ -11,11 +11,11 @@ import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
 abstract contract BaseManager is IBaseManager, Ownable2Step {
@@ -96,7 +96,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function _chargeOIFee(
     IOption option,
-    IFutureFeed futureFeed,
+    IForwardFeed forwardFeed,
     uint accountId,
     uint tradeId,
     IAccounts.AssetDelta[] calldata assetDeltas
@@ -113,8 +113,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       if (oi <= oiBefore) continue;
 
       (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
-      uint futurePrice = futureFeed.getFuturePrice(expiry);
-      fee += assetDeltas[i].delta.abs().multiplyDecimal(futurePrice).multiplyDecimal(OIFeeRateBPS);
+      (uint forwardPrice,) = forwardFeed.getForwardPrice(expiry);
+      fee += assetDeltas[i].delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
     }
 
     if (fee > 0) {

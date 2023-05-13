@@ -136,7 +136,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   function _updateEntryPriceAndPnl(uint accountId, int preBalance, int delta) internal {
     PositionDetail storage position = positions[accountId];
 
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
 
     int entryPrice = position.entryPrice.toInt256();
 
@@ -237,7 +237,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    */
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
     int size = _getPositionSize(accountId);
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
 
     int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
     int unrealizedPnl = _getUnrealizedPnl(accountId, size, indexPrice);
@@ -248,7 +248,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @dev Return the hourly funding rate for an account
    */
   function getFundingRate() external view returns (int fundingRate) {
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
     fundingRate = _getFundingRate(indexPrice);
   }
 
@@ -264,7 +264,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    */
   function _applyFundingOnAccount(uint accountId) internal {
     int size = _getPositionSize(accountId);
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
 
     int funding = _getUnrealizedFunding(accountId, size, indexPrice);
     // apply funding
@@ -278,7 +278,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   function _updateFundingRate() internal {
     if (block.timestamp == lastFundingPaidAt) return;
 
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
 
     int fundingRate = _getFundingRate(indexPrice);
 
@@ -338,6 +338,11 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    */
   function _getPositionSize(uint accountId) internal view returns (int) {
     return accounts.getBalance(accountId, IPerpAsset(address(this)), 0);
+  }
+
+  function _getIndexPrice() internal view returns (int) {
+    (uint spotPrice,) = spotFeed.getSpot();
+    return spotPrice.toInt256();
   }
 
   //////////////////////////

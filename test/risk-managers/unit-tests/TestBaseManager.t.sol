@@ -22,12 +22,12 @@ import "../../shared/mocks/MockPerp.sol";
 contract BaseManagerTester is BaseManager {
   IOption public immutable option;
   IPerpAsset public immutable perp;
-  IFutureFeed public immutable futureFeed;
+  IForwardFeed public immutable forwardFeed;
   ISettlementFeed public immutable settlementFeed;
 
   constructor(
     IAccounts accounts_,
-    IFutureFeed futureFeed_,
+    IForwardFeed forwardFeed_,
     ISettlementFeed settlementFeed_,
     ICashAsset cash_,
     IOption option_,
@@ -35,7 +35,7 @@ contract BaseManagerTester is BaseManager {
   ) BaseManager(accounts_, cash_) {
     option = option_;
     perp = perp_;
-    futureFeed = futureFeed_;
+    forwardFeed = forwardFeed_;
     settlementFeed = settlementFeed_;
   }
 
@@ -44,7 +44,7 @@ contract BaseManagerTester is BaseManager {
   }
 
   function chargeOIFee(uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) external {
-    _chargeOIFee(option, futureFeed, accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
   }
 
   function settleOptions(uint accountId) external {

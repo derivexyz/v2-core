@@ -236,7 +236,7 @@ contract IntegrationTestBase is Test {
    * @dev set future price for feed
    * @param price price in 18 decimals
    */
-  function _setFuturePrice(uint, /*expiry*/ int price) internal {
+  function _setForwardPrice(uint, /*expiry*/ int price) internal {
     // currently the same as set spot price
     _setSpotPriceE18(price);
   }
@@ -400,6 +400,11 @@ contract IntegrationTestBase is Test {
     return address(
       uint160(uint(keccak256(abi.encodePacked(bytes1(0xda), bytes1(0x94), _origin, bytes1(0x84), uint32(_nonce)))))
     );
+  }
+
+  function _getForwardPrice(uint expiry) internal view returns (uint forwardPrice) {
+    (forwardPrice,) = feed.getForwardPrice(expiry);
+    return forwardPrice;
   }
 
   /**

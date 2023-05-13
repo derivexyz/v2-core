@@ -69,7 +69,7 @@ contract PositionBuilderBase is IntegrationTestBase {
     // set up long and short accounts to hold leveraged fwd against one another
     uint tte = 4 weeks;
     uint expiry = block.timestamp + tte;
-    uint spot = feed.getFuturePrice(expiry);
+    uint spot = _getForwardPrice(expiry);
     uint strike = spot;
     positions = new Position[](2);
     positions[0] = Position({subId: uint96(option.getSubId(expiry, strike, true)), amount: 1e18});
@@ -84,8 +84,8 @@ contract PositionBuilderBase is IntegrationTestBase {
   function _openBox(uint longAcc, uint shortAcc, uint notional) internal returns (Position[] memory positions) {
     // set up long and short accounts to hold leveraged box against one another
     uint expiry = block.timestamp + 4 weeks;
-    uint strike1 = feed.getFuturePrice(expiry);
-    uint strike2 = feed.getFuturePrice(expiry) + 100e18;
+    uint strike1 = _getForwardPrice(expiry);
+    uint strike2 = _getForwardPrice(expiry) + 100e18;
     int numBoxes = int(notional) * 1e18 / 100e18;
     positions = new Position[](4);
     positions[0] = Position({subId: uint96(option.getSubId(expiry, strike1, true)), amount: numBoxes});

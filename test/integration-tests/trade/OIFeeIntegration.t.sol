@@ -29,7 +29,7 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
 
   function testChargeOIFee() public {
     uint expiry = block.timestamp + 7 days;
-    uint spot = feed.getFuturePrice(expiry);
+    uint spot = _getForwardPrice(expiry);
 
     uint strike = spot + 1000e18;
     uint96 callToTrade = OptionEncoding.toSubId(expiry, strike, true);
@@ -49,7 +49,7 @@ contract INTEGRATION_OIFeeTest is IntegrationTestBase {
   function testClosingChargeNoFee() public {
     // same setup
     uint expiry = block.timestamp + 7 days;
-    uint spot = feed.getFuturePrice(expiry);
+    uint spot = _getForwardPrice(expiry);
     uint strike = spot + 1000e18;
     uint96 callToTrade = OptionEncoding.toSubId(expiry, strike, true);
     int amountOfContracts = 10e18;

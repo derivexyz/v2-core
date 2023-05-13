@@ -20,7 +20,7 @@ import {IOption} from "src/interfaces/IOption.sol";
 import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
 import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
 import {IBasicManager} from "src/interfaces/IBasicManager.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
 import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
@@ -70,7 +70,7 @@ contract BasicManager is IBasicManager, BaseManager {
   mapping(uint marketId => ISettlementFeed) public settlementFeeds;
 
   /// @dev Mapping from marketId to forward price oracle
-  mapping(uint marketId => IFutureFeed) public forwardFeeds;
+  mapping(uint marketId => IForwardFeed) public forwardFeeds;
 
   ////////////////////////
   //    Constructor     //
@@ -99,7 +99,7 @@ contract BasicManager is IBasicManager, BaseManager {
   function setOraclesForMarket(
     uint8 marketId,
     ISpotFeed spotFeed,
-    IFutureFeed forwardFeed,
+    IForwardFeed forwardFeed,
     ISettlementFeed settlementFeed
   ) external onlyOwner {
     // registered asset
@@ -220,7 +220,8 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (int)
   {
-    int indexPrice = spotFeeds[subAccount.marketId].getSpot().toInt256();
+    (uint spot,) = spotFeeds[subAccount.marketId].getSpot();
+    int indexPrice = spot.toInt256();
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isMaintenance);
     int netOptionMargin = _getNetOptionMargin(subAccount, isMaintenance);
@@ -371,9 +372,7 @@ contract BasicManager is IBasicManager, BaseManager {
     int isolatedMargin = 0;
     bool zeroStrikeChecked;
 
-    IFutureFeed feed = forwardFeeds[marketId];
-
-    int forwardPrice = feed.getFuturePrice(expiryHolding.expiry).toInt256();
+    int forwardPrice = _getForwardPrice(marketId, expiryHolding.expiry);
 
     for (uint i; i < expiryHolding.options.length; i++) {
       // calculate isolated margin for this strike, aggregate to isolatedMargin
@@ -433,7 +432,7 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (int)
   {
-    int forwardPrice = forwardFeeds[marketId].getFuturePrice(expiry).toInt256();
+    int forwardPrice = _getForwardPrice(marketId, expiry);
     return _getIsolatedMargin(marketId, strike, isCall, balance, forwardPrice, isMaintenance);
   }
 
@@ -561,6 +560,11 @@ contract BasicManager is IBasicManager, BaseManager {
         expiryHolding.options[i].strike, expiryHolding.options[i].balance, price, expiryHolding.options[i].isCall
       );
     }
+  }
+
+  function _getForwardPrice(uint marketId, uint expiry) internal view returns (int) {
+    (uint fwdPrice,) = forwardFeeds[marketId].getForwardPrice(expiry);
+    return fwdPrice.toInt256();
   }
 
   ////////////////////////

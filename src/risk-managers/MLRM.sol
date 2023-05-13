@@ -43,7 +43,7 @@ contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
   IOption public immutable option;
 
   /// @dev Future feed oracle to get future price for an expiry
-  IFutureFeed public immutable futureFeed;
+  IForwardFeed public immutable forwardFeed;
 
   /// @dev Settlement feed oracle to get price fixed for settlement
   ISettlementFeed public immutable settlementFeed;
@@ -54,13 +54,13 @@ contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
 
   constructor(
     IAccounts accounts_,
-    IFutureFeed futureFeed_,
+    IForwardFeed forwardFeed_,
     ISettlementFeed _settlementFeed,
     ICashAsset cashAsset_,
     IOption option_
   ) BaseManager(accounts_, cashAsset_) {
     option = option_;
-    futureFeed = futureFeed_;
+    forwardFeed = forwardFeed_;
     settlementFeed = _settlementFeed;
   }
 
@@ -75,7 +75,7 @@ contract MLRM is BaseManager, SingleExpiryPortfolio, IManager {
     IAccounts.AssetDelta[] calldata assetDeltas,
     bytes memory
   ) public override {
-    _chargeOIFee(option, futureFeed, accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
     ISingleExpiryPortfolio.Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
 

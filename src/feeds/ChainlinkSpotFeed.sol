@@ -42,16 +42,16 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
   // Get Prices //
   ////////////////
 
-  function getSettlementPrice(uint expiry) external view returns (uint) {
+  function getSettlementPrice(uint expiry) external view returns (uint settlementPrice) {
     return settlementPrices[expiry];
   }
 
   /**
    * @notice Return future price for an expiry
    * @dev For now we just return spot price as future price
-   * @return futurePrice Future price with 18 decimal.
+   * @return forwardPrice Future price with 18 decimal.
    */
-  function getFuturePrice(uint /*expiry*/ ) external view returns (uint futurePrice) {
+  function getForwardPrice(uint /*expiry*/ ) external view returns (uint forwardPrice, uint confidence) {
     return getSpot();
   }
 
@@ -59,14 +59,14 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
    * @notice Gets spot price
    * @return spotPrice Spot price with 18 decimals.
    */
-  function getSpot() public view returns (uint) {
+  function getSpot() public view returns (uint, uint) {
     (uint spotPrice, uint updatedAt) = getSpotAndUpdatedAt();
 
     if (block.timestamp - updatedAt > staleLimit) {
       revert CF_SpotFeedStale(updatedAt, block.timestamp, staleLimit);
     }
 
-    return spotPrice;
+    return (spotPrice, 1e18);
   }
 
   /**
@@ -98,7 +98,7 @@ contract ChainlinkSpotFeed is IChainlinkSpotFeed {
     if (settlementPrices[expiry] != 0) revert CF_SettlementPriceAlreadySet(expiry, settlementPrices[expiry]);
     if (expiry > block.timestamp) revert NotExpired(expiry, block.timestamp);
 
-    settlementPrices[expiry] = getSpot();
+    (settlementPrices[expiry],) = getSpot();
     emit SettlementPriceSet(expiry, 0);
   }
 }

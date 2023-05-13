@@ -45,7 +45,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for callId at expiry above strike
     vm.warp(expiry);
     uint spotPrice = uint(strike) + 200e18;
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -59,7 +59,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for callId at expiry below strike
     vm.warp(expiry);
     uint spotPrice = uint(strike) - 200e18;
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -73,7 +73,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for putId at expiry below strike
     vm.warp(expiry);
     uint spotPrice = uint(strike) - 200e18;
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -87,7 +87,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for putId at expiry above strike
     vm.warp(expiry);
     uint spotPrice = uint(strike) + 200e18;
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -117,7 +117,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for callId at expiry above strike
     vm.warp(expiry);
     uint spotPrice = uint(int(strike) + priceDiff);
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -132,7 +132,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for callId at expiry below strike
     vm.warp(expiry);
     uint spotPrice = uint(int(strike) - priceDiff);
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(callId, 1e18);
 
@@ -147,7 +147,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for putId at expiry below strike
     vm.warp(expiry);
     uint spotPrice = uint(int(strike) - priceDiff);
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 
@@ -162,7 +162,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     // Lock in settlement price for putId at expiry above strike
     vm.warp(expiry);
     uint spotPrice = uint(int(strike) + priceDiff);
-    feed.setFuturePrice(expiry, spotPrice);
+    feed.setForwardPrice(expiry, spotPrice);
 
     (int payout,) = option.calcSettlementValue(putId, 1e18);
 

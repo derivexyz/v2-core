@@ -39,7 +39,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
   IOption public immutable option;
 
   /// @dev Future feed oracle to get future price for an expiry
-  IFutureFeed public immutable futureFeed;
+  IForwardFeed public immutable forwardFeed;
 
   /// @dev Settlement feed oracle to get price fixed for settlement
   ISettlementFeed public immutable settlementFeed;
@@ -79,7 +79,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
 
   constructor(
     IAccounts accounts_,
-    IFutureFeed futureFeed_,
+    IForwardFeed forwardFeed_,
     ISettlementFeed settlementFeed_,
     ICashAsset cashAsset_,
     IOption option_,
@@ -87,7 +87,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     ISpotJumpOracle spotJumpOracle_
   ) BaseManager(accounts_, cashAsset_) {
     option = option_;
-    futureFeed = futureFeed_;
+    forwardFeed = forwardFeed_;
     settlementFeed = settlementFeed_;
     dutchAuction = IDutchAuction(auction_);
     spotJumpOracle = spotJumpOracle_;
@@ -114,7 +114,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     // bypass the IM check if only adding cash
     if (assetDeltas.length == 1 && assetDeltas[0].asset == cashAsset && assetDeltas[0].delta >= 0) return;
 
-    _chargeOIFee(option, futureFeed, accountId, tradeId, assetDeltas);
+    _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
     // PCRM calculations
     Portfolio memory portfolio = _arrangePortfolio(accounts.getAccountBalances(accountId));
@@ -459,7 +459,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
    * @param spotUpPercent Percent by which to multiply spot to get the `up` scenario.
    * @param spotDownPercent Percent by which to multiply spot to get the `down` scenario.
    * @param spotTimeSlope Rate at which to increase the shocks with larger `timeToExpiry`.
-   * @param portfolioDiscountFactor Initial discounting factor applied when option margin > 0.
+   * @param portfolioInterestRate Initial discounting factor applied when option margin > 0.
    * @param expiry expiry of the portfolio
    * @return vol Volatility.
    * @return spotUp Shocked up spot.
@@ -470,7 +470,7 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     uint spotUpPercent,
     uint spotDownPercent,
     uint spotTimeSlope,
-    uint portfolioDiscountFactor,
+    uint portfolioInterestRate,
     uint expiry
   ) public view returns (uint vol, uint spotUp, uint spotDown, uint portfolioDiscount) {
     int timeToExpiry = expiry.toInt256() - block.timestamp.toInt256();
@@ -482,12 +482,12 @@ contract PCRM is BaseManager, SingleExpiryPortfolio, IManager, IPCRM {
     vol = _applyTimeWeightToVol(timeToExpiry.toUint256());
 
     // Get future price as spot, and apply shocks
-    uint spot = futureFeed.getFuturePrice(expiry);
+    (uint spot,) = forwardFeed.getForwardPrice(expiry);
     (spotUp, spotDown) =
       _applyTimeWeightToSpotShocks(spot, spotUpPercent, spotDownPercent, spotTimeSlope, timeToExpiry.toUint256());
 
     // Get portfolio-wide discount
-    portfolioDiscount = _applyTimeWeightToPortfolioDiscount(portfolioDiscountFactor, timeToExpiry.toUint256());
+    portfolioDiscount = _applyTimeWeightToPortfolioDiscount(portfolioInterestRate, timeToExpiry.toUint256());
   }
 
   /**

@@ -21,3 +21,5 @@ cache
 artifacts
 cache_hardhat
 artifacts_hardhat
+
+deployments
