@@ -41,6 +41,15 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   using SafeCast for uint;
   using IntLib for int;
 
+  struct Feeds {
+    ISpotFeed spotFeed;
+    ISpotFeed stableFeed;
+    IForwardFeed forwardFeed;
+    IInterestRateFeed interestRateFeed;
+    IVolFeed volFeed;
+    ISettlementFeed settlementFeed;
+  }
+
   ///////////////
   // Constants //
   ///////////////
@@ -75,22 +84,18 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
-    IForwardFeed forwardFeed_,
-    ISettlementFeed settlementFeed_,
-    ISpotFeed spotFeed_,
     IMTMCache mtmCache_,
-    IInterestRateFeed interestRateFeed_,
-    IVolFeed volFeed_,
     WrappedERC20Asset baseAsset_,
-    ISpotFeed stableFeed_
+    Feeds memory feeds_
   ) PMRMLib(mtmCache_) BaseManager(accounts_, cashAsset_) {
-    spotFeed = spotFeed_;
-    interestRateFeed = interestRateFeed_;
-    volFeed = volFeed_;
+    spotFeed = feeds_.spotFeed;
+    stableFeed = feeds_.stableFeed;
+    forwardFeed = feeds_.forwardFeed;
+    interestRateFeed = feeds_.interestRateFeed;
+    volFeed = feeds_.volFeed;
+    settlementFeed = feeds_.settlementFeed;
+
     baseAsset = baseAsset_;
-    stableFeed = stableFeed_;
-    forwardFeed = forwardFeed_;
-    settlementFeed = settlementFeed_;
     option = option_;
     perp = perp_;
   }

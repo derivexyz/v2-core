@@ -74,14 +74,16 @@ contract PMRMTestBase is Test {
       ICashAsset(address(cash)),
       option,
       IPerpAsset(address(mockPerp)),
-      IForwardFeed(feed),
-      ISettlementFeed(feed),
-      ISpotFeed(feed),
       IMTMCache(mtmCache),
-      IInterestRateFeed(feed),
-      IVolFeed(feed),
       baseAsset,
-      ISpotFeed(stableFeed)
+      PMRM.Feeds({
+        spotFeed: ISpotFeed(feed),
+        stableFeed: ISpotFeed(stableFeed),
+        forwardFeed: IForwardFeed(feed),
+        interestRateFeed: IInterestRateFeed(feed),
+        volFeed: IVolFeed(feed),
+        settlementFeed: ISettlementFeed(feed)
+      })
     );
 
     _setupAliceAndBob();

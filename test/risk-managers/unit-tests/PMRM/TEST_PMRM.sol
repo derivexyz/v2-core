@@ -6,30 +6,10 @@ contract TEST_PMRM is PMRM {
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
-    IForwardFeed forwardFeed_,
-    ISettlementFeed settlementFeed_,
-    ISpotFeed spotFeed_,
     IMTMCache mtmCache_,
-    IInterestRateFeed interestRateFeed_,
-    IVolFeed volFeed_,
     WrappedERC20Asset baseAsset_,
-    ISpotFeed stableFeed_
-  )
-    PMRM(
-      accounts_,
-      cashAsset_,
-      option_,
-      perp_,
-      forwardFeed_,
-      settlementFeed_,
-      spotFeed_,
-      mtmCache_,
-      interestRateFeed_,
-      volFeed_,
-      baseAsset_,
-      stableFeed_
-    )
-  {}
+    Feeds memory feeds_
+  ) PMRM(accounts_, cashAsset_, option_, perp_, mtmCache_, baseAsset_, feeds_) {}
 
   function arrangePortfolioByBalances(IAccounts.AssetBalance[] memory assets)
     external
