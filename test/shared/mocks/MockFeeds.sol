@@ -45,7 +45,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   }
 
   function updatePrice(bytes calldata callData) external override {
-      spot = abi.decode(callData, (uint));
+    spot = abi.decode(callData, (uint));
   }
 
   // ISpotFeed
