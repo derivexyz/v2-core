@@ -112,16 +112,6 @@ contract SecurityModule is Ownable2Step, ERC20, ISecurityModule {
     // check if the security module has enough fund. Cap the payout at min(balance, cashAmount)
     uint useableCash = accounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
 
-    // TODO: WHAT IS THIS THING???
-    uint staticCashOffset = 50e18;
-
-    // To ensure socialized losses can never be blocked,
-    // ensuring the SM never gives more than the staticCashOffset imposed by the PCRM.
-    if (useableCash < staticCashOffset) {
-      revert SM_BalanceBelowPCRMStaticCashOffset(useableCash, staticCashOffset);
-    }
-    useableCash -= staticCashOffset;
-
     // payout up to useable cash
     if (useableCash < cashAmountNeeded) {
       cashAmountPaid = useableCash;

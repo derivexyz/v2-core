@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
@@ -78,6 +79,8 @@ contract UNIT_TestAbstractBaseManager is Test {
   uint bobAcc;
   uint feeRecipientAcc;
 
+  uint expiry;
+
   function setUp() public {
     accounts = new Accounts("Lyra Accounts", "LyraAccount");
 
@@ -98,6 +101,8 @@ contract UNIT_TestAbstractBaseManager is Test {
     feeRecipientAcc = accounts.createAccount(address(this), IManager(address(tester)));
 
     tester.setFeeRecipient(feeRecipientAcc);
+
+    expiry = block.timestamp + 7 days;
   }
 
   function testTransferWithoutMarginPositiveAmount() public {
@@ -127,8 +132,9 @@ contract UNIT_TestAbstractBaseManager is Test {
   function testChargeFeeOn1SubIdIfOIIncreased() public {
     uint spot = 2000e18;
     feed.setSpot(spot, 1e18);
+    feed.setForwardPrice(expiry, spot, 1e18);
 
-    uint96 subId = 1;
+    uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
     uint tradeId = 5;
     int amount = 1e18;
 
@@ -151,8 +157,9 @@ contract UNIT_TestAbstractBaseManager is Test {
   function testShouldNotChargeFeeIfOIDecrease() public {
     uint spot = 2000e18;
     feed.setSpot(spot, 1e18);
+    feed.setForwardPrice(expiry, spot, 1e18);
 
-    uint96 subId = 1;
+    uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
     uint tradeId = 5;
     int amount = 1e18;
 
@@ -189,8 +196,12 @@ contract UNIT_TestAbstractBaseManager is Test {
   function testOnlyChargeFeeOnSubIDWIthOIIncreased() public {
     uint spot = 2000e18;
     feed.setSpot(spot, 1e18);
+    feed.setForwardPrice(expiry, spot, 1e18);
 
-    (uint96 subId1, uint96 subId2, uint96 subId3) = (1, 2, 3);
+    uint96 subId1 = OptionEncoding.toSubId(expiry, 2600e18, true);
+    uint96 subId2 = OptionEncoding.toSubId(expiry, 2700e18, true);
+    uint96 subId3 = OptionEncoding.toSubId(expiry, 2800e18, true);
+
     uint tradeId = 5;
     int amount = 10e18;
 
