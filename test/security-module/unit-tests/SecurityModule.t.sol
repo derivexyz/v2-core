@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 import "../mocks/MockCash.sol";
-import "../mocks/MockPCRMManager.sol";
+import "../../shared/mocks/MockManager.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
@@ -22,7 +22,7 @@ contract UNIT_SecurityModule is Test {
 
   MockCashAssetWithExchangeRate mockCash;
   MockERC20 usdc;
-  MockPCRMManager manager;
+  MockManager manager;
   Accounts accounts;
   SecurityModule securityModule;
 
@@ -32,7 +32,7 @@ contract UNIT_SecurityModule is Test {
   function setUp() public {
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockPCRMManager(address(accounts));
+    manager = new MockManager(address(accounts));
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
