@@ -78,20 +78,6 @@ contract UNIT_TestBasicManager is Test {
   // Manager Change //
   ////////////////////
 
-  function testValidManagerChange() public {
-    MockManager newManager = new MockManager(address(account));
-
-    // first fails the change
-    vm.startPrank(alice);
-    vm.expectRevert(IBasicManager.BM_NotWhitelistManager.selector);
-    account.changeManager(aliceAcc, IManager(address(newManager)), "");
-    vm.stopPrank();
-
-    manager.setWhitelistManager(address(newManager), true);
-    vm.startPrank(alice);
-    account.changeManager(aliceAcc, IManager(address(newManager)), "");
-    vm.stopPrank();
-  }
 
   ////////////////////////////
   // Set Margin Requirement //

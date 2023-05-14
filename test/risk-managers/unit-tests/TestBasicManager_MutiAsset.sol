@@ -93,8 +93,19 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     expiry2 = block.timestamp + 14 days;
     expiry3 = block.timestamp + 30 days;
 
-    ethFeed.setSpot(1500e18, 1e18);
-    btcFeed.setSpot(20000e18, 1e18);
+    uint ethSpot = 1500e18;
+    uint btcSpot = 20000e18;
+
+    ethFeed.setSpot(ethSpot, 1e18);
+    btcFeed.setSpot(btcSpot, 1e18);
+
+    ethFeed.setForwardPrice(expiry1, ethSpot, 1e18);
+    ethFeed.setForwardPrice(expiry2, ethSpot, 1e18);
+    ethFeed.setForwardPrice(expiry3, ethSpot, 1e18);
+
+    btcFeed.setForwardPrice(expiry1, btcSpot, 1e18);
+    btcFeed.setForwardPrice(expiry2, btcSpot, 1e18);
+    btcFeed.setForwardPrice(expiry3, btcSpot, 1e18);
 
     usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
@@ -185,6 +196,9 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     MockOption dogeOption = new MockOption(account);
     MockFeeds dogeFeed = new MockFeeds();
     dogeFeed.setSpot(0.0005e18, 1e18);
+
+    dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
+
     manager.whitelistAsset(dogeOption, 5, IBasicManager.AssetType.Option);
     manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed);
 

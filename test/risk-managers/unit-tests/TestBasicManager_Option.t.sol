@@ -73,6 +73,8 @@ contract UNIT_TestBasicManager_Option is Test {
     expiry = block.timestamp + 91 days;
     feed.setSpot(1513e18, 1e18);
 
+    feed.setForwardPrice(expiry, 1513e18, 1e18);
+
     usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
 

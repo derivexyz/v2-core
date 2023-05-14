@@ -309,6 +309,7 @@ contract BasicManager is IBasicManager, BaseManager {
       portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
       // 4. initiate the option array in each expiry holding
       for (uint j; j < numExpires; j++) {
+        portfolio.subAccounts[i].expiryHoldings[j].expiry = seenExpires[j];
         portfolio.subAccounts[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
       }
 
