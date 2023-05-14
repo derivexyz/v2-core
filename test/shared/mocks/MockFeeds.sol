@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../../../src/interfaces/ISpotFeed.sol";
-import "../../../src/interfaces/IVolFeed.sol";
-import "../../../src/interfaces/IInterestRateFeed.sol";
-import "../../../src/interfaces/IForwardFeed.sol";
-import "../../../src/interfaces/ISettlementFeed.sol";
+import "src/interfaces/ISpotFeed.sol";
+import "src/interfaces/IVolFeed.sol";
+import "src/interfaces/IInterestRateFeed.sol";
+import "src/interfaces/IForwardFeed.sol";
+import "src/interfaces/ISettlementFeed.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed {
+import "src/interfaces/IUpdatableOracle.sol";
+
+contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IUpdatableOracle {
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
