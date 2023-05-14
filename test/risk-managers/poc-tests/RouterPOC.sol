@@ -3,23 +3,23 @@ pragma solidity ^0.8.18;
 
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IManager} from "src/interfaces/IManager.sol";
 
-import "src/interfaces/IPCRM.sol";
+import "src/interfaces/IBaseManager.sol";
+import "src/interfaces/IManager.sol";
 
 contract OrderRouter {
   IAccounts immutable accounts;
   IAsset immutable cashAsset;
-  IPCRM immutable pcrm;
+  IBaseManager immutable manager;
 
   uint ownAcc;
 
-  constructor(IAccounts _accounts, IPCRM _pcrm, IAsset _cashAsset) {
+  constructor(IAccounts _accounts, IBaseManager _manager, IAsset _cashAsset) {
     accounts = _accounts;
-    pcrm = _pcrm;
+    manager = _manager;
     cashAsset = _cashAsset;
 
-    ownAcc = accounts.createAccount(address(this), IManager(address(_pcrm)));
+    ownAcc = accounts.createAccount(address(this), IManager(address(manager)));
   }
 
   function submitOrders(IAccounts.AssetTransfer[] memory transfers) external {
@@ -28,9 +28,9 @@ contract OrderRouter {
     // transfer funds with accounts
     uint tradeId = accounts.submitTransfers(transfers, "");
 
-    // get fee from pcrm (Base manager)
+    // get fee from manager (Base manager)
     uint accountA = transfers[0].fromAcc;
-    uint fee = pcrm.feeCharged(tradeId, accountA);
+    uint fee = manager.feeCharged(tradeId, accountA);
 
     // refund fee to accountA
     IAccounts.AssetTransfer[] memory refunds = new IAccounts.AssetTransfer[](1);

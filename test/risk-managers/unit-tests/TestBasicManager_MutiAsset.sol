@@ -14,7 +14,7 @@ import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
-import "test/shared/mocks/MockFeed.sol";
+import "test/shared/mocks/MockFeeds.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
 
 import "test/auction/mocks/MockCashAsset.sol";
@@ -38,8 +38,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   uint expiry2;
   uint expiry3;
 
-  MockFeed ethFeed;
-  MockFeed btcFeed;
+  MockFeeds ethFeed;
+  MockFeeds btcFeed;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -62,12 +62,12 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // Setup asset for ETH Markets
     ethPerp = new MockPerp(account);
     ethOption = new MockOption(account);
-    ethFeed = new MockFeed();
+    ethFeed = new MockFeeds();
 
     // setup asset for BTC Markets
     btcPerp = new MockPerp(account);
     btcOption = new MockOption(account);
-    btcFeed = new MockFeed();
+    btcFeed = new MockFeeds();
 
     pricing = new MockOptionPricing();
 
@@ -93,8 +93,19 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     expiry2 = block.timestamp + 14 days;
     expiry3 = block.timestamp + 30 days;
 
-    ethFeed.setSpot(1500e18);
-    btcFeed.setSpot(20000e18);
+    uint ethSpot = 1500e18;
+    uint btcSpot = 20000e18;
+
+    ethFeed.setSpot(ethSpot, 1e18);
+    btcFeed.setSpot(btcSpot, 1e18);
+
+    ethFeed.setForwardPrice(expiry1, ethSpot, 1e18);
+    ethFeed.setForwardPrice(expiry2, ethSpot, 1e18);
+    ethFeed.setForwardPrice(expiry3, ethSpot, 1e18);
+
+    btcFeed.setForwardPrice(expiry1, btcSpot, 1e18);
+    btcFeed.setForwardPrice(expiry2, btcSpot, 1e18);
+    btcFeed.setForwardPrice(expiry3, btcSpot, 1e18);
 
     usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
@@ -183,8 +194,11 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   function testCanTradeMultiMarketsNotInOrder() public {
     // Setup doge market
     MockOption dogeOption = new MockOption(account);
-    MockFeed dogeFeed = new MockFeed();
-    dogeFeed.setSpot(0.0005e18);
+    MockFeeds dogeFeed = new MockFeeds();
+    dogeFeed.setSpot(0.0005e18, 1e18);
+
+    dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
+
     manager.whitelistAsset(dogeOption, 5, IBasicManager.AssetType.Option);
     manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed);
 

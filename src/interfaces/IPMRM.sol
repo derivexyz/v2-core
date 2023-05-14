@@ -1,3 +1,9 @@
+import "./ISpotFeed.sol";
+import "./IForwardFeed.sol";
+import "./IInterestRateFeed.sol";
+import "./IVolFeed.sol";
+import "./ISettlementFeed.sol";
+
 interface IPMRM {
   enum VolShockDirection {
     None,
@@ -5,7 +11,16 @@ interface IPMRM {
     Down
   }
 
-  struct PMRM_Portfolio {
+  struct Feeds {
+    ISpotFeed spotFeed;
+    ISpotFeed stableFeed;
+    IForwardFeed forwardFeed;
+    IInterestRateFeed interestRateFeed;
+    IVolFeed volFeed;
+    ISettlementFeed settlementFeed;
+  }
+
+  struct Portfolio {
     uint spotPrice;
     uint stablePrice;
     /// cash amount or debt

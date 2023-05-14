@@ -2,16 +2,19 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "../../src/liquidation/DutchAuction.sol";
-import "../../src/Accounts.sol";
+import "src/liquidation/DutchAuction.sol";
+import "src/Accounts.sol";
+
+// shared mocks
 import "../shared/mocks/MockERC20.sol";
 import "../shared/mocks/MockAsset.sol";
 
-import "../../src/liquidation/DutchAuction.sol";
-
 import "../shared/mocks/MockManager.sol";
-import "../shared/mocks/MockFeed.sol";
-import "../shared/mocks/MockIPCRM.sol";
+import "../shared/mocks/MockFeeds.sol";
+
+// local mocks
+
+import "./mocks/MockBaseManager.sol";
 
 contract UNIT_DutchAuctionView is Test {
   address alice;
@@ -26,8 +29,9 @@ contract UNIT_DutchAuctionView is Test {
   MockAsset usdcAsset;
   MockAsset optionAdapter;
   MockAsset coolAsset;
-  MockIPCRM manager;
-  MockFeed feed;
+  MockBaseManager manager;
+  MockFeeds feed;
+
   DutchAuction dutchAuction;
   DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
@@ -72,12 +76,12 @@ contract UNIT_DutchAuctionView is Test {
     optionAdapter = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
-    manager = new MockIPCRM(address(account));
+    manager = new MockBaseManager(address(account));
 
     /*
-     Feed for Spot*/
-    feed = new MockFeed();
-    feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
+    Feed for Spot*/
+    feed = new MockFeeds();
+    feed.setSpot(1e18 * 1000, 1e18); // setting feed to 1000 usdc per eth
 
     dutchAuction =
       dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
@@ -139,12 +143,5 @@ contract UNIT_DutchAuctionView is Test {
 
   function testGetRiskManager() public {
     assertEq(address(dutchAuction.riskManager()), address(manager));
-  }
-
-  function testGetBounds() public {
-    manager.giveAssets(1);
-    (int max, int min) = dutchAuction.getBounds(1);
-    assertEq(max, 0);
-    assertEq(min, 0);
   }
 }

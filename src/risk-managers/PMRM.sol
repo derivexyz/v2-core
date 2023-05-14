@@ -8,7 +8,6 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
-import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
@@ -39,16 +38,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
+  using SafeCast for int;
   using IntLib for int;
-
-  struct Feeds {
-    ISpotFeed spotFeed;
-    ISpotFeed stableFeed;
-    IForwardFeed forwardFeed;
-    IInterestRateFeed interestRateFeed;
-    IVolFeed volFeed;
-    ISettlementFeed settlementFeed;
-  }
 
   ///////////////
   // Constants //
@@ -84,10 +75,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
-    IMTMCache mtmCache_,
+    IOptionPricing optionPricing_,
     WrappedERC20Asset baseAsset_,
     Feeds memory feeds_
-  ) PMRMLib(mtmCache_) BaseManager(accounts_, cashAsset_) {
+  ) PMRMLib(optionPricing_) BaseManager(accounts_, cashAsset_, IDutchAuction(address(0))) {
     spotFeed = feeds_.spotFeed;
     stableFeed = feeds_.stableFeed;
     forwardFeed = feeds_.forwardFeed;
@@ -171,7 +162,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
-    IPMRM.PMRM_Portfolio memory portfolio =
+    IPMRM.Portfolio memory portfolio =
       _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), !isTrustedRiskAssessor);
 
     if (isTrustedRiskAssessor) {
@@ -198,7 +189,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets, bool addForwardCont)
     internal
     view
-    returns (IPMRM.PMRM_Portfolio memory portfolio)
+    returns (IPMRM.Portfolio memory portfolio)
   {
     (uint seenExpiries, PortfolioExpiryData[] memory expiryCount) = _countExpiriesAndOptions(assets);
 
@@ -232,7 +223,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     for (uint i = 0; i < assetLen; ++i) {
       IAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-        (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+        (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
         if (optionExpiry < block.timestamp) {
           revert("option expired");
         }
@@ -260,7 +251,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   /**
    *
    */
-  function _initialiseExpiries(IPMRM.PMRM_Portfolio memory portfolio, PortfolioExpiryData[] memory expiryCount)
+  function _initialiseExpiries(IPMRM.Portfolio memory portfolio, PortfolioExpiryData[] memory expiryCount)
     internal
     view
   {
@@ -272,10 +263,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
       uint secToExpiry = expiryCount[i].expiry - block.timestamp;
       portfolio.expiries[i] = ExpiryHoldings({
-        secToExpiry: SafeCast.toUint64(secToExpiry),
+        secToExpiry: secToExpiry.toUint64(),
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardPrice: forwardPrice,
-        rate: SafeCast.toInt64(rate),
+        rate: rate,
         minConfidence: minConfidence,
         netOptions: 0,
         // vol shocks are added in addPrecomputes
@@ -291,20 +282,20 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
   function _arrangeOptions(
     uint accountId,
-    IPMRM.PMRM_Portfolio memory portfolio,
+    IPMRM.Portfolio memory portfolio,
     IAccounts.AssetBalance[] memory assets,
     PortfolioExpiryData[] memory expiryCount
   ) internal view {
     for (uint i = 0; i < assets.length; ++i) {
       IAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-        (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
+        (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
 
         uint expiryIndex = findInArray(portfolio.expiries, optionExpiry - block.timestamp, portfolio.expiries.length);
 
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
 
-        (uint vol, uint confidence) = volFeed.getVol(SafeCast.toUint128(strike), SafeCast.toUint128(optionExpiry));
+        (uint vol, uint confidence) = volFeed.getVol(strike.toUint128(), optionExpiry.toUint128());
         if (confidence < expiry.minConfidence) {
           expiry.minConfidence = confidence;
         }
@@ -320,7 +311,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         portfolio.perpPosition = currentAsset.balance;
         portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
       } else if (address(currentAsset.asset) == address(baseAsset)) {
-        portfolio.basePosition = SafeCast.toUint256(currentAsset.balance);
+        portfolio.basePosition = currentAsset.balance.toUint256();
       } else {
         revert("Invalid asset type");
       }
@@ -342,7 +333,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
   }
 
-  function _checkMargin(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
+  function _checkMargin(IPMRM.Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
     int im = _getMargin(portfolio, true, scenarios);
     if (im < 0) {
       revert("IM rules not satisfied");
@@ -353,12 +344,12 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // View //
   //////////
 
-  function arrangePortfolio(uint accountId) external view returns (IPMRM.PMRM_Portfolio memory portfolio) {
+  function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
     return _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
   }
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    IPMRM.PMRM_Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
     int im = _getMargin(portfolio, isInitial, marginScenarios);
     return im;
   }
@@ -378,26 +369,5 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         );
       }
     }
-  }
-
-  ////////////////////////
-  //    Account Hooks   //
-  ////////////////////////
-
-  /**
-   * @notice Ensures new manager is valid.
-   * @param newManager IManager to change account to.
-   */
-  function handleManagerChange(uint, IManager newManager) external view {}
-
-  ////////////////////////
-  //      Modifiers     //
-  ////////////////////////
-
-  modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) {
-      revert("only accounts");
-    }
-    _;
   }
 }

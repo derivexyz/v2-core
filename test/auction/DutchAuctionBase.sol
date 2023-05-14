@@ -9,11 +9,10 @@ import "../shared/mocks/MockERC20.sol";
 import "../shared/mocks/MockAsset.sol";
 import "../shared/mocks/MockSM.sol";
 import "./mocks/MockCashAsset.sol";
+import "./mocks/MockBaseManager.sol";
 import "../../src/liquidation/DutchAuction.sol";
 
-import "../shared/mocks/MockManager.sol";
-import "../shared/mocks/MockFeed.sol";
-import "../shared/mocks/MockIPCRM.sol";
+import "../shared/mocks/MockFeeds.sol";
 
 contract DutchAuctionBase is Test {
   address alice;
@@ -26,8 +25,8 @@ contract DutchAuctionBase is Test {
   MockERC20 usdc;
   MockCash usdcAsset;
   MockAsset optionAsset;
-  MockIPCRM manager;
-  MockFeed feed;
+  MockBaseManager manager;
+  MockFeeds feed;
   DutchAuction dutchAuction;
 
   /// @dev deploy mock system
@@ -45,16 +44,16 @@ contract DutchAuctionBase is Test {
     optionAsset = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
-    manager = new MockIPCRM(address(account));
+    manager = new MockBaseManager(address(account));
 
     // mock cash
     sm = new MockSM(account, usdcAsset);
     sm.createAccountForSM(manager);
 
     /*
-     Feed for Spot*/
-    feed = new MockFeed();
-    feed.setSpot(1e18 * 1000); // setting feed to 1000 usdc per eth
+    Feed for Spot*/
+    feed = new MockFeeds();
+    feed.setSpot(1e18 * 1000, 1e18); // setting feed to 1000 usdc per eth
 
     dutchAuction = dutchAuction = new DutchAuction(manager, account, sm, usdcAsset);
   }
@@ -83,6 +82,4 @@ contract DutchAuctionBase is Test {
     aliceAcc = account.createAccount(alice, manager);
     bobAcc = account.createAccount(bob, manager);
   }
-
-  function test() external {}
 }

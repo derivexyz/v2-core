@@ -15,13 +15,11 @@ import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {ISingleExpiryPortfolio} from "src/interfaces/ISingleExpiryPortfolio.sol";
 import {IOption} from "src/interfaces/IOption.sol";
-import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
-import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
 import {IBasicManager} from "src/interfaces/IBasicManager.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
+import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 
 import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
@@ -29,9 +27,8 @@ import {BaseManager} from "./BaseManager.sol";
 
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-import "src/libraries/StrikeGrouping.sol";
-
 import "forge-std/console2.sol";
+import "../interfaces/IOptionPricing.sol";
 
 /**
  * @title BasicManager
@@ -52,7 +49,7 @@ contract BasicManager is IBasicManager, BaseManager {
   ///////////////
 
   /// @dev Pricing module to get option mark-to-market price
-  IOptionPricing public pricing;
+  IOptionPricing public optionPricing;
 
   /// @dev True if an IAsset address is whitelisted.
   mapping(IAsset asset => AssetDetail) public assetDetails;
@@ -76,7 +73,7 @@ contract BasicManager is IBasicManager, BaseManager {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_) {}
+  constructor(IAccounts accounts_, ICashAsset cashAsset_) BaseManager(accounts_, cashAsset_, IDutchAuction(address(0))) {}
 
   ////////////////////////
   //    Admin-Only     //
@@ -144,7 +141,7 @@ contract BasicManager is IBasicManager, BaseManager {
    */
   function setPricingModule(IOptionPricing _pricing) external onlyOwner {
     // todo: use this for mark-to-market
-    pricing = IOptionPricing(_pricing);
+    optionPricing = IOptionPricing(_pricing);
 
     emit PricingModuleSet(address(_pricing));
   }
@@ -152,16 +149,6 @@ contract BasicManager is IBasicManager, BaseManager {
   ///////////////////////
   //   Account Hooks   //
   ///////////////////////
-
-  /**
-   * @notice Ensures new manager is valid.
-   * @param newManager IManager to change account to.
-   */
-  function handleManagerChange(uint, IManager newManager) external view {
-    if (!whitelistedManager[address(newManager)]) {
-      revert BM_NotWhitelistManager();
-    }
-  }
 
   /**
    * @notice Ensures asset is valid and Max Loss margin is met.
@@ -322,6 +309,7 @@ contract BasicManager is IBasicManager, BaseManager {
       portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
       // 4. initiate the option array in each expiry holding
       for (uint j; j < numExpires; j++) {
+        portfolio.subAccounts[i].expiryHoldings[j].expiry = seenExpires[j];
         portfolio.subAccounts[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
       }
 
@@ -564,15 +552,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
   function _getForwardPrice(uint marketId, uint expiry) internal view returns (int) {
     (uint fwdPrice,) = forwardFeeds[marketId].getForwardPrice(expiry);
+    if (fwdPrice == 0) revert BM_NoForwardPrice();
     return fwdPrice.toInt256();
-  }
-
-  ////////////////////////
-  //      Modifiers     //
-  ////////////////////////
-
-  modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) revert BM_NotAccounts();
-    _;
   }
 }

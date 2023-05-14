@@ -1,12 +1,13 @@
 import "../interfaces/IPMRM.sol";
-import "../interfaces/IMTMCache.sol";
+import "../interfaces/IOptionPricing.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "./TODO_MOVE_TO_LYRA_UTILS.sol";
 import "lyra-utils/math/IntLib.sol";
+import "lyra-utils/math/UintLib.sol";
+import "lyra-utils/math/Black76.sol";
 import "../interfaces/IAccounts.sol";
 
 import "forge-std/console2.sol";
@@ -50,15 +51,15 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   using SafeCast for uint;
 
   /// @dev Pricing module to get option mark-to-market price
-  IMTMCache public mtmCache;
+  IOptionPricing public optionPricing;
 
   IPMRMLib.ForwardContingencyParameters fwdContParams;
   IPMRMLib.OtherContingencyParameters otherContParams;
   IPMRMLib.StaticDiscountParameters staticDiscountParams;
   IPMRMLib.VolShockParameters volShockParams;
 
-  constructor(IMTMCache _mtmCache) Ownable2Step() {
-    mtmCache = _mtmCache;
+  constructor(IOptionPricing _optionPricing) Ownable2Step() {
+    optionPricing = _optionPricing;
 
     fwdContParams.spotShock1 = 0.95e18;
     fwdContParams.spotShock2 = 1.05e18;
@@ -87,8 +88,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // Admin //
   ///////////
 
-  function setMTMCache(IMTMCache _mtmCache) external onlyOwner {
-    mtmCache = _mtmCache;
+  function setOptionPricing(IOptionPricing _optionPricing) external onlyOwner {
+    optionPricing = _optionPricing;
   }
 
   function setForwardContingencyParams(IPMRMLib.ForwardContingencyParameters memory _fwdContParams) external onlyOwner {
@@ -131,7 +132,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // MTM calculations //
   //////////////////////
 
-  function _getMargin(IPMRM.PMRM_Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios)
+  function _getMargin(IPMRM.Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios)
     internal
     view
     returns (int margin)
@@ -160,13 +161,13 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
       minSPAN = minSPAN.multiplyDecimal(int(mFactor));
 
-      minSPAN -= SafeCast.toInt256(portfolio.confidenceContingency);
+      minSPAN -= portfolio.confidenceContingency.toInt256();
     }
 
     return (minSPAN + portfolio.totalMtM + portfolio.cash);
   }
 
-  function getScenarioMtM(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.Scenario memory scenario)
+  function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
     internal
     view
     returns (int scenarioMtM)
@@ -194,12 +195,11 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       scenarioMtM += _applyMTMDiscount(expiryMtM, expiry.staticDiscount) - expiry.mtm;
     }
 
-    int shockedBaseValue = SafeCast.toInt256(
-      _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, scenario.spotShock)
-    );
+    uint shockedBaseValue =
+      _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, scenario.spotShock);
     int shockedPerpValue = _getShockedPerpValue(portfolio.perpPosition, portfolio.spotPrice, scenario.spotShock);
 
-    scenarioMtM += (shockedBaseValue + shockedPerpValue - SafeCast.toInt256(portfolio.baseValue));
+    scenarioMtM += (shockedBaseValue.toInt256() + shockedPerpValue - portfolio.baseValue.toInt256());
   }
 
   // calculate MTM with given shock
@@ -216,36 +216,37 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
 
     // TODO: maybe these structs should be precomputed? Test gas
-    IMTMCache.Expiry memory expiryDetails = IMTMCache.Expiry({
-      secToExpiry: SafeCast.toUint64(expiry.secToExpiry),
-      forwardPrice: SafeCast.toUint128(expiry.forwardPrice.multiplyDecimal(spotShock)),
+    IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
+      secToExpiry: expiry.secToExpiry.toUint64(),
+      forwardPrice: expiry.forwardPrice.multiplyDecimal(spotShock).toUint128(),
       discountFactor: 1e18
     });
 
-    IMTMCache.Option[] memory optionDetails = new IMTMCache.Option[](expiry.options.length);
+    IOptionPricing.Option[] memory optionDetails = new IOptionPricing.Option[](expiry.options.length);
     for (uint i = 0; i < expiry.options.length; i++) {
       IPMRM.StrikeHolding memory option = expiry.options[i];
-      optionDetails[i] = IMTMCache.Option({
-        strike: SafeCast.toUint128(option.strike),
-        vol: SafeCast.toUint128(option.vol.multiplyDecimal(volShock)),
+      optionDetails[i] = IOptionPricing.Option({
+        strike: option.strike.toUint128(),
+        vol: option.vol.multiplyDecimal(volShock).toUint128(),
         amount: option.amount,
         isCall: option.isCall
       });
     }
 
-    return mtmCache.getExpiryMTM(expiryDetails, optionDetails);
+    return optionPricing.getExpiryOptionsValue(expiryDetails, optionDetails);
   }
 
   function _applyMTMDiscount(int expiryMTM, uint staticDiscount) internal pure returns (int) {
     if (expiryMTM > 0) {
-      return expiryMTM * SafeCast.toInt256(staticDiscount) / 1e18;
+      // TODO: just store staticDiscount as int
+      return expiryMTM.multiplyDecimal(staticDiscount.toInt256());
     } else {
       return expiryMTM;
     }
   }
 
   function _getShockedPerpValue(int position, uint spotPrice, uint spotShock) internal pure returns (int) {
-    int value = (int(spotShock) - SignedDecimalMath.UNIT).multiplyDecimal(int(spotPrice));
+    int value = (spotShock.toInt256() - SignedDecimalMath.UNIT).multiplyDecimal(spotPrice.toInt256());
     return position.multiplyDecimal(value);
   }
 
@@ -258,8 +259,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   /////////////////
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
-  function _addPrecomputes(IPMRM.PMRM_Portfolio memory portfolio, bool addForwardCont) internal view {
-    // TODO: baseValue seperate field??
+  function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addForwardCont) internal view {
     portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, 1e18);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
     portfolio.totalMtM += portfolio.unrealisedPerpValue;
@@ -294,41 +294,40 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function _addStaticDiscount(IPMRM.ExpiryHoldings memory expiry) internal view {
-    uint tAnnualised = expiry.secToExpiry * 1e18 / 365 days;
+    uint tAnnualised = expiry.secToExpiry * DecimalMath.UNIT / 365 days;
+    // TODO: this casting to uint is sus
     uint cappedRate = expiry.rate < 0 ? 0 : uint(int(expiry.rate));
-    uint shockRFR = uint(cappedRate).multiplyDecimal(staticDiscountParams.rateMultiplicativeFactor)
+    uint shockRFR = cappedRate.multiplyDecimal(staticDiscountParams.rateMultiplicativeFactor)
       + staticDiscountParams.rateAdditiveFactor;
     expiry.staticDiscount = staticDiscountParams.baseStaticDiscount.multiplyDecimal(
-      FixedPointMathLib.exp(-SafeCast.toInt256(tAnnualised.multiplyDecimal(shockRFR)))
+      FixedPointMathLib.exp(-tAnnualised.multiplyDecimal(shockRFR).toInt256())
     );
   }
 
   function _addVolShocks(IPMRM.ExpiryHoldings memory expiry) internal view {
     // TODO: "1 days" should be a param
-    uint tao = 30 days * 1e18 / TODO_MOVE_TO_LYRA_UTILS.max(expiry.secToExpiry, 1 days);
-    uint multShock = TODO_MOVE_TO_LYRA_UTILS.decPow(
-      tao, expiry.secToExpiry <= 30 days ? volShockParams.shortTermPower : volShockParams.longTermPower
+    int tao = int(30 days * DecimalMath.UNIT / UintLib.max(expiry.secToExpiry, 1 days));
+    uint multShock = FixedPointMathLib.decPow(
+      tao, expiry.secToExpiry <= 30 days ? int(volShockParams.shortTermPower) : int(volShockParams.longTermPower)
     );
 
-    expiry.volShockUp = 1e18 + volShockParams.volRangeUp.multiplyDecimal(multShock);
-    expiry.volShockDown = SafeCast.toUint256(int(1e18) - int(volShockParams.volRangeDown.multiplyDecimal(multShock)));
+    expiry.volShockUp = DecimalMath.UNIT + volShockParams.volRangeUp.multiplyDecimal(multShock);
+    expiry.volShockDown =
+      SafeCast.toUint256(SignedDecimalMath.UNIT - int(volShockParams.volRangeDown.multiplyDecimal(multShock)));
   }
 
   ///////////////////
   // Contingencies //
   ///////////////////
 
-  function _addForwardContingency(IPMRM.PMRM_Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry)
-    internal
-    view
-  {
+  function _addForwardContingency(IPMRM.Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry) internal view {
     expiry.fwdShock1MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock1, IPMRM.VolShockDirection.None);
     expiry.fwdShock2MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock2, IPMRM.VolShockDirection.None);
 
-    int fwdContingency = TODO_MOVE_TO_LYRA_UTILS.min(expiry.fwdShock1MtM, expiry.fwdShock2MtM) - expiry.mtm;
+    int fwdContingency = IntLib.min(expiry.fwdShock1MtM, expiry.fwdShock2MtM) - expiry.mtm;
     int fwdContingencyFactor = int(
       fwdContParams.additiveFactor //
-        + fwdContParams.multiplicativeFactor.multiplyDecimal(TODO_MOVE_TO_LYRA_UTILS.annualize(expiry.secToExpiry))
+        + fwdContParams.multiplicativeFactor.multiplyDecimal(Black76.annualise(uint64(expiry.secToExpiry)))
     );
     portfolio.fwdContingency += fwdContingency.multiplyDecimal(fwdContingencyFactor);
   }

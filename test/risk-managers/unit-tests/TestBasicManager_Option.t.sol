@@ -14,7 +14,7 @@ import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
-import "test/shared/mocks/MockFeed.sol";
+import "test/shared/mocks/MockFeeds.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
 
 import "test/auction/mocks/MockCashAsset.sol";
@@ -32,7 +32,7 @@ contract UNIT_TestBasicManager_Option is Test {
   MockOptionPricing pricing;
   uint expiry;
 
-  MockFeed feed;
+  MockFeeds feed;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -50,7 +50,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
     option = new MockOption(account);
 
-    feed = new MockFeed();
+    feed = new MockFeeds();
 
     pricing = new MockOptionPricing();
 
@@ -71,7 +71,9 @@ contract UNIT_TestBasicManager_Option is Test {
 
     // set a future price that will be used for 90 day options
     expiry = block.timestamp + 91 days;
-    feed.setSpot(1513e18);
+    feed.setSpot(1513e18, 1e18);
+
+    feed.setForwardPrice(expiry, 1513e18, 1e18);
 
     usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
@@ -116,7 +118,7 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testSetOracles() public {
-    MockFeed newFeed = new MockFeed();
+    MockFeeds newFeed = new MockFeeds();
     manager.setOraclesForMarket(1, newFeed, newFeed, newFeed);
     assertEq(address(manager.spotFeeds(1)), address(newFeed));
     assertEq(address(manager.settlementFeeds(1)), address(newFeed));
@@ -237,6 +239,14 @@ contract UNIT_TestBasicManager_Option is Test {
     _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
+  function testCannotTradeWithExpiryWithNoForwardPrice() public {
+    uint strike = 2000e18;
+    cash.deposit(aliceAcc, 190e18);
+
+    vm.expectRevert(IBasicManager.BM_NoForwardPrice.selector);
+    _tradeOption(aliceAcc, bobAcc, 1e18, expiry + 1, strike, true);
+  }
+
   function testShortStraddle() public {
     uint strike = 1500e18;
     int amount = 1e18;
@@ -295,7 +305,7 @@ contract UNIT_TestBasicManager_Option is Test {
     MockOption badAsset = new MockOption(account);
 
     vm.warp(expiry + 1);
-    feed.setSpot(2100e19);
+    feed.setSpot(2100e19, 1e18);
     vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
     manager.settleOptions(badAsset, aliceAcc);
   }

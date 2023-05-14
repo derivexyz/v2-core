@@ -14,7 +14,7 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
-import "test/shared/mocks/MockFeed.sol";
+import "test/shared/mocks/MockFeeds.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 import "test/shared/utils/JsonMechIO.sol";
@@ -37,7 +37,7 @@ contract UNIT_TestPMRM is PMRMTestBase {
     //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".OracleContingency");
     IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".StableRate");
     //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BitOfEverything");
-    IPMRM.PMRM_Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
     _logPortfolio(portfolio);
     console2.log("im", pmrm.getMarginByBalances(balances, true));
     console2.log("mm", pmrm.getMarginByBalances(balances, false));

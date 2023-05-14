@@ -6,11 +6,9 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
-import "lyra-utils/ownership/Owned.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import "src/interfaces/IAccounts.sol";
-import "src/interfaces/IChainlinkSpotFeed.sol";
 import "src/assets/ManagerWhitelist.sol";
 
 /**

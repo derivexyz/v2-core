@@ -11,7 +11,6 @@ import "lyra-utils/math/IntLib.sol";
 import "./ManagerWhitelist.sol";
 
 import {IOption} from "src/interfaces/IOption.sol";
-import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
