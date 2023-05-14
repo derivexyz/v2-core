@@ -11,7 +11,7 @@ import "src/interfaces/IUpdatableOracle.sol";
  */
 contract LyraSpotFeed is ISpotFeed, IUpdatableOracle {
   // todo: potentially be updatable
-  uint64 public immutable staleLimit;
+  // uint64 public immutable staleLimit;
 
   ////////////////////////
   //    Constructor     //
@@ -23,7 +23,7 @@ contract LyraSpotFeed is ISpotFeed, IUpdatableOracle {
    * @notice Gets spot price
    * @return spotPrice Spot price with 18 decimals.
    */
-  function getSpot() public view returns (uint spotPrice) {}
+  function getSpot() public view returns (uint spotPrice, uint confidence) {}
 
   function updatePrice(bytes calldata data) external {
     // parse data, verify signature

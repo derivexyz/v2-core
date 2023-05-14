@@ -247,8 +247,10 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     _submitMultipleTrades(aliceAcc, bobAcc, trades, managerData);
 
-    assertEq(ethFeed.getSpot(), ethSpot);
-    assertEq(btcFeed.getSpot(), btcSpot);
+    (uint _ethSpot, ) = ethFeed.getSpot();
+    (uint _btcSpot, ) = btcFeed.getSpot();
+    assertEq(_ethSpot, ethSpot);
+    assertEq(_btcSpot, btcSpot);
   }
 
   /////////////
