@@ -23,10 +23,7 @@ contract LyraSpotFeed is ISpotFeed, IUpdatableOracle {
    * @notice Gets spot price
    * @return spotPrice Spot price with 18 decimals.
    */
-  function getSpot() public view returns (uint spotPrice) {
-    
-
-  }
+  function getSpot() public view returns (uint spotPrice) {}
 
   function updatePrice(bytes calldata data) external {
     // parse data, verify signature
