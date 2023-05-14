@@ -8,7 +8,6 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/IntLib.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
-import "lyra-utils/ownership/Owned.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAccounts.sol";
@@ -39,6 +38,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
+  using SafeCast for int;
   using IntLib for int;
 
   ///////////////
@@ -223,7 +223,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     for (uint i = 0; i < assetLen; ++i) {
       IAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-        (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+        (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
         if (optionExpiry < block.timestamp) {
           revert("option expired");
         }
@@ -263,10 +263,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
       uint secToExpiry = expiryCount[i].expiry - block.timestamp;
       portfolio.expiries[i] = ExpiryHoldings({
-        secToExpiry: SafeCast.toUint64(secToExpiry),
+        secToExpiry: secToExpiry.toUint64(),
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardPrice: forwardPrice,
-        rate: SafeCast.toInt64(rate),
+        rate: rate,
         minConfidence: minConfidence,
         netOptions: 0,
         // vol shocks are added in addPrecomputes
@@ -289,13 +289,13 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     for (uint i = 0; i < assets.length; ++i) {
       IAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-        (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(currentAsset.subId));
+        (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
 
         uint expiryIndex = findInArray(portfolio.expiries, optionExpiry - block.timestamp, portfolio.expiries.length);
 
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
 
-        (uint vol, uint confidence) = volFeed.getVol(SafeCast.toUint128(strike), SafeCast.toUint128(optionExpiry));
+        (uint vol, uint confidence) = volFeed.getVol(strike.toUint128(), optionExpiry.toUint128());
         if (confidence < expiry.minConfidence) {
           expiry.minConfidence = confidence;
         }
@@ -311,7 +311,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         portfolio.perpPosition = currentAsset.balance;
         portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
       } else if (address(currentAsset.asset) == address(baseAsset)) {
-        portfolio.basePosition = SafeCast.toUint256(currentAsset.balance);
+        portfolio.basePosition = currentAsset.balance.toUint256();
       } else {
         revert("Invalid asset type");
       }

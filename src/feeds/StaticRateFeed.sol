@@ -1,7 +1,7 @@
-import "lyra-utils/ownership/Owned.sol";
 import "src/interfaces/IInterestRateFeed.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
-contract StaticInterestRateFeed is Owned, IInterestRateFeed {
+contract StaticInterestRateFeed is Ownable2Step, IInterestRateFeed {
   int64 public interestRate;
 
   function setInterestRate(int64 newInterestRate) external onlyOwner {
