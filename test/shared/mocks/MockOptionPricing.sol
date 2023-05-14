@@ -10,8 +10,12 @@ contract MockOptionPricing is IOptionPricing {
   // mocked strike => expiry => mock value
   mapping(uint => mapping(uint => mapping(bool => uint))) public mockMTM;
 
-
-  function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external view override returns (int) {
+  function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options)
+    external
+    view
+    override
+    returns (int)
+  {
     int total = 0;
     for (uint i = 0; i < options.length; i++) {
       total += getOptionValue(expiryDetails, options[i]) * options[i].amount / 1e18;
@@ -20,7 +24,8 @@ contract MockOptionPricing is IOptionPricing {
   }
 
   function getOptionValue(Expiry memory expiryDetails, Option memory option) public view returns (int) {
-    return int(mockMTM[option.strike][block.timestamp + expiryDetails.secToExpiry][option.isCall]) * option.amount / 1e18;
+    return
+      int(mockMTM[option.strike][block.timestamp + expiryDetails.secToExpiry][option.isCall]) * option.amount / 1e18;
   }
 
   // set mock value

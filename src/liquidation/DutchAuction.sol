@@ -88,7 +88,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IBaseManager _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Ownable2Step() {
+  constructor(IBaseManager _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash)
+    Ownable2Step()
+  {
     riskManager = _riskManager;
     accounts = _accounts;
     securityModule = _securityModule;
@@ -113,7 +115,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId The id of the account being liquidated
    */
   function startAuction(uint accountId) external {
-
     if (getMaintenanceMarginForAccount(accountId) >= 0) {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
@@ -432,7 +433,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     upperBound = type(int).max;
     lowerBound = type(int).min;
   }
-
 
   /**
    * @notice gets the current bid price for a particular auction at the current block

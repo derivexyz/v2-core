@@ -9,18 +9,12 @@ contract OptionPricing is IOptionPricing {
     int totalMTM;
     // TODO: maybe we wanna keep call/put price around in case we need it for next options
     for (uint i = 0; i < options.length; i++) {
-      totalMTM += getOptionValue(
-        expiryDetails,
-        options[i]
-      );
+      totalMTM += getOptionValue(expiryDetails, options[i]);
     }
     return totalMTM;
   }
 
-  function getOptionValue(
-    Expiry memory expiryDetails,
-    Option memory option
-  ) public view returns (int) {
+  function getOptionValue(Expiry memory expiryDetails, Option memory option) public view returns (int) {
     // console2.log all arguments
     (uint call, uint put) = Black76.prices(
       Black76.Black76Inputs({

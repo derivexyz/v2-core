@@ -239,6 +239,14 @@ contract UNIT_TestBasicManager_Option is Test {
     _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
+  function testCannotTradeWithExpiryWithNoForwardPrice() public {
+    uint strike = 2000e18;
+    cash.deposit(aliceAcc, 190e18);
+
+    vm.expectRevert(IBasicManager.BM_NoForwardPrice.selector);
+    _tradeOption(aliceAcc, bobAcc, 1e18, expiry + 1, strike, true);
+  }
+
   function testShortStraddle() public {
     uint strike = 1500e18;
     int amount = 1e18;

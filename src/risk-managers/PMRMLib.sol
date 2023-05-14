@@ -318,10 +318,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // Contingencies //
   ///////////////////
 
-  function _addForwardContingency(IPMRM.Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry)
-    internal
-    view
-  {
+  function _addForwardContingency(IPMRM.Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry) internal view {
     expiry.fwdShock1MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock1, IPMRM.VolShockDirection.None);
     expiry.fwdShock2MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock2, IPMRM.VolShockDirection.None);
 

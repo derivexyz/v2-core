@@ -88,6 +88,9 @@ interface IBasicManager {
   /// @dev Invalid Parameters for perp margin requirements
   error BM_InvalidMarginRequirement();
 
+  /// @dev Forward Price for an asset is 0
+  error BM_NoForwardPrice();
+
   ///////////////////
   //    Events     //
   ///////////////////

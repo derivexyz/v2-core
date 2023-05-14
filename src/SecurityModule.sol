@@ -112,7 +112,6 @@ contract SecurityModule is Ownable2Step, ERC20, ISecurityModule {
     // check if the security module has enough fund. Cap the payout at min(balance, cashAmount)
     uint useableCash = accounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
 
-
     // TODO: WHAT IS THIS THING???
     uint staticCashOffset = 50e18;
 

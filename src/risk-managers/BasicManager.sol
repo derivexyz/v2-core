@@ -552,6 +552,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
   function _getForwardPrice(uint marketId, uint expiry) internal view returns (int) {
     (uint fwdPrice,) = forwardFeeds[marketId].getForwardPrice(expiry);
+    if (fwdPrice == 0) revert BM_NoForwardPrice();
     return fwdPrice.toInt256();
   }
 }

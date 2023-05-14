@@ -121,7 +121,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     onlyLiquidations
   {
     if (portion > DecimalMath.UNIT) {
-      revert ("PCRM_InvalidBidPortion");
+      revert("PCRM_InvalidBidPortion");
     }
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
@@ -258,13 +258,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint, IManager newManager) external view override virtual {
+  function handleManagerChange(uint, IManager newManager) external view virtual override {
     // TODO: whitelist maybe
-//    if (!whitelistedManager[address(newManager)]) {
-//      revert BM_NotWhitelistManager();
-//    }
+    //    if (!whitelistedManager[address(newManager)]) {
+    //      revert BM_NotWhitelistManager();
+    //    }
   }
-
 
   //////
   // Modifier //
@@ -283,7 +282,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
     _;
   }
-
 
   ////////////////
   //   Events   //
