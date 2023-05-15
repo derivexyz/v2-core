@@ -152,7 +152,6 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
-
   function handleAdjustment(
     uint accountId,
     uint tradeId,
@@ -162,11 +161,18 @@ contract BasicManager is IBasicManager, BaseManager {
   ) public override onlyAccounts {
     // send data to oracles if needed
     _processManagerData(tradeId, managerData);
-    
+
+    // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
+    bool isRiskReducing = true;
+
+
     // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
       // allow cash
-      if (address(assetDeltas[i].asset) == address(cashAsset)) continue;
+      if (address(assetDeltas[i].asset) == address(cashAsset)) {
+        if (assetDeltas[i].delta < 0) isRiskReducing = false;
+        continue;
+      }
 
       AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
 
@@ -174,7 +180,15 @@ contract BasicManager is IBasicManager, BaseManager {
 
       if (detail.assetType == AssetType.Perpetual) {
         // settle perps if the user has perp position
-        _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
+        bool isReducePosition = _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
+        if (!isReducePosition) isRiskReducing = false;
+      } else if (detail.assetType == AssetType.Option) {
+        // if the user is only reducing option position, we don't need to check margin
+        if (assetDeltas[i].delta < 0) {
+          isRiskReducing = false;
+        }
+      } else {
+        revert BM_UnsupportedAsset();
       }
     }
 

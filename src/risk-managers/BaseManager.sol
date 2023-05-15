@@ -231,9 +231,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
    */
-  function _settleAccountPerps(IPerpAsset perp, uint accountId) internal {
+  function _settleAccountPerps(IPerpAsset perp, uint accountId) internal returns (bool isClose) {
     // settle perp: update latest funding rate and settle
-    int netCash = perp.settleRealizedPNLAndFunding(accountId);
+    (int pnl, int funding) = perp.settleRealizedPNLAndFunding(accountId);
+
+    isClose = pnl != 0;
+
+    int netCash = pnl + funding;
 
     cashAsset.updateSettledCash(netCash);
 
