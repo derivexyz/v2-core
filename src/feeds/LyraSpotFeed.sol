@@ -23,7 +23,9 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
 
   mapping(address => bool) public isSigner;
 
-  bytes32 public constant SPOT_DATA_TYPEHASH = keccak256("SpotData(uint256 spot,uint256 nonce,uint256 deadline)");
+  bytes32 public constant SPOT_DATA_TYPEHASH = keccak256(
+    "SpotData(uint96 price,uint96 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)"
+  );
 
   ////////////////////////
   //    Constructor     //
