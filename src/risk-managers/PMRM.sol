@@ -162,17 +162,31 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     IPMRM.Portfolio memory portfolio =
-      _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), !isTrustedRiskAssessor);
+      _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
 
     if (isTrustedRiskAssessor) {
       // If the caller is a trusted risk assessor, use a single predefined scenario for checking margin
       IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
       scenarios[0] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-      _checkMargin(portfolio, scenarios);
+      int atmMM = _getMargin(portfolio, false, scenarios, false);
+      if (atmMM + portfolio.cash < 0) {
+        revert("Liquidatable position after trade");
+      }
     } else {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
-      _checkMargin(portfolio, marginScenarios);
+      int postIM = _getMargin(portfolio, true, marginScenarios, true);
+      if (postIM + portfolio.cash < 0) {
+
+        IPMRM.Portfolio memory prePortfolio =
+          _arrangePortfolio(accountId, undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
+
+        int preIM = _getMargin(prePortfolio, true, marginScenarios, true);
+        if (postIM < preIM) {
+          revert("IM requirements not met");
+        }
+      }
     }
   }
 
@@ -333,13 +347,6 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
   }
 
-  function _checkMargin(IPMRM.Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
-    int im = _getMargin(portfolio, true, scenarios);
-    if (im < 0) {
-      revert("IM rules not satisfied");
-    }
-  }
-
   //////////
   // View //
   //////////
@@ -350,7 +357,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
-    int im = _getMargin(portfolio, isInitial, marginScenarios);
+    int im = _getMargin(portfolio, isInitial, marginScenarios, true);
     return im;
   }
 
@@ -369,5 +376,63 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         );
       }
     }
+  }
+
+
+  //////////
+  // Misc //
+  //////////
+
+  function undoAssetDeltas(
+    uint accountId,
+    IAccounts.AssetDelta[] memory assetDeltas
+  ) internal view returns (IAccounts.AssetBalance[] memory newAssetBalances) {
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+
+    // keep track of how many new elements to add to the result, can be negative technically (remove 0 balances)
+    uint removedBalances = 0;
+    uint newBalances = 0;
+    IAccounts.AssetBalance[] memory preBalances = new IAccounts.AssetBalance[](assetDeltas.length);
+
+    for (uint i=0; i < assetDeltas.length; ++i) {
+      IAccounts.AssetDelta memory delta = assetDeltas[i];
+      if (delta.delta == 0) {
+        continue;
+      }
+      bool found = false;
+      for (uint j=0; j < assetBalances.length; ++j) {
+        IAccounts.AssetBalance memory balance = assetBalances[j];
+        if (balance.asset == delta.asset && balance.subId == delta.subId) {
+          found = true;
+          assetBalances[j].balance = balance.balance - delta.delta;
+          if (assetBalances[j].balance == 0) {
+            removedBalances++;
+          }
+          break;
+        }
+      }
+      if (!found) {
+        preBalances[newBalances++] = IAccounts.AssetBalance({
+          asset: delta.asset,
+          subId: delta.subId,
+          balance: -delta.delta
+        });
+      }
+    }
+
+    newAssetBalances = new IAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
+
+    uint newBalancesIndex = 0;
+    for (uint i=0; i < assetBalances.length; ++i) {
+      IAccounts.AssetBalance memory balance = assetBalances[i];
+      if (balance.balance != 0) {
+        newAssetBalances[newBalancesIndex++] = balance;
+      }
+    }
+    for (uint i=0; i<newBalances; ++i) {
+      newAssetBalances[newBalancesIndex++] = preBalances[i];
+    }
+
+    return newAssetBalances;
   }
 }
