@@ -99,7 +99,7 @@ interface IBasicManager {
 
   event OraclesSet(uint8 marketId, address spotOracle, address forwardOracle, address settlementOracle);
 
-  event PricingModuleSet(address pricingModule);
+  event PricingModuleSet(uint8 marketId, address pricingModule);
 
   event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 

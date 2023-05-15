@@ -32,6 +32,8 @@ contract UNIT_TestBasicManager_Option is Test {
   MockOptionPricing pricing;
   uint expiry;
 
+  uint8 ethMarketId = 1;
+
   MockFeeds feed;
 
   address alice = address(0xaa);
@@ -59,12 +61,12 @@ contract UNIT_TestBasicManager_Option is Test {
       ICashAsset(address(cash))
     );
 
-    manager.setPricingModule(pricing);
+    manager.setPricingModule(ethMarketId, pricing);
 
-    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(perp, ethMarketId, IBasicManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, ethMarketId, IBasicManager.AssetType.Option);
 
-    manager.setOraclesForMarket(1, feed, feed, feed);
+    manager.setOraclesForMarket(ethMarketId, feed, feed, feed);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -79,12 +81,12 @@ contract UNIT_TestBasicManager_Option is Test {
     usdc.approve(address(cash), type(uint).max);
 
     // set init perp trading parameters
-    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
 
-    manager.setOptionMarginParameters(1, params);
+    manager.setOptionMarginParameters(ethMarketId, params);
   }
 
   ////////////////
@@ -108,9 +110,9 @@ contract UNIT_TestBasicManager_Option is Test {
   function testSetOptionParameters() public {
     IBasicManager.OptionMarginParameters memory params =
       IBasicManager.OptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
-    manager.setOptionMarginParameters(1, params);
+    manager.setOptionMarginParameters(ethMarketId, params);
     (int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio) =
-      manager.optionMarginParams(1);
+      manager.optionMarginParams(ethMarketId);
     assertEq(baselineOptionIM, 0.5e18);
     assertEq(baselineOptionMM, 0.2e18);
     assertEq(minStaticMMRatio, 0.1e18);
@@ -119,7 +121,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testSetOracles() public {
     MockFeeds newFeed = new MockFeeds();
-    manager.setOraclesForMarket(1, newFeed, newFeed, newFeed);
+    manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed);
     assertEq(address(manager.spotFeeds(1)), address(newFeed));
     assertEq(address(manager.settlementFeeds(1)), address(newFeed));
     assertEq(address(manager.forwardFeeds(1)), address(newFeed));
@@ -134,32 +136,32 @@ contract UNIT_TestBasicManager_Option is Test {
   ///////////////
 
   function testGetIsolatedMarginLongCall() public {
-    int im = manager.getIsolatedMargin(1, 1000e18, expiry, true, 1e18, false);
-    int mm = manager.getIsolatedMargin(1, 1000e18, expiry, true, 1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, true, 1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, true, 1e18, true);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
 
   function testGetIsolatedMarginShortATMCall() public {
     uint strike = 1500e18;
-    int im = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
-    int mm = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
     assertEq(im / 1e18, -315);
     assertEq(mm / 1e18, -164);
   }
 
   function testGetIsolatedMarginShortITMCall() public {
     uint strike = 400e18;
-    int im = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
-    int mm = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
     assertEq(im / 1e18, -1415);
     assertEq(mm / 1e18, -1264);
   }
 
   function testGetIsolatedMarginShortOTMCall() public {
     uint strike = 3000e18;
-    int im = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
-    int mm = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
     assertEq(im / 1e18, -189);
     assertEq(mm / 1e18, -121);
   }
@@ -169,32 +171,32 @@ contract UNIT_TestBasicManager_Option is Test {
   //////////////
 
   function testGetIsolatedMarginLongPut() public {
-    int im = manager.getIsolatedMargin(1, 1000e18, expiry, false, 1e18, false);
-    int mm = manager.getIsolatedMargin(1, 1000e18, expiry, false, 1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, false, 1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, false, 1e18, true);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
 
   function testGetIsolatedMarginShortATMPut() public {
     uint strike = 1500e18;
-    int im = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
-    int mm = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     assertEq(im / 1e18, -289);
     assertEq(mm / 1e18, -138);
   }
 
   function testGetIsolatedMarginShortITMPut() public {
     uint strike = 3000e18;
-    int im = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
-    int mm = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     assertEq(im / 1e18, -1789);
     assertEq(mm / 1e18, -1638);
   }
 
   function testGetIsolatedMarginShortOTMPut() public {
     uint strike = 400e18;
-    int im = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
-    int mm = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, true);
+    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
+    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     assertEq(im / 1e18, -189);
     assertEq(mm / 1e18, -121);
   }
@@ -251,8 +253,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike = 1500e18;
     int amount = 1e18;
 
-    int callMargin = manager.getIsolatedMargin(1, strike, expiry, true, -1e18, false);
-    int putMargin = manager.getIsolatedMargin(1, strike, expiry, false, -1e18, false);
+    int callMargin = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
+    int putMargin = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
 
     // the margin needed is the sum of 2 positions
     cash.deposit(aliceAcc, uint(-(callMargin + putMargin)));

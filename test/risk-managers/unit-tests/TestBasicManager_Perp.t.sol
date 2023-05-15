@@ -70,8 +70,8 @@ contract UNIT_TestBasicManager is Test {
 
   function testSetPricingModule() public {
     MockOptionPricing pricing = new MockOptionPricing();
-    manager.setPricingModule(pricing);
-    assertEq(address(manager.optionPricing()), address(pricing));
+    manager.setPricingModule(1, pricing);
+    assertEq(address(manager.pricingModules(1)), address(pricing));
   }
 
   ////////////////////

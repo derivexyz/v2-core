@@ -48,9 +48,6 @@ contract BasicManager is IBasicManager, BaseManager {
   // Variables //
   ///////////////
 
-  /// @dev Pricing module to get option mark-to-market price
-  IOptionPricing public optionPricing;
-
   /// @dev True if an IAsset address is whitelisted.
   mapping(IAsset asset => AssetDetail) public assetDetails;
 
@@ -68,6 +65,9 @@ contract BasicManager is IBasicManager, BaseManager {
 
   /// @dev Mapping from marketId to forward price oracle
   mapping(uint marketId => IForwardFeed) public forwardFeeds;
+
+  /// @dev Mapping from marketId to forward price oracle
+  mapping(uint marketId => IOptionPricing) public pricingModules;
 
   ////////////////////////
   //    Constructor     //
@@ -113,9 +113,12 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param _imRequirement new initial margin requirement
    */
   function setPerpMarginRequirements(uint8 marketId, uint _mmRequirement, uint _imRequirement) external onlyOwner {
-    if (_mmRequirement > _imRequirement) revert BM_InvalidMarginRequirement();
-    if (_mmRequirement == 0 || _mmRequirement >= 1e18) revert BM_InvalidMarginRequirement();
-    if (_imRequirement >= 1e18) revert BM_InvalidMarginRequirement();
+    if (
+      _mmRequirement > _imRequirement || 
+      _mmRequirement == 0 || 
+      _mmRequirement >= 1e18 || 
+      _imRequirement >= 1e18
+    ) revert BM_InvalidMarginRequirement();
 
     perpMarginRequirements[marketId] = PerpMarginRequirements(_mmRequirement, _imRequirement);
 
@@ -139,11 +142,10 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Set the pricing module
    * @param _pricing new pricing module
    */
-  function setPricingModule(IOptionPricing _pricing) external onlyOwner {
-    // todo: use this for mark-to-market
-    optionPricing = IOptionPricing(_pricing);
+  function setPricingModule(uint8 marketId, IOptionPricing _pricing) external onlyOwner {
+    pricingModules[marketId] = IOptionPricing(_pricing);
 
-    emit PricingModuleSet(address(_pricing));
+    emit PricingModuleSet(marketId, address(_pricing));
   }
 
   ///////////////////////
