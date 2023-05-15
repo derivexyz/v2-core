@@ -7,7 +7,7 @@ import "openzeppelin/utils/cryptography/SignatureChecker.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 // interfaces
 import "src/interfaces/ISpotFeed.sol";
-import "src/interfaces/IUpdatableOracle.sol";
+import "src/interfaces/IDataReceiver.sol";
 import "src/interfaces/ILyraSpotFeed.sol";
 
 /**
@@ -15,7 +15,7 @@ import "src/interfaces/ILyraSpotFeed.sol";
  * @author Lyra
  * @notice Spot feed that takes off-chain updates, verify signature and update on-chain
  */
-contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IUpdatableOracle {
+contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataReceiver {
   uint128 public spotPrice;
   uint64 public nonce;
   uint64 public lastUpdateAt;
@@ -64,7 +64,7 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IUpdata
   /**
    * @notice Parse input data and update spot price
    */
-  function updatePrice(bytes calldata data) external {
+  function sendData(bytes calldata data) external {
     // parse data as SpotData
     SpotData memory spotData = abi.decode(data, (SpotData));
     // verify signature

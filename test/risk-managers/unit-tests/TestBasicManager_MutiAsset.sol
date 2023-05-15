@@ -229,15 +229,15 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     assertEq(requirement, neededMargin);
   }
 
-  function testPassMultipleOracleData() public {
+  function testPassMultipleManagerData() public {
     cash.deposit(aliceAcc, 10000e18);
 
     // oracle data
     uint ethSpot = 2100e18;
     uint btcSpot = 30100e18;
-    IBaseManager.OracleData[] memory oracleData = new IBaseManager.OracleData[](2);
-    oracleData[0] = IBaseManager.OracleData({oracle: address(ethFeed), data: abi.encode(ethSpot)});
-    oracleData[1] = IBaseManager.OracleData({oracle: address(btcFeed), data: abi.encode(btcSpot)});
+    IBaseManager.ManagerData[] memory oracleData = new IBaseManager.ManagerData[](2);
+    oracleData[0] = IBaseManager.ManagerData({receiver: address(ethFeed), data: abi.encode(ethSpot)});
+    oracleData[1] = IBaseManager.ManagerData({receiver: address(btcFeed), data: abi.encode(btcSpot)});
     bytes memory managerData = abi.encode(oracleData);
 
     // build trades

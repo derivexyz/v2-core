@@ -7,9 +7,9 @@ import "src/interfaces/IInterestRateFeed.sol";
 import "src/interfaces/IForwardFeed.sol";
 import "src/interfaces/ISettlementFeed.sol";
 
-import "src/interfaces/IUpdatableOracle.sol";
+import "src/interfaces/IDataReceiver.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IUpdatableOracle {
+contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver {
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
@@ -44,7 +44,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     interestRateConfidences[expiry] = confidence;
   }
 
-  function updatePrice(bytes calldata callData) external override {
+  function sendData(bytes calldata callData) external override {
     spot = abi.decode(callData, (uint));
   }
 

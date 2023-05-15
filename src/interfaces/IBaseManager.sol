@@ -8,8 +8,8 @@ interface IBaseManager is IManager {
   // Structs //
   /////////////
 
-  struct OracleData {
-    address oracle;
+  struct ManagerData {
+    address receiver;
     bytes data;
   }
 

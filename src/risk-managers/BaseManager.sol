@@ -15,7 +15,7 @@ import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
-import {IUpdatableOracle} from "src/interfaces/IUpdatableOracle.sol";
+import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
 
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
@@ -167,9 +167,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     lastOracleUpdateTradeId = tradeId;
 
     // parse array of oracle data and update each oracle
-    OracleData[] memory oracleData = abi.decode(managerData, (OracleData[]));
+    ManagerData[] memory oracleData = abi.decode(managerData, (ManagerData[]));
     for (uint i; i < oracleData.length; i++) {
-      IUpdatableOracle(oracleData[i].oracle).updatePrice(oracleData[i].data);
+      IDataReceiver(oracleData[i].receiver).sendData(oracleData[i].data);
     }
   }
 
