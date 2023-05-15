@@ -18,13 +18,13 @@ import "src/interfaces/ILyraSpotFeed.sol";
 contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataReceiver {
   // pack the following into 1 storage slot
   uint96 public spotPrice;
-  uint96 public confidence;
+  uint64 public confidence;
   uint64 public priceTimestamp;
 
   mapping(address => bool) public isSigner;
 
   bytes32 public constant SPOT_DATA_TYPEHASH =
-    keccak256("SpotData(uint96 price,uint96 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)");
+    keccak256("SpotData(uint96 price,uint64 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)");
 
   ////////////////////////
   //    Constructor     //
@@ -36,7 +36,7 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
   //  Admin Functions   //
   ////////////////////////
 
-  function addSigner(address signer, bool isWhitelisted) external {
+  function addSigner(address signer, bool isWhitelisted) external onlyOwner {
     isSigner[signer] = isWhitelisted;
     emit SignerUpdated(signer, isWhitelisted);
   }
@@ -67,7 +67,7 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
   /**
    * @notice Parse input data and update spot price
    */
-  function sendData(bytes calldata data) external {
+  function acceptData(bytes calldata data) external {
     // parse data as SpotData
     SpotData memory spotData = abi.decode(data, (SpotData));
     // verify signature

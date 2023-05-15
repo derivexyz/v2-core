@@ -162,7 +162,7 @@ contract BasicManager is IBasicManager, BaseManager {
     bytes calldata managerData
   ) public override onlyAccounts {
     // send data to oracles if needed
-    _updateOracles(tradeId, managerData);
+    _processManagerData(tradeId, managerData);
 
     // check assets are only cash and perp
     for (uint i = 0; i < assetDeltas.length; i++) {

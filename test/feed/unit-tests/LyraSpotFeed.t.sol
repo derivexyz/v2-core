@@ -43,7 +43,7 @@ contract UNIT_LyraSpotFeed is Test {
 
     bytes memory data = _signPriceData(1000e18, 1.05e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
 
-    feed.sendData(data);
+    feed.acceptData(data);
 
     (uint spot, uint confidence) = feed.getSpot();
 
@@ -56,7 +56,7 @@ contract UNIT_LyraSpotFeed is Test {
     bytes memory data = _signPriceData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
 
     vm.expectRevert(ILyraSpotFeed.LSF_InvalidSigner.selector);
-    feed.sendData(data);
+    feed.acceptData(data);
   }
 
   function testCannotUpdateSpotFeedAfterDeadline() public {
@@ -67,7 +67,7 @@ contract UNIT_LyraSpotFeed is Test {
     vm.warp(block.timestamp + 10);
 
     vm.expectRevert(ILyraSpotFeed.LSF_DataExpired.selector);
-    feed.sendData(data);
+    feed.acceptData(data);
   }
 
   function testCannotSetSpotInTheFuture() public {
@@ -76,18 +76,18 @@ contract UNIT_LyraSpotFeed is Test {
     bytes memory data = _signPriceData(1000e18, 1e18, block.timestamp + 1000, block.timestamp + 5, pk, pkOwner);
 
     vm.expectRevert(ILyraSpotFeed.LSF_InvalidTimestamp.selector);
-    feed.sendData(data);
+    feed.acceptData(data);
   }
 
   function testIgnoreUpdateIfOlderDataIsPushed() public {
     feed.addSigner(pkOwner, true);
 
     bytes memory data1 = _signPriceData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
-    feed.sendData(data1);
+    feed.acceptData(data1);
 
     // this data is marked as timestamp = block.timestamp -1, will be ignored
     bytes memory data2 = _signPriceData(1100e18, 0.9e18, block.timestamp - 1, block.timestamp + 5, pk, pkOwner);
-    feed.sendData(data2);
+    feed.acceptData(data2);
 
     (uint spot, uint confidence) = feed.getSpot();
     assertEq(spot, 1000e18);
@@ -104,12 +104,12 @@ contract UNIT_LyraSpotFeed is Test {
     bytes memory data = _signPriceData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk2, pkOwner);
 
     vm.expectRevert(ILyraSpotFeed.LSF_InvalidSignature.selector);
-    feed.sendData(data);
+    feed.acceptData(data);
   }
 
   function _signPriceData(
     uint96 price,
-    uint96 confidence,
+    uint64 confidence,
     uint timestamp,
     uint deadline,
     uint privateKey,

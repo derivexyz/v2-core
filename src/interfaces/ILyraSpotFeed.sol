@@ -5,7 +5,7 @@ interface ILyraSpotFeed {
   struct SpotData {
     // price data
     uint96 price;
-    uint96 confidence;
+    uint64 confidence;
     uint64 timestamp;
     // the lastest timestamp you can use this data
     uint deadline;

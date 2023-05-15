@@ -7,5 +7,5 @@ pragma solidity ^0.8.18;
  * @notice Interface for oracles that takes data off-chain with signer data
  */
 interface IDataReceiver {
-  function sendData(bytes calldata data) external;
+  function acceptData(bytes calldata data) external;
 }

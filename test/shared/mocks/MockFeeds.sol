@@ -44,7 +44,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     interestRateConfidences[expiry] = confidence;
   }
 
-  function sendData(bytes calldata callData) external override {
+  function acceptData(bytes calldata callData) external override {
     spot = abi.decode(callData, (uint));
   }
 

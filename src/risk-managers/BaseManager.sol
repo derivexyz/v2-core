@@ -161,7 +161,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /**
    * @dev send custom data to oracles. Oracles should implement the verification logic on their own
    */
-  function _updateOracles(uint tradeId, bytes calldata managerData) internal {
+  function _processManagerData(uint tradeId, bytes calldata managerData) internal {
     if (managerData.length == 0 || lastOracleUpdateTradeId == tradeId) return;
 
     lastOracleUpdateTradeId = tradeId;
@@ -169,7 +169,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     // parse array of oracle data and update each oracle
     ManagerData[] memory oracleData = abi.decode(managerData, (ManagerData[]));
     for (uint i; i < oracleData.length; i++) {
-      IDataReceiver(oracleData[i].receiver).sendData(oracleData[i].data);
+      IDataReceiver(oracleData[i].receiver).acceptData(oracleData[i].data);
     }
   }
 
