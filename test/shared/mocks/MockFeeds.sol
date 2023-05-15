@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../../../src/interfaces/ISpotFeed.sol";
-import "../../../src/interfaces/IVolFeed.sol";
-import "../../../src/interfaces/IInterestRateFeed.sol";
-import "../../../src/interfaces/IForwardFeed.sol";
-import "../../../src/interfaces/ISettlementFeed.sol";
+import "src/interfaces/ISpotFeed.sol";
+import "src/interfaces/IVolFeed.sol";
+import "src/interfaces/IInterestRateFeed.sol";
+import "src/interfaces/IForwardFeed.sol";
+import "src/interfaces/ISettlementFeed.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed {
+import "src/interfaces/IDataReceiver.sol";
+
+contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver {
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
@@ -40,6 +42,10 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   function setInterestRate(uint expiry, int64 factor, uint64 confidence) external {
     interestRates[expiry] = factor;
     interestRateConfidences[expiry] = confidence;
+  }
+
+  function acceptData(bytes calldata callData) external override {
+    spot = abi.decode(callData, (uint));
   }
 
   // ISpotFeed
