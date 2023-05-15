@@ -180,17 +180,25 @@ contract BasicManager is IBasicManager, BaseManager {
 
       if (detail.assetType == AssetType.Perpetual) {
         // settle perps if the user has perp position
-        bool isReducePosition = _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
-        if (!isReducePosition) isRiskReducing = false;
-      } else if (detail.assetType == AssetType.Option) {
+        _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
+        if (isRiskReducing) {
+          // check if the delta and position has same sign
+          // if so, we cannot bypass the risk check
+          int perpPosition = accounts.getBalance(accountId, assetDeltas[i].asset, 0);
+          if (perpPosition != 0 && assetDeltas[i].delta * perpPosition > 0) {
+            isRiskReducing = false;
+          }
+        }
+      } else {
         // if the user is only reducing option position, we don't need to check margin
         if (assetDeltas[i].delta < 0) {
           isRiskReducing = false;
         }
-      } else {
-        revert BM_UnsupportedAsset();
       }
     }
+
+    // if all trades are only reducing risk, return early
+    if (isRiskReducing) return;
 
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
