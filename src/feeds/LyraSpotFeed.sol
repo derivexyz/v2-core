@@ -17,9 +17,7 @@ import "src/interfaces/ILyraSpotFeed.sol";
  */
 contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataReceiver {
   // pack the following into 1 storage slot
-  uint96 public spotPrice;
-  uint64 public confidence;
-  uint64 public priceTimestamp;
+  SpotDetail private spotDetail;
 
   mapping(address => bool) public isSigner;
 
@@ -57,11 +55,12 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
    * @return spotPrice Spot price with 18 decimals.
    */
   function getSpot() public view returns (uint, uint) {
+    SpotDetail memory spot = spotDetail;
     // todo: check last update timestamp, revert is stale
 
     // todo: update confidence based on timestamp?
 
-    return (spotPrice, confidence);
+    return (spot.price, spot.confidence);
   }
 
   /**
@@ -88,12 +87,10 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
     if (spotData.timestamp > block.timestamp) revert LSF_InvalidTimestamp();
 
     // ignore if timestamp is lower than current
-    if (spotData.timestamp < priceTimestamp) return;
+    if (spotData.timestamp < spotDetail.timestamp) return;
 
     // update spot price
-    spotPrice = spotData.price;
-    confidence = spotData.confidence;
-    priceTimestamp = spotData.timestamp;
+    spotDetail = SpotDetail(spotData.price, spotData.confidence, spotData.timestamp);
 
     emit SpotPriceUpdated(spotData.signer, spotData.price, spotData.confidence, spotData.timestamp);
   }

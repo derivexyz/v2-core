@@ -14,6 +14,13 @@ interface ILyraSpotFeed {
     bytes signature;
   }
 
+  /// @dev structure to store in contract storage
+  struct SpotDetail {
+    uint96 price;
+    uint64 confidence;
+    uint64 timestamp;
+  }
+
   /// @dev bad signature
   error LSF_InvalidSignature();
 
