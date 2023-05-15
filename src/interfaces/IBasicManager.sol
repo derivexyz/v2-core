@@ -19,16 +19,16 @@ interface IBasicManager {
   }
 
   /**
-   * @dev a basic manager portfolio contains up to 5 subAccounts assets
+   * @dev a basic manager portfolio contains up to 5 marketHoldings assets
    * each subAccount contains multiple derivative type
    */
   struct BasicManagerPortfolio {
     // @dev each subAccount take care of 1 base asset, for example ETH and BTC.
-    BasicManagerSubAccount[] subAccounts;
+    MarketHolding[] marketHoldings;
     int cash;
   }
 
-  struct BasicManagerSubAccount {
+  struct MarketHolding {
     uint marketId;
     // perp position detail
     IPerpAsset perp;
@@ -40,13 +40,14 @@ interface IBasicManager {
 
   ///@dev contains portfolio struct for single expiry assets
   struct ExpiryHolding {
+    /// expiry timestamp
     uint expiry;
-    /// temp variable to count how many options is used
-    uint numOptions;
     /// array of strike holding details
     Option[] options;
-    /// sum of all call positions
+    /// sum of all call positions, used to determine if portfolio max loss is bounded
     int netCalls;
+    /// temporary variable to count how many options is used
+    uint numOptions;
   }
 
   struct Option {

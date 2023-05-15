@@ -88,11 +88,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     emit OIFeeRateSet(OIFeeRateBPS);
   }
 
-
   ///////////////////
   // Liquidations ///
   ///////////////////
-  
+
   /**
    * @notice Confirm account is liquidatable and puts up for dutch auction.
    * @param accountId Account for which to check trade.

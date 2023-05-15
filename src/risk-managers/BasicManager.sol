@@ -84,7 +84,6 @@ contract BasicManager is IBasicManager, BaseManager {
    * @dev the basic manager only support option asset & perp asset
    */
   function whitelistAsset(IAsset _asset, uint8 _marketId, AssetType _type) external onlyOwner {
-    // registered asset
     assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
 
     emit AssetWhitelisted(address(_asset), _marketId, _type);
@@ -153,6 +152,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
    */
+
   function handleAdjustment(
     uint accountId,
     uint tradeId,
@@ -162,8 +162,8 @@ contract BasicManager is IBasicManager, BaseManager {
   ) public override onlyAccounts {
     // send data to oracles if needed
     _processManagerData(tradeId, managerData);
-
-    // check assets are only cash and perp
+    
+    // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
       // allow cash
       if (address(assetDeltas[i].asset) == address(cashAsset)) continue;
@@ -180,9 +180,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
-    // todo: don't allow borrowing cash
-
-    // check initial margin met
+    // the net margin here should always be zero or negative
     int margin = _getMargin(accountId, false);
 
     // cash deposited has to cover net option margin + net perp margin
@@ -201,16 +199,12 @@ contract BasicManager is IBasicManager, BaseManager {
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
     // for each subAccount, get margin and sum it up
-    for (uint i = 0; i < portfolio.subAccounts.length; i++) {
-      margin += _getSubAccountMargin(portfolio.subAccounts[i], isMaintenance);
+    for (uint i = 0; i < portfolio.marketHoldings.length; i++) {
+      margin += _getSubAccountMargin(portfolio.marketHoldings[i], isMaintenance);
     }
   }
 
-  function _getSubAccountMargin(BasicManagerSubAccount memory subAccount, bool isMaintenance)
-    internal
-    view
-    returns (int)
-  {
+  function _getSubAccountMargin(MarketHolding memory subAccount, bool isMaintenance) internal view returns (int) {
     (uint spot,) = spotFeeds[subAccount.marketId].getSpot();
     int indexPrice = spot.toInt256();
 
@@ -223,7 +217,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice get the margin required for the perp position of an subAccount
    * @return net margin for a perp position, always negative
    */
-  function _getNetPerpMargin(BasicManagerSubAccount memory subAccount, int indexPrice, bool isMaintenance)
+  function _getNetPerpMargin(MarketHolding memory subAccount, int indexPrice, bool isMaintenance)
     internal
     view
     returns (int)
@@ -239,11 +233,7 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    */
-  function _getNetOptionMargin(BasicManagerSubAccount memory subAccount, bool isMaintenance)
-    internal
-    view
-    returns (int margin)
-  {
+  function _getNetOptionMargin(MarketHolding memory subAccount, bool isMaintenance) internal view returns (int margin) {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < subAccount.expiryHoldings.length; i++) {
       margin += _calcNetBasicMarginSingleExpiry(
@@ -266,7 +256,7 @@ contract BasicManager is IBasicManager, BaseManager {
     (uint marketCount, int cashBalance, uint marketBitMap) = _countMarketsAndParseCash(assets);
 
     BasicManagerPortfolio memory portfolio =
-      BasicManagerPortfolio({cash: cashBalance, subAccounts: new BasicManagerSubAccount[](marketCount)});
+      BasicManagerPortfolio({cash: cashBalance, marketHoldings: new MarketHolding[](marketCount)});
 
     // for each market, need to count how many expires there are
     // and initiate a ExpiryHolding[] array in the corresponding
@@ -281,7 +271,7 @@ contract BasicManager is IBasicManager, BaseManager {
         marketId = id;
         break;
       }
-      portfolio.subAccounts[i].marketId = marketId;
+      portfolio.marketHoldings[i].marketId = marketId;
 
       // 2. filter through all balances and only find perp or option for this market
       uint numExpires;
@@ -297,10 +287,10 @@ contract BasicManager is IBasicManager, BaseManager {
 
         // if it's perp asset, update the perp position directly
         if (detail.assetType == AssetType.Perpetual) {
-          portfolio.subAccounts[i].perp = IPerpAsset(address(currentAsset.asset));
-          portfolio.subAccounts[i].perpPosition = currentAsset.balance;
+          portfolio.marketHoldings[i].perp = IPerpAsset(address(currentAsset.asset));
+          portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
         } else {
-          portfolio.subAccounts[i].option = IOption(address(currentAsset.asset));
+          portfolio.marketHoldings[i].option = IOption(address(currentAsset.asset));
           (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
           uint expiryIndex;
           (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);
@@ -310,11 +300,11 @@ contract BasicManager is IBasicManager, BaseManager {
       }
 
       // 3. initiate expiry holdings the subAccount
-      portfolio.subAccounts[i].expiryHoldings = new ExpiryHolding[](numExpires);
+      portfolio.marketHoldings[i].expiryHoldings = new ExpiryHolding[](numExpires);
       // 4. initiate the option array in each expiry holding
       for (uint j; j < numExpires; j++) {
-        portfolio.subAccounts[i].expiryHoldings[j].expiry = seenExpires[j];
-        portfolio.subAccounts[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
+        portfolio.marketHoldings[i].expiryHoldings[j].expiry = seenExpires[j];
+        portfolio.marketHoldings[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
       }
 
       // 5. put options into expiry holdings
@@ -328,13 +318,13 @@ contract BasicManager is IBasicManager, BaseManager {
         if (detail.assetType == AssetType.Option) {
           (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
           uint expiryIndex = seenExpires.findInArray(expiry, numExpires).toUint256();
-          uint nextIndex = portfolio.subAccounts[i].expiryHoldings[expiryIndex].numOptions;
-          portfolio.subAccounts[i].expiryHoldings[expiryIndex].options[nextIndex] =
+          uint nextIndex = portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions;
+          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].options[nextIndex] =
             Option({strike: strike, isCall: isCall, balance: currentAsset.balance});
 
-          portfolio.subAccounts[i].expiryHoldings[expiryIndex].numOptions++;
+          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions++;
           if (isCall) {
-            portfolio.subAccounts[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
+            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
           }
         }
       }
