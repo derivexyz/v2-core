@@ -161,7 +161,6 @@ contract BasicManager is IBasicManager, BaseManager {
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
     bool isRiskReducing = true;
 
-
     // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
       // allow cash
@@ -223,11 +222,10 @@ contract BasicManager is IBasicManager, BaseManager {
   }
 
   function _getSubAccountMargin(MarketHolding memory subAccount, bool isMaintenance) internal view returns (int) {
-    (uint spot,) = spotFeeds[subAccount.marketId].getSpot();
-    int indexPrice = spot.toInt256();
+    int indexPrice = _getIndexPrice(subAccount.marketId);
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isMaintenance);
-    int netOptionMargin = _getNetOptionMargin(subAccount, isMaintenance);
+    int netOptionMargin = _getNetOptionMargin(subAccount, indexPrice, isMaintenance);
     return netPerpMargin + netOptionMargin;
   }
 
@@ -251,7 +249,7 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    */
-  function _getNetOptionMargin(MarketHolding memory marketHolding, bool isMaintenance)
+  function _getNetOptionMargin(MarketHolding memory marketHolding, int indexPrice, bool isMaintenance)
     internal
     view
     returns (int margin)
@@ -259,7 +257,7 @@ contract BasicManager is IBasicManager, BaseManager {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
       margin += _calcNetBasicMarginSingleExpiry(
-        marketHolding.marketId, marketHolding.option, marketHolding.expiryHoldings[i], isMaintenance
+        marketHolding.marketId, marketHolding.option, marketHolding.expiryHoldings[i], indexPrice, isMaintenance
       );
     }
   }
@@ -368,6 +366,7 @@ contract BasicManager is IBasicManager, BaseManager {
     uint8 marketId,
     IOption option,
     ExpiryHolding memory expiryHolding,
+    int indexPrice,
     bool isMaintenance
   ) internal view returns (int margin) {
     bool lossBounded = expiryHolding.netCalls >= 0;
@@ -386,6 +385,7 @@ contract BasicManager is IBasicManager, BaseManager {
         expiryHolding.options[i].strike,
         expiryHolding.options[i].isCall,
         expiryHolding.options[i].balance,
+        indexPrice,
         forwardPrice,
         isMaintenance
       );
@@ -437,8 +437,9 @@ contract BasicManager is IBasicManager, BaseManager {
     view
     returns (int)
   {
+    int indexPrice = _getIndexPrice(marketId);
     int forwardPrice = _getForwardPrice(marketId, expiry);
-    return _getIsolatedMargin(marketId, expiry, strike, isCall, balance, forwardPrice, isMaintenance);
+    return _getIsolatedMargin(marketId, expiry, strike, isCall, balance, indexPrice, forwardPrice, isMaintenance);
   }
 
   /**
@@ -482,25 +483,22 @@ contract BasicManager is IBasicManager, BaseManager {
     uint strike,
     bool isCall,
     int balance,
+    int indexPrice,
     int forwardPrice,
     bool isMaintenance
   ) internal view returns (int margin) {
     if (balance > 0) return 0;
     if (isCall) {
-      margin = _getIsolatedMarginForCall(marketId, expiry, strike.toInt256(), balance, forwardPrice, isMaintenance);
+      margin =
+        _getIsolatedMarginForCall(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isMaintenance);
     } else {
-      margin = _getIsolatedMarginForPut(marketId, expiry, strike.toInt256(), balance, forwardPrice, isMaintenance);
+      margin =
+        _getIsolatedMarginForPut(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isMaintenance);
     }
   }
 
   /**
    * @dev calculate isolated margin requirement for a put option
-   * Basic Margin formula for Put:
-   *     size * min(strike, max((B - OTM_amount/index), STATIC) * index)
-   *     where:
-   *        B is base line margin ratio.
-   *        OTM_amount is index - strike
-   *        STATIC is min static ratio.
    * @dev expected to return a negative number
    */
   function _getIsolatedMarginForPut(
@@ -509,36 +507,30 @@ contract BasicManager is IBasicManager, BaseManager {
     int strike,
     int amount,
     int forwardPrice,
+    int indexPrice,
     bool isMaintenance
   ) internal view returns (int) {
     // todo: get vol from vol oracle
     uint vol = 1e18;
     int markToMarket = _getMarkToMarket(marketId, amount, forwardPrice, strike, expiry, vol, false);
 
-    int mmMultiplier = optionMarginParams[marketId].mmSC;
+    OptionMarginParameters memory params = optionMarginParams[marketId];
 
     // let imMultiplier be 0 if we only want maintenance margin
     int imMultiplier;
     if (isMaintenance) {
       // this ratio become negative if option is ITM
-      int otmRatio = (forwardPrice - strike).divideDecimal(forwardPrice);
-      imMultiplier =
-        SignedMath.max(optionMarginParams[marketId].scOffset1 - otmRatio, optionMarginParams[marketId].scOffset2);
+      int otmRatio = (indexPrice - strike).divideDecimal(indexPrice);
+      imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
     }
 
     int margin =
-      (SignedMath.max(mmMultiplier, imMultiplier) + markToMarket).multiplyDecimal(forwardPrice).multipleDecimal(amount);
+      ((SignedMath.max(params.mmSC, imMultiplier)).multiplyDecimal(indexPrice) + markToMarket).multiplyDecimal(amount);
     return margin;
   }
 
   /**
    * @dev calculate isolated margin requirement for a call option
-   * Basic Margin formula for Call:
-   *     size * max((B - OTM_amount / index), STATIC) * index
-   *     where:
-   *        B is base line margin ratio.
-   *        OTM_amount is strike - index
-   *        STATIC is min static ratio.
    * @param amount expected a negative number, representing amount of shorts
    */
   function _getIsolatedMarginForCall(
@@ -547,22 +539,24 @@ contract BasicManager is IBasicManager, BaseManager {
     int strike,
     int amount,
     int forwardPrice,
+    int indexPrice,
     bool isMaintenance
   ) internal view returns (int) {
     uint vol = 1e18;
     int markToMarket = _getMarkToMarket(marketId, amount, forwardPrice, strike, expiry, vol, true);
 
-    int baseLine =
-      isMaintenance ? optionMarginParams[marketId].baselineOptionMM : optionMarginParams[marketId].baselineOptionIM;
-    int minStaticRatio =
-      isMaintenance ? optionMarginParams[marketId].minStaticMMRatio : optionMarginParams[marketId].minStaticIMRatio;
+    OptionMarginParameters memory params = optionMarginParams[marketId];
+
+    if (isMaintenance) {
+      return (params.mmSC.multiplyDecimal(indexPrice) + markToMarket).multiplyDecimal(amount);
+    }
 
     // this ratio become negative if option is ITM
-    int otmRatio = (strike - forwardPrice).divideDecimal(forwardPrice);
+    int otmRatio = (strike - indexPrice).divideDecimal(indexPrice);
 
-    int margin =
-      SignedMath.max(baseLine - otmRatio, minStaticRatio).multiplyDecimal(forwardPrice).multiplyDecimal(amount);
+    int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
+    int margin = (imMultiplier.multiplyDecimal(indexPrice) + markToMarket).multiplyDecimal(amount);
     return margin;
   }
 
@@ -584,6 +578,17 @@ contract BasicManager is IBasicManager, BaseManager {
     }
   }
 
+  /**
+   * @dev return index price for a market
+   */
+  function _getIndexPrice(uint marketId) internal view returns (int indexPrice) {
+    (uint spot,) = spotFeeds[marketId].getSpot();
+    indexPrice = spot.toInt256();
+  }
+
+  /**
+   * @dev return the forward price for a specific market and expiry timestamp
+   */
   function _getForwardPrice(uint marketId, uint expiry) internal view returns (int) {
     (uint fwdPrice,) = forwardFeeds[marketId].getForwardPrice(expiry);
     if (fwdPrice == 0) revert BM_NoForwardPrice();
@@ -601,7 +606,7 @@ contract BasicManager is IBasicManager, BaseManager {
     uint expiry,
     uint vol,
     bool isCall
-  ) internal returns (int value) {
+  ) internal view returns (int value) {
     IOptionPricing pricing = IOptionPricing(pricingModules[marketId]);
 
     IOptionPricing.Expiry memory expiryData = IOptionPricing.Expiry({

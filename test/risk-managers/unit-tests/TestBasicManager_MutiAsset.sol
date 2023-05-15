@@ -267,7 +267,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     account.submitTransfer(transfer, "");
     uint gasUsed = gasBefore - gasleft();
     assertLt(gasUsed, 120_000); // one check is bypassed
-
   }
 
   /////////////
