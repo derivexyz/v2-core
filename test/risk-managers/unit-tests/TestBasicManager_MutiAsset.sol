@@ -46,7 +46,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   uint8 ethMarketId = 1;
   uint8 btcMarketId = 2;
 
-
   address alice = address(0xaa);
   address bob = address(0xbb);
   uint aliceAcc;
@@ -130,8 +129,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin = manager.getIsolatedMargin(ethMarketId,ethStrike, expiry1, true, -1e18, false);
-    int btcMargin = manager.getIsolatedMargin(btcMarketId,btcStrike, expiry1, true, -1e18, false);
+    int ethMargin = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
+    int btcMargin = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, false);
 
     int neededMargin = ethMargin + btcMargin;
     cash.deposit(aliceAcc, uint(-neededMargin));
@@ -150,10 +149,10 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId,ethStrike, expiry1, true, -1e18, false);
-    int btcMargin1 = manager.getIsolatedMargin(btcMarketId,btcStrike, expiry1, true, -1e18, false);
-    int ethMargin2 = manager.getIsolatedMargin(ethMarketId,ethStrike, expiry2, true, -1e18, false);
-    int btcMargin2 = manager.getIsolatedMargin(btcMarketId,btcStrike, expiry2, true, -1e18, false);
+    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
+    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, false);
+    int ethMargin2 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry2, true, -1e18, false);
+    int btcMargin2 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry2, true, -1e18, false);
 
     int neededMargin = ethMargin1 + btcMargin1 + ethMargin2 + btcMargin2;
     cash.deposit(aliceAcc, uint(-neededMargin));
@@ -211,7 +210,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint dogeStrike = 0.0006e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId,ethStrike, expiry1, true, -1e18, false);
+    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
     int dogeMargin1 = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, false);
 
     int ethPerpMargin = -150e18;

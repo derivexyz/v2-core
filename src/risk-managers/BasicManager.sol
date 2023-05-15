@@ -113,12 +113,9 @@ contract BasicManager is IBasicManager, BaseManager {
    * @param _imRequirement new initial margin requirement
    */
   function setPerpMarginRequirements(uint8 marketId, uint _mmRequirement, uint _imRequirement) external onlyOwner {
-    if (
-      _mmRequirement > _imRequirement || 
-      _mmRequirement == 0 || 
-      _mmRequirement >= 1e18 || 
-      _imRequirement >= 1e18
-    ) revert BM_InvalidMarginRequirement();
+    if (_mmRequirement > _imRequirement || _mmRequirement == 0 || _mmRequirement >= 1e18 || _imRequirement >= 1e18) {
+      revert BM_InvalidMarginRequirement();
+    }
 
     perpMarginRequirements[marketId] = PerpMarginRequirements(_mmRequirement, _imRequirement);
 
