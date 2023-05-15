@@ -29,7 +29,7 @@ interface IBasicManager {
   }
 
   struct MarketHolding {
-    uint marketId;
+    uint8 marketId;
     // perp position detail
     IPerpAsset perp;
     int perpPosition;
@@ -64,10 +64,9 @@ interface IBasicManager {
 
   ///@dev Struct for Option Margin Parameters
   struct OptionMarginParameters {
-    int baselineOptionIM;
-    int baselineOptionMM;
-    int minStaticMMRatio;
-    int minStaticIMRatio;
+    int scOffset1;
+    int scOffset2;
+    int mmSC;
   }
 
   ///////////////
@@ -104,7 +103,5 @@ interface IBasicManager {
 
   event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
-  event OptionMarginParametersSet(
-    uint8 marketId, int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio
-  );
+  event OptionMarginParametersSet(uint8 marketId, int scOffset1, int scOffset2, int mmSC);
 }

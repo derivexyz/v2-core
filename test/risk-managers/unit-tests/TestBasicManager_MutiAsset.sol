@@ -119,8 +119,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
 
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
+    IBasicManager.OptionMarginParameters memory params = IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
   }

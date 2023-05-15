@@ -83,8 +83,7 @@ contract UNIT_TestBasicManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.2e18, 0.1e18, 0.08e18, 0.125e18);
+    IBasicManager.OptionMarginParameters memory params = IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
   }
@@ -108,15 +107,12 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testSetOptionParameters() public {
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.5e18, 0.2e18, 0.1e18, 0.2e18);
+    IBasicManager.OptionMarginParameters memory params = IBasicManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18);
     manager.setOptionMarginParameters(ethMarketId, params);
-    (int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio) =
-      manager.optionMarginParams(ethMarketId);
-    assertEq(baselineOptionIM, 0.5e18);
-    assertEq(baselineOptionMM, 0.2e18);
-    assertEq(minStaticMMRatio, 0.1e18);
-    assertEq(minStaticIMRatio, 0.2e18);
+    (int scOffset1, int scOffset2, int mmSC) = manager.optionMarginParams(ethMarketId);
+    assertEq(scOffset1, 0.2e18);
+    assertEq(scOffset2, 0.15e18);
+    assertEq(mmSC, 0.1e18);
   }
 
   function testSetOracles() public {
