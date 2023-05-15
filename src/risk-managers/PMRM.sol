@@ -163,8 +163,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
-    IPMRM.Portfolio memory portfolio =
-      _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
 
     if (isTrustedRiskAssessor) {
       // If the caller is a trusted risk assessor, use a single predefined scenario for checking margin
@@ -178,7 +177,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
       int postIM = _getMargin(portfolio, true, marginScenarios, true);
       if (postIM + portfolio.cash < 0) {
-
+        // Note: cash interest is also undone here, but this is not a significant issue
         IPMRM.Portfolio memory prePortfolio =
           _arrangePortfolio(accountId, undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
@@ -378,15 +377,15 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
   }
 
-
   //////////
   // Misc //
   //////////
 
-  function undoAssetDeltas(
-    uint accountId,
-    IAccounts.AssetDelta[] memory assetDeltas
-  ) internal view returns (IAccounts.AssetBalance[] memory newAssetBalances) {
+  function undoAssetDeltas(uint accountId, IAccounts.AssetDelta[] memory assetDeltas)
+    internal
+    view
+    returns (IAccounts.AssetBalance[] memory newAssetBalances)
+  {
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
     // keep track of how many new elements to add to the result, can be negative technically (remove 0 balances)
@@ -394,13 +393,13 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     uint newBalances = 0;
     IAccounts.AssetBalance[] memory preBalances = new IAccounts.AssetBalance[](assetDeltas.length);
 
-    for (uint i=0; i < assetDeltas.length; ++i) {
+    for (uint i = 0; i < assetDeltas.length; ++i) {
       IAccounts.AssetDelta memory delta = assetDeltas[i];
       if (delta.delta == 0) {
         continue;
       }
       bool found = false;
-      for (uint j=0; j < assetBalances.length; ++j) {
+      for (uint j = 0; j < assetBalances.length; ++j) {
         IAccounts.AssetBalance memory balance = assetBalances[j];
         if (balance.asset == delta.asset && balance.subId == delta.subId) {
           found = true;
@@ -412,24 +411,21 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         }
       }
       if (!found) {
-        preBalances[newBalances++] = IAccounts.AssetBalance({
-          asset: delta.asset,
-          subId: delta.subId,
-          balance: -delta.delta
-        });
+        preBalances[newBalances++] =
+          IAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
       }
     }
 
     newAssetBalances = new IAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
 
     uint newBalancesIndex = 0;
-    for (uint i=0; i < assetBalances.length; ++i) {
+    for (uint i = 0; i < assetBalances.length; ++i) {
       IAccounts.AssetBalance memory balance = assetBalances[i];
       if (balance.balance != 0) {
         newAssetBalances[newBalancesIndex++] = balance;
       }
     }
-    for (uint i=0; i<newBalances; ++i) {
+    for (uint i = 0; i < newBalances; ++i) {
       newAssetBalances[newBalancesIndex++] = preBalances[i];
     }
 

@@ -132,11 +132,12 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // MTM calculations //
   //////////////////////
 
-  function _getMargin(IPMRM.Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios, bool useFwdContingency)
-    internal
-    view
-    returns (int margin)
-  {
+  function _getMargin(
+    IPMRM.Portfolio memory portfolio,
+    bool isInitial,
+    IPMRM.Scenario[] memory scenarios,
+    bool useFwdContingency
+  ) internal view returns (int margin) {
     int minSPAN = useFwdContingency ? portfolio.fwdContingency : type(int).max;
 
     for (uint i = 0; i < scenarios.length; ++i) {
