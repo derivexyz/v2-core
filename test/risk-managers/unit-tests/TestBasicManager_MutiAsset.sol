@@ -256,6 +256,21 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     assertEq(_btcSpot, btcSpot);
   }
 
+  function testCanTransferCash() public {
+    int amount = 1000e18;
+
+    cash.deposit(aliceAcc, uint(amount));
+
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: amount, assetData: ""});
+
+    uint gasBefore = gasleft();
+    account.submitTransfer(transfer, "");
+    uint gasUsed = gasBefore - gasleft();
+    assertLt(gasUsed, 120_000); // one check is bypassed
+
+  }
+
   /////////////
   // Helpers //
   /////////////
