@@ -41,18 +41,19 @@ contract UNIT_LyraSpotFeed is Test {
   function testCanPassInDataAndUpdateSpotFeed() public {
     feed.addSigner(pkOwner, true);
 
-    bytes memory data = _signPriceData(1000e18, 1, block.timestamp + 5, pk, pkOwner);
+    bytes memory data = _signPriceData(1000e18, 1.05e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
 
     feed.sendData(data);
 
-    (uint spot,) = feed.getSpot();
+    (uint spot, uint confidence) = feed.getSpot();
 
     assertEq(spot, 1000e18);
+    assertEq(confidence, 1.05e18);
   }
 
   function testCannotUpdateSpotFeedFromInvalidSigner() public {
     // we didn't whitelist the pk owner this time
-    bytes memory data = _signPriceData(1000e18, 1, block.timestamp + 5, pk, pkOwner);
+    bytes memory data = _signPriceData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
 
     vm.expectRevert(ILyraSpotFeed.LSF_InvalidSigner.selector);
     feed.sendData(data);
@@ -61,7 +62,7 @@ contract UNIT_LyraSpotFeed is Test {
   function testCannotUpdateSpotFeedAfterDeadline() public {
     feed.addSigner(pkOwner, true);
     // we didn't whitelist the pk owner this time
-    bytes memory data = _signPriceData(1000e18, 1, block.timestamp + 5, pk, pkOwner);
+    bytes memory data = _signPriceData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
 
     vm.warp(block.timestamp + 10);
 
@@ -69,16 +70,28 @@ contract UNIT_LyraSpotFeed is Test {
     feed.sendData(data);
   }
 
-  function testCannotUseSameNonceTwice() public {
+  function testCannotSetSpotInTheFuture() public {
+    feed.addSigner(pkOwner, true);
+    // we didn't whitelist the pk owner this time
+    bytes memory data = _signPriceData(1000e18, 1e18, block.timestamp + 1000, block.timestamp + 5, pk, pkOwner);
+
+    vm.expectRevert(ILyraSpotFeed.LSF_InvalidTimestamp.selector);
+    feed.sendData(data);
+  }
+
+  function testIgnoreUpdateIfOlderDataIsPushed() public {
     feed.addSigner(pkOwner, true);
 
-    bytes memory data1 = _signPriceData(1000e18, 1, block.timestamp + 5, pk, pkOwner);
+    bytes memory data1 = _signPriceData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
     feed.sendData(data1);
 
-    bytes memory data2 = _signPriceData(1100e18, 1, block.timestamp + 5, pk, pkOwner);
-
-    vm.expectRevert(ILyraSpotFeed.LSF_InvalidNonce.selector);
+    // this data is marked as timestamp = block.timestamp -1, will be ignored
+    bytes memory data2 = _signPriceData(1100e18, 0.9e18, block.timestamp - 1, block.timestamp + 5, pk, pkOwner);
     feed.sendData(data2);
+
+    (uint spot, uint confidence) = feed.getSpot();
+    assertEq(spot, 1000e18);
+    assertEq(confidence, 1e18);
   }
 
   function testCannotSubmitPriceWithReplacedSigner() public {
@@ -88,21 +101,25 @@ contract UNIT_LyraSpotFeed is Test {
     uint pk2 = 0xBEEF2222;
 
     // replace pkOwner with random signer address
-    bytes memory data = _signPriceData(1000e18, 1, block.timestamp + 5, pk2, pkOwner);
+    bytes memory data = _signPriceData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk2, pkOwner);
 
     vm.expectRevert(ILyraSpotFeed.LSF_InvalidSignature.selector);
     feed.sendData(data);
   }
 
-  function _signPriceData(uint128 price, uint64 nonce, uint deadline, uint privateKey, address signer)
-    internal
-    view
-    returns (bytes memory data)
-  {
+  function _signPriceData(
+    uint96 price,
+    uint96 confidence,
+    uint timestamp,
+    uint deadline,
+    uint privateKey,
+    address signer
+  ) internal view returns (bytes memory data) {
     ILyraSpotFeed.SpotData memory spotData = ILyraSpotFeed.SpotData({
       deadline: uint64(deadline),
       price: price,
-      nonce: nonce,
+      confidence: confidence,
+      timestamp: uint64(timestamp),
       signer: signer,
       signature: new bytes(0)
     });

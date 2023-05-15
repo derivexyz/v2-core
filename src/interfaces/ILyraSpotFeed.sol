@@ -3,8 +3,11 @@ pragma solidity ^0.8.18;
 
 interface ILyraSpotFeed {
   struct SpotData {
-    uint128 price;
-    uint64 nonce;
+    // price data
+    uint96 price;
+    uint96 confidence;
+    uint64 timestamp;
+    // the lastest timestamp you can use this data
     uint deadline;
     // signature v, r, s
     address signer;
@@ -21,12 +24,12 @@ interface ILyraSpotFeed {
   error LSF_DataExpired();
 
   /// @dev invalid nonce
-  error LSF_InvalidNonce();
+  error LSF_InvalidTimestamp();
 
   ////////////////////////
   //       Events       //
   ////////////////////////
-  event SpotPriceUpdated(uint128 spot, uint128 nonce);
+  event SpotPriceUpdated(address indexed signer, uint96 spot, uint96 confidence, uint64 timestamp);
 
   event SignerUpdated(address indexed signer, bool isWhitelisted);
 }

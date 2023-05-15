@@ -16,9 +16,10 @@ import "src/interfaces/ILyraSpotFeed.sol";
  * @notice Spot feed that takes off-chain updates, verify signature and update on-chain
  */
 contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataReceiver {
-  uint128 public spotPrice;
-  uint64 public nonce;
-  uint64 public lastUpdateAt;
+  // pack the following into 1 storage slot
+  uint96 public spotPrice;
+  uint96 public confidence;
+  uint64 public priceTimestamp;
 
   mapping(address => bool) public isSigner;
 
@@ -55,10 +56,11 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
    * @return spotPrice Spot price with 18 decimals.
    */
   function getSpot() public view returns (uint, uint) {
-    // todo: calculate confidence
-
     // todo: check last update timestamp, revert is stale
-    return (spotPrice, 1e18);
+
+    // todo: update confidence based on timestamp?
+
+    return (spotPrice, confidence);
   }
 
   /**
@@ -81,21 +83,24 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
     // check the deadline
     if (spotData.deadline < block.timestamp) revert LSF_DataExpired();
 
-    // check nonce is higher than current
-    if (spotData.nonce <= nonce) revert LSF_InvalidNonce();
+    // cannot set price in the future
+    if (spotData.timestamp > block.timestamp) revert LSF_InvalidTimestamp();
+
+    // ignore if timestamp is lower than current
+    if (spotData.timestamp < priceTimestamp) return;
 
     // update spot price
-    nonce = spotData.nonce;
     spotPrice = spotData.price;
-    lastUpdateAt = uint64(block.timestamp);
+    confidence = spotData.confidence;
+    priceTimestamp = spotData.timestamp;
 
-    emit SpotPriceUpdated(spotData.price, spotData.nonce);
+    emit SpotPriceUpdated(spotData.signer, spotData.price, spotData.confidence, spotData.timestamp);
   }
 
   /**
    * @dev return the hash of the spotData object
    */
   function hashSpotData(SpotData memory spotData) public pure returns (bytes32) {
-    return keccak256(abi.encode(SPOT_DATA_TYPEHASH, spotData.price, spotData.nonce, spotData.deadline));
+    return keccak256(abi.encode(SPOT_DATA_TYPEHASH, spotData.price, spotData.confidence, spotData.timestamp));
   }
 }
