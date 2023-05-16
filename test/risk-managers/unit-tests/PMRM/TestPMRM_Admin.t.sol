@@ -113,44 +113,48 @@ contract TestPMRM_Admin is PMRMTestBase {
     assertEq(address(pmrm.optionPricing()), address(0));
   }
 
+  //
+  //  function setForwardContingencyParams(IPMRMLib.ForwardContingencyParameters memory _fwdContParams) external onlyOwner {
+  //    if (
+  //      _fwdContParams.spotShock1 >= 1e18 || _fwdContParams.spotShock2 <= 1e18
+  //      || _fwdContParams.multiplicativeFactor > 1e18
+  //    ) {
+  //      revert InvalidForwardContingencyParameters();
+  //    }
+  //    fwdContParams = _fwdContParams;
+  //  }
+  //
+  //  function setOtherContingencyParams(IPMRMLib.OtherContingencyParameters memory _otherContParams) external onlyOwner {
+  //    if (
+  //      _otherContParams.pegLossThreshold >= 1e18
+  //      || _otherContParams.confidenceThreshold >= 1e18 || _otherContParams.confidenceFactor > 2e18
+  //      || _otherContParams.basePercent > 1e18 || _otherContParams.perpPercent > 1e18
+  //      || _otherContParams.optionPercent > 1e18
+  //    ) {
+  //      revert InvalidOtherContingencyParameters();
+  //    }
+  //    otherContParams = _otherContParams;
+  //  }
+  //
+  //  function setStaticDiscountParams(IPMRMLib.StaticDiscountParameters memory _staticDiscountParams) external onlyOwner {
+  //    if (
+  //      _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 1e18
+  //      || _staticDiscountParams.rateAdditiveFactor > 1e18
+  //    ) {
+  //      revert InvalidStaticDiscountParameters();
+  //    }
+  //    staticDiscountParams = _staticDiscountParams;
+  //  }
+  //
+  //  function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
+  //    // TODO: more bounds (for this and the above)
+  //    if (_volShockParams.dteFloor > 10 days) {
+  //      revert InvalidVolShockParameters();
+  //    }
+  //    volShockParams = _volShockParams;
+  //  }
+  //
   function testSetParameters() public {
-    //  struct VolShockParameters {
-    //    uint volRangeUp;
-    //    uint volRangeDown;
-    //    uint shortTermPower;
-    //    uint longTermPower;
-    //    uint dteFloor;
-    //  }
-    //
-    //  struct StaticDiscountParameters {
-    //    uint rateMultiplicativeFactor;
-    //    uint rateAdditiveFactor;
-    //    uint baseStaticDiscount;
-    //  }
-    //
-    //  struct ForwardContingencyParameters {
-    //    uint spotShock1;
-    //    uint spotShock2;
-    //    uint additiveFactor;
-    //    uint multiplicativeFactor;
-    //  }
-    //
-    //  struct OtherContingencyParameters {
-    //    uint pegLossThreshold;
-    //    uint pegLossFactor;
-    //    uint confidenceThreshold;
-    //    uint confidenceFactor;
-    //    uint basePercent;
-    //    uint perpPercent;
-    //    /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio
-    //    uint optionPercent;
-    //  }
-    //
-    //  IPMRMLib.ForwardContingencyParameters fwdContParams;
-    //  IPMRMLib.OtherContingencyParameters otherContParams;
-    //  IPMRMLib.StaticDiscountParameters staticDiscountParams;
-    //  IPMRMLib.VolShockParameters volShockParams;
-    //
     IPMRMLib.ForwardContingencyParameters memory fwdContParams = IPMRMLib.ForwardContingencyParameters({
       spotShock1: 1,
       spotShock2: 1e18 + 1,
@@ -200,5 +204,70 @@ contract TestPMRM_Admin is PMRMTestBase {
     assertEq(resVolShockParams.shortTermPower, 3);
     assertEq(resVolShockParams.longTermPower, 4);
     assertEq(resVolShockParams.dteFloor, 5);
+
+    fwdContParams.spotShock1 = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidForwardContingencyParameters.selector);
+    pmrm.setForwardContingencyParams(fwdContParams);
+    fwdContParams.spotShock1 = 1;
+
+    fwdContParams.spotShock2 = 1;
+    vm.expectRevert(IPMRMLib.InvalidForwardContingencyParameters.selector);
+    pmrm.setForwardContingencyParams(fwdContParams);
+    fwdContParams.spotShock2 = 1e18 + 1;
+
+    fwdContParams.multiplicativeFactor = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidForwardContingencyParameters.selector);
+    pmrm.setForwardContingencyParams(fwdContParams);
+    fwdContParams.multiplicativeFactor = 1;
+
+    otherContParams.pegLossThreshold = 1e18;
+    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    pmrm.setOtherContingencyParams(otherContParams);
+    otherContParams.pegLossThreshold = 1;
+
+    otherContParams.confidenceThreshold = 1e18;
+    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    pmrm.setOtherContingencyParams(otherContParams);
+    otherContParams.confidenceThreshold = 1;
+
+    otherContParams.confidenceFactor = 2e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    pmrm.setOtherContingencyParams(otherContParams);
+    otherContParams.confidenceFactor = 2e18;
+
+    otherContParams.basePercent = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    pmrm.setOtherContingencyParams(otherContParams);
+    otherContParams.basePercent = 1;
+
+    otherContParams.perpPercent = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    pmrm.setOtherContingencyParams(otherContParams);
+    otherContParams.perpPercent = 1;
+
+    otherContParams.optionPercent = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    pmrm.setOtherContingencyParams(otherContParams);
+    otherContParams.optionPercent = 1;
+
+    staticDiscountParams.baseStaticDiscount = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidStaticDiscountParameters.selector);
+    pmrm.setStaticDiscountParams(staticDiscountParams);
+    staticDiscountParams.baseStaticDiscount = 1;
+
+    staticDiscountParams.rateMultiplicativeFactor = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidStaticDiscountParameters.selector);
+    pmrm.setStaticDiscountParams(staticDiscountParams);
+    staticDiscountParams.rateMultiplicativeFactor = 1;
+
+    staticDiscountParams.rateAdditiveFactor = 1e18 + 1;
+    vm.expectRevert(IPMRMLib.InvalidStaticDiscountParameters.selector);
+    pmrm.setStaticDiscountParams(staticDiscountParams);
+    staticDiscountParams.rateAdditiveFactor = 1;
+
+    volShockParams.dteFloor = 10 days + 1;
+    vm.expectRevert(IPMRMLib.InvalidVolShockParameters.selector);
+    pmrm.setVolShockParams(volShockParams);
+    volShockParams.dteFloor = 10 days;
   }
 }

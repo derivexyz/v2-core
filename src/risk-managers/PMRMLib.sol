@@ -44,6 +44,11 @@ contract IPMRMLib {
     /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio
     uint optionPercent;
   }
+
+  error InvalidForwardContingencyParameters();
+  error InvalidOtherContingencyParameters();
+  error InvalidStaticDiscountParameters();
+  error InvalidVolShockParameters();
 }
 
 contract PMRMLib is IPMRMLib, Ownable2Step {
@@ -99,19 +104,18 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       _fwdContParams.spotShock1 >= 1e18 || _fwdContParams.spotShock2 <= 1e18
         || _fwdContParams.multiplicativeFactor > 1e18
     ) {
-      revert("Invalid Forward contingency parameters");
+      revert InvalidForwardContingencyParameters();
     }
     fwdContParams = _fwdContParams;
   }
 
   function setOtherContingencyParams(IPMRMLib.OtherContingencyParameters memory _otherContParams) external onlyOwner {
     if (
-      _otherContParams.pegLossThreshold >= 1e18 || _otherContParams.pegLossFactor > 1e18
-        || _otherContParams.confidenceThreshold >= 1e18 || _otherContParams.confidenceFactor > 2e18
-        || _otherContParams.basePercent > 1e18 || _otherContParams.perpPercent > 1e18
-        || _otherContParams.optionPercent > 1e18
+      _otherContParams.pegLossThreshold >= 1e18 || _otherContParams.confidenceThreshold >= 1e18
+        || _otherContParams.confidenceFactor > 2e18 || _otherContParams.basePercent > 1e18
+        || _otherContParams.perpPercent > 1e18 || _otherContParams.optionPercent > 1e18
     ) {
-      revert("Invalid Other contingency parameters");
+      revert InvalidOtherContingencyParameters();
     }
     otherContParams = _otherContParams;
   }
@@ -121,12 +125,16 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 1e18
         || _staticDiscountParams.rateAdditiveFactor > 1e18
     ) {
-      revert("Invalid Static discount parameters");
+      revert InvalidStaticDiscountParameters();
     }
     staticDiscountParams = _staticDiscountParams;
   }
 
   function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
+    // TODO: more bounds (for this and the above)
+    if (_volShockParams.dteFloor > 10 days) {
+      revert InvalidVolShockParameters();
+    }
     volShockParams = _volShockParams;
   }
 
