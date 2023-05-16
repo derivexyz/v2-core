@@ -76,4 +76,12 @@ interface IPMRM {
     uint spotShock; // i.e. 1.2e18 = 20% spot shock up
     VolShockDirection volShock; // i.e. [Up, Down, None]
   }
+
+  ////
+  // Errors
+  error PMRM_UnsupportedAsset();
+  error PMRM_InsufficientMargin();
+  error PMRM_FindInArrayError();
+  error PMRM_OptionExpired();
+  error PMRM_TooManyExpiries();
 }

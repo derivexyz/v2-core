@@ -151,9 +151,9 @@ contract PMRMTestBase is Test {
     scenarios[3] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
     scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
     scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[6] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[7] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[8] = IPMRM.Scenario({spotShock: 1.03e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[6] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
     scenarios[9] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
     scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
     scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
@@ -182,47 +182,12 @@ contract PMRMTestBase is Test {
     accounts.setApprovalForAll(address(this), true);
     vm.prank(bob);
     accounts.setApprovalForAll(address(this), true);
-
-    usdc.mint(address(this), 1_000_000_000 ether);
-    usdc.approve(address(cash), 1_000_000_000 ether);
-
-    cash.deposit(aliceAcc, 200_000_000 ether);
-    cash.deposit(bobAcc, 200_000_000 ether);
   }
 
-  function _submitTrade(
-    uint accA,
-    IAsset assetA,
-    uint96 subIdA,
-    int amountA,
-    uint accB,
-    IAsset assetB,
-    uint subIdB,
-    int amountB
-  ) internal {
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
-
-    // accA transfer asset A to accB
-    transferBatch[0] = IAccounts.AssetTransfer({
-      fromAcc: accA,
-      toAcc: accB,
-      asset: assetA,
-      subId: subIdA,
-      amount: amountA,
-      assetData: bytes32(0)
-    });
-
-    // accB transfer asset B to accA
-    transferBatch[1] = IAccounts.AssetTransfer({
-      fromAcc: accB,
-      toAcc: accA,
-      asset: assetB,
-      subId: subIdB,
-      amount: amountB,
-      assetData: bytes32(0)
-    });
-
-    accounts.submitTransfers(transferBatch, "");
+  function _depositCash(uint accId, uint amount) internal {
+    usdc.mint(address(this), amount);
+    usdc.approve(address(cash), amount);
+    cash.deposit(accId, amount);
   }
 
   struct OptionData {
@@ -384,5 +349,22 @@ contract PMRMTestBase is Test {
         IAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
     }
     return balances;
+  }
+
+  function _doBalanceTransfer(uint accA, uint accB, IAccounts.AssetBalance[] memory balances) internal {
+    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](balances.length);
+
+    for (uint i = 0; i < balances.length; i++) {
+      transferBatch[i] = IAccounts.AssetTransfer({
+        fromAcc: accA,
+        toAcc: accB,
+        asset: balances[i].asset,
+        subId: balances[i].subId,
+        amount: balances[i].balance,
+        assetData: bytes32(0)
+      });
+    }
+
+    accounts.submitTransfers(transferBatch, "");
   }
 }

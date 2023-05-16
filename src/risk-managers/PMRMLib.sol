@@ -18,6 +18,7 @@ contract IPMRMLib {
     uint volRangeDown;
     uint shortTermPower;
     uint longTermPower;
+    uint dteFloor;
   }
 
   struct StaticDiscountParameters {
@@ -82,6 +83,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     volShockParams.volRangeDown = 0.3e18;
     volShockParams.shortTermPower = 0.3e18;
     volShockParams.longTermPower = 0.13e18;
+    volShockParams.dteFloor = 1 days;
   }
 
   ///////////
@@ -305,8 +307,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function _addVolShocks(IPMRM.ExpiryHoldings memory expiry) internal view {
-    // TODO: "1 days" should be a param
-    int tao = int(30 days * DecimalMath.UNIT / UintLib.max(expiry.secToExpiry, 1 days));
+    int tao = int(30 days * DecimalMath.UNIT / UintLib.max(expiry.secToExpiry, volShockParams.dteFloor));
     uint multShock = FixedPointMathLib.decPow(
       tao, expiry.secToExpiry <= 30 days ? int(volShockParams.shortTermPower) : int(volShockParams.longTermPower)
     );
@@ -324,7 +325,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     expiry.fwdShock1MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock1, IPMRM.VolShockDirection.None);
     expiry.fwdShock2MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock2, IPMRM.VolShockDirection.None);
 
-    int fwdContingency = IntLib.min(expiry.fwdShock1MtM, expiry.fwdShock2MtM) - expiry.mtm;
+    int fwdContingency = IntLib.min(IntLib.min(expiry.fwdShock1MtM - expiry.mtm, expiry.fwdShock2MtM - expiry.mtm), 0);
     int fwdContingencyFactor = int(
       fwdContParams.additiveFactor //
         + fwdContParams.multiplicativeFactor.multiplyDecimal(Black76.annualise(uint64(expiry.secToExpiry)))
@@ -378,5 +379,24 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
 
     return nakedShorts.multiplyDecimal(otherContParams.optionPercent).multiplyDecimal(spotPrice);
+  }
+
+  ////
+  // View
+
+  function getForwardContingencyParams() external view returns (IPMRMLib.ForwardContingencyParameters memory) {
+    return fwdContParams;
+  }
+
+  function getVolShockParams() external view returns (IPMRMLib.VolShockParameters memory) {
+    return volShockParams;
+  }
+
+  function getStaticDiscountParams() external view returns (IPMRMLib.StaticDiscountParameters memory) {
+    return staticDiscountParams;
+  }
+
+  function getOtherContingencyParams() external view returns (IPMRMLib.OtherContingencyParameters memory) {
+    return otherContParams;
   }
 }

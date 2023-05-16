@@ -51,16 +51,16 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // Variables //
   ///////////////
 
+  IOption public immutable option;
+  IPerpAsset public immutable perp;
+  WrappedERC20Asset public immutable baseAsset;
+
   ISpotFeed public spotFeed;
   IInterestRateFeed public interestRateFeed;
   IVolFeed public volFeed;
   ISpotFeed public stableFeed;
   IForwardFeed public forwardFeed;
   ISettlementFeed public settlementFeed;
-  IOption public option;
-  IPerpAsset public perp;
-
-  WrappedERC20Asset public immutable baseAsset;
 
   IPMRM.Scenario[] public marginScenarios;
 
@@ -124,6 +124,22 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     volFeed = _volFeed;
   }
 
+  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
+    spotFeed = _spotFeed;
+  }
+
+  function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
+    stableFeed = _stableFeed;
+  }
+
+  function setForwardFeed(IForwardFeed _forwardFeed) external onlyOwner {
+    forwardFeed = _forwardFeed;
+  }
+
+  function setSettlementFeed(ISettlementFeed _settlementFeed) external onlyOwner {
+    settlementFeed = _settlementFeed;
+  }
+
   function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
     trustedRiskAssessor[riskAssessor] = trusted;
   }
@@ -150,15 +166,26 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   ) public onlyAccounts {
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
+    bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == perp) {
         // Settle perps if the user has a perp position
         _settleAccountPerps(perp, accountId);
+        riskAdding = true;
       } else if (
         assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option && assetDeltas[i].asset != baseAsset
       ) {
-        revert("unsupported asset");
+        revert PMRM_UnsupportedAsset();
+      } else {
+        if (assetDeltas[i].delta < 0) {
+          riskAdding = true;
+        }
       }
+    }
+
+    if (!riskAdding) {
+      // Early exit if only adding cash/option/baseAsset
+      return;
     }
 
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
@@ -172,7 +199,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       scenarios[0] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
       int atmMM = _getMargin(portfolio, false, scenarios, false);
       if (atmMM + portfolio.cash < 0) {
-        revert("Liquidatable position after trade");
+        revert PMRM_InsufficientMargin();
       }
     } else {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
@@ -184,7 +211,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
         int preIM = _getMargin(prePortfolio, true, marginScenarios, true);
         if (postIM < preIM) {
-          revert("IM requirements not met");
+          revert PMRM_InsufficientMargin();
         }
       }
     }
@@ -239,7 +266,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
         if (optionExpiry < block.timestamp) {
-          revert("option expired");
+          revert PMRM_OptionExpired();
         }
 
         bool found = false;
@@ -252,7 +279,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         }
         if (!found) {
           if (seenExpiries == MAX_EXPIRIES) {
-            revert("Too many expiries");
+            revert PMRM_TooManyExpiries();
           }
           expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: optionExpiry, optionCount: 1});
         }
@@ -270,17 +297,17 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     view
   {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
-      // TODO: break up into fixedPortion and floatingPortion
-      (uint forwardVariablePortion, uint confidence1) = forwardFeed.getForwardPrice(expiryCount[i].expiry);
-      (int64 rate, uint confidence2) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
-      uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
-      minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;
+      (uint forwardFixedPortion, uint forwardVariablePortion, uint fwdConfidence) =
+        forwardFeed.getForwardPricePortions(expiryCount[i].expiry);
+      (int64 rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
+      uint minConfidence = UintLib.min(fwdConfidence, rateConfidence);
+      minConfidence = UintLib.min(portfolio.minConfidence, minConfidence);
 
       uint secToExpiry = expiryCount[i].expiry - block.timestamp;
       portfolio.expiries[i] = ExpiryHoldings({
         secToExpiry: secToExpiry.toUint64(),
         options: new StrikeHolding[](expiryCount[i].optionCount),
-        forwardFixedPortion: 0, // TODO: fill in value
+        forwardFixedPortion: forwardFixedPortion,
         forwardVariablePortion: forwardVariablePortion,
         rate: rate,
         minConfidence: minConfidence,
@@ -328,9 +355,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
       } else if (address(currentAsset.asset) == address(baseAsset)) {
         portfolio.basePosition = currentAsset.balance.toUint256();
-      } else {
-        revert("Invalid asset type");
-      }
+      } // No need to catch other assets, as they will be caught in handleAdjustment
     }
   }
 
@@ -345,7 +370,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
           return i;
         }
       }
-      revert("secToExpiry not found");
+      revert PMRM_FindInArrayError();
     }
   }
 
@@ -363,8 +388,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
-    int im = _getMargin(portfolio, isInitial, marginScenarios, true);
-    return im;
+    return _getMargin(portfolio, isInitial, marginScenarios, true);
   }
 
   function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {

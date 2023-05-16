@@ -27,23 +27,23 @@ import "./PMRMTestBase.sol";
 
 import "forge-std/console2.sol";
 
-contract UNIT_TestPMRM is PMRMTestBase {
+// TODO: catch edge cases in arrange
+contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
   ///////////////////////
   // Arrange Portfolio //
   ///////////////////////
 
-  function testPMRM() public {
-    //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SingleBase");
-    //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".OracleContingency");
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".StableRate");
-    //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BitOfEverything");
+  function testPMRMScenario_OptionContingency() public {
+    uint expiry = block.timestamp + 1000;
+    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](pmrm.MAX_EXPIRIES() + 1);
+    for (uint i = 0; i < balances.length; i++) {
+      balances[i] = IAccounts.AssetBalance({
+        asset: IAsset(address(option)),
+        subId: OptionEncoding.toSubId(expiry + i, 1500e18, true),
+        balance: -1e18
+      });
+    }
+    vm.expectRevert();
     IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
-    _logPortfolio(portfolio);
-    console2.log("im", pmrm.getMarginByBalances(balances, true));
-    console2.log("mm", pmrm.getMarginByBalances(balances, false));
-  }
-
-  function testSinglePerp() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
   }
 }
