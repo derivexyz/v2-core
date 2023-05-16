@@ -124,7 +124,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
 
     IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 1.4e18);
+      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
     manager.setOptionMarginParameters(btcMarketId, params);
@@ -217,7 +217,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.setPricingModule(5, pricing);
 
     IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 1.4e18);
+      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
     manager.setOptionMarginParameters(5, params);
 
     // summarize the initial margin for 2 options

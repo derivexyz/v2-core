@@ -66,7 +66,9 @@ interface IBasicManager {
   struct OptionMarginParameters {
     int scOffset1;
     int scOffset2;
-    int mmSC;
+    int mmSCSpot;
+    int mmSPSpot;
+    int mmSPMtm;
     int unpairedScale;
   }
 
@@ -104,5 +106,7 @@ interface IBasicManager {
 
   event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
-  event OptionMarginParametersSet(uint8 marketId, int scOffset1, int scOffset2, int mmSC, int unpairedScale);
+  event OptionMarginParametersSet(
+    uint8 marketId, int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale
+  );
 }

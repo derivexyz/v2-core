@@ -38,7 +38,7 @@ contract UNIT_TestPMRM is PMRMTestBase {
     IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".StableRate");
     //    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BitOfEverything");
     IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
-    _logPortfolio(portfolio);
+    // _logPortfolio(portfolio);
     console2.log("im", pmrm.getMarginByBalances(balances, true));
     console2.log("mm", pmrm.getMarginByBalances(balances, false));
   }

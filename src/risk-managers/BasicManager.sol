@@ -127,7 +127,15 @@ contract BasicManager is IBasicManager, BaseManager {
   function setOptionMarginParameters(uint8 marketId, OptionMarginParameters calldata params) external onlyOwner {
     optionMarginParams[marketId] = params;
 
-    emit OptionMarginParametersSet(marketId, params.scOffset1, params.scOffset2, params.mmSC, params.unpairedScale);
+    emit OptionMarginParametersSet(
+      marketId,
+      params.scOffset1,
+      params.scOffset2,
+      params.mmSCSpot,
+      params.mmSPSpot,
+      params.mmSPMtm,
+      params.unpairedScale
+    );
   }
 
   /**
@@ -517,16 +525,18 @@ contract BasicManager is IBasicManager, BaseManager {
 
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
-    // let imMultiplier be 0 if we only want maintenance margin
-    int imMultiplier;
-    if (!isMaintenance) {
-      // this ratio become negative if option is ITM
-      int otmRatio = (indexPrice - strike).divideDecimal(indexPrice);
-      imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
-    }
+    int maintenanceMargin = SignedMath.max(
+      params.mmSPSpot.multiplyDecimal(indexPrice).multiplyDecimal(amount), params.mmSPMtm.multiplyDecimal(markToMarket)
+    ) + markToMarket;
 
+    if (isMaintenance) return maintenanceMargin;
+
+    int otmRatio = (indexPrice - strike).divideDecimal(indexPrice);
+    int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
+
+    // max or min?
     int margin =
-      (SignedMath.max(params.mmSC, imMultiplier)).multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket;
+      SignedMath.min(imMultiplier.multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket, maintenanceMargin);
     return margin;
   }
 
@@ -549,7 +559,7 @@ contract BasicManager is IBasicManager, BaseManager {
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
     if (isMaintenance) {
-      return (params.mmSC.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
+      return (params.mmSCSpot.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
     }
 
     // this ratio become negative if option is ITM

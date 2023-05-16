@@ -84,7 +84,7 @@ contract UNIT_TestBasicManager_Option is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
     IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 1.4e18);
+      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
   }
@@ -109,12 +109,15 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testSetOptionParameters() public {
     IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 1.4e18);
+      IBasicManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18);
     manager.setOptionMarginParameters(ethMarketId, params);
-    (int scOffset1, int scOffset2, int mmSC, int unpairedScale) = manager.optionMarginParams(ethMarketId);
+    (int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale) =
+      manager.optionMarginParams(ethMarketId);
     assertEq(scOffset1, 0.2e18);
     assertEq(scOffset2, 0.15e18);
-    assertEq(mmSC, 0.1e18);
+    assertEq(mmSCSpot, 0.1e18);
+    assertEq(mmSPSpot, 0.07e18);
+    assertEq(mmSPMtm, 0.09e18);
     assertEq(unpairedScale, 1.4e18);
   }
 
@@ -191,8 +194,7 @@ contract UNIT_TestBasicManager_Option is Test {
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     // 0.15 * 1500 + 100 = 325
     assertEq(im / 1e18, -325);
-    // 0.075 * 1500 + 100 = 212.5
-    assertEq(mm / 1e18, -212);
+    assertEq(mm / 1e18, -107);
   }
 
   function testGetIsolatedMarginShortITMPut() public {
@@ -210,7 +212,7 @@ contract UNIT_TestBasicManager_Option is Test {
     int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     assertEq(im / 1e18, -160);
-    assertEq(mm / 1e18, -122);
+    assertEq(mm / 1e18, -10);
   }
 
   ////////////////////
