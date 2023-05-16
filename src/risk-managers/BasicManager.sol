@@ -127,7 +127,7 @@ contract BasicManager is IBasicManager, BaseManager {
   function setOptionMarginParameters(uint8 marketId, OptionMarginParameters calldata params) external onlyOwner {
     optionMarginParams[marketId] = params;
 
-    emit OptionMarginParametersSet(marketId, params.scOffset1, params.scOffset2, params.mmSC);
+    emit OptionMarginParametersSet(marketId, params.scOffset1, params.scOffset2, params.mmSC, params.unpairedScale);
   }
 
   /**
@@ -372,6 +372,7 @@ contract BasicManager is IBasicManager, BaseManager {
     bool lossBounded = expiryHolding.netCalls >= 0;
 
     int maxLossMargin = 0;
+
     int isolatedMargin = 0;
     bool zeroStrikeChecked;
 
@@ -390,13 +391,11 @@ contract BasicManager is IBasicManager, BaseManager {
         isMaintenance
       );
 
-      // only calculate the max loss margin if loss is bounded (net calls > 0)
-      if (lossBounded) {
-        uint scenarioPrice = expiryHolding.options[i].strike;
-        maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, scenarioPrice), maxLossMargin);
-        if (scenarioPrice == 0) {
-          zeroStrikeChecked = true;
-        }
+      // calculate the max loss margin, update the maxLossMargin if it's lower than current
+      uint scenarioPrice = expiryHolding.options[i].strike;
+      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, scenarioPrice), maxLossMargin);
+      if (scenarioPrice == 0) {
+        zeroStrikeChecked = true;
       }
     }
 
@@ -405,11 +404,13 @@ contract BasicManager is IBasicManager, BaseManager {
       maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, 0), maxLossMargin);
     }
 
-    if (lossBounded) {
-      return SignedMath.max(isolatedMargin, maxLossMargin);
+    if (expiryHolding.netCalls < 0) {
+      int unpairedScale = optionMarginParams[marketId].unpairedScale;
+      maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(indexPrice);
     }
 
-    return isolatedMargin;
+    // return the better of the 2 margins
+    return SignedMath.max(isolatedMargin, maxLossMargin);
   }
 
   /**
@@ -518,14 +519,14 @@ contract BasicManager is IBasicManager, BaseManager {
 
     // let imMultiplier be 0 if we only want maintenance margin
     int imMultiplier;
-    if (isMaintenance) {
+    if (!isMaintenance) {
       // this ratio become negative if option is ITM
       int otmRatio = (indexPrice - strike).divideDecimal(indexPrice);
       imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
     }
 
     int margin =
-      ((SignedMath.max(params.mmSC, imMultiplier)).multiplyDecimal(indexPrice) + markToMarket).multiplyDecimal(amount);
+      (SignedMath.max(params.mmSC, imMultiplier)).multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket;
     return margin;
   }
 
@@ -548,7 +549,7 @@ contract BasicManager is IBasicManager, BaseManager {
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
     if (isMaintenance) {
-      return (params.mmSC.multiplyDecimal(indexPrice) + markToMarket).multiplyDecimal(amount);
+      return (params.mmSC.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
     }
 
     // this ratio become negative if option is ITM
@@ -556,7 +557,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
-    int margin = (imMultiplier.multiplyDecimal(indexPrice) + markToMarket).multiplyDecimal(amount);
+    int margin = (imMultiplier.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
     return margin;
   }
 

@@ -73,9 +73,9 @@ contract UNIT_TestBasicManager_Option is Test {
 
     // set a future price that will be used for 90 day options
     expiry = block.timestamp + 91 days;
-    feed.setSpot(1513e18, 1e18);
+    feed.setSpot(1500e18, 1e18);
 
-    feed.setForwardPrice(expiry, 1513e18, 1e18);
+    feed.setForwardPrice(expiry, 1500e18, 1e18);
 
     usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
@@ -83,7 +83,8 @@ contract UNIT_TestBasicManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
-    IBasicManager.OptionMarginParameters memory params = IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18);
+    IBasicManager.OptionMarginParameters memory params =
+      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
   }
@@ -107,12 +108,14 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testSetOptionParameters() public {
-    IBasicManager.OptionMarginParameters memory params = IBasicManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18);
+    IBasicManager.OptionMarginParameters memory params =
+      IBasicManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 1.4e18);
     manager.setOptionMarginParameters(ethMarketId, params);
-    (int scOffset1, int scOffset2, int mmSC) = manager.optionMarginParams(ethMarketId);
+    (int scOffset1, int scOffset2, int mmSC, int unpairedScale) = manager.optionMarginParams(ethMarketId);
     assertEq(scOffset1, 0.2e18);
     assertEq(scOffset2, 0.15e18);
     assertEq(mmSC, 0.1e18);
+    assertEq(unpairedScale, 1.4e18);
   }
 
   function testSetOracles() public {
@@ -140,26 +143,34 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testGetIsolatedMarginShortATMCall() public {
     uint strike = 1500e18;
+    pricing.setMockMTM(strike, expiry, true, 100e18);
+
     int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
-    assertEq(im / 1e18, -315);
-    assertEq(mm / 1e18, -164);
+    // (0.15 * 1500) + 100
+    assertEq(im / 1e18, -325);
+    // (0.075 * 1500) + 100
+    assertEq(mm / 1e18, -212);
   }
 
   function testGetIsolatedMarginShortITMCall() public {
     uint strike = 400e18;
+    pricing.setMockMTM(strike, expiry, true, 1100e18);
+
     int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
-    assertEq(im / 1e18, -1415);
-    assertEq(mm / 1e18, -1264);
+    assertEq(im / 1e18, -2424);
+    assertEq(mm / 1e18, -1212);
   }
 
   function testGetIsolatedMarginShortOTMCall() public {
     uint strike = 3000e18;
+    pricing.setMockMTM(strike, expiry, true, 10e18);
+
     int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
-    assertEq(im / 1e18, -189);
-    assertEq(mm / 1e18, -121);
+    assertEq(im / 1e18, -160);
+    assertEq(mm / 1e18, -122);
   }
 
   //////////////
@@ -175,26 +186,31 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testGetIsolatedMarginShortATMPut() public {
     uint strike = 1500e18;
+    pricing.setMockMTM(strike, expiry, false, 100e18);
     int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
-    assertEq(im / 1e18, -289);
-    assertEq(mm / 1e18, -138);
+    // 0.15 * 1500 + 100 = 325
+    assertEq(im / 1e18, -325);
+    // 0.075 * 1500 + 100 = 212.5
+    assertEq(mm / 1e18, -212);
   }
 
   function testGetIsolatedMarginShortITMPut() public {
     uint strike = 3000e18;
+    pricing.setMockMTM(strike, expiry, false, 1500e18);
     int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
-    assertEq(im / 1e18, -1789);
-    assertEq(mm / 1e18, -1638);
+    assertEq(im / 1e18, -3225);
+    assertEq(mm / 1e18, -1612);
   }
 
   function testGetIsolatedMarginShortOTMPut() public {
     uint strike = 400e18;
+    pricing.setMockMTM(strike, expiry, false, 10e18);
     int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
-    assertEq(im / 1e18, -189);
-    assertEq(mm / 1e18, -121);
+    assertEq(im / 1e18, -160);
+    assertEq(mm / 1e18, -122);
   }
 
   ////////////////////
@@ -218,16 +234,16 @@ contract UNIT_TestBasicManager_Option is Test {
     _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
-  function testDefaultToIsolatedMarginIfUnbounded() public {
+  function testUnpairedLegsAreChargedInMargin() public {
     uint aliceShortLeg = 1500e18;
     uint aliceLongLeg = 1600e18;
 
-    cash.deposit(aliceAcc, 100e18);
-    // shorting 1 wei more than long, breaking max loss and default to isolated margin
-    vm.expectRevert(
-      abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 315_599999999999999100)
-    );
-    _tradeSpread(aliceAcc, bobAcc, 1e18 + 1, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+    cash.deposit(aliceAcc, 123e18);
+    // uint extraMargin =
+    // shorting 0.01 wei more will require 22 USDC of option:
+    // 1500 * 0.01 * 1.4 = 21
+    // max loss 0.01 @ price 1600 = 1
+    _tradeSpread(aliceAcc, bobAcc, 1.01e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
   function testCanTradeZeroStrikeSpreadWithMaxLoss() public {

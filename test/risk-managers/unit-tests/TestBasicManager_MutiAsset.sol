@@ -35,7 +35,9 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   MockOption ethOption;
   MockOption btcOption;
 
-  MockOptionPricing pricing;
+  MockOptionPricing btcPricing;
+  MockOptionPricing ethPricing;
+
   uint expiry1;
   uint expiry2;
   uint expiry3;
@@ -74,14 +76,16 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     btcOption = new MockOption(account);
     btcFeed = new MockFeeds();
 
-    pricing = new MockOptionPricing();
+    ethPricing = new MockOptionPricing();
+    btcPricing = new MockOptionPricing();
 
     manager = new BasicManager(
       account,
       ICashAsset(address(cash))
     );
 
-    manager.setPricingModule(ethMarketId, pricing);
+    manager.setPricingModule(ethMarketId, ethPricing);
+    manager.setPricingModule(btcMarketId, btcPricing);
 
     manager.whitelistAsset(ethPerp, ethMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IBasicManager.AssetType.Option);
@@ -119,9 +123,11 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
 
-    IBasicManager.OptionMarginParameters memory params = IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18);
+    IBasicManager.OptionMarginParameters memory params =
+      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
+    manager.setOptionMarginParameters(btcMarketId, params);
   }
 
   function testCanTradeMultipleMarkets() public {
@@ -199,6 +205,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // Setup doge market
     MockOption dogeOption = new MockOption(account);
     MockFeeds dogeFeed = new MockFeeds();
+    MockOptionPricing pricing = new MockOptionPricing();
+
     dogeFeed.setSpot(0.0005e18, 1e18);
 
     dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
@@ -206,9 +214,18 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.whitelistAsset(dogeOption, 5, IBasicManager.AssetType.Option);
     manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed);
 
+    manager.setPricingModule(5, pricing);
+
+    IBasicManager.OptionMarginParameters memory params =
+      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 1.4e18);
+    manager.setOptionMarginParameters(5, params);
+
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint dogeStrike = 0.0006e18;
+    pricing.setMockMTM(dogeStrike, expiry1, true, 0.0005e18);
+    ethPricing.setMockMTM(ethStrike, expiry1, true, 100e18);
+
     int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
     int dogeMargin1 = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, false);
 

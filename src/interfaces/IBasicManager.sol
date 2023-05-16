@@ -67,6 +67,7 @@ interface IBasicManager {
     int scOffset1;
     int scOffset2;
     int mmSC;
+    int unpairedScale;
   }
 
   ///////////////
@@ -103,5 +104,5 @@ interface IBasicManager {
 
   event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
-  event OptionMarginParametersSet(uint8 marketId, int scOffset1, int scOffset2, int mmSC);
+  event OptionMarginParametersSet(uint8 marketId, int scOffset1, int scOffset2, int mmSC, int unpairedScale);
 }
