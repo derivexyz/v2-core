@@ -28,10 +28,6 @@ import "./PMRMTestBase.sol";
 import "forge-std/console2.sol";
 
 contract UNIT_TestPMRM_RiskBypass is PMRMTestBase {
-  ///////////////////////
-  // Arrange Portfolio //
-  ///////////////////////
-
   function testPMRMInsufficientMarginRegularTransfer() public {
     IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
 

@@ -45,7 +45,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // Constants //
   ///////////////
   uint public constant MAX_EXPIRIES = 11;
-  uint public constant MAX_ASSETS = 1024; // TODO: limit
+  uint public constant MAX_ASSETS = 128;
 
   ///////////////
   // Variables //
@@ -257,6 +257,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   {
     uint assetLen = assets.length;
 
+    if (assetLen > MAX_ASSETS) {
+      revert PMRM_TooManyAssets();
+    }
+
     seenExpiries = 0;
     expiryCount = new IPMRM.PortfolioExpiryData[](MAX_EXPIRIES > assetLen ? assetLen : MAX_EXPIRIES);
 
@@ -339,9 +343,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
 
         (uint vol, uint confidence) = volFeed.getVol(strike.toUint128(), optionExpiry.toUint128());
-        if (confidence < expiry.minConfidence) {
-          expiry.minConfidence = confidence;
-        }
+
+        expiry.minConfidence = UintLib.min(confidence, expiry.minConfidence);
 
         expiry.netOptions += IntLib.abs(currentAsset.balance);
 

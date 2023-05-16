@@ -53,6 +53,8 @@ contract PMRMTestBase is Test {
   uint bobAcc;
 
   function setUp() public {
+    vm.warp(1640995200); // 1st jan 2022
+
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeeds();

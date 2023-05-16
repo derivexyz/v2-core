@@ -28,10 +28,6 @@ import "./PMRMTestBase.sol";
 import "forge-std/console2.sol";
 
 contract UNIT_TestPMRM_Scenarios is PMRMTestBase {
-  ///////////////////////
-  // Arrange Portfolio //
-  ///////////////////////
-
   function testPMRMScenario_BigOne() public {
     IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
     console2.log("im", pmrm.getMarginByBalances(balances, true));

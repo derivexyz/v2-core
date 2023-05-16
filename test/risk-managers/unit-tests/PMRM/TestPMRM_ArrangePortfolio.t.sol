@@ -33,17 +33,42 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
   // Arrange Portfolio //
   ///////////////////////
 
-  function testPMRMScenario_OptionContingency() public {
+  function testPMRMArrangePortfolio_MaxExpiries() public {
     uint expiry = block.timestamp + 1000;
     IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](pmrm.MAX_EXPIRIES() + 1);
     for (uint i = 0; i < balances.length; i++) {
       balances[i] = IAccounts.AssetBalance({
         asset: IAsset(address(option)),
         subId: OptionEncoding.toSubId(expiry + i, 1500e18, true),
-        balance: -1e18
+        balance: 1e18
       });
     }
-    vm.expectRevert();
+    vm.expectRevert(IPMRM.PMRM_TooManyExpiries.selector);
+    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+  }
+
+  function testPMRMArrangePortfolio_MaxAssets() public {
+    uint expiry = block.timestamp + 1000;
+    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](pmrm.MAX_ASSETS() + 1);
+    for (uint i = 0; i < balances.length; i++) {
+      balances[i] = IAccounts.AssetBalance({
+        asset: IAsset(address(option)),
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        balance: 1e18
+      });
+    }
+    vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
+    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+  }
+
+  function testPMRMArrangePortfolio_ExpiredOption() public {
+    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
+    balances[0] = IAccounts.AssetBalance({
+      asset: IAsset(address(option)),
+      subId: OptionEncoding.toSubId(block.timestamp - 1, 1500e18, true),
+      balance: 1e18
+    });
+    vm.expectRevert(IPMRM.PMRM_OptionExpired.selector);
     IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
   }
 }
