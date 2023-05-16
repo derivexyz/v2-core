@@ -110,7 +110,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       }
     }
 
-    for (uint i = _scenarios.length; i < marginScenarios.length; i++) {
+    uint marginScenariosLength = marginScenarios.length;
+    for (uint i = _scenarios.length; i < marginScenariosLength; i++) {
       marginScenarios.pop();
     }
   }
@@ -269,7 +270,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     view
   {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
-      (uint forwardPrice, uint confidence1) = forwardFeed.getForwardPrice(expiryCount[i].expiry);
+      // TODO: break up into fixedPortion and floatingPortion
+      (uint forwardVariablePortion, uint confidence1) = forwardFeed.getForwardPrice(expiryCount[i].expiry);
       (int64 rate, uint confidence2) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
       uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
       minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;
@@ -278,7 +280,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       portfolio.expiries[i] = ExpiryHoldings({
         secToExpiry: secToExpiry.toUint64(),
         options: new StrikeHolding[](expiryCount[i].optionCount),
-        forwardPrice: forwardPrice,
+        forwardFixedPortion: 0, // TODO: fill in value
+        forwardVariablePortion: forwardVariablePortion,
         rate: rate,
         minConfidence: minConfidence,
         netOptions: 0,
@@ -349,6 +352,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   //////////
   // View //
   //////////
+
+  function getScenarios() external view returns (IPMRM.Scenario[] memory) {
+    return marginScenarios;
+  }
 
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
     return _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);

@@ -24,13 +24,13 @@ import "../../../shared/mocks/MockFeeds.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
 import "../../../shared/mocks/MockPerp.sol";
 import "../../../../src/feeds/OptionPricing.sol";
-import "./TEST_PMRM.sol";
+import "./PMRMPublic.sol";
 
 contract PMRMTestBase is Test {
   using stdJson for string;
 
   Accounts accounts;
-  TEST_PMRM pmrm;
+  PMRMPublic pmrm;
   MockAsset cash;
   MockERC20 usdc;
   MockERC20 weth;
@@ -69,7 +69,7 @@ contract PMRMTestBase is Test {
     option = new MockOption(accounts);
     optionPricing = new OptionPricing();
 
-    pmrm = new TEST_PMRM(
+    pmrm = new PMRMPublic(
       accounts,
       ICashAsset(address(cash)),
       option,
@@ -121,7 +121,8 @@ contract PMRMTestBase is Test {
       console2.log("=== secToExpiry:", expiry.secToExpiry);
       console2.log("params:");
 
-      console2.log("forwardPrice", expiry.forwardPrice);
+      console2.log("forwardFixedPortion", expiry.forwardFixedPortion);
+      console2.log("forwardVariablePortion", expiry.forwardVariablePortion);
       console2.log("volShockUp", expiry.volShockUp);
       console2.log("volShockDown", expiry.volShockDown);
       console2.log("mtm", expiry.mtm);

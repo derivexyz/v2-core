@@ -43,7 +43,10 @@ interface IPMRM {
   struct ExpiryHoldings {
     uint secToExpiry;
     StrikeHolding[] options;
-    uint forwardPrice;
+    // portion unaffected by spot shocks
+    uint forwardFixedPortion;
+    // portion affected by spot shocks
+    uint forwardVariablePortion;
     int64 rate;
     uint minConfidence;
     uint netOptions;

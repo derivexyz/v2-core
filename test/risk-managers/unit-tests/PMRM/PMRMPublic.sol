@@ -1,6 +1,6 @@
 import "src/risk-managers/PMRM.sol";
 
-contract TEST_PMRM is PMRM {
+contract PMRMPublic is PMRM {
   constructor(
     IAccounts accounts_,
     ICashAsset cashAsset_,

@@ -218,7 +218,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     // TODO: maybe these structs should be precomputed? Test gas
     IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
       secToExpiry: expiry.secToExpiry.toUint64(),
-      forwardPrice: expiry.forwardPrice.multiplyDecimal(spotShock).toUint128(),
+      forwardPrice: (expiry.forwardVariablePortion.multiplyDecimal(spotShock) + expiry.forwardFixedPortion).toUint128(),
       discountFactor: 1e18
     });
 
