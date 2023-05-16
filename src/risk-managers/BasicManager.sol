@@ -23,12 +23,13 @@ import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 
 import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
+import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
+
 import {BaseManager} from "./BaseManager.sol";
 
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import "forge-std/console2.sol";
-import "../interfaces/IOptionPricing.sol";
 
 /**
  * @title BasicManager
