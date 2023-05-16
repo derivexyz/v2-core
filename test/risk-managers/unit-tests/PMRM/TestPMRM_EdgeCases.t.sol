@@ -53,14 +53,23 @@ contract UNIT_TestPMRM_EdgeCases is PMRMTestBase {
     _depositCash(aliceAcc, 2_000 ether);
     _depositCash(bobAcc, 2_000 ether);
     _doBalanceTransfer(aliceAcc, bobAcc, balances);
-
-    vm.startPrank(alice);
-    accounts.transferFrom(alice, bob, aliceAcc);
-    vm.startPrank(bob);
     uint[] memory mergeAccs = new uint[](1);
     mergeAccs[0] = bobAcc;
+
+    // Fails when not owned by the same user
+    vm.startPrank(bob);
+    vm.expectRevert(IPMRM.PMRM_MergeOwnerMismatch.selector);
     pmrm.mergeAccounts(aliceAcc, mergeAccs);
 
+    // So then transfer alice's account to bob
+    vm.startPrank(alice);
+    accounts.transferFrom(alice, bob, aliceAcc);
+
+    // and now they can merge!
+    vm.startPrank(bob);
+    pmrm.mergeAccounts(aliceAcc, mergeAccs);
+
+    // perps cancel out, leaving bob with double the cash!
     IAccounts.AssetBalance[] memory bals = accounts.getAccountBalances(aliceAcc);
     assertEq(bals.length, 1);
     assertEq(bals[0].balance, 4_000 ether);

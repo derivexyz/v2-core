@@ -399,7 +399,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     for (uint i = 0; i < mergeFromIds.length; ++i) {
       // check owner of all accounts is the same - note this ignores
       if (owner != accounts.ownerOf(mergeFromIds[i])) {
-        revert("accounts not owned by same address");
+        revert PMRM_MergeOwnerMismatch();
       }
       // Move all assets of the other
       IAccounts.AssetBalance[] memory assets = accounts.getAccountBalances(mergeFromIds[i]);
@@ -422,7 +422,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   {
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
-    // keep track of how many new elements to add to the result, can be negative technically (remove 0 balances)
+    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
     uint removedBalances = 0;
     uint newBalances = 0;
     IAccounts.AssetBalance[] memory preBalances = new IAccounts.AssetBalance[](assetDeltas.length);

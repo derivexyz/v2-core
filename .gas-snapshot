@@ -245,7 +245,7 @@ UNIT_TestPMRM_ArrangePortfolio:testPMRMArrangePortfolio_ExpiredOption() (gas: 14
 UNIT_TestPMRM_ArrangePortfolio:testPMRMArrangePortfolio_MaxAssets() (gas: 211766)
 UNIT_TestPMRM_ArrangePortfolio:testPMRMArrangePortfolio_MaxExpiries() (gas: 54207)
 UNIT_TestPMRM_Contingencies:testPMRMScenario_OptionContingency() (gas: 173060)
-UNIT_TestPMRM_EdgeCases:testPMRM_merge() (gas: 2809531)
+UNIT_TestPMRM_EdgeCases:testPMRM_merge() (gas: 2816152)
 UNIT_TestPMRM_EdgeCases:testPMRM_perpTransfer() (gas: 2885368)
 UNIT_TestPMRM_EdgeCases:testPMRM_unsupportedAsset() (gas: 1121158)
 UNIT_TestPMRM_RiskBypass:testPMRMInsufficientMarginRegularTransfer() (gas: 16839525)
