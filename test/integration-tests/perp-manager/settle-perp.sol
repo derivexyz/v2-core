@@ -27,6 +27,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   CashAsset cash;
   Accounts account;
   MockFeeds feed;
+  MockFeeds stableFeed;
   MockERC20 usdc;
   MockInterestRateModel rateModel;
 
@@ -49,6 +50,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     // deploy contracts
     account = new Accounts("Lyra", "LYRA");
     feed = new MockFeeds();
+    stableFeed = new MockFeeds();
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
@@ -68,6 +70,10 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
 
     manager.setOraclesForMarket(1, feed, feed, feed);
+
+    manager.setStableFeed(stableFeed);
+    stableFeed.setSpot(1e18, 1e18);
+    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
 
     cash.setWhitelistManager(address(manager), true);
 

@@ -36,6 +36,8 @@ interface IBasicManager {
     // option position detail
     IOption option;
     ExpiryHolding[] expiryHoldings;
+    /// sum of all short positions. used to increase margin requirement if USDC depeg
+    int numShortOptions;
   }
 
   ///@dev contains portfolio struct for single expiry assets
@@ -72,6 +74,11 @@ interface IBasicManager {
     int unpairedScale;
   }
 
+  struct DepegParams {
+    int128 threshold;
+    int128 depegFactor;
+  }
+
   ///////////////
   //   Errors  //
   ///////////////
@@ -94,6 +101,9 @@ interface IBasicManager {
   /// @dev Forward Price for an asset is 0
   error BM_NoForwardPrice();
 
+  /// @dev Invalid depeg parameters
+  error BM_InvalidDepegParams();
+
   ///////////////////
   //    Events     //
   ///////////////////
@@ -109,4 +119,8 @@ interface IBasicManager {
   event OptionMarginParametersSet(
     uint8 marketId, int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale
   );
+
+  event DepegParametersSet(int128 threshold, int128 depegFactor);
+
+  event StableFeedUpdated(address stableFeed);
 }

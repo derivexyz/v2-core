@@ -35,6 +35,7 @@ contract UNIT_TestBasicManager_Option is Test {
   uint8 ethMarketId = 1;
 
   MockFeeds feed;
+  MockFeeds stableFeed;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -53,6 +54,8 @@ contract UNIT_TestBasicManager_Option is Test {
     option = new MockOption(account);
 
     feed = new MockFeeds();
+
+    stableFeed = new MockFeeds();
 
     pricing = new MockOptionPricing();
 
@@ -87,6 +90,10 @@ contract UNIT_TestBasicManager_Option is Test {
       IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
+
+    manager.setStableFeed(stableFeed);
+    stableFeed.setSpot(1e18, 1e18);
+    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
   }
 
   ////////////////
@@ -127,6 +134,27 @@ contract UNIT_TestBasicManager_Option is Test {
     assertEq(address(manager.spotFeeds(1)), address(newFeed));
     assertEq(address(manager.settlementFeeds(1)), address(newFeed));
     assertEq(address(manager.forwardFeeds(1)), address(newFeed));
+  }
+
+  function testSetStableFeed() public {
+    MockFeeds newFeed = new MockFeeds();
+    manager.setStableFeed(newFeed);
+    assertEq(address(manager.stableFeed()), address(newFeed));
+  }
+
+  function testSetDepegParameters() public {
+    manager.setDepegParameters(IBasicManager.DepegParams(0.99e18, 1.2e18));
+    (int threshold, int depegFactor) = manager.depegParams();
+    assertEq(threshold, 0.99e18);
+    assertEq(depegFactor, 1.2e18);
+  }
+
+  function testCannotSetInvalidDepegParameters() public {
+    vm.expectRevert(IBasicManager.BM_InvalidDepegParams.selector);
+    manager.setDepegParameters(IBasicManager.DepegParams(1.01e18, 1.2e18));
+
+    vm.expectRevert(IBasicManager.BM_InvalidDepegParams.selector);
+    manager.setDepegParameters(IBasicManager.DepegParams(0.9e18, 4e18));
   }
 
   ////////////////////////////////////////////////////

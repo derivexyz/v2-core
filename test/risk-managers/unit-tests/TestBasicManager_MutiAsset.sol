@@ -44,6 +44,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
   MockFeeds ethFeed;
   MockFeeds btcFeed;
+  MockFeeds stableFeed;
 
   uint8 ethMarketId = 1;
   uint8 btcMarketId = 2;
@@ -65,6 +66,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     usdc = new MockERC20("USDC", "USDC");
 
     cash = new MockCash(usdc, account);
+
+    stableFeed = new MockFeeds();
 
     // Setup asset for ETH Markets
     ethPerp = new MockPerp(account);
@@ -94,6 +97,10 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.whitelistAsset(btcPerp, btcMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IBasicManager.AssetType.Option);
     manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed);
+
+    manager.setStableFeed(stableFeed);
+    stableFeed.setSpot(1e18, 1e18);
+    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -196,6 +203,41 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
+
+    int requirement = manager.getMargin(aliceAcc, false);
+    assertEq(requirement, neededMargin);
+  }
+
+  function testMultiMarketDepeg() public {
+    // summarize the initial margin for 2 options
+    uint ethStrike = 2000e18;
+    uint btcStrike = 30000e18;
+    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
+    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, false);
+    int ethPerpMargin = -150e18;
+    int btcPerpMargin = -2000e18;
+
+    // USDC depeg to 0.95
+    // 1 short eth option + 1 eth perp position => 1.3 x eth spot x 2 * 0.03  = 117
+    // 1 short btc option + 1 btc perp position => 1.3 x btc x 2 * 0.03  = 1560
+    stableFeed.setSpot(0.95e18, 1e18);
+
+    int depegMargin = -(117e18 + 1560e18);
+    int neededMargin = ethMargin1 + btcMargin1 + ethPerpMargin + btcPerpMargin + depegMargin;
+
+    cash.deposit(aliceAcc, uint(-neededMargin));
+    cash.deposit(bobAcc, uint(-neededMargin));
+
+    Trade[] memory trades = new Trade[](4);
+    trades[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, ethStrike, true));
+    trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
+    trades[2] = Trade(ethPerp, 1e18, 0);
+    trades[3] = Trade(btcPerp, 1e18, 0);
+
+    // short 1 eth call + 1 btc call
+    _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
+
+    console2.log("test2");
 
     int requirement = manager.getMargin(aliceAcc, false);
     assertEq(requirement, neededMargin);

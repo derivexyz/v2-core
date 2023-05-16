@@ -49,6 +49,12 @@ contract BasicManager is IBasicManager, BaseManager {
   // Variables //
   ///////////////
 
+  /// @dev Depeg IM parameters: use to increase margin requirement if USDC depeg
+  DepegParams public depegParams;
+
+  /// @dev Oracle that returns USDC / USD price
+  ISpotFeed public stableFeed;
+
   /// @dev True if an IAsset address is whitelisted.
   mapping(IAsset asset => AssetDetail) public assetDetails;
 
@@ -140,6 +146,27 @@ contract BasicManager is IBasicManager, BaseManager {
   }
 
   /**
+   * @notice Set the option margin parameters for an market
+   *
+   */
+  function setDepegParameters(DepegParams calldata params) external onlyOwner {
+    if (params.threshold > 1e18 || params.depegFactor > 3e18) revert BM_InvalidDepegParams();
+    depegParams = params;
+
+    emit DepegParametersSet(params.threshold, params.depegFactor);
+  }
+
+  /**
+   * @notice Set feed for USDC / USD price
+   *
+   */
+  function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
+    stableFeed = _stableFeed;
+
+    emit StableFeedUpdated(address(_stableFeed));
+  }
+
+  /**
    * @notice Set the pricing module
    * @param _pricing new pricing module
    */
@@ -207,11 +234,11 @@ contract BasicManager is IBasicManager, BaseManager {
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
     // the net margin here should always be zero or negative
-    int margin = _getMargin(accountId, false);
+    int initialMargin = _getMargin(accountId, false);
 
     // cash deposited has to cover net option margin + net perp margin
-    if (cashBalance + margin < 0) {
-      revert BM_PortfolioBelowMargin(accountId, -(margin));
+    if (cashBalance + initialMargin < 0) {
+      revert BM_PortfolioBelowMargin(accountId, -(initialMargin));
     }
   }
 
@@ -224,18 +251,44 @@ contract BasicManager is IBasicManager, BaseManager {
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
+    int depegMultiplier = _getDepegMultiplier(isMaintenance);
+
     // for each subAccount, get margin and sum it up
     for (uint i = 0; i < portfolio.marketHoldings.length; i++) {
-      margin += _getSubAccountMargin(portfolio.marketHoldings[i], isMaintenance);
+      margin += _getSubAccountMargin(portfolio.marketHoldings[i], isMaintenance, depegMultiplier);
     }
   }
 
-  function _getSubAccountMargin(MarketHolding memory subAccount, bool isMaintenance) internal view returns (int) {
+  /**
+   * @dev if the stable feed for USDC / USD return price lower than threshold, add extra amount to im
+   * @return a positive multiplier that should be multiply to S * sum(shorts + perps)
+   */
+  function _getDepegMultiplier(bool isMaintenance) internal view returns (int) {
+    if (isMaintenance) return 0;
+
+    (uint usdcPrice,) = stableFeed.getSpot();
+    if (usdcPrice.toInt256() >= depegParams.threshold) return 0;
+
+    return (depegParams.threshold - int(usdcPrice)).multiplyDecimal(depegParams.depegFactor);
+  }
+
+  function _getSubAccountMargin(MarketHolding memory subAccount, bool isMaintenance, int depegMultiplier)
+    internal
+    view
+    returns (int)
+  {
     int indexPrice = _getIndexPrice(subAccount.marketId);
 
     int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isMaintenance);
     int netOptionMargin = _getNetOptionMargin(subAccount, indexPrice, isMaintenance);
-    return netPerpMargin + netOptionMargin;
+
+    int depegMargin = 0;
+    if (depegMultiplier != 0) {
+      int num = subAccount.perpPosition.abs().toInt256() + subAccount.numShortOptions;
+      depegMargin = -num.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
+    }
+
+    return netPerpMargin + netOptionMargin + depegMargin;
   }
 
   /**
@@ -354,6 +407,9 @@ contract BasicManager is IBasicManager, BaseManager {
           portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions++;
           if (isCall) {
             portfolio.marketHoldings[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
+          }
+          if (currentAsset.balance < 0) {
+            portfolio.marketHoldings[i].numShortOptions -= currentAsset.balance;
           }
         }
       }

@@ -24,6 +24,7 @@ contract UNIT_TestBasicManager is Test {
   MockERC20 usdc;
   MockPerp perp;
   MockOption option;
+  MockFeeds stableFeed;
 
   MockFeeds feed;
 
@@ -44,6 +45,7 @@ contract UNIT_TestBasicManager is Test {
     option = new MockOption(account);
 
     feed = new MockFeeds();
+    stableFeed = new MockFeeds();
 
     manager = new BasicManager(
       account,
@@ -54,6 +56,10 @@ contract UNIT_TestBasicManager is Test {
     manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
 
     manager.setOraclesForMarket(1, feed, feed, feed);
+
+    manager.setStableFeed(stableFeed);
+    stableFeed.setSpot(1e18, 1e18);
+    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
