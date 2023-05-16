@@ -67,6 +67,23 @@ contract TestPMRM_Admin is PMRMTestBase {
     assertEq(uint8(res[0].volShock), uint8(IPMRM.VolShockDirection.Up));
     assertEq(res[1].spotShock, 2);
     assertEq(uint8(res[1].volShock), uint8(IPMRM.VolShockDirection.Down));
+
+    
+    /////
+    // Update equal amount of scenarios
+    scenarios = new IPMRM.Scenario[](2);
+    scenarios[0] = IPMRM.Scenario({spotShock: 2, volShock: IPMRM.VolShockDirection.None});
+    scenarios[1] = IPMRM.Scenario({spotShock: 3, volShock: IPMRM.VolShockDirection.None});
+    pmrm.setScenarios(scenarios);
+
+    res = pmrm.getScenarios();
+    assertEq(res.length, 2);
+    assertEq(res[0].spotShock, 2);
+    assertEq(uint8(res[0].volShock), uint8(IPMRM.VolShockDirection.None));
+    assertEq(res[1].spotShock, 3);
+    assertEq(uint8(res[1].volShock), uint8(IPMRM.VolShockDirection.None));
+
+    
   }
 
   function testSetFeeds() public {

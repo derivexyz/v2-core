@@ -25,8 +25,8 @@ import "src/interfaces/IPMRM.sol";
 import "./BaseManager.sol";
 
 import "forge-std/console2.sol";
-import "./PMRMLib.sol";
-import "../assets/WrappedERC20Asset.sol";
+import "src/risk-managers/PMRMLib.sol";
+import "src/assets/WrappedERC20Asset.sol";
 
 /**
  * @title PMRM
