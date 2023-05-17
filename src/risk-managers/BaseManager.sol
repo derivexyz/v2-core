@@ -15,11 +15,15 @@ import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
+import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
+
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import {IManager} from "src/interfaces/IManager.sol";
+
+import "forge-std/console2.sol";
 
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
@@ -47,6 +51,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
+
+  /// @dev keep track of the last tradeId that this manager updated before, to prevent double update
+  uint public lastOracleUpdateTradeId;
 
   IDutchAuction public immutable liquidation;
 
@@ -148,6 +155,21 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
   //  Internal Functions  //
   //////////////////////////
+
+  /**
+   * @dev send custom data to oracles. Oracles should implement the verification logic on their own
+   */
+  function _processManagerData(uint tradeId, bytes calldata managerData) internal {
+    if (managerData.length == 0 || lastOracleUpdateTradeId == tradeId) return;
+
+    lastOracleUpdateTradeId = tradeId;
+
+    // parse array of oracle data and update each oracle
+    ManagerData[] memory oracleData = abi.decode(managerData, (ManagerData[]));
+    for (uint i; i < oracleData.length; i++) {
+      IDataReceiver(oracleData[i].receiver).acceptData(oracleData[i].data);
+    }
+  }
 
   /**
    * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc

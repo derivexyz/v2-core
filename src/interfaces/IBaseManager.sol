@@ -8,6 +8,11 @@ interface IBaseManager is IManager {
   // Structs //
   /////////////
 
+  struct ManagerData {
+    address receiver;
+    bytes data;
+  }
+
   function feeCharged(uint tradeId, uint account) external view returns (uint);
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee) external;
