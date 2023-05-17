@@ -501,7 +501,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @dev return the margin requirement for an account
    *      if it is negative, it should be compared with cash balance to determine if the account is solvent or not.
    */
-  function getMargin(uint accountId, bool isInitial, bool) external view returns (int) {
+  function getMargin(uint accountId, bool isInitial) external view returns (int) {
     return _getMargin(accountId, isInitial);
   }
 

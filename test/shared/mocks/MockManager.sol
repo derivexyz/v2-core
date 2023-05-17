@@ -53,7 +53,7 @@ contract MockManager is IManager {
     if (revertHandleManager) revert();
   }
 
-  function getMargin(uint accountId, bool isInitial, bool isTrustedRiskAssessor) external view returns (int) {
+  function getMargin(uint accountId, bool isInitial) external view returns (int) {
     return mockedMargin[accountId][isInitial];
   }
 

@@ -153,7 +153,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true, false);
+    int requirement = manager.getMargin(aliceAcc, true);
     assertEq(requirement, neededMargin);
   }
 
@@ -178,7 +178,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true, true);
+    int requirement = manager.getMargin(aliceAcc, true);
     assertEq(requirement, neededMargin);
   }
 
@@ -204,7 +204,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true, false); // account, im, trusted(not used)
+    int requirement = manager.getMargin(aliceAcc, true); // account, im, trusted(not used)
     assertEq(requirement, neededMargin);
   }
 
@@ -239,7 +239,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     console2.log("test2");
 
-    int requirement = manager.getMargin(aliceAcc, true, true);
+    int requirement = manager.getMargin(aliceAcc, true);
     assertEq(requirement, neededMargin);
   }
 
@@ -286,7 +286,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true, true);
+    int requirement = manager.getMargin(aliceAcc, true);
     assertEq(requirement, neededMargin);
   }
 

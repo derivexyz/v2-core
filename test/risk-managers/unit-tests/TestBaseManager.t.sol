@@ -60,7 +60,7 @@ contract BaseManagerTester is BaseManager {
     bytes memory
   ) public {}
 
-  function getMargin(uint accountId, bool isInitial, bool isTrustedRiskAssessor) external view returns (int) {}
+  function getMargin(uint accountId, bool isInitial) external view returns (int) {}
 }
 
 contract UNIT_TestAbstractBaseManager is Test {

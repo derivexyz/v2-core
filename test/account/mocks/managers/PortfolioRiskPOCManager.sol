@@ -235,5 +235,5 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
 
-  function getMargin(uint accountId, bool isInitial, bool isTrustedRiskAssessor) external view returns (int) {}
+  function getMargin(uint accountId, bool isInitial) external view returns (int) {}
 }

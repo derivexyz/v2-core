@@ -25,5 +25,5 @@ interface IManager {
    */
   function handleManagerChange(uint accountId, IManager newManager) external;
 
-  function getMargin(uint accountId, bool isInitial, bool isTrustedRiskAssessor) external view returns (int);
+  function getMargin(uint accountId, bool isInitial) external view returns (int);
 }
