@@ -234,7 +234,7 @@ contract BasicManager is IBasicManager, BaseManager {
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
     // the net margin here should always be zero or negative
-    int initialMargin = _getMargin(accountId, false);
+    int initialMargin = _getMargin(accountId, true);
 
     // cash deposited has to cover net option margin + net perp margin
     if (cashBalance + initialMargin < 0) {
@@ -246,16 +246,16 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
    */
-  function _getMargin(uint accountId, bool isMaintenance) internal view returns (int margin) {
+  function _getMargin(uint accountId, bool isInitial) internal view returns (int margin) {
     // get portfolio from array of balances
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
-    int depegMultiplier = _getDepegMultiplier(isMaintenance);
+    int depegMultiplier = _getDepegMultiplier(isInitial);
 
     // for each subAccount, get margin and sum it up
     for (uint i = 0; i < portfolio.marketHoldings.length; i++) {
-      margin += _getSubAccountMargin(portfolio.marketHoldings[i], isMaintenance, depegMultiplier);
+      margin += _getSubAccountMargin(accountId, portfolio.marketHoldings[i], isInitial, depegMultiplier);
     }
   }
 
@@ -263,8 +263,8 @@ contract BasicManager is IBasicManager, BaseManager {
    * @dev if the stable feed for USDC / USD return price lower than threshold, add extra amount to im
    * @return a positive multiplier that should be multiply to S * sum(shorts + perps)
    */
-  function _getDepegMultiplier(bool isMaintenance) internal view returns (int) {
-    if (isMaintenance) return 0;
+  function _getDepegMultiplier(bool isInitial) internal view returns (int) {
+    if (!isInitial) return 0;
 
     (uint usdcPrice,) = stableFeed.getSpot();
     if (usdcPrice.toInt256() >= depegParams.threshold) return 0;
@@ -272,15 +272,15 @@ contract BasicManager is IBasicManager, BaseManager {
     return (depegParams.threshold - int(usdcPrice)).multiplyDecimal(depegParams.depegFactor);
   }
 
-  function _getSubAccountMargin(MarketHolding memory subAccount, bool isMaintenance, int depegMultiplier)
+  function _getSubAccountMargin(uint accountId, MarketHolding memory subAccount, bool isInitial, int depegMultiplier)
     internal
     view
     returns (int)
   {
     int indexPrice = _getIndexPrice(subAccount.marketId);
 
-    int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isMaintenance);
-    int netOptionMargin = _getNetOptionMargin(subAccount, indexPrice, isMaintenance);
+    int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isInitial);
+    int netOptionMargin = _getNetOptionMargin(subAccount, indexPrice, isInitial);
 
     int depegMargin = 0;
     if (depegMultiplier != 0) {
@@ -288,22 +288,28 @@ contract BasicManager is IBasicManager, BaseManager {
       depegMargin = -num.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
     }
 
-    return netPerpMargin + netOptionMargin + depegMargin;
+    int unrealizedPerpPNL;
+    if (subAccount.perpPosition != 0) {
+      // if _settleAccountPerps is called before this call, unrealized perp pnl should always be 0
+      unrealizedPerpPNL = subAccount.perp.getUnsettledAndUnrealizedCash(accountId);
+    }
+
+    return netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
   }
 
   /**
    * @notice get the margin required for the perp position of an subAccount
    * @return net margin for a perp position, always negative
    */
-  function _getNetPerpMargin(MarketHolding memory subAccount, int indexPrice, bool isMaintenance)
+  function _getNetPerpMargin(MarketHolding memory subAccount, int indexPrice, bool isInitial)
     internal
     view
     returns (int)
   {
     uint notional = subAccount.perpPosition.multiplyDecimal(indexPrice).abs();
-    uint requirement = isMaintenance
-      ? perpMarginRequirements[subAccount.marketId].mmRequirement
-      : perpMarginRequirements[subAccount.marketId].imRequirement;
+    uint requirement = isInitial
+      ? perpMarginRequirements[subAccount.marketId].imRequirement
+      : perpMarginRequirements[subAccount.marketId].mmRequirement;
     int marginRequired = notional.multiplyDecimal(requirement).toInt256();
     return -marginRequired;
   }
@@ -311,7 +317,7 @@ contract BasicManager is IBasicManager, BaseManager {
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    */
-  function _getNetOptionMargin(MarketHolding memory marketHolding, int indexPrice, bool isMaintenance)
+  function _getNetOptionMargin(MarketHolding memory marketHolding, int indexPrice, bool isInitial)
     internal
     view
     returns (int margin)
@@ -319,7 +325,7 @@ contract BasicManager is IBasicManager, BaseManager {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
       margin += _calcNetBasicMarginSingleExpiry(
-        marketHolding.marketId, marketHolding.option, marketHolding.expiryHoldings[i], indexPrice, isMaintenance
+        marketHolding.marketId, marketHolding.option, marketHolding.expiryHoldings[i], indexPrice, isInitial
       );
     }
   }
@@ -432,7 +438,7 @@ contract BasicManager is IBasicManager, BaseManager {
     IOption option,
     ExpiryHolding memory expiryHolding,
     int indexPrice,
-    bool isMaintenance
+    bool isInitial
   ) internal view returns (int margin) {
     bool lossBounded = expiryHolding.netCalls >= 0;
 
@@ -453,7 +459,7 @@ contract BasicManager is IBasicManager, BaseManager {
         expiryHolding.options[i].balance,
         indexPrice,
         forwardPrice,
-        isMaintenance
+        isInitial
       );
 
       // calculate the max loss margin, update the maxLossMargin if it's lower than current
@@ -492,20 +498,21 @@ contract BasicManager is IBasicManager, BaseManager {
   ////////////////////////
 
   /**
-   * @dev return the margin for an account, it means the account is insolvent
+   * @dev return the margin requirement for an account
+   *      if it is negative, it should be compared with cash balance to determine if the account is solvent or not.
    */
-  function getMargin(uint accountId, bool isMaintenance) external view returns (int) {
-    return _getMargin(accountId, isMaintenance);
+  function getMargin(uint accountId, bool isInitial, bool) external view returns (int) {
+    return _getMargin(accountId, isInitial);
   }
 
-  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isMaintenance)
+  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
     external
     view
     returns (int)
   {
     int indexPrice = _getIndexPrice(marketId);
     int forwardPrice = _getForwardPrice(marketId, expiry);
-    return _getIsolatedMargin(marketId, expiry, strike, isCall, balance, indexPrice, forwardPrice, isMaintenance);
+    return _getIsolatedMargin(marketId, expiry, strike, isCall, balance, indexPrice, forwardPrice, isInitial);
   }
 
   /**
@@ -551,15 +558,15 @@ contract BasicManager is IBasicManager, BaseManager {
     int balance,
     int indexPrice,
     int forwardPrice,
-    bool isMaintenance
+    bool isInitial
   ) internal view returns (int margin) {
     if (balance > 0) return 0;
     if (isCall) {
       margin =
-        _getIsolatedMarginForCall(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isMaintenance);
+        _getIsolatedMarginForCall(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isInitial);
     } else {
       margin =
-        _getIsolatedMarginForPut(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isMaintenance);
+        _getIsolatedMarginForPut(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isInitial);
     }
   }
 
@@ -574,7 +581,7 @@ contract BasicManager is IBasicManager, BaseManager {
     int amount,
     int forwardPrice,
     int indexPrice,
-    bool isMaintenance
+    bool isInitial
   ) internal view returns (int) {
     // todo: get vol from vol oracle
     uint vol = 1e18;
@@ -586,7 +593,7 @@ contract BasicManager is IBasicManager, BaseManager {
       params.mmSPSpot.multiplyDecimal(indexPrice).multiplyDecimal(amount), params.mmSPMtm.multiplyDecimal(markToMarket)
     ) + markToMarket;
 
-    if (isMaintenance) return maintenanceMargin;
+    if (!isInitial) return maintenanceMargin;
 
     int otmRatio = (indexPrice - strike).divideDecimal(indexPrice);
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
@@ -608,14 +615,14 @@ contract BasicManager is IBasicManager, BaseManager {
     int amount,
     int forwardPrice,
     int indexPrice,
-    bool isMaintenance
+    bool isInitial
   ) internal view returns (int) {
     uint vol = 1e18;
     int markToMarket = _getMarkToMarket(marketId, amount, forwardPrice, strike, expiry, vol, true);
 
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
-    if (isMaintenance) {
+    if (!isInitial) {
       return (params.mmSCSpot.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
     }
 

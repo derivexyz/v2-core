@@ -141,8 +141,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
-    int btcMargin = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, false);
+    int ethMargin = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    int btcMargin = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
 
     int neededMargin = ethMargin + btcMargin;
     cash.deposit(aliceAcc, uint(-neededMargin));
@@ -153,7 +153,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, false);
+    int requirement = manager.getMargin(aliceAcc, true, false);
     assertEq(requirement, neededMargin);
   }
 
@@ -161,10 +161,10 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
-    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, false);
-    int ethMargin2 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry2, true, -1e18, false);
-    int btcMargin2 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry2, true, -1e18, false);
+    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
+    int ethMargin2 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry2, true, -1e18, true);
+    int btcMargin2 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry2, true, -1e18, true);
 
     int neededMargin = ethMargin1 + btcMargin1 + ethMargin2 + btcMargin2;
     cash.deposit(aliceAcc, uint(-neededMargin));
@@ -178,7 +178,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, false);
+    int requirement = manager.getMargin(aliceAcc, true, true);
     assertEq(requirement, neededMargin);
   }
 
@@ -186,8 +186,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
-    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, false);
+    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
     int neededMargin = ethMargin1 + btcMargin1 + ethPerpMargin + btcPerpMargin;
@@ -204,7 +204,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, false);
+    int requirement = manager.getMargin(aliceAcc, true, false); // account, im, trusted(not used)
     assertEq(requirement, neededMargin);
   }
 
@@ -212,8 +212,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
-    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, false);
+    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
 
@@ -239,7 +239,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     console2.log("test2");
 
-    int requirement = manager.getMargin(aliceAcc, false);
+    int requirement = manager.getMargin(aliceAcc, true, true);
     assertEq(requirement, neededMargin);
   }
 
@@ -268,8 +268,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     pricing.setMockMTM(dogeStrike, expiry1, true, 0.0005e18);
     ethPricing.setMockMTM(ethStrike, expiry1, true, 100e18);
 
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, false);
-    int dogeMargin1 = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, false);
+    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    int dogeMargin1 = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, true);
 
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
@@ -286,7 +286,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, false);
+    int requirement = manager.getMargin(aliceAcc, true, true);
     assertEq(requirement, neededMargin);
   }
 
@@ -325,7 +325,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     uint gasBefore = gasleft();
     account.submitTransfer(transfer, "");
     uint gasUsed = gasBefore - gasleft();
-    assertLt(gasUsed, 120_000); // one check is bypassed
+    assertLt(gasUsed, 130_000); // one check is bypassed
   }
 
   /////////////

@@ -36,6 +36,8 @@ interface IPerpAsset is IAsset {
   /// TODO: docs
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash);
 
+  function getIndexPrice() external view returns (uint);
+
   //////////////////
   //   Events     //
   //////////////////

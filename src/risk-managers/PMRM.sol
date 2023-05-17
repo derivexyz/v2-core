@@ -217,6 +217,25 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     }
   }
 
+  /**
+   * @notice Read the current margin for an account
+   * @dev usually this should return a negative number, and it should be compared against cash balance
+   */
+  function getMargin(uint accountId, bool isTrustedRiskAssessor, bool isInitial) external view returns (int margin) {
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
+
+    if (isTrustedRiskAssessor) {
+      // If the caller is a trusted risk assessor, use a single predefined scenario for checking margin
+      IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
+      scenarios[0] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
+      margin = _getMargin(portfolio, isInitial, scenarios, false);
+    } else {
+      // If the caller is not a trusted risk assessor, use all the margin scenarios
+      margin = _getMargin(portfolio, isInitial, marginScenarios, true);
+    }
+  }
+
   ///////////////////////
   // Arrange Portfolio //
   ///////////////////////

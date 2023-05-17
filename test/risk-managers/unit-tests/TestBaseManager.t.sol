@@ -59,6 +59,8 @@ contract BaseManagerTester is BaseManager {
     IAccounts.AssetDelta[] calldata, /*assetDeltas*/
     bytes memory
   ) public {}
+
+  function getMargin(uint accountId, bool isInitial, bool isTrustedRiskAssessor) external view returns (int) {}
 }
 
 contract UNIT_TestAbstractBaseManager is Test {

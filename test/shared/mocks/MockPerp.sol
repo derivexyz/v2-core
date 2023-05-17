@@ -17,4 +17,6 @@ contract MockPerp is MockAsset, IPerpAsset {
   function settleRealizedPNLAndFunding(uint accountId) external returns (int, int) {}
 
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {}
+
+  function getIndexPrice() external view returns (uint) {}
 }
