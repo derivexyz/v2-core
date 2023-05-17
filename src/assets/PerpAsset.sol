@@ -120,45 +120,13 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     // calculate funding from the last period, reflect changes in position.funding
     _updateFundingRate();
 
-    // update average entry price
-    _updateEntryPriceAndPnl(adjustment.acc, preBalance, adjustment.amount);
+    // update last index price and settle unrealized pnl into position.pnl
+    _settlePNLWithIndex(adjustment.acc, preBalance);
 
     // have a new position
     finalBalance = preBalance + adjustment.amount;
 
     needAllowance = true;
-  }
-
-  /**
-   * @dev update the entry price if an account is increased
-   *      and update the PnL if the position is closed
-   */
-  function _updateEntryPriceAndPnl(uint accountId, int preBalance, int delta) internal {
-    PositionDetail storage position = positions[accountId];
-
-    int indexPrice = _getIndexPrice();
-
-    int entryPrice = position.entryPrice.toInt256();
-
-    int pnl;
-
-    if (preBalance == 0) {
-      // if position was empty, update entry price
-      entryPrice = indexPrice;
-    } else if (preBalance * delta > 0) {
-      // pre-balance and delta has the same sign: increase position
-      // if position increases: modify entry price
-      entryPrice = (entryPrice * preBalance + indexPrice * delta) / (preBalance + delta);
-    } else if (preBalance.abs() >= delta.abs()) {
-      pnl = (entryPrice - indexPrice).multiplyDecimal(delta);
-    } else {
-      // position flipped from + to -, or - to +
-      pnl = (indexPrice - entryPrice).multiplyDecimal(preBalance);
-      entryPrice = indexPrice;
-    }
-
-    position.entryPrice = uint(entryPrice);
-    position.pnl += pnl;
   }
 
   /**
@@ -174,8 +142,8 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   //////////////////////////
 
   /**
-   * @notice Manager-only function to clear pnl and funding during settlement.
-   * @dev The manager should then update the cash balance of an account base on the returned netCash variable
+   * @notice Manager-only function to clear pnl and funding before risk checks
+   * @dev The manager should then update the cash balance of an account base on the returned values
    * @param accountId Account Id to settle
    */
   function settleRealizedPNLAndFunding(uint accountId)
@@ -256,6 +224,28 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
+   * @dev Return the current index price for the perp asset
+   */
+  function getIndexPrice() external view returns (uint) {
+    (uint spotPrice,) = spotFeed.getSpot();
+    return spotPrice;
+  }
+
+  /**
+   * @notice settle the perp position based on current index price
+   * @dev This function will update position.PNL, but not initiate any real payment in cash
+   */
+  function _settlePNLWithIndex(uint accountId, int preBalance) internal {
+    PositionDetail storage position = positions[accountId];
+
+    int indexPrice = _getIndexPrice();
+    int pnl = _getUnrealizedPnl(accountId, preBalance, indexPrice);
+
+    position.lastIndexPrice = uint(indexPrice);
+    position.pnl += pnl;
+  }
+
+  /**
    * Funding per Hour = (-1) × S × P × R
    * Where:
    *
@@ -331,9 +321,9 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @dev Get unrealized PNL if the position is closed at the current spot price
    */
   function _getUnrealizedPnl(uint accountId, int size, int indexPrice) internal view returns (int) {
-    int entryPrice = positions[accountId].entryPrice.toInt256();
+    int lastIndexPrice = positions[accountId].lastIndexPrice.toInt256();
 
-    return (indexPrice - entryPrice).multiplyDecimal(size);
+    return (indexPrice - lastIndexPrice).multiplyDecimal(size);
   }
 
   /**
