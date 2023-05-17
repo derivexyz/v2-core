@@ -13,4 +13,8 @@ interface IForwardFeed {
    * @param expiry Forward expiry to query
    */
   function getForwardPrice(uint expiry) external view returns (uint forwardPrice, uint confidence);
+  function getForwardPricePortions(uint expiry)
+    external
+    view
+    returns (uint forwardFixedPortion, uint forwardVariablePortion, uint confidence);
 }

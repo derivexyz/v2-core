@@ -25,8 +25,8 @@ import "src/interfaces/IPMRM.sol";
 import "./BaseManager.sol";
 
 import "forge-std/console2.sol";
-import "./PMRMLib.sol";
-import "../assets/WrappedERC20Asset.sol";
+import "src/risk-managers/PMRMLib.sol";
+import "src/assets/WrappedERC20Asset.sol";
 
 /**
  * @title PMRM
@@ -45,11 +45,15 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // Constants //
   ///////////////
   uint public constant MAX_EXPIRIES = 11;
-  uint public constant MAX_ASSETS = 1024; // TODO: limit
+  uint public constant MAX_ASSETS = 128;
 
   ///////////////
   // Variables //
   ///////////////
+
+  IOption public immutable option;
+  IPerpAsset public immutable perp;
+  WrappedERC20Asset public immutable baseAsset;
 
   ISpotFeed public spotFeed;
   IInterestRateFeed public interestRateFeed;
@@ -57,10 +61,6 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   ISpotFeed public stableFeed;
   IForwardFeed public forwardFeed;
   ISettlementFeed public settlementFeed;
-  IOption public option;
-  IPerpAsset public perp;
-
-  WrappedERC20Asset public immutable baseAsset;
 
   IPMRM.Scenario[] public marginScenarios;
 
@@ -110,7 +110,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       }
     }
 
-    for (uint i = _scenarios.length; i < marginScenarios.length; i++) {
+    uint marginScenariosLength = marginScenarios.length;
+    for (uint i = _scenarios.length; i < marginScenariosLength; i++) {
       marginScenarios.pop();
     }
   }
@@ -121,6 +122,22 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
   function setVolFeed(IVolFeed _volFeed) external onlyOwner {
     volFeed = _volFeed;
+  }
+
+  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
+    spotFeed = _spotFeed;
+  }
+
+  function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
+    stableFeed = _stableFeed;
+  }
+
+  function setForwardFeed(IForwardFeed _forwardFeed) external onlyOwner {
+    forwardFeed = _forwardFeed;
+  }
+
+  function setSettlementFeed(ISettlementFeed _settlementFeed) external onlyOwner {
+    settlementFeed = _settlementFeed;
   }
 
   function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
@@ -149,30 +166,54 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   ) public onlyAccounts {
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
+    bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == perp) {
         // Settle perps if the user has a perp position
         _settleAccountPerps(perp, accountId);
+        riskAdding = true;
       } else if (
         assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option && assetDeltas[i].asset != baseAsset
       ) {
-        revert("unsupported asset");
+        revert PMRM_UnsupportedAsset();
+      } else {
+        if (assetDeltas[i].delta < 0) {
+          riskAdding = true;
+        }
       }
+    }
+
+    if (!riskAdding) {
+      // Early exit if only adding cash/option/baseAsset
+      return;
     }
 
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
-    IPMRM.Portfolio memory portfolio =
-      _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), !isTrustedRiskAssessor);
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
 
     if (isTrustedRiskAssessor) {
       // If the caller is a trusted risk assessor, use a single predefined scenario for checking margin
       IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
       scenarios[0] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-      _checkMargin(portfolio, scenarios);
+      int atmMM = _getMargin(portfolio, false, scenarios, false);
+      if (atmMM + portfolio.cash < 0) {
+        revert PMRM_InsufficientMargin();
+      }
     } else {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
-      _checkMargin(portfolio, marginScenarios);
+      int postIM = _getMargin(portfolio, true, marginScenarios, true);
+      if (postIM + portfolio.cash < 0) {
+        // Note: cash interest is also undone here, but this is not a significant issue
+        IPMRM.Portfolio memory prePortfolio =
+          _arrangePortfolio(accountId, undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
+
+        int preIM = _getMargin(prePortfolio, true, marginScenarios, true);
+        if (postIM < preIM) {
+          revert PMRM_InsufficientMargin();
+        }
+      }
     }
   }
 
@@ -216,6 +257,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   {
     uint assetLen = assets.length;
 
+    if (assetLen > MAX_ASSETS) {
+      revert PMRM_TooManyAssets();
+    }
+
     seenExpiries = 0;
     expiryCount = new IPMRM.PortfolioExpiryData[](MAX_EXPIRIES > assetLen ? assetLen : MAX_EXPIRIES);
 
@@ -225,7 +270,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
         if (optionExpiry < block.timestamp) {
-          revert("option expired");
+          revert PMRM_OptionExpired();
         }
 
         bool found = false;
@@ -238,7 +283,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         }
         if (!found) {
           if (seenExpiries == MAX_EXPIRIES) {
-            revert("Too many expiries");
+            revert PMRM_TooManyExpiries();
           }
           expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: optionExpiry, optionCount: 1});
         }
@@ -256,16 +301,18 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     view
   {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
-      (uint forwardPrice, uint confidence1) = forwardFeed.getForwardPrice(expiryCount[i].expiry);
-      (int64 rate, uint confidence2) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
-      uint minConfidence = confidence1 < confidence2 ? confidence1 : confidence2;
-      minConfidence = portfolio.minConfidence < minConfidence ? portfolio.minConfidence : minConfidence;
+      (uint forwardFixedPortion, uint forwardVariablePortion, uint fwdConfidence) =
+        forwardFeed.getForwardPricePortions(expiryCount[i].expiry);
+      (int64 rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
+      uint minConfidence = UintLib.min(fwdConfidence, rateConfidence);
+      minConfidence = UintLib.min(portfolio.minConfidence, minConfidence);
 
       uint secToExpiry = expiryCount[i].expiry - block.timestamp;
       portfolio.expiries[i] = ExpiryHoldings({
         secToExpiry: secToExpiry.toUint64(),
         options: new StrikeHolding[](expiryCount[i].optionCount),
-        forwardPrice: forwardPrice,
+        forwardFixedPortion: forwardFixedPortion,
+        forwardVariablePortion: forwardVariablePortion,
         rate: rate,
         minConfidence: minConfidence,
         netOptions: 0,
@@ -296,9 +343,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
 
         (uint vol, uint confidence) = volFeed.getVol(strike.toUint128(), optionExpiry.toUint128());
-        if (confidence < expiry.minConfidence) {
-          expiry.minConfidence = confidence;
-        }
+
+        expiry.minConfidence = UintLib.min(confidence, expiry.minConfidence);
 
         expiry.netOptions += IntLib.abs(currentAsset.balance);
 
@@ -312,9 +358,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
       } else if (address(currentAsset.asset) == address(baseAsset)) {
         portfolio.basePosition = currentAsset.balance.toUint256();
-      } else {
-        revert("Invalid asset type");
-      }
+      } // No need to catch other assets, as they will be caught in handleAdjustment
     }
   }
 
@@ -329,14 +373,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
           return i;
         }
       }
-      revert("secToExpiry not found");
-    }
-  }
-
-  function _checkMargin(IPMRM.Portfolio memory portfolio, IPMRM.Scenario[] memory scenarios) internal view {
-    int im = _getMargin(portfolio, true, scenarios);
-    if (im < 0) {
-      revert("IM rules not satisfied");
+      revert PMRM_FindInArrayError();
     }
   }
 
@@ -344,14 +381,17 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // View //
   //////////
 
+  function getScenarios() external view returns (IPMRM.Scenario[] memory) {
+    return marginScenarios;
+  }
+
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
     return _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
   }
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
-    int im = _getMargin(portfolio, isInitial, marginScenarios);
-    return im;
+    return _getMargin(portfolio, isInitial, marginScenarios, true);
   }
 
   function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
@@ -359,7 +399,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     for (uint i = 0; i < mergeFromIds.length; ++i) {
       // check owner of all accounts is the same - note this ignores
       if (owner != accounts.ownerOf(mergeFromIds[i])) {
-        revert("accounts not owned by same address");
+        revert PMRM_MergeOwnerMismatch();
       }
       // Move all assets of the other
       IAccounts.AssetBalance[] memory assets = accounts.getAccountBalances(mergeFromIds[i]);
@@ -369,5 +409,60 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         );
       }
     }
+  }
+
+  //////////
+  // Misc //
+  //////////
+
+  function undoAssetDeltas(uint accountId, IAccounts.AssetDelta[] memory assetDeltas)
+    internal
+    view
+    returns (IAccounts.AssetBalance[] memory newAssetBalances)
+  {
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+
+    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
+    uint removedBalances = 0;
+    uint newBalances = 0;
+    IAccounts.AssetBalance[] memory preBalances = new IAccounts.AssetBalance[](assetDeltas.length);
+
+    for (uint i = 0; i < assetDeltas.length; ++i) {
+      IAccounts.AssetDelta memory delta = assetDeltas[i];
+      if (delta.delta == 0) {
+        continue;
+      }
+      bool found = false;
+      for (uint j = 0; j < assetBalances.length; ++j) {
+        IAccounts.AssetBalance memory balance = assetBalances[j];
+        if (balance.asset == delta.asset && balance.subId == delta.subId) {
+          found = true;
+          assetBalances[j].balance = balance.balance - delta.delta;
+          if (assetBalances[j].balance == 0) {
+            removedBalances++;
+          }
+          break;
+        }
+      }
+      if (!found) {
+        preBalances[newBalances++] =
+          IAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
+      }
+    }
+
+    newAssetBalances = new IAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
+
+    uint newBalancesIndex = 0;
+    for (uint i = 0; i < assetBalances.length; ++i) {
+      IAccounts.AssetBalance memory balance = assetBalances[i];
+      if (balance.balance != 0) {
+        newAssetBalances[newBalancesIndex++] = balance;
+      }
+    }
+    for (uint i = 0; i < newBalances; ++i) {
+      newAssetBalances[newBalancesIndex++] = preBalances[i];
+    }
+
+    return newAssetBalances;
   }
 }

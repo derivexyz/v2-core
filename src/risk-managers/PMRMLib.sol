@@ -18,6 +18,7 @@ contract IPMRMLib {
     uint volRangeDown;
     uint shortTermPower;
     uint longTermPower;
+    uint dteFloor;
   }
 
   struct StaticDiscountParameters {
@@ -43,6 +44,11 @@ contract IPMRMLib {
     /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio
     uint optionPercent;
   }
+
+  error InvalidForwardContingencyParameters();
+  error InvalidOtherContingencyParameters();
+  error InvalidStaticDiscountParameters();
+  error InvalidVolShockParameters();
 }
 
 contract PMRMLib is IPMRMLib, Ownable2Step {
@@ -82,6 +88,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     volShockParams.volRangeDown = 0.3e18;
     volShockParams.shortTermPower = 0.3e18;
     volShockParams.longTermPower = 0.13e18;
+    volShockParams.dteFloor = 1 days;
   }
 
   ///////////
@@ -97,19 +104,18 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       _fwdContParams.spotShock1 >= 1e18 || _fwdContParams.spotShock2 <= 1e18
         || _fwdContParams.multiplicativeFactor > 1e18
     ) {
-      revert("Invalid Forward contingency parameters");
+      revert InvalidForwardContingencyParameters();
     }
     fwdContParams = _fwdContParams;
   }
 
   function setOtherContingencyParams(IPMRMLib.OtherContingencyParameters memory _otherContParams) external onlyOwner {
     if (
-      _otherContParams.pegLossThreshold >= 1e18 || _otherContParams.pegLossFactor > 1e18
-        || _otherContParams.confidenceThreshold >= 1e18 || _otherContParams.confidenceFactor > 2e18
-        || _otherContParams.basePercent > 1e18 || _otherContParams.perpPercent > 1e18
-        || _otherContParams.optionPercent > 1e18
+      _otherContParams.pegLossThreshold >= 1e18 || _otherContParams.confidenceThreshold >= 1e18
+        || _otherContParams.confidenceFactor > 2e18 || _otherContParams.basePercent > 1e18
+        || _otherContParams.perpPercent > 1e18 || _otherContParams.optionPercent > 1e18
     ) {
-      revert("Invalid Other contingency parameters");
+      revert InvalidOtherContingencyParameters();
     }
     otherContParams = _otherContParams;
   }
@@ -119,12 +125,16 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 1e18
         || _staticDiscountParams.rateAdditiveFactor > 1e18
     ) {
-      revert("Invalid Static discount parameters");
+      revert InvalidStaticDiscountParameters();
     }
     staticDiscountParams = _staticDiscountParams;
   }
 
   function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
+    // TODO: more bounds (for this and the above)
+    if (_volShockParams.dteFloor > 10 days) {
+      revert InvalidVolShockParameters();
+    }
     volShockParams = _volShockParams;
   }
 
@@ -132,13 +142,13 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // MTM calculations //
   //////////////////////
 
-  function _getMargin(IPMRM.Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios)
-    internal
-    view
-    returns (int margin)
-  {
-    // TODO: if no fwdContingency this would be 0
-    int minSPAN = portfolio.fwdContingency;
+  function _getMargin(
+    IPMRM.Portfolio memory portfolio,
+    bool isInitial,
+    IPMRM.Scenario[] memory scenarios,
+    bool useFwdContingency
+  ) internal view returns (int margin) {
+    int minSPAN = useFwdContingency ? portfolio.fwdContingency : type(int).max;
 
     for (uint i = 0; i < scenarios.length; ++i) {
       IPMRM.Scenario memory scenario = scenarios[i];
@@ -164,7 +174,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       minSPAN -= portfolio.confidenceContingency.toInt256();
     }
 
-    return (minSPAN + portfolio.totalMtM + portfolio.cash);
+    return (minSPAN + portfolio.totalMtM);
   }
 
   function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
@@ -218,7 +228,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     // TODO: maybe these structs should be precomputed? Test gas
     IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
       secToExpiry: expiry.secToExpiry.toUint64(),
-      forwardPrice: expiry.forwardPrice.multiplyDecimal(spotShock).toUint128(),
+      forwardPrice: (expiry.forwardVariablePortion.multiplyDecimal(spotShock) + expiry.forwardFixedPortion).toUint128(),
       discountFactor: 1e18
     });
 
@@ -305,8 +315,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function _addVolShocks(IPMRM.ExpiryHoldings memory expiry) internal view {
-    // TODO: "1 days" should be a param
-    int tao = int(30 days * DecimalMath.UNIT / UintLib.max(expiry.secToExpiry, 1 days));
+    int tao = int(30 days * DecimalMath.UNIT / UintLib.max(expiry.secToExpiry, volShockParams.dteFloor));
     uint multShock = FixedPointMathLib.decPow(
       tao, expiry.secToExpiry <= 30 days ? int(volShockParams.shortTermPower) : int(volShockParams.longTermPower)
     );
@@ -324,7 +333,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     expiry.fwdShock1MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock1, IPMRM.VolShockDirection.None);
     expiry.fwdShock2MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock2, IPMRM.VolShockDirection.None);
 
-    int fwdContingency = IntLib.min(expiry.fwdShock1MtM, expiry.fwdShock2MtM) - expiry.mtm;
+    int fwdContingency = IntLib.min(IntLib.min(expiry.fwdShock1MtM - expiry.mtm, expiry.fwdShock2MtM - expiry.mtm), 0);
     int fwdContingencyFactor = int(
       fwdContParams.additiveFactor //
         + fwdContParams.multiplicativeFactor.multiplyDecimal(Black76.annualise(uint64(expiry.secToExpiry)))
@@ -378,5 +387,24 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
 
     return nakedShorts.multiplyDecimal(otherContParams.optionPercent).multiplyDecimal(spotPrice);
+  }
+
+  ////
+  // View
+
+  function getForwardContingencyParams() external view returns (IPMRMLib.ForwardContingencyParameters memory) {
+    return fwdContParams;
+  }
+
+  function getVolShockParams() external view returns (IPMRMLib.VolShockParameters memory) {
+    return volShockParams;
+  }
+
+  function getStaticDiscountParams() external view returns (IPMRMLib.StaticDiscountParameters memory) {
+    return staticDiscountParams;
+  }
+
+  function getOtherContingencyParams() external view returns (IPMRMLib.OtherContingencyParameters memory) {
+    return otherContParams;
   }
 }
