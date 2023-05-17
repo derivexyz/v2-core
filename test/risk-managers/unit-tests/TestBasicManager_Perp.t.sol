@@ -162,6 +162,29 @@ contract UNIT_TestBasicManager is Test {
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 
+  // tests around settling perp's unrealized PNL with spot
+  function testCannotSettleWithMaliciousPerpContract() public {
+    MockPerp badPerp = new MockPerp(account);
+    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
+    manager.settlePerpsWithIndex(badPerp, aliceAcc);
+  }
+
+  function testNoCashMovesIfNothingToSettle() public {
+    int cashBefore = _getCashBalance(aliceAcc);
+    perp.mockAccountPnlAndFunding(aliceAcc, 0, 0);
+    manager.settlePerpsWithIndex(perp, aliceAcc);
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(cashAfter, cashBefore);
+  }
+
+  function testCashChangesBasedOnPerpContractPNLAndFundingValues() public {
+    int cashBefore = _getCashBalance(aliceAcc);
+    perp.mockAccountPnlAndFunding(aliceAcc, 1e18, 100e18);
+    manager.settlePerpsWithIndex(perp, aliceAcc);
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(cashAfter - cashBefore, 101e18);
+  }
+
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
     IAccounts.AssetTransfer memory transfer =
       IAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});

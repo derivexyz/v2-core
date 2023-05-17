@@ -8,13 +8,23 @@ import "./MockAsset.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 contract MockPerp is MockAsset, IPerpAsset {
+  mapping(uint => int) mockedFunding;
+  mapping(uint => int) mockedPNL;
+
   constructor(IAccounts account) MockAsset(IERC20(address(0)), account, true) {}
 
   function updateFundingRate() external {}
 
   function applyFundingOnAccount(uint accountId) external {}
 
-  function settleRealizedPNLAndFunding(uint accountId) external returns (int, int) {}
+  function settleRealizedPNLAndFunding(uint accountId) external returns (int, int) {
+    return (mockedFunding[accountId], mockedPNL[accountId]);
+  }
+
+  function mockAccountPnlAndFunding(uint account, int funding, int pnl) external {
+    mockedFunding[account] = funding;
+    mockedPNL[account] = pnl;
+  }
 
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {}
 

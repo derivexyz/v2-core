@@ -196,7 +196,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
-   * @notice a public function to settle position with index, and return amount needed for settlement
+   * @notice a public function to settle position with index, update lastIndex price and move
    * @param accountId Account Id to settle
    */
   function realizePNLWithIndex(uint accountId) external {

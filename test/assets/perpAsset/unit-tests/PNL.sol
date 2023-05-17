@@ -72,6 +72,26 @@ contract UNIT_PerpAssetPNL is Test {
   /* Test Long position on Bob  */
   /* -------------------------- */
 
+  function testCanRealizeProfitForAnyone() public {
+    // price increase, in favor of Bob's position
+    _setPrices(1600e18);
+
+    perp.realizePNLWithIndex(bobAcc);
+
+    int pnl = _getPNL(bobAcc);
+    assertEq(pnl, 100e18);
+  }
+
+  function testCanRealizeLossesForAnyone() public {
+    // price increase, in favor of Bob's position
+    _setPrices(1400e18);
+
+    perp.realizePNLWithIndex(bobAcc);
+
+    int pnl = _getPNL(bobAcc);
+    assertEq(pnl, -100e18);
+  }
+
   function testIncreaseLongPosition() public {
     // price increase, in favor of Bob's position
     _setPrices(1600e18);
