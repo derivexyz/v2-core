@@ -19,34 +19,37 @@ interface IBasicManager {
   }
 
   /**
-   * @dev a basic manager portfolio contains up to 5 subAccounts assets
+   * @dev a basic manager portfolio contains up to 5 marketHoldings assets
    * each subAccount contains multiple derivative type
    */
   struct BasicManagerPortfolio {
     // @dev each subAccount take care of 1 base asset, for example ETH and BTC.
-    BasicManagerSubAccount[] subAccounts;
+    MarketHolding[] marketHoldings;
     int cash;
   }
 
-  struct BasicManagerSubAccount {
-    uint marketId;
+  struct MarketHolding {
+    uint8 marketId;
     // perp position detail
     IPerpAsset perp;
     int perpPosition;
     // option position detail
     IOption option;
     ExpiryHolding[] expiryHoldings;
+    /// sum of all short positions. used to increase margin requirement if USDC depeg
+    int numShortOptions;
   }
 
   ///@dev contains portfolio struct for single expiry assets
   struct ExpiryHolding {
+    /// expiry timestamp
     uint expiry;
-    /// temp variable to count how many options is used
-    uint numOptions;
     /// array of strike holding details
     Option[] options;
-    /// sum of all call positions
+    /// sum of all call positions, used to determine if portfolio max loss is bounded
     int netCalls;
+    /// temporary variable to count how many options is used
+    uint numOptions;
   }
 
   struct Option {
@@ -63,10 +66,17 @@ interface IBasicManager {
 
   ///@dev Struct for Option Margin Parameters
   struct OptionMarginParameters {
-    int baselineOptionIM;
-    int baselineOptionMM;
-    int minStaticMMRatio;
-    int minStaticIMRatio;
+    int scOffset1;
+    int scOffset2;
+    int mmSCSpot;
+    int mmSPSpot;
+    int mmSPMtm;
+    int unpairedScale;
+  }
+
+  struct DepegParams {
+    int128 threshold;
+    int128 depegFactor;
   }
 
   ///////////////
@@ -91,6 +101,9 @@ interface IBasicManager {
   /// @dev Forward Price for an asset is 0
   error BM_NoForwardPrice();
 
+  /// @dev Invalid depeg parameters
+  error BM_InvalidDepegParams();
+
   ///////////////////
   //    Events     //
   ///////////////////
@@ -99,11 +112,15 @@ interface IBasicManager {
 
   event OraclesSet(uint8 marketId, address spotOracle, address forwardOracle, address settlementOracle);
 
-  event PricingModuleSet(address pricingModule);
+  event PricingModuleSet(uint8 marketId, address pricingModule);
 
   event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
   event OptionMarginParametersSet(
-    uint8 marketId, int baselineOptionIM, int baselineOptionMM, int minStaticMMRatio, int minStaticIMRatio
+    uint8 marketId, int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale
   );
+
+  event DepegParametersSet(int128 threshold, int128 depegFactor);
+
+  event StableFeedUpdated(address stableFeed);
 }

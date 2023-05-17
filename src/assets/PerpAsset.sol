@@ -178,17 +178,20 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @dev The manager should then update the cash balance of an account base on the returned netCash variable
    * @param accountId Account Id to settle
    */
-  function settleRealizedPNLAndFunding(uint accountId) external onlyManagerForAccount(accountId) returns (int netCash) {
+  function settleRealizedPNLAndFunding(uint accountId)
+    external
+    onlyManagerForAccount(accountId)
+    returns (int pnl, int funding)
+  {
     _updateFundingRate();
     _applyFundingOnAccount(accountId);
 
     PositionDetail storage position = positions[accountId];
-    netCash = position.funding + position.pnl;
+    pnl = position.pnl;
+    funding = position.funding;
 
     position.funding = 0;
     position.pnl = 0;
-
-    return netCash;
   }
 
   /**

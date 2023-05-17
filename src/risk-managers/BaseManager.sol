@@ -46,9 +46,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   uint public OIFeeRateBPS = 0.001e18; // 10 BPS
 
-  /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
-  mapping(address => bool) public whitelistedManager;
-
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
@@ -89,17 +86,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     emit OIFeeRateSet(OIFeeRateBPS);
   }
 
-  /**
-   * @notice Whitelist or un-whitelist a manager used in .changeManager()
-   * @param _manager manager address
-   * @param _whitelisted true to whitelist
-   */
-  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
-    whitelistedManager[_manager] = _whitelisted;
-  }
-
-  ///////
+  ///////////////////
   // Liquidations ///
+  ///////////////////
 
   /**
    * @notice Confirm account is liquidatable and puts up for dutch auction.
@@ -242,7 +231,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function _settleAccountPerps(IPerpAsset perp, uint accountId) internal {
     // settle perp: update latest funding rate and settle
-    int netCash = perp.settleRealizedPNLAndFunding(accountId);
+    (int pnl, int funding) = perp.settleRealizedPNLAndFunding(accountId);
+
+    int netCash = pnl + funding;
+
     if (netCash == 0) {
       return;
     }
@@ -283,16 +275,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @notice Ensures new manager is valid.
    * @param newManager IManager to change account to.
    */
-  function handleManagerChange(uint, IManager newManager) external view virtual override {
-    // TODO: whitelist maybe
-    //    if (!whitelistedManager[address(newManager)]) {
-    //      revert BM_NotWhitelistManager();
-    //    }
-  }
+  function handleManagerChange(uint, IManager newManager) external view virtual override {}
 
-  //////
-  // Modifier //
-  ///
+  ////////////////////
+  //    Modifier    //
+  ////////////////////
 
   modifier onlyLiquidations() {
     if (msg.sender != address(liquidation)) {
