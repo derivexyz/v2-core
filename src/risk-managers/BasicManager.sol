@@ -253,9 +253,9 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int depegMultiplier = _getDepegMultiplier(isInitial);
 
-    // for each subAccount, get margin and sum it up
+    // for each markets, get margin and sum it up
     for (uint i = 0; i < portfolio.marketHoldings.length; i++) {
-      margin += _getSubAccountMargin(accountId, portfolio.marketHoldings[i], isInitial, depegMultiplier);
+      margin += _getMarketMargin(accountId, portfolio.marketHoldings[i], isInitial, depegMultiplier);
     }
   }
 
@@ -272,44 +272,50 @@ contract BasicManager is IBasicManager, BaseManager {
     return (depegParams.threshold - int(usdcPrice)).multiplyDecimal(depegParams.depegFactor);
   }
 
-  function _getSubAccountMargin(uint accountId, MarketHolding memory subAccount, bool isInitial, int depegMultiplier)
+  /**
+   * @notice return the margin for a specific market, including perp & option position
+   * @dev this function should normally return a negative number, -100e18 means it requires $100 cash as margin
+   *      it's possible that it return positive number because of unrealizedPNL from the perp position
+   */
+  function _getMarketMargin(uint accountId, MarketHolding memory marketHolding, bool isInitial, int depegMultiplier)
     internal
     view
     returns (int)
   {
-    int indexPrice = _getIndexPrice(subAccount.marketId);
+    int indexPrice = _getIndexPrice(marketHolding.marketId);
 
-    int netPerpMargin = _getNetPerpMargin(subAccount, indexPrice, isInitial);
-    int netOptionMargin = _getNetOptionMargin(subAccount, indexPrice, isInitial);
+    int netPerpMargin = _getNetPerpMargin(marketHolding, indexPrice, isInitial);
+    int netOptionMargin = _getNetOptionMargin(marketHolding, indexPrice, isInitial);
 
     int depegMargin = 0;
     if (depegMultiplier != 0) {
-      int num = subAccount.perpPosition.abs().toInt256() + subAccount.numShortOptions;
+      // depeg multiplier should be 0 for maintanance margin, or when there is no depeg
+      int num = marketHolding.perpPosition.abs().toInt256() + marketHolding.numShortOptions;
       depegMargin = -num.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
     }
 
     int unrealizedPerpPNL;
-    if (subAccount.perpPosition != 0) {
+    if (marketHolding.perpPosition != 0) {
       // if _settlePerpRealizedPNL is called before this call, unrealized perp pnl should always be 0
-      unrealizedPerpPNL = subAccount.perp.getUnsettledAndUnrealizedCash(accountId);
+      unrealizedPerpPNL = marketHolding.perp.getUnsettledAndUnrealizedCash(accountId);
     }
 
     return netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
   }
 
   /**
-   * @notice get the margin required for the perp position of an subAccount
+   * @notice get the margin required for the perp position of an market
    * @return net margin for a perp position, always negative
    */
-  function _getNetPerpMargin(MarketHolding memory subAccount, int indexPrice, bool isInitial)
+  function _getNetPerpMargin(MarketHolding memory marketHolding, int indexPrice, bool isInitial)
     internal
     view
     returns (int)
   {
-    uint notional = subAccount.perpPosition.multiplyDecimal(indexPrice).abs();
+    uint notional = marketHolding.perpPosition.multiplyDecimal(indexPrice).abs();
     uint requirement = isInitial
-      ? perpMarginRequirements[subAccount.marketId].imRequirement
-      : perpMarginRequirements[subAccount.marketId].mmRequirement;
+      ? perpMarginRequirements[marketHolding.marketId].imRequirement
+      : perpMarginRequirements[marketHolding.marketId].mmRequirement;
     int marginRequired = notional.multiplyDecimal(requirement).toInt256();
     return -marginRequired;
   }
@@ -387,7 +393,7 @@ contract BasicManager is IBasicManager, BaseManager {
         }
       }
 
-      // 3. initiate expiry holdings the subAccount
+      // 3. initiate expiry holdings in a marketHolding
       portfolio.marketHoldings[i].expiryHoldings = new ExpiryHolding[](numExpires);
       // 4. initiate the option array in each expiry holding
       for (uint j; j < numExpires; j++) {

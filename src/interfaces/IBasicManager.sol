@@ -20,10 +20,10 @@ interface IBasicManager {
 
   /**
    * @dev a basic manager portfolio contains up to 5 marketHoldings assets
-   * each subAccount contains multiple derivative type
+   * each marketHolding contains multiple derivative type
    */
   struct BasicManagerPortfolio {
-    // @dev each subAccount take care of 1 base asset, for example ETH and BTC.
+    // @dev each marketHolding take care of 1 base asset, for example ETH and BTC.
     MarketHolding[] marketHoldings;
     int cash;
   }
