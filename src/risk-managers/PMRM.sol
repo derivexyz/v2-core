@@ -169,8 +169,8 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == perp) {
-        // Settle perps if the user has a perp position
-        _settleAccountPerps(perp, accountId);
+        // Settle perp PNL into cash if the user traded perp in this tx.
+        _settlePerpRealizedPNL(perp, accountId);
         riskAdding = true;
       } else if (
         assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option && assetDeltas[i].asset != baseAsset

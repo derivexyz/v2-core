@@ -121,7 +121,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     _updateFundingRate();
 
     // update last index price and settle unrealized pnl into position.pnl
-    _settlePNLWithIndex(adjustment.acc, preBalance);
+    _realizePNLWithIndex(adjustment.acc, preBalance);
 
     // have a new position
     finalBalance = preBalance + adjustment.amount;
@@ -144,6 +144,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   /**
    * @notice Manager-only function to clear pnl and funding before risk checks
    * @dev The manager should then update the cash balance of an account base on the returned values
+   *      Only meaningful to call this function after a perp asset transfer, otherwise it will be 0.
    * @param accountId Account Id to settle
    */
   function settleRealizedPNLAndFunding(uint accountId)
@@ -151,15 +152,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     onlyManagerForAccount(accountId)
     returns (int pnl, int funding)
   {
-    _updateFundingRate();
-    _applyFundingOnAccount(accountId);
-
-    PositionDetail storage position = positions[accountId];
-    pnl = position.pnl;
-    funding = position.funding;
-
-    position.funding = 0;
-    position.pnl = 0;
+    return _clearRealizedPNL(accountId);
   }
 
   /**
@@ -203,6 +196,14 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
+   * @notice a public function to settle position with index, and return amount needed for settlement
+   * @param accountId Account Id to settle
+   */
+  function realizePNLWithIndex(uint accountId) external {
+    _realizePNLWithIndex(accountId, _getPositionSize(accountId));
+  }
+
+  /**
    * @dev This function reflect how much cash should be mark "available" for an account
    * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
    */
@@ -232,10 +233,10 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
-   * @notice settle the perp position based on current index price
+   * @notice real perp position pnl based on current index price
    * @dev This function will update position.PNL, but not initiate any real payment in cash
    */
-  function _settlePNLWithIndex(uint accountId, int preBalance) internal {
+  function _realizePNLWithIndex(uint accountId, int preBalance) internal {
     PositionDetail storage position = positions[accountId];
 
     int indexPrice = _getIndexPrice();
@@ -243,6 +244,21 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
 
     position.lastIndexPrice = uint(indexPrice);
     position.pnl += pnl;
+  }
+
+  /**
+   * @notice return pnl and funding kept in position storage and clear storage
+   */
+  function _clearRealizedPNL(uint accountId) internal returns (int pnl, int funding) {
+    _updateFundingRate();
+    _applyFundingOnAccount(accountId);
+
+    PositionDetail storage position = positions[accountId];
+    pnl = position.pnl;
+    funding = position.funding;
+
+    position.funding = 0;
+    position.pnl = 0;
   }
 
   /**

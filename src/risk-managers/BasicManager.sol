@@ -210,8 +210,8 @@ contract BasicManager is IBasicManager, BaseManager {
       if (!detail.isWhitelisted) revert BM_UnsupportedAsset();
 
       if (detail.assetType == AssetType.Perpetual) {
-        // settle perps if the user has perp position
-        _settleAccountPerps(IPerpAsset(address(assetDeltas[i].asset)), accountId);
+        // settle perp PNL into cash if the user traded perp in this tx.
+        _settlePerpRealizedPNL(IPerpAsset(address(assetDeltas[i].asset)), accountId);
         if (isRiskReducing) {
           // check if the delta and position has same sign
           // if so, we cannot bypass the risk check
@@ -290,7 +290,7 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int unrealizedPerpPNL;
     if (subAccount.perpPosition != 0) {
-      // if _settleAccountPerps is called before this call, unrealized perp pnl should always be 0
+      // if _settlePerpRealizedPNL is called before this call, unrealized perp pnl should always be 0
       unrealizedPerpPNL = subAccount.perp.getUnsettledAndUnrealizedCash(accountId);
     }
 
@@ -491,6 +491,14 @@ contract BasicManager is IBasicManager, BaseManager {
   function settleOptions(IOption option, uint accountId) external {
     if (!assetDetails[option].isWhitelisted) revert BM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
+  }
+
+  /**
+   * @dev settle perp value with index price
+   */
+  function settlePerpsWithIndex(IPerpAsset perp, uint accountId) external {
+    if (!assetDetails[perp].isWhitelisted) revert BM_UnsupportedAsset();
+    _settlePerpUnrealizedPNL(perp, accountId);
   }
 
   ////////////////////////

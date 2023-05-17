@@ -228,16 +228,15 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
+   * @dev this should only be called after a perp transfer happens on this account
    */
-  function _settleAccountPerps(IPerpAsset perp, uint accountId) internal {
+  function _settlePerpRealizedPNL(IPerpAsset perp, uint accountId) internal {
     // settle perp: update latest funding rate and settle
     (int pnl, int funding) = perp.settleRealizedPNLAndFunding(accountId);
 
     int netCash = pnl + funding;
 
-    if (netCash == 0) {
-      return;
-    }
+    if (netCash == 0) return;
 
     cashAsset.updateSettledCash(netCash);
 
@@ -245,6 +244,16 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
 
     emit PerpSettled(accountId, netCash);
+  }
+
+  /**
+   * @notice settle account's perp position with index price, and settle through cash
+   * @dev calling function should make sure perp address is trusted
+   */
+  function _settlePerpUnrealizedPNL(IPerpAsset perp, uint accountId) internal {
+    perp.realizePNLWithIndex(accountId);
+
+    _settlePerpRealizedPNL(perp, accountId);
   }
 
   /**
