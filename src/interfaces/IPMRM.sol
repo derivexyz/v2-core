@@ -43,7 +43,10 @@ interface IPMRM {
   struct ExpiryHoldings {
     uint secToExpiry;
     StrikeHolding[] options;
-    uint forwardPrice;
+    // portion unaffected by spot shocks
+    uint forwardFixedPortion;
+    // portion affected by spot shocks
+    uint forwardVariablePortion;
     int64 rate;
     uint minConfidence;
     uint netOptions;
@@ -73,4 +76,14 @@ interface IPMRM {
     uint spotShock; // i.e. 1.2e18 = 20% spot shock up
     VolShockDirection volShock; // i.e. [Up, Down, None]
   }
+
+  ////
+  // Errors
+  error PMRM_UnsupportedAsset();
+  error PMRM_InsufficientMargin();
+  error PMRM_FindInArrayError();
+  error PMRM_OptionExpired();
+  error PMRM_TooManyExpiries();
+  error PMRM_TooManyAssets();
+  error PMRM_MergeOwnerMismatch();
 }
