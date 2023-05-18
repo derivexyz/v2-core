@@ -18,6 +18,9 @@ import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IBasicManager} from "src/interfaces/IBasicManager.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
+
+import {ILiquidatableManager} from "src/interfaces/ILiquidatableManager.sol";
+
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 
@@ -37,7 +40,7 @@ import "forge-std/console2.sol";
  * @notice Risk Manager that margin perp and option in isolation.
  */
 
-contract BasicManager is IBasicManager, BaseManager {
+contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -499,7 +502,6 @@ contract BasicManager is IBasicManager, BaseManager {
     }
 
     if (expiryHolding.netCalls < 0) {
-      int forwardPrice = _getForwardPrice(marketId, expiryHolding.expiry);
       int unpairedScale = optionMarginParams[marketId].unpairedScale;
       maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice);
     }

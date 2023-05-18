@@ -19,8 +19,6 @@ contract MockManager is IManager {
 
   mapping(uint => uint) public accTriggeredDeltaLength;
 
-  mapping(uint accountId => mapping(bool isInitial => int)) mockedMargin;
-
   uint mockedSpot;
 
   // acc => asset => subId => time
@@ -51,14 +49,6 @@ contract MockManager is IManager {
 
   function handleManagerChange(uint, IManager) public view virtual {
     if (revertHandleManager) revert();
-  }
-
-  function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    return mockedMargin[accountId][isInitial];
-  }
-
-  function setMockedMargin(uint accountId, bool isInitial, int margin) external {
-    mockedMargin[accountId][isInitial] = margin;
   }
 
   function setRevertHandleManager(bool _revert) external {

@@ -24,6 +24,4 @@ interface IManager {
    * @dev    a manager should only allow migrating to another manager it trusts.
    */
   function handleManagerChange(uint accountId, IManager newManager) external;
-
-  function getMargin(uint accountId, bool isInitial) external view returns (int);
 }

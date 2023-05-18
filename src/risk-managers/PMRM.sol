@@ -18,6 +18,7 @@ import "src/interfaces/IOption.sol";
 import "src/interfaces/IOptionPricing.sol";
 import "src/interfaces/ISpotFeed.sol";
 import "src/interfaces/IBasicManager.sol";
+import "src/interfaces/ILiquidatableManager.sol";
 import "src/interfaces/IVolFeed.sol";
 import "src/interfaces/IInterestRateFeed.sol";
 import "src/interfaces/IPMRM.sol";
@@ -34,7 +35,7 @@ import "src/assets/WrappedERC20Asset.sol";
  * @notice Risk Manager that uses a SPAN like methodology to margin an options portfolio.
  */
 
-contract PMRM is PMRMLib, IPMRM, BaseManager {
+contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;

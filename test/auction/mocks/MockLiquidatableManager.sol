@@ -3,12 +3,17 @@ pragma solidity ^0.8.18;
 
 import "test/shared/mocks/MockManager.sol";
 
-import "src/interfaces/IBaseManager.sol";
+import "src/interfaces/ILiquidatableManager.sol";
 
-contract MockBaseManager is MockManager, IBaseManager {
+contract MockLiquidatableManager is MockManager, ILiquidatableManager {
   mapping(uint tradeId => mapping(uint account => uint fee)) mockFeeCharged;
+  mapping(uint => mapping(bool => int)) mockMargin;
 
   constructor(address account_) MockManager(account_) {}
+
+  function setMockMargin(uint accountId, bool isInitial, int margin) external {
+    mockMargin[accountId][isInitial] = margin;
+  }
 
   function setMockFeeCharged(uint tradeId, uint account, uint fee) external {
     mockFeeCharged[tradeId][account] = fee;
@@ -20,6 +25,10 @@ contract MockBaseManager is MockManager, IBaseManager {
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee) external {
     // do nothing
+  }
+
+  function getMargin(uint accountId, bool isInitial) external view override returns (int) {
+    return mockMargin[accountId][isInitial];
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
