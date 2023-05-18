@@ -6,6 +6,7 @@ import "src/risk-managers/BasicManager.sol";
 
 import "src/Accounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
+import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
 import "test/shared/mocks/MockManager.sol";
@@ -183,6 +184,61 @@ contract UNIT_TestBasicManager is Test {
     manager.settlePerpsWithIndex(perp, aliceAcc);
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashAfter - cashBefore, 101e18);
+  }
+
+  function testSettlePerpWithManagerData() public {
+    int cashBefore = _getCashBalance(aliceAcc);
+    perp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
+
+    bytes memory settlementData = abi.encode(address(perp), aliceAcc);
+    IBaseManager.ManagerAction memory action =
+      IBaseManager.ManagerAction(IBaseManager.ActionType.SettleUnrealizedPerpPNL, settlementData);
+    IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
+    allData[0] = IBaseManager.ManagerData({receiver: address(0), data: abi.encode(action)});
+    bytes memory managerData = abi.encode(allData);
+
+    // only transfer 0 cash
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    account.submitTransfer(transfer, managerData);
+
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(cashAfter - cashBefore, 100e18);
+  }
+
+  function testCannotSettleWithBadPerp() public {
+    MockPerp badPerp = new MockPerp(account);
+    badPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
+
+    bytes memory settlementData = abi.encode(address(badPerp), aliceAcc);
+    IBaseManager.ManagerAction memory action =
+      IBaseManager.ManagerAction(IBaseManager.ActionType.SettleUnrealizedPerpPNL, settlementData);
+    IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
+    allData[0] = IBaseManager.ManagerData({receiver: address(0), data: abi.encode(action)});
+    bytes memory managerData = abi.encode(allData);
+
+    // only transfer 0 cash
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+
+    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
+    account.submitTransfer(transfer, managerData);
+  }
+
+  function testCanSettleIntoNegativeCash() public {
+    perp.mockAccountPnlAndFunding(aliceAcc, 0, -10000e18);
+    manager.settlePerpsWithIndex(perp, aliceAcc);
+    assertLt(_getCashBalance(aliceAcc), 0);
+  }
+
+  function testCannotHaveNegativeCash() public {
+    // assume alice has 1000 unrealized pnl (report by perp contract)
+    perp.mockAccountPnlAndFunding(aliceAcc, 0, 1000e18);
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 1000e18, assetData: ""});
+
+    vm.expectRevert(IBasicManager.BM_NoNegativeCash.selector);
+    account.submitTransfer(transfer, "");
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {

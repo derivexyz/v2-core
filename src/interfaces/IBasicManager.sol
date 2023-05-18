@@ -104,6 +104,9 @@ interface IBasicManager {
   /// @dev Invalid depeg parameters
   error BM_InvalidDepegParams();
 
+  /// @dev No negative cash
+  error BM_NoNegativeCash();
+
   ///////////////////
   //    Events     //
   ///////////////////

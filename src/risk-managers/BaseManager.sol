@@ -153,10 +153,15 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     lastOracleUpdateTradeId = tradeId;
 
-    // parse array of oracle data and update each oracle
-    ManagerData[] memory oracleData = abi.decode(managerData, (ManagerData[]));
-    for (uint i; i < oracleData.length; i++) {
-      IDataReceiver(oracleData[i].receiver).acceptData(oracleData[i].data);
+    // parse array of data and update each oracle or take action
+    ManagerData[] memory managerDatas = abi.decode(managerData, (ManagerData[]));
+    for (uint i; i < managerDatas.length; i++) {
+      // invoke some actions if needed
+      if (managerDatas[i].receiver == address(0)) {
+        _handleManagerAction(managerDatas[i].data);
+      } else {
+        IDataReceiver(managerDatas[i].receiver).acceptData(managerDatas[i].data);
+      }
     }
   }
 
@@ -197,6 +202,29 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
     }
   }
+
+  /**
+   * @notice handle manager actions: user can specify which actions they want to call before the risk checks
+   * @dev usually used for settlement. All the function that can be triggered here are public functions that anyone can call
+   */
+  function _handleManagerAction(bytes memory data) internal {
+    ManagerAction memory action = abi.decode(data, (ManagerAction));
+
+    if (action.actionType == ActionType.SettleUnrealizedPerpPNL) {
+      (address perp, uint accountId) = abi.decode(action.data, (address, uint));
+
+      // needs to verify perp address otherwise people can plugin malicious perp addresses for print cash
+      _verifyPerp(perp);
+      _settlePerpUnrealizedPNL(IPerpAsset(perp), accountId);
+    } else {
+      revert BN_InvalidAction();
+    }
+  }
+
+  /**
+   * @dev should be implemented by both manager to verify if a perp address is valid
+   */
+  function _verifyPerp(address _perp) internal virtual {}
 
   /**
    * @dev settle an account by removing all expired option positions and adjust cash balance

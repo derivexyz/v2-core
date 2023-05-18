@@ -233,10 +233,12 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
-    // the net margin here should always be zero or negative
+    if (cashBalance < 0) revert BM_NoNegativeCash();
+
+    // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
     int initialMargin = _getMargin(accountId, true);
 
-    // cash deposited has to cover net option margin + net perp margin
+    // cash deposited has to cover the margin requirement
     if (cashBalance + initialMargin < 0) {
       revert BM_PortfolioBelowMargin(accountId, -(initialMargin));
     }
@@ -289,14 +291,17 @@ contract BasicManager is IBasicManager, BaseManager {
 
     int depegMargin = 0;
     if (depegMultiplier != 0) {
-      // depeg multiplier should be 0 for maintanance margin, or when there is no depeg
+      // depeg multiplier should be 0 for maintenance margin, or when there is no depeg
       int num = marketHolding.perpPosition.abs().toInt256() + marketHolding.numShortOptions;
       depegMargin = -num.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
     }
 
     int unrealizedPerpPNL;
     if (marketHolding.perpPosition != 0) {
-      // if _settlePerpRealizedPNL is called before this call, unrealized perp pnl should always be 0
+      // if this function is called in handleAdjustment, unrealized perp pnl will always be 0 if this perp is traded
+      // because it would have been settled.
+      // If called as a view function or on perp assets didn't got traded in this tx, it will represent the value that
+      // should be added as cash if it is settle now
       unrealizedPerpPNL = marketHolding.perp.getUnsettledAndUnrealizedCash(accountId);
     }
 
@@ -708,5 +713,13 @@ contract BasicManager is IBasicManager, BaseManager {
       IOptionPricing.Option({strike: uint128(uint(strike)), vol: uint128(vol), amount: amount, isCall: isCall});
 
     return pricing.getOptionValue(expiryData, option);
+  }
+
+  ///////////////////////
+  ///    Overrides     //
+  ///////////////////////
+
+  function _verifyPerp(address _perp) internal override {
+    if (!assetDetails[IAsset(_perp)].isWhitelisted) revert BM_UnsupportedAsset();
   }
 }

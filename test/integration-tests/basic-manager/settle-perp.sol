@@ -158,6 +158,12 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     assertEq(bobCashBefore + 100e18, bobCashAfter);
   }
 
+  function testCanSettleIntoNegativeCash() public {
+    _setPrices(200_000e18);
+    manager.settlePerpsWithIndex(perp, aliceAcc);
+    assertLt(_getCashBalance(aliceAcc), 0);
+  }
+
   function _setPrices(uint price) internal {
     feed.setSpot(price, 1e18);
   }

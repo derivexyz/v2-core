@@ -465,4 +465,12 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
     return newAssetBalances;
   }
+
+  ///////////////////////
+  ///    Overrides     //
+  ///////////////////////
+
+  function _verifyPerp(address _perp) internal override {
+    if (_perp != address(perp)) revert PMRM_UnsupportedAsset();
+  }
 }
