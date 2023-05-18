@@ -326,11 +326,7 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice get the margin required for the perp position of an market
    * @return net margin for a perp position, always negative
    */
-  function _getNetPerpMargin(MarketHolding memory marketHolding, bool isInitial)
-    internal
-    view
-    returns (int)
-  {
+  function _getNetPerpMargin(MarketHolding memory marketHolding, bool isInitial) internal view returns (int) {
     // while calculating margin for perp, we use the perp market price oracle
     (uint perpPrice,) = perpFeeds[marketHolding.marketId].getSpot();
     uint notional = marketHolding.perpPosition.abs().multiplyDecimal(perpPrice);

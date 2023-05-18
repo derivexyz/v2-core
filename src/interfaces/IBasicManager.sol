@@ -113,7 +113,9 @@ interface IBasicManager {
 
   event AssetWhitelisted(address asset, uint8 marketId, AssetType assetType);
 
-  event OraclesSet(uint8 marketId, address spotOracle, address perpOracle, address forwardOracle, address settlementOracle);
+  event OraclesSet(
+    uint8 marketId, address spotOracle, address perpOracle, address forwardOracle, address settlementOracle
+  );
 
   event PricingModuleSet(uint8 marketId, address pricingModule);
 
