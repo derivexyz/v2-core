@@ -252,7 +252,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
     // alice short 1 2000-ETH CALL with 190 USDC as margin
     cash.deposit(aliceAcc, 190e18);
-    _tradeOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
+    _transferOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
   }
 
   function testCanTradeSpreadWithMaxLoss() public {
@@ -288,7 +288,7 @@ contract UNIT_TestBasicManager_Option is Test {
     cash.deposit(aliceAcc, 190e18);
 
     vm.expectRevert(IBasicManager.BM_NoForwardPrice.selector);
-    _tradeOption(aliceAcc, bobAcc, 1e18, expiry + 1, strike, true);
+    _transferOption(aliceAcc, bobAcc, 1e18, expiry + 1, strike, true);
   }
 
   function testShortStraddle() public {
@@ -321,6 +321,23 @@ contract UNIT_TestBasicManager_Option is Test {
     account.submitTransfers(transfers, "");
   }
 
+  function testAllowRiskReducingTrade() public {
+    uint strike = 2000e18;
+    cash.deposit(aliceAcc, 2500e18);
+
+    pricing.setMockMTM(strike, expiry, true, 100e18);
+    _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
+
+    // assume that option price changes: now need more margin and the account is insolvent
+    pricing.setMockMTM(strike, expiry, true, 300e18);
+
+    // alice can still close position (pay premium), bob short, alice long,
+    int closeAmount = 1e18;
+    int premium = 100e18;
+    // this trade can go through
+    _tradeOption(bobAcc, aliceAcc, closeAmount, premium, expiry, strike, true);
+  }
+
   //////////////////////
   //    Settlement    //
   //////////////////////
@@ -330,7 +347,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
     // alice short 10 2000-ETH CALL with 2000 USDC as margin
     cash.deposit(aliceAcc, 2000e18);
-    _tradeOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
+    _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
     int cashBefore = account.getBalance(aliceAcc, cash, 0);
 
@@ -358,7 +375,7 @@ contract UNIT_TestBasicManager_Option is Test {
   // Helpers //
   /////////////
 
-  function _tradeOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
+  function _transferOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
     IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
@@ -368,6 +385,35 @@ contract UNIT_TestBasicManager_Option is Test {
       assetData: ""
     });
     account.submitTransfer(transfer, "");
+  }
+
+  function _tradeOption(
+    uint shortAcc,
+    uint longAcc,
+    int optionAmount,
+    int premium,
+    uint _expiry,
+    uint strike,
+    bool isCall
+  ) internal {
+    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
+    transfers[0] = IAccounts.AssetTransfer({
+      fromAcc: shortAcc,
+      toAcc: longAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(_expiry, strike, isCall),
+      amount: optionAmount,
+      assetData: ""
+    });
+    transfers[1] = IAccounts.AssetTransfer({
+      fromAcc: longAcc,
+      toAcc: shortAcc,
+      asset: cash,
+      subId: 0,
+      amount: premium,
+      assetData: ""
+    });
+    account.submitTransfers(transfers, "");
   }
 
   function _tradeSpread(

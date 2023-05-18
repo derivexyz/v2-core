@@ -304,6 +304,57 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     );
   }
 
+  function _undoAssetDeltas(uint accountId, IAccounts.AssetDelta[] memory assetDeltas)
+    internal
+    view
+    returns (IAccounts.AssetBalance[] memory newAssetBalances)
+  {
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+
+    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
+    uint removedBalances = 0;
+    uint newBalances = 0;
+    IAccounts.AssetBalance[] memory preBalances = new IAccounts.AssetBalance[](assetDeltas.length);
+
+    for (uint i = 0; i < assetDeltas.length; ++i) {
+      IAccounts.AssetDelta memory delta = assetDeltas[i];
+      if (delta.delta == 0) {
+        continue;
+      }
+      bool found = false;
+      for (uint j = 0; j < assetBalances.length; ++j) {
+        IAccounts.AssetBalance memory balance = assetBalances[j];
+        if (balance.asset == delta.asset && balance.subId == delta.subId) {
+          found = true;
+          assetBalances[j].balance = balance.balance - delta.delta;
+          if (assetBalances[j].balance == 0) {
+            removedBalances++;
+          }
+          break;
+        }
+      }
+      if (!found) {
+        preBalances[newBalances++] =
+          IAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
+      }
+    }
+
+    newAssetBalances = new IAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
+
+    uint newBalancesIndex = 0;
+    for (uint i = 0; i < assetBalances.length; ++i) {
+      IAccounts.AssetBalance memory balance = assetBalances[i];
+      if (balance.balance != 0) {
+        newAssetBalances[newBalancesIndex++] = balance;
+      }
+    }
+    for (uint i = 0; i < newBalances; ++i) {
+      newAssetBalances[newBalancesIndex++] = preBalances[i];
+    }
+
+    return newAssetBalances;
+  }
+
   ///////////////////
   // Account Hooks //
   ///////////////////

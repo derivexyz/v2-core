@@ -235,12 +235,21 @@ contract BasicManager is IBasicManager, BaseManager {
 
     if (cashBalance < 0) revert BM_NoNegativeCash();
 
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
     // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
-    int initialMargin = _getMargin(accountId, true);
+    int postIM = _getMargin(accountId, portfolio, true);
 
     // cash deposited has to cover the margin requirement
-    if (cashBalance + initialMargin < 0) {
-      revert BM_PortfolioBelowMargin(accountId, -(initialMargin));
+    if (cashBalance + postIM < 0) {
+      BasicManagerPortfolio memory prePortfolio = _arrangePortfolio(_undoAssetDeltas(accountId, assetDeltas));
+
+      int preIM = _getMargin(accountId, prePortfolio, true);
+
+      // allow the trade to pass if the net margin increased
+      if (postIM > preIM) return;
+
+      revert BM_PortfolioBelowMargin(accountId, -(postIM));
     }
   }
 
@@ -248,11 +257,11 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
    */
-  function _getMargin(uint accountId, bool isInitial) internal view returns (int margin) {
-    // get portfolio from array of balances
-    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
-    BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
-
+  function _getMargin(uint accountId, BasicManagerPortfolio memory portfolio, bool isInitial)
+    internal
+    view
+    returns (int margin)
+  {
     int depegMultiplier = _getDepegMultiplier(isInitial);
 
     // for each markets, get margin and sum it up
@@ -521,7 +530,10 @@ contract BasicManager is IBasicManager, BaseManager {
    *      if it is negative, it should be compared with cash balance to determine if the account is solvent or not.
    */
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    return _getMargin(accountId, isInitial);
+    // get portfolio from array of balances
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
+    return _getMargin(accountId, portfolio, isInitial);
   }
 
   function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
