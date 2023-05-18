@@ -67,6 +67,9 @@ contract BasicManager is IBasicManager, BaseManager {
   /// @dev Mapping from marketId to spot price oracle
   mapping(uint marketId => ISpotFeed) public spotFeeds;
 
+  /// @dev Mapping from marketId to market price of perps
+  mapping(uint marketId => ISpotFeed) public perpFeeds;
+
   /// @dev Mapping from marketId to settlement price oracle
   mapping(uint marketId => ISettlementFeed) public settlementFeeds;
 
@@ -102,15 +105,17 @@ contract BasicManager is IBasicManager, BaseManager {
   function setOraclesForMarket(
     uint8 marketId,
     ISpotFeed spotFeed,
+    ISpotFeed perpFeed,
     IForwardFeed forwardFeed,
     ISettlementFeed settlementFeed
   ) external onlyOwner {
     // registered asset
     spotFeeds[marketId] = spotFeed;
+    perpFeeds[marketId] = perpFeed;
     forwardFeeds[marketId] = forwardFeed;
     settlementFeeds[marketId] = settlementFeed;
 
-    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(settlementFeed));
+    emit OraclesSet(marketId, address(spotFeed), address(perpFeed), address(forwardFeed), address(settlementFeed));
   }
 
   /**
@@ -295,7 +300,7 @@ contract BasicManager is IBasicManager, BaseManager {
   {
     int indexPrice = _getIndexPrice(marketHolding.marketId);
 
-    int netPerpMargin = _getNetPerpMargin(marketHolding, indexPrice, isInitial);
+    int netPerpMargin = _getNetPerpMargin(marketHolding, isInitial);
     int netOptionMargin = _getNetOptionMargin(marketHolding, indexPrice, isInitial);
 
     int depegMargin = 0;
@@ -321,12 +326,14 @@ contract BasicManager is IBasicManager, BaseManager {
    * @notice get the margin required for the perp position of an market
    * @return net margin for a perp position, always negative
    */
-  function _getNetPerpMargin(MarketHolding memory marketHolding, int indexPrice, bool isInitial)
+  function _getNetPerpMargin(MarketHolding memory marketHolding, bool isInitial)
     internal
     view
     returns (int)
   {
-    uint notional = marketHolding.perpPosition.multiplyDecimal(indexPrice).abs();
+    // while calculating margin for perp, we use the perp market price oracle
+    (uint perpPrice,) = perpFeeds[marketHolding.marketId].getSpot();
+    uint notional = marketHolding.perpPosition.abs().multiplyDecimal(perpPrice);
     uint requirement = isInitial
       ? perpMarginRequirements[marketHolding.marketId].imRequirement
       : perpMarginRequirements[marketHolding.marketId].mmRequirement;
@@ -496,8 +503,9 @@ contract BasicManager is IBasicManager, BaseManager {
     }
 
     if (expiryHolding.netCalls < 0) {
+      int forwardPrice = _getForwardPrice(marketId, expiryHolding.expiry);
       int unpairedScale = optionMarginParams[marketId].unpairedScale;
-      maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(indexPrice);
+      maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice);
     }
 
     // return the better of the 2 margins

@@ -69,7 +69,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
 
-    manager.setOraclesForMarket(1, feed, feed, feed);
+    manager.setOraclesForMarket(1, feed, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
