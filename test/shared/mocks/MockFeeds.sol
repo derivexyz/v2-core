@@ -17,8 +17,8 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   mapping(uint => int64) interestRates;
   mapping(uint => uint64) interestRateConfidences;
   mapping(uint => uint) settlementPrice;
-  mapping(uint128 => mapping(uint128 => uint128)) vols;
-  mapping(uint128 => mapping(uint128 => uint64)) volConfidences;
+  mapping(uint64 => mapping(uint128 => uint128)) vols;
+  mapping(uint64 => mapping(uint128 => uint64)) volConfidences;
 
   function setSpot(uint _spot, uint _confidence) external {
     spot = _spot;
@@ -29,7 +29,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     settlementPrice[expiry] = price;
   }
 
-  function setVol(uint128 expiry, uint128 strike, uint128 vol, uint64 confidence) external {
+  function setVol(uint64 expiry, uint128 strike, uint128 vol, uint64 confidence) external {
     vols[expiry][strike] = vol;
     volConfidences[expiry][strike] = confidence;
   }
@@ -76,7 +76,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   // IVolFeed
 
-  function getVol(uint128 strike, uint128 expiry) external view returns (uint128 vol, uint64 confidence) {
+  function getVol(uint128 strike, uint64 expiry) external view returns (uint128 vol, uint64 confidence) {
     return (vols[expiry][strike], volConfidences[expiry][strike]);
   }
 

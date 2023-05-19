@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.18;
+
 import "../interfaces/IPMRM.sol";
 import "../interfaces/IOptionPricing.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
@@ -274,9 +277,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
     portfolio.totalMtM += portfolio.unrealisedPerpValue;
 
-    uint staticContingency = IntLib.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent);
-    staticContingency += portfolio.basePosition.multiplyDecimal(otherContParams.basePercent);
-    portfolio.staticContingency = staticContingency.multiplyDecimal(portfolio.spotPrice);
+    portfolio.staticContingency = IntLib.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent)
+      .multiplyDecimal(portfolio.perpPrice);
+    portfolio.staticContingency +=
+      portfolio.basePosition.multiplyDecimal(otherContParams.basePercent).multiplyDecimal(portfolio.spotPrice);
 
     portfolio.confidenceContingency = _getConfidenceContingency(
       portfolio.minConfidence, IntLib.abs(portfolio.perpPosition) + portfolio.basePosition, portfolio.spotPrice

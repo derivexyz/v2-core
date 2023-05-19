@@ -9,46 +9,29 @@ import "openzeppelin/access/Ownable2Step.sol";
 import "src/interfaces/ISpotFeed.sol";
 import "src/interfaces/IDataReceiver.sol";
 import "src/interfaces/ILyraSpotFeed.sol";
+import "./BaseLyraFeed.sol";
 
 /**
  * @title LyraSpotFeed
  * @author Lyra
  * @notice Spot feed that takes off-chain updates, verify signature and update on-chain
  */
-contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataReceiver {
-  // pack the following into 1 storage slot
-  SpotDetail private spotDetail;
-
-  mapping(address => bool) public isSigner;
-
+contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
   bytes32 public constant SPOT_DATA_TYPEHASH =
     keccak256("SpotData(uint96 price,uint64 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)");
+
+  // pack the following into 1 storage slot
+  SpotDetail private spotDetail;
 
   ////////////////////////
   //    Constructor     //
   ////////////////////////
 
-  constructor() EIP712("LyraSpotFeed", "1") {}
-
-  ////////////////////////
-  //  Admin Functions   //
-  ////////////////////////
-
-  function addSigner(address signer, bool isWhitelisted) external onlyOwner {
-    isSigner[signer] = isWhitelisted;
-    emit SignerUpdated(signer, isWhitelisted);
-  }
+  constructor() BaseLyraFeed("LyraSpotFeed", "1") {}
 
   ////////////////////////
   //  Public Functions  //
   ////////////////////////
-
-  /**
-   * @dev get domain separator for signing
-   */
-  function domainSeparator() external view returns (bytes32) {
-    return _domainSeparatorV4();
-  }
 
   /**
    * @notice Gets spot price
@@ -56,9 +39,6 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
    */
   function getSpot() public view returns (uint, uint) {
     SpotDetail memory spot = spotDetail;
-    // todo: check last update timestamp, revert is stale
-
-    // todo: update confidence based on timestamp?
 
     return (spot.price, spot.confidence);
   }
@@ -66,28 +46,20 @@ contract LyraSpotFeed is EIP712, Ownable2Step, ILyraSpotFeed, ISpotFeed, IDataRe
   /**
    * @notice Parse input data and update spot price
    */
-  function acceptData(bytes calldata data) external {
+  function acceptData(bytes calldata data) external override {
     // parse data as SpotData
     SpotData memory spotData = abi.decode(data, (SpotData));
     // verify signature
     bytes32 structHash = hashSpotData(spotData);
 
-    // check the signature is from signer specified in spotData
-    if (!SignatureChecker.isValidSignatureNow(spotData.signer, _hashTypedDataV4(structHash), spotData.signature)) {
-      revert LSF_InvalidSignature();
+    _verifySignatureDetails(spotData.signer, structHash, spotData.signature, spotData.deadline, spotData.timestamp);
+
+    // ignore if timestamp is lower or equal to current
+    if (spotData.timestamp <= spotDetail.timestamp) return;
+
+    if (spotData.confidence > 1e18) {
+      revert LSF_InvalidConfidence();
     }
-
-    // check that it is a valid signer
-    if (!isSigner[spotData.signer]) revert LSF_InvalidSigner();
-
-    // check the deadline
-    if (spotData.deadline < block.timestamp) revert LSF_DataExpired();
-
-    // cannot set price in the future
-    if (spotData.timestamp > block.timestamp) revert LSF_InvalidTimestamp();
-
-    // ignore if timestamp is lower than current
-    if (spotData.timestamp < spotDetail.timestamp) return;
 
     // update spot price
     spotDetail = SpotDetail(spotData.price, spotData.confidence, spotData.timestamp);
