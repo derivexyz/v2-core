@@ -11,15 +11,16 @@ import "lyra-utils/math/FixedPointMathLib.sol";
 import "src/interfaces/IDataReceiver.sol";
 import "src/interfaces/IVolFeed.sol";
 import "./BaseLyraFeed.sol";
+import "src/interfaces/ILyraVolFeed.sol";
 
 library SVI {
   // TODO: move to lyra-utils and CLEAN UP A LOT
-  function getVol(uint strike, int SVI_a, uint SVI_b, int SVI_rho, int SVI_m, uint SVI_sigma, uint SVI_spot)
+  function getVol(uint strike, int SVI_a, uint SVI_b, int SVI_rho, int SVI_m, uint SVI_sigma, uint SVI_fwd)
     internal
     pure
     returns (uint128)
   {
-    int k = FixedPointMathLib.ln(int(strike * 1e18 / SVI_spot));
+    int k = FixedPointMathLib.ln(int(strike * 1e18 / SVI_fwd));
 
     // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
     int k_sub_m = int(k) - SVI_m;
@@ -38,48 +39,6 @@ library SVI {
   }
 }
 
-interface ILyraVolFeed {
-  struct VolData {
-    uint64 expiry;
-    // price data
-    int SVI_a;
-    uint SVI_b;
-    int SVI_rho;
-    int SVI_m;
-    uint SVI_sigma;
-    uint SVI_spot;
-    uint64 confidence;
-    uint64 timestamp;
-    // the latest timestamp you can use this data
-    uint deadline;
-    // signature v, r, s
-    address signer;
-    bytes signature;
-  }
-
-  /// @dev structure to store in contract storage
-  struct VolDetails {
-    int SVI_a;
-    uint SVI_b;
-    int SVI_rho;
-    int SVI_m;
-    uint SVI_sigma;
-    uint SVI_spot;
-    uint64 confidence;
-    uint64 timestamp;
-  }
-
-  ////////////////////////
-  //       Errors       //
-  ////////////////////////
-  error LVF_MissingExpiryData();
-
-  ////////////////////////
-  //       Events       //
-  ////////////////////////
-  event VolDataUpdated(address indexed signer, uint64 indexed expiry, VolDetails volDetails);
-}
-
 /**
  * @title LyraVolFeed
  * @author Lyra
@@ -91,7 +50,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
   //     Constants      //
   ////////////////////////
   bytes32 public constant VOL_DATA_TYPEHASH = keccak256(
-    "VolData(int SVI_a,uint SVI_b,int SVI_rho,int SVI_m,uint SVI_sigma,uint SVI_spot,uint64 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)"
+    "VolData(int SVI_a,uint SVI_b,int SVI_rho,int SVI_m,uint SVI_sigma,uint SVI_fwd,uint64 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)"
   );
 
   ////////////////////////
@@ -118,8 +77,8 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
   function getVol(uint128 strike, uint64 expiry) public view returns (uint128 vol, uint64 confidence) {
     VolDetails memory volDetail = volDetails[expiry];
 
+    // Revert if no data for given expiry
     if (volDetail.timestamp == 0) {
-      // TODO: is this just caught by solidity?
       revert LVF_MissingExpiryData();
     }
 
@@ -133,7 +92,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       volDetail.SVI_rho,
       volDetail.SVI_m,
       volDetail.SVI_sigma,
-      volDetail.SVI_spot
+      volDetail.SVI_fwd
     );
 
     return (vol, volDetail.confidence);
@@ -160,7 +119,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       SVI_rho: volData.SVI_rho,
       SVI_m: volData.SVI_m,
       SVI_sigma: volData.SVI_sigma,
-      SVI_spot: volData.SVI_spot,
+      SVI_fwd: volData.SVI_fwd,
       confidence: volData.confidence,
       timestamp: volData.timestamp
     });
@@ -181,7 +140,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
         volData.SVI_rho,
         volData.SVI_m,
         volData.SVI_sigma,
-        volData.SVI_spot,
+        volData.SVI_fwd,
         volData.confidence,
         volData.timestamp
       )

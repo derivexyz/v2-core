@@ -31,9 +31,6 @@ interface IBaseLyraFeed {
   /// @dev Data has crossed heartbeat threshold
   error BLF_DataTooOld();
 
-  /// @dev function has not been implemented by inheriting contract
-  error BLF_NotImplementedError();
-
   ////////////////////////
   //       Events       //
   ////////////////////////
@@ -84,13 +81,6 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
    */
   function domainSeparator() external view returns (bytes32) {
     return _domainSeparatorV4();
-  }
-
-  /**
-   * @notice Parse input data and update spot price
-   */
-  function acceptData(bytes calldata /* data */ ) external virtual override {
-    revert BLF_NotImplementedError();
   }
 
   ////////////////////////

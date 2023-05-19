@@ -45,6 +45,11 @@ contract UNIT_LyraVolFeed is Test {
     assertEq(feed.isSigner(alice), true);
   }
 
+  function testRevertsWhenFetchingInvalidExpiry() public {
+    vm.expectRevert(ILyraVolFeed.LVF_MissingExpiryData.selector);
+    feed.getVol(uint128(uint(1500e18)), defaultExpiry);
+  }
+
   function testCanPassInDataAndUpdateVolFeed() public {
     ILyraVolFeed.VolData memory volData = _getDefaultVolData();
     bytes memory data = _getSignedVolData(pk, volData);
@@ -86,21 +91,23 @@ contract UNIT_LyraVolFeed is Test {
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidTimestamp.selector);
     feed.acceptData(data);
   }
-  //
-  //  function testIgnoreUpdateIfOlderDataIsPushed() public {
-  //    feed.addSigner(pkOwner, true);
-  //
-  //    bytes memory data1 = _signVolData(1000e18, 1e18, block.timestamp, block.timestamp + 5, pk, pkOwner);
-  //    feed.acceptData(data1);
-  //
-  //    // this data is marked as timestamp = block.timestamp -1, will be ignored
-  //    bytes memory data2 = _signVolData(1100e18, 0.9e18, block.timestamp - 1, block.timestamp + 5, pk, pkOwner);
-  //    feed.acceptData(data2);
-  //
-  //    (uint spot, uint confidence) = feed.getSpot();
-  //    assertEq(spot, 1000e18);
-  //    assertEq(confidence, 1e18);
-  //  }
+
+  function testIgnoreUpdateIfOlderDataIsPushed() public {
+    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
+
+    bytes memory data = _getSignedVolData(pk, volData);
+    feed.acceptData(data);
+    (, uint confidence) = feed.getVol(uint128(uint(1500e18)), defaultExpiry);
+    assertEq(confidence, 1e18);
+
+    volData.confidence = 0.9e18;
+    volData.timestamp = uint64(block.timestamp - 100);
+    data = _getSignedVolData(pk, volData);
+    feed.acceptData(data);
+    (, confidence) = feed.getVol(uint128(uint(1500e18)), defaultExpiry);
+
+    assertEq(confidence, 1e18);
+  }
 
   function testCannotSubmitPriceWithReplacedSigner() public {
     // use a different private key to sign the data but still specify pkOwner as signer
@@ -122,7 +129,7 @@ contract UNIT_LyraVolFeed is Test {
       SVI_rho: -0.1e18,
       SVI_m: -0.05e18,
       SVI_sigma: 0.05e18,
-      SVI_spot: 1200e18,
+      SVI_fwd: 1200e18,
       confidence: 1e18,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
