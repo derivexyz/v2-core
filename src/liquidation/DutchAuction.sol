@@ -421,10 +421,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     emit Insolvent(accountId);
   }
 
-  function _getVUpper() internal view returns (uint vUpper) {    
+  function _getVUpper() internal view returns (uint vUpper) {
     int marketToMarket = 0;
     // apply scaler to market to market
-
   }
 
   /**

@@ -542,7 +542,6 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     return _getMargin(accountId, portfolio, isInitial);
   }
 
-
   function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
     external
     view
