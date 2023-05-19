@@ -187,6 +187,10 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(bobFunding, 0.75e18);
   }
 
+  function testIndexPrice() public {
+    assertEq(perp.getIndexPrice(), uint(spot));
+  }
+
   function _setPricesPositiveFunding() internal {
     int iap = spot + 6e18;
     int ibp = spot + 6e18;

@@ -9,8 +9,8 @@ import {IAsset} from "src/interfaces/IAsset.sol";
  */
 interface IPerpAsset is IAsset {
   struct PositionDetail {
-    // Price that the position was opened at
-    uint entryPrice;
+    // Spot price the last time user interact with perp contract
+    uint lastIndexPrice;
     // All funding, not yet settled as cash in Accounts
     int funding;
     // Realized pnl, not yet settled as cash in Accounts
@@ -35,6 +35,10 @@ interface IPerpAsset is IAsset {
 
   /// TODO: docs
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash);
+
+  function realizePNLWithIndex(uint account) external;
+
+  function getIndexPrice() external view returns (uint);
 
   //////////////////
   //   Events     //

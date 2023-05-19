@@ -14,7 +14,7 @@ import "../shared/mocks/MockFeeds.sol";
 
 // local mocks
 
-import "./mocks/MockBaseManager.sol";
+import "./mocks/MockLiquidatableManager.sol";
 
 contract UNIT_DutchAuctionView is Test {
   address alice;
@@ -29,7 +29,7 @@ contract UNIT_DutchAuctionView is Test {
   MockAsset usdcAsset;
   MockAsset optionAdapter;
   MockAsset coolAsset;
-  MockBaseManager manager;
+  MockLiquidatableManager manager;
   MockFeeds feed;
 
   DutchAuction dutchAuction;
@@ -76,7 +76,7 @@ contract UNIT_DutchAuctionView is Test {
     optionAdapter = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
-    manager = new MockBaseManager(address(account));
+    manager = new MockLiquidatableManager(address(account));
 
     /*
     Feed for Spot*/

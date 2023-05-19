@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 // interfaces
-import "src/interfaces/IBaseManager.sol";
+import "src/interfaces/ILiquidatableManager.sol";
 import "src/interfaces/ISecurityModule.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IDutchAuction.sol";
@@ -70,7 +70,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   mapping(uint => Auction) public auctions;
 
   /// @dev The risk manager that is the parent of the dutch auction contract
-  IBaseManager public immutable riskManager;
+  ILiquidatableManager public immutable riskManager;
 
   /// @dev The security module that will help pay out for insolvent auctions
   ISecurityModule public immutable securityModule;
@@ -88,7 +88,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IBaseManager _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash)
+  constructor(ILiquidatableManager _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash)
     Ownable2Step()
   {
     riskManager = _riskManager;

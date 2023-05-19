@@ -69,7 +69,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
 
-    manager.setOraclesForMarket(1, feed, feed, feed);
+    manager.setOraclesForMarket(1, feed, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -124,6 +124,44 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
     // alice has lost $100
     assertEq(cashBefore - 100e18, cashAfter);
+  }
+
+  function testCanSettleUnrealizedLossForAnyAccount() public {
+    int cashBefore = _getCashBalance(aliceAcc);
+
+    // alice is short, bob is long
+    _setPrices(1600e18);
+
+    manager.settlePerpsWithIndex(perp, aliceAcc);
+
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(cashBefore - 100e18, cashAfter);
+  }
+
+  function testCanSettleUnrealizedPNLForAnyAccount() public {
+    int aliceCashBefore = _getCashBalance(aliceAcc);
+    int bobCashBefore = _getCashBalance(bobAcc);
+
+    // alice is short, bob is long
+    _setPrices(1600e18);
+
+    manager.settlePerpsWithIndex(perp, aliceAcc);
+    manager.settlePerpsWithIndex(perp, bobAcc);
+
+    int aliceCashAfter = _getCashBalance(aliceAcc);
+    int bobCashAfter = _getCashBalance(bobAcc);
+
+    // alice loss $100
+    assertEq(aliceCashBefore - 100e18, aliceCashAfter);
+
+    // bob gets $100
+    assertEq(bobCashBefore + 100e18, bobCashAfter);
+  }
+
+  function testCanSettleIntoNegativeCash() public {
+    _setPrices(200_000e18);
+    manager.settlePerpsWithIndex(perp, aliceAcc);
+    assertLt(_getCashBalance(aliceAcc), 0);
   }
 
   function _setPrices(uint price) internal {

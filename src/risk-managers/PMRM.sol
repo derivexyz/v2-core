@@ -18,6 +18,7 @@ import "src/interfaces/IOption.sol";
 import "src/interfaces/IOptionPricing.sol";
 import "src/interfaces/ISpotFeed.sol";
 import "src/interfaces/IBasicManager.sol";
+import "src/interfaces/ILiquidatableManager.sol";
 import "src/interfaces/IVolFeed.sol";
 import "src/interfaces/IInterestRateFeed.sol";
 import "src/interfaces/IPMRM.sol";
@@ -34,7 +35,7 @@ import "src/assets/WrappedERC20Asset.sol";
  * @notice Risk Manager that uses a SPAN like methodology to margin an options portfolio.
  */
 
-contract PMRM is PMRMLib, IPMRM, BaseManager {
+contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -166,15 +167,17 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     uint tradeId,
     address caller,
     IAccounts.AssetDelta[] calldata assetDeltas,
-    bytes memory managerData
+    bytes calldata managerData
   ) public onlyAccounts {
+    _processManagerData(tradeId, managerData);
+
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == perp) {
-        // Settle perps if the user has a perp position
-        _settleAccountPerps(perp, accountId);
+        // Settle perp PNL into cash if the user traded perp in this tx.
+        _settlePerpRealizedPNL(perp, accountId);
         riskAdding = true;
       } else if (
         assetDeltas[i].asset != cashAsset && assetDeltas[i].asset != option && assetDeltas[i].asset != baseAsset
@@ -211,7 +214,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
       if (postIM + portfolio.cash < 0) {
         // Note: cash interest is also undone here, but this is not a significant issue
         IPMRM.Portfolio memory prePortfolio =
-          _arrangePortfolio(accountId, undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
+          _arrangePortfolio(accountId, _undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
         int preIM = _getMargin(prePortfolio, true, marginScenarios, true);
         if (postIM < preIM) {
@@ -402,6 +405,14 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     return _getMargin(portfolio, isInitial, marginScenarios, true);
   }
 
+  /**
+   * @notice can be called by anyone to settle a perp asset in an account
+   */
+  function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {
+    if (_perp != perp) revert PMRM_UnsupportedAsset();
+    _settlePerpUnrealizedPNL(perp, accountId);
+  }
+
   function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
     address owner = accounts.ownerOf(mergeIntoId);
     for (uint i = 0; i < mergeFromIds.length; ++i) {
@@ -417,60 +428,5 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
         );
       }
     }
-  }
-
-  //////////
-  // Misc //
-  //////////
-
-  function undoAssetDeltas(uint accountId, IAccounts.AssetDelta[] memory assetDeltas)
-    internal
-    view
-    returns (IAccounts.AssetBalance[] memory newAssetBalances)
-  {
-    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
-
-    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
-    uint removedBalances = 0;
-    uint newBalances = 0;
-    IAccounts.AssetBalance[] memory preBalances = new IAccounts.AssetBalance[](assetDeltas.length);
-
-    for (uint i = 0; i < assetDeltas.length; ++i) {
-      IAccounts.AssetDelta memory delta = assetDeltas[i];
-      if (delta.delta == 0) {
-        continue;
-      }
-      bool found = false;
-      for (uint j = 0; j < assetBalances.length; ++j) {
-        IAccounts.AssetBalance memory balance = assetBalances[j];
-        if (balance.asset == delta.asset && balance.subId == delta.subId) {
-          found = true;
-          assetBalances[j].balance = balance.balance - delta.delta;
-          if (assetBalances[j].balance == 0) {
-            removedBalances++;
-          }
-          break;
-        }
-      }
-      if (!found) {
-        preBalances[newBalances++] =
-          IAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
-      }
-    }
-
-    newAssetBalances = new IAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
-
-    uint newBalancesIndex = 0;
-    for (uint i = 0; i < assetBalances.length; ++i) {
-      IAccounts.AssetBalance memory balance = assetBalances[i];
-      if (balance.balance != 0) {
-        newAssetBalances[newBalancesIndex++] = balance;
-      }
-    }
-    for (uint i = 0; i < newBalances; ++i) {
-      newAssetBalances[newBalancesIndex++] = preBalances[i];
-    }
-
-    return newAssetBalances;
   }
 }

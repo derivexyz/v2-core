@@ -9,7 +9,7 @@ import "../shared/mocks/MockERC20.sol";
 import "../shared/mocks/MockAsset.sol";
 import "../shared/mocks/MockSM.sol";
 import "./mocks/MockCashAsset.sol";
-import "./mocks/MockBaseManager.sol";
+import "./mocks/MockLiquidatableManager.sol";
 import "../../src/liquidation/DutchAuction.sol";
 
 import "../shared/mocks/MockFeeds.sol";
@@ -25,7 +25,7 @@ contract DutchAuctionBase is Test {
   MockERC20 usdc;
   MockCash usdcAsset;
   MockAsset optionAsset;
-  MockBaseManager manager;
+  MockLiquidatableManager manager;
   MockFeeds feed;
   DutchAuction dutchAuction;
 
@@ -44,7 +44,7 @@ contract DutchAuctionBase is Test {
     optionAsset = new MockAsset(IERC20(address(0)), account, true);
 
     /* Risk Manager */
-    manager = new MockBaseManager(address(account));
+    manager = new MockLiquidatableManager(address(account));
 
     // mock cash
     sm = new MockSM(account, usdcAsset);
