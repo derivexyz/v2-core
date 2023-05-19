@@ -272,7 +272,7 @@
 //    assertEq(currentBidPrice, 0); // starts at 0 as insolvent
 //
 //    // increment the insolvent auction
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //    // get the current step
 //    uint currentStep = dutchAuction.getAuction(aliceAcc).stepInsolvent;
 //    assertEq(currentStep, 1);
@@ -283,7 +283,7 @@
 //
 //    // increment the insolvent auction
 //    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_SolventAuctionCannotIncrement.selector, aliceAcc));
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //  }
 //
 //  function testTerminatesSolventAuction() public {

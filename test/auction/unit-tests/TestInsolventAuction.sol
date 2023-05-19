@@ -71,11 +71,11 @@
 //
 //    // increment the insolvent auction
 //    // 1 of 200 steps
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -5000e18);
 //
 //    // 2 of 200 steps
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -10_000e18);
 //  }
 //
@@ -83,8 +83,8 @@
 //    createDefaultInsolventAuction(aliceAcc);
 //
 //    // 2 of 200 steps
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //
 //    int expectedTotalPayoutFromSM = 10_000e18;
 //
@@ -109,8 +109,8 @@
 //    createDefaultInsolventAuction(aliceAcc);
 //
 //    // 2 of 200 steps
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //
 //    int expectedTotalPayoutFromSM = 10_000e18;
 //
@@ -140,10 +140,10 @@
 //    );
 //    createDefaultInsolventAuction(aliceAcc);
 //
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //
 //    vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //  }
 //
 //  function testCannotSpamIncrementStep() public {
@@ -158,7 +158,7 @@
 //    );
 //    createDefaultInsolventAuction(aliceAcc);
 //
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //
 //    vm.expectRevert(
 //      abi.encodeWithSelector(
@@ -167,6 +167,6 @@
 //        block.timestamp + dutchAuction.getParameters().secBetweenSteps
 //      )
 //    );
-//    dutchAuction.incrementInsolventAuction(aliceAcc);
+//    dutchAuction.continueInsolventAuction(aliceAcc);
 //  }
 //}

@@ -61,7 +61,7 @@
 //    // increase step size several times
 //    for (uint i = 0; i < 30; i++) {
 //      vm.warp(block.timestamp + _getDefaultAuctionParam().secBetweenSteps + 1);
-//      auction.incrementInsolventAuction(aliceAcc);
+//      auction.continueInsolventAuction(aliceAcc);
 //    }
 //
 //    uint supplyBefore = cash.totalSupply();

@@ -123,11 +123,14 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_AuctionAlreadyStarted(accountId);
     }
 
-    (int upperBound, int lowerBound) = _getBounds(accountId);
+    int upperBound = _getVUpper(accountId);
     // covers the case where an auction could start as insolvent, upper bound < 0
     if (upperBound > 0) {
       _startSolventAuction(upperBound, accountId);
     } else {
+      // insolvent auction start from 0 -> initial margin (negative number)
+      // int lowerBound = _getIM();
+      int lowerBound = -1000e18;
       _startInsolventAuction(lowerBound, accountId);
     }
 
@@ -228,7 +231,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
   /**
    * @notice Return true if an auction can be terminated (back above water)
-   * @dev for solvent auction: if IM(rv=0) > 0
+   * @dev for solvent auction: if IM > 0
    * @dev for insolvent auction: if MM > 0
    * @param accountId ID of the account to check
    */
@@ -281,7 +284,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId the accountId that relates to the auction that is being stepped
    * @return uint the step that the auction is on
    */
-  function incrementInsolventAuction(uint accountId) external returns (uint) {
+  function continueInsolventAuction(uint accountId) external returns (uint) {
     Auction storage auction = auctions[accountId];
     if (!auction.insolvent) {
       revert DA_SolventAuctionCannotIncrement(accountId);
@@ -322,12 +325,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice gets the upper bound for the liquidation price
-   * @dev requires the accountId and the spot price to mark each asset at a particular value
-   * @param accountId the accountId of the account that is being liquidated
+   * @notice gets the upper bound for the liquidation price. This should be a static discount of market to market
    */
-  function getBounds(uint accountId) external view returns (int, int) {
-    return _getBounds(accountId);
+  function getVUpper(uint accountId) external view returns (int) {
+    return _getVUpper(accountId);
   }
 
   /**
@@ -418,6 +419,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       lowerBound: lowerBound
     });
     emit Insolvent(accountId);
+  }
+
+  function _getVUpper() internal view returns (uint vUpper) {    
+    int marketToMarket = 0;
+    // apply scaler to market to market
+
   }
 
   /**
