@@ -51,11 +51,14 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
   // Variables //
   ///////////////
 
+  // TODO: OI cap
+
   IOption public immutable option;
   IPerpAsset public immutable perp;
   WrappedERC20Asset public immutable baseAsset;
 
   ISpotFeed public spotFeed;
+  ISpotFeed public perpFeed;
   IInterestRateFeed public interestRateFeed;
   IVolFeed public volFeed;
   ISpotFeed public stableFeed;
@@ -80,6 +83,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
     Feeds memory feeds_
   ) PMRMLib(optionPricing_) BaseManager(accounts_, cashAsset_, IDutchAuction(address(0))) {
     spotFeed = feeds_.spotFeed;
+    perpFeed = feeds_.perpFeed;
     stableFeed = feeds_.stableFeed;
     forwardFeed = feeds_.forwardFeed;
     interestRateFeed = feeds_.interestRateFeed;
@@ -236,6 +240,10 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
+    // TODO: portfolio.perpPrice, perpPriceConfidence
+    (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
+    portfolio.perpPrice = perpPrice;
+    portfolio.minConfidence = UintLib.min(portfolio.minConfidence, perpConfidence);
 
     (uint stablePrice, uint stableConfidence) = stableFeed.getSpot();
     if (stableConfidence < portfolio.minConfidence) {
@@ -342,7 +350,7 @@ contract PMRM is PMRMLib, IPMRM, BaseManager {
 
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
 
-        (uint vol, uint confidence) = volFeed.getVol(strike.toUint128(), optionExpiry.toUint128());
+        (uint vol, uint confidence) = volFeed.getVol(strike.toUint128(), optionExpiry.toUint64());
 
         expiry.minConfidence = UintLib.min(confidence, expiry.minConfidence);
 

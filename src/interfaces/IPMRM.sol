@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.18;
+
 import "./ISpotFeed.sol";
 import "./IForwardFeed.sol";
 import "./IInterestRateFeed.sol";
@@ -13,6 +16,7 @@ interface IPMRM {
 
   struct Feeds {
     ISpotFeed spotFeed;
+    ISpotFeed perpFeed;
     ISpotFeed stableFeed;
     IForwardFeed forwardFeed;
     IInterestRateFeed interestRateFeed;
@@ -22,6 +26,7 @@ interface IPMRM {
 
   struct Portfolio {
     uint spotPrice;
+    uint perpPrice;
     uint stablePrice;
     /// cash amount or debt
     int cash;

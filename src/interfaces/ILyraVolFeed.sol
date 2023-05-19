@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-interface ILyraSpotFeed {
-  struct SpotData {
+interface ILyraVolFeed {
+  struct VolData {
+    uint64 expiry;
     // price data
-    uint96 price;
+    int SVI_a;
+    uint SVI_b;
+    int SVI_rho;
+    int SVI_m;
+    uint SVI_sigma;
+    uint SVI_fwd;
     uint64 confidence;
     uint64 timestamp;
     // the latest timestamp you can use this data
@@ -15,19 +21,24 @@ interface ILyraSpotFeed {
   }
 
   /// @dev structure to store in contract storage
-  struct SpotDetail {
-    uint96 price;
+  struct VolDetails {
+    int SVI_a;
+    uint SVI_b;
+    int SVI_rho;
+    int SVI_m;
+    uint SVI_sigma;
+    uint SVI_fwd;
     uint64 confidence;
     uint64 timestamp;
   }
 
   ////////////////////////
-  //       Events       //
-  ////////////////////////
-  event SpotPriceUpdated(address indexed signer, uint96 spot, uint96 confidence, uint64 timestamp);
-
-  ////////////////////////
   //       Errors       //
   ////////////////////////
-  error LSF_InvalidConfidence();
+  error LVF_MissingExpiryData();
+
+  ////////////////////////
+  //       Events       //
+  ////////////////////////
+  event VolDataUpdated(address indexed signer, uint64 indexed expiry, VolDetails volDetails);
 }
