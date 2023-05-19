@@ -13,16 +13,6 @@ interface IBaseManager is IManager {
     bytes data;
   }
 
-  enum ActionType {
-    NONE,
-    SettleUnrealizedPerpPNL
-  }
-
-  struct ManagerAction {
-    ActionType actionType;
-    bytes data;
-  }
-
   struct SettleUnrealizedPNLData {
     uint accountId;
     address perp; // this needs to be verified

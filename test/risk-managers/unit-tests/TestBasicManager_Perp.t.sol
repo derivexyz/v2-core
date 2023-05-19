@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "src/risk-managers/BasicManager.sol";
+import "src/risk-managers/SettlementHelper.sol";
 
 import "src/Accounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
@@ -26,6 +27,7 @@ contract UNIT_TestBasicManager is Test {
   MockPerp perp;
   MockOption option;
   MockFeeds stableFeed;
+  SettlementHelper settlementHelper;
 
   MockFeeds feed;
 
@@ -69,6 +71,9 @@ contract UNIT_TestBasicManager is Test {
 
     usdc.mint(address(this), 10000e18);
     usdc.approve(address(cash), type(uint).max);
+
+    // settler
+    settlementHelper = new SettlementHelper();
   }
 
   /////////////
@@ -190,11 +195,9 @@ contract UNIT_TestBasicManager is Test {
     int cashBefore = _getCashBalance(aliceAcc);
     perp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
 
-    bytes memory settlementData = abi.encode(address(perp), aliceAcc);
-    IBaseManager.ManagerAction memory action =
-      IBaseManager.ManagerAction(IBaseManager.ActionType.SettleUnrealizedPerpPNL, settlementData);
+    bytes memory data = abi.encode(address(manager), address(perp), aliceAcc);
     IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
-    allData[0] = IBaseManager.ManagerData({receiver: address(0), data: abi.encode(action)});
+    allData[0] = IBaseManager.ManagerData({receiver: address(settlementHelper), data: data});
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash
@@ -210,11 +213,9 @@ contract UNIT_TestBasicManager is Test {
     MockPerp badPerp = new MockPerp(account);
     badPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
 
-    bytes memory settlementData = abi.encode(address(badPerp), aliceAcc);
-    IBaseManager.ManagerAction memory action =
-      IBaseManager.ManagerAction(IBaseManager.ActionType.SettleUnrealizedPerpPNL, settlementData);
+    bytes memory data = abi.encode(address(manager), address(badPerp), aliceAcc);
     IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
-    allData[0] = IBaseManager.ManagerData({receiver: address(0), data: abi.encode(action)});
+    allData[0] = IBaseManager.ManagerData({receiver: address(settlementHelper), data: data});
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash

@@ -163,8 +163,10 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     uint tradeId,
     address caller,
     IAccounts.AssetDelta[] calldata assetDeltas,
-    bytes memory managerData
+    bytes calldata managerData
   ) public onlyAccounts {
+    _processManagerData(tradeId, managerData);
+
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
 
     bool riskAdding = false;
@@ -395,6 +397,14 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     return _getMargin(portfolio, isInitial, marginScenarios, true);
   }
 
+  /**
+   * @notice can be called by anyone to settle a perp asset in an account
+   */
+  function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {
+    if (_perp != perp) revert PMRM_UnsupportedAsset();
+    _settlePerpUnrealizedPNL(perp, accountId);
+  }
+
   function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
     address owner = accounts.ownerOf(mergeIntoId);
     for (uint i = 0; i < mergeFromIds.length; ++i) {
@@ -410,13 +420,5 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
         );
       }
     }
-  }
-
-  ///////////////////////
-  ///    Overrides     //
-  ///////////////////////
-
-  function _verifyPerp(address _perp) internal override {
-    if (_perp != address(perp)) revert PMRM_UnsupportedAsset();
   }
 }

@@ -15,6 +15,7 @@ import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockSM.sol";
 import "test/shared/mocks/MockFeeds.sol";
+import "test/auction/mocks/MockCashAsset.sol";
 
 import "test/risk-managers/mocks/MockDutchAuction.sol";
 import "test/shared/utils/JsonMechIO.sol";
@@ -31,7 +32,7 @@ contract PMRMTestBase is Test {
 
   Accounts accounts;
   PMRMPublic pmrm;
-  MockAsset cash;
+  MockCash cash;
   MockERC20 usdc;
   MockERC20 weth;
   WrappedERC20Asset baseAsset;
@@ -64,7 +65,7 @@ contract PMRMTestBase is Test {
 
     usdc = new MockERC20("USDC", "USDC");
     weth = new MockERC20("weth", "weth");
-    cash = new MockAsset(usdc, accounts, true);
+    cash = new MockCash(usdc, accounts);
     baseAsset = new WrappedERC20Asset(accounts, weth);
     mockPerp = new MockPerp(accounts);
 
@@ -73,9 +74,9 @@ contract PMRMTestBase is Test {
 
     pmrm = new PMRMPublic(
       accounts,
-      ICashAsset(address(cash)),
+      cash,
       option,
-      IPerpAsset(address(mockPerp)),
+      mockPerp,
       IOptionPricing(optionPricing),
       baseAsset,
       IPMRM.Feeds({
@@ -368,5 +369,9 @@ contract PMRMTestBase is Test {
     }
 
     accounts.submitTransfers(transferBatch, "");
+  }
+
+  function _getCashBalance(uint acc) public view returns (int) {
+    return accounts.getBalance(acc, cash, 0);
   }
 }

@@ -732,12 +732,4 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
 
     return pricing.getOptionValue(expiryData, option);
   }
-
-  ///////////////////////
-  ///    Overrides     //
-  ///////////////////////
-
-  function _verifyPerp(address _perp) internal override {
-    if (!assetDetails[IAsset(_perp)].isWhitelisted) revert BM_UnsupportedAsset();
-  }
 }
