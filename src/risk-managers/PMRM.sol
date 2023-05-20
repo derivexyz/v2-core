@@ -405,6 +405,20 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     return _getMargin(portfolio, isInitial, marginScenarios, true);
   }
 
+  /**
+   * @dev Used by the auction contract with cached scenario Id
+   */
+  function getMarginWithData(uint accountId, bool isInitial, uint scenarioId) external view returns (int) {
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
+    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
+    scenarios[0] = marginScenarios[scenarioId];
+    return _getMargin(portfolio, isInitial, scenarios, true);
+  }
+
+  function getMarkToMarket(uint accountId, uint scenarioId) external view returns (int) {
+    // todo: implementation
+  }
+
   /// todo: add logic
   function getSolventAuctionUpperBound(uint accountId) external view returns (int) {}
 

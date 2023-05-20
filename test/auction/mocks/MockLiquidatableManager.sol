@@ -9,6 +9,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
   mapping(uint tradeId => mapping(uint account => uint fee)) mockFeeCharged;
   mapping(uint => mapping(bool => int)) mockMargin;
 
+  mapping(uint => int) mockMarkToMarket;
+
   constructor(address account_) MockManager(account_) {}
 
   function setMockMargin(uint accountId, bool isInitial, int margin) external {
@@ -29,6 +31,18 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   function getMargin(uint accountId, bool isInitial) external view override returns (int) {
     return mockMargin[accountId][isInitial];
+  }
+
+  function getMarginWithData(uint accountId, bool isInitial, uint scenarioId) external view returns (int) {
+    return mockMargin[accountId][isInitial];
+  }
+
+  function getMarkToMarket(uint accountId, uint scenarioId) external view returns (int) {
+    return mockMarkToMarket[accountId];
+  }
+
+  function setMarkToMarket(uint accountId, int markToMarket) external {
+    mockMarkToMarket[accountId] = markToMarket;
   }
 
   function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {}

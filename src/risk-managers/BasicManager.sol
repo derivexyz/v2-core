@@ -535,11 +535,22 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
    * @dev return the margin requirement for an account
    *      if it is negative, it should be compared with cash balance to determine if the account is solvent or not.
    */
-  function getMargin(uint accountId, bool isInitial) external view returns (int) {
+  function getMargin(uint accountId, bool isInitial) public view returns (int) {
     // get portfolio from array of balances
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
     return _getMargin(accountId, portfolio, isInitial);
+  }
+
+  /**
+   * @dev the function used by the auction contract
+   */
+  function getMarginWithData(uint accountId, bool isInitial, uint) external view returns (int) {
+    return getMargin(accountId, isInitial);
+  }
+
+  function getMarkToMarket(uint accountId, uint scenarioId) external view returns (int) {
+    // todo: implementation
   }
 
   /**

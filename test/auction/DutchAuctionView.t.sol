@@ -33,7 +33,7 @@ contract UNIT_DutchAuctionView is Test {
   MockFeeds feed;
 
   DutchAuction dutchAuction;
-  DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 
   uint tokenSubId = 1000;
 
@@ -108,13 +108,13 @@ contract UNIT_DutchAuctionView is Test {
   ///////////
 
   function testGetParams() public {
-    DutchAuction.DutchAuctionParameters memory retParams = dutchAuction.getParameters();
+    IDutchAuction.DutchAuctionParameters memory retParams = dutchAuction.getParameters();
     assertEq(retParams.stepInterval, dutchAuctionParameters.stepInterval);
     assertEq(retParams.lengthOfAuction, dutchAuctionParameters.lengthOfAuction);
 
     // change params
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({
+      IDutchAuction.DutchAuctionParameters({
         stepInterval: 2,
         lengthOfAuction: 200,
         secBetweenSteps: 0,
@@ -132,7 +132,7 @@ contract UNIT_DutchAuctionView is Test {
     // change params
     vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
     dutchAuction.setDutchAuctionParameters(
-      DutchAuction.DutchAuctionParameters({
+      IDutchAuction.DutchAuctionParameters({
         stepInterval: 2,
         lengthOfAuction: 200,
         secBetweenSteps: 0,

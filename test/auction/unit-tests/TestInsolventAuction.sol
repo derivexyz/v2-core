@@ -17,7 +17,7 @@
 //import "forge-std/console2.sol";
 //
 //contract UNIT_TestInvolventAuction is DutchAuctionBase {
-//  DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+//  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 //
 //  uint tokenSubId = 1000;
 //
@@ -26,7 +26,7 @@
 //    setupAccounts();
 //
 //    dutchAuction.setDutchAuctionParameters(
-//      DutchAuction.DutchAuctionParameters({
+//      IDutchAuction.DutchAuctionParameters({
 //        stepInterval: 2,
 //        lengthOfAuction: 200,
 //        secBetweenSteps: 0,
@@ -131,7 +131,7 @@
 //
 //  function testIncreaseStepMax() public {
 //    dutchAuction.setDutchAuctionParameters(
-//      DutchAuction.DutchAuctionParameters({
+//      IDutchAuction.DutchAuctionParameters({
 //        stepInterval: 2,
 //        lengthOfAuction: 2,
 //        liquidatorFeeRate: 0.05e18,
@@ -149,7 +149,7 @@
 //  function testCannotSpamIncrementStep() public {
 //    // change parameters to add cool down
 //    dutchAuction.setDutchAuctionParameters(
-//      DutchAuction.DutchAuctionParameters({
+//      IDutchAuction.DutchAuctionParameters({
 //        stepInterval: 2,
 //        lengthOfAuction: 200,
 //        liquidatorFeeRate: 0.05e18,

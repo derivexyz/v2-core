@@ -306,8 +306,8 @@
 //    optimalUtil = 0.6 * 1e18;
 //  }
 //
-//  function _getDefaultAuctionParam() internal pure returns (DutchAuction.DutchAuctionParameters memory param) {
-//    param = DutchAuction.DutchAuctionParameters({
+//  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.DutchAuctionParameters memory param) {
+//    param = IDutchAuction.DutchAuctionParameters({
 //      stepInterval: 2,
 //      lengthOfAuction: 200,
 //      secBetweenSteps: 1, // cool down

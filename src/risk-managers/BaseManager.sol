@@ -91,16 +91,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ///////////////////
 
   /**
-   * @notice Confirm account is liquidatable and puts up for dutch auction.
-   * @param accountId Account for which to check trade.
-   */
-  function checkAndStartLiquidation(uint accountId) external {
-    liquidation.startAuction(accountId);
-    // todo [Cameron / Dom]: check that account is liquidatable / freeze account / call out to auction contract
-    // todo [Cameron / Dom]: add account Id to send reward for flagging liquidation
-  }
-
-  /**
    * @notice Transfers portion of account to the liquidator.
    *         Transfers cash to the liquidated account.
    * @dev Auction contract can decide to either:

@@ -26,7 +26,7 @@
 //  MockAsset usdcAsset;
 //  MockManager manager;
 //  DutchAuction dutchAuction;
-//  DutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+//  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
 //
 //  uint tokenSubId = 1000;
 //
@@ -62,7 +62,7 @@
 //    dutchAuction =
 //      dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
 //
-//    dutchAuctionParameters = DutchAuction.DutchAuctionParameters({
+//    dutchAuctionParameters = IDutchAuction.DutchAuctionParameters({
 //      stepInterval: 1,
 //      lengthOfAuction: 200,
 //      secBetweenSteps: 0,

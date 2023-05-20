@@ -2,7 +2,41 @@
 pragma solidity ^0.8.18;
 
 interface IDutchAuction {
-  function startAuction(uint accountId) external;
+  struct Auction {
+    /// the accountId that is being liquidated
+    uint accountId;
+    /// scenario ID used to calculate IM or MtM. Ignored for Basic Manager
+    uint scenarioId;
+    /// The upperBound(starting price) of the auction in cash asset
+    int upperBound;
+    /// The lowerBound(ending price) of the auction in cash asset
+    int lowerBound;
+    /// Boolean that will be switched when the auction price passes through 0
+    bool insolvent;
+    /// If an auction is active
+    bool ongoing;
+    /// The startTime of the auction
+    uint startTime;
+    /// The change in value of the portfolio per step in dollars when not insolvent
+    uint dv;
+    /// The current step if the auction is insolvent
+    uint stepInsolvent;
+    /// The timestamp of the last increase of steps for insolvent auction
+    uint lastStepUpdate;
+  }
+
+  struct DutchAuctionParameters {
+    /// Big number, Length of each step in seconds
+    uint stepInterval;
+    /// Big number: Total length of an auction in seconds
+    uint lengthOfAuction;
+    // Number, Amount of time between steps when the auction is insolvent
+    uint secBetweenSteps;
+    // Liquidator fee rate in percentage, 1e18 = 100%
+    uint liquidatorFeeRate;
+  }
+
+  function startAuction(uint accountId, uint scenarioId) external;
 
   ////////////
   // EVENTS //
@@ -26,6 +60,9 @@ interface IDutchAuction {
 
   /// @dev emitted owner is trying to set a bad parameter for auction
   error DA_InvalidParameter();
+
+  /// @dev Cannot stop an ongoing auction
+  error DA_NotOngoingAuction();
 
   /// @dev emitted when someone tries to start an insolvent auction when bidding
   /// has not concluded.
