@@ -31,7 +31,7 @@
 //  MockAsset usdcAsset;
 //  MockManager manager;
 //  DutchAuction dutchAuction;
-//  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+//  IDutchAuction.SolventAuctionParams public dutchAuctionParameters;
 
 //  function setUp() public {
 //    deployMockSystem();
@@ -64,14 +64,14 @@
 //    dutchAuction =
 //      dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
 
-//    dutchAuctionParameters = IDutchAuction.DutchAuctionParameters({
+//    dutchAuctionParameters = IDutchAuction.SolventAuctionParams({
 //      stepInterval: 2,
 //      lengthOfAuction: 200,
 //      secBetweenSteps: 0,
 //      liquidatorFeeRate: 0.05e18
 //    });
 
-//    dutchAuction.setDutchAuctionParameters(dutchAuctionParameters);
+//    dutchAuction.setSolventAuctionParams(dutchAuctionParameters);
 //  }
 
 //  function mintAndDeposit(

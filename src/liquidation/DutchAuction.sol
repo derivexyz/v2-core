@@ -22,19 +22,19 @@ import "lyra-utils/math/IntLib.sol";
  * @author Lyra
  * @notice Is used to liquidate an account that does not meet the margin requirements
  * There are 3 types of auctions:
-  1. SolventFastAuction: 
-       * start on account below maintenance margin, starting bid from 98% of Mtm to 
-         80% of Mtm, within 20 minutes
-       * can be un-flagged if initial margin > 0
-   2. SolventSlowAuction
-       * continue if a solvent fast auction reach the 80% bound. Goes from 80% off MtM to 0.
-         within 12 hours
-       * can be un-flagged if initial margin > 0
-   3. InsolventAuction
-       * start insolvent auction that will be printing the liquidator cash or pay out from 
-       * security module to take out the position
-       * the price of portfolio went from 0 to Initial margin (negative)
-       * can be un-flagged if maintenance margin > 0
+ *   1. SolventFastAuction:
+ * start on account below maintenance margin, starting bid from 98% of Mtm to
+ *          80% of Mtm, within 20 minutes
+ * can be un-flagged if initial margin > 0
+ *    2. SolventSlowAuction
+ * continue if a solvent fast auction reach the 80% bound. Goes from 80% off MtM to 0.
+ *          within 12 hours
+ * can be un-flagged if initial margin > 0
+ *    3. InsolventAuction
+ * start insolvent auction that will be printing the liquidator cash or pay out from
+ * security module to take out the position
+ * the price of portfolio went from 0 to Initial margin (negative)
+ * can be un-flagged if maintenance margin > 0
  */
 contract DutchAuction is IDutchAuction, Ownable2Step {
   using SafeCast for int;
@@ -58,7 +58,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   Accounts public immutable accounts;
 
   /// @dev The parameters for the dutch auction
-  DutchAuctionParameters private parameters;
+  SolventAuctionParams public solventAuctionParams;
+
+  InsolventAuctionParams public insolventAuctionParams;
 
   ////////////////////////
   //    Constructor     //
@@ -75,14 +77,25 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
   /**
    * @notice Sets the dutch Auction Parameters
-   * @dev This function is used to set the parameters for the dutch auction
-   * @param _parameters A struct that contains all the parameters for the dutch auction
+   * @dev This function is used to set the parameters for the fast and slow solvent auctions
+   * @param _params New parameters
    */
-  function setDutchAuctionParameters(DutchAuctionParameters memory _parameters) external onlyOwner {
-    // liquidator fee cannot be higher than 10%
-    if (_parameters.liquidatorFeeRate > 0.1e18) revert DA_InvalidParameter();
+  function setSolventAuctionParams(SolventAuctionParams memory _params) external onlyOwner {
+    if (
+      _params.startingMtMPercentage > 1e18 // cannot start with > 100% of mark to market
+        || _params.liquidatorFeeRate > 0.1e18 // liquidator fee cannot be higher than 10%
+    ) revert DA_InvalidParameter();
 
-    parameters = _parameters;
+    solventAuctionParams = _params;
+  }
+
+  /**
+   * @notice Sets the insolvent auction parameters
+   * @dev This function is used to set the parameters for the dutch auction
+   * @param _params New parameters
+   */
+  function setInsolventAuctionParams(InsolventAuctionParams memory _params) external onlyOwner {
+    insolventAuctionParams = _params;
   }
 
   /**
@@ -92,7 +105,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param scenarioId id to compute the IM with for PMRM, ignored for basic manager
    */
   function startAuction(uint accountId, uint scenarioId) external {
-    if (getMaintenanceMarginForAccount(accountId) >= 0) {
+    // todo: settle interest rate?
+
+    if (_getMaintenanceMargin(accountId, scenarioId) >= 0) {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
 
@@ -100,13 +115,18 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_AuctionAlreadyStarted(accountId);
     }
 
-    int upperBound = _getVUpper(accountId, scenarioId);
+    (int upperBound, int markToMarket) = _getVUpperAndMtM(accountId, scenarioId);
     if (upperBound > 0) {
       // solvent auction goes from upper bound -> 0
+
+      // charge the account a fee to security module
+      uint fee = _getLiquidationFee(accountId, scenarioId, markToMarket);
+      //todo: charge fee
+
       _startSolventAuction(accountId, scenarioId, upperBound);
     } else {
       // insolvent auction start from 0 -> initial margin (negative number)
-      int lowerBound = _getVLower(accountId, scenarioId);
+      int lowerBound = _getInitialMargin(accountId, scenarioId);
       _startInsolventAuction(accountId, scenarioId, lowerBound);
     }
   }
@@ -114,7 +134,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /**
    * @notice Function used to begin insolvency logic for an auction that started as solvent
    * @dev This function can only be called on auctions that has already started as solvent
-   * @param accountId the bytesId that corresponds to the auction being marked as liquidatable
+   * @param accountId the accountID being liquidated
    */
   function convertToInsolventAuction(uint accountId) external {
     // getCurrentBidPrice will revert if there is no auction for accountId going on
@@ -127,7 +147,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     uint scenarioId = auctions[accountId].scenarioId;
 
-    int lowerBound = _getVLower(accountId, scenarioId);
+    // lower bound of insolvent auction is initial margin (negative)
+    int lowerBound = _getInitialMargin(accountId, scenarioId);
 
     auctions[accountId].lastStepUpdate = block.timestamp;
     _startInsolventAuction(accountId, scenarioId, lowerBound);
@@ -139,7 +160,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId Account ID of the liquidated account
    * @param bidderId Account ID of bidder, must be owned by msg.sender
    * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
-   * @return finalPercentage Actual percentage liquidated
+   * @return finalPercentage percentage of portfolio being liquidated
    * @return cashFromBidder Amount of cash paid from bidder to liquidated account
    * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
    * @return fee Amount of cash paid from bidder to security module
@@ -182,21 +203,31 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       }
     } else {
       // if the account is solvent, the bidder pays the account for a portion of the account
-      uint p_max = _getMaxProportion(accountId);
-      finalPercentage = percentOfAccount > p_max ? p_max : percentOfAccount;
-      // bid price == 0 means auction has ended
       int bidPrice = _getCurrentBidPrice(accountId);
+
+      uint scenarioId = auctions[accountId].scenarioId;
+
       if (bidPrice == 0) revert DA_SolventAuctionEnded();
+
+      // MtM is expected to be negative
+      int markToMarket = _getMarkToMarket(accountId, scenarioId);
+
+      // todo: get discount
+      uint discount = 1e18;
+
+      // calculate tha max proportion of the portfolio that can be liquidated
+      uint pMax = _getMaxProportion(accountId, scenarioId, markToMarket, discount); // discount
+
+      finalPercentage = percentOfAccount > pMax ? pMax : percentOfAccount;
+
       cashFromBidder = bidPrice.toUint256().multiplyDecimal(finalPercentage); // bid * f_max
     }
 
     // risk manager transfers portion of the account to the bidder
     // liquidator pays "cashFromLiquidator" to accountId
-    // liquidator pays "fee" to security module
-    fee = cashFromBidder.multiplyDecimal(parameters.liquidatorFeeRate);
-    riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
+    riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder);
 
-    emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, fee);
+    emit Bid(accountId, bidderId, finalPercentage, cashFromBidder);
 
     // terminating the auction if the account is back above water
     if (checkCanTerminateAuction(accountId)) {
@@ -212,10 +243,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function checkCanTerminateAuction(uint accountId) public view returns (bool) {
     if (!auctions[accountId].ongoing) revert DA_NotOngoingAuction();
-    if (auctions[accountId].insolvent) {
-      int mm = getMaintenanceMarginForAccount(accountId);
-    } else {
 
+    if (auctions[accountId].insolvent) {
+      int mm = _getMaintenanceMargin(accountId, auctions[accountId].scenarioId);
+      return mm > 0;
+    } else {
+      int im = _getInitialMargin(accountId, auctions[accountId].scenarioId);
+      return im > 0;
     }
   }
 
@@ -234,16 +268,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev Helper to get maintenance margin for an accountId
    */
   function getMaintenanceMarginForAccount(uint accountId) public view returns (int) {
-    
     return -10e18;
-  }
-
-  /**
-   * @dev Helper to get initial margin for an accountId
-   */
-  function getInitMarginForAccount(uint accountId) public view returns (int) {
-    // TODO: generalise call to get "InitMargin"
-    return -20e18;
   }
 
   /**
@@ -270,14 +295,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
 
     uint lastIncrement = auction.lastStepUpdate;
-    if (block.timestamp < lastIncrement + parameters.secBetweenSteps && lastIncrement != 0) {
-      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, block.timestamp + parameters.secBetweenSteps);
+    if (block.timestamp < lastIncrement + insolventAuctionParams.coolDown && lastIncrement != 0) {
+      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, lastIncrement + insolventAuctionParams.coolDown);
     }
 
     uint newStep = ++auction.stepInsolvent;
-    if (newStep * parameters.stepInterval > parameters.lengthOfAuction) {
-      revert DA_MaxStepReachedInsolventAuction();
-    }
+    if (newStep > insolventAuctionParams.totalSteps) revert DA_MaxStepReachedInsolventAuction();
 
     auction.lastStepUpdate = block.timestamp;
 
@@ -299,34 +322,39 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function getMaxProportion(uint accountId) external view returns (uint) {
-    return _getMaxProportion(accountId);
+  function getMaxProportion(uint accountId, uint scenarioId) external view returns (uint) {
+    int markToMarket = _getMarkToMarket(accountId, scenarioId);
+
+    uint discount = 0; //getDiscount;
+
+    return _getMaxProportion(accountId, auctions[accountId].scenarioId, markToMarket, discount);
+  }
+
+  /**
+   * @dev get the fee that should be transferred to the security module
+   */
+  function _getLiquidationFee(uint accountId, uint scenarioId, int markToMarket) internal view returns (uint fee) {
+    uint maxProportion = _getMaxProportion(accountId, scenarioId, markToMarket, 1e18);
+
+    fee =
+      maxProportion.multiplyDecimal(IntLib.abs(markToMarket)).multiplyDecimal(solventAuctionParams.liquidatorFeeRate);
   }
 
   /**
    * @notice gets the upper bound for the liquidation price. This should be a static discount of market to market
    */
-  function getVUpper(uint accountId, uint scenarioId) external view returns (int) {
-    return _getVUpper(accountId, scenarioId);
+  function getVUpperAndMtM(uint accountId, uint scenarioId) external view returns (int, int) {
+    return _getVUpperAndMtM(accountId, scenarioId);
   }
 
   /**
    * @notice gets the current bid price for a particular auction at the current block
    * @dev returns the current bid price for a particular auction
-   * @param accountId the bytes32 id of an auctionId
+   * @param accountId Id of account being liquidated
    * @return int the current bid price for the auction
    */
   function getCurrentBidPrice(uint accountId) external view returns (int) {
     return _getCurrentBidPrice(accountId);
-  }
-
-  /**
-   * @notice gets the parameters for the dutch auction
-   * @dev returns the parameters for the dutch auction
-   * @return DutchAuctionParameters the parameters for the dutch auction
-   */
-  function getParameters() external view returns (DutchAuctionParameters memory) {
-    return parameters;
   }
 
   ///////////////
@@ -335,22 +363,28 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
   /**
    * @notice Gets the maximum size of the portfolio that could be bought at the current price
+   * @dev assuming negative IM and MtM, the formula for max portion is:
+   *
+   *                        IM
+   *    f = ----------------------------------
+   *         IM - MtM * discount_percentage
+   *
+   *
    * @param accountId the id of the account being liquidated
+   * @param discountPercentage the discount percentage of MtM the auction is offering at (dropping from 98% to 0%)
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function _getMaxProportion(uint accountId) internal view returns (uint) {
-    int initialMargin = getInitMarginForAccount(accountId);
-    int currentBidPrice = _getCurrentBidPrice(accountId);
+  function _getMaxProportion(uint accountId, uint scenarioId, int markToMarket, uint discountPercentage)
+    internal
+    view
+    returns (uint)
+  {
+    // IM is expected to be negative
+    int initialMargin = _getInitialMargin(accountId, scenarioId);
 
-    if (currentBidPrice <= 0) {
-      return DecimalMath.UNIT;
-    }
+    int denominator = initialMargin - markToMarket * int(discountPercentage);
 
-    // IM is always negative under the margining system.
-    int pMax = (initialMargin * 1e18) / (initialMargin - currentBidPrice); // needs to return big number, how to do this with ints.
-
-    // commented out if statement to hit coverage don't have a test that hits it.
-    return pMax.toUint256();
+    return initialMargin.divideDecimal(denominator).toUint256();
   }
 
   /**
@@ -361,7 +395,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function _startSolventAuction(uint accountId, uint scenarioId, int upperBound) internal {
     // this function will revert if upper bound is somehow negative
-    uint dv = upperBound.toUint256() / parameters.lengthOfAuction; // as the auction starts in the positive, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
       accountId: accountId,
@@ -369,11 +402,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       insolvent: false,
       ongoing: true,
       startTime: block.timestamp,
-      dv: dv,
+      dv: 0, // ?? todo
       stepInsolvent: 0,
       lastStepUpdate: 0,
-      upperBound: upperBound,
-      lowerBound: 0
+      upperBound: upperBound
     });
 
     emit AuctionStarted(accountId, upperBound, 0, block.timestamp, false);
@@ -386,7 +418,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId the id of the account that is being liquidated
    */
   function _startInsolventAuction(uint accountId, uint scenarioId, int lowerBound) internal {
-    uint dv = IntLib.abs(lowerBound) / parameters.lengthOfAuction;
+    // decrease value every step
+    uint dv = IntLib.abs(lowerBound) / insolventAuctionParams.totalSteps;
 
     auctions[accountId] = Auction({
       accountId: accountId,
@@ -397,26 +430,52 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       dv: dv,
       stepInsolvent: 0,
       lastStepUpdate: 0,
-      upperBound: 0,
-      lowerBound: lowerBound
+      upperBound: 0
     });
     emit AuctionStarted(accountId, 0, lowerBound, block.timestamp, true);
+  }
+
+  function _getDiscountPercentage(uint startTimestamp, uint currentTimestamp) internal view returns (uint) {
+    // todo: impl
+    return 0.8e18;
   }
 
   /**
    * @dev get the upper bound of a solvent auction, which is the mark to market value of a portfolio
    */
-  function _getVUpper(uint accountId, uint scenarioId) internal view returns (int vUpper) {
+  function _getVUpperAndMtM(uint accountId, uint scenarioId) internal view returns (int vUpper, int markToMarket) {
     address manager = address(accounts.manager(accountId));
-    
+    markToMarket = _getMarkToMarket(accountId, scenarioId);
+    vUpper = markToMarket.multiplyDecimal(int64(solventAuctionParams.startingMtMPercentage));
   }
 
   /**
-   * @dev get the lower bound of a solvent auction, which is the initial margin of a portfolio
+   * @notice get the mark to market of an account from the account's manager.
+   * @dev scenarioId will be ignored for basic manager
    */
-  function _getVLower(uint accountId, uint scenarioId) internal view returns (int vLower) {
+  function _getMarkToMarket(uint accountId, uint scenarioId) internal view returns (int markToMarket) {
     address manager = address(accounts.manager(accountId));
-    
+    markToMarket = ILiquidatableManager(manager).getMarkToMarket(accountId, scenarioId);
+  }
+
+  /**
+   * @notice get the initial margin of an account from the account's manager.
+   * @dev scenarioId will be ignored for basic manager
+   */
+  function _getInitialMargin(uint accountId, uint scenarioId) internal view returns (int vLower) {
+    address manager = address(accounts.manager(accountId));
+
+    vLower = ILiquidatableManager(manager).getMarginWithData(accountId, true, scenarioId);
+  }
+
+  /**
+   * @notice get the maintenance margin of an account from the account's manager
+   * @dev scenarioId will be ignored for basic manager
+   */
+  function _getMaintenanceMargin(uint accountId, uint scenarioId) internal view returns (int vLower) {
+    address manager = address(accounts.manager(accountId));
+
+    vLower = ILiquidatableManager(manager).getMarginWithData(accountId, false, scenarioId);
   }
 
   /**
@@ -427,9 +486,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function _getCurrentBidPrice(uint accountId) internal view returns (int) {
     Auction memory auction = auctions[accountId];
-    if (!auction.ongoing) {
-      revert DA_AuctionNotStarted(accountId);
-    }
+
+    if (!auction.ongoing) revert DA_AuctionNotStarted(accountId);
 
     if (auction.insolvent) {
       // @invariant: if insolvent, bids should always be negative
@@ -437,13 +495,15 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       return 0 - (auction.dv * numSteps).toInt256();
     } else {
       // @invariant: if solvent, bids should always be positive
-      if (block.timestamp > auction.startTime + parameters.lengthOfAuction) {
+      uint totalLength = solventAuctionParams.fastAuctionLength + solventAuctionParams.slowAuctionLength;
+      if (block.timestamp > auction.startTime + totalLength) {
         return 0;
       }
 
-      int upperBound = auction.upperBound;
-      int bidPrice =
-        upperBound - (int(auction.dv) * int(block.timestamp - auction.startTime)) / int(parameters.stepInterval);
+      // calculate discount percentage
+      uint discount = _getDiscountPercentage(auction.startTime, block.timestamp); //getDiscount;
+
+      int bidPrice = auction.upperBound.multiplyDecimal(int(discount));
       return bidPrice;
     }
   }

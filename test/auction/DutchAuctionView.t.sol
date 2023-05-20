@@ -33,7 +33,7 @@ contract UNIT_DutchAuctionView is Test {
   MockFeeds feed;
 
   DutchAuction dutchAuction;
-  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+  IDutchAuction.SolventAuctionParams public dutchAuctionParameters;
 
   uint tokenSubId = 1000;
 
@@ -108,13 +108,14 @@ contract UNIT_DutchAuctionView is Test {
   ///////////
 
   function testGetParams() public {
-    IDutchAuction.DutchAuctionParameters memory retParams = dutchAuction.getParameters();
+    IDutchAuction.SolventAuctionParams memory retParams = dutchAuction.solventAuctionParams();
     assertEq(retParams.stepInterval, dutchAuctionParameters.stepInterval);
     assertEq(retParams.lengthOfAuction, dutchAuctionParameters.lengthOfAuction);
 
     // change params
-    dutchAuction.setDutchAuctionParameters(
-      IDutchAuction.DutchAuctionParameters({
+    dutchAuction.setSolventAuctionParams(
+      IDutchAuction.SolventAuctionParams({
+        startingMtMPercentage: 0.98e18,
         stepInterval: 2,
         lengthOfAuction: 200,
         secBetweenSteps: 0,
@@ -123,7 +124,7 @@ contract UNIT_DutchAuctionView is Test {
     );
 
     // check if params changed
-    retParams = dutchAuction.getParameters();
+    retParams = dutchAuction.solventAuctionParams();
     assertEq(retParams.stepInterval, 2);
     assertEq(retParams.lengthOfAuction, 200);
   }
@@ -131,12 +132,24 @@ contract UNIT_DutchAuctionView is Test {
   function testCannotSetInvalidParameter() public {
     // change params
     vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
-    dutchAuction.setDutchAuctionParameters(
-      IDutchAuction.DutchAuctionParameters({
+    dutchAuction.setSolventAuctionParams(
+      IDutchAuction.SolventAuctionParams({
+        startingMtMPercentage: 0.98e18,
         stepInterval: 2,
         lengthOfAuction: 200,
         secBetweenSteps: 0,
         liquidatorFeeRate: 0.11e18 // invalid fee rate
+      })
+    );
+
+    vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
+    dutchAuction.setSolventAuctionParams(
+      IDutchAuction.SolventAuctionParams({
+        startingMtMPercentage: 1.01e18, // invalid mtm percentage
+        stepInterval: 2,
+        lengthOfAuction: 200,
+        secBetweenSteps: 0,
+        liquidatorFeeRate: 0.01e18
       })
     );
   }

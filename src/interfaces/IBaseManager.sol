@@ -20,7 +20,7 @@ interface IBaseManager is IManager {
 
   function feeCharged(uint tradeId, uint account) external view returns (uint);
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee) external;
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external;
 
   // bad action
   error BN_InvalidAction();

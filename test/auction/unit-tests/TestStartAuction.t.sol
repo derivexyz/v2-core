@@ -26,7 +26,7 @@
 //  MockAsset usdcAsset;
 //  MockManager manager;
 //  DutchAuction dutchAuction;
-//  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+//  IDutchAuction.SolventAuctionParams public dutchAuctionParameters;
 //
 //  uint tokenSubId = 1000;
 //
@@ -62,14 +62,14 @@
 //    dutchAuction =
 //      dutchAuction = new DutchAuction(manager, account, ISecurityModule(address(0)), ICashAsset(address(0)));
 //
-//    dutchAuctionParameters = IDutchAuction.DutchAuctionParameters({
+//    dutchAuctionParameters = IDutchAuction.SolventAuctionParams({
 //      stepInterval: 1,
 //      lengthOfAuction: 200,
 //      secBetweenSteps: 0,
 //      liquidatorFeeRate: 0.05e18
 //    });
 //
-//    dutchAuction.setDutchAuctionParameters(dutchAuctionParameters);
+//    dutchAuction.setSolventAuctionParams(dutchAuctionParameters);
 //  }
 //
 //  function mintAndDeposit(

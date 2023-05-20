@@ -60,7 +60,7 @@ contract BaseManagerTester is BaseManager {
     bytes memory
   ) public {}
 
-  function getMargin(uint, bool ) external view returns (int) {}
+  function getMargin(uint, bool) external view returns (int) {}
 
   function getMarginWithData(uint, bool, uint) external view returns (int) {}
 

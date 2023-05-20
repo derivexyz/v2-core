@@ -17,7 +17,7 @@
 //import "forge-std/console2.sol";
 //
 //contract UNIT_TestInvolventAuction is DutchAuctionBase {
-//  IDutchAuction.DutchAuctionParameters public dutchAuctionParameters;
+//  IDutchAuction.SolventAuctionParams public dutchAuctionParameters;
 //
 //  uint tokenSubId = 1000;
 //
@@ -25,8 +25,8 @@
 //    deployMockSystem();
 //    setupAccounts();
 //
-//    dutchAuction.setDutchAuctionParameters(
-//      IDutchAuction.DutchAuctionParameters({
+//    dutchAuction.setSolventAuctionParams(
+//      IDutchAuction.SolventAuctionParams({
 //        stepInterval: 2,
 //        lengthOfAuction: 200,
 //        secBetweenSteps: 0,
@@ -130,8 +130,8 @@
 //  }
 //
 //  function testIncreaseStepMax() public {
-//    dutchAuction.setDutchAuctionParameters(
-//      IDutchAuction.DutchAuctionParameters({
+//    dutchAuction.setSolventAuctionParams(
+//      IDutchAuction.SolventAuctionParams({
 //        stepInterval: 2,
 //        lengthOfAuction: 2,
 //        liquidatorFeeRate: 0.05e18,
@@ -148,8 +148,8 @@
 //
 //  function testCannotSpamIncrementStep() public {
 //    // change parameters to add cool down
-//    dutchAuction.setDutchAuctionParameters(
-//      IDutchAuction.DutchAuctionParameters({
+//    dutchAuction.setSolventAuctionParams(
+//      IDutchAuction.SolventAuctionParams({
 //        stepInterval: 2,
 //        lengthOfAuction: 200,
 //        liquidatorFeeRate: 0.05e18,
@@ -164,7 +164,7 @@
 //      abi.encodeWithSelector(
 //        IDutchAuction.DA_CannotStepBeforeCoolDownEnds.selector,
 //        block.timestamp,
-//        block.timestamp + dutchAuction.getParameters().secBetweenSteps
+//        block.timestamp + dutchAuction.insolventAuctionParams().secBetweenSteps
 //      )
 //    );
 //    dutchAuction.continueInsolventAuction(aliceAcc);

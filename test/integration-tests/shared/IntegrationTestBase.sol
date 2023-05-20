@@ -147,7 +147,7 @@
 //    pmrm.setFeeRecipient(pmrmFeeAcc);
 //
 //    // set parameter for auction
-//    auction.setDutchAuctionParameters(_getDefaultAuctionParam());
+//    auction.setSolventAuctionParams(_getDefaultAuctionParam());
 //
 //    // allow liquidation to request payout from sm
 //    securityModule.setWhitelistModule(address(auction), true);
@@ -306,8 +306,8 @@
 //    optimalUtil = 0.6 * 1e18;
 //  }
 //
-//  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.DutchAuctionParameters memory param) {
-//    param = IDutchAuction.DutchAuctionParameters({
+//  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.SolventAuctionParams memory param) {
+//    param = IDutchAuction.SolventAuctionParams({
 //      stepInterval: 2,
 //      lengthOfAuction: 200,
 //      secBetweenSteps: 1, // cool down

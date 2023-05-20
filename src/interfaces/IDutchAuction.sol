@@ -9,8 +9,6 @@ interface IDutchAuction {
     uint scenarioId;
     /// The upperBound(starting price) of the auction in cash asset
     int upperBound;
-    /// The lowerBound(ending price) of the auction in cash asset
-    int lowerBound;
     /// Boolean that will be switched when the auction price passes through 0
     bool insolvent;
     /// If an auction is active
@@ -25,15 +23,24 @@ interface IDutchAuction {
     uint lastStepUpdate;
   }
 
-  struct DutchAuctionParameters {
-    /// Big number, Length of each step in seconds
-    uint stepInterval;
-    /// Big number: Total length of an auction in seconds
-    uint lengthOfAuction;
-    // Number, Amount of time between steps when the auction is insolvent
-    uint secBetweenSteps;
+  struct SolventAuctionParams {
+    /// Starting percentage of MtM. 1e18 is 100%
+    uint64 startingMtMPercentage;
+    /// Fast auction length in seconds
+    uint32 fastAuctionLength;
+    /// Slow auction length in seconds
+    uint32 slowAuctionLength;
     // Liquidator fee rate in percentage, 1e18 = 100%
-    uint liquidatorFeeRate;
+    uint64 liquidatorFeeRate;
+  }
+
+  struct InsolventAuctionParams {
+    /// total seconds
+    uint32 totalSteps;
+    /// Length of each step in seconds
+    uint32 stepInterval;
+    // Amount of seconds to go to next step
+    uint32 coolDown;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
@@ -46,7 +53,7 @@ interface IDutchAuction {
   event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime, bool insolvent);
 
   // emitted when a bid is placed
-  event Bid(uint accountId, uint bidderId, uint percentagePortfolio, uint cash, uint fee);
+  event Bid(uint accountId, uint bidderId, uint percentagePortfolio, uint cash);
 
   // emitted when an auction results in insolvency
   event Insolvent(uint accountId);
