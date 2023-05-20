@@ -73,7 +73,7 @@ interface IPMRM {
   }
 
   struct PortfolioExpiryData {
-    uint expiry;
+    uint64 expiry;
     uint optionCount;
   }
 

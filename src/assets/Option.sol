@@ -114,7 +114,7 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
-    uint settlementPrice = settlementFeed.getSettlementPrice(expiry);
+    uint settlementPrice = settlementFeed.getSettlementPrice(uint64(expiry));
 
     // Return false if settlement price has not been locked in
     if (settlementPrice == 0) {

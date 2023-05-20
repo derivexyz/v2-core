@@ -56,11 +56,11 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   // IForwardFeed
 
-  function getForwardPrice(uint expiry) external view returns (uint forwardPrice, uint confidence) {
+  function getForwardPrice(uint64 expiry) external view returns (uint forwardPrice, uint confidence) {
     return (forwardPrices[expiry], forwardPriceConfidences[expiry]);
   }
 
-  function getForwardPricePortions(uint expiry)
+  function getForwardPricePortions(uint64 expiry)
     external
     view
     returns (uint forwardFixedPortion, uint forwardVariablePortion, uint confidence)
@@ -70,7 +70,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   // ISettlementPrice
 
-  function getSettlementPrice(uint expiry) external view returns (uint) {
+  function getSettlementPrice(uint64 expiry) external view returns (uint) {
     return settlementPrice[expiry];
   }
 
@@ -81,7 +81,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   }
 
   // IInterestRateFeed
-  function getInterestRate(uint expiry) external view returns (int64 interestRate, uint64 confidence) {
+  function getInterestRate(uint64 expiry) external view returns (int64 interestRate, uint64 confidence) {
     return (interestRates[expiry], interestRateConfidences[expiry]);
   }
 }

@@ -186,7 +186,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       if (oi <= oiBefore) continue;
 
       (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
-      (uint forwardPrice,) = forwardFeed.getForwardPrice(expiry);
+      (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
       fee += assetDeltas[i].delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
     }
 

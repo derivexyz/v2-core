@@ -112,6 +112,10 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
     // ignore if timestamp is lower than current
     if (volData.timestamp <= volDetails[volData.expiry].timestamp) return;
 
+    if (volData.timestamp > volData.expiry) {
+      revert LVF_InvalidVolDataTimestamp();
+    }
+
     // update spot price
     VolDetails memory newVolDetails = VolDetails({
       SVI_a: volData.SVI_a,

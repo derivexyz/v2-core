@@ -36,6 +36,7 @@ interface ILyraVolFeed {
   //       Errors       //
   ////////////////////////
   error LVF_MissingExpiryData();
+  error LVF_InvalidVolDataTimestamp();
 
   ////////////////////////
   //       Events       //
