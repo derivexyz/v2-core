@@ -405,6 +405,12 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     return _getMargin(portfolio, isInitial, marginScenarios, true);
   }
 
+  /// todo: add logic
+  function getSolventAuctionUpperBound(uint accountId) external view returns (int) {}
+
+  /// todo: add logic
+  function getInsolventAuctionLowerBound(uint accountId) external view returns (int) {}
+
   /**
    * @notice can be called by anyone to settle a perp asset in an account
    */

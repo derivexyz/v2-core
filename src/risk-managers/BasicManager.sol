@@ -542,6 +542,10 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     return _getMargin(accountId, portfolio, isInitial);
   }
 
+  /**
+   * @dev return the isolated margin for a single option position
+   * @return negative number, indicate margin requirement for a position
+   */
   function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
     external
     view
@@ -551,6 +555,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     int forwardPrice = _getForwardPrice(marketId, expiry);
     return _getIsolatedMargin(marketId, expiry, strike, isCall, balance, indexPrice, forwardPrice, isInitial);
   }
+
+  /// todo: add logic
+  function getSolventAuctionUpperBound(uint accountId) external view returns (int) {}
+
+  /// todo: add logic
+  function getInsolventAuctionLowerBound(uint accountId) external view returns (int) {}
 
   /**
    * @dev Count how many market the user has

@@ -133,8 +133,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       int lowerBound = -1000e18;
       _startInsolventAuction(lowerBound, accountId);
     }
-
-    emit AuctionStarted(accountId, upperBound, lowerBound, block.timestamp, auctions[accountId].insolvent);
   }
 
   /**
@@ -151,8 +149,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_AuctionAlreadyInInsolvencyMode(accountId);
     }
 
-    // todo[Anton]: refactor the logic here so that we don't need to recalculate upper bound
-    (, int lowerBound) = _getBounds(accountId);
+    int lowerBound = _getVLower(accountId);
 
     auctions[accountId].lastStepUpdate = block.timestamp;
     _startInsolventAuction(lowerBound, accountId);
@@ -395,6 +392,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       upperBound: upperBound,
       lowerBound: 0
     });
+
+    emit AuctionStarted(accountId, upperBound, 0, block.timestamp, false);
   }
 
   /**
@@ -405,7 +404,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function _startInsolventAuction(int lowerBound, uint accountId) internal {
     uint dv = IntLib.abs(lowerBound) / parameters.lengthOfAuction;
-    // as the auction starts in the negative, recalculate when insolvency occurs
 
     auctions[accountId] = Auction({
       accountId: accountId,
@@ -418,26 +416,17 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       upperBound: 0,
       lowerBound: lowerBound
     });
-    emit Insolvent(accountId);
+    emit AuctionStarted(accountId, 0, lowerBound, block.timestamp, true);
   }
 
-  function _getVUpper() internal view returns (uint vUpper) {
-    int marketToMarket = 0;
-    // apply scaler to market to market
+  function _getVUpper(uint accountId) internal view returns (int vUpper) {
+    address manager = address(accounts.manager(accountId));
+    vUpper = ILiquidatableManager(manager).getSolventAuctionUpperBound(accountId);
   }
 
-  /**
-   * @notice gets the upper bound for the liquidation price
-   * @dev requires the accountId and the spot price to mark each asset at a particular value
-   * @dev vUpper = IM(P'), while P' being the inversed portfolio
-   * @dev vLower = IM(P)
-   * @param accountId the accountId of the account that is being liquidated
-   */
-  function _getBounds(uint accountId) internal view returns (int upperBound, int lowerBound) {
-    // TODO: get bounds
-
-    upperBound = type(int).max;
-    lowerBound = type(int).min;
+  function _getVLower(uint accountId) internal view returns (int vLower) {
+    address manager = address(accounts.manager(accountId));
+    vLower = ILiquidatableManager(manager).getInsolventAuctionLowerBound(accountId);
   }
 
   /**

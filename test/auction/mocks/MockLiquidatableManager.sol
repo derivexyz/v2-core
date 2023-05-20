@@ -33,6 +33,10 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {}
 
+  function getSolventAuctionUpperBound(uint accountId) external view returns (int) {}
+
+  function getInsolventAuctionLowerBound(uint accountId) external view returns (int) {}
+
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public override {}
 }

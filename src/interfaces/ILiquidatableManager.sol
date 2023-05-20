@@ -15,4 +15,8 @@ interface ILiquidatableManager is IBaseManager {
    * @dev get initial margin or maintenance margin
    */
   function getMargin(uint accountId, bool isInitial) external view returns (int);
+
+  function getSolventAuctionUpperBound(uint accountId) external view returns (int);
+
+  function getInsolventAuctionLowerBound(uint accountId) external view returns (int);
 }
