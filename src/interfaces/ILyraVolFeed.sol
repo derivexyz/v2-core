@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 interface ILyraVolFeed {
   struct VolData {
     uint64 expiry;
-    // price data
+    // TODO: limit the vol data size
     int SVI_a;
     uint SVI_b;
     int SVI_rho;
@@ -36,6 +36,7 @@ interface ILyraVolFeed {
   //       Errors       //
   ////////////////////////
   error LVF_MissingExpiryData();
+  error LVF_InvalidVolDataTimestamp();
 
   ////////////////////////
   //       Events       //

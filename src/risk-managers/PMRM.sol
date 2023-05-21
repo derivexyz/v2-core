@@ -296,7 +296,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
           if (seenExpiries == MAX_EXPIRIES) {
             revert PMRM_TooManyExpiries();
           }
-          expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: optionExpiry, optionCount: 1});
+          expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: uint64(optionExpiry), optionCount: 1});
         }
       }
     }
@@ -318,9 +318,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       uint minConfidence = UintLib.min(fwdConfidence, rateConfidence);
       minConfidence = UintLib.min(portfolio.minConfidence, minConfidence);
 
-      uint secToExpiry = expiryCount[i].expiry - block.timestamp;
+      uint64 secToExpiry = expiryCount[i].expiry - uint64(block.timestamp);
       portfolio.expiries[i] = ExpiryHoldings({
-        secToExpiry: secToExpiry.toUint64(),
+        secToExpiry: secToExpiry,
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardFixedPortion: forwardFixedPortion,
         forwardVariablePortion: forwardVariablePortion,

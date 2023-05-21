@@ -12,8 +12,8 @@ interface IForwardFeed {
    * @notice Gets forward price for a particular asset
    * @param expiry Forward expiry to query
    */
-  function getForwardPrice(uint expiry) external view returns (uint forwardPrice, uint confidence);
-  function getForwardPricePortions(uint expiry)
+  function getForwardPrice(uint64 expiry) external view returns (uint forwardPrice, uint confidence);
+  function getForwardPricePortions(uint64 expiry)
     external
     view
     returns (uint forwardFixedPortion, uint forwardVariablePortion, uint confidence);

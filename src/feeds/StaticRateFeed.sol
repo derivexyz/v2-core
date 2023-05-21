@@ -9,7 +9,7 @@ contract StaticInterestRateFeed is Ownable2Step, IInterestRateFeed {
     emit InterestRateSet(interestRate, 1e18);
   }
 
-  function getInterestRate(uint /* expiry */ ) external view override returns (int64, uint64) {
+  function getInterestRate(uint64 /* expiry */ ) external view override returns (int64, uint64) {
     return (interestRate, 1e18);
   }
 }

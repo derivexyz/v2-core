@@ -702,7 +702,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
    * @dev return the forward price for a specific market and expiry timestamp
    */
   function _getForwardPrice(uint marketId, uint expiry) internal view returns (int) {
-    (uint fwdPrice,) = forwardFeeds[marketId].getForwardPrice(expiry);
+    (uint fwdPrice,) = forwardFeeds[marketId].getForwardPrice(uint64(expiry));
     if (fwdPrice == 0) revert BM_NoForwardPrice();
     return fwdPrice.toInt256();
   }

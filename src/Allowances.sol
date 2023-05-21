@@ -8,9 +8,9 @@ import {IAllowances} from "src/interfaces/IAllowances.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 
 /**
- * @title Allowacne
+ * @title Allowance
  * @author Lyra
- * @notice Allow more granular alloance setting, supposed to be used by Account
+ * @notice Allow more granular allowance setting, supposed to be used by Account
  */
 contract Allowances is IAllowances {
   using IntLib for int;
