@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../DutchAuctionBase.sol";
+import "./DutchAuctionBase.sol";
 import "forge-std/console2.sol";
 //
 
