@@ -126,29 +126,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice Function used to begin insolvency logic for an auction that started as solvent
-   * @dev This function can only be called on auctions that has already started as solvent
-   * @param accountId the accountID being liquidated
-   */
-  function convertToInsolventAuction(uint accountId) external {
-    // getCurrentBidPrice will revert if there is no auction for accountId going on
-    if (_getCurrentBidPrice(accountId) > 0) {
-      revert DA_AuctionNotEnteredInsolvency(accountId);
-    }
-    if (auctions[accountId].insolvent) {
-      revert DA_AuctionAlreadyInInsolvencyMode(accountId);
-    }
-
-    uint scenarioId = auctions[accountId].scenarioId;
-
-    // lower bound of insolvent auction is initial margin (negative)
-    int lowerBound = _getInitialMargin(accountId, scenarioId);
-
-    auctions[accountId].lastStepUpdate = block.timestamp;
-    _startInsolventAuction(accountId, scenarioId, lowerBound);
-  }
-
-  /**
    * @notice a user submits a bid for a particular auction
    * @dev Takes in the auction and returns the account id
    * @param accountId Account ID of the liquidated account
@@ -231,30 +208,26 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice Return true if an auction can be terminated (back above water)
-   * @dev for solvent auction: if IM > 0
-   * @dev for insolvent auction: if MM > 0
-   * @param accountId ID of the account to check
+   * @notice Function used to begin insolvency logic for an auction that started as solvent
+   * @dev This function can only be called on auctions that has already started as solvent
+   * @param accountId the accountID being liquidated
    */
-  function checkCanTerminateAuction(uint accountId) public view returns (bool) {
-    if (!auctions[accountId].ongoing) revert DA_NotOngoingAuction();
-
-    if (auctions[accountId].insolvent) {
-      int mm = _getMaintenanceMargin(accountId, auctions[accountId].scenarioId);
-      return mm > 0;
-    } else {
-      int im = _getInitialMargin(accountId, auctions[accountId].scenarioId);
-      return im > 0;
+  function convertToInsolventAuction(uint accountId) external {
+    // getCurrentBidPrice will revert if there is no auction for accountId going on
+    if (_getCurrentBidPrice(accountId) > 0) {
+      revert DA_AuctionNotEnteredInsolvency(accountId);
     }
-  }
+    if (auctions[accountId].insolvent) {
+      revert DA_AuctionAlreadyInInsolvencyMode(accountId);
+    }
 
-  /**
-   * @notice returns the details of an ongoing auction
-   * @param accountId the id of the auction that is being queried
-   * @return Auction returns the struct of the auction details
-   */
-  function getAuction(uint accountId) external view returns (Auction memory) {
-    return auctions[accountId];
+    uint scenarioId = auctions[accountId].scenarioId;
+
+    // lower bound of insolvent auction is initial margin (negative)
+    int lowerBound = _getInitialMargin(accountId, scenarioId);
+
+    auctions[accountId].lastStepUpdate = block.timestamp;
+    _startInsolventAuction(accountId, scenarioId, lowerBound);
   }
 
   /**
@@ -292,6 +265,33 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function terminateAuction(uint accountId) external {
     if (!checkCanTerminateAuction(accountId)) revert DA_AuctionCannotTerminate(accountId);
     _terminateAuction(accountId);
+  }
+
+  /**
+   * @notice Return true if an auction can be terminated (back above water)
+   * @dev for solvent auction: if IM > 0
+   * @dev for insolvent auction: if MM > 0
+   * @param accountId ID of the account to check
+   */
+  function checkCanTerminateAuction(uint accountId) public view returns (bool) {
+    if (!auctions[accountId].ongoing) revert DA_NotOngoingAuction();
+
+    if (auctions[accountId].insolvent) {
+      int mm = _getMaintenanceMargin(accountId, auctions[accountId].scenarioId);
+      return mm > 0;
+    } else {
+      int im = _getInitialMargin(accountId, auctions[accountId].scenarioId);
+      return im > 0;
+    }
+  }
+
+  /**
+   * @notice returns the details of an ongoing auction
+   * @param accountId the id of the auction that is being queried
+   * @return Auction returns the struct of the auction details
+   */
+  function getAuction(uint accountId) external view returns (Auction memory) {
+    return auctions[accountId];
   }
 
   /**
