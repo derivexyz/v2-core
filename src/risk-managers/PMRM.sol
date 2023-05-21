@@ -413,6 +413,14 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _settlePerpUnrealizedPNL(perp, accountId);
   }
 
+  /**
+   * @notice can be called by anyone to settle a perp asset in an account
+   */
+  function settleOptions(IOption _option, uint accountId) external {
+    if (_option != option) revert PMRM_UnsupportedAsset();
+    _settleAccountOptions(_option, accountId);
+  }
+
   function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
     address owner = accounts.ownerOf(mergeIntoId);
     for (uint i = 0; i < mergeFromIds.length; ++i) {
