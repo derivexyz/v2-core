@@ -24,74 +24,55 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     assertEq(currentBidPrice, 0); // start with 0
   }
 
-  //
-  //  function testStartInsolventAuction() public {
-  //    createDefaultInsolventAuction(aliceAcc);
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.insolvent, true); // start as insolvent from the very beginning
-  //
-  //    // starts with 0 bid
-  //    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
-  //
-  //    // increment the insolvent auction
-  //    // 1 of 200 steps
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -5000e18);
-  //
-  //    // 2 of 200 steps
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -10_000e18);
-  //  }
-  //
-  //  function testBidForInsolventAuctionFromSM() public {
-  //    createDefaultInsolventAuction(aliceAcc);
-  //
-  //    // 2 of 200 steps
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //
-  //    int expectedTotalPayoutFromSM = 10_000e18;
-  //
-  //    // if sm has enough balance
-  //    sm.mockBalance(expectedTotalPayoutFromSM);
-  //    usdcAsset.deposit(sm.accountId(), uint(expectedTotalPayoutFromSM));
-  //
-  //    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), -expectedTotalPayoutFromSM);
-  //
-  //    int cashBefore = account.getBalance(bobAcc, usdcAsset, 0);
-  //
-  //    vm.prank(bob);
-  //    dutchAuction.bid(aliceAcc, bobAcc, 0.2e18); // bid for 20%
-  //
-  //    int cashAfter = account.getBalance(bobAcc, usdcAsset, 0);
-  //
-  //    assertEq(cashAfter - cashBefore, expectedTotalPayoutFromSM * 2 / 10);
-  //    assertEq(usdcAsset.isSocialized(), false);
-  //  }
-  //
-  //  function testBidForInsolventAuctionMakesSMInsolvent() public {
-  //    createDefaultInsolventAuction(aliceAcc);
-  //
-  //    // 2 of 200 steps
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //
-  //    int expectedTotalPayoutFromSM = 10_000e18;
-  //
-  //    // if sm doesn't have enough balance
-  //    sm.mockBalance(1000e18);
-  //    usdcAsset.deposit(sm.accountId(), uint(1000e18));
-  //
-  //    int cashBefore = account.getBalance(bobAcc, usdcAsset, 0);
-  //
-  //    vm.prank(bob);
-  //    dutchAuction.bid(aliceAcc, bobAcc, 1e18); // bid for 100%
-  //
-  //    int cashAfter = account.getBalance(bobAcc, usdcAsset, 0);
-  //    assertEq(cashAfter - cashBefore, expectedTotalPayoutFromSM);
-  //
-  //    assertEq(usdcAsset.isSocialized(), true);
-  //  }
+  function testCanBidOnInsolventAuctionWith0Bid() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    vm.prank(bob);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+
+    // pay 0 and receive 0 extra cash from SM
+    assertEq(finalPercentage, 1e18);
+    assertEq(cashFromBidder, 0);
+    assertEq(cashToBidder, 0);
+  }
+
+  function testBidForInsolventAuctionFromSM() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    // increase step to 1
+    _increaseInsolventStep(1, aliceAcc);
+
+    vm.prank(bob);
+    // bid 50% of the portfolio
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18);
+
+    // 1% of 200 * 50% (max value) = 1
+    uint expectedTotalPayoutFromSM = 1e18;
+
+    assertEq(finalPercentage, 0.5e18);
+    assertEq(cashFromBidder, 0);
+    assertEq(cashToBidder, expectedTotalPayoutFromSM);
+  }
+
+  function testBidForInsolventAuctionMakesSMInsolvent() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    // increase step to 5
+    _increaseInsolventStep(5, aliceAcc);
+
+    vm.prank(bob);
+    // bid 100% of the portfolio
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+
+    // 5% of 200 = 10
+    uint expectedPayout = 10e18;
+
+    assertEq(finalPercentage, 1e18);
+    assertEq(cashFromBidder, 0);
+    assertEq(cashToBidder, expectedPayout);
+
+    assertEq(usdcAsset.isSocialized(), true);
+  }
   //
   //  function testIncreaseStepMax() public {
   //    dutchAuction.setSolventAuctionParams(
@@ -148,6 +129,14 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   //    // check that the auction is terminated
   //    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
   //  }
+
+  function _increaseInsolventStep(uint steps, uint acc) internal {
+    // increase step to 1
+    for (uint i = 0; i < steps; i++) {
+      vm.warp(block.timestamp + 5);
+      dutchAuction.continueInsolventAuction(acc);
+    }
+  }
 
   function _startDefaultInsolventAuction(uint acc) internal {
     // -500 init margin

@@ -134,6 +134,15 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
   }
 
+  function testCannotBidOnSolventAccount() public {
+    _startDefaultSolventAuction(aliceAcc);
+    // assume initial margin is back above threshold
+    manager.setMockMargin(aliceAcc, true, 1e18);
+    vm.prank(bob);
+    vm.expectRevert(IDutchAuction.DA_AuctionShouldBeTerminated.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
   //  test that an auction can start as solvent and convert to insolvent
   function testConvertToInsolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);

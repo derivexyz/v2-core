@@ -145,7 +145,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   {
     if (percentOfAccount > DecimalMath.UNIT || percentOfAccount == 0) {
       revert DA_InvalidPercentage();
-    } 
+    }
 
     // get bidder address and make sure that they own the account
     if (accounts.ownerOf(bidderId) != msg.sender) {
@@ -231,7 +231,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // lower bound of insolvent auction is initial margin (negative)
     int lowerBound = _getInitialMargin(accountId, scenarioId);
 
-    auctions[accountId].lastStepUpdate = block.timestamp;
     _startInsolventAuction(accountId, scenarioId, lowerBound);
   }
 
@@ -313,13 +312,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice gets the upper bound for the liquidation price. This should be a static discount of market to market
-   */
-  function getVUpperAndMtM(uint accountId, uint scenarioId) external view returns (int, int) {
-    return _getVUpperAndMtM(accountId, scenarioId);
-  }
-
-  /**
    * @notice gets the current bid price for a particular auction at the current block
    * @dev returns the current bid price for a particular auction
    * @param accountId Id of account being liquidated
@@ -381,7 +373,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       percentageLeft: 1e18,
       dv: dv,
       stepInsolvent: 0,
-      lastStepUpdate: 0,
+      lastStepUpdate: block.timestamp,
       upperBound: 0
     });
     emit AuctionStarted(accountId, 0, lowerBound, block.timestamp, true);
