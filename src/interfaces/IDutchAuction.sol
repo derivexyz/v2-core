@@ -26,6 +26,8 @@ interface IDutchAuction {
   struct SolventAuctionParams {
     /// Starting percentage of MtM. 1e18 is 100%
     uint64 startingMtMPercentage;
+    /// Percentage that starts the slow auction
+    uint64 fastAuctionCutoffPercentage;
     /// Fast auction length in seconds
     uint32 fastAuctionLength;
     /// Slow auction length in seconds

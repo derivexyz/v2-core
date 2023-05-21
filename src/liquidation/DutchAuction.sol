@@ -45,9 +45,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint => Auction) public auctions;
 
-  /// @dev The risk manager that is the parent of the dutch auction contract
-  ILiquidatableManager public immutable riskManager;
-
   /// @dev The security module that will help pay out for insolvent auctions
   ISecurityModule public immutable securityModule;
 
@@ -66,10 +63,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   //    Constructor     //
   ////////////////////////
 
-  constructor(ILiquidatableManager _riskManager, Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash)
-    Ownable2Step()
-  {
-    riskManager = _riskManager;
+  constructor(Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Ownable2Step() {
     accounts = _accounts;
     securityModule = _securityModule;
     cash = _cash;
@@ -84,6 +78,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     if (
       _params.startingMtMPercentage > 1e18 // cannot start with > 100% of mark to market
         || _params.liquidatorFeeRate > 0.1e18 // liquidator fee cannot be higher than 10%
+        || _params.fastAuctionCutoffPercentage > _params.startingMtMPercentage
     ) revert DA_InvalidParameter();
 
     solventAuctionParams = _params;
@@ -213,7 +208,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       int markToMarket = _getMarkToMarket(accountId, scenarioId);
 
       // todo: get discount
-      uint discount = 1e18;
+      (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
       // calculate tha max proportion of the portfolio that can be liquidated
       uint pMax = _getMaxProportion(accountId, scenarioId, markToMarket, discount); // discount
@@ -225,7 +220,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     // risk manager transfers portion of the account to the bidder
     // liquidator pays "cashFromLiquidator" to accountId
-    riskManager.executeBid(accountId, bidderId, finalPercentage, cashFromBidder);
+    address manager = address(accounts.manager(accountId));
+    ILiquidatableManager(manager).executeBid(accountId, bidderId, finalPercentage, cashFromBidder);
 
     emit Bid(accountId, bidderId, finalPercentage, cashFromBidder);
 
@@ -325,7 +321,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function getMaxProportion(uint accountId, uint scenarioId) external view returns (uint) {
     int markToMarket = _getMarkToMarket(accountId, scenarioId);
 
-    uint discount = 0; //getDiscount;
+    (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
     return _getMaxProportion(accountId, auctions[accountId].scenarioId, markToMarket, discount);
   }
@@ -355,6 +351,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function getCurrentBidPrice(uint accountId) external view returns (int) {
     return _getCurrentBidPrice(accountId);
+  }
+
+  function getDiscountPercentage(uint startTime, uint current) external view returns (uint, bool) {
+    return _getDiscountPercentage(startTime, current);
   }
 
   ///////////////
@@ -435,9 +435,38 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     emit AuctionStarted(accountId, 0, lowerBound, block.timestamp, true);
   }
 
-  function _getDiscountPercentage(uint startTimestamp, uint currentTimestamp) internal view returns (uint) {
-    // todo: impl
-    return 0.8e18;
+  /**
+   * @dev get discount percentage
+   * the discount percentage decay from startingMtMPercentage to fastAuctionCutoffPercentage during the fast auction
+   * then decay from fastAuctionCutoffPercentage to 0 during the slow auction
+   */
+  function _getDiscountPercentage(uint startTimestamp, uint currentTimestamp)
+    internal
+    view
+    returns (uint discount, bool isFast)
+  {
+    SolventAuctionParams memory params = solventAuctionParams;
+
+    uint timeElapsed = currentTimestamp - startTimestamp;
+
+    // still during the fast auction
+    if (timeElapsed < params.fastAuctionLength) {
+      uint totalChangeInFastAuction = params.startingMtMPercentage - params.fastAuctionCutoffPercentage;
+      discount = params.startingMtMPercentage
+        - totalChangeInFastAuction.multiplyDecimal(timeElapsed).divideDecimal(params.fastAuctionLength);
+      isFast = true;
+    } else if (timeElapsed > params.fastAuctionLength + params.slowAuctionLength) {
+      // whole solvent auction is over
+      discount = 0;
+      isFast = false;
+    } else {
+      uint timeElapsedInSlow = timeElapsed - params.fastAuctionLength;
+      discount = params.fastAuctionCutoffPercentage
+        - uint(params.fastAuctionCutoffPercentage).multiplyDecimal(timeElapsedInSlow).divideDecimal(
+          params.slowAuctionLength
+        );
+      isFast = false;
+    }
   }
 
   /**
@@ -501,7 +530,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       }
 
       // calculate discount percentage
-      uint discount = _getDiscountPercentage(auction.startTime, block.timestamp); //getDiscount;
+      (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp); //getDiscount;
 
       int bidPrice = auction.upperBound.multiplyDecimal(int(discount));
       return bidPrice;
