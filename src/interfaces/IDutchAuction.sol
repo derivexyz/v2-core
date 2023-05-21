@@ -74,16 +74,16 @@ interface IDutchAuction {
 
   /// @dev emitted when someone tries to start an insolvent auction when bidding
   /// has not concluded.
-  error DA_AuctionNotEnteredInsolvency(uint accountId);
+  error DA_AuctionNotEnteredInsolvency();
 
   /// @dev revert if trying to start an auction when it's above maintenance margin (well collateralized)
   error DA_AccountIsAboveMaintenanceMargin();
 
   /// @dev emitted when someone tries mark an insolvent auction again
-  error DA_AuctionAlreadyInInsolvencyMode(uint accountId);
+  error DA_AuctionAlreadyInInsolvencyMode();
 
   /// @dev emitted when someone tries to bid on auction that has not started
-  error DA_AuctionNotStarted(uint accountId);
+  error DA_AuctionNotStarted();
 
   /// @dev emitted when a risk manager tries to start an auction that has already been started
   error DA_AuctionAlreadyStarted();
@@ -93,22 +93,22 @@ interface IDutchAuction {
   error DA_SolventAuctionEnded();
 
   /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
-  error DA_AmountTooLarge(uint accountId, uint amount);
+  error DA_InvalidPercentage();
 
   /// @dev emitted when a bid is submitted for 0% of the portfolio
-  error DA_AmountIsZero(uint accountId);
+  error DA_AmountIsZero();
 
   /// @dev emitted when a user tries to increment the step for an insolvent auction
-  error DA_SolventAuctionCannotIncrement(uint accountId);
+  error DA_SolventAuctionCannotIncrement();
 
-  /// @dev emitted when a user doesn't own the account that they are trying to bid on
-  error DA_BidderNotOwner(uint accountId, address bidder);
+  /// @dev emitted when a user doesn't own the account that they are trying to bid from
+  error DA_SenderNotOwner();
 
   /// @dev emitted when a user tries to terminate an auction but the account is still underwater
-  error DA_AuctionCannotTerminate(uint accountId);
+  error DA_AuctionCannotTerminate();
 
   /// @dev emitted when a user tries to bid on an auction, but it should be terminated
-  error DA_AuctionShouldBeTerminated(uint accountId);
+  error DA_AuctionShouldBeTerminated();
 
   /// @dev emitted when a increase the step for an insolvent auction that has already reach its steps
   error DA_MaxStepReachedInsolventAuction();

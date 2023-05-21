@@ -7,7 +7,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   uint scenario = 1;
 
   function testCannotGetBidPriceOnNormalAccount() public {
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotStarted.selector, aliceAcc));
+    vm.expectRevert(IDutchAuction.DA_AuctionNotStarted.selector);
     dutchAuction.getCurrentBidPrice(aliceAcc);
   }
 
@@ -119,6 +119,21 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(auction.percentageLeft, 0.8e18);
   }
 
+  function testCannotBidWithInvalidPercentage() public {
+    _startDefaultSolventAuction(aliceAcc);
+    vm.expectRevert(IDutchAuction.DA_InvalidPercentage.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1.01e18);
+
+    vm.expectRevert(IDutchAuction.DA_InvalidPercentage.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 0);
+  }
+
+  function testCannotBidFromNonOwner() public {
+    _startDefaultSolventAuction(aliceAcc);
+    vm.expectRevert(IDutchAuction.DA_SenderNotOwner.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
   //  test that an auction can start as solvent and convert to insolvent
   function testConvertToInsolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
@@ -141,7 +156,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(auction.insolvent, true);
 
     // cannot mark twice
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyInInsolvencyMode.selector, aliceAcc));
+    vm.expectRevert(IDutchAuction.DA_AuctionAlreadyInInsolvencyMode.selector);
     dutchAuction.convertToInsolventAuction(aliceAcc);
   }
 
@@ -156,7 +171,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
     // start an auction on Alice's account
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector, aliceAcc));
+    vm.expectRevert(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector);
     dutchAuction.convertToInsolventAuction(aliceAcc);
   }
 
@@ -188,7 +203,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     _startDefaultSolventAuction(aliceAcc);
 
     // increment the insolvent auction
-    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_SolventAuctionCannotIncrement.selector, aliceAcc));
+    vm.expectRevert(IDutchAuction.DA_SolventAuctionCannotIncrement.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
 

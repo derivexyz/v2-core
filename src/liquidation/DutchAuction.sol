@@ -143,19 +143,17 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     external
     returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder)
   {
-    if (percentOfAccount > DecimalMath.UNIT) {
-      revert DA_AmountTooLarge(accountId, percentOfAccount);
-    } else if (percentOfAccount == 0) {
-      revert DA_AmountIsZero(accountId);
-    }
+    if (percentOfAccount > DecimalMath.UNIT || percentOfAccount == 0) {
+      revert DA_InvalidPercentage();
+    } 
 
     // get bidder address and make sure that they own the account
     if (accounts.ownerOf(bidderId) != msg.sender) {
-      revert DA_BidderNotOwner(bidderId, msg.sender);
+      revert DA_SenderNotOwner();
     }
 
     if (checkCanTerminateAuction(accountId)) {
-      revert DA_AuctionShouldBeTerminated(accountId);
+      revert DA_AuctionShouldBeTerminated();
     }
 
     // _getCurrentBidPrice below will check if the auction is active or not
@@ -222,10 +220,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function convertToInsolventAuction(uint accountId) external {
     // getCurrentBidPrice will revert if there is no auction for accountId going on
     if (_getCurrentBidPrice(accountId) > 0) {
-      revert DA_AuctionNotEnteredInsolvency(accountId);
+      revert DA_AuctionNotEnteredInsolvency();
     }
     if (auctions[accountId].insolvent) {
-      revert DA_AuctionAlreadyInInsolvencyMode(accountId);
+      revert DA_AuctionAlreadyInInsolvencyMode();
     }
 
     uint scenarioId = auctions[accountId].scenarioId;
@@ -248,7 +246,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function continueInsolventAuction(uint accountId) external returns (uint) {
     Auction storage auction = auctions[accountId];
     if (!auction.insolvent) {
-      revert DA_SolventAuctionCannotIncrement(accountId);
+      revert DA_SolventAuctionCannotIncrement();
     }
 
     uint lastIncrement = auction.lastStepUpdate;
@@ -270,7 +268,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId the accountId that relates to the auction that is being stepped
    */
   function terminateAuction(uint accountId) external {
-    if (!checkCanTerminateAuction(accountId)) revert DA_AuctionCannotTerminate(accountId);
+    if (!checkCanTerminateAuction(accountId)) revert DA_AuctionCannotTerminate();
     _terminateAuction(accountId);
   }
 
@@ -522,7 +520,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function _getCurrentBidPrice(uint accountId) internal view returns (int) {
     Auction memory auction = auctions[accountId];
 
-    if (!auction.ongoing) revert DA_AuctionNotStarted(accountId);
+    if (!auction.ongoing) revert DA_AuctionNotStarted();
 
     if (auction.insolvent) {
       // @invariant: if insolvent, bids should always be negative
