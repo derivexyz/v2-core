@@ -26,18 +26,22 @@ contract DutchAuctionBase is Test {
   MockCash usdcAsset;
   MockAsset optionAsset;
   MockLiquidatableManager manager;
-  MockFeeds feed;
   DutchAuction dutchAuction;
 
+  function setUp() public {
+    _deployMockSystem();
+    _setupAccounts();
+  }
+
   /// @dev deploy mock system
-  function deployMockSystem() public {
+  function _deployMockSystem() public {
     /* Base Layer */
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");
 
-    // usdc asset: deposit with usdc, cannot be negative
+    // usdc asset
     usdcAsset = new MockCash(IERC20(usdc), account);
 
     // optionAsset: not allow deposit, can be negative
@@ -50,15 +54,12 @@ contract DutchAuctionBase is Test {
     sm = new MockSM(account, usdcAsset);
     sm.createAccountForSM(manager);
 
-    /*
-    Feed for Spot*/
-    feed = new MockFeeds();
-    feed.setSpot(1e18 * 1000, 1e18); // setting feed to 1000 usdc per eth
-
     dutchAuction = dutchAuction = new DutchAuction(account, sm, usdcAsset);
+
+    dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
   }
 
-  function mintAndDeposit(
+  function _mintAndDeposit(
     address user,
     uint accountId,
     MockERC20 token,
@@ -74,12 +75,26 @@ contract DutchAuctionBase is Test {
     vm.stopPrank();
   }
 
-  function setupAccounts() public {
+  function _setupAccounts() public {
     alice = address(0xaa);
     bob = address(0xbb);
     usdc.approve(address(usdcAsset), type(uint).max);
 
     aliceAcc = account.createAccount(alice, manager);
     bobAcc = account.createAccount(bob, manager);
+  }
+
+  //////////////////////////
+  ///       Helpers      ///
+  //////////////////////////
+
+  function _getDefaultSolventParams() internal view returns (IDutchAuction.SolventAuctionParams memory) {
+    return IDutchAuction.SolventAuctionParams({
+      startingMtMPercentage: 1e18,
+      fastAuctionCutoffPercentage: 0.8e18,
+      fastAuctionLength: 600,
+      slowAuctionLength: 7200,
+      liquidatorFeeRate: 0
+    });
   }
 }

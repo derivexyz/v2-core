@@ -567,12 +567,6 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     return _getIsolatedMargin(marketId, expiry, strike, isCall, balance, indexPrice, forwardPrice, isInitial);
   }
 
-  /// todo: add logic
-  function getSolventAuctionUpperBound(uint accountId) external view returns (int) {}
-
-  /// todo: add logic
-  function getInsolventAuctionLowerBound(uint accountId) external view returns (int) {}
-
   /**
    * @dev Count how many market the user has
    */

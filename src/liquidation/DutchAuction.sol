@@ -427,7 +427,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // IM is expected to be negative
     int initialMargin = _getInitialMargin(accountId, scenarioId);
 
-    int denominator = initialMargin - markToMarket * int(discountPercentage);
+    int denominator = initialMargin - (markToMarket.multiplyDecimal(int(discountPercentage)));
 
     return initialMargin.divideDecimal(denominator).toUint256();
   }
