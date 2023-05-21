@@ -148,13 +148,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
 
     // get bidder address and make sure that they own the account
-    if (accounts.ownerOf(bidderId) != msg.sender) {
-      revert DA_SenderNotOwner();
-    }
+    if (accounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
 
-    if (checkCanTerminateAuction(accountId)) {
-      revert DA_AuctionShouldBeTerminated();
-    }
+    if (checkCanTerminateAuction(accountId)) revert DA_AuctionShouldBeTerminated();
 
     // _getCurrentBidPrice below will check if the auction is active or not
 
@@ -177,9 +173,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       // if the account is solvent, the bidder pays the account for a portion of the account
       int bidPrice = _getCurrentBidPrice(accountId);
 
-      uint scenarioId = auctions[accountId].scenarioId;
-
       if (bidPrice == 0) revert DA_SolventAuctionEnded();
+
+      uint scenarioId = auctions[accountId].scenarioId;
 
       // MtM is expected to be negative
       int markToMarket = _getMarkToMarket(accountId, scenarioId);
@@ -250,7 +246,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     uint lastIncrement = auction.lastStepUpdate;
     if (block.timestamp < lastIncrement + insolventAuctionParams.coolDown && lastIncrement != 0) {
-      revert DA_CannotStepBeforeCoolDownEnds(block.timestamp, lastIncrement + insolventAuctionParams.coolDown);
+      revert DA_InCoolDown();
     }
 
     uint newStep = ++auction.stepInsolvent;

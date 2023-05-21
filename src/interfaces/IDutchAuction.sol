@@ -114,5 +114,5 @@ interface IDutchAuction {
   error DA_MaxStepReachedInsolventAuction();
 
   /// @dev emitted when IncrementInsolventAuction is spammed
-  error DA_CannotStepBeforeCoolDownEnds(uint blockTimeStamp, uint coolDownEnds);
+  error DA_InCoolDown();
 }

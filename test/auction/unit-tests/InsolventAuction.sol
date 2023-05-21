@@ -73,47 +73,24 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     assertEq(usdcAsset.isSocialized(), true);
   }
-  //
-  //  function testIncreaseStepMax() public {
-  //    dutchAuction.setSolventAuctionParams(
-  //      IDutchAuction.SolventAuctionParams({
-  //        stepInterval: 2,
-  //        lengthOfAuction: 2,
-  //        liquidatorFeeRate: 0.05e18,
-  //        secBetweenSteps: 0 // cool down is 0
-  //      })
-  //    );
-  //    createDefaultInsolventAuction(aliceAcc);
-  //
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //
-  //    vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //  }
-  //
-  //  function testCannotSpamIncrementStep() public {
-  //    // change parameters to add cool down
-  //    dutchAuction.setSolventAuctionParams(
-  //      IDutchAuction.SolventAuctionParams({
-  //        stepInterval: 2,
-  //        lengthOfAuction: 200,
-  //        liquidatorFeeRate: 0.05e18,
-  //        secBetweenSteps: 100
-  //      })
-  //    );
-  //    createDefaultInsolventAuction(aliceAcc);
-  //
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //
-  //    vm.expectRevert(
-  //      abi.encodeWithSelector(
-  //        IDutchAuction.DA_CannotStepBeforeCoolDownEnds.selector,
-  //        block.timestamp,
-  //        block.timestamp + dutchAuction.insolventAuctionParams().secBetweenSteps
-  //      )
-  //    );
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //  }
+
+  function testIncreaseStepMax() public {
+    dutchAuction.setInsolventAuctionParams(IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0}));
+    _startDefaultInsolventAuction(aliceAcc);
+
+    dutchAuction.continueInsolventAuction(aliceAcc);
+    dutchAuction.continueInsolventAuction(aliceAcc);
+
+    vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
+    dutchAuction.continueInsolventAuction(aliceAcc);
+  }
+
+  function testCannotSpamIncrementStep() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
+    dutchAuction.continueInsolventAuction(aliceAcc);
+  }
 
   //  function testTerminatesInsolventAuction() public {
   //    _startDefaultInsolventAuction(aliceAcc);

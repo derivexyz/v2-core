@@ -143,6 +143,16 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
   }
 
+  function testCannotBidOnEndedAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
+    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength + 5);
+
+    vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
   //  test that an auction can start as solvent and convert to insolvent
   function testConvertToInsolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
@@ -157,7 +167,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength);
     assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
 
-    // mark the auction as insolvent
+    // convert the auction to insolvent auction
     dutchAuction.convertToInsolventAuction(aliceAcc);
 
     // testing that the view returns the correct auction.
@@ -229,6 +239,14 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+  }
+
+  function testCannotTerminateUsualAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    vm.expectRevert(IDutchAuction.DA_AuctionCannotTerminate.selector);
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
   }
 
   function _startDefaultSolventAuction(uint acc) internal {
