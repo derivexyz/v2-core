@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "openzeppelin/utils/cryptography/EIP712.sol";
-import "openzeppelin/utils/cryptography/SignatureChecker.sol";
+// inherited
+import "src/feeds/BaseLyraFeed.sol";
 
-import "openzeppelin/access/Ownable2Step.sol";
 // interfaces
 import "src/interfaces/ISpotFeed.sol";
-import "src/interfaces/IDataReceiver.sol";
 import "src/interfaces/ILyraSpotFeed.sol";
-import "./BaseLyraFeed.sol";
 
 /**
  * @title LyraSpotFeed
@@ -17,8 +14,9 @@ import "./BaseLyraFeed.sol";
  * @notice Spot feed that takes off-chain updates, verify signature and update on-chain
  */
 contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
-  bytes32 public constant SPOT_DATA_TYPEHASH =
-    keccak256("SpotData(uint96 price,uint64 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)");
+  bytes32 public constant SPOT_DATA_TYPEHASH = keccak256(
+    "SpotData(uint96 price,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
+  );
 
   // pack the following into 1 storage slot
   SpotDetail private spotDetail;

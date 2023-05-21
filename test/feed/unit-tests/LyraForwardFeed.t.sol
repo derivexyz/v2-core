@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "src/feeds/LyraVolFeed.sol";
-import "../../../src/feeds/LyraForwardAndSettlementFeed.sol";
+import "../../../src/feeds/LyraForwardFeed.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -138,7 +138,7 @@ contract UNIT_LyraForwardFeed is Test {
     assertEq(forwardVariablePortion, uint(1000e18) / 3);
     assertEq(confidence, 0.99e18);
 
-    vm.warp(defaultExpiry - 6 minutes);
+    vm.warp(defaultExpiry - 4 minutes);
     vm.expectRevert(ILyraForwardFeed.LFF_SettlementDataTooOld.selector);
     feed.getForwardPricePortions(defaultExpiry);
 

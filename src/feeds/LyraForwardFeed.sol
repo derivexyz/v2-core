@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "openzeppelin/utils/cryptography/EIP712.sol";
-import "openzeppelin/utils/cryptography/SignatureChecker.sol";
+// inherited
+import "src/feeds/BaseLyraFeed.sol";
 
-import "openzeppelin/access/Ownable2Step.sol";
 // interfaces
-import "src/interfaces/ISpotFeed.sol";
-import "src/interfaces/IDataReceiver.sol";
-import "src/interfaces/ILyraSpotFeed.sol";
-import "./BaseLyraFeed.sol";
-import "../interfaces/ILyraForwardAndSettlementFeed.sol";
-import "../interfaces/IForwardFeed.sol";
-import "../interfaces/ISettlementFeed.sol";
-import "../interfaces/ILyraForwardAndSettlementFeed.sol";
+import "src/interfaces/ILyraForwardFeed.sol";
+import "src/interfaces/IForwardFeed.sol";
+import "src/interfaces/ISettlementFeed.sol";
 
 /**
  * @title LyraForwardFeed
@@ -25,13 +19,13 @@ import "../interfaces/ILyraForwardAndSettlementFeed.sol";
  */
 contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettlementFeed {
   bytes32 public constant FORWARD_DATA_TYPEHASH = keccak256(
-    "SpotData(uint64 expiry,uint settlementStartAggregate,uint currentSpotAggregate,uint96 forwardPrice,uint64 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)"
+    "ForwardData(uint64 expiry,uint256 settlementStartAggregate,uint256 currentSpotAggregate,uint96 forwardPrice,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
   uint64 public constant SETTLEMENT_TWAP_DURATION = 30 minutes;
 
   // @dev secondary heartbeat for when the forward price is close to expiry
-  uint64 settlementHeartbeat = 2 minutes;
+  uint64 settlementHeartbeat = 5 minutes;
   mapping(uint64 => ForwardDetails) private forwardDetails;
   mapping(uint64 => SettlementDetails) private settlementDetails;
 
@@ -65,7 +59,8 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
   /**
    * @notice Gets forward price for a given expiry
-   * @return forwardFixedPortion The part of the settlement price that wont change
+   * @return forwardFixedPortion The portion of the settlement price that is guaranteed to be included.
+   *  Options have no further delta exposure to this portion.
    * @return forwardVariablePortion The part of the price that can still change until expiry
    * @return confidence The confidence value of the feed
    */
@@ -164,6 +159,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   // Internal Functions //
   ////////////////////////
 
+  /// @dev Checks the cached data timestamp against the heartbeat, and settlement heartbeat if applicable
   function _verifyDetailTimestamp(uint64 fwdDetailsTimestamp, uint64 settlementFeedStart) internal view {
     if (fwdDetailsTimestamp == 0) {
       revert LFF_MissingExpiryData();
@@ -176,6 +172,12 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     }
   }
 
+  /**
+   * @return fixedPortion The portion of the settlement price that is guaranteed to be included.
+   *  Options have no further delta exposure to this portion.
+   * @return variablePortion The part of the price that can still change until expiry (current forward price applied to
+   *  the remaining time until expiry)
+   */
   function _getSettlementPricePortions(
     ForwardDetails memory fwdDeets,
     SettlementDetails memory settlementData,

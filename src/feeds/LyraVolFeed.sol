@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "openzeppelin/utils/cryptography/EIP712.sol";
-import "openzeppelin/utils/cryptography/SignatureChecker.sol";
-import "openzeppelin/access/Ownable2Step.sol";
-
-import "lyra-utils/math/FixedPointMathLib.sol";
+// inherited
+import "src/feeds/BaseLyraFeed.sol";
 
 // interfaces
-import "src/interfaces/IDataReceiver.sol";
 import "src/interfaces/IVolFeed.sol";
-import "./BaseLyraFeed.sol";
 import "src/interfaces/ILyraVolFeed.sol";
+
+// libraries
+import "lyra-utils/math/FixedPointMathLib.sol";
 
 library SVI {
   // TODO: move to lyra-utils and CLEAN UP A LOT
@@ -50,7 +48,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
   //     Constants      //
   ////////////////////////
   bytes32 public constant VOL_DATA_TYPEHASH = keccak256(
-    "VolData(int SVI_a,uint SVI_b,int SVI_rho,int SVI_m,uint SVI_sigma,uint SVI_fwd,uint64 confidence,uint64 timestamp,uint deadline,address signer,bytes signature)"
+    "VolData(int256 SVI_a,uint256 SVI_b,int256 SVI_rho,int256 SVI_m,uint256 SVI_sigma,uint256 SVI_fwd,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
   ////////////////////////
