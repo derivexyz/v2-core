@@ -42,6 +42,11 @@ contract TestPMRM_Settlement is PMRMTestBase {
     assertEq(cashAfter - cashBefore, 100e18);
   }
 
+  function testCanSettlePerpWithBadAddress() public {
+    vm.expectRevert(IPMRM.PMRM_UnsupportedAsset.selector);
+    pmrm.settlePerpsWithIndex(IPerpAsset(address(option)), aliceAcc);
+  }
+
   function testCanSettleOptions() public {
     _depositCash(aliceAcc, 2000e18);
 
@@ -70,6 +75,11 @@ contract TestPMRM_Settlement is PMRMTestBase {
     pmrm.settleOptions(option, aliceAcc);
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashBefore - cashAfter, 500e18);
+  }
+
+  function testCanSettleOptionWithBadAddress() public {
+    vm.expectRevert(IPMRM.PMRM_UnsupportedAsset.selector);
+    pmrm.settleOptions(IOption(address(mockPerp)), aliceAcc);
   }
 
   function _tradeOptionAndMockSettlementValue(int netValue) internal {
