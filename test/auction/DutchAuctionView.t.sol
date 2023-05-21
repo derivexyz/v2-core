@@ -181,8 +181,8 @@ contract UNIT_DutchAuctionView is Test {
     assertTrue(!isFast);
   }
 
-  function testGetDiscountDiffLength() public {
-    // default setting: fast auction 100% - 80%, slow auction 80% - 0%
+  function testGetDiscountPercentage2() public {
+    // new setting: fast auction 96% - 80%, slow auction 80% - 0%
     IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
     params.startingMtMPercentage = 0.96e18;
     params.fastAuctionCutoffPercentage = 0.8e18;
@@ -212,6 +212,12 @@ contract UNIT_DutchAuctionView is Test {
     (discount,) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.08e18);
   }
+
+  function testGetMaxProportion() public {}
+
+  //////////////////////////
+  ///       Helpers      ///
+  //////////////////////////
 
   function _getDefaultSolventParams() internal view returns (IDutchAuction.SolventAuctionParams memory) {
     return IDutchAuction.SolventAuctionParams({

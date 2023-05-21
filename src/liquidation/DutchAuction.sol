@@ -94,8 +94,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice Called by the riskManager to start an auction
-   * @dev Can only be auctioned by a risk manager and will start an auction
+   * @dev anyone can start an auction for an account
    * @param accountId The id of the account being liquidated
    * @param scenarioId id to compute the IM with for PMRM, ignored for basic manager
    */
@@ -207,7 +206,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       // MtM is expected to be negative
       int markToMarket = _getMarkToMarket(accountId, scenarioId);
 
-      // todo: get discount
+      // todo: if it changes from fast to slow, lock withdraw?
       (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
       // calculate tha max proportion of the portfolio that can be liquidated
@@ -247,24 +246,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       int im = _getInitialMargin(accountId, auctions[accountId].scenarioId);
       return im > 0;
     }
-  }
-
-  /**
-   * @notice Internal function to terminate an auction
-   * @dev Changes the value of an auction and flags that it can no longer be bid on
-   * @param accountId The accountId of account that is being liquidated
-   */
-  function _terminateAuction(uint accountId) internal {
-    Auction storage auction = auctions[accountId];
-    auction.ongoing = false;
-    emit AuctionEnded(accountId, block.timestamp);
-  }
-
-  /**
-   * @dev Helper to get maintenance margin for an accountId
-   */
-  function getMaintenanceMarginForAccount(uint accountId) public view returns (int) {
-    return -10e18;
   }
 
   /**
@@ -327,16 +308,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @dev get the fee that should be transferred to the security module
-   */
-  function _getLiquidationFee(uint accountId, uint scenarioId, int markToMarket) internal view returns (uint fee) {
-    uint maxProportion = _getMaxProportion(accountId, scenarioId, markToMarket, 1e18);
-
-    fee =
-      maxProportion.multiplyDecimal(IntLib.abs(markToMarket)).multiplyDecimal(solventAuctionParams.liquidatorFeeRate);
-  }
-
-  /**
    * @notice gets the upper bound for the liquidation price. This should be a static discount of market to market
    */
   function getVUpperAndMtM(uint accountId, uint scenarioId) external view returns (int, int) {
@@ -357,35 +328,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return _getDiscountPercentage(startTime, current);
   }
 
-  ///////////////
-  // internal //
-  ///////////////
-
-  /**
-   * @notice Gets the maximum size of the portfolio that could be bought at the current price
-   * @dev assuming negative IM and MtM, the formula for max portion is:
-   *
-   *                        IM
-   *    f = ----------------------------------
-   *         IM - MtM * discount_percentage
-   *
-   *
-   * @param accountId the id of the account being liquidated
-   * @param discountPercentage the discount percentage of MtM the auction is offering at (dropping from 98% to 0%)
-   * @return uint the proportion of the portfolio that could be bought at the current price
-   */
-  function _getMaxProportion(uint accountId, uint scenarioId, int markToMarket, uint discountPercentage)
-    internal
-    view
-    returns (uint)
-  {
-    // IM is expected to be negative
-    int initialMargin = _getInitialMargin(accountId, scenarioId);
-
-    int denominator = initialMargin - markToMarket * int(discountPercentage);
-
-    return initialMargin.divideDecimal(denominator).toUint256();
-  }
+  ////////////////////
+  //    internal    //
+  ////////////////////
 
   /**
    * @notice Starts an auction that starts with a positive upper bound
@@ -433,6 +378,58 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       upperBound: 0
     });
     emit AuctionStarted(accountId, 0, lowerBound, block.timestamp, true);
+  }
+
+  /**
+   * @notice Internal function to terminate an auction
+   * @dev Changes the value of an auction and flags that it can no longer be bid on
+   * @param accountId The accountId of account that is being liquidated
+   */
+  function _terminateAuction(uint accountId) internal {
+    Auction storage auction = auctions[accountId];
+    auction.ongoing = false;
+    emit AuctionEnded(accountId, block.timestamp);
+  }
+
+  /////////////////////////
+  //   internal  View    //
+  /////////////////////////
+
+  /**
+   * @dev get the fee that should be transferred to the security module
+   * @dev this function should only be called in solvent auction
+   */
+  function _getLiquidationFee(uint accountId, uint scenarioId, int markToMarket) internal view returns (uint fee) {
+    uint maxProportion = _getMaxProportion(accountId, scenarioId, markToMarket, 1e18);
+
+    fee =
+      maxProportion.multiplyDecimal(IntLib.abs(markToMarket)).multiplyDecimal(solventAuctionParams.liquidatorFeeRate);
+  }
+
+  /**
+   * @notice Gets the maximum size of the portfolio that could be bought at the current price
+   * @dev assuming negative IM and MtM, the formula for max portion is:
+   *
+   *                        IM
+   *    f = ----------------------------------
+   *         IM - MtM * discount_percentage
+   *
+   *
+   * @param accountId the id of the account being liquidated
+   * @param discountPercentage the discount percentage of MtM the auction is offering at (dropping from 98% to 0%)
+   * @return uint the proportion of the portfolio that could be bought at the current price
+   */
+  function _getMaxProportion(uint accountId, uint scenarioId, int markToMarket, uint discountPercentage)
+    internal
+    view
+    returns (uint)
+  {
+    // IM is expected to be negative
+    int initialMargin = _getInitialMargin(accountId, scenarioId);
+
+    int denominator = initialMargin - markToMarket * int(discountPercentage);
+
+    return initialMargin.divideDecimal(denominator).toUint256();
   }
 
   /**
