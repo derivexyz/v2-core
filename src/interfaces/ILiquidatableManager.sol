@@ -13,7 +13,7 @@ interface ILiquidatableManager is IBaseManager {
   function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external;
 
   /**
-   * @notice can be called by anyone to settle a perp asset in an account
+   * @notice can be called by anyone to settle option assets in an account
    */
   function settleOptions(IOption _option, uint accountId) external;
 
