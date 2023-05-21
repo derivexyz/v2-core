@@ -3,8 +3,11 @@ pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import "src/interfaces/IInterestRateModel.sol";
+import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface ICashAsset is IAsset {
+  function stableAsset() external view returns (IERC20Metadata);
+
   /**
    * @dev Deposit USDC and increase account balance
    * @param recipientAccount account id to receive the cash asset

@@ -41,7 +41,7 @@ contract UNIT_SecurityModule is Test {
     mockCash = new MockCashAssetWithExchangeRate(accounts, usdc);
     mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
-    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, IManager(manager));
+    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), IManager(manager));
 
     smAccId = securityModule.accountId();
 
@@ -55,76 +55,30 @@ contract UNIT_SecurityModule is Test {
   function testDepositIntoSM() public {
     uint depositAmount = 1000e6;
 
-    securityModule.deposit(depositAmount);
-
-    // first deposit get equivelant share of USDC <> seuciry module share
-    uint shares = securityModule.balanceOf(address(this));
-    assertEq(shares, depositAmount);
-  }
-
-  function testShareCalculationAfterFirstDeposit() public {
-    uint depositAmount = 1000e6;
-
-    securityModule.deposit(depositAmount);
-
-    mockCash.setAccBalanceWithInterest(smAccId, 1000e18);
-
-    // deposit from Alice
-    address alice = address(0xac);
-    uint aliceAmount = depositAmount * 2;
-    usdc.mint(alice, aliceAmount);
-    vm.startPrank(alice);
-    usdc.approve(address(securityModule), type(uint).max);
-    securityModule.deposit(aliceAmount);
-
-    vm.stopPrank();
-    uint shares = securityModule.balanceOf(alice);
-    assertEq(shares, aliceAmount);
+    securityModule.donate(depositAmount);
+    assertEq(uint(accounts.getBalance(smAccId, mockCash, 0)), 1000e18);
+    assertEq(usdc.balanceOf(address(mockCash)), depositAmount);
   }
 
   function testWithdrawWithNoShare() public {
     // cover the line where total supply is 0
-    // _shareToStable should not revert. only revert when actually burning
     uint shares = 1000e6;
-    vm.expectRevert("ERC20: burn amount exceeds balance");
+    vm.expectRevert("ERC20: transfer amount exceeds balance");
     securityModule.withdraw(shares, address(this));
   }
 
   function testWithdrawFromSM() public {
     uint depositAmount = 1000e6;
-    securityModule.deposit(depositAmount);
-
-    uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
-    uint expectedStable = depositAmount / 2;
+    securityModule.donate(depositAmount);
 
     uint usdcBefore = usdc.balanceOf(address(this));
 
-    // mock the balanceWithInterset call to return the exact balance deposited
-    mockCash.setAccBalanceWithInterest(smAccId, 1000e18);
+    securityModule.withdraw(depositAmount / 2, address(this));
 
-    securityModule.withdraw(sharesToWithdraw, address(this));
-    uint sharesLeft = securityModule.balanceOf(address(this));
-    assertEq(sharesLeft, sharesToWithdraw); // 50% shares remaining
+    assertEq(usdc.balanceOf(address(mockCash)), depositAmount / 2);
 
     uint usdcAfter = usdc.balanceOf(address(this));
-    assertEq(usdcAfter - usdcBefore, expectedStable);
-  }
-
-  function testWithdrawMoreAfterInterestIsApplied() public {
-    uint depositAmount = 1000e6;
-    securityModule.deposit(depositAmount);
-
-    uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
-    uint proportionalStable = depositAmount / 2;
-
-    uint usdcBefore = usdc.balanceOf(address(this));
-    // someone transferred to the account or interest is accrued: 0.5%
-    mockCash.setAccBalanceWithInterest(smAccId, 1005e18);
-
-    securityModule.withdraw(sharesToWithdraw, address(this));
-
-    uint usdcAfter = usdc.balanceOf(address(this));
-    assertGt(usdcAfter - usdcBefore, proportionalStable);
+    assertEq(usdcAfter - usdcBefore, depositAmount / 2);
   }
 
   function testCannotAddWhitelistedModuleFromNonOwner() public {
@@ -149,7 +103,7 @@ contract UNIT_SecurityModule is Test {
   function testCanRequestPayoutFromWhitelistedModule() public {
     // someone deposit 1 million first
     uint depositAmount = 1000_000e6;
-    securityModule.deposit(depositAmount);
+    securityModule.donate(depositAmount);
 
     // create acc to get paid
     uint receiverAcc = accounts.createAccount(address(this), manager);
@@ -169,7 +123,7 @@ contract UNIT_SecurityModule is Test {
   function testPayoutAmountIsCapped() public {
     // someone deposit 1000 first
     uint depositAmount = 1_000e6;
-    securityModule.deposit(depositAmount);
+    securityModule.donate(depositAmount);
 
     // create acc to get paid
     uint receiverAcc = accounts.createAccount(address(this), manager);
