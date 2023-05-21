@@ -31,6 +31,11 @@ contract DutchAuctionBase is Test {
   function setUp() public {
     _deployMockSystem();
     _setupAccounts();
+
+    dutchAuction = dutchAuction = new DutchAuction(account, sm, usdcAsset);
+
+    dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
+    dutchAuction.setInsolventAuctionParams(_getDefaultInsolventParams());
   }
 
   /// @dev deploy mock system
@@ -53,10 +58,6 @@ contract DutchAuctionBase is Test {
     // mock cash
     sm = new MockSM(account, usdcAsset);
     sm.createAccountForSM(manager);
-
-    dutchAuction = dutchAuction = new DutchAuction(account, sm, usdcAsset);
-
-    dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
   }
 
   function _mintAndDeposit(
@@ -96,5 +97,9 @@ contract DutchAuctionBase is Test {
       slowAuctionLength: 7200,
       liquidatorFeeRate: 0
     });
+  }
+
+  function _getDefaultInsolventParams() internal view returns (IDutchAuction.InsolventAuctionParams memory) {
+    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5});
   }
 }

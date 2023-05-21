@@ -3,8 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../DutchAuctionBase.sol";
 
-contract UNIT_TestStartAuction is DutchAuctionBase {
-
+contract UNIT_TestSolventAuction is DutchAuctionBase {
   uint scenario = 1;
 
   function testCannotGetBidPriceOnNormalAccount() public {
@@ -33,6 +32,18 @@ contract UNIT_TestStartAuction is DutchAuctionBase {
 
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc, scenario);
     assertEq(maxProportion, 0.4e18); // can liquidate 40% of portfolio at most
+  }
+
+  function testCannotAuctionOnSolventAccount() public {
+    vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
+    dutchAuction.startAuction(aliceAcc, scenario);
+  }
+
+  function testCannotRestartAuctions() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    vm.expectRevert(IDutchAuction.DA_AuctionAlreadyStarted.selector);
+    dutchAuction.startAuction(aliceAcc, scenario);
   }
 
   //  function testStartInsolventAuctionRead() public {
@@ -73,14 +84,6 @@ contract UNIT_TestStartAuction is DutchAuctionBase {
   //    (int upperBound, int lowerBound) = dutchAuction.getBounds(aliceAcc);
   //    assertEq(auction.lowerBound, lowerBound);
   //    assertEq(auction.upperBound, upperBound);
-  //  }
-
-  //  function testCannotStartAuctionAlreadyStarted() public {
-  //    _startDefaultSolventAuction(aliceAcc);
-
-  //    // start an auction on Alice's account
-  //    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
-  //    dutchAuction.startAuction(aliceAcc);
   //  }
 
   //  // test that an auction can start as solvent and convert to insolvent
@@ -245,16 +248,4 @@ contract UNIT_TestStartAuction is DutchAuctionBase {
     // start an auction on Alice's account
     dutchAuction.startAuction(acc, scenario);
   }
-
-  //  function _startDefaultInsolventAuction(uint acc) internal {
-  //    manager.giveAssets(acc);
-
-  //    manager.setMaintenanceMarginForPortfolio(-1);
-  //    manager.setInitMarginForPortfolio(-1000 * 1e18); // 1 thousand bucks
-
-  //    manager.setInitMarginForInversedPortfolio(-1); // price drops from -1 => -1000
-
-  //    // start an auction on Alice's account
-  //    dutchAuction.startAuction(acc);
-  //  }
 }

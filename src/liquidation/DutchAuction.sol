@@ -105,9 +105,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
 
-    if (auctions[accountId].ongoing) {
-      revert DA_AuctionAlreadyStarted(accountId);
-    }
+    if (auctions[accountId].ongoing) revert DA_AuctionAlreadyStarted();
 
     (int upperBound, int markToMarket) = _getVUpperAndMtM(accountId, scenarioId);
     if (upperBound > 0) {

@@ -85,7 +85,7 @@ interface IDutchAuction {
   error DA_AuctionNotStarted(uint accountId);
 
   /// @dev emitted when a risk manager tries to start an auction that has already been started
-  error DA_AuctionAlreadyStarted(uint accountId);
+  error DA_AuctionAlreadyStarted();
 
   /// @dev emitted when a bid is submitted on a solvent auction that has passed the auction time
   ///      at this point, it can be converted into insolvent auction and keep going.
