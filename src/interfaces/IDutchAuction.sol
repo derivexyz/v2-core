@@ -13,6 +13,7 @@ interface IDutchAuction {
     bool insolvent;
     /// If an auction is active
     bool ongoing;
+    uint percentageLeft;
     /// The startTime of the auction
     uint startTime;
     /// The change in value of the portfolio per step in dollars when not insolvent

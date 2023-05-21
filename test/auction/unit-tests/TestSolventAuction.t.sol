@@ -11,6 +11,11 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.getCurrentBidPrice(aliceAcc);
   }
 
+  function testCannotCallTerminateOnNonExistentAuction() public {
+    vm.expectRevert(IDutchAuction.DA_NotOngoingAuction.selector);
+    dutchAuction.checkCanTerminateAuction(aliceAcc);
+  }
+
   /////////////////////////
   // Start Auction Tests //
   /////////////////////////
@@ -46,119 +51,114 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.startAuction(aliceAcc, scenario);
   }
 
-  //  function testStartInsolventAuctionRead() public {
-  //    _startDefaultInsolventAuction(aliceAcc);
+  function testCanBidWithMaxPercentage() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    // fast forward to half way through the fast auction
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
 
-  //    // log all the auction struct details
-  //    assertEq(auction.insolvent, true);
-  //    assertEq(auction.ongoing, true);
-  //    assertEq(auction.startTime, block.timestamp);
+    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
+    assertEq(currentBidPrice, 270e18); // 90% of mark to market
 
-  //    (int upperBound, int lowerBound) = dutchAuction.getBounds(aliceAcc);
-  //    assertEq(upperBound, -1);
-  //    assertEq(lowerBound, -1000e18);
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc, scenario);
+    assertEq(maxProportion / 1e15, 425); // can liquidate 42.5% of portfolio at most
 
-  //    // getting the current bid price
-  //    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-  //    assertEq(currentBidPrice, 0);
-  //  }
+    // bid on the auction
+    vm.prank(bob);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
-  //  function testCannotStartAuctionOnAccountAboveMargin() public {
-  //    vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
-  //    dutchAuction.startAuction(aliceAcc);
-  //  }
+    assertEq(finalPercentage, maxProportion); // bid max
+    assertEq(cashToBidder, 0); // bid max
+    assertEq(cashFromBidder / 1e18, 114); // 42.5% of portfolio, price at 270
 
-  //  function testStartAuctionAndCheckValues() public {
-  //    manager.giveAssets(aliceAcc);
-  //    manager.setMaintenanceMarginForPortfolio(-1);
+    // // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true); // start does not automatically un-flag because mocked MM is not updated
+    assertEq(auction.insolvent, false);
+  }
 
-  //    // start an auction on Alice's account
-  //    dutchAuction.startAuction(aliceAcc);
+  function testCanBidWithLowerPercentage() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    // fast forward to half way through the fast auction
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
 
-  //    (int upperBound, int lowerBound) = dutchAuction.getBounds(aliceAcc);
-  //    assertEq(auction.lowerBound, lowerBound);
-  //    assertEq(auction.upperBound, upperBound);
-  //  }
+    // bidder can liquidate 42.5% of portfolio at most
+    uint percentage = 0.1e18;
+    // bid on the auction
+    vm.prank(bob);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
 
-  //  // test that an auction can start as solvent and convert to insolvent
-  //  function testConvertToInsolventAuction() public {
-  //    _startDefaultSolventAuction(aliceAcc);
+    assertEq(finalPercentage, percentage); // bid max
+    assertEq(cashToBidder, 0); // 0 dollar paid from SM
+    assertEq(cashFromBidder / 1e18, 27); // 10% of portfolio, price at 270
 
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.insolvent, false);
+    // // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true); // start does not automatically un-flag because mocked MM is not updated
+    assertEq(auction.insolvent, false);
+  }
 
-  //    // fast forward
-  //    vm.warp(block.timestamp + dutchAuctionParameters.lengthOfAuction);
-  //    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
+  function testBidRaceCondition() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // mark the auction as insolvent
-  //    dutchAuction.convertToInsolventAuction(aliceAcc);
+    // fast forward to half way through the fast auction
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
 
-  //    // testing that the view returns the correct auction.
-  //    auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.insolvent, true);
+    uint percentage = 0.1e18;
 
-  //    // cannot mark twice
-  //    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyInInsolvencyMode.selector, aliceAcc));
-  //    dutchAuction.convertToInsolventAuction(aliceAcc);
-  //  }
+    vm.prank(bob);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
+    vm.prank(charlie);
+    (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage);
 
-  //  function testStartAuctionFailingOnGoingAuction() public {
-  //    _startDefaultSolventAuction(aliceAcc);
+    assertEq(cashFromCharlie, cashFromBob); // they should pay the same amount
+    assertEq(charliePercentage, bobPercentage);
 
-  //    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyStarted.selector, aliceAcc));
-  //    dutchAuction.startAuction(aliceAcc);
-  //  }
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.percentageLeft, 0.8e18);
+  }
 
-  //  function testCannotMarkInsolventIfAuctionNotInsolvent() public {
-  //    _startDefaultSolventAuction(aliceAcc);
+  //  test that an auction can start as solvent and convert to insolvent
+  function testConvertToInsolventAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.accountId, aliceAcc);
-  //    assertEq(auction.ongoing, true);
-  //    assertEq(auction.insolvent, false);
+    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
 
-  //    assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
-  //    // start an auction on Alice's account
-  //    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector, aliceAcc));
-  //    dutchAuction.convertToInsolventAuction(aliceAcc);
-  //  }
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.insolvent, false);
 
-  //  function testGetMaxProportionNegativeMargin() public {
-  //    // mock MM and IM
-  //    manager.giveAssets(aliceAcc);
-  //    manager.setMaintenanceMarginForPortfolio(-1);
-  //    manager.setInitMarginForPortfolio(-100_000 * 1e18);
+    // fast forward till end of auction
+    vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength);
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
 
-  //    // start an auction on Alice's account
-  //    dutchAuction.startAuction(aliceAcc);
+    // mark the auction as insolvent
+    dutchAuction.convertToInsolventAuction(aliceAcc);
 
-  //    // getting the max proportion
-  //    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-  //    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
-  //  }
+    // testing that the view returns the correct auction.
+    auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.insolvent, true);
 
-  //  function testGetMaxProportionPositiveMargin() public {
-  //    // mock MM and IM
-  //    manager.giveAssets(aliceAcc);
-  //    manager.setMaintenanceMarginForPortfolio(-1);
-  //    manager.setInitMarginForPortfolio(1000 * 1e18);
+    // cannot mark twice
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionAlreadyInInsolvencyMode.selector, aliceAcc));
+    dutchAuction.convertToInsolventAuction(aliceAcc);
+  }
 
-  //    // start an auction on Alice's account
-  //    dutchAuction.startAuction(aliceAcc);
+  function testCannotMarkInsolventIfAuctionNotInsolvent() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // getting the max proportion
-  //    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc);
-  //    assertEq(maxProportion, 1e18); // 100% of the portfolio could be liquidated
-  //  }
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.accountId, aliceAcc);
+    assertEq(auction.ongoing, true);
+    assertEq(auction.insolvent, false);
+
+    assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
+    // start an auction on Alice's account
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector, aliceAcc));
+    dutchAuction.convertToInsolventAuction(aliceAcc);
+  }
 
   //  function testStartInsolventAuctionAndIncrement() public {
   //    manager.giveAssets(aliceAcc);
@@ -184,56 +184,28 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   //    assertEq(currentStep, 1);
   //  }
 
-  //  function testCannotStepNonInsolventAuction() public {
-  //    _startDefaultSolventAuction(aliceAcc);
+  function testCannotStepNonInsolventAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // increment the insolvent auction
-  //    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_SolventAuctionCannotIncrement.selector, aliceAcc));
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //  }
+    // increment the insolvent auction
+    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_SolventAuctionCannotIncrement.selector, aliceAcc));
+    dutchAuction.continueInsolventAuction(aliceAcc);
+  }
 
-  //  function testTerminatesSolventAuction() public {
-  //    _startDefaultSolventAuction(aliceAcc);
+  function testTerminatesSolventAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.ongoing, true);
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true);
 
-  //    // deposit margin => makes IM(rv = 0) > 0
-  //    manager.setInitMarginForPortfolioZeroRV(15_000 * 1e18);
-  //    // terminate the auction
-  //    dutchAuction.terminateAuction(aliceAcc);
-  //    // check that the auction is terminated
-  //    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
-  //  }
-
-  //  function testTerminatesInsolventAuction() public {
-  //    _startDefaultInsolventAuction(aliceAcc);
-
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.ongoing, true);
-
-  //    // set maintenance margin > 0
-  //    manager.setMaintenanceMarginForPortfolio(5_000 * 1e18);
-  //    // terminate the auction
-  //    dutchAuction.terminateAuction(aliceAcc);
-  //    // check that the auction is terminated
-  //    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
-  //  }
-
-  //  function testCannotTerminateAuctionIfAccountIsUnderwater() public {
-  //    manager.giveAssets(aliceAcc);
-  //    manager.setMaintenanceMarginForPortfolio(-1);
-  //    manager.setInitMarginForPortfolio(-10000 * 1e18); // 1 million bucks
-
-  //    // start an auction on Alice's account
-  //    dutchAuction.startAuction(aliceAcc);
-
-  //    // terminate the auction
-  //    vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionCannotTerminate.selector, aliceAcc));
-  //    dutchAuction.terminateAuction(aliceAcc);
-  //  }
+    // can un-flag if IM > 0
+    manager.setMockMargin(aliceAcc, true, 1e18);
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+    // check that the auction is terminated
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+  }
 
   function _startDefaultSolventAuction(uint acc) internal {
     // -200 init margin

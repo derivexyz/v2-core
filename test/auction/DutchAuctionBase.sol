@@ -17,8 +17,10 @@ import "../shared/mocks/MockFeeds.sol";
 contract DutchAuctionBase is Test {
   address alice;
   address bob;
+  address charlie;
   uint aliceAcc;
   uint bobAcc;
+  uint charlieAcc;
 
   Accounts account;
   MockSM sm;
@@ -79,10 +81,12 @@ contract DutchAuctionBase is Test {
   function _setupAccounts() public {
     alice = address(0xaa);
     bob = address(0xbb);
+    charlie = address(0xcc);
     usdc.approve(address(usdcAsset), type(uint).max);
 
     aliceAcc = account.createAccount(alice, manager);
     bobAcc = account.createAccount(bob, manager);
+    charlieAcc = account.createAccount(charlie, manager);
   }
 
   //////////////////////////

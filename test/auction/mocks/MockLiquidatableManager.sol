@@ -25,7 +25,7 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     return mockFeeCharged[tradeId][account];
   }
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external {
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint totalPortion, uint cashAmount) external {
     // do nothing
   }
 

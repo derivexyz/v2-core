@@ -17,24 +17,30 @@ import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title Dutch Auction
  * @author Lyra
  * @notice Is used to liquidate an account that does not meet the margin requirements
  * There are 3 types of auctions:
- *   1. SolventFastAuction:
+ *
+ * 1. SolventFastAuction:
  * start on account below maintenance margin, starting bid from 98% of Mtm to
- *          80% of Mtm, within 20 minutes
+ * 80% of Mtm, within 20 minutes
  * can be un-flagged if initial margin > 0
- *    2. SolventSlowAuction
+ *
+ * 2. SolventSlowAuction
  * continue if a solvent fast auction reach the 80% bound. Goes from 80% off MtM to 0.
- *          within 12 hours
+ * within 12 hours
  * can be un-flagged if initial margin > 0
- *    3. InsolventAuction
+ *
+ * 3. InsolventAuction
  * start insolvent auction that will be printing the liquidator cash or pay out from
  * security module to take out the position
  * the price of portfolio went from 0 to Initial margin (negative)
  * can be un-flagged if maintenance margin > 0
+ *
  */
 contract DutchAuction is IDutchAuction, Ownable2Step {
   using SafeCast for int;
@@ -132,11 +138,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @return finalPercentage percentage of portfolio being liquidated
    * @return cashFromBidder Amount of cash paid from bidder to liquidated account
    * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
-   * @return fee Amount of cash paid from bidder to security module
    */
   function bid(uint accountId, uint bidderId, uint percentOfAccount)
     external
-    returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder, uint fee)
+    returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder)
   {
     if (percentOfAccount > DecimalMath.UNIT) {
       revert DA_AmountTooLarge(accountId, percentOfAccount);
@@ -195,7 +200,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // risk manager transfers portion of the account to the bidder
     // liquidator pays "cashFromLiquidator" to accountId
     address manager = address(accounts.manager(accountId));
-    ILiquidatableManager(manager).executeBid(accountId, bidderId, finalPercentage, cashFromBidder);
+    ILiquidatableManager(manager).executeBid(
+      accountId, bidderId, finalPercentage, auctions[accountId].percentageLeft, cashFromBidder
+    );
+
+    auctions[accountId].percentageLeft -= finalPercentage;
 
     emit Bid(accountId, bidderId, finalPercentage, cashFromBidder);
 
@@ -345,7 +354,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       insolvent: false,
       ongoing: true,
       startTime: block.timestamp,
-      dv: 0, // ?? todo
+      percentageLeft: 1e18,
+      dv: 0, // combine or remove
       stepInsolvent: 0,
       lastStepUpdate: 0,
       upperBound: upperBound
@@ -370,6 +380,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       insolvent: true,
       ongoing: true,
       startTime: block.timestamp,
+      percentageLeft: 1e18,
       dv: dv,
       stepInsolvent: 0,
       lastStepUpdate: 0,
