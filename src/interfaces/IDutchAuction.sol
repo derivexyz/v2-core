@@ -37,8 +37,6 @@ interface IDutchAuction {
   struct InsolventAuctionParams {
     /// total seconds
     uint32 totalSteps;
-    /// Length of each step in seconds
-    uint32 stepInterval;
     // Amount of seconds to go to next step
     uint32 coolDown;
   }
