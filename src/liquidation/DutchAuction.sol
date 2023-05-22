@@ -178,7 +178,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       uint scenarioId = auctions[accountId].scenarioId;
 
       // MtM is expected to be negative
-      int markToMarket = _getMarkToMarket(accountId, scenarioId);
+      int markToMarket = _getMarkToMarket(accountId);
 
       // todo: if it changes from fast to slow, lock withdraw?
       (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
@@ -300,7 +300,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
   function getMaxProportion(uint accountId, uint scenarioId) external view returns (uint) {
-    int markToMarket = _getMarkToMarket(accountId, scenarioId);
+    int markToMarket = _getMarkToMarket(accountId);
 
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
@@ -466,7 +466,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function _getVUpperAndMtM(uint accountId, uint scenarioId) internal view returns (int vUpper, int markToMarket) {
     address manager = address(accounts.manager(accountId));
-    markToMarket = _getMarkToMarket(accountId, scenarioId);
+    markToMarket = _getMarkToMarket(accountId);
     vUpper = markToMarket.multiplyDecimal(int64(solventAuctionParams.startingMtMPercentage));
   }
 
@@ -474,9 +474,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @notice get the mark to market of an account from the account's manager.
    * @dev scenarioId will be ignored for basic manager
    */
-  function _getMarkToMarket(uint accountId, uint scenarioId) internal view returns (int markToMarket) {
+  function _getMarkToMarket(uint accountId) internal view returns (int markToMarket) {
     address manager = address(accounts.manager(accountId));
-    markToMarket = ILiquidatableManager(manager).getMarkToMarket(accountId, scenarioId);
+    markToMarket = ILiquidatableManager(manager).getMarkToMarket(accountId);
   }
 
   /**

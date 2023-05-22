@@ -64,7 +64,7 @@ contract BaseManagerTester is BaseManager {
 
   function getMarginWithData(uint, bool, uint) external view returns (int) {}
 
-  function getMarkToMarket(uint, uint) external view returns (int) {}
+  function getMarkToMarket(uint) external view returns (int) {}
 }
 
 contract UNIT_TestAbstractBaseManager is Test {

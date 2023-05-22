@@ -549,7 +549,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     return getMargin(accountId, isInitial);
   }
 
-  function getMarkToMarket(uint accountId, uint scenarioId) external view returns (int) {
+  function getMarkToMarket(uint accountId) external view returns (int) {
     // todo: implementation
   }
 

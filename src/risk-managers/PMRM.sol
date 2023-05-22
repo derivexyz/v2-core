@@ -415,7 +415,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     return _getMargin(portfolio, isInitial, scenarios, true);
   }
 
-  function getMarkToMarket(uint accountId, uint scenarioId) external view returns (int) {
+  function getMarkToMarket(uint accountId) external view returns (int) {
     // todo: implementation
   }
 
