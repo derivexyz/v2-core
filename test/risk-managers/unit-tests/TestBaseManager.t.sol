@@ -282,6 +282,10 @@ contract UNIT_TestAbstractBaseManager is Test {
     assertEq(accounts.getBalance(aliceAcc, cash, 0), 0);
   }
 
+  function testSettleCashInterest() external {
+    tester.settleInterest(aliceAcc);
+  }
+
   // alice open 10 long call, 10 short put
   function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {
     vm.prank(bob);

@@ -7,22 +7,22 @@ import "src/interfaces/ILiquidatableManager.sol";
 
 contract MockLiquidatableManager is MockManager, ILiquidatableManager {
   mapping(uint tradeId => mapping(uint account => uint fee)) mockFeeCharged;
-  mapping(uint => mapping(bool => int)) mockMargin;
+  mapping(uint account => mapping(bool isInitial => mapping(uint scenario => int margin))) mockMargin;
 
   mapping(uint => int) mockMarkToMarket;
 
   constructor(address account_) MockManager(account_) {}
 
-  function setMockMargin(uint accountId, bool isInitial, int margin) external {
-    mockMargin[accountId][isInitial] = margin;
+  function setMockMargin(uint accountId, bool isInitial, uint scenario, int margin) external {
+    mockMargin[accountId][isInitial][scenario] = margin;
   }
 
-  function setMockFeeCharged(uint tradeId, uint account, uint fee) external {
-    mockFeeCharged[tradeId][account] = fee;
+  function setMockFeeCharged(uint tradeId, uint accountId, uint fee) external {
+    mockFeeCharged[tradeId][accountId] = fee;
   }
 
-  function feeCharged(uint tradeId, uint account) external view returns (uint) {
-    return mockFeeCharged[tradeId][account];
+  function feeCharged(uint tradeId, uint accountId) external view returns (uint) {
+    return mockFeeCharged[tradeId][accountId];
   }
 
   function settleInterest(uint accountId) external {}
@@ -31,12 +31,12 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     // do nothing
   }
 
-  function getMargin(uint accountId, bool isInitial) external view override returns (int) {
-    return mockMargin[accountId][isInitial];
+  function getMargin(uint, bool) external pure override returns (int) {
+    return 0;
   }
 
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int) {
-    return (mockMargin[accountId][isInitial], mockMarkToMarket[accountId]);
+    return (mockMargin[accountId][isInitial][scenarioId], mockMarkToMarket[accountId]);
   }
 
   function getMarkToMarket(uint accountId) external view returns (int) {

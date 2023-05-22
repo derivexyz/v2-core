@@ -117,10 +117,10 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
   function _startDefaultInsolventAuction(uint acc) internal {
     // -500 init margin
-    manager.setMockMargin(acc, true, -200e18);
+    manager.setMockMargin(acc, true, scenario, -200e18);
 
     // -300 maintenance margin
-    manager.setMockMargin(acc, false, -100e18);
+    manager.setMockMargin(acc, false, scenario, -100e18);
 
     // mark to market: negative!!
     manager.setMarkToMarket(acc, -100e18);

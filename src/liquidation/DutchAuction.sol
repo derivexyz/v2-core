@@ -179,8 +179,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
       if (bidPrice <= 0) revert DA_SolventAuctionEnded();
 
-      uint scenarioId = auctions[accountId].scenarioId;
-
       // todo: if it changes from fast to slow, maybe lock withdraw in cash
       (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 

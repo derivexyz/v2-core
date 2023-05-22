@@ -1,3 +1,5 @@
+pragma solidity ^0.8.18;
+
 import "src/interfaces/IInterestRateFeed.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
