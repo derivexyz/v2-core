@@ -59,7 +59,7 @@ contract AllowList is BaseLyraFeed, IAllowList {
   function acceptData(bytes calldata data) external override {
     AllowListData memory allowListData = abi.decode(data, (AllowListData));
 
-    bytes32 structHash = hashSpotData(allowListData);
+    bytes32 structHash = hashAllowListData(allowListData);
 
     _verifySignatureDetails(allowListData.signer, structHash, allowListData.signature, allowListData.deadline, 0);
 
@@ -77,7 +77,7 @@ contract AllowList is BaseLyraFeed, IAllowList {
   /**
    * @dev return the hash of the allowListData object
    */
-  function hashSpotData(AllowListData memory allowListData) public pure returns (bytes32) {
+  function hashAllowListData(AllowListData memory allowListData) public pure returns (bytes32) {
     return keccak256(
       abi.encode(
         ALLOW_LIST_DATA_TYPEHASH,
