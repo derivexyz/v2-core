@@ -113,15 +113,15 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     if (auctions[accountId].ongoing) revert DA_AuctionAlreadyStarted();
 
-    (int upperBound, int markToMarket) = _getVUpperAndMtM(accountId, scenarioId);
-    if (upperBound > 0) {
+    int markToMarket = _getMarkToMarket(accountId);
+    if (markToMarket > 0) {
       // solvent auction goes from upper bound -> 0
 
       // charge the account a fee to security module
       uint fee = _getLiquidationFee(accountId, scenarioId, markToMarket);
       //todo: charge fee
 
-      _startSolventAuction(accountId, scenarioId, upperBound);
+      _startSolventAuction(accountId, scenarioId, markToMarket, fee);
     } else {
       // insolvent auction start from 0 -> initial margin (negative number)
       int lowerBound = _getInitialMargin(accountId, scenarioId);
@@ -170,14 +170,14 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       }
     } else {
       // if the account is solvent, the bidder pays the account for a portion of the account
-      int bidPrice = _getSolventAuctionBidPrice(accountId);
-
-      if (bidPrice == 0) revert DA_SolventAuctionEnded();
-
-      uint scenarioId = auctions[accountId].scenarioId;
-
       // MtM is expected to be negative
       int markToMarket = _getMarkToMarket(accountId);
+
+      int bidPrice = _getSolventAuctionBidPrice(accountId, markToMarket);
+
+      if (bidPrice <= 0) revert DA_SolventAuctionEnded();
+
+      uint scenarioId = auctions[accountId].scenarioId;
 
       // todo: if it changes from fast to slow, lock withdraw?
       (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
@@ -213,11 +213,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId the accountID being liquidated
    */
   function convertToInsolventAuction(uint accountId) external {
-    if (_getSolventAuctionBidPrice(accountId) > 0) {
-      revert DA_OngoingSolventAuction();
-    }
+    int markToMarket = _getMarkToMarket(accountId);
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode();
+    }
+    if (_getSolventAuctionBidPrice(accountId, markToMarket) > 0) {
+      revert DA_OngoingSolventAuction();
     }
 
     // check mm > 0
@@ -316,7 +317,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function getCurrentBidPrice(uint accountId) external view returns (int) {
     bool insolvent = auctions[accountId].insolvent;
     if (!insolvent) {
-      return _getSolventAuctionBidPrice(accountId);
+      int markToMarket = _getMarkToMarket(accountId);
+      return _getSolventAuctionBidPrice(accountId, markToMarket);
     } else {
       // the payout is the positive amount security module will pay the liquidator (bidder)
       // which is a "negative" bid price
@@ -335,12 +337,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /**
    * @notice Starts an auction that starts with a positive upper bound
    * @dev Function is here to break up the logic for insolvent and solvent auctions
-   * @param upperBound The upper bound of the auction that must be greater than zero
    * @param accountId The id of the account being liquidated
    */
-  function _startSolventAuction(uint accountId, uint scenarioId, int upperBound) internal {
-    // this function will revert if upper bound is somehow negative
-
+  function _startSolventAuction(uint accountId, uint scenarioId, int markToMarket, uint fee) internal {
     auctions[accountId] = Auction({
       accountId: accountId,
       scenarioId: scenarioId,
@@ -348,24 +347,24 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
-      dv: 0, // combine or remove
+      stepSize: 0,
       stepInsolvent: 0,
-      lastStepUpdate: 0,
-      upperBound: upperBound
+      lastStepUpdate: 0
     });
 
-    emit AuctionStarted(accountId, upperBound, 0, block.timestamp, false);
+    emit SolventAuctionStarted(accountId, scenarioId, markToMarket, fee);
   }
 
   /**
    * @notice Explain to an end user what this does
    * @dev Explain to a developer any extra details
-   * @param lowerBound The lowerBound, the minimum acceptable bid for an insolvency
+   * @param lowerBound negative amount in cash, -100e18 means the SM will pay out $100 CASH at most
    * @param accountId the id of the account that is being liquidated
    */
   function _startInsolventAuction(uint accountId, uint scenarioId, int lowerBound) internal {
     // decrease value every step
-    uint dv = IntLib.abs(lowerBound) / insolventAuctionParams.totalSteps;
+    uint numSteps = insolventAuctionParams.totalSteps;
+    uint stepSize = IntLib.abs(lowerBound) / numSteps;
 
     auctions[accountId] = Auction({
       accountId: accountId,
@@ -374,12 +373,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
-      dv: dv,
+      stepSize: stepSize,
       stepInsolvent: 0,
-      lastStepUpdate: block.timestamp,
-      upperBound: 0
+      lastStepUpdate: block.timestamp
     });
-    emit AuctionStarted(accountId, 0, lowerBound, block.timestamp, true);
+    emit InsolventAuctionStarted(accountId, numSteps, stepSize);
   }
 
   /**
@@ -469,15 +467,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @dev get the upper bound of a solvent auction, which is the mark to market value of a portfolio
-   */
-  function _getVUpperAndMtM(uint accountId, uint scenarioId) internal view returns (int vUpper, int markToMarket) {
-    address manager = address(accounts.manager(accountId));
-    markToMarket = _getMarkToMarket(accountId);
-    vUpper = markToMarket.multiplyDecimal(int64(solventAuctionParams.startingMtMPercentage));
-  }
-
-  /**
    * @notice get the mark to market of an account from the account's manager.
    * @dev scenarioId will be ignored for basic manager
    */
@@ -512,7 +501,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId the uint id related to the auction
    * @return int the current bid price for the auction
    */
-  function _getSolventAuctionBidPrice(uint accountId) internal view returns (int) {
+  function _getSolventAuctionBidPrice(uint accountId, int markToMarket) internal view returns (int) {
     Auction memory auction = auctions[accountId];
 
     if (!auction.ongoing) revert DA_AuctionNotStarted();
@@ -524,19 +513,19 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp); //getDiscount;
 
     // MARK TO MARKET * discount
-    int bidPrice = auction.upperBound.multiplyDecimal(int(discount));
+    int bidPrice = markToMarket.multiplyDecimal(int(discount));
     return bidPrice;
   }
 
   /**
    * @dev return the value that the security module will pay the liquidator
    * @dev this can be translated to a "negative" bid price.
-   * 
+   *
    * @return payout: a positive number indicating how much the security module will pay the liquidator
    */
   function _getInsolventAuctionPayout(uint accountId) internal view returns (uint) {
     if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
 
-    return auctions[accountId].dv * auctions[accountId].stepInsolvent;
+    return auctions[accountId].stepSize * auctions[accountId].stepInsolvent;
   }
 }

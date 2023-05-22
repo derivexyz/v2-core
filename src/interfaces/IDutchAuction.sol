@@ -7,17 +7,19 @@ interface IDutchAuction {
     uint accountId;
     /// scenario ID used to calculate IM or MtM. Ignored for Basic Manager
     uint scenarioId;
-    /// The upperBound(starting price) of the auction in cash asset
-    int upperBound;
     /// Boolean that will be switched when the auction price passes through 0
     bool insolvent;
     /// If an auction is active
     bool ongoing;
+    /// The percentage of the portfolio that is left to be auctioned
     uint percentageLeft;
     /// The startTime of the auction
     uint startTime;
+    /*------------------------- *
+     * Insolvent Auction Params *
+    /*------------------------- */
     /// The change in value of the portfolio per step in dollars when not insolvent
-    uint dv;
+    uint stepSize;
     /// The current step if the auction is insolvent
     uint stepInsolvent;
     /// The timestamp of the last increase of steps for insolvent auction
@@ -50,8 +52,11 @@ interface IDutchAuction {
   // EVENTS //
   ////////////
 
-  // emitted when an auction starts
-  event AuctionStarted(uint accountId, int upperBound, int lowerBound, uint startTime, bool insolvent);
+  // emitted when a solvent auction starts
+  event SolventAuctionStarted(uint accountId, uint scenarioId, int markToMarket, uint fee);
+
+  // emitted when an insolvent auction starts
+  event InsolventAuctionStarted(uint accountId, uint steps, uint stepSize);
 
   // emitted when a bid is placed
   event Bid(uint accountId, uint bidderId, uint percentagePortfolio, uint cash);
