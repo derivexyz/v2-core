@@ -256,13 +256,13 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
     // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
-    int postIM = _getMargin(accountId, portfolio, true);
+    (int postIM,) = _getMargin(accountId, portfolio, true);
 
     // cash deposited has to cover the margin requirement
     if (cashBalance + postIM < 0) {
       BasicManagerPortfolio memory prePortfolio = _arrangePortfolio(_undoAssetDeltas(accountId, assetDeltas));
 
-      int preIM = _getMargin(accountId, prePortfolio, true);
+      (int preIM,) = _getMargin(accountId, prePortfolio, true);
 
       // allow the trade to pass if the net margin increased
       if (postIM > preIM) return;
@@ -278,13 +278,16 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function _getMargin(uint accountId, BasicManagerPortfolio memory portfolio, bool isInitial)
     internal
     view
-    returns (int margin)
+    returns (int totalMargin, int totalMarkToMarket)
   {
     int depegMultiplier = _getDepegMultiplier(isInitial);
 
     // for each markets, get margin and sum it up
     for (uint i = 0; i < portfolio.marketHoldings.length; i++) {
-      margin += _getMarketMargin(accountId, portfolio.marketHoldings[i], isInitial, depegMultiplier);
+      (int margin, int markToMarket) =
+        _getMarketMargin(accountId, portfolio.marketHoldings[i], isInitial, depegMultiplier);
+      totalMargin += margin;
+      totalMarkToMarket += markToMarket;
     }
   }
 
@@ -309,12 +312,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function _getMarketMargin(uint accountId, MarketHolding memory marketHolding, bool isInitial, int depegMultiplier)
     internal
     view
-    returns (int)
+    returns (int margin, int markToMarket)
   {
     int indexPrice = _getIndexPrice(marketHolding.marketId);
 
     int netPerpMargin = _getNetPerpMargin(marketHolding, isInitial);
-    int netOptionMargin = _getNetOptionMargin(marketHolding, indexPrice, isInitial);
+    (int netOptionMargin, int optionMtm) = _getNetOptionMargin(marketHolding, indexPrice, isInitial);
 
     int depegMargin = 0;
     if (depegMultiplier != 0) {
@@ -332,7 +335,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
       unrealizedPerpPNL = marketHolding.perp.getUnsettledAndUnrealizedCash(accountId);
     }
 
-    return netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
+    margin = netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
+    markToMarket = optionMtm;
   }
 
   /**
@@ -356,13 +360,15 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function _getNetOptionMargin(MarketHolding memory marketHolding, int indexPrice, bool isInitial)
     internal
     view
-    returns (int margin)
+    returns (int netMargin, int totalMarkToMarket)
   {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
-      margin += _calcNetBasicMarginSingleExpiry(
+      (int margin, int markToMarket) = _calcNetBasicMarginSingleExpiry(
         marketHolding.marketId, marketHolding.option, marketHolding.expiryHoldings[i], indexPrice, isInitial
       );
+      netMargin += margin;
+      totalMarkToMarket += markToMarket;
     }
   }
 
@@ -467,7 +473,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
    * @dev If an account's max loss is bounded, return min (max loss margin, isolated margin)
    *      If an account's max loss is unbounded, return isolated margin
    * @param expiryHolding strikes for single expiry
-   * @return margin If the account's option require 10K cash, this function will return -10K
+   * @return netMargin If the account's option & perp require 10K cash, this function will return -10K
+   * @return totalMarkToMarket the estimated worth of this expiry holding
    */
   function _calcNetBasicMarginSingleExpiry(
     uint8 marketId,
@@ -475,40 +482,39 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     ExpiryHolding memory expiryHolding,
     int indexPrice,
     bool isInitial
-  ) internal view returns (int margin) {
-    bool lossBounded = expiryHolding.netCalls >= 0;
-
-    int maxLossMargin = 0;
-
-    int isolatedMargin = 0;
-    bool zeroStrikeChecked;
+  ) internal view returns (int, int totalMarkToMarket) {
+    // We make sure the evaluate the scenario at price = 0
+    int maxLossMargin = _calcPayoffAtPrice(option, expiryHolding, 0);
+    int totalIsolatedMargin = 0;
 
     int forwardPrice = _getForwardPrice(marketId, expiryHolding.expiry);
 
     for (uint i; i < expiryHolding.options.length; i++) {
-      // calculate isolated margin for this strike, aggregate to isolatedMargin
-      isolatedMargin += _getIsolatedMargin(
-        marketId,
-        expiryHolding.expiry,
-        expiryHolding.options[i].strike,
-        expiryHolding.options[i].isCall,
-        expiryHolding.options[i].balance,
-        indexPrice,
-        forwardPrice,
-        isInitial
-      );
+      Option memory optionPos = expiryHolding.options[i];
+      // caching variables to bring them to the top of the stack
+      {
+        int _indexPrice = indexPrice;
+        bool _isInitial = isInitial;
+        uint8 _marketId = marketId;
+        uint _expiry = expiryHolding.expiry;
+
+        // calculate isolated margin for this strike, aggregate to isolatedMargin
+        (int isolatedMargin, int markToMarket) = _getIsolatedMargin(
+          _marketId,
+          _expiry,
+          optionPos.strike,
+          optionPos.isCall,
+          optionPos.balance,
+          _indexPrice,
+          forwardPrice,
+          _isInitial
+        );
+        totalIsolatedMargin += isolatedMargin;
+        totalMarkToMarket += markToMarket;
+      }
 
       // calculate the max loss margin, update the maxLossMargin if it's lower than current
-      uint scenarioPrice = expiryHolding.options[i].strike;
-      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, scenarioPrice), maxLossMargin);
-      if (scenarioPrice == 0) {
-        zeroStrikeChecked = true;
-      }
-    }
-
-    // Ensure price = 0 scenario is always evaluated.
-    if (lossBounded && !zeroStrikeChecked) {
-      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, 0), maxLossMargin);
+      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, optionPos.strike), maxLossMargin);
     }
 
     if (expiryHolding.netCalls < 0) {
@@ -516,8 +522,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
       maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice);
     }
 
-    // return the better of the 2 margins
-    return SignedMath.max(isolatedMargin, maxLossMargin);
+    // return the better of the 2 is the margin
+    return (SignedMath.max(totalIsolatedMargin, maxLossMargin), totalMarkToMarket);
   }
 
   /**
@@ -549,25 +555,28 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     // get portfolio from array of balances
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
-    return _getMargin(accountId, portfolio, isInitial);
+    (int margin,) = _getMargin(accountId, portfolio, isInitial);
+    return margin;
   }
 
   /**
    * @dev the function used by the auction contract
    */
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint) external view returns (int, int) {
-    int margin = getMargin(accountId, isInitial);
-    return (margin, 0);
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
+    return _getMargin(accountId, portfolio, isInitial);
   }
 
   /**
    * @dev return the isolated margin for a single option position
-   * @return negative number, indicate margin requirement for a position
+   * @return margin negative number, indicate margin requirement for a position
+   * @return markToMarket the estimated worth of this position
    */
   function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
     external
     view
-    returns (int)
+    returns (int margin, int markToMarket)
   {
     int indexPrice = _getIndexPrice(marketId);
     int forwardPrice = _getForwardPrice(marketId, expiry);
@@ -618,12 +627,17 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     int indexPrice,
     int forwardPrice,
     bool isInitial
-  ) internal view returns (int margin) {
-    if (balance > 0) return 0;
+  ) internal view returns (int margin, int markToMarket) {
+    (uint vol,) = volFeeds[marketId].getVol(uint128(strike), uint64(expiry));
+    markToMarket = _getMarkToMarket(marketId, balance, forwardPrice, strike, expiry, vol, isCall);
+
+    // a long position doesn't have any "margin", cannot be used to offset other positions
+    if (balance > 0) return (margin, markToMarket);
+
     if (isCall) {
-      margin = _getIsolatedMarginForCall(marketId, expiry, strike, balance, indexPrice, forwardPrice, isInitial);
+      margin = _getIsolatedMarginForCall(marketId, markToMarket, strike, balance, indexPrice, isInitial);
     } else {
-      margin = _getIsolatedMarginForPut(marketId, expiry, strike, balance, indexPrice, forwardPrice, isInitial);
+      margin = _getIsolatedMarginForPut(marketId, markToMarket, strike, balance, indexPrice, isInitial);
     }
   }
 
@@ -633,16 +647,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
    */
   function _getIsolatedMarginForPut(
     uint8 marketId,
-    uint expiry,
+    int markToMarket,
     uint strike,
     int amount,
-    int forwardPrice,
     int indexPrice,
     bool isInitial
   ) internal view returns (int) {
-    (uint vol,) = volFeeds[marketId].getVol(uint128(strike), uint64(expiry));
-    int markToMarket = _getMarkToMarket(marketId, amount, forwardPrice, strike, expiry, vol, false);
-
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
     int maintenanceMargin = SignedMath.max(
@@ -666,16 +676,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
    */
   function _getIsolatedMarginForCall(
     uint8 marketId,
-    uint expiry,
+    int markToMarket,
     uint strike,
     int amount,
-    int forwardPrice,
     int indexPrice,
     bool isInitial
   ) internal view returns (int) {
-    (uint vol,) = volFeeds[marketId].getVol(uint128(strike), uint64(expiry));
-    int markToMarket = _getMarkToMarket(marketId, amount, forwardPrice, strike, expiry, vol, true);
-
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
     if (!isInitial) {
