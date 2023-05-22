@@ -105,7 +105,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param scenarioId id to compute the IM with for PMRM, ignored for basic manager
    */
   function startAuction(uint accountId, uint scenarioId) external {
-    // todo: settle interest rate?
+    // settle pending interest rate on an account
+    address manager = address(accounts.manager(accountId));
+    ILiquidatableManager(manager).settleInterest(accountId);
+
     (int maintenanceMargin, int markToMarket) = _getMarginAndMarkToMarket(accountId, false, scenarioId);
 
     // can only start auction if maintenance margin > 0

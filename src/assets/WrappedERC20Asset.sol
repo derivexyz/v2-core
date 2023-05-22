@@ -130,14 +130,15 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     int preBalance,
     IManager manager,
     address /*caller*/
-  ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+  ) external view onlyAccounts returns (int finalBalance, bool needAllowance) {
     if (adjustment.amount == 0) {
       return (preBalance, false);
     }
-    if (preBalance + adjustment.amount < 0) {
-      revert("Cannot have a negative balance");
-    }
-    return (preBalance + adjustment.amount, true);
+    finalBalance = preBalance + adjustment.amount;
+
+    if (finalBalance < 0) revert("Cannot have a negative balance");
+
+    return (finalBalance, adjustment.amount < 0);
   }
 
   /**

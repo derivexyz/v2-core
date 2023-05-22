@@ -5,7 +5,7 @@ import "forge-std/console2.sol";
 import "../interfaces/IOptionPricing.sol";
 
 contract OptionPricing is IOptionPricing {
-  function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external view returns (int) {
+  function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external pure returns (int) {
     int totalMTM;
     // TODO: maybe we wanna keep call/put price around in case we need it for next options
     for (uint i = 0; i < options.length; i++) {
