@@ -152,14 +152,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     if (checkCanTerminateAuction(accountId)) revert DA_AuctionShouldBeTerminated();
 
-    // _getCurrentBidPrice below will check if the auction is active or not
-
     if (auctions[accountId].insolvent) {
       finalPercentage = percentOfAccount;
 
       // the account is insolvent when the bid price for the account falls below zero
       // someone get paid from security module to take on the risk
-      cashToBidder = (-_getCurrentBidPrice(accountId)).toUint256().multiplyDecimal(finalPercentage);
+      uint currentPayout = _getInsolventAuctionPayout(accountId);
+      cashToBidder = currentPayout.multiplyDecimal(finalPercentage);
       // we first ask the security module to compensate the bidder
       uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
       // if amount paid is less than we requested:
@@ -171,7 +170,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       }
     } else {
       // if the account is solvent, the bidder pays the account for a portion of the account
-      int bidPrice = _getCurrentBidPrice(accountId);
+      int bidPrice = _getSolventAuctionBidPrice(accountId);
 
       if (bidPrice == 0) revert DA_SolventAuctionEnded();
 
@@ -214,13 +213,14 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId the accountID being liquidated
    */
   function convertToInsolventAuction(uint accountId) external {
-    // getCurrentBidPrice will revert if there is no auction for accountId going on
-    if (_getCurrentBidPrice(accountId) > 0) {
-      revert DA_AuctionNotEnteredInsolvency();
+    if (_getSolventAuctionBidPrice(accountId) > 0) {
+      revert DA_OngoingSolventAuction();
     }
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode();
     }
+
+    // check mm > 0
 
     uint scenarioId = auctions[accountId].scenarioId;
 
@@ -314,7 +314,14 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @return int the current bid price for the auction
    */
   function getCurrentBidPrice(uint accountId) external view returns (int) {
-    return _getCurrentBidPrice(accountId);
+    bool insolvent = auctions[accountId].insolvent;
+    if (!insolvent) {
+      return _getSolventAuctionBidPrice(accountId);
+    } else {
+      // the payout is the positive amount security module will pay the liquidator (bidder)
+      // which is a "negative" bid price
+      return -_getInsolventAuctionPayout(accountId).toInt256();
+    }
   }
 
   function getDiscountPercentage(uint startTime, uint current) external view returns (uint, bool) {
@@ -500,32 +507,36 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice gets the current bid price for a particular auction at the current block
-   * @dev returns the current bid price for a particular auction
+   * @notice gets the current bid price for a solvent auction at the current block
+   * @dev invariant: returned bids should always be positive
    * @param accountId the uint id related to the auction
    * @return int the current bid price for the auction
    */
-  function _getCurrentBidPrice(uint accountId) internal view returns (int) {
+  function _getSolventAuctionBidPrice(uint accountId) internal view returns (int) {
     Auction memory auction = auctions[accountId];
 
     if (!auction.ongoing) revert DA_AuctionNotStarted();
 
-    if (auction.insolvent) {
-      // @invariant: if insolvent, bids should always be negative
-      uint numSteps = auction.stepInsolvent;
-      return 0 - (auction.dv * numSteps).toInt256();
-    } else {
-      // @invariant: if solvent, bids should always be positive
-      uint totalLength = solventAuctionParams.fastAuctionLength + solventAuctionParams.slowAuctionLength;
-      if (block.timestamp > auction.startTime + totalLength) {
-        return 0;
-      }
+    uint totalLength = solventAuctionParams.fastAuctionLength + solventAuctionParams.slowAuctionLength;
+    if (block.timestamp > auction.startTime + totalLength) return 0;
 
-      // calculate discount percentage
-      (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp); //getDiscount;
+    // calculate discount percentage
+    (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp); //getDiscount;
 
-      int bidPrice = auction.upperBound.multiplyDecimal(int(discount));
-      return bidPrice;
-    }
+    // MARK TO MARKET * discount
+    int bidPrice = auction.upperBound.multiplyDecimal(int(discount));
+    return bidPrice;
+  }
+
+  /**
+   * @dev return the value that the security module will pay the liquidator
+   * @dev this can be translated to a "negative" bid price.
+   * 
+   * @return payout: a positive number indicating how much the security module will pay the liquidator
+   */
+  function _getInsolventAuctionPayout(uint accountId) internal view returns (uint) {
+    if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
+
+    return auctions[accountId].dv * auctions[accountId].stepInsolvent;
   }
 }

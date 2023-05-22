@@ -74,7 +74,7 @@ interface IDutchAuction {
 
   /// @dev emitted when someone tries to start an insolvent auction when bidding
   /// has not concluded.
-  error DA_AuctionNotEnteredInsolvency();
+  error DA_OngoingSolventAuction();
 
   /// @dev revert if trying to start an auction when it's above maintenance margin (well collateralized)
   error DA_AccountIsAboveMaintenanceMargin();

@@ -190,7 +190,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     assertGt(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
     // start an auction on Alice's account
-    vm.expectRevert(IDutchAuction.DA_AuctionNotEnteredInsolvency.selector);
+    vm.expectRevert(IDutchAuction.DA_OngoingSolventAuction.selector);
     dutchAuction.convertToInsolventAuction(aliceAcc);
   }
 
