@@ -119,6 +119,23 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(auction.percentageLeft, 0.8e18);
   }
 
+  function testBidMarkToMarketChange() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    // fast forward to half way through the fast auction, should give me 90% discount
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
+
+    uint percentage = 0.1e18;
+
+    // mark to market is changed to 1000, now i need to pay 90% of 1000 * 10% = 90
+    manager.setMarkToMarket(aliceAcc, 1000e18);
+
+    vm.prank(bob);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, 0.1e18);
+
+    assertEq(cashFromBob, 90e18);
+  }
+
   function testCannotBidWithInvalidPercentage() public {
     _startDefaultSolventAuction(aliceAcc);
     vm.expectRevert(IDutchAuction.DA_InvalidPercentage.selector);

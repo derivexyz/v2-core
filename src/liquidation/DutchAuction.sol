@@ -512,7 +512,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // calculate discount percentage
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp); //getDiscount;
 
-    // MARK TO MARKET * discount
     int bidPrice = markToMarket.multiplyDecimal(int(discount));
     return bidPrice;
   }
