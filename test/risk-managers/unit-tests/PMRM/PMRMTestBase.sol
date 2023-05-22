@@ -54,7 +54,7 @@ contract PMRMTestBase is Test {
   uint aliceAcc;
   uint bobAcc;
 
-  function setUp() public {
+  function setUp() public virtual {
     vm.warp(1640995200); // 1st jan 2022
 
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
@@ -359,6 +359,13 @@ contract PMRMTestBase is Test {
   }
 
   function _doBalanceTransfer(uint accA, uint accB, IAccounts.AssetBalance[] memory balances) internal {
+    accounts.submitTransfers(_getTransferBatch(accA, accB, balances), "");
+  }
+
+  function _getTransferBatch(uint accA, uint accB, IAccounts.AssetBalance[] memory balances)
+    internal
+    returns (IAccounts.AssetTransfer[] memory)
+  {
     IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](balances.length);
 
     for (uint i = 0; i < balances.length; i++) {
@@ -372,7 +379,7 @@ contract PMRMTestBase is Test {
       });
     }
 
-    accounts.submitTransfers(transferBatch, "");
+    return transferBatch;
   }
 
   function _getCashBalance(uint acc) public view returns (int) {

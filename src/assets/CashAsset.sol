@@ -178,30 +178,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
     uint cashAmount = stableAmount.to18DecimalsRoundUp(stableDecimals);
-
-    // if the cash asset is insolvent,
-    // each cash balance can only take out <100% amount of stable asset
-    if (temporaryWithdrawFeeEnabled) {
-      // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
-      cashAmount = cashAmount.divideDecimal(_getExchangeRate());
-    }
-
-    // transfer the asset out after potentially needing to calculate exchange rate
-    stableAsset.safeTransfer(recipient, stableAmount);
-
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
-        acc: accountId,
-        asset: ICashAsset(address(this)),
-        subId: 0,
-        amount: -int(cashAmount),
-        assetData: bytes32(0)
-      }),
-      true, // do trigger callback on handleAdjustment so we apply interest
-      ""
-    );
-
-    emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
+    _withdrawCashAmount(accountId, cashAmount, recipient);
   }
 
   /**
@@ -355,6 +332,19 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     }
   }
 
+  function forceWithdraw(uint accountId) external {
+    if (msg.sender != address(accounts.manager(accountId))) {
+      revert CA_ForceWithdrawNotAuthorized();
+    }
+    address owner = accounts.ownerOf(accountId);
+    int balance = accounts.getBalance(accountId, ICashAsset(address(this)), 0);
+    if (balance < 0) {
+      revert CA_ForceWithdrawNegativeBalance();
+    }
+
+    _withdrawCashAmount(accountId, balance.toUint256(), owner);
+  }
+
   /**
    * @notice Allows whitelisted manager to adjust netSettledCash
    * @dev Required to track printed cash for asymmetric settlements
@@ -370,6 +360,37 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   ////////////////////////////
   //   Internal Functions   //
   ////////////////////////////
+
+  /**
+   * @notice Withdraws cash from a given account and sends the converted stable amount to the recipient
+   */
+  function _withdrawCashAmount(uint accountId, uint cashAmount, address recipient) internal {
+    // if the cash asset is insolvent,
+    // each cash balance can only take out <100% amount of stable asset
+    if (temporaryWithdrawFeeEnabled) {
+      // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
+      cashAmount = cashAmount.divideDecimal(_getExchangeRate());
+    }
+
+    uint stableAmount = cashAmount.from18Decimals(stableDecimals);
+
+    // transfer the asset out after potentially needing to calculate exchange rate
+    stableAsset.safeTransfer(recipient, stableAmount);
+
+    accounts.assetAdjustment(
+      IAccounts.AssetAdjustment({
+        acc: accountId,
+        asset: ICashAsset(address(this)),
+        subId: 0,
+        amount: -int(cashAmount),
+        assetData: bytes32(0)
+      }),
+      true, // do trigger callback on handleAdjustment so we apply interest
+      ""
+    );
+
+    emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
+  }
 
   /**
    * @notice Accrues interest onto the balance provided

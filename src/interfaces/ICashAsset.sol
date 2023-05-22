@@ -49,6 +49,11 @@ interface ICashAsset is IAsset {
    */
   function updateSettledCash(int amountCash) external;
 
+  /**
+   * @notice Allows the account's risk manager to forcefully send all cash to the account owner
+   */
+  function forceWithdraw(uint accountId) external;
+
   ////////////////
   //   Events   //
   ////////////////
@@ -100,4 +105,10 @@ interface ICashAsset is IAsset {
 
   /// @dev Security module fee cut greater than 100%
   error CA_SmFeeInvalid(uint fee);
+
+  /// @dev The caller of force withdraw was not the account's risk manager
+  error CA_ForceWithdrawNotAuthorized();
+
+  /// @dev Calling force withdraw when user has a negative balance
+  error CA_ForceWithdrawNegativeBalance();
 }

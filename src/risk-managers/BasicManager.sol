@@ -199,6 +199,9 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     IAccounts.AssetDelta[] calldata assetDeltas,
     bytes calldata managerData
   ) public override onlyAccounts {
+    // check if account is valid
+    _verifyCanTrade(accountId);
+
     // send data to oracles if needed
     _processManagerData(tradeId, managerData);
 
