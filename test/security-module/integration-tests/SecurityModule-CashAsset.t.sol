@@ -55,7 +55,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
     cashAsset.setWhitelistManager(address(manager), true);
 
-    securityModule = new SecurityModule(accounts, cashAsset, usdc, IManager(manager));
+    securityModule = new SecurityModule(accounts, cashAsset, IManager(manager));
 
     smAccId = securityModule.accountId();
 
@@ -69,11 +69,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
   function testDepositIntoSM() public {
     uint depositAmount = 1000e6;
 
-    securityModule.deposit(depositAmount);
-
-    // first deposit get equivelant share of USDC <> seuciry module share
-    uint shares = securityModule.balanceOf(address(this));
-    assertEq(shares, depositAmount);
+    securityModule.donate(depositAmount);
 
     // cash in account is also updated
     int cashBalance = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
@@ -82,13 +78,10 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
 
   function testWithdrawFromSM() public {
     uint depositAmount = 1000e6;
-    securityModule.deposit(depositAmount);
+    securityModule.donate(depositAmount);
 
-    uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
-
-    securityModule.withdraw(sharesToWithdraw, address(this));
-    uint sharesLeft = securityModule.balanceOf(address(this));
-    assertEq(sharesLeft, sharesToWithdraw); // 50% shares remaining
+    securityModule.withdraw(depositAmount / 2, address(this));
+    usdc.balanceOf(address(this));
   }
 
   // test the numbers increased when we have fee cut on SM

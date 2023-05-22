@@ -20,12 +20,13 @@ import "../../shared/mocks/MockAsset.sol";
  */
 contract MockCashAssetWithExchangeRate is MockAsset {
   mapping(uint => int) public mockedBalanceWithInterest;
-
+  IERC20Metadata public immutable stableAsset;
   uint public mockExchangeRate = 1e18;
-
-  constructor(IAccounts _accounts, IERC20Metadata _stableAsset) MockAsset(_stableAsset, _accounts, true) {}
-
   int public netSettledCash;
+
+  constructor(IAccounts _accounts, IERC20Metadata _stableAsset) MockAsset(_stableAsset, _accounts, true) {
+    stableAsset = _stableAsset;
+  }
 
   function calculateBalanceWithInterest(uint accountId) external view returns (int balance) {
     return mockedBalanceWithInterest[accountId];
