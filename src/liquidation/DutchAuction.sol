@@ -119,7 +119,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       // solvent auction goes from upper bound -> 0
 
       // charge the account a fee to security module
-      uint fee = _getLiquidationFee(accountId, scenarioId, markToMarket, initMargin);
+      uint fee = _getLiquidationFee(markToMarket, initMargin);
       //todo: charge fee
 
       _startSolventAuction(accountId, scenarioId, markToMarket, fee);
@@ -185,7 +185,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
       // calculate tha max proportion of the portfolio that can be liquidated
-      uint pMax = _getMaxProportion(accountId, scenarioId, markToMarket, margin, discount); // discount
+      uint pMax = _getMaxProportion(markToMarket, margin, discount); // discount
 
       finalPercentage = percentOfAccount > pMax ? pMax : percentOfAccount;
 
@@ -311,7 +311,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
-    return _getMaxProportion(accountId, auctions[accountId].scenarioId, markToMarket, initialMargin, discount);
+    return _getMaxProportion(markToMarket, initialMargin, discount);
   }
 
   /**
@@ -405,12 +405,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev get the fee that should be transferred to the security module
    * @dev this function should only be called in solvent auction
    */
-  function _getLiquidationFee(uint accountId, uint scenarioId, int markToMarket, int initialMargin)
-    internal
-    view
-    returns (uint fee)
-  {
-    uint maxProportion = _getMaxProportion(accountId, scenarioId, markToMarket, initialMargin, 1e18);
+  function _getLiquidationFee(int markToMarket, int initialMargin) internal view returns (uint fee) {
+    uint maxProportion = _getMaxProportion(markToMarket, initialMargin, 1e18);
 
     fee =
       maxProportion.multiplyDecimal(IntLib.abs(markToMarket)).multiplyDecimal(solventAuctionParams.liquidatorFeeRate);
@@ -425,18 +421,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    *         IM - MtM * discount_percentage
    *
    *
-   * @param accountId the id of the account being liquidated
    * @param initialMargin expect to be negative
    * @param discountPercentage the discount percentage of MtM the auction is offering at (dropping from 98% to 0%)
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function _getMaxProportion(
-    uint accountId,
-    uint scenarioId,
-    int markToMarket,
-    int initialMargin,
-    uint discountPercentage
-  ) internal view returns (uint) {
+  function _getMaxProportion(int markToMarket, int initialMargin, uint discountPercentage) internal pure returns (uint) {
     int denominator = initialMargin - (markToMarket.multiplyDecimal(int(discountPercentage)));
 
     return initialMargin.divideDecimal(denominator).toUint256();

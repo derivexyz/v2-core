@@ -18,6 +18,11 @@ interface IBaseManager is IManager {
     address perp; // this needs to be verified
   }
 
+  /**
+   * @notice settle interest for an account
+   */
+  function settleInterest(uint accountId) external;
+
   function feeCharged(uint tradeId, uint account) external view returns (uint);
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint totalPortion, uint cashAmount) external;

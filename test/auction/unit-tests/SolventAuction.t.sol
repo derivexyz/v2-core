@@ -131,9 +131,10 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMarkToMarket(aliceAcc, 1000e18);
 
     vm.prank(bob);
-    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, 0.1e18);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
 
     assertEq(cashFromBob, 90e18);
+    assertEq(bobPercentage, percentage);
   }
 
   function testCannotBidWithInvalidPercentage() public {

@@ -93,7 +93,7 @@ contract DutchAuctionBase is Test {
   ///       Helpers      ///
   //////////////////////////
 
-  function _getDefaultSolventParams() internal view returns (IDutchAuction.SolventAuctionParams memory) {
+  function _getDefaultSolventParams() internal pure returns (IDutchAuction.SolventAuctionParams memory) {
     return IDutchAuction.SolventAuctionParams({
       startingMtMPercentage: 1e18,
       fastAuctionCutoffPercentage: 0.8e18,
@@ -103,7 +103,7 @@ contract DutchAuctionBase is Test {
     });
   }
 
-  function _getDefaultInsolventParams() internal view returns (IDutchAuction.InsolventAuctionParams memory) {
+  function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
     return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5});
   }
 }
