@@ -92,11 +92,11 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     manager.whitelistAsset(ethPerp, ethMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IBasicManager.AssetType.Option);
-    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed);
+    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
 
     manager.whitelistAsset(btcPerp, btcMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IBasicManager.AssetType.Option);
-    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed);
+    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -254,7 +254,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
 
     manager.whitelistAsset(dogeOption, 5, IBasicManager.AssetType.Option);
-    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
+    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
 
     manager.setPricingModule(5, pricing);
 

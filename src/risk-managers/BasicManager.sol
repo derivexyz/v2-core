@@ -18,7 +18,7 @@ import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IBasicManager} from "src/interfaces/IBasicManager.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
-
+import {IVolFeed} from "src/interfaces/IVolFeed.sol";
 import {ILiquidatableManager} from "src/interfaces/ILiquidatableManager.sol";
 
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
@@ -79,6 +79,9 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   /// @dev Mapping from marketId to forward price oracle
   mapping(uint marketId => IForwardFeed) public forwardFeeds;
 
+  /// @dev Mapping from marketId to vol oracle
+  mapping(uint marketId => IVolFeed) public volFeeds;
+
   /// @dev Mapping from marketId to forward price oracle
   mapping(uint marketId => IOptionPricing) public pricingModules;
 
@@ -110,15 +113,19 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     ISpotFeed spotFeed,
     ISpotFeed perpFeed,
     IForwardFeed forwardFeed,
-    ISettlementFeed settlementFeed
+    ISettlementFeed settlementFeed,
+    IVolFeed volFeed
   ) external onlyOwner {
     // registered asset
     spotFeeds[marketId] = spotFeed;
     perpFeeds[marketId] = perpFeed;
     forwardFeeds[marketId] = forwardFeed;
     settlementFeeds[marketId] = settlementFeed;
+    volFeeds[marketId] = volFeed;
 
-    emit OraclesSet(marketId, address(spotFeed), address(perpFeed), address(forwardFeed), address(settlementFeed));
+    emit OraclesSet(
+      marketId, address(spotFeed), address(perpFeed), address(forwardFeed), address(settlementFeed), address(volFeed)
+    );
   }
 
   /**
@@ -614,11 +621,9 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   ) internal view returns (int margin) {
     if (balance > 0) return 0;
     if (isCall) {
-      margin =
-        _getIsolatedMarginForCall(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isInitial);
+      margin = _getIsolatedMarginForCall(marketId, expiry, strike, balance, indexPrice, forwardPrice, isInitial);
     } else {
-      margin =
-        _getIsolatedMarginForPut(marketId, expiry, strike.toInt256(), balance, indexPrice, forwardPrice, isInitial);
+      margin = _getIsolatedMarginForPut(marketId, expiry, strike, balance, indexPrice, forwardPrice, isInitial);
     }
   }
 
@@ -629,14 +634,13 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function _getIsolatedMarginForPut(
     uint8 marketId,
     uint expiry,
-    int strike,
+    uint strike,
     int amount,
     int forwardPrice,
     int indexPrice,
     bool isInitial
   ) internal view returns (int) {
-    // todo: get vol from vol oracle
-    uint vol = 1e18;
+    (uint vol,) = volFeeds[marketId].getVol(uint128(strike), uint64(expiry));
     int markToMarket = _getMarkToMarket(marketId, amount, forwardPrice, strike, expiry, vol, false);
 
     OptionMarginParameters memory params = optionMarginParams[marketId];
@@ -647,7 +651,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
 
     if (!isInitial) return maintenanceMargin;
 
-    int otmRatio = (indexPrice - strike).divideDecimal(indexPrice);
+    int otmRatio = (indexPrice - strike.toInt256()).divideDecimal(indexPrice);
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
     // max or min?
@@ -663,13 +667,13 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function _getIsolatedMarginForCall(
     uint8 marketId,
     uint expiry,
-    int strike,
+    uint strike,
     int amount,
     int forwardPrice,
     int indexPrice,
     bool isInitial
   ) internal view returns (int) {
-    uint vol = 1e18;
+    (uint vol,) = volFeeds[marketId].getVol(uint128(strike), uint64(expiry));
     int markToMarket = _getMarkToMarket(marketId, amount, forwardPrice, strike, expiry, vol, true);
 
     OptionMarginParameters memory params = optionMarginParams[marketId];
@@ -679,7 +683,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     }
 
     // this ratio become negative if option is ITM
-    int otmRatio = (strike - indexPrice).divideDecimal(indexPrice);
+    int otmRatio = (strike.toInt256() - indexPrice).divideDecimal(indexPrice);
 
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
@@ -729,7 +733,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     uint8 marketId,
     int amount,
     int forwardPrice,
-    int strike,
+    uint strike,
     uint expiry,
     uint vol,
     bool isCall
@@ -743,7 +747,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     });
 
     IOptionPricing.Option memory option =
-      IOptionPricing.Option({strike: uint128(uint(strike)), vol: uint128(vol), amount: amount, isCall: isCall});
+      IOptionPricing.Option({strike: uint128(strike), vol: uint128(vol), amount: amount, isCall: isCall});
 
     return pricing.getOptionValue(expiryData, option);
   }
