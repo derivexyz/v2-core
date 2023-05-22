@@ -17,7 +17,7 @@ contract MockPerp is MockAsset, IPerpAsset {
 
   function applyFundingOnAccount(uint accountId) external {}
 
-  function settleRealizedPNLAndFunding(uint accountId) external returns (int, int) {
+  function settleRealizedPNLAndFunding(uint accountId) external view returns (int, int) {
     return (mockedFunding[accountId], mockedPNL[accountId]);
   }
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "src/risk-managers/BasicManager.sol";
-import "src/risk-managers/SettlementHelper.sol";
+import "src/periphery/PerpSettlementHelper.sol";
 
 import "src/Accounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
@@ -27,7 +27,7 @@ contract UNIT_TestBasicManager is Test {
   MockPerp perp;
   MockOption option;
   MockFeeds stableFeed;
-  SettlementHelper settlementHelper;
+  PerpSettlementHelper perpHelper;
 
   MockFeeds feed;
 
@@ -73,7 +73,7 @@ contract UNIT_TestBasicManager is Test {
     usdc.approve(address(cash), type(uint).max);
 
     // settler
-    settlementHelper = new SettlementHelper();
+    perpHelper = new PerpSettlementHelper();
   }
 
   /////////////
@@ -197,7 +197,7 @@ contract UNIT_TestBasicManager is Test {
 
     bytes memory data = abi.encode(address(manager), address(perp), aliceAcc);
     IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
-    allData[0] = IBaseManager.ManagerData({receiver: address(settlementHelper), data: data});
+    allData[0] = IBaseManager.ManagerData({receiver: address(perpHelper), data: data});
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash
@@ -215,7 +215,7 @@ contract UNIT_TestBasicManager is Test {
 
     bytes memory data = abi.encode(address(manager), address(badPerp), aliceAcc);
     IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
-    allData[0] = IBaseManager.ManagerData({receiver: address(settlementHelper), data: data});
+    allData[0] = IBaseManager.ManagerData({receiver: address(perpHelper), data: data});
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash

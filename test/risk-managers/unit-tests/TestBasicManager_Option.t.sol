@@ -3,12 +3,14 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "src/risk-managers/BasicManager.sol";
+import "src/periphery/OptionSettlementHelper.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "src/Accounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
+import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -30,6 +32,7 @@ contract UNIT_TestBasicManager_Option is Test {
   MockPerp perp;
   MockOption option;
   MockOptionPricing pricing;
+  OptionSettlementHelper optionHelper;
   uint expiry;
 
   uint8 ethMarketId = 1;
@@ -94,6 +97,8 @@ contract UNIT_TestBasicManager_Option is Test {
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
     manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
+
+    optionHelper = new OptionSettlementHelper();
   }
 
   ////////////////
@@ -370,6 +375,32 @@ contract UNIT_TestBasicManager_Option is Test {
     feed.setSpot(2100e19, 1e18);
     vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
     manager.settleOptions(badAsset, aliceAcc);
+  }
+
+  function testSettleOptionWithManagerData() public {
+    uint strike = 2000e18;
+    cash.deposit(aliceAcc, 2000e18);
+    _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
+
+    int cashBefore = account.getBalance(aliceAcc, cash, 0);
+
+    vm.warp(expiry + 1);
+    uint subId = OptionEncoding.toSubId(expiry, strike, true);
+    option.setMockedSubIdSettled(subId, true);
+    option.setMockedTotalSettlementValue(subId, -500e18);
+
+    bytes memory data = abi.encode(address(manager), address(option), aliceAcc);
+    IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
+    allData[0] = IBaseManager.ManagerData({receiver: address(optionHelper), data: data});
+    bytes memory managerData = abi.encode(allData);
+
+    // only transfer 0 cash
+    IAccounts.AssetTransfer memory transfer =
+      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    account.submitTransfer(transfer, managerData);
+
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(cashBefore - cashAfter, 500e18);
   }
 
   /////////////
