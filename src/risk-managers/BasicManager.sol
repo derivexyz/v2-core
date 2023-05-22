@@ -545,12 +545,9 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   /**
    * @dev the function used by the auction contract
    */
-  function getMarginWithData(uint accountId, bool isInitial, uint) external view returns (int) {
-    return getMargin(accountId, isInitial);
-  }
-
-  function getMarkToMarket(uint accountId) external view returns (int) {
-    // todo: implementation
+  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int) {
+    int margin = getMargin(accountId, isInitial);
+    return (margin, 0);
   }
 
   /**

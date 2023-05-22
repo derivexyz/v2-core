@@ -13,7 +13,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
   function testCannotCallTerminateOnNonExistentAuction() public {
     vm.expectRevert(IDutchAuction.DA_NotOngoingAuction.selector);
-    dutchAuction.checkCanTerminateAuction(aliceAcc);
+    dutchAuction.getAuctionStatus(aliceAcc);
   }
 
   /////////////////////////

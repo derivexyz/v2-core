@@ -33,8 +33,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     return mockMargin[accountId][isInitial];
   }
 
-  function getMarginWithData(uint accountId, bool isInitial, uint scenarioId) external view returns (int) {
-    return mockMargin[accountId][isInitial];
+  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int) {
+    return (mockMargin[accountId][isInitial], mockMarkToMarket[accountId]);
   }
 
   function getMarkToMarket(uint accountId) external view returns (int) {
