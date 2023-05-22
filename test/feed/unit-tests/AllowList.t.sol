@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
-import "../../../src/feeds/AllowList.sol";
+import "src/feeds/AllowList.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -56,7 +56,7 @@ contract UNIT_AllowList is Test {
     assertEq(feed.canTrade(defaultUser), true);
   }
 
-  function test() public {
+  function testCanTradeStates() public {
     feed.setAllowListEnabled(true);
 
     IAllowList.AllowListData memory allowListData = _getDefaultAllowListData();

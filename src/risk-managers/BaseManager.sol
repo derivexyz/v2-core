@@ -372,11 +372,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   function _allowListed(uint accountId) internal view returns (bool) {
-    if (allowList != IAllowList(address(0))) {
-      address user = accounts.ownerOf(accountId);
-      return allowList.canTrade(user);
+    if (allowList == IAllowList(address(0))) {
+      return true;
     }
-    return true;
+    address user = accounts.ownerOf(accountId);
+    return allowList.canTrade(user);
   }
 
   ///////////////////
