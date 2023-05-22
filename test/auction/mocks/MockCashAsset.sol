@@ -15,6 +15,8 @@ import "../../shared/mocks/MockAsset.sol";
 contract MockCash is ICashAsset, MockAsset {
   using DecimalMath for uint;
 
+  IERC20Metadata public stableAsset;
+
   bool public isSocialized;
 
   int public mockedBalanceWithInterest;
@@ -23,7 +25,9 @@ contract MockCash is ICashAsset, MockAsset {
 
   int public netSettledCash;
 
-  constructor(IERC20 token_, IAccounts accounts_) MockAsset(token_, accounts_, true) {}
+  constructor(IERC20 token_, IAccounts accounts_) MockAsset(token_, accounts_, true) {
+    stableAsset = IERC20Metadata(address(token_));
+  }
 
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
     isSocialized = true;
@@ -89,6 +93,8 @@ contract MockCash is ICashAsset, MockAsset {
   function updateSettledCash(int amountCash) external {
     netSettledCash += amountCash;
   }
+
+  function forceWithdraw(uint accountId) external {}
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function testSkip() public {}

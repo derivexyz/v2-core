@@ -169,6 +169,8 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     IAccounts.AssetDelta[] calldata assetDeltas,
     bytes calldata managerData
   ) public onlyAccounts {
+    _verifyCanTrade(accountId);
+
     _processManagerData(tradeId, managerData);
 
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
