@@ -163,8 +163,8 @@ contract UNIT_TestBasicManager is Test {
     cash.deposit(aliceAcc, 1499e18);
     cash.deposit(bobAcc, 1499e18);
 
-    // trade cannot go through
-    vm.expectRevert(abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 1500e18));
+    // trade cannot go through: -1$ under collateralized
+    vm.expectRevert(abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 1e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 

@@ -153,8 +153,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+    assertEq(im, 0);
   }
 
   function testCanTradeMultiMarketMultiExpiry() public {
@@ -178,8 +178,10 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+
+    // well collateralized
+    assertEq(im, 0);
   }
 
   function testCanTradeMultiMarketOptionPerps() public {
@@ -204,8 +206,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true); // account, im, trusted(not used)
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true); // account, im, trusted(not used)
+    assertEq(im, 0);
   }
 
   function testMultiMarketDepeg() public {
@@ -237,10 +239,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    console2.log("test2");
-
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+    assertEq(im, 0);
   }
 
   function testCanTradeMultiMarketsNotInOrder() public {
@@ -286,8 +286,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+    assertEq(im, 0);
   }
 
   function testPassMultipleManagerData() public {

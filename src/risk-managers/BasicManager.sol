@@ -249,20 +249,19 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     // if all trades are only reducing risk, return early
     if (isRiskReducing) return;
 
-    int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
-
-    if (cashBalance < 0) revert BM_NoNegativeCash();
-
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
+
+    if (portfolio.cash < 0) revert BM_NoNegativeCash();
+
     // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
-    (int postIM,) = _getMargin(accountId, portfolio, true);
+    (int postIM,) = _getMarginAndMarkToMarket(accountId, portfolio, true);
 
     // cash deposited has to cover the margin requirement
-    if (cashBalance + postIM < 0) {
+    if (postIM < 0) {
       BasicManagerPortfolio memory prePortfolio = _arrangePortfolio(_undoAssetDeltas(accountId, assetDeltas));
 
-      (int preIM,) = _getMargin(accountId, prePortfolio, true);
+      (int preIM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, true);
 
       // allow the trade to pass if the net margin increased
       if (postIM > preIM) return;
@@ -274,11 +273,13 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
+   * @return netMargin net margin. If negative, the account is under margin requirement
+   * @return totalMarkToMarket the mark-to-market value of the portfolio, should be positive unless portfolio is obviously insolvent
    */
-  function _getMargin(uint accountId, BasicManagerPortfolio memory portfolio, bool isInitial)
+  function _getMarginAndMarkToMarket(uint accountId, BasicManagerPortfolio memory portfolio, bool isInitial)
     internal
     view
-    returns (int totalMargin, int totalMarkToMarket)
+    returns (int netMargin, int totalMarkToMarket)
   {
     int depegMultiplier = _getDepegMultiplier(isInitial);
 
@@ -286,9 +287,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     for (uint i = 0; i < portfolio.marketHoldings.length; i++) {
       (int margin, int markToMarket) =
         _getMarketMargin(accountId, portfolio.marketHoldings[i], isInitial, depegMultiplier);
-      totalMargin += margin;
+      netMargin += margin;
       totalMarkToMarket += markToMarket;
     }
+
+    totalMarkToMarket += portfolio.cash;
+    netMargin += portfolio.cash;
   }
 
   /**
@@ -317,7 +321,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     int indexPrice = _getIndexPrice(marketHolding.marketId);
 
     int netPerpMargin = _getNetPerpMargin(marketHolding, isInitial);
-    (int netOptionMargin, int optionMtm) = _getNetOptionMargin(marketHolding, indexPrice, isInitial);
+    (int netOptionMargin, int optionMtm) = _getNetOptionMarginAndMtM(marketHolding, indexPrice, isInitial);
 
     int depegMargin = 0;
     if (depegMultiplier != 0) {
@@ -336,7 +340,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     }
 
     margin = netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
-    markToMarket = optionMtm;
+    markToMarket = optionMtm + unrealizedPerpPNL; // unrealized pnl is the mark to market value of a perp position
   }
 
   /**
@@ -357,7 +361,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   /**
    * @notice get the net margin for the option positions. This is expected to be negative
    */
-  function _getNetOptionMargin(MarketHolding memory marketHolding, int indexPrice, bool isInitial)
+  function _getNetOptionMarginAndMtM(MarketHolding memory marketHolding, int indexPrice, bool isInitial)
     internal
     view
     returns (int netMargin, int totalMarkToMarket)
@@ -548,14 +552,14 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   ////////////////////////
 
   /**
-   * @dev return the margin requirement for an account
-   *      if it is negative, it should be compared with cash balance to determine if the account is solvent or not.
+   * @dev return the total net margin of an account
+   * @return margin if it is negative, the account is insolvent
    */
   function getMargin(uint accountId, bool isInitial) public view returns (int) {
     // get portfolio from array of balances
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
-    (int margin,) = _getMargin(accountId, portfolio, isInitial);
+    (int margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
     return margin;
   }
 
@@ -565,7 +569,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint) external view returns (int, int) {
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
     BasicManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
-    return _getMargin(accountId, portfolio, isInitial);
+    return _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
   }
 
   /**
