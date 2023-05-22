@@ -61,7 +61,9 @@ contract AllowList is BaseLyraFeed, IAllowList {
 
     bytes32 structHash = hashAllowListData(allowListData);
 
-    _verifySignatureDetails(allowListData.signer, structHash, allowListData.signature, allowListData.deadline, 0);
+    _verifySignatureDetails(
+      allowListData.signer, structHash, allowListData.signature, allowListData.deadline, allowListData.timestamp
+    );
 
     if (allowListDetails[allowListData.user].timestamp >= allowListData.timestamp) {
       return;

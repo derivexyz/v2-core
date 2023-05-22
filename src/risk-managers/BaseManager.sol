@@ -161,7 +161,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       revert BM_OnlyBlockedAccounts();
     }
     IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
-    if (balances.length != 1 && address(balances[0].asset) != address(cashAsset)) {
+    if (balances.length != 1 || address(balances[0].asset) != address(cashAsset)) {
       revert BM_InvalidForceWithdrawAccountState();
     }
     cashAsset.forceWithdraw(accountId);
@@ -172,7 +172,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       revert BM_OnlyBlockedAccounts();
     }
     IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
-    if (balances.length == 1 && address(balances[0].asset) == address(cashAsset) && balances[0].balance > 0) {
+    if (balances.length == 1 || address(balances[0].asset) == address(cashAsset) || balances[0].balance > 0) {
       revert BM_InvalidForceLiquidateAccountState();
     }
     // TODO: force the account to go through liquidation process for the full account
