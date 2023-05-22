@@ -211,6 +211,23 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
+   * @notice anyone can come in during the auction to supply a scenario ID that will make the IM worse
+   * @param scenarioId new scenarioId
+   */
+  function updateScenarioId(uint accountId, uint scenarioId) external {
+    if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
+
+    // check if the new scenarioId is worse than the current one
+    (int newIM,) = _getMarginAndMarkToMarket(accountId, true, scenarioId);
+    (int currentIM,) = _getMarginAndMarkToMarket(accountId, true, auctions[accountId].scenarioId);
+
+    if (newIM >= currentIM) revert DA_ScenarioIdNotWorse();
+
+    auctions[accountId].scenarioId = scenarioId;
+    emit ScenarioIdUpdated(accountId, scenarioId);
+  }
+
+  /**
    * @notice Function used to begin insolvency logic for an auction that started as solvent
    * @dev This function can only be called on auctions that has already started as solvent
    * @param accountId the accountID being liquidated

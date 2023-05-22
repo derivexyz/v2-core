@@ -67,6 +67,8 @@ interface IDutchAuction {
   // emitted when an auction ends, either by insolvency or by the assets of an account being purchased.
   event AuctionEnded(uint accountId, uint endTime);
 
+  event ScenarioIdUpdated(uint accountId, uint newScenarioId);
+
   ////////////
   // ERRORS //
   ////////////
@@ -111,6 +113,9 @@ interface IDutchAuction {
 
   /// @dev emitted when a user tries to terminate an auction but the account is still underwater
   error DA_AuctionCannotTerminate();
+
+  /// @dev can only specify an id that make the IM worse
+  error DA_ScenarioIdNotWorse();
 
   /// @dev emitted when a user tries to bid on an auction, but it should be terminated
   error DA_AuctionShouldBeTerminated();

@@ -92,20 +92,16 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
 
-  //  function testTerminatesInsolventAuction() public {
-  //    _startDefaultInsolventAuction(aliceAcc);
+  function testTerminatesInsolventAuction() public {
+    _startDefaultInsolventAuction(aliceAcc);
 
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.ongoing, true);
-
-  //    // set maintenance margin > 0
-  //    manager.setMaintenanceMarginForPortfolio(5_000 * 1e18);
-  //    // terminate the auction
-  //    dutchAuction.terminateAuction(aliceAcc);
-  //    // check that the auction is terminated
-  //    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
-  //  }
+    // set maintenance margin > 0
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+    // check that the auction is terminated
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+  }
 
   function _increaseInsolventStep(uint steps, uint acc) internal {
     // increase step to 1

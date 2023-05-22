@@ -212,29 +212,41 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.convertToInsolventAuction(aliceAcc);
   }
 
-  //  function testStartInsolventAuctionAndIncrement() public {
-  //    manager.giveAssets(aliceAcc);
-  //    manager.setMaintenanceMarginForPortfolio(-1);
-  //    manager.setInitMarginForPortfolio(-1000_000 * 1e18); // 1 million bucks underwater
-  //    manager.setInitMarginForInversedPortfolio(0); // price drops from 0
+  function testCannotMarkInsolventIfAccountMMIsOK() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // start an auction on Alice's account
-  //    dutchAuction.startAuction(aliceAcc);
+    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength);
 
-  //    // testing that the view returns the correct auction.
-  //    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-  //    assertEq(auction.insolvent, true);
+    // assume MM is back above 0
+    manager.setMockMargin(aliceAcc, false, scenario, 1e18);
+    vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
+    dutchAuction.convertToInsolventAuction(aliceAcc);
+  }
 
-  //    // getting the current bid price
-  //    int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-  //    assertEq(currentBidPrice, 0); // starts at 0 as insolvent
+  function testCanUpdateScenarioID() public {
+    _startDefaultSolventAuction(aliceAcc);
 
-  //    // increment the insolvent auction
-  //    dutchAuction.continueInsolventAuction(aliceAcc);
-  //    // get the current step
-  //    uint currentStep = dutchAuction.getAuction(aliceAcc).stepInsolvent;
-  //    assertEq(currentStep, 1);
-  //  }
+    // increment the insolvent auction
+    uint newId = 2;
+    manager.setMockMargin(aliceAcc, true, newId, -300e18);
+
+    dutchAuction.updateScenarioId(aliceAcc, newId);
+
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.scenarioId, newId);
+  }
+
+  function testCanUpdateScenarioIDWithHigherIM() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    // increment the insolvent auction
+    uint newId = 2;
+    manager.setMockMargin(aliceAcc, true, newId, 300e18);
+
+    vm.expectRevert(IDutchAuction.DA_ScenarioIdNotWorse.selector);
+    dutchAuction.updateScenarioId(aliceAcc, newId);
+  }
 
   function testCannotStepNonInsolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
