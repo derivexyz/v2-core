@@ -22,6 +22,7 @@ import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import {IManager} from "src/interfaces/IManager.sol";
+import {IAllowList} from "src/interfaces/IAllowList.sol";
 
 import "forge-std/console2.sol";
 
@@ -39,6 +40,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
+
+  IAllowList public allowList;
 
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
@@ -63,6 +66,14 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
   // Owner-only Functions //
   //////////////////////////
+
+  /**
+   * @notice Governance determined allowList
+   * @param _allowList The allowList contract, can be empty which will bypass allowList checks
+   */
+  function setAllowList(IAllowList _allowList) external onlyOwner {
+    allowList = _allowList;
+  }
 
   /**
    * @dev Governance determined account to receive OI fee
@@ -139,6 +150,32 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     _symmetricManagerAdjustment(liquidatorId, feeRecipientAcc, cashAsset, 0, int(liquidatorFee));
 
     // TODO: check account risk on both sides
+  }
+
+  //////////////////////////
+  //   Keeper Functions   //
+  //////////////////////////
+
+  function forceWithdrawAccount(uint accountId) external {
+    if (_allowListed(accountId)) {
+      revert BM_OnlyBlockedAccounts();
+    }
+    IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+    if (balances.length != 1 && address(balances[0].asset) != address(cashAsset)) {
+      revert BM_InvalidForceWithdrawAccountState();
+    }
+    cashAsset.forceWithdraw(accountId);
+  }
+
+  function forceLiquidateAccount(uint accountId) external {
+    if (_allowListed(accountId)) {
+      revert BM_OnlyBlockedAccounts();
+    }
+    IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+    if (balances.length == 1 && address(balances[0].asset) == address(cashAsset) && balances[0].balance > 0) {
+      revert BM_InvalidForceLiquidateAccountState();
+    }
+    // TODO: force the account to go through liquidation process for the full account
   }
 
   //////////////////////////
@@ -326,6 +363,20 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
 
     return newAssetBalances;
+  }
+
+  function _verifyCanTrade(uint accountId) internal view {
+    if (!_allowListed(accountId)) {
+      revert BM_CannotTrade();
+    }
+  }
+
+  function _allowListed(uint accountId) internal view returns (bool) {
+    if (allowList != IAllowList(address(0))) {
+      address user = accounts.ownerOf(accountId);
+      return allowList.canTrade(user);
+    }
+    return true;
   }
 
   ///////////////////
