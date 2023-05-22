@@ -94,6 +94,8 @@ contract MockCash is ICashAsset, MockAsset {
     netSettledCash += amountCash;
   }
 
+  function forceWithdraw(uint accountId) external {}
+
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function testSkip() public {}
 }

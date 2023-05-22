@@ -24,4 +24,9 @@ interface IBaseManager is IManager {
 
   // bad action
   error BN_InvalidAction();
+  /// @dev User is not allowlisted, so trade is blocked
+  error BM_CannotTrade();
+  error BM_OnlyBlockedAccounts();
+  error BM_InvalidForceWithdrawAccountState();
+  error BM_InvalidForceLiquidateAccountState();
 }
