@@ -78,9 +78,12 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.setInsolventAuctionParams(IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0}));
     _startDefaultInsolventAuction(aliceAcc);
 
+    vm.warp(block.timestamp + 1);
     dutchAuction.continueInsolventAuction(aliceAcc);
+    vm.warp(block.timestamp + 1);
     dutchAuction.continueInsolventAuction(aliceAcc);
 
+    vm.warp(block.timestamp + 1);
     vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
@@ -88,6 +91,11 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   function testCannotSpamIncrementStep() public {
     _startDefaultInsolventAuction(aliceAcc);
 
+    vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
+    dutchAuction.continueInsolventAuction(aliceAcc);
+
+    // cannot spam even if "coolDown" config is not set
+    dutchAuction.setInsolventAuctionParams(IDutchAuction.InsolventAuctionParams({totalSteps: 0, coolDown: 0}));
     vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
@@ -106,7 +114,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   function _increaseInsolventStep(uint steps, uint acc) internal {
     // increase step to 1
     for (uint i = 0; i < steps; i++) {
-      vm.warp(block.timestamp + 5);
+      vm.warp(block.timestamp + 6);
       dutchAuction.continueInsolventAuction(acc);
     }
   }

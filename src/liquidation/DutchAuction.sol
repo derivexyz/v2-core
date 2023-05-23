@@ -267,7 +267,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
 
     uint lastIncrement = auction.lastStepUpdate;
-    if (block.timestamp < lastIncrement + insolventAuctionParams.coolDown && lastIncrement != 0) {
+    if (block.timestamp <= lastIncrement + insolventAuctionParams.coolDown && lastIncrement != 0) {
       revert DA_InCoolDown();
     }
 
