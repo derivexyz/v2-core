@@ -359,7 +359,10 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     // base value is the mark to market value of ETH or BTC hold in the account
     int baseValue;
     if (marketHolding.basePosition > 0) {
-      baseValue = marketHolding.basePosition.multiplyDecimal(indexPrice);
+      int basePosition = marketHolding.basePosition;
+      (uint usdcPrice,) = stableFeed.getSpot();
+      // convert to denominate in USDC
+      baseValue = basePosition.multiplyDecimal(indexPrice).divideDecimal(usdcPrice.toInt256());
     }
 
     margin = netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
