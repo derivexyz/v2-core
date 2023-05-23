@@ -145,12 +145,7 @@ contract Accounts is Allowances, ERC721, EIP712, IAccounts {
 
     // update the manager after all checks (external calls) are done. expected reentry pattern
     manager[accountId] = newManager;
-
-    uint tradeId = ++lastTradeId;
-
-    // trigger the manager hook on the new manager. Same as post-transfer checks
-    AssetDelta[] memory deltas = new AssetDelta[](0);
-    _managerHook(accountId, tradeId, msg.sender, deltas, newManagerData);
+    newManager.receiveNewAccount(accountId, ++lastTradeId, msg.sender, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }

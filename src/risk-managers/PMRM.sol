@@ -153,6 +153,17 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   //   Account Hooks   //
   ///////////////////////
 
+  function receiveNewAccount(uint accountId, uint tradeId, address caller, bytes calldata managerData)
+    external
+    override
+    onlyAccounts
+  {
+    _verifyCanTrade(accountId);
+    _processManagerData(tradeId, managerData);
+    IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](0);
+    _assessRisk(accountId, caller, assetDeltas);
+  }
+
   /**
    * @notice Handles adjustments to the margin positions for a given account.
    * @dev Only the accounts contract can invoke this function.
@@ -197,6 +208,10 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       return;
     }
 
+    _assessRisk(accountId, caller, assetDeltas);
+  }
+
+  function _assessRisk(uint accountId, address caller, IAccounts.AssetDelta[] memory assetDeltas) internal {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);

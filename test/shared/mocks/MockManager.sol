@@ -51,6 +51,8 @@ contract MockManager is IManager {
     if (revertHandleManager) revert();
   }
 
+  function receiveNewAccount(uint, uint, address, bytes calldata) public view virtual override {}
+
   function setRevertHandleManager(bool _revert) external {
     revertHandleManager = _revert;
   }

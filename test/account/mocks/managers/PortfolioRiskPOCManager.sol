@@ -232,6 +232,8 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
     require(address(_manager) != nextManager && nextManager != address(0), "wrong manager");
   }
 
+  function receiveNewAccount(uint, uint, address, bytes calldata) public view virtual override {}
+
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
 

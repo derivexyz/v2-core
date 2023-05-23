@@ -61,6 +61,8 @@ contract BaseManagerTester is BaseManager {
   ) public {}
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {}
+
+  function receiveNewAccount(uint, uint, address, bytes calldata) public view override {}
 }
 
 contract UNIT_TestAbstractBaseManager is Test {

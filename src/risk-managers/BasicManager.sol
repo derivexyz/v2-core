@@ -188,6 +188,17 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   //   Account Hooks   //
   ///////////////////////
 
+  function receiveNewAccount(uint accountId, uint tradeId, address, bytes calldata managerData)
+    external
+    override
+    onlyAccounts
+  {
+    _verifyCanTrade(accountId);
+    _processManagerData(tradeId, managerData);
+    IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](0);
+    _assessRisk(accountId, assetDeltas);
+  }
+
   /**
    * @notice Ensures asset is valid and Max Loss margin is met.
    * @param accountId Account for which to check trade.
@@ -242,6 +253,10 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     // if all trades are only reducing risk, return early
     if (isRiskReducing) return;
 
+    _assessRisk(accountId, assetDeltas);
+  }
+
+  function _assessRisk(uint accountId, IAccounts.AssetDelta[] memory assetDeltas) internal {
     int cashBalance = accounts.getBalance(accountId, cashAsset, 0);
 
     if (cashBalance < 0) revert BM_NoNegativeCash();
