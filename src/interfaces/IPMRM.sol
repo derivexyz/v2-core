@@ -82,8 +82,10 @@ interface IPMRM {
     VolShockDirection volShock; // i.e. [Up, Down, None]
   }
 
-  ////
-  // Errors
+  ////////////
+  // Errors //
+  ////////////
+  error PMRM_ExceededBaseOICap();
   error PMRM_UnsupportedAsset();
   error PMRM_InsufficientMargin();
   error PMRM_FindInArrayError();

@@ -52,8 +52,6 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     wrappedAsset.safeTransferFrom(msg.sender, address(this), assetAmount);
     uint adjustmentAmount = assetAmount.to18Decimals(assetDecimals);
 
-    managerOI[accounts.manager(recipientAccount)] += adjustmentAmount;
-
     accounts.assetAdjustment(
       IAccounts.AssetAdjustment({
         acc: recipientAccount,
@@ -83,8 +81,6 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     uint adjustmentAmount = assetAmount.to18DecimalsRoundUp(assetDecimals);
 
     wrappedAsset.safeTransfer(recipient, assetAmount);
-
-    managerOI[accounts.manager(accountId)] -= adjustmentAmount;
 
     accounts.assetAdjustment(
       IAccounts.AssetAdjustment({
