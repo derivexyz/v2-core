@@ -39,8 +39,8 @@ interface IBasicManager {
     // option position detail
     IOption option;
     ExpiryHolding[] expiryHoldings;
-    /// sum of all short positions. used to increase margin requirement if USDC depeg
-    int numShortOptions;
+    /// sum of all short positions. used to increase margin requirement if USDC depeg. Should be positive
+    int totalShortPositions;
   }
 
   ///@dev contains portfolio struct for single expiry assets
@@ -53,7 +53,11 @@ interface IBasicManager {
     int netCalls;
     /// temporary variable to count how many options is used
     uint numOptions;
+    /// total short position size. should be positive
+    int totalShortPositions;
   }
+  /// temporary variable to keep track of the lowest confidence level of all oracles
+  // uint minConfidence;
 
   struct Option {
     uint strike;
@@ -80,6 +84,11 @@ interface IBasicManager {
   struct DepegParams {
     int128 threshold;
     int128 depegFactor;
+  }
+
+  struct OracleContingencyParams {
+    uint128 threshold;
+    int128 OCFactor;
   }
 
   ///////////////
@@ -134,6 +143,8 @@ interface IBasicManager {
   );
 
   event DepegParametersSet(int128 threshold, int128 depegFactor);
+
+  event OracleContingencySet(uint128 threshold, int128 ocFactor);
 
   event StableFeedUpdated(address stableFeed);
 }
