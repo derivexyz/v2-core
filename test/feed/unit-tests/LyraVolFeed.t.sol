@@ -97,14 +97,15 @@ contract UNIT_LyraVolFeed is Test {
 
     bytes memory data = _getSignedVolData(pk, volData);
     feed.acceptData(data);
-    (, uint confidence) = feed.getVol(uint128(uint(1500e18)), defaultExpiry);
+    uint confidence = feed.getVolConfidence(defaultExpiry);
     assertEq(confidence, 1e18);
 
     volData.confidence = 0.9e18;
     volData.timestamp = uint64(block.timestamp - 100);
     data = _getSignedVolData(pk, volData);
     feed.acceptData(data);
-    (, confidence) = feed.getVol(uint128(uint(1500e18)), defaultExpiry);
+
+    confidence = feed.getVolConfidence(defaultExpiry);
 
     assertEq(confidence, 1e18);
   }
