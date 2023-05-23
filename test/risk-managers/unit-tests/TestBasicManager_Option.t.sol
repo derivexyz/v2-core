@@ -372,19 +372,18 @@ contract UNIT_TestBasicManager_Option is Test {
 
     (int callMargin,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -10e18, true);
     cash.deposit(aliceAcc, uint(-callMargin));
-    
+
     _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
     (int imBefore, int mtmBefore) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
-    (int mmBefore, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    (int mmBefore,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
     assertEq(imBefore, 0);
 
     // update confidence in spot oracle to below threshold
     feed.setSpot(1500e18, 0.8e18);
     (int imAfter, int mtmAfter) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
-    (int mmAfter, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    (int mmAfter,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
 
-    
     // expected im change: (1 - 0.8) * (1500) * 10 * 0.1 = -300
     assertEq(imAfter, -300e18);
 

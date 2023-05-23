@@ -179,15 +179,15 @@ contract UNIT_TestBasicManager is Test {
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
 
     (int imBefore, int mtmBefore) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
-    (int mmBefore, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    (int mmBefore,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
     assertEq(imBefore, 0);
 
     // update confidence in spot oracle to below threshold
     feed.setSpot(1500e18, 0.7e18);
     (int aliceImAfter, int aliceMtmAfter) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
     (int bobIMAfter, int bobMtmAfter) = manager.getMarginAndMarkToMarket(bobAcc, true, 1);
-    (int mmAfter, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
-    
+    (int mmAfter,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+
     // (1 - 0.7) * (1500) * 10 * 0.1 = -450
     assertEq(bobIMAfter, -450e18);
     assertEq(aliceImAfter, -450e18);
@@ -198,7 +198,6 @@ contract UNIT_TestBasicManager is Test {
 
     // maintenance margin is not affected
     assertEq(mmAfter, mmBefore);
-
   }
 
   //======================================

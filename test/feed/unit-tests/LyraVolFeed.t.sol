@@ -104,7 +104,7 @@ contract UNIT_LyraVolFeed is Test {
     volData.timestamp = uint64(block.timestamp - 100);
     data = _getSignedVolData(pk, volData);
     feed.acceptData(data);
-    
+
     confidence = feed.getVolConfidence(defaultExpiry);
 
     assertEq(confidence, 1e18);

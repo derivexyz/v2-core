@@ -396,7 +396,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
     if (ocParam.perpThreshold != 0 && minConf < ocParam.perpThreshold) {
       int diff = 1e18 - int(minConf);
-      int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(int(position.abs()));
+      int penalty =
+        diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(int(position.abs()));
       netMargin -= penalty;
     }
   }
@@ -414,7 +415,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   ) internal view returns (int netMargin, int totalMarkToMarket) {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
-      (int forwardPrice, uint fwdConf) = _getForwardPrice(marketHolding.marketId, marketHolding.expiryHoldings[i].expiry);
+      (int forwardPrice, uint fwdConf) =
+        _getForwardPrice(marketHolding.marketId, marketHolding.expiryHoldings[i].expiry);
       minConfidence = UintLib.min(minConfidence, fwdConf);
 
       {
