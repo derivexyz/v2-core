@@ -161,6 +161,13 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
   }
 
+  function testCannotGetMaxProportionOnInsolventAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
+    manager.setMarkToMarket(aliceAcc, -1e18);
+    vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
+    dutchAuction.getMaxProportion(aliceAcc, scenario);
+  }
+
   function testCannotBidOnEndedAuction() public {
     _startDefaultSolventAuction(aliceAcc);
     IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();

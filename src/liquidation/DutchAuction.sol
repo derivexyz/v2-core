@@ -327,6 +327,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function getMaxProportion(uint accountId, uint scenarioId) external view returns (uint) {
     (int initialMargin, int markToMarket) = _getMarginAndMarkToMarket(accountId, true, scenarioId);
 
+    if (markToMarket < 0) revert DA_SolventAuctionEnded();
+
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
     return _getMaxProportion(markToMarket, initialMargin, discount);
