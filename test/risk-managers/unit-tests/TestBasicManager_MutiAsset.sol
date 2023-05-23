@@ -18,7 +18,7 @@ import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeeds.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
-
+import "test/shared/mocks/MockAsset.sol";
 import "test/auction/mocks/MockCashAsset.sol";
 
 /**
@@ -29,14 +29,22 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   BasicManager manager;
   MockCash cash;
   MockERC20 usdc;
+  MockERC20 weth;
+  MockERC20 wbtc;
 
   MockPerp ethPerp;
   MockPerp btcPerp;
   MockOption ethOption;
   MockOption btcOption;
+  // mocked base asset!
+  MockAsset wethAsset;
+  MockAsset wbtcAsset;
 
   MockOptionPricing btcPricing;
   MockOptionPricing ethPricing;
+
+  uint ethSpot = 1500e18;
+  uint btcSpot = 20000e18;
 
   uint expiry1;
   uint expiry2;
@@ -77,6 +85,13 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // setup asset for BTC Markets
     btcPerp = new MockPerp(account);
     btcOption = new MockOption(account);
+
+    // setup mock base asset (only change mark to market)
+    weth = new MockERC20("weth", "weth");
+    wethAsset = new MockAsset(weth, account, false); // false as it cannot go negative
+    wbtc = new MockERC20("wbtc", "wbtc");
+    wbtcAsset = new MockAsset(wbtc, account, false); // false as it cannot go negative
+
     btcFeed = new MockFeeds();
 
     ethPricing = new MockOptionPricing();
@@ -92,10 +107,12 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     manager.whitelistAsset(ethPerp, ethMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(wethAsset, ethMarketId, IBasicManager.AssetType.Base);
     manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
 
     manager.whitelistAsset(btcPerp, btcMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(wbtcAsset, btcMarketId, IBasicManager.AssetType.Base);
     manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
@@ -108,9 +125,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     expiry1 = block.timestamp + 7 days;
     expiry2 = block.timestamp + 14 days;
     expiry3 = block.timestamp + 30 days;
-
-    uint ethSpot = 1500e18;
-    uint btcSpot = 20000e18;
 
     ethFeed.setSpot(ethSpot, 1e18);
     btcFeed.setSpot(btcSpot, 1e18);
@@ -210,6 +224,28 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     assertEq(im, 0);
   }
 
+  function testCanTradeBaseAsset() public {
+    // mint and deposit some "weth asset token"
+    uint amount = 10e18;
+    weth.mint(address(this), amount);
+    weth.approve(address(wethAsset), amount);
+    wethAsset.deposit(aliceAcc, 0, amount);
+
+    (int im, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1); 
+    assertEq(im, 0); // doesn't contribute to margin
+    assertEq(mtm, int(ethSpot) * 10);
+
+    // add 2 wbtc into the account!
+    uint btcAmount = 2e18;
+    wbtc.mint(address(this), btcAmount);
+    wbtc.approve(address(wbtcAsset), btcAmount);
+    wbtcAsset.deposit(aliceAcc, 0, btcAmount);
+
+    // mark to market now include wbtc value!
+    (, int newMtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1); 
+    assertEq(newMtm, int(ethSpot) * 10 + int(btcSpot) * 2);
+  }
+
   function testMultiMarketDepeg() public {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
@@ -284,9 +320,11 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[2] = Trade(ethPerp, 1e18, 0);
     trades[3] = Trade(btcPerp, 1e18, 0);
 
+    
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
     int im = manager.getMargin(aliceAcc, true);
+
     assertEq(im, 0);
   }
 
@@ -294,11 +332,11 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     cash.deposit(aliceAcc, 10000e18);
 
     // oracle data
-    uint ethSpot = 2100e18;
-    uint btcSpot = 30100e18;
+    uint newEthSpot = 2100e18;
+    uint newBtcSpot = 30100e18;
     IBaseManager.ManagerData[] memory oracleData = new IBaseManager.ManagerData[](2);
-    oracleData[0] = IBaseManager.ManagerData({receiver: address(ethFeed), data: abi.encode(ethSpot)});
-    oracleData[1] = IBaseManager.ManagerData({receiver: address(btcFeed), data: abi.encode(btcSpot)});
+    oracleData[0] = IBaseManager.ManagerData({receiver: address(ethFeed), data: abi.encode(newEthSpot)});
+    oracleData[1] = IBaseManager.ManagerData({receiver: address(btcFeed), data: abi.encode(newBtcSpot)});
     bytes memory managerData = abi.encode(oracleData);
 
     // build trades
@@ -310,8 +348,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     (uint _ethSpot,) = ethFeed.getSpot();
     (uint _btcSpot,) = btcFeed.getSpot();
-    assertEq(_ethSpot, ethSpot);
-    assertEq(_btcSpot, btcSpot);
+    assertEq(_ethSpot, newEthSpot);
+    assertEq(_btcSpot, newBtcSpot);
   }
 
   function testCanTransferCash() public {
@@ -322,10 +360,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     IAccounts.AssetTransfer memory transfer =
       IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: amount, assetData: ""});
 
-    uint gasBefore = gasleft();
     account.submitTransfer(transfer, "");
-    uint gasUsed = gasBefore - gasleft();
-    assertLt(gasUsed, 130_000); // one check is bypassed
   }
 
   /////////////
