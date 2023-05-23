@@ -31,8 +31,9 @@ contract BaseManagerTester is BaseManager {
     ISettlementFeed settlementFeed_,
     ICashAsset cash_,
     IOption option_,
-    IPerpAsset perp_
-  ) BaseManager(accounts_, cash_, IDutchAuction(address(0))) {
+    IPerpAsset perp_,
+    IDutchAuction auction_
+  ) BaseManager(accounts_, cash_, auction_) {
     // TODO: liquidations
     option = option_;
     perp = perp_;
@@ -85,6 +86,8 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   uint expiry;
 
+  address mockAuction = address(0xdd);
+
   function setUp() public {
     accounts = new Accounts("Lyra Accounts", "LyraAccount");
 
@@ -94,9 +97,9 @@ contract UNIT_TestAbstractBaseManager is Test {
     perp = new MockPerp(accounts);
     cash = new MockCash(usdc, accounts);
 
-    tester = new BaseManagerTester(accounts, feed, feed, cash, option, perp);
+    tester = new BaseManagerTester(accounts, feed, feed, cash, option, perp, IDutchAuction(mockAuction));
 
-    mockAsset = new MockAsset(IERC20(address(0)), accounts, true);
+    mockAsset = new MockAsset(usdc, accounts, true);
 
     aliceAcc = accounts.createAccount(alice, IManager(address(tester)));
 
@@ -107,6 +110,10 @@ contract UNIT_TestAbstractBaseManager is Test {
     tester.setFeeRecipient(feeRecipientAcc);
 
     expiry = block.timestamp + 7 days;
+
+    usdc.mint(address(this), 2000_000e18);
+    usdc.approve(address(mockAsset), 2000_000e18);
+    usdc.approve(address(cash), 2000_000e18);
   }
 
   function testTransferWithoutMarginPositiveAmount() public {
@@ -284,6 +291,84 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testSettleCashInterest() external {
     tester.settleInterest(aliceAcc);
+  }
+
+  function testCannotExecuteBidFromNonLiquidation() external {
+    vm.expectRevert(IBaseManager.BM_OnlyLiquidationModule.selector);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 1e18, 0);
+  }
+
+  function testCannotExecuteInvalidBid() external {
+    vm.startPrank(mockAuction);
+    vm.expectRevert(IBaseManager.BM_InvalidBidPortion.selector);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0.2e18, 0);
+    vm.stopPrank();
+  }
+
+  function testCannotExecuteBidIfLiquidatorHoldsNonCash() external {
+    vm.startPrank(mockAuction);
+
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
+    vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 1e18, 0);
+
+    vm.stopPrank();
+  }
+
+  function testCannotExecuteBidIfHoldTooManyAssets() external {
+    vm.startPrank(mockAuction);
+
+    // balance[0] is cash
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1e18);
+    // balance[1] is not cash
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
+    vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 1e18, 0);
+
+    vm.stopPrank();
+  }
+
+  function testExecuteBidFromBidderWithNoCash() external {
+    // under some edge cases, people should be able to just "receive" the portfolio without paying anything
+    // for example at the end of insolvent auction, anyone can use a empty account to receive the portfolio + initial margin
+
+    // alice' portfolio
+    mockAsset.deposit(aliceAcc, 0, 1e18);
+    mockAsset.deposit(aliceAcc, 1, 1e18);
+
+    vm.startPrank(mockAuction);
+    tester.executeBid(aliceAcc, bobAcc, 1e18, 1e18, 0);
+
+    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), 0);
+    assertEq(accounts.getBalance(bobAcc, mockAsset, 0), 1e18);
+
+    assertEq(accounts.getBalance(aliceAcc, mockAsset, 1), 0);
+    assertEq(accounts.getBalance(bobAcc, mockAsset, 1), 1e18);
+
+    vm.stopPrank();
+  }
+
+  function testExecuteBidPartial() external {
+    uint amount = 200e18;
+    // alice' portfolio: 200 mockAsset
+    mockAsset.deposit(aliceAcc, 0, amount);
+
+    // bob's portfolio 100e18
+    cash.deposit(bobAcc, 0, 100e18);
+    uint bid = 30e18;
+
+    vm.startPrank(mockAuction);
+
+    // liquidate 80%
+    tester.executeBid(aliceAcc, bobAcc, 0.4e18, 0.5e18, bid);
+
+    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), 40e18);
+    assertEq(accounts.getBalance(aliceAcc, cash, 0), int(bid));
+
+    assertEq(accounts.getBalance(bobAcc, mockAsset, 0), 160e18);
+    assertEq(accounts.getBalance(bobAcc, cash, 0), 70e18); // cas
+
+    vm.stopPrank();
   }
 
   // alice open 10 long call, 10 short put

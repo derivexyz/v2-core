@@ -23,24 +23,24 @@ import "forge-std/console2.sol";
  * @title Dutch Auction
  * @author Lyra
  * @notice Is used to liquidate an account that does not meet the margin requirements
- * There are 3 types of auctions:
+ * There are 3 stages of an auction on an account:
  *
  * 1. SolventFastAuction:
- * start on account below maintenance margin, starting bid from 98% of Mtm to
- * 80% of Mtm, within 20 minutes
+ * start if account below maintenance margin, starting bid from 98% of Mtm to
+ * 80% of Mtm, within a short period of time (e.g 20 minutes)
  * can be un-flagged if initial margin > 0
  *
  * 2. SolventSlowAuction
  * continue if a solvent fast auction reach the 80% bound. Goes from 80% off MtM to 0.
- * within 12 hours
+ * within a longer period of time (e.g. 12 hours)
  * can be un-flagged if initial margin > 0
  *
  * 3. InsolventAuction
- * start insolvent auction that will be printing the liquidator cash or pay out from
- * security module to take out the position
+ * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even if it's given for free.
+ * or, it can be started if mark to market value of a portfolio is negative.
+ * the insolvent auction that will print the liquidator cash or pay out from security module for liquidator to take the position
  * the price of portfolio went from 0 to Initial margin (negative)
  * can be un-flagged if maintenance margin > 0
- *
  */
 contract DutchAuction is IDutchAuction, Ownable2Step {
   using SafeCast for int;

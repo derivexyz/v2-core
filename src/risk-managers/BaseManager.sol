@@ -116,9 +116,17 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     external
     onlyLiquidations
   {
-    if (portion > totalPortion) {
-      revert("PCRM_InvalidBidPortion");
+    if (portion > totalPortion) revert BM_InvalidBidPortion();
+
+    // check that liquidator only has cash and nothing else
+    IAccounts.AssetBalance[] memory liquidatorAssets = accounts.getAccountBalances(liquidatorId);
+    if (
+      liquidatorAssets.length != 0
+        && (liquidatorAssets.length != 1 || address(liquidatorAssets[0].asset) != address(cashAsset))
+    ) {
+      revert BM_LiquidatorCanOnlyHaveCash();
     }
+
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
     uint percentage = portion.divideDecimal(totalPortion);
@@ -136,8 +144,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     // transfer cash (bid amount) to liquidated account
     _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
-
-    // TODO: check account risk on both sides
   }
 
   /**
@@ -390,16 +396,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ////////////////////
 
   modifier onlyLiquidations() {
-    if (msg.sender != address(liquidation)) {
-      revert("only liquidations");
-    }
+    if (msg.sender != address(liquidation)) revert BM_OnlyLiquidationModule();
     _;
   }
 
   modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) {
-      revert("only accounts");
-    }
+    if (msg.sender != address(accounts)) revert BM_OnlyAccounts();
     _;
   }
 

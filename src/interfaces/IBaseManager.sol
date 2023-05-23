@@ -34,4 +34,12 @@ interface IBaseManager is IManager {
   error BM_OnlyBlockedAccounts();
   error BM_InvalidForceWithdrawAccountState();
   error BM_InvalidForceLiquidateAccountState();
+
+  error BM_InvalidBidPortion();
+
+  error BM_LiquidatorCanOnlyHaveCash();
+
+  error BM_OnlyLiquidationModule();
+
+  error BM_OnlyAccounts();
 }
