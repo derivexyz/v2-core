@@ -231,7 +231,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     weth.approve(address(wethAsset), amount);
     wethAsset.deposit(aliceAcc, 0, amount);
 
-    (int im, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1); 
+    (int im, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
     assertEq(im, 0); // doesn't contribute to margin
     assertEq(mtm, int(ethSpot) * 10);
 
@@ -242,7 +242,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     wbtcAsset.deposit(aliceAcc, 0, btcAmount);
 
     // mark to market now include wbtc value!
-    (, int newMtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1); 
+    (, int newMtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
     assertEq(newMtm, int(ethSpot) * 10 + int(btcSpot) * 2);
   }
 
@@ -320,7 +320,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[2] = Trade(ethPerp, 1e18, 0);
     trades[3] = Trade(btcPerp, 1e18, 0);
 
-    
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
     int im = manager.getMargin(aliceAcc, true);
