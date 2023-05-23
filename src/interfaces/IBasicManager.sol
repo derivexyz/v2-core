@@ -87,8 +87,9 @@ interface IBasicManager {
   }
 
   struct OracleContingencyParams {
-    uint128 threshold;
-    int128 OCFactor;
+    uint64 perpThreshold;
+    uint64 optionThreshold;
+    int64 OCFactor;
   }
 
   ///////////////
@@ -115,6 +116,9 @@ interface IBasicManager {
 
   /// @dev Invalid depeg parameters
   error BM_InvalidDepegParams();
+
+  /// @dev Invalid Oracle contingency params
+  error BM_InvalidOracleContingencyParams();
 
   /// @dev No negative cash
   error BM_NoNegativeCash();
@@ -144,7 +148,7 @@ interface IBasicManager {
 
   event DepegParametersSet(int128 threshold, int128 depegFactor);
 
-  event OracleContingencySet(uint128 threshold, int128 ocFactor);
+  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, int128 ocFactor);
 
   event StableFeedUpdated(address stableFeed);
 }

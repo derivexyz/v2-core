@@ -168,6 +168,43 @@ contract UNIT_TestBasicManager is Test {
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 
+  function testOracleContingencyOnPerps() public {
+    // set oracle contingency params
+    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    manager.setOracleContingencyParams(1, IBasicManager.OracleContingencyParams(0.75e18, 0, 0.1e18));
+
+    // requirement: 10 * 1500 * 0.1 = 1500
+    cash.deposit(aliceAcc, 1500e18);
+    cash.deposit(bobAcc, 1500e18);
+    _tradePerpContract(aliceAcc, bobAcc, 10e18);
+
+    (int imBefore, int mtmBefore) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
+    (int mmBefore, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    assertEq(imBefore, 0);
+
+    // update confidence in spot oracle to below threshold
+    feed.setSpot(1500e18, 0.7e18);
+    (int aliceImAfter, int aliceMtmAfter) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
+    (int bobIMAfter, int bobMtmAfter) = manager.getMarginAndMarkToMarket(bobAcc, true, 1);
+    (int mmAfter, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    
+    // (1 - 0.7) * (1500) * 10 * 0.1 = -450
+    assertEq(bobIMAfter, -450e18);
+    assertEq(aliceImAfter, -450e18);
+
+    // mtm is not affected
+    assertEq(mtmBefore, aliceMtmAfter);
+    assertEq(mtmBefore, bobMtmAfter);
+
+    // maintenance margin is not affected
+    assertEq(mmAfter, mmBefore);
+
+  }
+
+  //======================================
+  //        Settlement   Tests
+  //======================================
+
   // tests around settling perp's unrealized PNL with spot
   function testCannotSettleWithMaliciousPerpContract() public {
     MockPerp badPerp = new MockPerp(account);

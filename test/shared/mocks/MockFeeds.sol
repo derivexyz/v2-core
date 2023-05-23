@@ -34,6 +34,10 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     volConfidences[expiry] = confidence;
   }
 
+  function setVolConfidence(uint64 expiry, uint64 confidence) external {
+    volConfidences[expiry] = confidence;
+  }
+
   function getVolConfidence(uint64 expiry) external view returns (uint64) {
     return volConfidences[expiry];
   }

@@ -168,9 +168,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
    * @notice Set the option margin parameters for an market
    */
   function setOracleContingencyParams(uint8 marketId, OracleContingencyParams calldata params) external onlyOwner {
+    if (params.perpThreshold > 1e18 || params.optionThreshold > 1e18 || params.OCFactor > 1e18) {
+      revert BM_InvalidOracleContingencyParams();
+    }
     oracleContingencyParams[marketId] = params;
 
-    emit OracleContingencySet(params.threshold, params.OCFactor);
+    emit OracleContingencySet(params.perpThreshold, params.optionThreshold, params.OCFactor);
   }
 
   /**
@@ -334,9 +337,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     (int indexPrice, uint indexConf) = _getIndexPrice(marketHolding.marketId);
 
     // also getting confidence because we need to find the
-    (int netPerpMargin, uint perpConf) = _getNetPerpMargin(marketHolding, isInitial);
-    (int netOptionMargin, int optionMtm) =
-      _getNetOptionMarginAndMtM(marketHolding, indexPrice, isInitial, UintLib.min(indexConf, perpConf));
+    int netPerpMargin = _getNetPerpMargin(marketHolding, indexPrice, isInitial, indexConf);
+    (int netOptionMargin, int optionMtm) = _getNetOptionMarginAndMtM(marketHolding, indexPrice, isInitial, indexConf);
 
     int depegMargin = 0;
     if (depegMultiplier != 0) {
@@ -368,17 +370,35 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
 
   /**
    * @notice get the margin required for the perp position of an market
-   * @return net margin for a perp position, always negative
+   * @param indexConf index confidence
+   * @return netMargin for a perp position, always negative
    */
-  function _getNetPerpMargin(MarketHolding memory marketHolding, bool isInitial) internal view returns (int, uint) {
+  function _getNetPerpMargin(MarketHolding memory marketHolding, int indexPrice, bool isInitial, uint indexConf)
+    internal
+    view
+    returns (int netMargin)
+  {
+    int position = marketHolding.perpPosition;
+    if (position == 0) return 0;
+
     // while calculating margin for perp, we use the perp market price oracle
     (uint perpPrice, uint confidence) = perpFeeds[marketHolding.marketId].getSpot();
-    uint notional = marketHolding.perpPosition.abs().multiplyDecimal(perpPrice);
+    uint notional = position.abs().multiplyDecimal(perpPrice);
     uint requirement = isInitial
       ? perpMarginRequirements[marketHolding.marketId].imRequirement
       : perpMarginRequirements[marketHolding.marketId].mmRequirement;
-    int marginRequired = notional.multiplyDecimal(requirement).toInt256();
-    return (-marginRequired, confidence);
+    netMargin = -notional.multiplyDecimal(requirement).toInt256();
+
+    if (!isInitial) return netMargin;
+
+    // if the min of two confidences is below threshold, apply penalty (becomes more negative)
+    uint minConf = UintLib.min(confidence, indexConf);
+    OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
+    if (ocParam.perpThreshold != 0 && minConf < ocParam.perpThreshold) {
+      int diff = 1e18 - int(minConf);
+      int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(int(position.abs()));
+      netMargin -= penalty;
+    }
   }
 
   /**
@@ -394,12 +414,11 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   ) internal view returns (int netMargin, int totalMarkToMarket) {
     // for each expiry, sum up the margin requirement
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
-      uint expiry = marketHolding.expiryHoldings[i].expiry;
-      (int forwardPrice, uint fwdConf) = _getForwardPrice(marketHolding.marketId, expiry);
+      (int forwardPrice, uint fwdConf) = _getForwardPrice(marketHolding.marketId, marketHolding.expiryHoldings[i].expiry);
       minConfidence = UintLib.min(minConfidence, fwdConf);
 
       {
-        uint volConf = volFeeds[marketHolding.marketId].getVolConfidence(uint64(expiry));
+        uint volConf = volFeeds[marketHolding.marketId].getVolConfidence(uint64(marketHolding.expiryHoldings[i].expiry));
         minConfidence = UintLib.min(minConfidence, volConf);
       }
 
@@ -414,10 +433,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
       netMargin += margin;
       totalMarkToMarket += mtm;
 
-      // add oracle contingency on expiry bases
+      // add oracle contingency on each expiry, only for IM
+      if (!isInitial) continue;
       OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
-      if (ocParam.threshold != 0 && minConfidence < uint(ocParam.threshold)) {
-        int penalty = int(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(
+      if (ocParam.optionThreshold != 0 && minConfidence < uint(ocParam.optionThreshold)) {
+        int diff = 1e18 - int(minConfidence);
+        int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(
           marketHolding.expiryHoldings[i].totalShortPositions
         );
         netMargin -= penalty;
@@ -546,28 +567,12 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
 
     for (uint i; i < expiryHolding.options.length; i++) {
       Option memory optionPos = expiryHolding.options[i];
-      // caching variables to bring them to the top of the stack
-      {
-        uint8 _marketId = marketId;
-        int _indexPrice = indexPrice;
-        int _forwardPrice = forwardPrice;
-        bool _isInitial = isInitial;
-        uint _expiry = expiryHolding.expiry;
 
-        // calculate isolated margin for this strike, aggregate to isolatedMargin
-        (int isolatedMargin, int markToMarket) = _getIsolatedMargin(
-          _marketId,
-          _expiry,
-          optionPos.strike,
-          optionPos.isCall,
-          optionPos.balance,
-          _indexPrice,
-          _forwardPrice,
-          _isInitial
-        );
-        totalIsolatedMargin += isolatedMargin;
-        totalMarkToMarket += markToMarket;
-      }
+      // calculate isolated margin for this strike, aggregate to isolatedMargin
+      (int isolatedMargin, int markToMarket) =
+        _getIsolatedMargin(marketId, expiryHolding.expiry, optionPos, indexPrice, forwardPrice, isInitial);
+      totalIsolatedMargin += isolatedMargin;
+      totalMarkToMarket += markToMarket;
 
       // calculate the max loss margin, update the maxLossMargin if it's lower than current
       maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, optionPos.strike), maxLossMargin);
@@ -636,7 +641,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   {
     (int indexPrice,) = _getIndexPrice(marketId);
     (int forwardPrice,) = _getForwardPrice(marketId, expiry);
-    return _getIsolatedMargin(marketId, expiry, strike, isCall, balance, indexPrice, forwardPrice, isInitial);
+    Option memory optionPos = Option({strike: strike, isCall: isCall, balance: balance});
+    return _getIsolatedMargin(marketId, expiry, optionPos, indexPrice, forwardPrice, isInitial);
   }
 
   /**
@@ -677,23 +683,24 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function _getIsolatedMargin(
     uint8 marketId,
     uint expiry,
-    uint strike,
-    bool isCall,
-    int balance,
+    Option memory optionPos,
     int indexPrice,
     int forwardPrice,
     bool isInitial
   ) internal view returns (int margin, int markToMarket) {
-    (uint vol,) = volFeeds[marketId].getVol(uint128(strike), uint64(expiry));
-    markToMarket = _getMarkToMarket(marketId, balance, forwardPrice, strike, expiry, vol, isCall);
+    (uint vol,) = volFeeds[marketId].getVol(uint128(optionPos.strike), uint64(expiry));
+    markToMarket =
+      _getMarkToMarket(marketId, optionPos.balance, forwardPrice, optionPos.strike, expiry, vol, optionPos.isCall);
 
     // a long position doesn't have any "margin", cannot be used to offset other positions
-    if (balance > 0) return (margin, markToMarket);
+    if (optionPos.balance > 0) return (margin, markToMarket);
 
-    if (isCall) {
-      margin = _getIsolatedMarginForCall(marketId, markToMarket, strike, balance, indexPrice, isInitial);
+    if (optionPos.isCall) {
+      margin =
+        _getIsolatedMarginForCall(marketId, markToMarket, optionPos.strike, optionPos.balance, indexPrice, isInitial);
     } else {
-      margin = _getIsolatedMarginForPut(marketId, markToMarket, strike, balance, indexPrice, isInitial);
+      margin =
+        _getIsolatedMarginForPut(marketId, markToMarket, optionPos.strike, optionPos.balance, indexPrice, isInitial);
     }
   }
 
