@@ -52,8 +52,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   // Variables //
   ///////////////
 
-  // TODO: OI cap
-
   IOption public immutable option;
   IPerpAsset public immutable perp;
   WrappedERC20Asset public immutable baseAsset;
@@ -69,6 +67,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   IPMRM.Scenario[] public marginScenarios;
 
   mapping(address => bool) public trustedRiskAssessor;
+
+  uint lastSeenBaseOI;
+  uint baseOICap;
 
   ////////////////////////
   //    Constructor     //
@@ -171,6 +172,14 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   ) public onlyAccounts {
     _verifyCanTrade(accountId);
 
+    uint currentBaseOi = baseAsset.managerOI(IManager(address(this)));
+    if (currentBaseOi != lastSeenBaseOI) {
+      if (currentBaseOi > baseOICap) {
+        revert("PMRM Exceeded OI cap");
+      }
+      lastSeenBaseOI = currentBaseOi;
+    }
+
     _processManagerData(tradeId, managerData);
 
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
@@ -196,7 +205,10 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       // Early exit if only adding cash/option/baseAsset
       return;
     }
+    _assessRisk(caller, accountId, assetDeltas);
+  }
 
+  function _assessRisk(address caller, uint accountId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);

@@ -19,6 +19,7 @@ import "src/assets/ManagerWhitelist.sol";
  */
 contract WrappedERC20Asset is ManagerWhitelist, IAsset {
   // TODO: IWrappedERC20Asset
+  // TODO: cleanup libs
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
@@ -31,20 +32,11 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
   IERC20Metadata public immutable wrappedAsset;
   uint8 public immutable assetDecimals;
 
-  uint public OICap;
-  uint public OI;
+  mapping(IManager => uint) public managerOI;
 
   constructor(IAccounts _accounts, IERC20Metadata _wrappedAsset) ManagerWhitelist(_accounts) {
     wrappedAsset = _wrappedAsset;
     assetDecimals = _wrappedAsset.decimals();
-  }
-
-  ////////////////////////////
-  //     Admin Functions    //
-  ////////////////////////////
-
-  function setOICap(uint cap_) external onlyOwner {
-    OICap = cap_;
   }
 
   ////////////////////////////
@@ -60,6 +52,8 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     wrappedAsset.safeTransferFrom(msg.sender, address(this), assetAmount);
     uint adjustmentAmount = assetAmount.to18Decimals(assetDecimals);
 
+    managerOI[accounts.manager(recipientAccount)] += adjustmentAmount;
+
     accounts.assetAdjustment(
       IAccounts.AssetAdjustment({
         acc: recipientAccount,
@@ -71,11 +65,6 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
       true,
       ""
     );
-
-    OI += adjustmentAmount;
-    if (OI > OICap) {
-      revert("OI cap reached");
-    }
 
     // emit Deposit(accountId, msg.sender, cashAmount, stableAmount);
   }
@@ -95,6 +84,8 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
 
     wrappedAsset.safeTransfer(recipient, assetAmount);
 
+    managerOI[accounts.manager(accountId)] -= adjustmentAmount;
+
     accounts.assetAdjustment(
       IAccounts.AssetAdjustment({
         acc: accountId,
@@ -107,7 +98,6 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
       ""
     );
 
-    OI -= adjustmentAmount;
     // emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
   }
 
@@ -131,6 +121,12 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    if (adjustment.amount < 0) {
+      managerOI[manager] -= uint(-adjustment.amount);
+    } else {
+      managerOI[manager] += uint(adjustment.amount);
+    }
+
     if (adjustment.amount == 0) {
       return (preBalance, false);
     }
@@ -144,7 +140,11 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, IManager newManager) external view {
+  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
+
+    uint balance = accounts.getBalance(accountId, IAsset(address(this)), 0).toUint256();
+    managerOI[accounts.manager(accountId)] -= balance;
+    managerOI[newManager] += balance;
   }
 }
