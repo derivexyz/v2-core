@@ -339,8 +339,16 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
       unrealizedPerpPNL = marketHolding.perp.getUnsettledAndUnrealizedCash(accountId);
     }
 
+    // base value is the mark to market value of ETH or BTC hold in the account
+    int baseValue;
+    if (marketHolding.basePosition > 0) {
+      baseValue = marketHolding.basePosition.multiplyDecimal(indexPrice);
+    }
+
     margin = netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
-    markToMarket = optionMtm + unrealizedPerpPNL; // unrealized pnl is the mark to market value of a perp position
+
+    // unrealized pnl is the mark to market value of a perp position
+    markToMarket = optionMtm + unrealizedPerpPNL + baseValue;
   }
 
   /**
@@ -419,17 +427,20 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
         AssetDetail memory detail = assetDetails[currentAsset.asset];
         if (detail.marketId != marketId) continue;
 
-        // if it's perp asset, update the perp position directly
         if (detail.assetType == AssetType.Perpetual) {
+          // if it's perp asset, update the perp position directly
           portfolio.marketHoldings[i].perp = IPerpAsset(address(currentAsset.asset));
           portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
-        } else {
+        } else if (detail.assetType == AssetType.Option) {
           portfolio.marketHoldings[i].option = IOption(address(currentAsset.asset));
           (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
           uint expiryIndex;
           (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);
           // print all seen expiries
           expiryOptionCounts[expiryIndex]++;
+        } else {
+          // base asset, update holding.basePosition directly. This balance should always be positive
+          portfolio.marketHoldings[i].basePosition = currentAsset.balance;
         }
       }
 

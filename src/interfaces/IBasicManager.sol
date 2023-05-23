@@ -9,7 +9,8 @@ interface IBasicManager {
   enum AssetType {
     NotSet,
     Option,
-    Perpetual
+    Perpetual,
+    Base
   }
 
   struct AssetDetail {
@@ -30,6 +31,8 @@ interface IBasicManager {
 
   struct MarketHolding {
     uint8 marketId;
+    // base position: doesn't contribute to margin, but increase total portfolio mark to market
+    int basePosition;
     // perp position detail
     IPerpAsset perp;
     int perpPosition;
