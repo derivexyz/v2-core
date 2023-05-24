@@ -423,7 +423,8 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
       minConfidence = UintLib.min(minConfidence, fwdConf);
 
       {
-        uint volConf = volFeeds[marketHolding.marketId].getVolConfidence(uint64(marketHolding.expiryHoldings[i].expiry));
+        uint volConf =
+          volFeeds[marketHolding.marketId].getExpiryMinConfidence(uint64(marketHolding.expiryHoldings[i].expiry));
         minConfidence = UintLib.min(minConfidence, volConf);
       }
 

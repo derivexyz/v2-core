@@ -96,7 +96,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
     return (vol, volDetail.confidence);
   }
 
-  function getVolConfidence(uint64 expiry) external view override returns (uint64 confidence) {
+  function getExpiryMinConfidence(uint64 expiry) external view override returns (uint64 confidence) {
     VolDetails memory volDetail = volDetails[expiry];
 
     // Revert if no data for given expiry

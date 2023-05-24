@@ -97,7 +97,7 @@ contract UNIT_LyraVolFeed is Test {
 
     bytes memory data = _getSignedVolData(pk, volData);
     feed.acceptData(data);
-    uint confidence = feed.getVolConfidence(defaultExpiry);
+    uint confidence = feed.getExpiryMinConfidence(defaultExpiry);
     assertEq(confidence, 1e18);
 
     volData.confidence = 0.9e18;
@@ -105,7 +105,7 @@ contract UNIT_LyraVolFeed is Test {
     data = _getSignedVolData(pk, volData);
     feed.acceptData(data);
 
-    confidence = feed.getVolConfidence(defaultExpiry);
+    confidence = feed.getExpiryMinConfidence(defaultExpiry);
 
     assertEq(confidence, 1e18);
   }

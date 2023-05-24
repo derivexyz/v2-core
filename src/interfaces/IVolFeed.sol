@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 interface IVolFeed {
   function getVol(uint128 strike, uint64 expiry) external view returns (uint128 vol, uint64 confidence);
 
-  function getVolConfidence(uint64 expiry) external view returns (uint64 confidence);
+  function getExpiryMinConfidence(uint64 expiry) external view returns (uint64 confidence);
 
   ////////////
   // Events //
