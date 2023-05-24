@@ -240,8 +240,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @dev Return the current index price for the perp asset
    */
   function getIndexPrice() external view returns (uint) {
-    (uint spotPrice,) = spotFeed.getSpot();
-    return spotPrice;
+    return _getIndexPrice().toUint256();
   }
 
   /**
@@ -365,7 +364,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     (uint spotPrice,) = spotFeed.getSpot();
     (int128 perpSpotDiff,) = perpFeed.getSpotDiff();
 
-    int indexPrice = spotPrice.toInt256() - int(perpSpotDiff);
+    int indexPrice = spotPrice.toInt256() + int(perpSpotDiff);
     if (indexPrice < 0) {
       revert PA_InvalidIndexPrice();
     }

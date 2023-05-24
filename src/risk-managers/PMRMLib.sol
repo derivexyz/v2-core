@@ -204,7 +204,6 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       }
 
       // we subtract expiry MtM as we only care about the difference from the current mtm at this stage
-      // TODO: do we use static discount the same for MM? seems a bit punishing
       scenarioMtM += _applyMTMDiscount(expiryMtM, expiry.staticDiscount) - expiry.mtm;
     }
 

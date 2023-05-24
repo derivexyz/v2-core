@@ -43,7 +43,6 @@ contract PMRMTestBase is Test {
   MockDutchAuction auction;
   MockSM sm;
   MockFeeds feed;
-  MockFeeds perpFeed;
   MockFeeds stableFeed;
   uint feeRecipient;
   OptionPricing optionPricing;
@@ -60,11 +59,9 @@ contract PMRMTestBase is Test {
     accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeeds();
-    perpFeed = new MockFeeds();
     stableFeed = new MockFeeds();
     feed.setSpot(1500e18, 1e18);
     stableFeed.setSpot(1e18, 1e18);
-    perpFeed.setSpot(1500e18, 1e18);
 
     usdc = new MockERC20("USDC", "USDC");
     weth = new MockERC20("weth", "weth");
@@ -84,7 +81,7 @@ contract PMRMTestBase is Test {
       baseAsset,
       IPMRM.Feeds({
         spotFeed: ISpotFeed(feed),
-        perpFeed: ISpotDiffFeed(perpFeed),
+        perpFeed: ISpotDiffFeed(feed),
         stableFeed: ISpotFeed(stableFeed),
         forwardFeed: IForwardFeed(feed),
         interestRateFeed: IInterestRateFeed(feed),
@@ -112,6 +109,7 @@ contract PMRMTestBase is Test {
     console2.log("stablePrice", portfolio.stablePrice);
     console2.log("cash", portfolio.cash);
     console2.log("perpPosition", portfolio.perpPosition);
+    console2.log("perpValue", portfolio.perpValue);
     console2.log("basePosition", portfolio.basePosition);
     console2.log("baseValue", portfolio.baseValue);
     console2.log("totalMtM", portfolio.totalMtM);
