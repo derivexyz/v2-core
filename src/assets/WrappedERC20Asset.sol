@@ -117,11 +117,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
-    if (adjustment.amount < 0) {
-      managerOI[manager] -= uint(-adjustment.amount);
-    } else {
-      managerOI[manager] += uint(adjustment.amount);
-    }
+    managerOI[manager] = (managerOI[manager].toInt256() + adjustment.amount).toUint256();
 
     if (adjustment.amount == 0) {
       return (preBalance, false);
