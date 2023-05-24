@@ -41,6 +41,7 @@ contract UNIT_PerpAssetPNL is Test {
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
     perp.setSpotFeed(feed);
+    perp.setPerpFeed(feed);
 
     perp.setWhitelistManager(address(manager), true);
     perp.setFundingRateOracle(keeper);

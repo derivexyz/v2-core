@@ -84,7 +84,7 @@ contract PMRMTestBase is Test {
       baseAsset,
       IPMRM.Feeds({
         spotFeed: ISpotFeed(feed),
-        perpFeed: ISpotFeed(perpFeed),
+        perpFeed: ISpotDiffFeed(perpFeed),
         stableFeed: ISpotFeed(stableFeed),
         forwardFeed: IForwardFeed(feed),
         interestRateFeed: IInterestRateFeed(feed),

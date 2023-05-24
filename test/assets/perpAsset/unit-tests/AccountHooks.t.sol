@@ -25,6 +25,7 @@ contract UNIT_PerpAssetHook is Test {
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
     perp.setSpotFeed(feed);
+    perp.setPerpFeed(feed);
 
     feed.setSpot(1500e18, 1e18);
   }

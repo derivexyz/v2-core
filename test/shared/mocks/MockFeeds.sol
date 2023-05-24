@@ -8,10 +8,21 @@ import "src/interfaces/IForwardFeed.sol";
 import "src/interfaces/ISettlementFeed.sol";
 
 import "src/interfaces/IDataReceiver.sol";
+import "../../../src/interfaces/ISpotDiffFeed.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver {
+contract MockFeeds is
+  ISpotFeed,
+  IVolFeed,
+  IForwardFeed,
+  IInterestRateFeed,
+  ISettlementFeed,
+  ISpotDiffFeed,
+  IDataReceiver
+{
   uint public spot;
   uint public spotConfidence;
+  int128 public spotDiff;
+  uint64 public spotDiffConfidence;
   mapping(uint => uint) forwardPrices;
   mapping(uint => uint) forwardPriceConfidences;
   mapping(uint => int64) interestRates;
@@ -23,6 +34,11 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   function setSpot(uint _spot, uint _confidence) external {
     spot = _spot;
     spotConfidence = _confidence;
+  }
+
+  function setSpotDiff(int128 _spotDiff, uint64 _confidence) external {
+    spotDiff = _spotDiff;
+    spotDiffConfidence = _confidence;
   }
 
   function setSettlementPrice(uint expiry, uint price) external {
@@ -52,6 +68,12 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   function getSpot() external view returns (uint, uint) {
     return (spot, spotConfidence);
+  }
+
+  // ISpotDiffFeed
+
+  function getSpotDiff() external view returns (int128, uint64) {
+    return (spotDiff, spotDiffConfidence);
   }
 
   // IForwardFeed

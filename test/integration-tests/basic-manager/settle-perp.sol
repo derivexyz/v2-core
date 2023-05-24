@@ -61,6 +61,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     perp = new PerpAsset(account, 0.0075e18);
 
     perp.setSpotFeed(feed);
+    perp.setPerpFeed(feed);
 
     option = new Option(account, address(feed));
 

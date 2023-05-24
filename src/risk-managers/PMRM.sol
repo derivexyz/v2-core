@@ -28,6 +28,7 @@ import "./BaseManager.sol";
 import "forge-std/console2.sol";
 import "src/risk-managers/PMRMLib.sol";
 import "src/assets/WrappedERC20Asset.sol";
+import "src/interfaces/ISpotDiffFeed.sol";
 
 /**
  * @title PMRM
@@ -57,7 +58,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   WrappedERC20Asset public immutable baseAsset;
 
   ISpotFeed public spotFeed;
-  ISpotFeed public perpFeed;
+  ISpotDiffFeed public perpFeed;
   IInterestRateFeed public interestRateFeed;
   IVolFeed public volFeed;
   ISpotFeed public stableFeed;
@@ -234,7 +235,10 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
       int postIM = _getMargin(portfolio, true, marginScenarios, true);
       if (postIM + portfolio.cash < 0) {
+        // TODO: take the scenario for IM, get MM - this will be worst case MM
+
         // Note: cash interest is also undone here, but this is not a significant issue
+        // TODO: get MM instead of IM
         IPMRM.Portfolio memory prePortfolio =
           _arrangePortfolio(accountId, _undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
@@ -265,10 +269,11 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
-    // TODO: portfolio.perpPrice, perpPriceConfidence
-    (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
-    portfolio.perpPrice = perpPrice;
-    portfolio.minConfidence = UintLib.min(portfolio.minConfidence, perpConfidence);
+
+    (int128 perpSpotDiff, uint64 perpConfidence) = perpFeed.getSpotDiff();
+    portfolio.perpPrice = (int(portfolio.spotPrice) - int(perpSpotDiff)).toUint256();
+
+    portfolio.minConfidence = UintLib.min(portfolio.minConfidence, uint(perpConfidence));
 
     (uint stablePrice, uint stableConfidence) = stableFeed.getSpot();
     if (stableConfidence < portfolio.minConfidence) {
@@ -388,7 +393,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
         portfolio.cash = currentAsset.balance;
       } else if (address(currentAsset.asset) == address(perp)) {
         portfolio.perpPosition = currentAsset.balance;
-        portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
+        portfolio.perpValue = perp.getUnsettledAndUnrealizedCash(accountId);
       } else if (address(currentAsset.asset) == address(baseAsset)) {
         portfolio.basePosition = currentAsset.balance.toUint256();
       } // No need to catch other assets, as they will be caught in handleAdjustment

@@ -52,6 +52,8 @@ interface IPerpAsset is IAsset {
 
   event SpotFeedUpdated(address spotFeed);
 
+  event PerpFeedUpdated(address perpFeed);
+
   event ImpactPricesSet(int impactAskPrice, int impactBidPrice);
 
   ////////////////
@@ -84,4 +86,7 @@ interface IPerpAsset is IAsset {
 
   /// @dev Caller is not the impact price oracle address
   error PA_OnlyImpactPriceOracle();
+
+  /// @dev reverts if index price is unexpectedly below 0
+  error PA_InvalidIndexPrice();
 }

@@ -38,6 +38,7 @@ contract UNIT_PerpAssetFunding is Test {
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
     perp.setSpotFeed(feed);
+    perp.setPerpFeed(feed);
     feed.setSpot(uint(spot), 1e18);
 
     // whitelist keepers

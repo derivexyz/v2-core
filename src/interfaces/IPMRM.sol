@@ -6,6 +6,7 @@ import "./IForwardFeed.sol";
 import "./IInterestRateFeed.sol";
 import "./IVolFeed.sol";
 import "./ISettlementFeed.sol";
+import "./ISpotDiffFeed.sol";
 
 interface IPMRM {
   enum VolShockDirection {
@@ -16,7 +17,7 @@ interface IPMRM {
 
   struct Feeds {
     ISpotFeed spotFeed;
-    ISpotFeed perpFeed;
+    ISpotDiffFeed perpFeed;
     ISpotFeed stableFeed;
     IForwardFeed forwardFeed;
     IInterestRateFeed interestRateFeed;
@@ -33,6 +34,7 @@ interface IPMRM {
     /// option holdings per expiry
     ExpiryHoldings[] expiries;
     int perpPosition;
+    int perpValue;
     uint basePosition;
     uint baseValue;
     int totalMtM;
@@ -42,7 +44,6 @@ interface IPMRM {
     uint staticContingency;
     uint confidenceContingency;
     uint minConfidence;
-    int unrealisedPerpValue;
   }
 
   struct ExpiryHoldings {

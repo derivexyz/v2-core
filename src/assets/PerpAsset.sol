@@ -16,6 +16,7 @@ import "lyra-utils/math/IntLib.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
+import {ISpotDiffFeed} from "src/interfaces/ISpotDiffFeed.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 
@@ -37,6 +38,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   using DecimalMath for uint;
 
   ISpotFeed public spotFeed;
+  ISpotDiffFeed public perpFeed;
 
   ///@dev Mapping from account to position
   mapping(uint => PositionDetail) public positions;
@@ -83,6 +85,16 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     spotFeed = _spotFeed;
 
     emit SpotFeedUpdated(address(_spotFeed));
+  }
+
+  /**
+   * @notice Set new perp feed address
+   * @param _perpFeed address of the new perp feed
+   */
+  function setPerpFeed(ISpotDiffFeed _perpFeed) external onlyOwner {
+    perpFeed = _perpFeed;
+
+    emit PerpFeedUpdated(address(_perpFeed));
   }
 
   /**
@@ -351,7 +363,13 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
 
   function _getIndexPrice() internal view returns (int) {
     (uint spotPrice,) = spotFeed.getSpot();
-    return spotPrice.toInt256();
+    (int128 perpSpotDiff,) = perpFeed.getSpotDiff();
+
+    int indexPrice = spotPrice.toInt256() - int(perpSpotDiff);
+    if (indexPrice < 0) {
+      revert PA_InvalidIndexPrice();
+    }
+    return indexPrice;
   }
 
   //////////////////////////
