@@ -293,6 +293,10 @@ contract UNIT_TestAbstractBaseManager is Test {
     tester.settleInterest(aliceAcc);
   }
 
+  // ------------------------
+  //      Execute Bids
+  // ------------------------
+
   function testCannotExecuteBidFromNonLiquidation() external {
     vm.expectRevert(IBaseManager.BM_OnlyLiquidationModule.selector);
     tester.executeBid(aliceAcc, bobAcc, 0.5e18, 1e18, 0);
@@ -369,6 +373,29 @@ contract UNIT_TestAbstractBaseManager is Test {
     assertEq(accounts.getBalance(bobAcc, cash, 0), 70e18); // cas
 
     vm.stopPrank();
+  }
+
+  // -----------------------------
+  //      Pay liquidation fee
+  // -----------------------------
+
+  function testCannotExecutePayFeeFromNonLiquidation() external {
+    vm.expectRevert(IBaseManager.BM_OnlyLiquidationModule.selector);
+    tester.payLiquidationFee(aliceAcc, bobAcc, 1e18);
+  }
+
+  function testCanPayLiquidationFee() external {
+    // balances
+    uint amount = 200e18;
+    // alice' portfolio: 200 mockAsset
+    mockAsset.deposit(aliceAcc, 0, amount);
+    cash.deposit(aliceAcc, 0, amount);
+
+    vm.startPrank(mockAuction);
+    tester.payLiquidationFee(aliceAcc, bobAcc, 1e18);
+
+    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), int(amount));
+    assertEq(accounts.getBalance(aliceAcc, cash, 0), 199e18);
   }
 
   // alice open 10 long call, 10 short put

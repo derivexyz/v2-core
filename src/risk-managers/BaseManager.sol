@@ -147,6 +147,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   /**
+   * @dev the liquidation module can request manager to pay the liquidation fee from liquidated account at start of auction
+   */
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external onlyLiquidations {
+    _symmetricManagerAdjustment(accountId, recipient, cashAsset, 0, int(cashAmount));
+  }
+
+  /**
    * @dev settle pending interest on an account
    * @param accountId account id
    */

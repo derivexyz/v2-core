@@ -31,6 +31,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     // do nothing
   }
 
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external {}
+
   function getMargin(uint, bool) external pure override returns (int) {
     return 0;
   }

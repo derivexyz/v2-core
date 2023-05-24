@@ -27,6 +27,8 @@ interface IBaseManager is IManager {
 
   function executeBid(uint accountId, uint liquidatorId, uint portion, uint totalPortion, uint cashAmount) external;
 
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external;
+
   // bad action
   error BN_InvalidAction();
   /// @dev User is not allowlisted, so trade is blocked

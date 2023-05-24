@@ -131,7 +131,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     if (markToMarket > 0) {
       // charge the account a fee to security module
       uint fee = _getLiquidationFee(markToMarket, bufferMargin);
-      //todo: charge fee
+      if (fee > 0) {
+        ILiquidatableManager(manager).payLiquidationFee(accountId, securityModule.accountId(), fee);
+      }
 
       // solvent auction goes from mark to market * static discount -> 0
       _startSolventAuction(accountId, scenarioId, markToMarket, fee);
