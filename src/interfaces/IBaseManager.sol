@@ -18,9 +18,16 @@ interface IBaseManager is IManager {
     address perp; // this needs to be verified
   }
 
+  /**
+   * @notice settle interest for an account
+   */
+  function settleInterest(uint accountId) external;
+
   function feeCharged(uint tradeId, uint account) external view returns (uint);
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee) external;
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external;
+
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external;
 
   // bad action
   error BN_InvalidAction();
@@ -29,4 +36,12 @@ interface IBaseManager is IManager {
   error BM_OnlyBlockedAccounts();
   error BM_InvalidForceWithdrawAccountState();
   error BM_InvalidForceLiquidateAccountState();
+
+  error BM_InvalidBidPortion();
+
+  error BM_LiquidatorCanOnlyHaveCash();
+
+  error BM_OnlyLiquidationModule();
+
+  error BM_OnlyAccounts();
 }

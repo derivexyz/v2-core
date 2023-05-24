@@ -1,5 +1,5 @@
-//// SPDX-License-Identifier: UNLICENSED
-//pragma solidity ^0.8.18;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.18;
 //
 //import "forge-std/Test.sol";
 //import "forge-std/console2.sol";
@@ -61,7 +61,7 @@
 //    // increase step size several times
 //    for (uint i = 0; i < 30; i++) {
 //      vm.warp(block.timestamp + _getDefaultAuctionParam().secBetweenSteps + 1);
-//      auction.incrementInsolventAuction(aliceAcc);
+//      auction.continueInsolventAuction(aliceAcc);
 //    }
 //
 //    uint supplyBefore = cash.totalSupply();

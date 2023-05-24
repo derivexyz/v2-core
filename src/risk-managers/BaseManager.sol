@@ -102,16 +102,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ///////////////////
 
   /**
-   * @notice Confirm account is liquidatable and puts up for dutch auction.
-   * @param accountId Account for which to check trade.
-   */
-  function checkAndStartLiquidation(uint accountId) external {
-    liquidation.startAuction(accountId);
-    // todo [Cameron / Dom]: check that account is liquidatable / freeze account / call out to auction contract
-    // todo [Cameron / Dom]: add account Id to send reward for flagging liquidation
-  }
-
-  /**
    * @notice Transfers portion of account to the liquidator.
    *         Transfers cash to the liquidated account.
    * @dev Auction contract can decide to either:
@@ -121,15 +111,19 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param liquidatorId Liquidator account ID.
    * @param portion Portion of account that is requested to be liquidated.
    * @param cashAmount Cash amount liquidator is offering for portion of account.
-   * @param liquidatorFee Cash amount liquidator will be paying the security module
    */
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint liquidatorFee)
-    external
-    onlyLiquidations
-  {
-    if (portion > DecimalMath.UNIT) {
-      revert("PCRM_InvalidBidPortion");
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyLiquidations {
+    if (portion > 1e18) revert BM_InvalidBidPortion();
+
+    // check that liquidator only has cash and nothing else
+    IAccounts.AssetBalance[] memory liquidatorAssets = accounts.getAccountBalances(liquidatorId);
+    if (
+      liquidatorAssets.length != 0
+        && (liquidatorAssets.length != 1 || address(liquidatorAssets[0].asset) != address(cashAsset))
+    ) {
+      revert BM_LiquidatorCanOnlyHaveCash();
     }
+
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
     // transfer liquidated account's asset to liquidator
@@ -144,12 +138,23 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
 
     // transfer cash (bid amount) to liquidated account
+    // todo: do we want to add cash into the account immediately? which could affect the auction price / flow
     _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
+  }
 
-    // transfer fee to security module
-    _symmetricManagerAdjustment(liquidatorId, feeRecipientAcc, cashAsset, 0, int(liquidatorFee));
+  /**
+   * @dev the liquidation module can request manager to pay the liquidation fee from liquidated account at start of auction
+   */
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external onlyLiquidations {
+    _symmetricManagerAdjustment(accountId, recipient, cashAsset, 0, int(cashAmount));
+  }
 
-    // TODO: check account risk on both sides
+  /**
+   * @dev settle pending interest on an account
+   * @param accountId account id
+   */
+  function settleInterest(uint accountId) external {
+    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, 0, bytes32(0)));
   }
 
   //////////////////////////
@@ -394,16 +399,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ////////////////////
 
   modifier onlyLiquidations() {
-    if (msg.sender != address(liquidation)) {
-      revert("only liquidations");
-    }
+    if (msg.sender != address(liquidation)) revert BM_OnlyLiquidationModule();
     _;
   }
 
   modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) {
-      revert("only accounts");
-    }
+    if (msg.sender != address(accounts)) revert BM_OnlyAccounts();
     _;
   }
 

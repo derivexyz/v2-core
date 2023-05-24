@@ -72,7 +72,7 @@ contract UNIT_TestBasicManager_Option is Test {
     manager.whitelistAsset(perp, ethMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(option, ethMarketId, IBasicManager.AssetType.Option);
 
-    manager.setOraclesForMarket(ethMarketId, feed, feed, feed, feed);
+    manager.setOraclesForMarket(ethMarketId, feed, feed, feed, feed, feed);
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
@@ -85,6 +85,8 @@ contract UNIT_TestBasicManager_Option is Test {
 
     usdc.mint(address(this), 100_000e18);
     usdc.approve(address(cash), type(uint).max);
+
+    feed.setVolConfidence(uint64(expiry), 1e18);
 
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
@@ -135,11 +137,12 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testSetOracles() public {
     MockFeeds newFeed = new MockFeeds();
-    manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed, newFeed);
+    manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed, newFeed, newFeed);
     assertEq(address(manager.spotFeeds(1)), address(newFeed));
     assertEq(address(manager.settlementFeeds(1)), address(newFeed));
     assertEq(address(manager.perpFeeds(1)), address(newFeed));
     assertEq(address(manager.forwardFeeds(1)), address(newFeed));
+    assertEq(address(manager.volFeeds(1)), address(newFeed));
   }
 
   function testSetStableFeed() public {
@@ -163,6 +166,26 @@ contract UNIT_TestBasicManager_Option is Test {
     manager.setDepegParameters(IBasicManager.DepegParams(0.9e18, 4e18));
   }
 
+  function testSetOracleContingencyParams() public {
+    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.8e18, 0.9e18, 0.05e18));
+
+    (uint64 prepThreshold, uint64 optionThreshold, int128 factor) = manager.oracleContingencyParams(ethMarketId);
+    assertEq(prepThreshold, 0.8e18);
+    assertEq(optionThreshold, 0.9e18);
+    assertEq(factor, 0.05e18);
+  }
+
+  function testCannotSetInvalidOracleContingencyParams() public {
+    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(1.01e18, 0.9e18, 0.05e18));
+
+    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.9e18, 1.01e18, 0.05e18));
+
+    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.5e18, 0.9e18, 1.2e18));
+  }
+
   ////////////////////////////////////////////////////
   // Isolated Margin Calculations For Naked Options //
   ////////////////////////////////////////////////////
@@ -172,8 +195,8 @@ contract UNIT_TestBasicManager_Option is Test {
   ///////////////
 
   function testGetIsolatedMarginLongCall() public {
-    int im = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, true, 1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, true, 1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, true, 1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, true, 1e18, false);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
@@ -182,8 +205,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike = 1500e18;
     pricing.setMockMTM(strike, expiry, true, 100e18);
 
-    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
     // (0.15 * 1500) + 100
     assertEq(im / 1e18, -325);
     // (0.075 * 1500) + 100
@@ -194,8 +217,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike = 400e18;
     pricing.setMockMTM(strike, expiry, true, 1100e18);
 
-    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
     assertEq(im / 1e18, -2424);
     assertEq(mm / 1e18, -1212);
   }
@@ -204,8 +227,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike = 3000e18;
     pricing.setMockMTM(strike, expiry, true, 10e18);
 
-    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
     assertEq(im / 1e18, -160);
     assertEq(mm / 1e18, -122);
   }
@@ -215,8 +238,8 @@ contract UNIT_TestBasicManager_Option is Test {
   //////////////
 
   function testGetIsolatedMarginLongPut() public {
-    int im = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, false, 1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, false, 1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, false, 1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, 1000e18, expiry, false, 1e18, false);
     assertEq(im, 0);
     assertEq(mm, 0);
   }
@@ -224,8 +247,8 @@ contract UNIT_TestBasicManager_Option is Test {
   function testGetIsolatedMarginShortATMPut() public {
     uint strike = 1500e18;
     pricing.setMockMTM(strike, expiry, false, 100e18);
-    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     // 0.15 * 1500 + 100 = 325
     assertEq(im / 1e18, -325);
     assertEq(mm / 1e18, -107);
@@ -234,8 +257,8 @@ contract UNIT_TestBasicManager_Option is Test {
   function testGetIsolatedMarginShortITMPut() public {
     uint strike = 3000e18;
     pricing.setMockMTM(strike, expiry, false, 1500e18);
-    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     assertEq(im / 1e18, -3225);
     assertEq(mm / 1e18, -1612);
   }
@@ -243,8 +266,8 @@ contract UNIT_TestBasicManager_Option is Test {
   function testGetIsolatedMarginShortOTMPut() public {
     uint strike = 400e18;
     pricing.setMockMTM(strike, expiry, false, 10e18);
-    int im = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
-    int mm = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
+    (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
+    (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     assertEq(im / 1e18, -160);
     assertEq(mm / 1e18, -10);
   }
@@ -301,8 +324,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike = 1500e18;
     int amount = 1e18;
 
-    int callMargin = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
-    int putMargin = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
+    (int callMargin,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
+    (int putMargin,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
 
     // the margin needed is the sum of 2 positions
     cash.deposit(aliceAcc, uint(-(callMargin + putMargin)));
@@ -342,6 +365,37 @@ contract UNIT_TestBasicManager_Option is Test {
     int premium = 100e18;
     // this trade can go through
     _tradeOption(bobAcc, aliceAcc, closeAmount, premium, expiry, strike, true);
+  }
+
+  function testOracleContingencyOnOptions() public {
+    // set oracle contingency params
+    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.8e18, 0.9e18, 0.1e18));
+
+    // start a trade
+    uint strike = 2000e18;
+    pricing.setMockMTM(strike, expiry, true, 100e18);
+
+    (int callMargin,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -10e18, true);
+    cash.deposit(aliceAcc, uint(-callMargin));
+
+    _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
+
+    (int imBefore, int mtmBefore) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
+    (int mmBefore,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    assertEq(imBefore, 0);
+
+    // update confidence in spot oracle to below threshold
+    feed.setSpot(1500e18, 0.8e18);
+    (int imAfter, int mtmAfter) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
+    (int mmAfter,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+
+    // expected im change: (1 - 0.8) * (1500) * 10 * 0.1 = -300
+    assertEq(imAfter, -300e18);
+
+    // mtm is not affected
+    assertEq(mtmBefore, mtmAfter);
+    // mm is not affected
+    assertEq(mmBefore, mmAfter);
   }
 
   //////////////////////

@@ -21,4 +21,6 @@ interface ILiquidatableManager is IBaseManager {
    * @dev get initial margin or maintenance margin
    */
   function getMargin(uint accountId, bool isInitial) external view returns (int);
+
+  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int);
 }

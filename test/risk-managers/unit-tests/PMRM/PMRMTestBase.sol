@@ -225,7 +225,7 @@ contract PMRMTestBase is Test {
     uint[] rateConfidences;
   }
 
-  function readOptionData(string memory json, string memory testId) internal returns (OptionData[] memory) {
+  function readOptionData(string memory json, string memory testId) internal pure returns (OptionData[] memory) {
     uint[] memory expiries = json.readUintArray(string.concat(testId, ".OptionExpiries"));
     uint[] memory strikes = json.readUintArray(string.concat(testId, ".OptionStrikes"));
     uint[] memory isCall = json.readUintArray(string.concat(testId, ".OptionIsCall"));
@@ -255,7 +255,7 @@ contract PMRMTestBase is Test {
     return data;
   }
 
-  function readOtherAssetData(string memory json, string memory testId) internal returns (OtherAssets memory) {
+  function readOtherAssetData(string memory json, string memory testId) internal pure returns (OtherAssets memory) {
     uint count = 0;
     int cashAmount = json.readInt(string.concat(testId, ".Cash"));
     if (cashAmount != 0) {
@@ -273,7 +273,7 @@ contract PMRMTestBase is Test {
     return OtherAssets({count: count, cashAmount: cashAmount, perpAmount: perpAmount, baseAmount: baseAmount});
   }
 
-  function readFeedData(string memory json, string memory testId) internal returns (FeedData memory) {
+  function readFeedData(string memory json, string memory testId) internal pure returns (FeedData memory) {
     uint spotPrice = json.readUint(string.concat(testId, ".SpotPrice"));
     uint spotConfidence = json.readUint(string.concat(testId, ".SpotConfidence"));
     uint stablePrice = json.readUint(string.concat(testId, ".StablePrice"));
