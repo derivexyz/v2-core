@@ -20,6 +20,22 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   // Start Auction Tests //
   /////////////////////////
 
+  function testStartAuctionPaysFee() public {
+    dutchAuction.setSolventAuctionParams(
+      IDutchAuction.SolventAuctionParams({
+        startingMtMPercentage: 1e18,
+        fastAuctionCutoffPercentage: 0.8e18,
+        fastAuctionLength: 600,
+        slowAuctionLength: 7200,
+        liquidatorFeeRate: 0.01e18
+      })
+    );
+    // start auction
+    _startDefaultSolventAuction(aliceAcc);
+
+    assertGt(manager.feePaid(), 0);
+  }
+
   function testStartSolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
 
