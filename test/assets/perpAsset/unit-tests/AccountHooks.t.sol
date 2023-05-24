@@ -13,20 +13,24 @@ contract UNIT_PerpAssetHook is Test {
   PerpAsset perp;
   MockManager manager;
   address account;
-  MockFeeds feed;
+  MockFeeds spotFeed;
+  MockFeeds perpFeed;
 
   function setUp() public {
     account = address(0xaa);
 
-    feed = new MockFeeds();
+    spotFeed = new MockFeeds();
+    perpFeed = new MockFeeds();
 
     manager = new MockManager(account);
 
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
-    perp.setSpotFeed(feed);
+    perp.setSpotFeed(spotFeed);
+    perp.setPerpFeed(perpFeed);
 
-    feed.setSpot(1500e18, 1e18);
+    spotFeed.setSpot(1500e18, 1e18);
+    perpFeed.setSpot(1500e18, 1e18);
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {

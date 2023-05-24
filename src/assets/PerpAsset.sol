@@ -36,7 +36,11 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
+  ///@dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
   ISpotFeed public spotFeed;
+
+  ///@dev perp feed, used for settling pnl before each trades
+  ISpotFeed public perpFeed;
 
   ///@dev Mapping from account to position
   mapping(uint => PositionDetail) public positions;
@@ -46,16 +50,16 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
 
   /// @dev Max hourly funding rate
   int public immutable maxRatePerHour;
+
   /// @dev Min hourly funding rate
   int public immutable minRatePerHour;
 
-  /// @dev Latest hourly funding rate, set by the oracle
-  // int public fundingRate;
-
   /// @dev Impact ask price
   int public impactAskPrice;
+
   /// @dev Impact bid price
   int public impactBidPrice;
+
   /// @dev static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
@@ -83,6 +87,16 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     spotFeed = _spotFeed;
 
     emit SpotFeedUpdated(address(_spotFeed));
+  }
+
+  /**
+   * @notice Set new perp feed address
+   * @param _perpFeed address of the new perp feed
+   */
+  function setPerpFeed(ISpotFeed _perpFeed) external onlyOwner {
+    perpFeed = _perpFeed;
+
+    emit PerpFeedUpdated(address(_perpFeed));
   }
 
   /**
@@ -210,9 +224,10 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
     int size = _getPositionSize(accountId);
     int indexPrice = _getIndexPrice();
+    int perpPrice = _getPerpPrice();
 
     int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
-    int unrealizedPnl = _getUnrealizedPnl(accountId, size, indexPrice);
+    int unrealizedPnl = _getUnrealizedPnl(accountId, size, perpPrice);
     return unrealizedFunding + unrealizedPnl + positions[accountId].funding + positions[accountId].pnl;
   }
 
@@ -233,16 +248,24 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
+   * @dev Return the current mark price for the perp asset
+   */
+  function getPerpPrice() external view returns (uint) {
+    (uint perpPrice,) = perpFeed.getSpot();
+    return perpPrice;
+  }
+
+  /**
    * @notice real perp position pnl based on current index price
    * @dev This function will update position.PNL, but not initiate any real payment in cash
    */
   function _realizePNLWithIndex(uint accountId, int preBalance) internal {
     PositionDetail storage position = positions[accountId];
 
-    int indexPrice = _getIndexPrice();
-    int pnl = _getUnrealizedPnl(accountId, preBalance, indexPrice);
+    int perpPrice = _getPerpPrice();
+    int pnl = _getUnrealizedPnl(accountId, preBalance, perpPrice);
 
-    position.lastIndexPrice = uint(indexPrice);
+    position.lastMarkPrice = uint(perpPrice);
     position.pnl += pnl;
   }
 
@@ -336,10 +359,10 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   /**
    * @dev Get unrealized PNL if the position is closed at the current spot price
    */
-  function _getUnrealizedPnl(uint accountId, int size, int indexPrice) internal view returns (int) {
-    int lastIndexPrice = positions[accountId].lastIndexPrice.toInt256();
+  function _getUnrealizedPnl(uint accountId, int size, int perpPrice) internal view returns (int) {
+    int lastMarkPrice = positions[accountId].lastMarkPrice.toInt256();
 
-    return (indexPrice - lastIndexPrice).multiplyDecimal(size);
+    return (perpPrice - lastMarkPrice).multiplyDecimal(size);
   }
 
   /**
@@ -352,6 +375,11 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   function _getIndexPrice() internal view returns (int) {
     (uint spotPrice,) = spotFeed.getSpot();
     return spotPrice.toInt256();
+  }
+
+  function _getPerpPrice() internal view returns (int) {
+    (uint perpPrice,) = perpFeed.getSpot();
+    return perpPrice.toInt256();
   }
 
   //////////////////////////

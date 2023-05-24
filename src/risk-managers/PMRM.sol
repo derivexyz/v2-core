@@ -421,7 +421,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
-    return _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
+    return _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), true);
   }
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
