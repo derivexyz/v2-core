@@ -130,6 +130,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     if (markToMarket > 0) {
       // charge the account a fee to security module
+      // todo: consider updating fee calculation if fee makes mtm negative
       uint fee = _getLiquidationFee(markToMarket, bufferMargin);
       if (fee > 0) {
         ILiquidatableManager(manager).payLiquidationFee(accountId, securityModule.accountId(), fee);

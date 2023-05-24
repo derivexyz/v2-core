@@ -138,6 +138,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
 
     // transfer cash (bid amount) to liquidated account
+    // todo: do we want to add cash into the account immediately? which could affect the auction price / flow
     _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
   }
 
