@@ -55,6 +55,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {}
 
+  function settleOptions(IOption _option, uint accountId) external {}
+
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public override {}
 }

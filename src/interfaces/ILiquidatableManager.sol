@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
+import {IOption} from "src/interfaces/IOption.sol";
 
 // todo: rename to LyraManager?
 interface ILiquidatableManager is IBaseManager {
@@ -10,6 +11,11 @@ interface ILiquidatableManager is IBaseManager {
    * @notice can be called by anyone to settle a perp asset in an account
    */
   function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external;
+
+  /**
+   * @notice can be called by anyone to settle option assets in an account
+   */
+  function settleOptions(IOption _option, uint accountId) external;
 
   /**
    * @dev get initial margin or maintenance margin
