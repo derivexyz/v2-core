@@ -52,8 +52,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   // Variables //
   ///////////////
 
-  // TODO: OI cap
-
   IOption public immutable option;
   IPerpAsset public immutable perp;
   WrappedERC20Asset public immutable baseAsset;
@@ -69,6 +67,11 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   IPMRM.Scenario[] public marginScenarios;
 
   mapping(address => bool) public trustedRiskAssessor;
+
+  /// @dev keep track of last seen baseOI to enable transferring when cap is reduced
+  uint lastSeenBaseOI;
+  /// @notice Limit the total amount of baseAsset held within the PMRM
+  uint baseOICap;
 
   ////////////////////////
   //    Constructor     //
@@ -149,6 +152,10 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     trustedRiskAssessor[riskAssessor] = trusted;
   }
 
+  function setBaseOICap(uint _baseOICap) external onlyOwner {
+    baseOICap = _baseOICap;
+  }
+
   ///////////////////////
   //   Account Hooks   //
   ///////////////////////
@@ -170,7 +177,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     bytes calldata managerData
   ) public onlyAccounts {
     _verifyCanTrade(accountId);
-
+    _updateBaseOI();
     _processManagerData(tradeId, managerData);
 
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
@@ -196,7 +203,20 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       // Early exit if only adding cash/option/baseAsset
       return;
     }
+    _assessRisk(caller, accountId, assetDeltas);
+  }
 
+  function _updateBaseOI() internal {
+    uint currentBaseOi = baseAsset.managerOI(IManager(address(this)));
+    if (currentBaseOi != lastSeenBaseOI) {
+      if (currentBaseOi > lastSeenBaseOI && currentBaseOi > baseOICap) {
+        revert PMRM_ExceededBaseOICap();
+      }
+      lastSeenBaseOI = currentBaseOi;
+    }
+  }
+
+  function _assessRisk(address caller, uint accountId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
