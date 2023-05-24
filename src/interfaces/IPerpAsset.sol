@@ -10,7 +10,7 @@ import {IAsset} from "src/interfaces/IAsset.sol";
 interface IPerpAsset is IAsset {
   struct PositionDetail {
     // Spot price the last time user interact with perp contract
-    uint lastIndexPrice;
+    uint lastMarkPrice;
     // All funding, not yet settled as cash in Accounts
     int funding;
     // Realized pnl, not yet settled as cash in Accounts
@@ -51,6 +51,8 @@ interface IPerpAsset is IAsset {
   event FundingRateOracleUpdated(address oracle);
 
   event SpotFeedUpdated(address spotFeed);
+
+  event PerpFeedUpdated(address perpFeed);
 
   event ImpactPricesSet(int impactAskPrice, int impactBidPrice);
 

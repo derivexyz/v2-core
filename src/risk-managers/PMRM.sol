@@ -390,7 +390,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
         portfolio.cash = currentAsset.balance;
       } else if (address(currentAsset.asset) == address(perp)) {
         portfolio.perpPosition = currentAsset.balance;
-        portfolio.unrealisedPerpValue = perp.getUnsettledAndUnrealizedCash(accountId);
+        portfolio.perpValue = perp.getUnsettledAndUnrealizedCash(accountId);
       } else if (address(currentAsset.asset) == address(baseAsset)) {
         portfolio.basePosition = currentAsset.balance.toUint256();
       } // No need to catch other assets, as they will be caught in handleAdjustment
@@ -421,7 +421,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
-    return _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
+    return _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), true);
   }
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {

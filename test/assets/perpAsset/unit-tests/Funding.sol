@@ -16,7 +16,8 @@ contract UNIT_PerpAssetFunding is Test {
   PerpAsset perp;
   MockManager manager;
   Accounts account;
-  MockFeeds feed;
+  MockFeeds spotFeed;
+  MockFeeds perpFeed;
 
   // keeper address to set impact prices
   address keeper = address(0xb0ba);
@@ -33,12 +34,19 @@ contract UNIT_PerpAssetFunding is Test {
   function setUp() public {
     // deploy contracts
     account = new Accounts("Lyra", "LYRA");
-    feed = new MockFeeds();
+    spotFeed = new MockFeeds();
+    perpFeed = new MockFeeds();
+
     manager = new MockManager(address(account));
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
-    perp.setSpotFeed(feed);
-    feed.setSpot(uint(spot), 1e18);
+    perp.setSpotFeed(spotFeed);
+    perp.setPerpFeed(perpFeed);
+
+    manager = new MockManager(address(account));
+
+    spotFeed.setSpot(uint(spot), 1e18);
+    perpFeed.setSpot(uint(spot), 1e18);
 
     // whitelist keepers
     perp.setWhitelistManager(address(manager), true);
@@ -66,6 +74,11 @@ contract UNIT_PerpAssetFunding is Test {
   function testSetSpotFeed() public {
     perp.setSpotFeed(ISpotFeed(address(0)));
     assertEq(address(perp.spotFeed()), address(0));
+  }
+
+  function testSetPerpFeed() public {
+    perp.setPerpFeed(ISpotFeed(address(0)));
+    assertEq(address(perp.perpFeed()), address(0));
   }
 
   function testCannotSetSpotFeedFromNonOwner() public {
@@ -188,7 +201,11 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testIndexPrice() public {
-    assertEq(perp.getIndexPrice(), uint(spot));
+    spotFeed.setSpot(500e18, 1e18);
+    assertEq(perp.getIndexPrice(), 500e18);
+
+    perpFeed.setSpot(550e18, 1e18);
+    assertEq(perp.getPerpPrice(), 550e18);
   }
 
   function _setPricesPositiveFunding() internal {

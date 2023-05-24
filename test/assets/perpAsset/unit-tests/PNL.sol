@@ -16,7 +16,8 @@ contract UNIT_PerpAssetPNL is Test {
   PerpAsset perp;
   MockManager manager;
   Accounts account;
-  MockFeeds feed;
+  MockFeeds spotFeed;
+  MockFeeds perpFeed;
 
   // keeper address to set impact prices
   address keeper = address(0xb0ba);
@@ -36,11 +37,15 @@ contract UNIT_PerpAssetPNL is Test {
   function setUp() public {
     // deploy contracts
     account = new Accounts("Lyra", "LYRA");
-    feed = new MockFeeds();
+
+    spotFeed = new MockFeeds();
+    perpFeed = new MockFeeds();
+
     manager = new MockManager(address(account));
     perp = new PerpAsset(IAccounts(account), 0.0075e18);
 
-    perp.setSpotFeed(feed);
+    perp.setSpotFeed(spotFeed);
+    perp.setPerpFeed(perpFeed);
 
     perp.setWhitelistManager(address(manager), true);
     perp.setFundingRateOracle(keeper);
@@ -50,7 +55,7 @@ contract UNIT_PerpAssetPNL is Test {
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
     charlieAcc = account.createAccountWithApproval(charlie, address(this), manager);
 
-    _setPrices(initPrice);
+    _setMarkPrices(initPrice);
 
     // open trades: Alice is Short, Bob is Long
     _tradePerpContract(aliceAcc, bobAcc, oneContract);
@@ -74,7 +79,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testCanRealizeProfitForAnyone() public {
     // price increase, in favor of Bob's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     perp.realizePNLWithIndex(bobAcc);
 
@@ -84,7 +89,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testCanRealizeLossesForAnyone() public {
     // price increase, in favor of Bob's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     perp.realizePNLWithIndex(bobAcc);
 
@@ -94,7 +99,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testIncreaseLongPosition() public {
     // price increase, in favor of Bob's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     // bob has $100 in unrealized PNL
     assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
@@ -108,7 +113,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testCloseLongPositionWithProfit() public {
     // price increase, in favor of Bob's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
 
@@ -123,7 +128,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testCloseLongPositionWithLosses() public {
     // price decrease, against of Bob's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
 
@@ -136,7 +141,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testPartialCloseLongPositionWithProfit() public {
     // price increase, in favor of Bob's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     // bob trade with charlie to close half of his long position
     _tradePerpContract(bobAcc, charlieAcc, oneContract / 2);
@@ -149,7 +154,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testPartialCloseLongPositionWithLosses() public {
     // price decrease, against of Bob's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     // bob trade with charlie to close half of his long position
     _tradePerpContract(bobAcc, charlieAcc, oneContract / 2);
@@ -162,7 +167,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testFromLongToShort() public {
     // price decrease, against of Bob's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     // bob trade with charlie to close his long position
     // + and open a short position
@@ -180,7 +185,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testIncreaseShortPosition() public {
     // price increase, again alice's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     // alice trade with charlie to increase short position
     _tradePerpContract(aliceAcc, charlieAcc, oneContract);
@@ -194,7 +199,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testCloseShortPositionWithProfit() public {
     // price decrease, in favor of alice's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     // alice trade with charlie to completely close her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract);
@@ -207,7 +212,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testCloseShortPositionWithLosses() public {
     // price increase, against of alice's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     // alice trade with charlie to completely close her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract);
@@ -220,7 +225,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testPartialCloseShortPositionWithProfit() public {
     // price decrease, in favor of alice's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     // alice trade with charlie to close half of her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract / 2);
@@ -233,7 +238,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testPartialCloseShortPositionWithLosses() public {
     // price increase, against of alice's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     // alice trade with charlie to close half of her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract / 2);
@@ -247,7 +252,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testFromShortToLong() public {
     // price increase, against of alice's position
-    _setPrices(1600e18);
+    _setMarkPrices(1600e18);
 
     // alice trade with charlie to close her short position
     // + and open a long position
@@ -268,7 +273,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testMockSettleBob() public {
     // price decrease, against of Bob's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     // bob trade with charlie to completely close his long position
     _tradePerpContract(bobAcc, charlieAcc, oneContract);
@@ -282,7 +287,7 @@ contract UNIT_PerpAssetPNL is Test {
 
   function testMockSettleAlice() public {
     // price decreased, in favor of alice's position
-    _setPrices(1400e18);
+    _setMarkPrices(1400e18);
 
     // alice trade with charlie to completely close her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract);
@@ -294,8 +299,8 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 0);
   }
 
-  function _setPrices(uint price) internal {
-    feed.setSpot(price, 1e18);
+  function _setMarkPrices(uint price) internal {
+    perpFeed.setSpot(price, 1e18);
   }
 
   function _getPNL(uint acc) internal view returns (int) {

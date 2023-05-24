@@ -27,6 +27,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   CashAsset cash;
   Accounts account;
   MockFeeds feed;
+  MockFeeds perpFeed;
   MockFeeds stableFeed;
   MockERC20 usdc;
   MockInterestRateModel rateModel;
@@ -50,6 +51,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     // deploy contracts
     account = new Accounts("Lyra", "LYRA");
     feed = new MockFeeds();
+    perpFeed = new MockFeeds();
     stableFeed = new MockFeeds();
 
     usdc = new MockERC20("USDC", "USDC");
@@ -61,6 +63,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     perp = new PerpAsset(account, 0.0075e18);
 
     perp.setSpotFeed(feed);
+    perp.setPerpFeed(perpFeed);
 
     option = new Option(account, address(feed));
 
@@ -85,7 +88,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
     charlieAcc = account.createAccountWithApproval(charlie, address(this), manager);
 
-    _setPrices(initPrice);
+    _setPerpPrices(initPrice);
 
     usdc.mint(address(this), 120_000e6);
     usdc.approve(address(cash), 120_000e6);
@@ -100,7 +103,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   function testSettleLongPosition() public {
     int cashBefore = _getCashBalance(bobAcc);
 
-    _setPrices(1600e18);
+    _setPerpPrices(1600e18);
 
     // bobAcc close his position and has $100 in PNL
     _tradePerpContract(bobAcc, aliceAcc, oneContract);
@@ -115,7 +118,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     int cashBefore = _getCashBalance(aliceAcc);
 
     // alice is short, bob is long
-    _setPrices(1600e18);
+    _setPerpPrices(1600e18);
 
     // alice close his position and has $100 in PNL
     _tradePerpContract(bobAcc, aliceAcc, oneContract);
@@ -130,7 +133,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     int cashBefore = _getCashBalance(aliceAcc);
 
     // alice is short, bob is long
-    _setPrices(1600e18);
+    _setPerpPrices(1600e18);
 
     manager.settlePerpsWithIndex(perp, aliceAcc);
 
@@ -143,7 +146,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     int bobCashBefore = _getCashBalance(bobAcc);
 
     // alice is short, bob is long
-    _setPrices(1600e18);
+    _setPerpPrices(1600e18);
 
     manager.settlePerpsWithIndex(perp, aliceAcc);
     manager.settlePerpsWithIndex(perp, bobAcc);
@@ -159,13 +162,13 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   }
 
   function testCanSettleIntoNegativeCash() public {
-    _setPrices(200_000e18);
+    _setPerpPrices(200_000e18);
     manager.settlePerpsWithIndex(perp, aliceAcc);
     assertLt(_getCashBalance(aliceAcc), 0);
   }
 
-  function _setPrices(uint price) internal {
-    feed.setSpot(price, 1e18);
+  function _setPerpPrices(uint price) internal {
+    perpFeed.setSpot(price, 1e18);
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {
