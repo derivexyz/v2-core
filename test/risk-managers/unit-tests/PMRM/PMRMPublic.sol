@@ -24,7 +24,7 @@ contract PMRMPublic is PMRM {
 
   function getMarginByBalances(IAccounts.AssetBalance[] memory assets, bool isInitial) external view returns (int) {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, assets, true);
-    int im = _getMargin(portfolio, isInitial, marginScenarios, true);
-    return im + portfolio.cash;
+    (int im,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
+    return im;
   }
 }

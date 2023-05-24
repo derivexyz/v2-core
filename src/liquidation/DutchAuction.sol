@@ -123,7 +123,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     (int maintenanceMargin, int bufferMargin, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
 
-    // can only start auction if maintenance margin > 0
+    // can only start auction if maintenance margin < 0. (If > 0 it's still well collateralized)
     if (maintenanceMargin >= 0) revert DA_AccountIsAboveMaintenanceMargin();
 
     if (auctions[accountId].ongoing) revert DA_AuctionAlreadyStarted();
@@ -209,6 +209,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function convertToInsolventAuction(uint accountId) external {
     uint scenarioId = auctions[accountId].scenarioId;
     (int maintenanceMargin, int bufferMargin, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
+
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode();
     }

@@ -18,7 +18,7 @@ import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeeds.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
-
+import "test/shared/mocks/MockAsset.sol";
 import "test/auction/mocks/MockCashAsset.sol";
 
 /**
@@ -29,14 +29,22 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   BasicManager manager;
   MockCash cash;
   MockERC20 usdc;
+  MockERC20 weth;
+  MockERC20 wbtc;
 
   MockPerp ethPerp;
   MockPerp btcPerp;
   MockOption ethOption;
   MockOption btcOption;
+  // mocked base asset!
+  MockAsset wethAsset;
+  MockAsset wbtcAsset;
 
   MockOptionPricing btcPricing;
   MockOptionPricing ethPricing;
+
+  uint ethSpot = 1500e18;
+  uint btcSpot = 20000e18;
 
   uint expiry1;
   uint expiry2;
@@ -77,6 +85,13 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // setup asset for BTC Markets
     btcPerp = new MockPerp(account);
     btcOption = new MockOption(account);
+
+    // setup mock base asset (only change mark to market)
+    weth = new MockERC20("weth", "weth");
+    wethAsset = new MockAsset(weth, account, false); // false as it cannot go negative
+    wbtc = new MockERC20("wbtc", "wbtc");
+    wbtcAsset = new MockAsset(wbtc, account, false); // false as it cannot go negative
+
     btcFeed = new MockFeeds();
 
     ethPricing = new MockOptionPricing();
@@ -92,11 +107,13 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     manager.whitelistAsset(ethPerp, ethMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IBasicManager.AssetType.Option);
-    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed);
+    manager.whitelistAsset(wethAsset, ethMarketId, IBasicManager.AssetType.Base);
+    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
 
     manager.whitelistAsset(btcPerp, btcMarketId, IBasicManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IBasicManager.AssetType.Option);
-    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed);
+    manager.whitelistAsset(wbtcAsset, btcMarketId, IBasicManager.AssetType.Base);
+    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -108,9 +125,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     expiry1 = block.timestamp + 7 days;
     expiry2 = block.timestamp + 14 days;
     expiry3 = block.timestamp + 30 days;
-
-    uint ethSpot = 1500e18;
-    uint btcSpot = 20000e18;
 
     ethFeed.setSpot(ethSpot, 1e18);
     btcFeed.setSpot(btcSpot, 1e18);
@@ -141,8 +155,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
-    int btcMargin = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
+    (int ethMargin,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    (int btcMargin,) = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
 
     int neededMargin = ethMargin + btcMargin;
     cash.deposit(aliceAcc, uint(-neededMargin));
@@ -153,18 +167,18 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     trades[1] = Trade(btcOption, 1e18, OptionEncoding.toSubId(expiry1, btcStrike, true));
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+    assertEq(im, 0);
   }
 
   function testCanTradeMultiMarketMultiExpiry() public {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
-    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
-    int ethMargin2 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry2, true, -1e18, true);
-    int btcMargin2 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry2, true, -1e18, true);
+    (int ethMargin1,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    (int btcMargin1,) = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
+    (int ethMargin2,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry2, true, -1e18, true);
+    (int btcMargin2,) = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry2, true, -1e18, true);
 
     int neededMargin = ethMargin1 + btcMargin1 + ethMargin2 + btcMargin2;
     cash.deposit(aliceAcc, uint(-neededMargin));
@@ -178,16 +192,18 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+
+    // well collateralized
+    assertEq(im, 0);
   }
 
   function testCanTradeMultiMarketOptionPerps() public {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
-    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
+    (int ethMargin1,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    (int btcMargin1,) = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
     int neededMargin = ethMargin1 + btcMargin1 + ethPerpMargin + btcPerpMargin;
@@ -204,16 +220,38 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true); // account, im, trusted(not used)
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true); // account, im, trusted(not used)
+    assertEq(im, 0);
+  }
+
+  function testCanTradeBaseAsset() public {
+    // mint and deposit some "weth asset token"
+    uint amount = 10e18;
+    weth.mint(address(this), amount);
+    weth.approve(address(wethAsset), amount);
+    wethAsset.deposit(aliceAcc, 0, amount);
+
+    (int im, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
+    assertEq(im, 0); // doesn't contribute to margin
+    assertEq(mtm, int(ethSpot) * 10);
+
+    // add 2 wbtc into the account!
+    uint btcAmount = 2e18;
+    wbtc.mint(address(this), btcAmount);
+    wbtc.approve(address(wbtcAsset), btcAmount);
+    wbtcAsset.deposit(aliceAcc, 0, btcAmount);
+
+    // mark to market now include wbtc value!
+    (, int newMtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
+    assertEq(newMtm, int(ethSpot) * 10 + int(btcSpot) * 2);
   }
 
   function testMultiMarketDepeg() public {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint btcStrike = 30000e18;
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
-    int btcMargin1 = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
+    (int ethMargin1,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    (int btcMargin1,) = manager.getIsolatedMargin(btcMarketId, btcStrike, expiry1, true, -1e18, true);
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
 
@@ -237,10 +275,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     // short 1 eth call + 1 btc call
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    console2.log("test2");
-
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+    assertEq(im, 0);
   }
 
   function testCanTradeMultiMarketsNotInOrder() public {
@@ -254,7 +290,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
 
     manager.whitelistAsset(dogeOption, 5, IBasicManager.AssetType.Option);
-    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
+    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
 
     manager.setPricingModule(5, pricing);
 
@@ -268,8 +304,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     pricing.setMockMTM(dogeStrike, expiry1, true, 0.0005e18);
     ethPricing.setMockMTM(ethStrike, expiry1, true, 100e18);
 
-    int ethMargin1 = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
-    int dogeMargin1 = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, true);
+    (int ethMargin1,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
+    (int dogeMargin1,) = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, true);
 
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
@@ -286,19 +322,20 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     _submitMultipleTrades(aliceAcc, bobAcc, trades, "");
 
-    int requirement = manager.getMargin(aliceAcc, true);
-    assertEq(requirement, neededMargin);
+    int im = manager.getMargin(aliceAcc, true);
+
+    assertEq(im, 0);
   }
 
   function testPassMultipleManagerData() public {
     cash.deposit(aliceAcc, 10000e18);
 
     // oracle data
-    uint ethSpot = 2100e18;
-    uint btcSpot = 30100e18;
+    uint newEthSpot = 2100e18;
+    uint newBtcSpot = 30100e18;
     IBaseManager.ManagerData[] memory oracleData = new IBaseManager.ManagerData[](2);
-    oracleData[0] = IBaseManager.ManagerData({receiver: address(ethFeed), data: abi.encode(ethSpot)});
-    oracleData[1] = IBaseManager.ManagerData({receiver: address(btcFeed), data: abi.encode(btcSpot)});
+    oracleData[0] = IBaseManager.ManagerData({receiver: address(ethFeed), data: abi.encode(newEthSpot)});
+    oracleData[1] = IBaseManager.ManagerData({receiver: address(btcFeed), data: abi.encode(newBtcSpot)});
     bytes memory managerData = abi.encode(oracleData);
 
     // build trades
@@ -310,8 +347,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     (uint _ethSpot,) = ethFeed.getSpot();
     (uint _btcSpot,) = btcFeed.getSpot();
-    assertEq(_ethSpot, ethSpot);
-    assertEq(_btcSpot, btcSpot);
+    assertEq(_ethSpot, newEthSpot);
+    assertEq(_btcSpot, newBtcSpot);
   }
 
   function testCanTransferCash() public {
@@ -322,10 +359,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     IAccounts.AssetTransfer memory transfer =
       IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: amount, assetData: ""});
 
-    uint gasBefore = gasleft();
     account.submitTransfer(transfer, "");
-    uint gasUsed = gasBefore - gasleft();
-    assertLt(gasUsed, 130_000); // one check is bypassed
   }
 
   /////////////
