@@ -76,6 +76,11 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(address(perp.spotFeed()), address(0));
   }
 
+  function testSetPerpFeed() public {
+    perp.setPerpFeed(ISpotFeed(address(0)));
+    assertEq(address(perp.perpFeed()), address(0));
+  }
+
   function testCannotSetSpotFeedFromNonOwner() public {
     vm.prank(alice);
     vm.expectRevert(bytes("Ownable: caller is not the owner"));
