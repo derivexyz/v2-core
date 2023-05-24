@@ -42,7 +42,7 @@ interface IPMRM {
     uint staticContingency;
     uint confidenceContingency;
     uint minConfidence;
-    int unrealisedPerpValue;
+    int perpValue;
   }
 
   struct ExpiryHoldings {

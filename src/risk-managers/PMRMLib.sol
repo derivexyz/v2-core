@@ -210,7 +210,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
     uint shockedBaseValue =
       _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, scenario.spotShock);
-    int shockedPerpValue = _getShockedPerpValue(portfolio.perpPosition, portfolio.spotPrice, scenario.spotShock);
+    int shockedPerpValue = _getShockedPerpValue(portfolio.perpPosition, portfolio.perpPrice, scenario.spotShock);
 
     scenarioMtM += (shockedBaseValue.toInt256() + shockedPerpValue - portfolio.baseValue.toInt256());
   }
@@ -275,12 +275,11 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addForwardCont) internal view {
     portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, 1e18);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
-    portfolio.totalMtM += portfolio.unrealisedPerpValue;
+    portfolio.totalMtM += portfolio.perpValue;
 
-    portfolio.staticContingency = IntLib.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent)
-      .multiplyDecimal(portfolio.perpPrice);
-    portfolio.staticContingency +=
-      portfolio.basePosition.multiplyDecimal(otherContParams.basePercent).multiplyDecimal(portfolio.spotPrice);
+    uint basePerpContingencyFactor = IntLib.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent);
+    basePerpContingencyFactor += portfolio.basePosition.multiplyDecimal(otherContParams.basePercent);
+    portfolio.staticContingency = basePerpContingencyFactor.multiplyDecimal(portfolio.spotPrice);
 
     portfolio.confidenceContingency = _getConfidenceContingency(
       portfolio.minConfidence, IntLib.abs(portfolio.perpPosition) + portfolio.basePosition, portfolio.spotPrice

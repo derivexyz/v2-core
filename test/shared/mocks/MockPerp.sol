@@ -21,12 +21,14 @@ contract MockPerp is MockAsset, IPerpAsset {
     return (mockedFunding[accountId], mockedPNL[accountId]);
   }
 
-  function mockAccountPnlAndFunding(uint account, int funding, int pnl) external {
-    mockedFunding[account] = funding;
-    mockedPNL[account] = pnl;
+  function mockAccountPnlAndFunding(uint accountId, int funding, int pnl) external {
+    mockedFunding[accountId] = funding;
+    mockedPNL[accountId] = pnl;
   }
 
-  function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {}
+  function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
+    return mockedFunding[accountId] + mockedPNL[accountId];
+  }
 
   function getIndexPrice() external view returns (uint) {}
 
