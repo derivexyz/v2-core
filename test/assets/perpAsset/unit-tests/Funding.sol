@@ -201,7 +201,11 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testIndexPrice() public {
-    assertEq(perp.getIndexPrice(), uint(spot));
+    spotFeed.setSpot(500e18, 1e18);
+    assertEq(perp.getIndexPrice(), 500e18);
+
+    perpFeed.setSpot(550e18, 1e18);
+    assertEq(perp.getPerpPrice(), 550e18);
   }
 
   function _setPricesPositiveFunding() internal {
