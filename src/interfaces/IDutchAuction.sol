@@ -44,6 +44,8 @@ interface IDutchAuction {
     uint32 totalSteps;
     // Amount of seconds to go to next step
     uint32 coolDown;
+    /// buffer margin scaler. liquidation will go from 0 to (buffer margin) * scaler
+    int64 bufferMarginScaler;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;

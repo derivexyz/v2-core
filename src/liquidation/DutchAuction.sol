@@ -39,7 +39,7 @@ import "forge-std/console2.sol";
  * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even if it's given for free.
  * or, it can be started if mark to market value of a portfolio is negative.
  * the insolvent auction that will print the liquidator cash or pay out from security module for liquidator to take the position
- * the price of portfolio went from 0 to Initial margin (negative) pending: IM or BM
+ * the price of portfolio went from 0 to Buffer margin * scaler (negative)
  * can be un-flagged if maintenance margin > 0
  */
 contract DutchAuction is IDutchAuction, Ownable2Step {
@@ -136,8 +136,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       // solvent auction goes from mark to market * static discount -> 0
       _startSolventAuction(accountId, scenarioId, markToMarket, fee);
     } else {
-      // insolvent auction start from 0 -> buffer margin (negative number)
-      _startInsolventAuction(accountId, scenarioId, bufferMargin);
+      // insolvent auction start from 0 -> buffer margin (negative number) * scaler
+      int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScaler);
+      _startInsolventAuction(accountId, scenarioId, lowerBound);
     }
   }
 

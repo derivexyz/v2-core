@@ -46,8 +46,8 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     // bid 50% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18);
 
-    // 1% of 320 * 50% = 1.6
-    uint expectedTotalPayoutFromSM = 1.6e18;
+    // 1% of 384 * 50% = 19.2
+    uint expectedTotalPayoutFromSM = 1.92e18;
 
     assertEq(finalPercentage, 0.5e18);
     assertEq(cashFromBidder, 0);
@@ -64,8 +64,8 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     // bid 100% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
-    // 5% of 320 = 16
-    uint expectedPayout = 16e18;
+    // 5% of 384 = 19.2
+    uint expectedPayout = 19.2e18;
 
     assertEq(finalPercentage, 1e18);
     assertEq(cashFromBidder, 0);
@@ -75,7 +75,9 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   }
 
   function testIncreaseStepMax() public {
-    dutchAuction.setInsolventAuctionParams(IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0}));
+    dutchAuction.setInsolventAuctionParams(
+      IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0, bufferMarginScaler: 1e18})
+    );
     _startDefaultInsolventAuction(aliceAcc);
 
     vm.warp(block.timestamp + 1);
@@ -95,7 +97,9 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.continueInsolventAuction(aliceAcc);
 
     // cannot spam even if "coolDown" config is not set
-    dutchAuction.setInsolventAuctionParams(IDutchAuction.InsolventAuctionParams({totalSteps: 0, coolDown: 0}));
+    dutchAuction.setInsolventAuctionParams(
+      IDutchAuction.InsolventAuctionParams({totalSteps: 0, coolDown: 0, bufferMarginScaler: 1e18})
+    );
     vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
@@ -128,6 +132,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // buffer is -200
     // (default) buffer margin is -300 - 20 = -320
+    // lowest bid is buffer margin * 1.2 = -384
 
     // start an auction on Alice's account
     dutchAuction.startAuction(acc, scenario);

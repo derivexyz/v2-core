@@ -55,13 +55,26 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     );
   }
 
+  function testSetBufferMarginPercentage() public {
+    dutchAuction.setBufferMarginPercentage(0.2e18);
+    assertEq(dutchAuction.bufferMarginPercentage(), 0.2e18);
+  }
+
+  function testCannotSetBufferMarginPercentageOutOfBounds() public {
+    vm.expectRevert(IDutchAuction.DA_InvalidBufferMarginParameter.selector);
+    dutchAuction.setBufferMarginPercentage(0.31e18);
+  }
+
   function testSetInsolventAuctionParameters() public {
-    dutchAuction.setInsolventAuctionParams(IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 2}));
+    dutchAuction.setInsolventAuctionParams(
+      IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 2, bufferMarginScaler: 1.2e18})
+    );
 
     // expect value
-    (uint32 totalSteps, uint32 coolDown) = dutchAuction.insolventAuctionParams();
+    (uint32 totalSteps, uint32 coolDown, int64 scaler) = dutchAuction.insolventAuctionParams();
     assertEq(totalSteps, 100);
     assertEq(coolDown, 2);
+    assertEq(scaler, 1.2e18);
   }
 
   function testGetDiscountPercentage() public {
