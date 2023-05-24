@@ -29,17 +29,17 @@ contract UNIT_LyraSpotFeed is Test {
     feed.addSigner(pkOwner, true);
   }
 
-  function testDomainSeparator() public {
+  function testSpotFeed_DomainSeparator() public {
     assertEq(feed.domainSeparator(), domainSeparator);
   }
 
-  function testCanAddSigner() public {
+  function testSpotFeed_CanAddSigner() public {
     address alice = address(0xaaaa);
     feed.addSigner(alice, true);
     assertEq(feed.isSigner(alice), true);
   }
 
-  function testCanPassInDataAndUpdateSpotFeed() public {
+  function testSpotFeed_CanPassInDataAndUpdateSpotFeed() public {
     ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
     bytes memory data = _getSignedSpotData(pk, spotData);
 
@@ -51,7 +51,7 @@ contract UNIT_LyraSpotFeed is Test {
     assertEq(confidence, 1e18);
   }
 
-  function testCantPassInInvalidConfidence() public {
+  function testSpotFeed_CantPassInInvalidConfidence() public {
     ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
     spotData.confidence = 1.01e18;
     bytes memory data = _getSignedSpotData(pk, spotData);
@@ -60,7 +60,7 @@ contract UNIT_LyraSpotFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotUpdateSpotFeedFromInvalidSigner() public {
+  function testSpotFeed_CannotUpdateSpotFeedFromInvalidSigner() public {
     // we don't whitelist the pk owner this time
     feed.addSigner(pkOwner, false);
 
@@ -71,7 +71,7 @@ contract UNIT_LyraSpotFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotUpdateSpotFeedAfterDeadline() public {
+  function testSpotFeed_CannotUpdateSpotFeedAfterDeadline() public {
     ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
     bytes memory data = _getSignedSpotData(pk, spotData);
 
@@ -81,7 +81,7 @@ contract UNIT_LyraSpotFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotSetSpotInTheFuture() public {
+  function testSpotFeed_CannotSetSpotInTheFuture() public {
     ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
     spotData.timestamp = uint64(block.timestamp + 1000);
 
@@ -91,7 +91,7 @@ contract UNIT_LyraSpotFeed is Test {
     feed.acceptData(data);
   }
 
-  function testIgnoreUpdateIfOlderDataIsPushed() public {
+  function testSpotFeed_IgnoreUpdateIfOlderDataIsPushed() public {
     ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
     bytes memory data1 = _getSignedSpotData(pk, spotData);
 
@@ -108,7 +108,7 @@ contract UNIT_LyraSpotFeed is Test {
     assertEq(confidence, 1e18);
   }
 
-  function testCannotSubmitPriceWithReplacedSigner() public {
+  function testSpotFeed_CannotSubmitPriceWithReplacedSigner() public {
     // use a different private key to sign the data but still specify pkOwner as signer
     uint pk2 = 0xBEEF2222;
 

@@ -15,7 +15,7 @@ import "src/interfaces/ILyraSpotFeed.sol";
  */
 contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
   bytes32 public constant SPOT_DATA_TYPEHASH = keccak256(
-    "SpotData(uint96 price,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
+    "SpotData(uint128 price,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
   // pack the following into 1 storage slot

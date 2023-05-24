@@ -35,22 +35,22 @@ contract UNIT_LyraVolFeed is Test {
     feed.addSigner(pkOwner, true);
   }
 
-  function testDomainSeparator() public {
+  function testVolFeed_DomainSeparator() public {
     assertEq(feed.domainSeparator(), domainSeparator);
   }
 
-  function testCanAddSigner() public {
+  function testVolFeed_CanAddSigner() public {
     address alice = address(0xaaaa);
     feed.addSigner(alice, true);
     assertEq(feed.isSigner(alice), true);
   }
 
-  function testRevertsWhenFetchingInvalidExpiry() public {
+  function testVolFeed_RevertsWhenFetchingInvalidExpiry() public {
     vm.expectRevert(ILyraVolFeed.LVF_MissingExpiryData.selector);
     feed.getVol(uint128(uint(1500e18)), defaultExpiry);
   }
 
-  function testCanPassInDataAndUpdateVolFeed() public {
+  function testVolFeed_CanPassInDataAndUpdateVolFeed() public {
     ILyraVolFeed.VolData memory volData = _getDefaultVolData();
     bytes memory data = _getSignedVolData(pk, volData);
 
@@ -62,7 +62,7 @@ contract UNIT_LyraVolFeed is Test {
     assertEq(confidence, 1e18);
   }
 
-  function testCannotUpdateVolFeedFromInvalidSigner() public {
+  function testVolFeed_CannotUpdateVolFeedFromInvalidSigner() public {
     // we didn't whitelist the pk owner this time
     feed.addSigner(pkOwner, false);
 
@@ -73,7 +73,7 @@ contract UNIT_LyraVolFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotUpdateVolFeedAfterDeadline() public {
+  function testVolFeed_CannotUpdateVolFeedAfterDeadline() public {
     ILyraVolFeed.VolData memory volData = _getDefaultVolData();
     bytes memory data = _getSignedVolData(pk, volData);
 
@@ -83,7 +83,7 @@ contract UNIT_LyraVolFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotSetVolInTheFuture() public {
+  function testVolFeed_CannotSetVolInTheFuture() public {
     ILyraVolFeed.VolData memory volData = _getDefaultVolData();
     volData.timestamp = uint64(block.timestamp + 1000);
     bytes memory data = _getSignedVolData(pk, volData);
@@ -92,7 +92,7 @@ contract UNIT_LyraVolFeed is Test {
     feed.acceptData(data);
   }
 
-  function testIgnoreUpdateIfOlderDataIsPushed() public {
+  function testVolFeed_IgnoreUpdateIfOlderDataIsPushed() public {
     ILyraVolFeed.VolData memory volData = _getDefaultVolData();
 
     bytes memory data = _getSignedVolData(pk, volData);
@@ -109,7 +109,7 @@ contract UNIT_LyraVolFeed is Test {
     assertEq(confidence, 1e18);
   }
 
-  function testCannotSubmitPriceWithReplacedSigner() public {
+  function testVolFeed_CannotSubmitPriceWithReplacedSigner() public {
     // use a different private key to sign the data but still specify pkOwner as signer
     uint pk2 = 0xBEEF2222;
 

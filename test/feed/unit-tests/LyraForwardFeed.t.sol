@@ -36,12 +36,12 @@ contract UNIT_LyraForwardFeed is Test {
     feed.addSigner(pkOwner, true);
   }
 
-  function testRevertsWhenFetchingInvalidExpiry() public {
+  function testFwdFeed_RevertsWhenFetchingInvalidExpiry() public {
     vm.expectRevert(ILyraForwardFeed.LFF_MissingExpiryData.selector);
     feed.getForwardPrice(defaultExpiry);
   }
 
-  function testCanPassInDataAndUpdateFwdFeed() public {
+  function testFwdFeed_CanPassInDataAndUpdateFwdFeed() public {
     ILyraForwardFeed.ForwardData memory volData = _getDefaultForwardData();
     bytes memory data = _getSignedForwardData(pk, volData);
 
@@ -52,7 +52,7 @@ contract UNIT_LyraForwardFeed is Test {
     assertEq(confidence, 1e18);
   }
 
-  function testCannotUpdateFwdFeedFromInvalidSigner() public {
+  function testFwdFeed_CannotUpdateFwdFeedFromInvalidSigner() public {
     // we didn't whitelist the pk owner this time
     feed.addSigner(pkOwner, false);
 
@@ -63,7 +63,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotUpdateFwdFeedAfterDeadline() public {
+  function testFwdFeed_CannotUpdateFwdFeedAfterDeadline() public {
     ILyraForwardFeed.ForwardData memory volData = _getDefaultForwardData();
     bytes memory data = _getSignedForwardData(pk, volData);
 
@@ -73,7 +73,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotSetFwdInTheFuture() public {
+  function testFwdFeed_CannotSetFwdInTheFuture() public {
     ILyraForwardFeed.ForwardData memory volData = _getDefaultForwardData();
     volData.timestamp = uint64(block.timestamp + 1000);
     bytes memory data = _getSignedForwardData(pk, volData);
@@ -82,7 +82,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCannotSetFwdPastExpiry() public {
+  function testFwdFeed_CannotSetFwdPastExpiry() public {
     vm.warp(defaultExpiry + 1);
     ILyraForwardFeed.ForwardData memory volData = _getDefaultForwardData();
     volData.timestamp = uint64(defaultExpiry + 1);
@@ -92,7 +92,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.acceptData(data);
   }
 
-  function testCanSetSettlementData() public {
+  function testFwdFeed_CanSetSettlementData() public {
     vm.warp(defaultExpiry);
     ILyraForwardFeed.ForwardData memory volData = _getDefaultForwardData();
     volData.timestamp = uint64(defaultExpiry);
@@ -103,7 +103,7 @@ contract UNIT_LyraForwardFeed is Test {
     assertEq(settlementPrice, 1050e18);
   }
 
-  function testIgnoreUpdateIfOlderDataIsPushed() public {
+  function testFwdFeed_IgnoreUpdateIfOlderDataIsPushed() public {
     ILyraForwardFeed.ForwardData memory volData = _getDefaultForwardData();
 
     bytes memory data = _getSignedForwardData(pk, volData);
@@ -120,7 +120,7 @@ contract UNIT_LyraForwardFeed is Test {
     assertEq(confidence, 1e18);
   }
 
-  function testSplitForwardFeed() public {
+  function testFwdFeed_SplitForwardFeed() public {
     feed.setHeartbeat(1 days);
 
     vm.warp(defaultExpiry - 10 minutes);
@@ -147,7 +147,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.getSettlementPrice(defaultExpiry);
   }
 
-  function testCannotSubmitPriceWithReplacedSigner() public {
+  function testFwdFeed_CannotSubmitPriceWithReplacedSigner() public {
     // use a different private key to sign the data but still specify pkOwner as signer
     uint pk2 = 0xBEEF2222;
 

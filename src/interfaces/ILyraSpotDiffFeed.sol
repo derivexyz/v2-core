@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-interface ILyraSpotFeed {
-  struct SpotData {
-    // price data
-    uint128 price;
+interface ILyraSpotDiffFeed {
+  struct SpotDiffData {
+    int128 spotDiff;
     uint64 confidence;
     uint64 timestamp;
     // the latest timestamp you can use this data
@@ -15,8 +14,8 @@ interface ILyraSpotFeed {
   }
 
   /// @dev structure to store in contract storage
-  struct SpotDetail {
-    uint128 price;
+  struct SpotDiffDetail {
+    int128 spotDiff;
     uint64 confidence;
     uint64 timestamp;
   }
@@ -24,7 +23,7 @@ interface ILyraSpotFeed {
   ////////////////////////
   //       Events       //
   ////////////////////////
-  event SpotPriceUpdated(address indexed signer, uint128 spot, uint64 confidence, uint64 timestamp);
+  event SpotDiffUpdated(address indexed signer, int128 spotDiff, uint64 confidence, uint64 timestamp);
 
   ////////////////////////
   //       Errors       //
