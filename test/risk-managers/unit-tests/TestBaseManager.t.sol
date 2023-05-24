@@ -299,13 +299,13 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testCannotExecuteBidFromNonLiquidation() external {
     vm.expectRevert(IBaseManager.BM_OnlyLiquidationModule.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 1e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
   }
 
   function testCannotExecuteInvalidBid() external {
     vm.startPrank(mockAuction);
     vm.expectRevert(IBaseManager.BM_InvalidBidPortion.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0.2e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 1.2e18, 0);
     vm.stopPrank();
   }
 
@@ -314,7 +314,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
     vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 1e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
 
     vm.stopPrank();
   }
@@ -327,7 +327,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     // balance[1] is not cash
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
     vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 1e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
 
     vm.stopPrank();
   }
@@ -341,7 +341,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     mockAsset.deposit(aliceAcc, 1, 1e18);
 
     vm.startPrank(mockAuction);
-    tester.executeBid(aliceAcc, bobAcc, 1e18, 1e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 1e18, 0);
 
     assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), 0);
     assertEq(accounts.getBalance(bobAcc, mockAsset, 0), 1e18);
@@ -364,7 +364,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     vm.startPrank(mockAuction);
 
     // liquidate 80%
-    tester.executeBid(aliceAcc, bobAcc, 0.4e18, 0.5e18, bid);
+    tester.executeBid(aliceAcc, bobAcc, 0.8e18, bid);
 
     assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), 40e18);
     assertEq(accounts.getBalance(aliceAcc, cash, 0), int(bid));

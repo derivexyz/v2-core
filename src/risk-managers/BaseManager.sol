@@ -112,11 +112,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param portion Portion of account that is requested to be liquidated.
    * @param cashAmount Cash amount liquidator is offering for portion of account.
    */
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint totalPortion, uint cashAmount)
-    external
-    onlyLiquidations
-  {
-    if (portion > totalPortion) revert BM_InvalidBidPortion();
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyLiquidations {
+    if (portion > 1e18) revert BM_InvalidBidPortion();
 
     // check that liquidator only has cash and nothing else
     IAccounts.AssetBalance[] memory liquidatorAssets = accounts.getAccountBalances(liquidatorId);
@@ -129,8 +126,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
-    uint percentage = portion.divideDecimal(totalPortion);
-
     // transfer liquidated account's asset to liquidator
     for (uint i; i < assetBalances.length; i++) {
       _symmetricManagerAdjustment(
@@ -138,7 +133,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
         liquidatorId,
         assetBalances[i].asset,
         uint96(assetBalances[i].subId),
-        assetBalances[i].balance.multiplyDecimal(int(percentage))
+        assetBalances[i].balance.multiplyDecimal(int(portion))
       );
     }
 

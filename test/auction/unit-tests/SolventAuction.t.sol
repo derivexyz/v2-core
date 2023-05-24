@@ -73,7 +73,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-    assertEq(auction.ongoing, true);
+    assertEq(auction.ongoing, false); // mark as terminated
     assertEq(auction.insolvent, false);
   }
 
@@ -109,10 +109,13 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
+    // after the first liquidation, mtm should be 0.9 now
+    manager.setMarkToMarket(aliceAcc, 270e18);
+
     vm.prank(charlie);
     (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage);
 
-    assertEq(cashFromCharlie, cashFromBob); // they should pay the same amount
+    assertEq(cashFromCharlie + 27, cashFromBob); // they should pay the same amount. (+dust amount)
     assertEq(charliePercentage, bobPercentage);
 
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);

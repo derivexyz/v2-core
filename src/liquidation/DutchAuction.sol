@@ -170,53 +170,16 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     if (canTerminate) revert DA_AuctionShouldBeTerminated();
 
+    bool canTerminateAfterwards;
     if (auctions[accountId].insolvent) {
-      finalPercentage = percentOfAccount;
-
-      // the account is insolvent when the bid price for the account falls below zero
-      // someone get paid from security module to take on the risk
-      uint currentPayout = _getInsolventAuctionPayout(accountId);
-      cashToBidder = currentPayout.multiplyDecimal(finalPercentage);
-      // we first ask the security module to compensate the bidder
-      uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
-      // if amount paid is less than we requested:
-      // 1. we trigger socialize losses on cash asset
-      // 2. print cash to the bidder (in cash.socializeLoss)
-      if (cashToBidder > amountPaid) {
-        uint loss = cashToBidder - amountPaid;
-        cash.socializeLoss(loss, bidderId);
-      }
+      (canTerminateAfterwards, finalPercentage, cashToBidder) =
+        _bidOnInsolventAuction(accountId, bidderId, percentOfAccount);
     } else {
-      // if the account is solvent, the bidder pays the account for a portion of the account
-      // MtM is expected to be negative
-
-      int bidPrice = _getSolventAuctionBidPrice(accountId, markToMarket);
-
-      if (bidPrice <= 0) revert DA_SolventAuctionEnded();
-
-      // todo: if it changes from fast to slow, maybe lock withdraw in cash
-      (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
-
-      // calculate tha max proportion of the portfolio that can be liquidated
-      uint pMax = _getMaxProportion(markToMarket, margin, discount); // discount
-
-      finalPercentage = percentOfAccount > pMax ? pMax : percentOfAccount;
-
-      cashFromBidder = bidPrice.toUint256().multiplyDecimal(finalPercentage); // bid * f_max
+      (canTerminateAfterwards, finalPercentage, cashFromBidder) =
+        _bidOnSolventAuction(accountId, bidderId, percentOfAccount, margin, markToMarket);
     }
 
-    // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
-    ILiquidatableManager(address(accounts.manager(accountId))).executeBid(
-      accountId, bidderId, finalPercentage, auctions[accountId].percentageLeft, cashFromBidder
-    );
-
-    auctions[accountId].percentageLeft -= finalPercentage;
-
-    emit Bid(accountId, bidderId, finalPercentage, cashFromBidder);
-
-    // terminating the auction if the account is back above water
-    (bool canTerminateAfter,,) = getAuctionStatus(accountId);
-    if (canTerminateAfter) {
+    if (canTerminateAfterwards) {
       _terminateAuction(accountId);
     }
   }
@@ -412,6 +375,86 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       lastStepUpdate: block.timestamp
     });
     emit InsolventAuctionStarted(accountId, numSteps, stepSize);
+  }
+
+  /**
+   * @param accountId Account being liquidated
+   * @param bidderId Account getting paid from security module to take the liquidated account
+   * @param percentOfAccount the percentage of the original portfolio that was put on auction
+   * @return canTerminate can the auction be terminated afterwards
+   * @return finalPercentage the percentage of the original portfolio account that was actually liquidated
+   */
+  function _bidOnSolventAuction(
+    uint accountId,
+    uint bidderId,
+    uint percentOfAccount,
+    int bufferMargin,
+    int markToMarket
+  ) internal returns (bool canTerminate, uint finalPercentage, uint cashFromBidder) {
+    finalPercentage = percentOfAccount;
+
+    // calculate the max percentage of "current portfolio" that can be liquidated
+    int bidPrice = _getSolventAuctionBidPrice(accountId, markToMarket);
+    if (bidPrice <= 0) revert DA_SolventAuctionEnded();
+
+    (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
+
+    // max percentage of the "current" portfolio that can be liquidated
+
+    uint maxOfCurrent = _getMaxProportion(markToMarket, bufferMargin, discount);
+
+    // the percentage the user requested to liquidate, in form percentage of current portfolio
+    uint requestedPercentage = percentOfAccount.divideDecimal(auctions[accountId].percentageLeft);
+
+    if (requestedPercentage > maxOfCurrent) {
+      requestedPercentage = maxOfCurrent;
+      canTerminate = true;
+
+      // scaled down finalPercentage- amount of original that was liquidated
+      finalPercentage = requestedPercentage.multiplyDecimal(auctions[accountId].percentageLeft);
+    }
+
+    cashFromBidder = bidPrice.toUint256().multiplyDecimal(requestedPercentage);
+
+    auctions[accountId].percentageLeft -= finalPercentage;
+
+    // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
+    ILiquidatableManager(address(accounts.manager(accountId))).executeBid(
+      accountId, bidderId, requestedPercentage, cashFromBidder
+    );
+  }
+
+  /**
+   * @dev bidder got paid to take on an insolvent account
+   * @param accountId Account being liquidated
+   * @param bidderId Account getting paid from security module to take the liquidated account
+   * @param percentOfAccount the percentage of the original portfolio that was put on auction
+   */
+  function _bidOnInsolventAuction(uint accountId, uint bidderId, uint percentOfAccount)
+    internal
+    returns (bool canTerminate, uint finalPercentage, uint cashToBidder)
+  {
+    uint percentageOfOriginalLeft = auctions[accountId].percentageLeft;
+    finalPercentage = percentOfAccount > percentageOfOriginalLeft ? percentageOfOriginalLeft : percentOfAccount;
+
+    // the account is insolvent when the bid price for the account falls below zero
+    // someone get paid from security module to take on the risk
+    cashToBidder = _getInsolventAuctionPayout(accountId).multiplyDecimal(finalPercentage);
+    // we first ask the security module to compensate the bidder
+    uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
+    // if amount paid is less than we requested: we trigger socialize losses on cash asset (which will print cash)
+    if (cashToBidder > amountPaid) {
+      uint loss = cashToBidder - amountPaid;
+      cash.socializeLoss(loss, bidderId);
+    }
+
+    // risk manager transfers portion of the account to the bidder, liquidator pays 0
+    uint percentageOfCurrent = finalPercentage.divideDecimal(percentageOfOriginalLeft);
+
+    auctions[accountId].percentageLeft -= finalPercentage;
+
+    ILiquidatableManager(address(accounts.manager(accountId))).executeBid(accountId, bidderId, percentageOfCurrent, 0);
+    canTerminate = auctions[accountId].percentageLeft == 0;
   }
 
   /**
