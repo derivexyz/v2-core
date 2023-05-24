@@ -38,6 +38,8 @@ contract DutchAuctionBase is Test {
 
     dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
     dutchAuction.setInsolventAuctionParams(_getDefaultInsolventParams());
+
+    dutchAuction.setBufferMarginPercentage(0.1e18);
   }
 
   /// @dev deploy mock system
@@ -104,6 +106,6 @@ contract DutchAuctionBase is Test {
   }
 
   function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
-    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5});
+    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5, bufferMarginScaler: 1.2e18});
   }
 }

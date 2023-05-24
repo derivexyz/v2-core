@@ -112,16 +112,19 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param portion Portion of account that is requested to be liquidated.
    * @param cashAmount Cash amount liquidator is offering for portion of account.
    */
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint totalPortion, uint cashAmount)
-    external
-    onlyLiquidations
-  {
-    if (portion > totalPortion) {
-      revert("PCRM_InvalidBidPortion");
-    }
-    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyLiquidations {
+    if (portion > 1e18) revert BM_InvalidBidPortion();
 
-    uint percentage = portion.divideDecimal(totalPortion);
+    // check that liquidator only has cash and nothing else
+    IAccounts.AssetBalance[] memory liquidatorAssets = accounts.getAccountBalances(liquidatorId);
+    if (
+      liquidatorAssets.length != 0
+        && (liquidatorAssets.length != 1 || address(liquidatorAssets[0].asset) != address(cashAsset))
+    ) {
+      revert BM_LiquidatorCanOnlyHaveCash();
+    }
+
+    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
 
     // transfer liquidated account's asset to liquidator
     for (uint i; i < assetBalances.length; i++) {
@@ -130,14 +133,19 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
         liquidatorId,
         assetBalances[i].asset,
         uint96(assetBalances[i].subId),
-        assetBalances[i].balance.multiplyDecimal(int(percentage))
+        assetBalances[i].balance.multiplyDecimal(int(portion))
       );
     }
 
     // transfer cash (bid amount) to liquidated account
     _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
+  }
 
-    // TODO: check account risk on both sides
+  /**
+   * @dev the liquidation module can request manager to pay the liquidation fee from liquidated account at start of auction
+   */
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external onlyLiquidations {
+    _symmetricManagerAdjustment(accountId, recipient, cashAsset, 0, int(cashAmount));
   }
 
   /**
@@ -390,16 +398,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ////////////////////
 
   modifier onlyLiquidations() {
-    if (msg.sender != address(liquidation)) {
-      revert("only liquidations");
-    }
+    if (msg.sender != address(liquidation)) revert BM_OnlyLiquidationModule();
     _;
   }
 
   modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) {
-      revert("only accounts");
-    }
+    if (msg.sender != address(accounts)) revert BM_OnlyAccounts();
     _;
   }
 

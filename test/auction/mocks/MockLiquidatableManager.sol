@@ -11,6 +11,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   mapping(uint => int) mockMarkToMarket;
 
+  uint public feePaid;
+
   constructor(address account_) MockManager(account_) {}
 
   function setMockMargin(uint accountId, bool isInitial, uint scenario, int margin) external {
@@ -27,8 +29,12 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   function settleInterest(uint accountId) external {}
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint totalPortion, uint cashAmount) external {
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external {
     // do nothing
+  }
+
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external {
+    feePaid += cashAmount;
   }
 
   function getMargin(uint, bool) external pure override returns (int) {

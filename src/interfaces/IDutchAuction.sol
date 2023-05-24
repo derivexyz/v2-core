@@ -44,6 +44,8 @@ interface IDutchAuction {
     uint32 totalSteps;
     // Amount of seconds to go to next step
     uint32 coolDown;
+    /// buffer margin scaler. liquidation will go from 0 to (buffer margin) * scaler
+    int64 bufferMarginScaler;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
@@ -104,6 +106,9 @@ interface IDutchAuction {
 
   /// @dev emitted when a bid is submitted for 0% of the portfolio
   error DA_AmountIsZero();
+
+  /// @dev emitted when owner trying to set a invalid buffer margin param
+  error DA_InvalidBufferMarginParameter();
 
   /// @dev emitted when a user tries to increment the step for an insolvent auction
   error DA_SolventAuctionCannotIncrement();
