@@ -36,7 +36,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(currentBidPrice, 300e18); // 100% of mark to market
 
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc, scenario);
-    assertEq(maxProportion, 0.4e18); // can liquidate 40% of portfolio at most
+    assertEq(maxProportion / 1e15, 318); // can liquidate 31.8% of portfolio at most
   }
 
   function testCannotAuctionOnSolventAccount() public {
@@ -61,7 +61,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(currentBidPrice, 270e18); // 90% of mark to market
 
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc, scenario);
-    assertEq(maxProportion / 1e15, 425); // can liquidate 42.5% of portfolio at most
+    assertEq(maxProportion / 1e15, 341); // can liquidate 34.1% of portfolio at most
 
     // bid on the auction
     vm.prank(bob);
@@ -69,11 +69,11 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     assertEq(finalPercentage, maxProportion); // bid max
     assertEq(cashToBidder, 0); // bid max
-    assertEq(cashFromBidder / 1e18, 114); // 42.5% of portfolio, price at 270
+    assertEq(cashFromBidder / 1e18, 92); // 92% of portfolio, price at 270
 
-    // // testing that the view returns the correct auction.
+    // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-    assertEq(auction.ongoing, true); // start does not automatically un-flag because mocked MM is not updated
+    assertEq(auction.ongoing, true);
     assertEq(auction.insolvent, false);
   }
 
@@ -152,10 +152,19 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
   }
 
-  function testCannotBidOnSolventAccount() public {
+  function testCanStillBidWhenMMIsZero() public {
     _startDefaultSolventAuction(aliceAcc);
-    // assume initial margin is back above threshold
-    manager.setMockMargin(aliceAcc, true, scenario, 1e18);
+
+    manager.setMockMargin(aliceAcc, false, scenario, 1e18);
+
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
+  function testCannotBidOnAccountThatBufferMarginIsAboveThreshold() public {
+    _startDefaultSolventAuction(aliceAcc);
+    // assume maintenance margin to 100, making buffer margin 100 - (200-100)*0.1 = 90
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
     vm.prank(bob);
     vm.expectRevert(IDutchAuction.DA_AuctionShouldBeTerminated.selector);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
@@ -236,7 +245,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // increment the insolvent auction
     uint newId = 2;
-    manager.setMockMargin(aliceAcc, true, newId, -300e18);
+    manager.setMockMargin(aliceAcc, false, newId, -300e18);
 
     dutchAuction.updateScenarioId(aliceAcc, newId);
 
@@ -270,8 +279,9 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, true);
 
-    // can un-flag if IM > 0
-    manager.setMockMargin(aliceAcc, true, scenario, 1e18);
+    // can un-flag if Buffer marin > 0
+    // set mm to 100 to make buffer margin > 0
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
@@ -287,14 +297,14 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   }
 
   function _startDefaultSolventAuction(uint acc) internal {
-    // -200 init margin
-    manager.setMockMargin(acc, true, scenario, -200e18);
-
     // -100 maintenance margin
     manager.setMockMargin(acc, false, scenario, -100e18);
 
     // mark to market: 300
     manager.setMarkToMarket(acc, 300e18);
+
+    // buffer is -400
+    // buffer marin = -100 - 40 = -140
 
     // start an auction on Alice's account
     dutchAuction.startAuction(acc, scenario);

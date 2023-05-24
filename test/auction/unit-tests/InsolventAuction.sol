@@ -46,8 +46,8 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     // bid 50% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18);
 
-    // 1% of 200 * 50% (max value) = 1
-    uint expectedTotalPayoutFromSM = 1e18;
+    // 1% of 320 * 50% = 1.6
+    uint expectedTotalPayoutFromSM = 1.6e18;
 
     assertEq(finalPercentage, 0.5e18);
     assertEq(cashFromBidder, 0);
@@ -64,8 +64,8 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     // bid 100% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
-    // 5% of 200 = 10
-    uint expectedPayout = 10e18;
+    // 5% of 320 = 16
+    uint expectedPayout = 16e18;
 
     assertEq(finalPercentage, 1e18);
     assertEq(cashFromBidder, 0);
@@ -120,14 +120,14 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   }
 
   function _startDefaultInsolventAuction(uint acc) internal {
-    // -500 init margin
-    manager.setMockMargin(acc, true, scenario, -200e18);
-
     // -300 maintenance margin
-    manager.setMockMargin(acc, false, scenario, -100e18);
+    manager.setMockMargin(acc, false, scenario, -300e18);
 
     // mark to market: negative!!
     manager.setMarkToMarket(acc, -100e18);
+
+    // buffer is -200
+    // (default) buffer margin is -300 - 20 = -320
 
     // start an auction on Alice's account
     dutchAuction.startAuction(acc, scenario);

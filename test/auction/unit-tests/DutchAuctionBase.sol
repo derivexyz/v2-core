@@ -38,6 +38,8 @@ contract DutchAuctionBase is Test {
 
     dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
     dutchAuction.setInsolventAuctionParams(_getDefaultInsolventParams());
+
+    dutchAuction.setBufferMarginPercentage(0.1e18);
   }
 
   /// @dev deploy mock system
