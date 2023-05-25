@@ -43,7 +43,12 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   ISpotFeed public perpFeed;
 
   ///@dev Mapping from account to position
-  mapping(uint => PositionDetail) public positions;
+  mapping(uint account => PositionDetail) public positions;
+
+  mapping(uint tradeId => OISnapshot) public openInterestBeforeTrade;
+
+  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
+  mapping(IManager manager => uint) public totalPosition;
 
   ///@dev Mapping from address to whitelisted to push impacted prices
   address public fundingRateOracle;
@@ -59,6 +64,9 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
 
   /// @dev Impact bid price
   int128 public impactBidPrice;
+
+  /// @dev Open Interest: sum of total positive positions
+  uint128 public openInterest;
 
   /// @dev static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
@@ -124,12 +132,18 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    */
   function handleAdjustment(
     IAccounts.AssetAdjustment memory adjustment,
-    uint, /*tradeId*/
+    uint tradeId,
     int preBalance,
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
+
+    // take snapshot of OI if this subId has not been traded in this tradeId
+    if (!openInterestBeforeTrade[tradeId].initialized) {
+      openInterestBeforeTrade[tradeId].initialized = true;
+      openInterestBeforeTrade[tradeId].oi = openInterest;
+    }
 
     // calculate funding from the last period, reflect changes in position.funding
     _updateFundingRate();
@@ -253,6 +267,23 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   function getPerpPrice() external view returns (uint) {
     (uint perpPrice,) = perpFeed.getSpot();
     return perpPrice;
+  }
+
+  /**
+   * @dev update global OI and total position
+   * @param preBalance Account balance before an adjustment
+   * @param change Change of balance
+   */
+  function _updateOIAndTotalPosition(IManager manager, int preBalance, int change) internal {
+    int postBalance = preBalance + change;
+
+    // update OI: total positive sum
+    openInterest = (uint(openInterest).toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance))
+      .toUint256().toUint128();
+
+    // update total position for manager, won't revert if it exceeds the cap
+    //  should only be checked by manager by the end of all transfers
+    totalPosition[manager] = totalPosition[manager] + postBalance.abs() - preBalance.abs();
   }
 
   /**

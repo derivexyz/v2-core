@@ -45,6 +45,7 @@ contract UNIT_OptionAssetOITest is Test {
     accountEmpty = account.createAccount(address(this), manager);
 
     option.setTotalPositionCap(manager, uint(10 * tradeAmount));
+    option.setTotalPositionCap(manager2, uint(10 * tradeAmount));
   }
 
   /* --------------------- *
@@ -199,6 +200,13 @@ contract UNIT_OptionAssetOITest is Test {
 
     assertEq(totalPos1After, totalPos1Before - uint(tradeAmount));
     assertEq(totalPos2After, totalPos2Before + uint(tradeAmount));
+  }
+
+  function testCannotChangeManagerIfExceedCap() public {
+    option.setTotalPositionCap(manager2, 1);
+
+    vm.expectRevert(IOption.OA_ManagerChangeExceedCap.selector);
+    account.changeManager(accountNeg, manager2, "");
   }
 
   /// @dev util function to transfer

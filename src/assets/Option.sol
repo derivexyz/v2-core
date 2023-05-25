@@ -106,7 +106,8 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
     totalPosition[accounts.manager(accountId)] -= pos;
     totalPosition[newManager] += pos;
 
-    if (totalPosition[newManager] > totalPositionCap[newManager]) revert OA_ManagerChangeExceedCap();
+    uint cap = totalPositionCap[newManager];
+    if (cap != 0 && totalPosition[newManager] > cap) revert OA_ManagerChangeExceedCap();
   }
 
   //////////
