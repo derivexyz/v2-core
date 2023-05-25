@@ -5,7 +5,7 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
-import "openzeppelin/access/Ownable2Step.sol";
+// import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
 import "./ManagerWhitelist.sol";
@@ -15,12 +15,14 @@ import {IAccounts} from "src/interfaces/IAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
+import {OITracking} from "./OITracking.sol";
+
 /**
  * @title Option
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, Ownable2Step, ManagerWhitelist {
+contract Option is IOption, OITracking, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
@@ -33,17 +35,17 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   // Variables //
   ///////////////
 
-  ///@dev SubId => tradeId => open interest snapshot
-  mapping(uint subId => mapping(uint tradeId => OISnapshot)) public openInterestBeforeTrade;
+  // ///@dev SubId => tradeId => open interest snapshot
+  // mapping(uint subId => mapping(uint tradeId => OISnapshot)) public openInterestBeforeTrade;
 
-  ///@dev Open interest for a subId. OI is the sum of all positive balance
-  mapping(uint subId => uint) public openInterest;
+  // ///@dev Open interest for a subId. OI is the sum of all positive balance
+  // mapping(uint subId => uint) public openInterest;
 
-  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
-  mapping(IManager manager => uint) public totalPositionCap;
+  // ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
+  // mapping(IManager manager => uint) public totalPositionCap;
 
-  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
-  mapping(IManager manager => uint) public totalPosition;
+  // ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
+  // mapping(IManager manager => uint) public totalPosition;
 
   ///@dev Each account's total position: (sum of .abs() of all option positions)
   mapping(uint accountId => uint) public accountTotalPosition;
@@ -54,16 +56,6 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
 
   constructor(IAccounts _accounts, address _settlementFeed) ManagerWhitelist(_accounts) {
     settlementFeed = ISettlementFeed(_settlementFeed);
-  }
-
-  ///////////////////////
-  //    Admin-Only     //
-  ///////////////////////
-
-  function setTotalPositionCap(IManager manager, uint cap) external onlyOwner {
-    totalPositionCap[manager] = cap;
-
-    emit TotalPositionCapSet(address(manager), cap);
   }
 
   /////////////////////
@@ -88,9 +80,13 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
     }
 
     // update the OI based on pre balance and change amount
-    _updateOIAndTotalPosition(manager, adjustment.acc, adjustment.subId, preBalance, adjustment.amount);
+    _updateOIAndTotalPosition(manager, adjustment.subId, preBalance, adjustment.amount);
 
-    return (preBalance + adjustment.amount, adjustment.amount < 0);
+    // update total position for account
+    int postBalance = preBalance + adjustment.amount;
+    accountTotalPosition[adjustment.acc] = accountTotalPosition[adjustment.acc] + postBalance.abs() - preBalance.abs();
+
+    return (postBalance, adjustment.amount < 0);
   }
 
   /**
@@ -154,26 +150,7 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
 
   //////////////
   // Internal //
-  //////////////
-
-  /**
-   * @dev update global OI for an subId, base on adjustment of a single account
-   * @param preBalance Account balance before an adjustment
-   * @param change Change of balance
-   */
-  function _updateOIAndTotalPosition(IManager manager, uint accountId, uint subId, int preBalance, int change) internal {
-    int postBalance = preBalance + change;
-
-    // update OI for subId
-    openInterest[subId] =
-      (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
-
-    // update total position for manager, won't revert if it exceeds the cap, should only be checked by manager by the end of all transfers
-    totalPosition[manager] = totalPosition[manager] + postBalance.abs() - preBalance.abs();
-
-    // update total position for account
-    accountTotalPosition[accountId] = accountTotalPosition[accountId] + postBalance.abs() - preBalance.abs();
-  }
+  ////////////
 
   function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
     public

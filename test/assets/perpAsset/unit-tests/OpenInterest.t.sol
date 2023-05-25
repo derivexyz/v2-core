@@ -87,7 +87,7 @@ contract UNIT_PerpOIAndCap is Test {
   function testTradeIncreaseOIAndTotalPos() public {
     // alice opens short, bob opens long
     _transferPerp(aliceAcc, bobAcc, 100e18);
-    assertEq(perp.openInterest(), 100e18);
+    assertEq(perp.openInterest(0), 100e18);
     assertEq(perp.totalPosition(manager), 200e18);
   }
 
@@ -98,7 +98,7 @@ contract UNIT_PerpOIAndCap is Test {
 
     // close half of the positions
     _transferPerp(bobAcc, aliceAcc, 50e18);
-    assertEq(perp.openInterest(), 50e18);
+    assertEq(perp.openInterest(0), 50e18);
     assertEq(perp.totalPosition(manager), 100e18);
   }
 
@@ -110,7 +110,7 @@ contract UNIT_PerpOIAndCap is Test {
     // alice long 200 with charlie, making alice now +100, bob: +100, charlie: -200
     _transferPerp(charlieAcc, aliceAcc, 200e18);
 
-    assertEq(perp.openInterest(), 200e18);
+    assertEq(perp.openInterest(0), 200e18);
     assertEq(perp.totalPosition(manager), 400e18);
   }
 
@@ -120,7 +120,7 @@ contract UNIT_PerpOIAndCap is Test {
     // alice opens short on manager 1, new account long on manager 2
     _transferPerp(aliceAcc, newAccount, 100e18);
 
-    assertEq(perp.openInterest(), 100e18);
+    assertEq(perp.openInterest(0), 100e18);
     assertEq(perp.totalPosition(manager), 100e18);
     assertEq(perp.totalPosition(manager2), 100e18);
   }

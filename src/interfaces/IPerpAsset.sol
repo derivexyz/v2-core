@@ -8,11 +8,6 @@ import {IAsset} from "src/interfaces/IAsset.sol";
  * @notice Interface for a perpetual asset contract that extends the IAsset interface.
  */
 interface IPerpAsset is IAsset {
-  struct OISnapshot {
-    bool initialized;
-    uint240 oi;
-  }
-
   struct PositionDetail {
     // Spot price the last time user interact with perp contract
     uint128 lastMarkPrice;
@@ -60,8 +55,6 @@ interface IPerpAsset is IAsset {
   event PerpFeedUpdated(address perpFeed);
 
   event ImpactPricesSet(int impactAskPrice, int impactBidPrice);
-
-  event TotalPositionCapSet(address manager, uint newCap);
 
   ////////////////
   //   Errors   //
