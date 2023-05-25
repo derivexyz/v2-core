@@ -175,6 +175,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _processManagerData(tradeId, managerData);
 
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
+    _checkOptionCap(option);
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {

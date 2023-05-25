@@ -2,8 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import "src/interfaces/IInterestRateModel.sol";
-import "src/interfaces/ISettlementFeed.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 
 interface IOption is IAsset {
   /////////////////
@@ -38,6 +37,9 @@ interface IOption is IAsset {
     pure
     returns (int);
 
+  function totalPositionCap(IManager manager) external view returns (uint);
+  function totalPosition(IManager manager) external view returns (uint);
+
   ////////////////
   //   Events   //
   ////////////////
@@ -46,7 +48,7 @@ interface IOption is IAsset {
   event SnapshotTaken(uint subId, uint tradeId, uint oi);
 
   /// @dev Emitted when OI cap is set
-  event OICapSet(address manager, uint oiCap);
+  event TotalPositionCapSet(address manager, uint oiCap);
 
   ////////////////
   //   Errors   //

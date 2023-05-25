@@ -39,6 +39,12 @@ contract MockOption is IOption {
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
+  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position 
+  mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
+
+  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position 
+  mapping(IManager manager => uint totalPosition) public totalPosition;
+
   constructor(IAccounts account_) {
     account = account_;
   }
@@ -90,6 +96,14 @@ contract MockOption is IOption {
 
   function setMockedSubIdSettled(uint subId, bool settled) external {
     mockedSubSettled[subId] = settled;
+  }
+
+  function setMockTotalPositionCap(IManager manager, uint cap) external {
+    totalPositionCap[manager] = cap;
+  }
+
+  function setMockTotalPosition(IManager manager, uint position) external {
+    totalPosition[manager] = position;
   }
 
   function calcSettlementValue(uint subId, int /*balance*/ ) external view returns (int payout, bool priceSettled) {

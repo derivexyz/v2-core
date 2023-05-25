@@ -240,6 +240,14 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
   }
 
+  function _checkOptionCap(IOption option) internal view {
+    uint totalPosCap = option.totalPositionCap(IManager(address(this)));
+    if (totalPosCap == 0) return;
+
+    uint totalPos = option.totalPosition(IManager(address(this)));
+    if (totalPos > totalPosCap) revert BM_OptionCapExceeded();
+  }
+
   /**
    * @dev settle an account by removing all expired option positions and adjust cash balance
    * @param accountId Account Id to settle

@@ -24,6 +24,7 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
+  using IntLib for int;
 
   /// @dev Contract to get spot prices which are locked in at settlement
   ISettlementFeed public settlementFeed;
@@ -38,8 +39,14 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   ///@dev Open interest for a subId. OI is the sum of all positive balance
   mapping(uint subId => uint) public openInterest;
 
-  ///@dev Cap on each manager's open interest
-  mapping(address manager => uint OICap) public OICaps;
+  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position 
+  mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
+
+  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position 
+  mapping(IManager manager => uint totalPosition) public totalPosition;
+
+  ///@dev Each account's total position: (sum of .abs() of all option positions)
+  mapping(uint accountId => uint totalPosition) public accountTotalPosition;
 
   ////////////////////////
   //    Constructor     //
@@ -53,10 +60,10 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   //    Admin-Only     //
   ///////////////////////
 
-  function setOICap(address manager, uint cap) external onlyOwner {
-    OICaps[manager] = cap;
+  function setTotalPositionCap(IManager manager, uint cap) external onlyOwner {
+    totalPositionCap[manager] = cap;
 
-    emit OICapSet(manager, cap);
+    emit TotalPositionCapSet(address(manager), cap);
   }
 
   /////////////////////
@@ -81,7 +88,7 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
     }
 
     // update the OI based on pre balance and change amount
-    _updateOIForSubId(adjustment.subId, preBalance, adjustment.amount);
+    _updateOIAndTotalPosition(manager, adjustment.acc, adjustment.subId, preBalance, adjustment.amount);
 
     return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
@@ -91,10 +98,13 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
    * @dev block update with non-whitelisted manager
    */
 
-  function handleManagerChange(uint, IManager newManager) external view onlyAccounts {
+  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
 
     // migrate OI cap to new manager
+    uint pos = accountTotalPosition[accountId];
+    totalPosition[accounts.manager(accountId)] -= pos;
+    totalPosition[newManager] += pos;
   }
 
   //////////
@@ -148,10 +158,20 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
    * @param preBalance Account balance before an adjustment
    * @param change Change of balance
    */
-  function _updateOIForSubId(uint subId, int preBalance, int change) internal {
+  function _updateOIAndTotalPosition(IManager manager, uint accountId, uint subId, int preBalance, int change) internal {
     int postBalance = preBalance + change;
+
+    // update OI for subId
     openInterest[subId] =
       (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
+    
+    // update total position for manager, won't revert if it exceeds the cap, should only be checked by manager by the end of all transfers
+    totalPosition[manager] =
+      totalPosition[manager] + postBalance.abs() - preBalance.abs();
+    
+    // update total position for account
+    accountTotalPosition[accountId] =
+      accountTotalPosition[accountId] + postBalance.abs() - preBalance.abs();
   }
 
   function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
