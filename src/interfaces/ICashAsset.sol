@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import "src/interfaces/IInterestRateModel.sol";
+import {IManager} from "src/interfaces/IManager.sol";
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface ICashAsset is IAsset {
@@ -14,6 +15,16 @@ interface ICashAsset is IAsset {
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external;
+
+  /**
+   * @dev Deposit USDC and create a new account
+   * @param recipient user for who the new account is created
+   * @param stableAmount amount of stable coins to deposit
+   * @param manager manager of the new account
+   */
+  function depositToNewAccount(address recipient, uint stableAmount, IManager manager)
+    external
+    returns (uint newAccountId);
 
   /**
    * @notice Withdraw USDC from a Lyra account
