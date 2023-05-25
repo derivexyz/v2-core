@@ -123,7 +123,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   /**
    * @dev set total position cap of a manager
    * @param manager The manager contract
-    * @param cap The new cap
+   * @param cap The new cap
    */
   function setTotalPositionCap(IManager manager, uint cap) external onlyOwner {
     totalPositionCap[manager] = cap;
