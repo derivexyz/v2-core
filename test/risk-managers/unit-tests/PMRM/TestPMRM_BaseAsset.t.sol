@@ -42,11 +42,13 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     baseAsset.withdraw(bobAcc, 10e18, bob);
   }
 
-  function testCannotTransferFromAnotherManager() public {
+  function testCannotTransferBaseFromAnotherManager() public {
     baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(bobAcc, 100e18);
+
+    // decrease the cap to 0
     baseAsset.setOICap(pmrm, 0);
 
     // other PMRM
@@ -75,12 +77,13 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     baseAsset.deposit(newAcc, 100e18);
 
     IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
-    balances[0] = IAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
+    balances[0] = IAccounts.AssetBalance({asset: baseAsset, balance: 20e18, subId: 0});
 
     // bob can transfer out
     _doBalanceTransfer(bobAcc, newAcc, balances);
 
     // bob cannot transfer back in
+    vm.expectRevert(IPMRM.PMRM_ExceededBaseOICap.selector);
     _doBalanceTransfer(newAcc, bobAcc, balances);
   }
 }

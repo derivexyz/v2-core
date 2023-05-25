@@ -171,7 +171,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     bytes calldata managerData
   ) public onlyAccounts {
     _verifyCanTrade(accountId);
-    _updateBaseOI();
+    _checkBaseOICap();
     _processManagerData(tradeId, managerData);
 
     _chargeOIFee(option, forwardFeed, accountId, tradeId, assetDeltas);
@@ -200,7 +200,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _assessRisk(caller, accountId, assetDeltas);
   }
 
-  function _updateBaseOI() internal {
+  function _checkBaseOICap() internal {
     uint currentBaseOI = baseAsset.managerOI(IManager(address(this)));
     if (lastSeenBaseOI == currentBaseOI) return;
 
