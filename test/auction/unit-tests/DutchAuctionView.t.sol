@@ -67,14 +67,14 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
 
   function testSetInsolventAuctionParameters() public {
     dutchAuction.setInsolventAuctionParams(
-      IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 2, bufferMarginScaler: 1.2e18})
+      IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 2, bufferMarginScalar: 1.2e18})
     );
 
     // expect value
-    (uint32 totalSteps, uint32 coolDown, int64 scaler) = dutchAuction.insolventAuctionParams();
+    (uint32 totalSteps, uint32 coolDown, int64 scalar) = dutchAuction.insolventAuctionParams();
     assertEq(totalSteps, 100);
     assertEq(coolDown, 2);
-    assertEq(scaler, 1.2e18);
+    assertEq(scalar, 1.2e18);
   }
 
   function testGetDiscountPercentage() public {

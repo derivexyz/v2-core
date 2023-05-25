@@ -15,6 +15,8 @@ interface IDutchAuction {
     uint percentageLeft;
     /// The startTime of the auction
     uint startTime;
+    /// Whether the auction is a forced liquidation (full account)
+    bool isForcedLiquidation;
     /*------------------------- *
      * Insolvent Auction Params *
     /*------------------------- */
@@ -44,11 +46,16 @@ interface IDutchAuction {
     uint32 totalSteps;
     // Amount of seconds to go to next step
     uint32 coolDown;
-    /// buffer margin scaler. liquidation will go from 0 to (buffer margin) * scaler
-    int64 bufferMarginScaler;
+    /// buffer margin scalar. liquidation will go from 0 to (buffer margin) * scalar
+    int64 bufferMarginScalar;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
+
+  /// @dev Manager only
+  function startForcedAuction(uint accountId, uint scenarioId) external;
+
+  function hasOngoingAuction(uint accountId) external returns (bool);
 
   ////////////
   // EVENTS //
@@ -74,6 +81,9 @@ interface IDutchAuction {
   ////////////
   // ERRORS //
   ////////////
+
+  /// @dev Emitted when caller is not authorized
+  error DA_NotAuthorized();
 
   /// @dev emitted owner is trying to set a bad parameter for auction
   error DA_InvalidParameter();

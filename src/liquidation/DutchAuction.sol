@@ -39,7 +39,7 @@ import "forge-std/console2.sol";
  * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even if it's given for free.
  * or, it can be started if mark to market value of a portfolio is negative.
  * the insolvent auction that will print the liquidator cash or pay out from security module for liquidator to take the position
- * the price of portfolio went from 0 to Buffer margin * scaler (negative)
+ * the price of portfolio went from 0 to Buffer margin * scalar (negative)
  * can be un-flagged if maintenance margin > 0
  */
 contract DutchAuction is IDutchAuction, Ownable2Step {
@@ -78,6 +78,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     cash = _cash;
   }
 
+  ////////////////////////
+  //       Admin        //
+  ////////////////////////
+
   /**
    * @notice Set buffer margin that will be used to determine the target margin level we liquidate to
    * @dev if set to 0, we liquidate to maintenance margin. If set to 0.3, approximately to initial margin
@@ -111,12 +115,27 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     insolventAuctionParams = _params;
   }
 
+  ////////////////////////
+  //   Begin Auction    //
+  ////////////////////////
+
   /**
    * @dev anyone can start an auction for an account
    * @param accountId The id of the account being liquidated
    * @param scenarioId id to compute the IM with for PMRM, ignored for basic manager
    */
   function startAuction(uint accountId, uint scenarioId) external {
+    _startAuction(accountId, scenarioId, false);
+  }
+
+  function startForcedAuction(uint accountId, uint scenarioId) external {
+    if (msg.sender != address(accounts.manager(accountId))) revert DA_NotAuthorized();
+    // TODO: if theres a live auction what do we do?
+    // and what if that auction is insolvent (but MTM > 0?)
+    _startAuction(accountId, scenarioId, true);
+  }
+
+  function _startAuction(uint accountId, uint scenarioId, bool isForced) internal {
     // settle pending interest rate on an account
     address manager = address(accounts.manager(accountId));
     ILiquidatableManager(manager).settleInterest(accountId);
@@ -124,7 +143,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     (int maintenanceMargin, int bufferMargin, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
 
     // can only start auction if maintenance margin < 0. (If > 0 it's still well collateralized)
-    if (maintenanceMargin >= 0) revert DA_AccountIsAboveMaintenanceMargin();
+    if (!isForced && maintenanceMargin >= 0) revert DA_AccountIsAboveMaintenanceMargin();
 
     if (auctions[accountId].ongoing) revert DA_AuctionAlreadyStarted();
 
@@ -137,13 +156,46 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       }
 
       // solvent auction goes from mark to market * static discount -> 0
-      _startSolventAuction(accountId, scenarioId, markToMarket, fee);
+      _startSolventAuction(accountId, scenarioId, markToMarket, fee, isForced);
     } else {
-      // insolvent auction start from 0 -> buffer margin (negative number) * scaler
-      int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScaler);
-      _startInsolventAuction(accountId, scenarioId, lowerBound);
+      // insolvent auction start from 0 -> buffer margin (negative number) * scalar
+      int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScalar);
+      _startInsolventAuction(accountId, scenarioId, lowerBound, isForced);
     }
   }
+
+  /**
+   * @notice anyone can come in during the auction to supply a scenario ID that will make the IM worse
+   * @param scenarioId new scenarioId
+   */
+  function updateScenarioId(uint accountId, uint scenarioId) external {
+    if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
+
+    // check if the new scenarioId is worse than the current one
+    (int newMargin,,) = _getMarginAndMarkToMarket(accountId, scenarioId);
+    (int currentMargin,,) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
+
+    if (newMargin >= currentMargin) revert DA_ScenarioIdNotWorse();
+
+    auctions[accountId].scenarioId = scenarioId;
+    emit ScenarioIdUpdated(accountId, scenarioId);
+  }
+
+
+  /**
+   * @notice This function can used by anyone to end an auction early
+   * @dev This is to allow account owner to cancel the auction after adding more collateral
+   * @param accountId the accountId that relates to the auction that is being stepped
+   */
+  function terminateAuction(uint accountId) external {
+    (bool canTerminate,,) = getAuctionStatus(accountId);
+    if (!canTerminate) revert DA_AuctionCannotTerminate();
+    _terminateAuction(accountId);
+  }
+
+  ////////////////////////
+  //   Auction Bidding  //
+  ////////////////////////
 
   /**
    * @notice a user submits a bid for a particular auction
@@ -185,22 +237,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
   }
 
-  /**
-   * @notice anyone can come in during the auction to supply a scenario ID that will make the IM worse
-   * @param scenarioId new scenarioId
-   */
-  function updateScenarioId(uint accountId, uint scenarioId) external {
-    if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
-
-    // check if the new scenarioId is worse than the current one
-    (int newMargin,,) = _getMarginAndMarkToMarket(accountId, scenarioId);
-    (int currentMargin,,) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
-
-    if (newMargin >= currentMargin) revert DA_ScenarioIdNotWorse();
-
-    auctions[accountId].scenarioId = scenarioId;
-    emit ScenarioIdUpdated(accountId, scenarioId);
-  }
+  ////////////////////////
+  //  Insolvent Auction //
+  ////////////////////////
 
   /**
    * @notice Function used to begin insolvency logic for an auction that started as solvent
@@ -222,7 +261,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
 
-    _startInsolventAuction(accountId, scenarioId, bufferMargin);
+    _startInsolventAuction(accountId, scenarioId, bufferMargin, auctions[accountId].isForcedLiquidation);
   }
 
   /**
@@ -252,16 +291,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return newStep;
   }
 
-  /**
-   * @notice This function can used by anyone to end an auction early
-   * @dev This is to allow account owner to cancel the auction after adding more collateral
-   * @param accountId the accountId that relates to the auction that is being stepped
-   */
-  function terminateAuction(uint accountId) external {
-    (bool canTerminate,,) = getAuctionStatus(accountId);
-    if (!canTerminate) revert DA_AuctionCannotTerminate();
-    _terminateAuction(accountId);
-  }
+  ////////////////////////
+  //   External Views   //
+  ////////////////////////
 
   /**
    * @notice Return true if an auction can be terminated (back above water)
@@ -329,22 +361,23 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return _getDiscountPercentage(startTime, current);
   }
 
-  ////////////////////
-  //    internal    //
-  ////////////////////
+  ////////////////////////
+  //      Internal      //
+  ////////////////////////
 
   /**
    * @notice Starts an auction that starts with a positive upper bound
    * @dev Function is here to break up the logic for insolvent and solvent auctions
    * @param accountId The id of the account being liquidated
    */
-  function _startSolventAuction(uint accountId, uint scenarioId, int markToMarket, uint fee) internal {
+  function _startSolventAuction(uint accountId, uint scenarioId, int markToMarket, uint fee, bool isForced) internal {
     auctions[accountId] = Auction({
       accountId: accountId,
       scenarioId: scenarioId,
       insolvent: false,
       ongoing: true,
       startTime: block.timestamp,
+      isForcedLiquidation: isForced,
       percentageLeft: 1e18,
       stepSize: 0,
       stepInsolvent: 0,
@@ -360,7 +393,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param lowerBound negative amount in cash, -100e18 means the SM will pay out $100 CASH at most
    * @param accountId the id of the account that is being liquidated
    */
-  function _startInsolventAuction(uint accountId, uint scenarioId, int lowerBound) internal {
+  function _startInsolventAuction(uint accountId, uint scenarioId, int lowerBound, bool isForced) internal {
     // decrease value every step
     uint numSteps = insolventAuctionParams.totalSteps;
     uint stepSize = IntLib.abs(lowerBound) / numSteps;
@@ -371,6 +404,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       insolvent: true,
       ongoing: true,
       startTime: block.timestamp,
+      isForcedLiquidation: isForced,
       percentageLeft: 1e18,
       stepSize: stepSize,
       stepInsolvent: 0,
@@ -425,6 +459,55 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       accountId, bidderId, requestedPercentage, cashFromBidder
     );
   }
+
+  /**
+     * @param accountId Account being liquidated
+   * @param bidderId Account getting paid from security module to take the liquidated account
+   * @param percentOfAccount the percentage of the original portfolio that was put on auction
+   * @return canTerminate can the auction be terminated afterwards
+   * @return finalPercentage the percentage of the original portfolio account that was actually liquidated
+   */
+  function _bidOnForcedAuction(
+    uint accountId,
+    uint bidderId,
+    uint percentOfAccount,
+    int bufferMargin,
+    int markToMarket
+  ) internal returns (bool canTerminate, uint finalPercentage, uint cashFromBidder) {
+    finalPercentage = percentOfAccount;
+
+    // calculate the max percentage of "current portfolio" that can be liquidated
+    int bidPrice = _getSolventAuctionBidPrice(accountId, markToMarket);
+    // Allow 0, but revert if bidPrice fell bellow 0 (MTM < 0)
+    if (bidPrice < 0) revert DA_SolventAuctionEnded();
+
+    (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
+
+    // The full portfolio can be liquidated in a forced auction
+    uint maxOfCurrent = 1e18;
+
+    // the percentage the user requested to liquidate, in form percentage of current portfolio
+    uint requestedPercentage = percentOfAccount.divideDecimal(auctions[accountId].percentageLeft);
+
+    if (requestedPercentage > maxOfCurrent) {
+      requestedPercentage = maxOfCurrent;
+      canTerminate = true;
+
+      // scaled down finalPercentage- amount of original that was liquidated
+      finalPercentage = requestedPercentage.multiplyDecimal(auctions[accountId].percentageLeft);
+    }
+
+    cashFromBidder = bidPrice.toUint256().multiplyDecimal(requestedPercentage);
+
+    auctions[accountId].percentageLeft -= finalPercentage;
+
+    // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
+    ILiquidatableManager(address(accounts.manager(accountId))).executeBid(
+      accountId, bidderId, requestedPercentage, cashFromBidder
+    );
+  }
+
+
 
   /**
    * @dev bidder got paid to take on an insolvent account
