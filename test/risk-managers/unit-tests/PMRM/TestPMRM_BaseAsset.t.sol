@@ -13,17 +13,17 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     vm.expectRevert(IPMRM.PMRM_ExceededBaseOICap.selector);
     baseAsset.deposit(bobAcc, 100e18);
 
-    pmrm.setBaseOICap(100e18);
+    baseAsset.setOICap(pmrm, 100e18);
     baseAsset.deposit(bobAcc, 100e18);
   }
 
   function testCanTransferEvenPastCap() public {
-    pmrm.setBaseOICap(100e18);
+    baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(bobAcc, 100e18);
 
-    pmrm.setBaseOICap(0);
+    baseAsset.setOICap(pmrm, 0);
 
     IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
     balances[0] = IAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
@@ -31,23 +31,23 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
   }
 
   function testCanWithdrawEvenPastCap() public {
-    pmrm.setBaseOICap(100e18);
+    baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(bobAcc, 100e18);
 
-    pmrm.setBaseOICap(0);
+    baseAsset.setOICap(pmrm, 0);
 
     vm.startPrank(bob);
     baseAsset.withdraw(bobAcc, 10e18, bob);
   }
 
   function testCannotTransferFromAnotherManager() public {
-    pmrm.setBaseOICap(100e18);
+    baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(bobAcc, 100e18);
-    pmrm.setBaseOICap(0);
+    baseAsset.setOICap(pmrm, 0);
 
     // other PMRM
     PMRM newManager = new PMRMPublic(
@@ -69,7 +69,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     );
     // create new account for that manager
     uint newAcc = accounts.createAccount(address(this), IManager(address(newManager)));
-    newManager.setBaseOICap(type(uint).max);
+    baseAsset.setOICap(newManager, type(uint).max);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(newAcc, 100e18);

@@ -8,8 +8,11 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-import "src/interfaces/IAccounts.sol";
-import "src/assets/ManagerWhitelist.sol";
+import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IWrappedERC20Asset} from "src/interfaces/IWrappedERC20Asset.sol";
+import {ManagerWhitelist} from "src/assets/ManagerWhitelist.sol";
 
 /**
  * @title Wrapped ERC20 Asset
@@ -17,7 +20,7 @@ import "src/assets/ManagerWhitelist.sol";
  *        The USD value of the asset can be computed for the given shocked scenario.
  * @author Lyra
  */
-contract WrappedERC20Asset is ManagerWhitelist, IAsset {
+contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
   // TODO: IWrappedERC20Asset
   // TODO: cleanup libs
   using SafeERC20 for IERC20Metadata;
@@ -34,9 +37,20 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
 
   mapping(IManager => uint) public managerOI;
 
+  mapping(IManager => uint) public managerOICap;
+
   constructor(IAccounts _accounts, IERC20Metadata _wrappedAsset) ManagerWhitelist(_accounts) {
     wrappedAsset = _wrappedAsset;
     assetDecimals = _wrappedAsset.decimals();
+  }
+
+  ////////////////////////////
+  //      Admin - Only      //
+  ////////////////////////////
+  function setOICap(IManager manager, uint cap) external onlyOwner {
+    managerOICap[manager] = cap;
+
+    emit OICapSet(address(manager), cap);
   }
 
   ////////////////////////////
@@ -90,7 +104,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
         amount: -int(adjustmentAmount),
         assetData: bytes32(0)
       }),
-      true,
+      true, // invoke the handleAdjustment hook
       ""
     );
 
@@ -117,6 +131,8 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    // only update the OI for each manager but didn't check cap. It should be checked by the manager if needed at the end of all transfer
+    // otherwise a transfer might fail if += amount is processed first
     managerOI[manager] = (managerOI[manager].toInt256() + adjustment.amount).toUint256();
 
     if (adjustment.amount == 0) {
@@ -139,5 +155,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IAsset {
     uint balance = accounts.getBalance(accountId, IAsset(address(this)), 0).toUint256();
     managerOI[accounts.manager(accountId)] -= balance;
     managerOI[newManager] += balance;
+
+    if (managerOI[newManager] > managerOICap[newManager]) revert WERC_ManagerChangeExceedOICap();
   }
 }

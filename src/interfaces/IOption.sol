@@ -45,6 +45,9 @@ interface IOption is IAsset {
   /// @dev Emitted when interest related state variables are updated
   event SnapshotTaken(uint subId, uint tradeId, uint oi);
 
+  /// @dev Emitted when OI cap is set
+  event OICapSet(address manager, uint oiCap);
+
   ////////////////
   //   Errors   //
   ////////////////

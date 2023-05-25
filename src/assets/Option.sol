@@ -33,10 +33,13 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   ///////////////
 
   ///@dev SubId => tradeId => open interest snapshot
-  mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
+  mapping(uint subId => mapping(uint tradeId => OISnapshot)) public openInterestBeforeTrade;
 
   ///@dev Open interest for a subId. OI is the sum of all positive balance
-  mapping(uint => uint) public openInterest;
+  mapping(uint subId => uint) public openInterest;
+
+  ///@dev Cap on each manager's open interest
+  mapping(address manager => uint OICap) public OICaps;
 
   ////////////////////////
   //    Constructor     //
@@ -46,9 +49,19 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
     settlementFeed = ISettlementFeed(_settlementFeed);
   }
 
-  ///////////////
-  // Transfers //
-  ///////////////
+  ///////////////////////
+  //    Admin-Only     //
+  ///////////////////////
+
+  function setOICap(address manager, uint cap) external onlyOwner {
+    OICaps[manager] = cap;
+
+    emit OICapSet(manager, cap);
+  }
+
+  /////////////////////
+  //  Transfer Hook  //
+  /////////////////////
 
   function handleAdjustment(
     IAccounts.AssetAdjustment memory adjustment,
@@ -68,7 +81,7 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
     }
 
     // update the OI based on pre balance and change amount
-    _updateOI(adjustment.subId, preBalance, adjustment.amount);
+    _updateOIForSubId(adjustment.subId, preBalance, adjustment.amount);
 
     return (preBalance + adjustment.amount, adjustment.amount < 0);
   }
@@ -80,6 +93,8 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
 
   function handleManagerChange(uint, IManager newManager) external view onlyAccounts {
     _checkManager(address(newManager));
+
+    // migrate OI cap to new manager
   }
 
   //////////
@@ -133,7 +148,7 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
    * @param preBalance Account balance before an adjustment
    * @param change Change of balance
    */
-  function _updateOI(uint subId, int preBalance, int change) internal {
+  function _updateOIForSubId(uint subId, int preBalance, int change) internal {
     int postBalance = preBalance + change;
     openInterest[subId] =
       (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();

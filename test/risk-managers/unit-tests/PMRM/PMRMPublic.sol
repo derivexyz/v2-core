@@ -10,7 +10,7 @@ contract PMRMPublic is PMRM {
     IOption option_,
     IPerpAsset perp_,
     IOptionPricing optionPricing_,
-    WrappedERC20Asset baseAsset_,
+    IWrappedERC20Asset baseAsset_,
     Feeds memory feeds_
   ) PMRM(accounts_, cashAsset_, option_, perp_, optionPricing_, baseAsset_, feeds_) {}
 

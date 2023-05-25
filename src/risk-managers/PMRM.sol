@@ -22,12 +22,12 @@ import "src/interfaces/ILiquidatableManager.sol";
 import "src/interfaces/IVolFeed.sol";
 import "src/interfaces/IInterestRateFeed.sol";
 import "src/interfaces/IPMRM.sol";
+import "src/interfaces/IWrappedERC20Asset.sol";
 
 import "./BaseManager.sol";
 
 import "forge-std/console2.sol";
 import "src/risk-managers/PMRMLib.sol";
-import "src/assets/WrappedERC20Asset.sol";
 
 /**
  * @title PMRM
@@ -54,7 +54,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
   IOption public immutable option;
   IPerpAsset public immutable perp;
-  WrappedERC20Asset public immutable baseAsset;
+  IWrappedERC20Asset public immutable baseAsset;
 
   ISpotFeed public spotFeed;
   ISpotFeed public perpFeed;
@@ -70,8 +70,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
   /// @dev keep track of last seen baseOI to enable transferring when cap is reduced
   uint lastSeenBaseOI;
-  /// @notice Limit the total amount of baseAsset held within the PMRM
-  uint baseOICap;
 
   ////////////////////////
   //    Constructor     //
@@ -83,7 +81,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     IOption option_,
     IPerpAsset perp_,
     IOptionPricing optionPricing_,
-    WrappedERC20Asset baseAsset_,
+    IWrappedERC20Asset baseAsset_,
     Feeds memory feeds_
   ) PMRMLib(optionPricing_) BaseManager(accounts_, cashAsset_, IDutchAuction(address(0))) {
     spotFeed = feeds_.spotFeed;
@@ -152,10 +150,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     trustedRiskAssessor[riskAssessor] = trusted;
   }
 
-  function setBaseOICap(uint _baseOICap) external onlyOwner {
-    baseOICap = _baseOICap;
-  }
-
   ///////////////////////
   //   Account Hooks   //
   ///////////////////////
@@ -207,13 +201,15 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   function _updateBaseOI() internal {
-    uint currentBaseOi = baseAsset.managerOI(IManager(address(this)));
-    if (currentBaseOi != lastSeenBaseOI) {
-      if (currentBaseOi > lastSeenBaseOI && currentBaseOi > baseOICap) {
-        revert PMRM_ExceededBaseOICap();
-      }
-      lastSeenBaseOI = currentBaseOi;
+    uint currentBaseOI = baseAsset.managerOI(IManager(address(this)));
+    if (lastSeenBaseOI == currentBaseOI) return;
+
+    uint baseOICap = baseAsset.managerOICap(IManager(address(this)));
+    if (currentBaseOI > lastSeenBaseOI && currentBaseOI > baseOICap) {
+      revert PMRM_ExceededBaseOICap();
     }
+
+    lastSeenBaseOI = currentBaseOI;
   }
 
   function _assessRisk(address caller, uint accountId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
