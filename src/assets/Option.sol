@@ -40,13 +40,13 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   mapping(uint subId => uint) public openInterest;
 
   ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
-  mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
+  mapping(IManager manager => uint) public totalPositionCap;
 
   ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
-  mapping(IManager manager => uint totalPosition) public totalPosition;
+  mapping(IManager manager => uint) public totalPosition;
 
   ///@dev Each account's total position: (sum of .abs() of all option positions)
-  mapping(uint accountId => uint totalPosition) public accountTotalPosition;
+  mapping(uint accountId => uint) public accountTotalPosition;
 
   ////////////////////////
   //    Constructor     //

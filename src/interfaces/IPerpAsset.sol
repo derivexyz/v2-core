@@ -61,6 +61,8 @@ interface IPerpAsset is IAsset {
 
   event ImpactPricesSet(int impactAskPrice, int impactBidPrice);
 
+  event TotalPositionCapSet(address manager, uint newCap);
+
   ////////////////
   //   Errors   //
   ////////////////
@@ -91,4 +93,7 @@ interface IPerpAsset is IAsset {
 
   /// @dev Caller is not the impact price oracle address
   error PA_OnlyImpactPriceOracle();
+
+  /// @dev Emitted when changing manager make total position exceed cap
+  error PA_ManagerChangeExceedCap();
 }

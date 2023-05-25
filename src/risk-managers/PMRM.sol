@@ -216,7 +216,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     lastSeenBaseOI = currentBaseOI;
   }
 
-  function _assessRisk(address caller, uint accountId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
+  function _assessRisk(address caller, uint accountId, IAccounts.AssetDelta[] calldata assetDeltas) internal view {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);

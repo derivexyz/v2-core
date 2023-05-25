@@ -241,6 +241,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   function _checkOptionCap(IOption option) internal view {
+    // todo: if totalPositionCap is updated to a lower number, it might revert even if it's reducing
     uint totalPosCap = option.totalPositionCap(IManager(address(this)));
     if (totalPosCap == 0) return;
 

@@ -50,6 +50,9 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint) public totalPosition;
 
+  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
+  mapping(IManager manager => uint) public totalPositionCap;
+
   ///@dev Mapping from address to whitelisted to push impacted prices
   address public fundingRateOracle;
 
@@ -117,6 +120,17 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     emit FundingRateOracleUpdated(_oracle);
   }
 
+  /**
+   * @dev set total position cap of a manager
+   * @param manager The manager contract
+    * @param cap The new cap
+   */
+  function setTotalPositionCap(IManager manager, uint cap) external onlyOwner {
+    totalPositionCap[manager] = cap;
+
+    emit TotalPositionCapSet(address(manager), cap);
+  }
+
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -170,6 +184,9 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     uint pos = accounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
     totalPosition[accounts.manager(accountId)] -= pos;
     totalPosition[newManager] += pos;
+
+    uint cap = totalPositionCap[newManager];
+    if (cap != 0 && totalPosition[newManager] > cap) revert PA_ManagerChangeExceedCap();
   }
 
   //////////////////////////

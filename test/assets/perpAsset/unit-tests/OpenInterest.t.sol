@@ -57,7 +57,31 @@ contract UNIT_PerpOIAndCap is Test {
   }
 
   function testCanSetTotalPositionCapOnManager() public {
-    // todo: after we implement set cap
+    perp.setTotalPositionCap(manager, 100e18);
+    assertEq(perp.totalPositionCap(manager), 100e18);
+  }
+
+  function testCanChangeManagerIfCapNotSet() public {
+    _transferPerp(aliceAcc, bobAcc, 100e18);
+    account.changeManager(aliceAcc, manager2, "");
+    assertEq(perp.totalPosition(manager2), 100e18);
+  }
+
+  function testCannotChangeManagerIfExceedCap() public {
+    _transferPerp(aliceAcc, bobAcc, 100e18);
+    perp.setTotalPositionCap(manager2, 1e18);
+    vm.expectRevert(IPerpAsset.PA_ManagerChangeExceedCap.selector);
+    account.changeManager(aliceAcc, manager2, "");
+  }
+
+  function testChangeManagerWillMigrateTotalPosition() public {
+    // alice opens short, bob opens long
+    _transferPerp(aliceAcc, bobAcc, 100e18);
+
+    account.changeManager(aliceAcc, manager2, "");
+
+    assertEq(perp.totalPosition(manager), 100e18);
+    assertEq(perp.totalPosition(manager2), 100e18);
   }
 
   function testTradeIncreaseOIAndTotalPos() public {
@@ -97,16 +121,6 @@ contract UNIT_PerpOIAndCap is Test {
     _transferPerp(aliceAcc, newAccount, 100e18);
 
     assertEq(perp.openInterest(), 100e18);
-    assertEq(perp.totalPosition(manager), 100e18);
-    assertEq(perp.totalPosition(manager2), 100e18);
-  }
-
-  function testChangeManagerWillMigrateTotalPosition() public {
-    // alice opens short, bob opens long
-    _transferPerp(aliceAcc, bobAcc, 100e18);
-
-    account.changeManager(aliceAcc, manager2, "");
-
     assertEq(perp.totalPosition(manager), 100e18);
     assertEq(perp.totalPosition(manager2), 100e18);
   }

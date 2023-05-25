@@ -91,7 +91,7 @@ contract TestPMRM_Settlement is PMRMTestBase {
     uint subId = OptionEncoding.toSubId(expiry, strike, true);
 
     option.setMockedSubIdSettled(subId, true);
-    option.setMockedTotalSettlementValue(subId, -500e18);
+    option.setMockedTotalSettlementValue(subId, netValue);
   }
 
   function _transferOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {

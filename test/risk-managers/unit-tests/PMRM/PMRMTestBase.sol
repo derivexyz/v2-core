@@ -363,7 +363,7 @@ contract PMRMTestBase is Test {
   }
 
   function _getTransferBatch(uint accA, uint accB, IAccounts.AssetBalance[] memory balances)
-    internal
+    internal view
     returns (IAccounts.AssetTransfer[] memory)
   {
     IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](balances.length);
