@@ -10,15 +10,15 @@ import {IAsset} from "src/interfaces/IAsset.sol";
 interface IPerpAsset is IAsset {
   struct PositionDetail {
     // Spot price the last time user interact with perp contract
-    uint lastMarkPrice;
+    uint128 lastMarkPrice;
     // All funding, not yet settled as cash in Accounts
-    int funding;
+    int128 funding;
     // Realized pnl, not yet settled as cash in Accounts
-    int pnl;
+    int128 pnl;
     // Last aggregated funding rate applied to this position
-    int lastAggregatedFundingRate;
+    int128 lastAggregatedFundingRate;
     // Timestamp of the last time funding was applied
-    uint lastFundingPaid;
+    uint64 lastFundingPaid;
   }
 
   /**
