@@ -267,7 +267,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
-    // TODO: portfolio.perpPrice, perpPriceConfidence
     (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
     portfolio.perpPrice = perpPrice;
     portfolio.minConfidence = UintLib.min(portfolio.minConfidence, perpConfidence);

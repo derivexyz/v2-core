@@ -65,13 +65,13 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   uint128 public accruedSmFees;
 
   ///@dev Represents the growth of $1 of debt since deploy
-  uint public borrowIndex = DecimalMath.UNIT;
+  uint96 public borrowIndex = 1e18;
 
   ///@dev Represents the growth of $1 of positive balance since deploy
-  uint public supplyIndex = DecimalMath.UNIT;
+  uint96 public supplyIndex = 1e18;
 
   ///@dev Last timestamp that the interest was accrued
-  uint public lastTimestamp;
+  uint64 public lastTimestamp;
 
   ///@dev The security module fee represented as a mantissa (0-1e18)
   uint public smFeePercentage;
@@ -104,7 +104,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     stableDecimals = _stableAsset.decimals();
     smId = _smId;
 
-    lastTimestamp = block.timestamp;
+    lastTimestamp = uint64(block.timestamp);
     rateModel = _rateModel;
     liquidationModule = _liquidationModule;
   }
@@ -403,9 +403,9 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
     uint indexChange;
     if (preBalance < 0) {
-      indexChange = borrowIndex.divideDecimal(accountIndex);
+      indexChange = uint(borrowIndex).divideDecimal(accountIndex);
     } else if (preBalance > 0) {
-      indexChange = supplyIndex.divideDecimal(accountIndex);
+      indexChange = uint(supplyIndex).divideDecimal(accountIndex);
     }
     interestBalance = indexChange.toInt256().multiplyDecimal(preBalance);
   }
@@ -420,7 +420,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
     // Update timestamp even if there are no borrows
     uint elapsedTime = block.timestamp - lastTimestamp;
-    lastTimestamp = block.timestamp;
+    lastTimestamp = (block.timestamp).toUint64();
     if (totalBorrow == 0) return;
 
     // Calculate interest since last timestamp using compounded interest rate
@@ -449,8 +449,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     totalSupply += (interestAccrued - smFeeCut);
 
     // Update borrow/supply index by calculating the % change of total * current borrow/supply index
-    borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
-    supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex);
+    borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex).toUint96();
+    supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex).toUint96();
 
     emit InterestAccrued(interestAccrued, borrowIndex, totalSupply, totalBorrow);
   }
