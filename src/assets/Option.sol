@@ -35,7 +35,7 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
-  ///@dev OI for a subId. OI is the sum of all positive balance
+  ///@dev Open interest for a subId. OI is the sum of all positive balance
   mapping(uint => uint) public openInterest;
 
   ////////////////////////

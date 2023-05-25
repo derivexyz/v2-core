@@ -34,7 +34,6 @@ contract BaseManagerTester is BaseManager {
     IPerpAsset perp_,
     IDutchAuction auction_
   ) BaseManager(accounts_, cash_, auction_) {
-    // TODO: liquidations
     option = option_;
     perp = perp_;
     forwardFeed = forwardFeed_;

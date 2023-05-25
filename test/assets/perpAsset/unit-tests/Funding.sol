@@ -29,7 +29,7 @@ contract UNIT_PerpAssetFunding is Test {
   uint bobAcc;
 
   int defaultPosition = 1e18;
-  int spot = 1500e18;
+  int128 spot = 1500e18;
 
   function setUp() public {
     // deploy contracts
@@ -45,8 +45,8 @@ contract UNIT_PerpAssetFunding is Test {
 
     manager = new MockManager(address(account));
 
-    spotFeed.setSpot(uint(spot), 1e18);
-    perpFeed.setSpot(uint(spot), 1e18);
+    spotFeed.setSpot(uint(int(spot)), 1e18);
+    perpFeed.setSpot(uint(int(spot)), 1e18);
 
     // whitelist keepers
     perp.setWhitelistManager(address(manager), true);
@@ -209,16 +209,16 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function _setPricesPositiveFunding() internal {
-    int iap = spot + 6e18;
-    int ibp = spot + 6e18;
+    int128 iap = spot + 6e18;
+    int128 ibp = spot + 6e18;
 
     vm.prank(keeper);
     perp.setImpactPrices(iap, ibp);
   }
 
   function _setPricesNegativeFunding() internal {
-    int iap = spot - 6e18;
-    int ibp = spot - 6e18;
+    int128 iap = spot - 6e18;
+    int128 ibp = spot - 6e18;
 
     vm.prank(keeper);
     perp.setImpactPrices(iap, ibp);

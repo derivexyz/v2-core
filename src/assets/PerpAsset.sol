@@ -55,21 +55,21 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   int public immutable minRatePerHour;
 
   /// @dev Impact ask price
-  int public impactAskPrice;
+  int128 public impactAskPrice;
 
   /// @dev Impact bid price
-  int public impactBidPrice;
+  int128 public impactBidPrice;
 
   /// @dev static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
   ///@dev Latest aggregated funding rate
-  int public aggregatedFundingRate;
+  int128 public aggregatedFundingRate;
   ///@dev Last time aggregated funding rate was updated
-  uint public lastFundingPaidAt;
+  uint64 public lastFundingPaidAt;
 
   constructor(IAccounts _accounts, int maxAbsRatePerHour) ManagerWhitelist(_accounts) {
-    lastFundingPaidAt = block.timestamp;
+    lastFundingPaidAt = uint64(block.timestamp);
 
     maxRatePerHour = maxAbsRatePerHour;
     minRatePerHour = -maxAbsRatePerHour;
@@ -172,7 +172,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   /**
    * @notice allow oracle to set impact prices
    */
-  function setImpactPrices(int _impactAskPrice, int _impactBidPrice) external onlyImpactPriceOracle {
+  function setImpactPrices(int128 _impactAskPrice, int128 _impactBidPrice) external onlyImpactPriceOracle {
     if (_impactAskPrice < 0 || _impactBidPrice < 0) {
       revert PA_ImpactPriceMustBePositive();
     }
@@ -265,8 +265,8 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
     int perpPrice = _getPerpPrice();
     int pnl = _getUnrealizedPnl(accountId, preBalance, perpPrice);
 
-    position.lastMarkPrice = uint(perpPrice);
-    position.pnl += pnl;
+    position.lastMarkPrice = uint(perpPrice).toUint128();
+    position.pnl += pnl.toInt128();
   }
 
   /**
@@ -300,7 +300,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
 
     int funding = _getUnrealizedFunding(accountId, size, indexPrice);
     // apply funding
-    positions[accountId].funding += funding;
+    positions[accountId].funding += funding.toInt128();
     positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
   }
 
@@ -316,9 +316,9 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
+    aggregatedFundingRate += (fundingRate * timeElapsed / 1 hours).toInt128();
 
-    lastFundingPaidAt = block.timestamp;
+    lastFundingPaidAt = (block.timestamp).toUint64();
   }
 
   /**
@@ -341,8 +341,9 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * Premium = (Max(0, Impact Bid Price - Index Price) - Max(0, Index Price - Impact Ask Price)) / Index Price
    */
   function _getPremium(int indexPrice) internal view returns (int premium) {
-    premium = (SignedMath.max(impactBidPrice - indexPrice, 0) - SignedMath.max(indexPrice - impactAskPrice, 0))
-      .divideDecimal(indexPrice);
+    premium = (
+      SignedMath.max(int(impactBidPrice) - indexPrice, 0) - SignedMath.max(int(indexPrice) - impactAskPrice, 0)
+    ).divideDecimal(indexPrice);
   }
 
   /**
@@ -360,7 +361,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @dev Get unrealized PNL if the position is closed at the current spot price
    */
   function _getUnrealizedPnl(uint accountId, int size, int perpPrice) internal view returns (int) {
-    int lastMarkPrice = positions[accountId].lastMarkPrice.toInt256();
+    int lastMarkPrice = uint(positions[accountId].lastMarkPrice).toInt256();
 
     return (perpPrice - lastMarkPrice).multiplyDecimal(size);
   }
