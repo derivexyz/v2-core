@@ -200,6 +200,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _assessRisk(caller, accountId, assetDeltas);
   }
 
+  /**
+   * @dev check that the base OI doesn't increase beyond the cap
+   */
   function _checkBaseOICap() internal {
     uint currentBaseOI = baseAsset.managerOI(IManager(address(this)));
     if (lastSeenBaseOI == currentBaseOI) return;
