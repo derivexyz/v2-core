@@ -57,6 +57,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   IDutchAuction public immutable liquidation;
 
+  /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
+  mapping(address sender => bool) public feeBypassedCaller;
+
   constructor(IAccounts _accounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
     accounts = _accounts;
     cashAsset = _cashAsset;
@@ -95,6 +98,17 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     OIFeeRateBPS = newFeeRate;
 
     emit OIFeeRateSet(OIFeeRateBPS);
+  }
+
+  /**
+   * @notice Governance determined tx msg.sender to Accounts that can bypass OI fee on perp or options
+   * @param caller msg.sender to Accounts, caller reported by handleAdjustment
+   * @param bypassed true to bypass OI fee, false to charge OI fee
+   */
+  function setFeeBypassedCaller(address caller, bool bypassed) external onlyOwner {
+    feeBypassedCaller[caller] = bypassed;
+
+    emit FeeBypassedCallerSet(caller, bypassed);
   }
 
   ///////////////////
@@ -209,12 +223,15 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param assetDeltas Array of asset changes made to this account
    */
   function _chargeOIFee(
+    address caller,
     IOption option,
     IForwardFeed forwardFeed,
     uint accountId,
     uint tradeId,
     IAccounts.AssetDelta[] calldata assetDeltas
   ) internal {
+    if (feeBypassedCaller[caller]) return;
+
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
@@ -415,19 +432,4 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (msg.sender != address(accounts)) revert BM_OnlyAccounts();
     _;
   }
-
-  ////////////////
-  //   Events   //
-  ////////////////
-
-  /// @dev Emitted when OI fee rate is set
-  event OIFeeRateSet(uint oiFeeRate);
-
-  event PerpSettled(uint indexed accountId, int netCash);
-
-  ////////////
-  // Errors //
-  ////////////
-
-  error BM_ManagerNotWhitelisted(uint accountId, address newManager);
 }
