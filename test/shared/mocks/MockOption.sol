@@ -39,10 +39,10 @@ contract MockOption is IOption {
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
-  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position 
+  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
 
-  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position 
+  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint totalPosition) public totalPosition;
 
   constructor(IAccounts account_) {

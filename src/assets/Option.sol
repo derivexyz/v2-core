@@ -39,10 +39,10 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
   ///@dev Open interest for a subId. OI is the sum of all positive balance
   mapping(uint subId => uint) public openInterest;
 
-  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position 
+  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
 
-  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position 
+  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint totalPosition) public totalPosition;
 
   ///@dev Each account's total position: (sum of .abs() of all option positions)
@@ -164,14 +164,12 @@ contract Option is IOption, Ownable2Step, ManagerWhitelist {
     // update OI for subId
     openInterest[subId] =
       (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
-    
+
     // update total position for manager, won't revert if it exceeds the cap, should only be checked by manager by the end of all transfers
-    totalPosition[manager] =
-      totalPosition[manager] + postBalance.abs() - preBalance.abs();
-    
+    totalPosition[manager] = totalPosition[manager] + postBalance.abs() - preBalance.abs();
+
     // update total position for account
-    accountTotalPosition[accountId] =
-      accountTotalPosition[accountId] + postBalance.abs() - preBalance.abs();
+    accountTotalPosition[accountId] = accountTotalPosition[accountId] + postBalance.abs() - preBalance.abs();
   }
 
   function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)

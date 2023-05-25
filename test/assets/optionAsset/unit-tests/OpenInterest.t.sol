@@ -138,7 +138,7 @@ contract UNIT_OptionAssetOITest is Test {
 
   function testTotalPositionUnchangedIfNoNetOpen() public {
     uint totalPosBefore = option.totalPosition(manager);
-    
+
     // AccountNeg => -100 -> 0
     // AccountEmpty => 0 -> -100
     _transfer(accountEmpty, accountNeg, tradeAmount);
@@ -150,7 +150,7 @@ contract UNIT_OptionAssetOITest is Test {
 
   function testTotalPositionIncreaseIfBothIncrease() public {
     uint totalPosBefore = option.totalPosition(manager);
-    
+
     // AccountNeg => -100 -> -200
     // AccountPos => +100 -> +200
     _transfer(accountNeg, accountPos, tradeAmount);
@@ -162,7 +162,7 @@ contract UNIT_OptionAssetOITest is Test {
 
   function testTotalPositionCanDecreaseIfSomeoneClose() public {
     uint totalPosBefore = option.totalPosition(manager);
-    
+
     // AccountNeg => -100 -> 0
     // AccountPos => +100 -> 0
     _transfer(accountPos, accountNeg, tradeAmount);
