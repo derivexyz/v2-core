@@ -145,6 +145,8 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
       openInterestBeforeTrade[tradeId].oi = openInterest;
     }
 
+    _updateOIAndTotalPosition(manager, preBalance, adjustment.amount);
+
     // calculate funding from the last period, reflect changes in position.funding
     _updateFundingRate();
 
@@ -161,8 +163,13 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, IManager newManager) external view {
+  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
+
+    // update total position
+    uint pos = accounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
+    totalPosition[accounts.manager(accountId)] -= pos;
+    totalPosition[newManager] += pos;
   }
 
   //////////////////////////

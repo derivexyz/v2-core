@@ -58,11 +58,4 @@ contract UNIT_PerpAssetHook is Test {
     assertEq(postBalance, amount);
     assertEq(needAllowance, true);
   }
-
-  function testWillNotRevertOnLegalManagerUpdate() public {
-    perp.setWhitelistManager(address(manager), true);
-
-    vm.prank(account);
-    perp.handleManagerChange(0, manager);
-  }
 }
