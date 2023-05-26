@@ -8,6 +8,7 @@ import "src/periphery/OptionSettlementHelper.sol";
 
 contract TestPMRM_BaseAsset is PMRMTestBase {
   function testCanDepositBase() public {
+    baseAsset.setWhitelistManager(address(pmrm), true);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     vm.expectRevert(IPMRM.PMRM_ExceededBaseOICap.selector);
@@ -18,6 +19,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
   }
 
   function testCanTransferEvenPastCap() public {
+    baseAsset.setWhitelistManager(address(pmrm), true);
     baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
@@ -31,6 +33,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
   }
 
   function testCanWithdrawEvenPastCap() public {
+    baseAsset.setWhitelistManager(address(pmrm), true);
     baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
@@ -43,6 +46,8 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
   }
 
   function testCannotTransferBaseFromAnotherManager() public {
+    baseAsset.setWhitelistManager(address(pmrm), true);
+
     baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
@@ -69,6 +74,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
         settlementFeed: ISettlementFeed(feed)
       })
     );
+    baseAsset.setWhitelistManager(address(newManager), true);
     // create new account for that manager
     uint newAcc = accounts.createAccount(address(this), IManager(address(newManager)));
     baseAsset.setOICap(newManager, type(uint).max);

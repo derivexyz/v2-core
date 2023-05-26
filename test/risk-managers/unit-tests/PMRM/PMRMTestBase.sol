@@ -95,6 +95,9 @@ contract PMRMTestBase is Test {
 
     _setupAliceAndBob();
     addScenarios();
+
+    feeRecipient = accounts.createAccount(address(this), pmrm);
+    pmrm.setFeeRecipient(feeRecipient);
   }
 
   function _logPortfolio(IPMRM.Portfolio memory portfolio) internal view {
