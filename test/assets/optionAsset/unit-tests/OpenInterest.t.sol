@@ -203,7 +203,7 @@ contract UNIT_OptionAssetOITest is Test {
     assertEq(totalPos1After, totalPos1Before - uint(tradeAmount));
     assertEq(totalPos2After, totalPos2Before + uint(tradeAmount));
   }
-  
+
   /// @dev util function to transfer
   function _transfer(uint from, uint to, int amount) internal {
     ISubAccounts.AssetTransfer memory transfer =
