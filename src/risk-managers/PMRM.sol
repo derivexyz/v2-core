@@ -307,7 +307,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     for (uint i = 0; i < assetLen; ++i) {
       IAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
-        (uint optionExpiry,, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
+        (uint optionExpiry,,) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
         if (optionExpiry < block.timestamp) {
           revert PMRM_OptionExpired();
         }

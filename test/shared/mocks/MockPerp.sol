@@ -16,6 +16,10 @@ contract MockPerp is MockAsset, IPerpAsset {
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
 
+  mapping(IManager => uint) public mockedTotalPosition;
+
+  mapping(IManager => uint) public mockedTotalPositionCap;
+
   constructor(IAccounts account) MockAsset(IERC20(address(0)), account, true) {}
 
   function updateFundingRate() external {}
@@ -47,6 +51,19 @@ contract MockPerp is MockAsset, IPerpAsset {
     openInterestBeforeTrade[_subId][_tradeId] = OISnapshot(true, uint240(_oi));
   }
 
-  function totalPosition(IManager manager) external view returns (uint) {}
-  function totalPositionCap(IManager manager) external view returns (uint) {}
+  function totalPosition(IManager manager) external view returns (uint) {
+    return mockedTotalPosition[manager];
+  }
+
+  function totalPositionCap(IManager manager) external view returns (uint) {
+    return mockedTotalPositionCap[manager];
+  }
+
+  function setTotalPosition(IManager manager, uint position) external {
+    mockedTotalPosition[manager] = position;
+  }
+
+  function setTotalPositionCap(IManager manager, uint positionCap) external {
+    mockedTotalPositionCap[manager] = positionCap;
+  }
 }

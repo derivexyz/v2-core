@@ -244,18 +244,22 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
       if (!detail.isWhitelisted) revert BM_UnsupportedAsset();
 
       if (detail.assetType == AssetType.Perpetual) {
+        IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
         // settle perp PNL into cash if the user traded perp in this tx.
-        _settlePerpRealizedPNL(IPerpAsset(address(assetDeltas[i].asset)), accountId);
+        _settlePerpRealizedPNL(perp, accountId);
+        _checkAssetCap(perp);
+
         if (isRiskReducing) {
           // check if the delta and position has same sign
           // if so, we cannot bypass the risk check
-          int perpPosition = accounts.getBalance(accountId, assetDeltas[i].asset, 0);
+          int perpPosition = accounts.getBalance(accountId, perp, 0);
           if (perpPosition != 0 && assetDeltas[i].delta * perpPosition > 0) {
             isRiskReducing = false;
           }
         }
-      } else {
+      } else if (detail.assetType == AssetType.Option) {
         // if the user is only reducing option position, we don't need to check margin
+        _checkAssetCap(IOption(address(assetDeltas[i].asset)));
         if (assetDeltas[i].delta < 0) {
           isRiskReducing = false;
         }

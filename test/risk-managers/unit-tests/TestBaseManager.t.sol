@@ -55,6 +55,10 @@ contract BaseManagerTester is BaseManager {
     fee = _getPerpOIFee(asset, spotFeed, delta, tradeId);
   }
 
+  function checkAssetCap(IOITracking asset) external view {
+    return _checkAssetCap(asset);
+  }
+
   function settleOptions(uint accountId) external {
     _settleAccountOptions(option, accountId);
   }
@@ -197,6 +201,27 @@ contract UNIT_TestAbstractBaseManager is Test {
     perp.setMockedOI(0, 0);
 
     assertEq(tester.getPerpOIFee(perp, 1e18, tradeId), 0);
+  }
+
+  // ================================
+  //            Test Caps
+  // ================================
+
+  function testExceedCapCheck() public {
+    // mock exceed cap
+    perp.setTotalPosition(tester, 100e18);
+    perp.setTotalPositionCap(tester, 5e18);
+
+    vm.expectRevert(IBaseManager.BM_AssetCapExceeded.selector);
+    tester.checkAssetCap(perp);
+  }
+
+  function testAssetCapSet() public {
+    perp.setTotalPosition(tester, 100e18);
+    tester.checkAssetCap(perp); // no revert
+
+    perp.setTotalPositionCap(tester, 100e18);
+    tester.checkAssetCap(perp); // no revert
   }
 
   // ================================

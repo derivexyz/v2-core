@@ -270,7 +270,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (totalPosCap == 0) return;
 
     uint totalPos = asset.totalPosition(IManager(address(this)));
-    if (totalPos > totalPosCap) revert BM_OptionCapExceeded();
+    if (totalPos > totalPosCap) revert BM_AssetCapExceeded();
   }
 
   /**

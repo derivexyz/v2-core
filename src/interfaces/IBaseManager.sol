@@ -56,5 +56,5 @@ interface IBaseManager is IManager {
 
   error BM_OnlyAccounts();
 
-  error BM_OptionCapExceeded();
+  error BM_AssetCapExceeded();
 }
