@@ -10,7 +10,7 @@ import "../../shared/mocks/MockERC20.sol";
 import "../../assets/cashAsset/mocks/MockInterestRateModel.sol";
 
 import "src/Accounts.sol";
-import "src/risk-managers/BasicManager.sol";
+import "src/risk-managers/StandardManager.sol";
 import "src/assets/PerpAsset.sol";
 import "src/assets/CashAsset.sol";
 import "src/assets/Option.sol";
@@ -18,12 +18,12 @@ import {IAccounts} from "src/interfaces/IAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 /**
- * This test use the real BasicManager & PerpAsset to test the settlement flow
+ * This test use the real StandardManager & PerpAsset to test the settlement flow
  */
 contract INTEGRATION_PerpAssetSettlement is Test {
   PerpAsset perp;
   Option option;
-  BasicManager manager;
+  StandardManager manager;
   CashAsset cash;
   Accounts account;
   MockFeeds feed;
@@ -67,16 +67,16 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
     option = new Option(account, address(feed));
 
-    manager = new BasicManager(account, ICashAsset(cash));
+    manager = new StandardManager(account, ICashAsset(cash));
 
-    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
 
     manager.setOraclesForMarket(1, feed, feed, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
-    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
 
     cash.setWhitelistManager(address(manager), true);
 

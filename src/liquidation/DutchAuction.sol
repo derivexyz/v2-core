@@ -114,7 +114,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /**
    * @dev anyone can start an auction for an account
    * @param accountId The id of the account being liquidated
-   * @param scenarioId id to compute the IM with for PMRM, ignored for basic manager
+   * @param scenarioId id to compute the IM with for PMRM, ignored for standard manager
    */
   function startAuction(uint accountId, uint scenarioId) external {
     // settle pending interest rate on an account

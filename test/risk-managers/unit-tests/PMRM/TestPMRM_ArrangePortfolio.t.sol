@@ -44,7 +44,7 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
       });
     }
     vm.expectRevert(IPMRM.PMRM_TooManyExpiries.selector);
-    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+    pmrm.arrangePortfolioByBalances(balances);
   }
 
   function testPMRMArrangePortfolio_MaxAssets() public {
@@ -58,7 +58,7 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
       });
     }
     vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
-    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+    pmrm.arrangePortfolioByBalances(balances);
   }
 
   function testPMRMArrangePortfolio_ExpiredOption() public {
@@ -69,6 +69,6 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
       balance: 1e18
     });
     vm.expectRevert(IPMRM.PMRM_OptionExpired.selector);
-    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+    pmrm.arrangePortfolioByBalances(balances);
   }
 }

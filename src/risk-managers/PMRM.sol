@@ -17,7 +17,7 @@ import "src/interfaces/IBaseManager.sol";
 import "src/interfaces/IOption.sol";
 import "src/interfaces/IOptionPricing.sol";
 import "src/interfaces/ISpotFeed.sol";
-import "src/interfaces/IBasicManager.sol";
+import "src/interfaces/IStandardManager.sol";
 import "src/interfaces/ILiquidatableManager.sol";
 import "src/interfaces/IVolFeed.sol";
 import "src/interfaces/IInterestRateFeed.sol";

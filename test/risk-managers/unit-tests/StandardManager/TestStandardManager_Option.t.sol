@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/BasicManager.sol";
+import "src/risk-managers/StandardManager.sol";
 import "src/periphery/OptionSettlementHelper.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
@@ -24,9 +24,9 @@ import "test/auction/mocks/MockCashAsset.sol";
 /**
  * Focusing on the margin rules for options
  */
-contract UNIT_TestBasicManager_Option is Test {
+contract UNIT_TestStandardManager_Option is Test {
   Accounts account;
-  BasicManager manager;
+  StandardManager manager;
   MockCash cash;
   MockERC20 usdc;
   MockPerp perp;
@@ -64,15 +64,15 @@ contract UNIT_TestBasicManager_Option is Test {
 
     pricing = new MockOptionPricing();
 
-    manager = new BasicManager(
+    manager = new StandardManager(
       account,
       ICashAsset(address(cash))
     );
 
     manager.setPricingModule(ethMarketId, pricing);
 
-    manager.whitelistAsset(perp, ethMarketId, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, ethMarketId, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(perp, ethMarketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, ethMarketId, IStandardManager.AssetType.Option);
 
     manager.setOraclesForMarket(ethMarketId, feed, feed, feed, feed, feed);
 
@@ -95,14 +95,14 @@ contract UNIT_TestBasicManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
+    IStandardManager.OptionMarginParameters memory params =
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
-    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
 
     optionHelper = new OptionSettlementHelper();
   }
@@ -112,22 +112,22 @@ contract UNIT_TestBasicManager_Option is Test {
   ////////////////
 
   function testWhitelistAsset() public {
-    manager.whitelistAsset(perp, 2, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 2, IBasicManager.AssetType.Option);
-    (bool isPerpWhitelisted, IBasicManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
-    (bool isOptionWhitelisted, IBasicManager.AssetType optionType, uint8 optionMarketId) = manager.assetDetails(option);
+    manager.whitelistAsset(perp, 2, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 2, IStandardManager.AssetType.Option);
+    (bool isPerpWhitelisted, IStandardManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
+    (bool isOptionWhitelisted, IStandardManager.AssetType optionType, uint8 optionMarketId) = manager.assetDetails(option);
     assertEq(isPerpWhitelisted, true);
-    assertEq(uint(perpType), uint(IBasicManager.AssetType.Perpetual));
+    assertEq(uint(perpType), uint(IStandardManager.AssetType.Perpetual));
     assertEq(marketId, 2);
 
     assertEq(isOptionWhitelisted, true);
-    assertEq(uint(optionType), uint(IBasicManager.AssetType.Option));
+    assertEq(uint(optionType), uint(IStandardManager.AssetType.Option));
     assertEq(optionMarketId, 2);
   }
 
   function testSetOptionParameters() public {
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18);
+    IStandardManager.OptionMarginParameters memory params =
+      IStandardManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18);
     manager.setOptionMarginParameters(ethMarketId, params);
     (int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale) =
       manager.optionMarginParams(ethMarketId);
@@ -156,22 +156,22 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testSetDepegParameters() public {
-    manager.setDepegParameters(IBasicManager.DepegParams(0.99e18, 1.2e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.99e18, 1.2e18));
     (int threshold, int depegFactor) = manager.depegParams();
     assertEq(threshold, 0.99e18);
     assertEq(depegFactor, 1.2e18);
   }
 
   function testCannotSetInvalidDepegParameters() public {
-    vm.expectRevert(IBasicManager.BM_InvalidDepegParams.selector);
-    manager.setDepegParameters(IBasicManager.DepegParams(1.01e18, 1.2e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidDepegParams.selector);
+    manager.setDepegParameters(IStandardManager.DepegParams(1.01e18, 1.2e18));
 
-    vm.expectRevert(IBasicManager.BM_InvalidDepegParams.selector);
-    manager.setDepegParameters(IBasicManager.DepegParams(0.9e18, 4e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidDepegParams.selector);
+    manager.setDepegParameters(IStandardManager.DepegParams(0.9e18, 4e18));
   }
 
   function testSetOracleContingencyParams() public {
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.8e18, 0.9e18, 0.05e18));
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.05e18));
 
     (uint64 prepThreshold, uint64 optionThreshold, int128 factor) = manager.oracleContingencyParams(ethMarketId);
     assertEq(prepThreshold, 0.8e18);
@@ -180,14 +180,14 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testCannotSetInvalidOracleContingencyParams() public {
-    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(1.01e18, 0.9e18, 0.05e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(1.01e18, 0.9e18, 0.05e18));
 
-    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.9e18, 1.01e18, 0.05e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.9e18, 1.01e18, 0.05e18));
 
-    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.5e18, 0.9e18, 1.2e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.9e18, 1.2e18));
   }
 
   ////////////////////////////////////////////////////
@@ -363,7 +363,7 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike = 2000e18;
     cash.deposit(aliceAcc, 190e18);
 
-    vm.expectRevert(IBasicManager.BM_NoForwardPrice.selector);
+    vm.expectRevert(IStandardManager.SRM_NoForwardPrice.selector);
     _transferOption(aliceAcc, bobAcc, 1e18, expiry + 1, strike, true);
   }
 
@@ -416,7 +416,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testOracleContingencyOnOptions() public {
     // set oracle contingency params
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.8e18, 0.9e18, 0.1e18));
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.1e18));
 
     // start a trade
     uint strike = 2000e18;
@@ -474,7 +474,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
     vm.warp(expiry + 1);
     feed.setSpot(2100e19, 1e18);
-    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
+    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
     manager.settleOptions(badAsset, aliceAcc);
   }
 
