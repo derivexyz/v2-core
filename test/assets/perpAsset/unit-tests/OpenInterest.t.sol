@@ -4,13 +4,14 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../../shared/mocks/MockManager.sol";
-import "../../../shared/mocks/MockFeeds.sol";
+import "test/shared/mocks/MockManager.sol";
+import "test/shared/mocks/MockFeeds.sol";
 
 import "src/Accounts.sol";
 import "src/assets/PerpAsset.sol";
 import {IAccounts} from "src/interfaces/IAccounts.sol";
-import "src/interfaces/IPerpAsset.sol";
+import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
+import {IOITracking} from "src/interfaces/IOITracking.sol";
 
 contract UNIT_PerpOIAndCap is Test {
   PerpAsset perp;
@@ -70,7 +71,7 @@ contract UNIT_PerpOIAndCap is Test {
   function testCannotChangeManagerIfExceedCap() public {
     _transferPerp(aliceAcc, bobAcc, 100e18);
     perp.setTotalPositionCap(manager2, 1e18);
-    vm.expectRevert(IPerpAsset.PA_ManagerChangeExceedCap.selector);
+    vm.expectRevert(IOITracking.OT_ManagerChangeExceedCap.selector);
     account.changeManager(aliceAcc, manager2, "");
   }
 

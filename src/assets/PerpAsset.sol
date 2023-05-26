@@ -159,11 +159,7 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
 
     // update total position
     uint pos = accounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
-    totalPosition[accounts.manager(accountId)] -= pos;
-    totalPosition[newManager] += pos;
-
-    uint cap = totalPositionCap[newManager];
-    if (cap != 0 && totalPosition[newManager] > cap) revert PA_ManagerChangeExceedCap();
+    _migrateTotalPositionAndCheckCaps(pos, accounts.manager(accountId), newManager);
   }
 
   //////////////////////////

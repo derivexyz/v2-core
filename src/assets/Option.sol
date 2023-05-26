@@ -35,18 +35,6 @@ contract Option is IOption, OITracking, ManagerWhitelist {
   // Variables //
   ///////////////
 
-  // ///@dev SubId => tradeId => open interest snapshot
-  // mapping(uint subId => mapping(uint tradeId => OISnapshot)) public openInterestBeforeTrade;
-
-  // ///@dev Open interest for a subId. OI is the sum of all positive balance
-  // mapping(uint subId => uint) public openInterest;
-
-  // ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
-  // mapping(IManager manager => uint) public totalPositionCap;
-
-  // ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
-  // mapping(IManager manager => uint) public totalPosition;
-
   ///@dev Each account's total position: (sum of .abs() of all option positions)
   mapping(uint accountId => uint) public accountTotalPosition;
 
@@ -93,17 +81,12 @@ contract Option is IOption, OITracking, ManagerWhitelist {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-
   function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
 
     // migrate OI cap to new manager
     uint pos = accountTotalPosition[accountId];
-    totalPosition[accounts.manager(accountId)] -= pos;
-    totalPosition[newManager] += pos;
-
-    uint cap = totalPositionCap[newManager];
-    if (cap != 0 && totalPosition[newManager] > cap) revert OA_ManagerChangeExceedCap();
+    _migrateTotalPositionAndCheckCaps(pos, accounts.manager(accountId), newManager);
   }
 
   //////////

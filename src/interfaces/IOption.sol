@@ -35,7 +35,4 @@ interface IOption is IAsset, IOITracking {
 
   /// @dev revert when settlement is triggered from unknown managers
   error OA_UnknownManager();
-
-  /// @dev total position cap reached while changing manager
-  error OA_ManagerChangeExceedCap();
 }

@@ -8,6 +8,8 @@ import "../../../shared/mocks/MockManager.sol";
 import "../../../../src/assets/Option.sol";
 import "../../../../src/Accounts.sol";
 
+import {IOITracking} from "src/interfaces/IOITracking.sol";
+
 /**
  * @dev testing open interest before and after
  * asset transfers
@@ -205,7 +207,7 @@ contract UNIT_OptionAssetOITest is Test {
   function testCannotChangeManagerIfExceedCap() public {
     option.setTotalPositionCap(manager2, 1);
 
-    vm.expectRevert(IOption.OA_ManagerChangeExceedCap.selector);
+    vm.expectRevert(IOITracking.OT_ManagerChangeExceedCap.selector);
     account.changeManager(accountNeg, manager2, "");
   }
 
