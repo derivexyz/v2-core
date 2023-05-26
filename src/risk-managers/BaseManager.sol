@@ -217,49 +217,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       IDataReceiver(managerDatas[i].receiver).acceptData(managerDatas[i].data);
     }
   }
-
-  /**
-   * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
-   * @dev when charging OI fee for option, it needs to find all subIds traded in assetDeltas.
-   * @param accountId Account potentially to charge
-   * @param tradeId ID of the trade informed by Accounts
-   * @param assetDeltas Array of asset changes made to this account
-   */
-  // function _chargeOptionOIFee(
-  //   address caller,
-  //   IOption option,
-  //   IForwardFeed forwardFeed,
-  //   uint accountId,
-  //   uint tradeId,
-  //   IAccounts.AssetDelta[] calldata assetDeltas
-  // ) internal {
-  //   if (feeBypassedCaller[caller]) return;
-
-  //   uint fee;
-  //   // iterate through all asset changes, if it's option asset, change if OI increased
-  //   for (uint i; i < assetDeltas.length; i++) {
-  //     if (assetDeltas[i].asset != option) continue;
-
-  //     (, uint oiBefore) = option.openInterestBeforeTrade(assetDeltas[i].subId, tradeId);
-  //     uint oi = option.openInterest(assetDeltas[i].subId);
-
-  //     // if OI decreases, don't charge a fee
-  //     if (oi <= oiBefore) continue;
-
-  //     (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
-  //     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
-  //     fee += assetDeltas[i].delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
-  //   }
-
-  //   if (fee > 0) {
-  //     // keep track of OI Fee
-  //     feeCharged[tradeId][accountId] = fee;
-
-  //     // transfer cash to fee recipient account
-  //     _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
-  //   }
-  // }
-
+  
   /**
    * @dev calculate the option OI fee for a specific option + subId combination
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset

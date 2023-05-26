@@ -23,12 +23,14 @@ contract BaseManagerTester is BaseManager {
   IOption public immutable option;
   IPerpAsset public immutable perp;
   IForwardFeed public immutable forwardFeed;
+  ISpotFeed public immutable spotFeed;
   ISettlementFeed public immutable settlementFeed;
 
   constructor(
     IAccounts accounts_,
     IForwardFeed forwardFeed_,
     ISettlementFeed settlementFeed_,
+    ISpotFeed spotFeed_,
     ICashAsset cash_,
     IOption option_,
     IPerpAsset perp_,
@@ -38,17 +40,22 @@ contract BaseManagerTester is BaseManager {
     perp = perp_;
     forwardFeed = forwardFeed_;
     settlementFeed = settlementFeed_;
+    spotFeed = spotFeed_;
   }
 
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 
-  // function chargeOIFee(address caller, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas)
-  //   external
-  // {
-  //   _chargeOIFee(caller, option, forwardFeed, accountId, tradeId, assetDeltas);
-  // }
+  function getOptionOIFee(IOITracking asset, int delta, uint subId, uint tradeId)
+    external returns (uint fee)
+  {
+    fee = _getOptionOIFee(asset, forwardFeed, delta, subId, tradeId);
+  }
+
+  function getPerpOIFee(IOITracking asset, int delta, uint tradeId) external returns (uint fee) {
+    fee = _getPerpOIFee(asset, spotFeed, delta, tradeId);
+  }
 
   function settleOptions(uint accountId) external {
     _settleAccountOptions(option, accountId);
@@ -98,7 +105,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     perp = new MockPerp(accounts);
     cash = new MockCash(usdc, accounts);
 
-    tester = new BaseManagerTester(accounts, feed, feed, cash, option, perp, IDutchAuction(mockAuction));
+    tester = new BaseManagerTester(accounts, feed, feed, feed, cash, option, perp, IDutchAuction(mockAuction));
 
     mockAsset = new MockAsset(usdc, accounts, true);
 
@@ -133,133 +140,62 @@ contract UNIT_TestAbstractBaseManager is Test {
     assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
   }
 
-  /* ----------------------------- *
-   *    Test Option Arrangement    *
-   * ---------------------------- **/
+  /* ------------------------- *
+   *    Test OI fee getters    *
+   * ------------------------- **/
 
-  /* ----------------- *
-   *    Test OI fee    *
-   * ---------------- **/
+  function testOptionFeeIfOIIncrease() public {
+    feed.setForwardPrice(expiry, 2000e18, 1e18);
 
-  // function testChargeFeeOn1SubIdIfOIIncreased() public {
-  //   uint spot = 2000e18;
-  //   feed.setSpot(spot, 1e18);
-  //   feed.setForwardPrice(expiry, spot, 1e18);
+    uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
+    uint tradeId = 5;
 
-  //   uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
-  //   uint tradeId = 5;
-  //   int amount = 1e18;
+    // OI increase
+    option.setMockedOISnapshotBeforeTrade(subId, tradeId, 0);
+    option.setMockedOI(subId, 100e18);
 
-  //   // OI increase
-  //   option.setMockedOISnapshotBeforeTrade(subId, tradeId, 0);
-  //   option.setMockedOI(subId, 100e18);
+    // fee = 1 * 0.1% * 2000;
+    assertEq(tester.getOptionOIFee(option, 1e18, subId, tradeId), 2e18);
+  }
 
-  //   IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](1);
-  //   assetDeltas[0] = IAccounts.AssetDelta(option, subId, amount);
+  function testNoOptionFeeIfOIDecrease() public {
+    feed.setForwardPrice(expiry, 2000e18, 1e18);
 
-  //   int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
-  //   tester.chargeOIFee(address(this), aliceAcc, tradeId, assetDeltas);
+    uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
+    uint tradeId = 5;
 
-  //   int fee = accounts.getBalance(tester.feeRecipientAcc(), cash, 0) - cashBefore;
-  //   // fee = 1 * 0.1% * 2000;
-  //   assertEq(fee, 2e18);
-  //   assertEq(tester.feeCharged(tradeId, aliceAcc), uint(fee));
-  // }
+    // OI increase
+    option.setMockedOISnapshotBeforeTrade(subId, tradeId, 100e18);
+    option.setMockedOI(subId, 0);
 
-  // function testShouldNotChargeFeeIfOIDecrease() public {
-  //   uint spot = 2000e18;
-  //   feed.setSpot(spot, 1e18);
-  //   feed.setForwardPrice(expiry, spot, 1e18);
+    assertEq(tester.getOptionOIFee(option, 1e18, subId, tradeId), 0);
+  }
 
-  //   uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
-  //   uint tradeId = 5;
-  //   int amount = 1e18;
+  // OI Fee on Perps
 
-  //   // OI decrease
-  //   option.setMockedOISnapshotBeforeTrade(subId, tradeId, 100e18);
-  //   option.setMockedOI(subId, 0);
+  function testPerpFeeIfOIIncrease() public {
+    feed.setSpot(5000e18, 1e18);
+    uint tradeId = 5;
 
-  //   IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](1);
-  //   assetDeltas[0] = IAccounts.AssetDelta(option, subId, amount);
+    // OI increase
+    perp.setMockedOISnapshotBeforeTrade(0, tradeId, 0);
+    perp.setMockedOI(0, 100e18);
 
-  //   int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
-  //   tester.chargeOIFee(address(this), aliceAcc, tradeId, assetDeltas);
+    // fee = 1 * 0.1% * 5000;
+    assertEq(tester.getPerpOIFee(perp, 1e18, tradeId), 5e18);
+  }
 
-  //   // no fee: balance stays the same
-  //   assertEq(accounts.getBalance(tester.feeRecipientAcc(), cash, 0), cashBefore);
-  // }
+  function testNoPerpFeeIfOIDecrease() public {
+    feed.setSpot(6000e18, 1e18);
+    uint tradeId = 5;
 
-  // function testShouldNotChargeFeeOnOtherAssetsThenCash() public {
-  //   int amount = -2000e18;
+    // OI increase
+    perp.setMockedOISnapshotBeforeTrade(0, tradeId, 100e18);
+    perp.setMockedOI(0, 0);
 
-  //   IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](1);
-  //   assetDeltas[0] = IAccounts.AssetDelta(cash, 0, amount);
-
-  //   uint tradeId = 1;
-
-  //   int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
-  //   tester.chargeOIFee(address(this), aliceAcc, tradeId, assetDeltas);
-
-  //   // no fee: balance stays the same
-  //   assertEq(accounts.getBalance(tester.feeRecipientAcc(), cash, 0), cashBefore);
-  //   assertEq(tester.feeCharged(tradeId, aliceAcc), 0);
-  // }
-
-  // function testOnlyChargeFeeOnSubIDWIthOIIncreased() public {
-  //   uint spot = 2000e18;
-  //   feed.setSpot(spot, 1e18);
-  //   feed.setForwardPrice(expiry, spot, 1e18);
-
-  //   uint96 subId1 = OptionEncoding.toSubId(expiry, 2600e18, true);
-  //   uint96 subId2 = OptionEncoding.toSubId(expiry, 2700e18, true);
-  //   uint96 subId3 = OptionEncoding.toSubId(expiry, 2800e18, true);
-
-  //   uint tradeId = 5;
-  //   int amount = 10e18;
-
-  //   // subId2 and subId2 OI increase
-  //   option.setMockedOI(subId2, 100e18);
-  //   option.setMockedOI(subId3, 100e18);
-
-  //   IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](3);
-  //   assetDeltas[0] = IAccounts.AssetDelta(option, subId1, amount);
-  //   assetDeltas[1] = IAccounts.AssetDelta(option, subId2, -amount);
-  //   assetDeltas[2] = IAccounts.AssetDelta(option, subId3, amount);
-
-  //   int cashBefore = accounts.getBalance(tester.feeRecipientAcc(), cash, 0);
-  //   tester.chargeOIFee(address(this), aliceAcc, tradeId, assetDeltas);
-
-  //   // no fee: balance stays the same
-  //   int fee = accounts.getBalance(tester.feeRecipientAcc(), cash, 0) - cashBefore;
-  //   // fee for each subId2 = 10 * 0.1% * 2000 = 20;
-  //   // fee for each subId3 = 10 * 0.1% * 2000 = 20;
-  //   assertEq(fee, 40e18);
-  // }
-
-  // function testCanSetBypassCaller() public {
-  //   tester.setFeeBypassedCaller(address(this), true);
-
-  //   uint spot = 2000e18;
-  //   feed.setSpot(spot, 1e18);
-  //   feed.setForwardPrice(expiry, spot, 1e18);
-
-  //   uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
-  //   uint tradeId = 5;
-  //   int amount = 1e18;
-
-  //   // OI increase
-  //   option.setMockedOISnapshotBeforeTrade(subId, tradeId, 0);
-  //   option.setMockedOI(subId, 100e18);
-
-  //   IAccounts.AssetDelta[] memory assetDeltas = new IAccounts.AssetDelta[](1);
-  //   assetDeltas[0] = IAccounts.AssetDelta(option, subId, amount);
-
-  //   tester.chargeOIFee(address(this), aliceAcc, tradeId, assetDeltas);
-
-  //   // fee not charged
-  //   assertEq(accounts.getBalance(tester.feeRecipientAcc(), cash, 0), 0);
-  //   assertEq(tester.feeCharged(tradeId, aliceAcc), 0);
-  // }
+    assertEq(tester.getPerpOIFee(perp, 1e18, tradeId), 0);
+  }
+  
 
   // ================================
   //            Settlement
