@@ -171,11 +171,16 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     bytes calldata managerData
   ) public onlyAccounts {
     _verifyCanTrade(accountId);
+
     _checkBaseOICap();
+
     _processManagerData(tradeId, managerData);
 
-    _chargeOIFee(caller, option, forwardFeed, accountId, tradeId, assetDeltas);
-    _checkOptionCap(option);
+    _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
+
+    // check cap is not exceeded
+    _checkAssetCap(option);
+    _checkAssetCap(perp);
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -408,6 +413,30 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
         }
       }
       revert PMRM_FindInArrayError();
+    }
+  }
+
+  /**
+   * iterate through all asset delta, charge OI fee for perp and option assets
+   */
+  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas)
+    internal
+  {
+    if (feeBypassedCaller[caller]) return;
+
+    uint fee;
+    // iterate through all asset changes, if it's option asset, change if OI increased
+    for (uint i; i < assetDeltas.length; i++) {
+      if (address(assetDeltas[i].asset) == address(option)) {
+        fee += _getOptionOIFee(option, forwardFeed, assetDeltas[i].delta, assetDeltas[i].subId, tradeId);
+      } else if (address(assetDeltas[i].asset) == address(perp)) {
+        fee += _getPerpOIFee(perp, perpFeed, assetDeltas[i].delta, tradeId);
+      }
+    }
+
+    if (fee > 0) {
+      // transfer cash to fee recipient account
+      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
     }
   }
 

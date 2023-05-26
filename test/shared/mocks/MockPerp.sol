@@ -33,4 +33,11 @@ contract MockPerp is MockAsset, IPerpAsset {
   function getIndexPrice() external view returns (uint) {}
 
   function realizePNLWithIndex(uint account) external {}
+
+  function openInterest(uint subId) external view returns (uint oi) {}
+
+  function openInterestBeforeTrade(uint subId, uint tradeId) external view returns (bool initialized, uint240 oi) {}
+
+  function totalPosition(IManager manager) external view returns (uint) {}
+  function totalPositionCap(IManager manager) external view returns (uint) {}
 }

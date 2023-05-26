@@ -2,12 +2,13 @@
 pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
+import {IOITracking} from "src/interfaces/IOITracking.sol";
 
 /**
  * @title IPerpAsset
  * @notice Interface for a perpetual asset contract that extends the IAsset interface.
  */
-interface IPerpAsset is IAsset {
+interface IPerpAsset is IAsset, IOITracking {
   struct PositionDetail {
     // Spot price the last time user interact with perp contract
     uint128 lastMarkPrice;

@@ -218,7 +218,7 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
   function handleAdjustment(
     uint accountId,
     uint tradeId,
-    address,
+    address caller,
     IAccounts.AssetDelta[] calldata assetDeltas,
     bytes calldata managerData
   ) public override onlyAccounts {
@@ -261,6 +261,9 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
         }
       }
     }
+
+    // iterate through delta again and charge all fees
+    _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
 
     // if all trades are only reducing risk, return early
     if (isRiskReducing) return;
@@ -649,6 +652,36 @@ contract BasicManager is IBasicManager, ILiquidatableManager, BaseManager {
     (int forwardPrice,) = _getForwardPrice(marketId, expiry);
     Option memory optionPos = Option({strike: strike, isCall: isCall, balance: balance});
     return _getIsolatedMargin(marketId, expiry, optionPos, indexPrice, forwardPrice, isInitial);
+  }
+
+  //////////////////////////
+  //       Internal       //
+  //////////////////////////
+
+  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas)
+    internal
+  {
+    if (feeBypassedCaller[caller]) return;
+
+    uint fee;
+    // iterate through all asset changes, if it's option asset, change if OI increased
+    for (uint i; i < assetDeltas.length; i++) {
+      AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
+      if (detail.assetType == AssetType.Perpetual) {
+        IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
+        ISpotFeed perpFeed = perpFeeds[detail.marketId];
+        fee += _getPerpOIFee(perp, perpFeed, assetDeltas[i].delta, tradeId);
+      } else if (detail.assetType == AssetType.Option) {
+        IOption option = IOption(address(assetDeltas[i].asset));
+        IForwardFeed forwardFeed = forwardFeeds[detail.marketId];
+        fee += _getOptionOIFee(option, forwardFeed, assetDeltas[i].delta, assetDeltas[i].subId, tradeId);
+      }
+    }
+
+    if (fee > 0) {
+      // transfer cash to fee recipient account
+      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
+    }
   }
 
   /**

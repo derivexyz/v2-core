@@ -15,10 +15,12 @@ import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
+import {IOITracking} from "src/interfaces/IOITracking.sol";
 import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
 
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import {IManager} from "src/interfaces/IManager.sol";
@@ -218,51 +220,98 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /**
    * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
+   * @dev when charging OI fee for option, it needs to find all subIds traded in assetDeltas.
    * @param accountId Account potentially to charge
    * @param tradeId ID of the trade informed by Accounts
    * @param assetDeltas Array of asset changes made to this account
    */
-  function _chargeOIFee(
-    address caller,
-    IOption option,
-    IForwardFeed forwardFeed,
-    uint accountId,
-    uint tradeId,
-    IAccounts.AssetDelta[] calldata assetDeltas
-  ) internal {
-    if (feeBypassedCaller[caller]) return;
+  // function _chargeOptionOIFee(
+  //   address caller,
+  //   IOption option,
+  //   IForwardFeed forwardFeed,
+  //   uint accountId,
+  //   uint tradeId,
+  //   IAccounts.AssetDelta[] calldata assetDeltas
+  // ) internal {
+  //   if (feeBypassedCaller[caller]) return;
 
-    uint fee;
-    // iterate through all asset changes, if it's option asset, change if OI increased
-    for (uint i; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset != option) continue;
+  //   uint fee;
+  //   // iterate through all asset changes, if it's option asset, change if OI increased
+  //   for (uint i; i < assetDeltas.length; i++) {
+  //     if (assetDeltas[i].asset != option) continue;
 
-      (, uint oiBefore) = option.openInterestBeforeTrade(assetDeltas[i].subId, tradeId);
-      uint oi = option.openInterest(assetDeltas[i].subId);
+  //     (, uint oiBefore) = option.openInterestBeforeTrade(assetDeltas[i].subId, tradeId);
+  //     uint oi = option.openInterest(assetDeltas[i].subId);
 
-      // if OI decreases, don't charge a fee
-      if (oi <= oiBefore) continue;
+  //     // if OI decreases, don't charge a fee
+  //     if (oi <= oiBefore) continue;
 
-      (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
-      (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
-      fee += assetDeltas[i].delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
-    }
+  //     (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
+  //     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
+  //     fee += assetDeltas[i].delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
+  //   }
 
-    if (fee > 0) {
-      // keep track of OI Fee
-      feeCharged[tradeId][accountId] = fee;
+  //   if (fee > 0) {
+  //     // keep track of OI Fee
+  //     feeCharged[tradeId][accountId] = fee;
 
-      // transfer cash to fee recipient account
-      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
-    }
+  //     // transfer cash to fee recipient account
+  //     _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
+  //   }
+  // }
+
+  /**
+   * @dev calculate the option OI fee for a specific option + subId combination
+   * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
+   * @param asset Option contract
+   * @param forwardFeed Forward feed contract
+   * @param delta Change in this trade
+   * @param subId SubId of the option
+   */
+  function _getOptionOIFee(IOITracking asset, IForwardFeed forwardFeed, int delta, uint subId, uint tradeId)
+    internal
+    view
+    returns (uint fee)
+  {
+    bool oiIncreased = _getOIIncreased(asset, subId, tradeId);
+    if (!oiIncreased) return 0;
+
+    (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
+    fee = delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
   }
 
-  function _checkOptionCap(IOption option) internal view {
+  /**
+   * @notice calculate the perpetual OI fee.
+   * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
+   */
+  function _getPerpOIFee(IOITracking asset, ISpotFeed perpFeed, int delta, uint tradeId)
+    internal
+    view
+    returns (uint fee)
+  {
+    bool oiIncreased = _getOIIncreased(asset, 0, tradeId);
+    if (!oiIncreased) return 0;
+
+    (uint perpPrice,) = perpFeed.getSpot();
+    fee = delta.abs().multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS);
+  }
+
+  /**
+   * @dev check if OI increased for a given asset and subId in a trade
+   */
+  function _getOIIncreased(IOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
+    (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
+    uint oi = asset.openInterest(subId);
+    return oi > oiBefore;
+  }
+
+  function _checkAssetCap(IOITracking asset) internal view {
     // todo: if totalPositionCap is updated to a lower number, it might revert even if it's reducing
-    uint totalPosCap = option.totalPositionCap(IManager(address(this)));
+    uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
     if (totalPosCap == 0) return;
 
-    uint totalPos = option.totalPosition(IManager(address(this)));
+    uint totalPos = asset.totalPosition(IManager(address(this)));
     if (totalPos > totalPosCap) revert BM_OptionCapExceeded();
   }
 
