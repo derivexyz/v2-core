@@ -115,7 +115,8 @@ contract UNIT_TestStandardManager_Option is Test {
     manager.whitelistAsset(perp, 2, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 2, IStandardManager.AssetType.Option);
     (bool isPerpWhitelisted, IStandardManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
-    (bool isOptionWhitelisted, IStandardManager.AssetType optionType, uint8 optionMarketId) = manager.assetDetails(option);
+    (bool isOptionWhitelisted, IStandardManager.AssetType optionType, uint8 optionMarketId) =
+      manager.assetDetails(option);
     assertEq(isPerpWhitelisted, true);
     assertEq(uint(perpType), uint(IStandardManager.AssetType.Perpetual));
     assertEq(marketId, 2);
