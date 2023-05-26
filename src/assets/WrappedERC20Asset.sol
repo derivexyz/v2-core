@@ -88,7 +88,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint assetAmount, address recipient) external {
-    if (msg.sender != accounts.ownerOf(accountId)) revert("Only account owner");
+    if (msg.sender != accounts.ownerOf(accountId)) revert WERC_OnlyAccountOwner();
 
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
@@ -131,6 +131,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    _checkManager(address(manager));
     // only update the OI for each manager but didn't check cap. It should be checked by the manager if needed at the end of all transfer
     // otherwise a transfer might fail if += amount is processed first
     managerOI[manager] = (managerOI[manager].toInt256() + adjustment.amount).toUint256();
@@ -140,7 +141,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
     }
     finalBalance = preBalance + adjustment.amount;
 
-    if (finalBalance < 0) revert("Cannot have a negative balance");
+    if (finalBalance < 0) revert WERC_CannotBeNegative();
 
     return (finalBalance, adjustment.amount < 0);
   }

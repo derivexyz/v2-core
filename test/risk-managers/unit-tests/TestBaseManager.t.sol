@@ -143,6 +143,7 @@ contract UNIT_TestAbstractBaseManager is Test {
    * ------------------------- **/
 
   function testOptionFeeIfOIIncrease() public {
+    tester.setOIFeeRateBPS(0.001e18);
     feed.setForwardPrice(expiry, 2000e18, 1e18);
 
     uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
@@ -157,6 +158,7 @@ contract UNIT_TestAbstractBaseManager is Test {
   }
 
   function testNoOptionFeeIfOIDecrease() public {
+    tester.setOIFeeRateBPS(0.001e18);
     feed.setForwardPrice(expiry, 2000e18, 1e18);
 
     uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
@@ -172,6 +174,8 @@ contract UNIT_TestAbstractBaseManager is Test {
   // OI Fee on Perps
 
   function testPerpFeeIfOIIncrease() public {
+    tester.setOIFeeRateBPS(0.001e18);
+
     feed.setSpot(5000e18, 1e18);
     uint tradeId = 5;
 
@@ -184,6 +188,7 @@ contract UNIT_TestAbstractBaseManager is Test {
   }
 
   function testNoPerpFeeIfOIDecrease() public {
+    tester.setOIFeeRateBPS(0.001e18);
     feed.setSpot(6000e18, 1e18);
     uint tradeId = 5;
 

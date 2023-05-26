@@ -12,4 +12,8 @@ interface IWrappedERC20Asset is IAsset {
   event OICapSet(address manager, uint oiCap);
 
   error WERC_ManagerChangeExceedOICap();
+
+  error WERC_OnlyAccountOwner();
+
+  error WERC_CannotBeNegative();
 }
