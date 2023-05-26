@@ -14,7 +14,7 @@ contract UNIT_WrappedBaseAssetHook is Test {
   WrappedERC20Asset asset;
   MockERC20 wbtc;
   MockManager manager;
-  
+
   Accounts accounts;
 
   uint accId;
@@ -25,8 +25,6 @@ contract UNIT_WrappedBaseAssetHook is Test {
     manager = new MockManager(address(accounts));
     wbtc = new MockERC20("WBTC", "WBTC");
     wbtc.setDecimals(8);
-
-    
 
     asset = new WrappedERC20Asset(accounts, wbtc);
     accId = accounts.createAccount(address(this), manager);
