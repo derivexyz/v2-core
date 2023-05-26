@@ -45,6 +45,8 @@ contract UNIT_TestBasicManager_Option is Test {
   uint aliceAcc;
   uint bobAcc;
 
+  uint feeRecipient;
+
   function setUp() public {
     account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
@@ -76,6 +78,8 @@ contract UNIT_TestBasicManager_Option is Test {
 
     aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
     bobAcc = account.createAccountWithApproval(bob, address(this), manager);
+
+    feeRecipient = account.createAccount(address(this), manager);
 
     // set a future price that will be used for 90 day options
     expiry = block.timestamp + 91 days;
@@ -291,6 +295,49 @@ contract UNIT_TestBasicManager_Option is Test {
 
     cash.deposit(aliceAcc, 100e18);
     _tradeSpread(aliceAcc, bobAcc, 1e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  function testOIFeeOnOption() public {
+    uint strike = 3000e18;
+    uint subId = OptionEncoding.toSubId(expiry, 3000e18, true);
+
+    manager.setOIFeeRateBPS(0.001e18);
+    manager.setFeeRecipient(feeRecipient);
+
+    cash.deposit(aliceAcc, 300e18);
+
+    uint tradeId = 2;
+    option.setMockedOISnapshotBeforeTrade(subId, tradeId, 0);
+    option.setMockedOI(subId, 100e18);
+
+    // short 1 option
+    _transferOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
+
+    uint expectedFee = 1500 * 0.001e18;
+
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(uint(cashAfter), 300e18 - expectedFee);
+  }
+
+  function testBypassOIFee() public {
+    uint strike = 3000e18;
+    uint subId = OptionEncoding.toSubId(expiry, 3000e18, true);
+
+    manager.setOIFeeRateBPS(0.001e18);
+    manager.setFeeRecipient(feeRecipient);
+    manager.setFeeBypassedCaller(address(this), true);
+
+    cash.deposit(aliceAcc, 300e18);
+
+    uint tradeId = 2;
+    option.setMockedOISnapshotBeforeTrade(subId, tradeId, 0);
+    option.setMockedOI(subId, 100e18);
+
+    // short 1 option
+    _transferOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
+
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(uint(cashAfter), 300e18);
   }
 
   function testUnpairedLegsAreChargedInMargin() public {

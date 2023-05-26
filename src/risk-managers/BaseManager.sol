@@ -49,7 +49,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   uint public feeRecipientAcc;
 
   ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
-  uint public OIFeeRateBPS = 0.001e18; // 10 BPS
+  uint public OIFeeRateBPS = 0;
 
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;

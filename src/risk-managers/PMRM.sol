@@ -434,7 +434,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       }
     }
 
-    if (fee > 0) {
+    if (fee > 0 && feeRecipientAcc != 0) {
       // transfer cash to fee recipient account
       _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
     }

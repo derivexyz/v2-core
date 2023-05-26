@@ -47,11 +47,11 @@ contract BaseManagerTester is BaseManager {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 
-  function getOptionOIFee(IOITracking asset, int delta, uint subId, uint tradeId) external returns (uint fee) {
+  function getOptionOIFee(IOITracking asset, int delta, uint subId, uint tradeId) external view returns (uint fee) {
     fee = _getOptionOIFee(asset, forwardFeed, delta, subId, tradeId);
   }
 
-  function getPerpOIFee(IOITracking asset, int delta, uint tradeId) external returns (uint fee) {
+  function getPerpOIFee(IOITracking asset, int delta, uint tradeId) external view returns (uint fee) {
     fee = _getPerpOIFee(asset, spotFeed, delta, tradeId);
   }
 
