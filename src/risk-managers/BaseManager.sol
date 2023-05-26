@@ -217,7 +217,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       IDataReceiver(managerDatas[i].receiver).acceptData(managerDatas[i].data);
     }
   }
-  
+
   /**
    * @dev calculate the option OI fee for a specific option + subId combination
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset

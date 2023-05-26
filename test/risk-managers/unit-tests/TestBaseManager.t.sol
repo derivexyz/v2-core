@@ -47,9 +47,7 @@ contract BaseManagerTester is BaseManager {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 
-  function getOptionOIFee(IOITracking asset, int delta, uint subId, uint tradeId)
-    external returns (uint fee)
-  {
+  function getOptionOIFee(IOITracking asset, int delta, uint subId, uint tradeId) external returns (uint fee) {
     fee = _getOptionOIFee(asset, forwardFeed, delta, subId, tradeId);
   }
 
@@ -195,7 +193,6 @@ contract UNIT_TestAbstractBaseManager is Test {
 
     assertEq(tester.getPerpOIFee(perp, 1e18, tradeId), 0);
   }
-  
 
   // ================================
   //            Settlement
