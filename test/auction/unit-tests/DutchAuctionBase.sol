@@ -106,6 +106,6 @@ contract DutchAuctionBase is Test {
   }
 
   function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
-    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5, bufferMarginScaler: 1.2e18});
+    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5, bufferMarginScalar: 1.2e18});
   }
 }

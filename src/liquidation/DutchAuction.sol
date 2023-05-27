@@ -39,7 +39,7 @@ import "forge-std/console2.sol";
  * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even if it's given for free.
  * or, it can be started if mark to market value of a portfolio is negative.
  * the insolvent auction that will print the liquidator cash or pay out from security module for liquidator to take the position
- * the price of portfolio went from 0 to Buffer margin * scaler (negative)
+ * the price of portfolio went from 0 to Buffer margin * scalar (negative)
  * can be un-flagged if maintenance margin > 0
  */
 contract DutchAuction is IDutchAuction, Ownable2Step {
@@ -78,6 +78,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     cash = _cash;
   }
 
+  ///////////
+  // Admin //
+  ///////////
+
   /**
    * @notice Set buffer margin that will be used to determine the target margin level we liquidate to
    * @dev if set to 0, we liquidate to maintenance margin. If set to 0.3, approximately to initial margin
@@ -111,6 +115,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     insolventAuctionParams = _params;
   }
 
+  ///////////////////
+  // Begin Auction //
+  ///////////////////
+
   /**
    * @dev anyone can start an auction for an account
    * @param accountId The id of the account being liquidated
@@ -139,49 +147,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       // solvent auction goes from mark to market * static discount -> 0
       _startSolventAuction(accountId, scenarioId, markToMarket, fee);
     } else {
-      // insolvent auction start from 0 -> buffer margin (negative number) * scaler
-      int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScaler);
+      // insolvent auction start from 0 -> buffer margin (negative number) * scalar
+      int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScalar);
       _startInsolventAuction(accountId, scenarioId, lowerBound);
-    }
-  }
-
-  /**
-   * @notice a user submits a bid for a particular auction
-   * @dev Takes in the auction and returns the account id
-   * @param accountId Account ID of the liquidated account
-   * @param bidderId Account ID of bidder, must be owned by msg.sender
-   * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
-   * @return finalPercentage percentage of portfolio being liquidated
-   * @return cashFromBidder Amount of cash paid from bidder to liquidated account
-   * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
-   */
-  function bid(uint accountId, uint bidderId, uint percentOfAccount)
-    external
-    returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder)
-  {
-    if (percentOfAccount > DecimalMath.UNIT || percentOfAccount == 0) {
-      revert DA_InvalidPercentage();
-    }
-
-    // get bidder address and make sure that they own the account
-    if (subAccounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
-
-    // margin is buffer margin for solvent auction, maintenance margin for insolvent auction
-    (bool canTerminate, int markToMarket, int margin) = getAuctionStatus(accountId);
-
-    if (canTerminate) revert DA_AuctionShouldBeTerminated();
-
-    bool canTerminateAfterwards;
-    if (auctions[accountId].insolvent) {
-      (canTerminateAfterwards, finalPercentage, cashToBidder) =
-        _bidOnInsolventAuction(accountId, bidderId, percentOfAccount);
-    } else {
-      (canTerminateAfterwards, finalPercentage, cashFromBidder) =
-        _bidOnSolventAuction(accountId, bidderId, percentOfAccount, margin, markToMarket);
-    }
-
-    if (canTerminateAfterwards) {
-      _terminateAuction(accountId);
     }
   }
 
@@ -226,6 +194,65 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
+   * @notice This function can used by anyone to end an auction early
+   * @dev This is to allow account owner to cancel the auction after adding more collateral
+   * @param accountId the accountId that relates to the auction that is being stepped
+   */
+  function terminateAuction(uint accountId) external {
+    (bool canTerminate,,) = getAuctionStatus(accountId);
+    if (!canTerminate) revert DA_AuctionCannotTerminate();
+    _terminateAuction(accountId);
+  }
+
+  ////////////////////////
+  //   Auction Bidding  //
+  ////////////////////////
+
+  /**
+   * @notice a user submits a bid for a particular auction
+   * @dev Takes in the auction and returns the account id
+   * @param accountId Account ID of the liquidated account
+   * @param bidderId Account ID of bidder, must be owned by msg.sender
+   * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
+   * @return finalPercentage percentage of portfolio being liquidated
+   * @return cashFromBidder Amount of cash paid from bidder to liquidated account
+   * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
+   */
+  function bid(uint accountId, uint bidderId, uint percentOfAccount)
+    external
+    returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder)
+  {
+    if (percentOfAccount > DecimalMath.UNIT || percentOfAccount == 0) {
+      revert DA_InvalidPercentage();
+    }
+
+    // get bidder address and make sure that they own the account
+    if (subAccounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
+
+    // margin is buffer margin for solvent auction, maintenance margin for insolvent auction
+    (bool canTerminate, int markToMarket, int margin) = getAuctionStatus(accountId);
+
+    if (canTerminate) revert DA_AuctionShouldBeTerminated();
+
+    bool canTerminateAfterwards;
+    if (auctions[accountId].insolvent) {
+      (canTerminateAfterwards, finalPercentage, cashToBidder) =
+        _bidOnInsolventAuction(accountId, bidderId, percentOfAccount);
+    } else {
+      (canTerminateAfterwards, finalPercentage, cashFromBidder) =
+        _bidOnSolventAuction(accountId, bidderId, percentOfAccount, margin, markToMarket);
+    }
+
+    if (canTerminateAfterwards) {
+      _terminateAuction(accountId);
+    }
+  }
+
+  ////////////////////////
+  //  Insolvent Auction //
+  ////////////////////////
+
+  /**
    * @notice This function can only be used for when the auction is insolvent and is a safety mechanism for
    * if the network is down for rpc provider is unable to submit requests to sequencer, potentially resulting
    * massive insolvency due to bids falling to v_lower.
@@ -252,16 +279,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return newStep;
   }
 
-  /**
-   * @notice This function can used by anyone to end an auction early
-   * @dev This is to allow account owner to cancel the auction after adding more collateral
-   * @param accountId the accountId that relates to the auction that is being stepped
-   */
-  function terminateAuction(uint accountId) external {
-    (bool canTerminate,,) = getAuctionStatus(accountId);
-    if (!canTerminate) revert DA_AuctionCannotTerminate();
-    _terminateAuction(accountId);
-  }
+  ////////////////////////
+  //       Views        //
+  ////////////////////////
 
   /**
    * @notice Return true if an auction can be terminated (back above water)
@@ -282,12 +302,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     canTerminate = netMargin > 0;
   }
-
   /**
    * @notice returns the details of an ongoing auction
    * @param accountId the id of the auction that is being queried
    * @return Auction returns the struct of the auction details
    */
+
   function getAuction(uint accountId) external view returns (Auction memory) {
     return auctions[accountId];
   }
@@ -329,9 +349,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return _getDiscountPercentage(startTime, current);
   }
 
-  ////////////////////
-  //    internal    //
-  ////////////////////
+  ///////////////////////
+  // Internal Mutators //
+  ///////////////////////
 
   /**
    * @notice Starts an auction that starts with a positive upper bound
@@ -346,6 +366,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
+      cashPaid: 0,
       stepSize: 0,
       stepInsolvent: 0,
       lastStepUpdate: 0
@@ -372,6 +393,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
+      cashPaid: 0,
       stepSize: stepSize,
       stepInsolvent: 0,
       lastStepUpdate: block.timestamp
@@ -473,7 +495,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /////////////////////////
-  //   internal  View    //
+  //   Internal Views    //
   /////////////////////////
 
   /**
