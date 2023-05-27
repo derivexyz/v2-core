@@ -353,6 +353,9 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     }
   }
 
+  /**
+   * @dev Manager can trigger forge withdraw that burn cash and give up stable asset
+   */
   function forceWithdraw(uint accountId) external {
     if (msg.sender != address(subAccounts.manager(accountId))) {
       revert CA_ForceWithdrawNotAuthorized();

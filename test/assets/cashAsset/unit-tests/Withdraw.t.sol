@@ -91,6 +91,38 @@ contract UNIT_CashAssetWithdraw is Test {
     // todo: number might change based on interest
     assertEq(accBalance, -(int(amountToBorrow)));
   }
+
+  function testForceWithdraw() public {
+    // transfer the subAccount to someone else
+    address alice = address(0xaa);
+    subAccounts.transferFrom(address(this), alice, accountId);
+
+    vm.prank(address(manager));
+    cashAsset.forceWithdraw(accountId);
+
+    assertEq(usdc.balanceOf(address(alice)), depositedAmount);
+  }
+
+  function testCannotForceWithdrawNegativeBalance() public {
+    address alice = address(0xaa);
+    uint acc2 = subAccounts.createAccount(alice, manager);
+
+    subAccounts.submitTransfer(
+      ISubAccounts.AssetTransfer({
+        fromAcc: accountId,
+        toAcc: acc2,
+        asset: IAsset(cashAsset),
+        subId: 0,
+        amount: int(depositedAmount * 2),
+        assetData: bytes32(0)
+      }),
+      ""
+    );
+
+    vm.prank(address(manager));
+    vm.expectRevert(ICashAsset.CA_ForceWithdrawNegativeBalance.selector);
+    cashAsset.forceWithdraw(accountId);
+  }
 }
 
 /**

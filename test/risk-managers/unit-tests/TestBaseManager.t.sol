@@ -391,6 +391,10 @@ contract UNIT_TestAbstractBaseManager is Test {
     assertEq(subAccounts.getBalance(aliceAcc, cash, 0), 199e18);
   }
 
+  // ------------------------
+  //      force withdraw
+  // ------------------------
+
   // alice open 10 long call, 10 short put
   function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {
     vm.prank(bob);
