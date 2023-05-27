@@ -11,6 +11,7 @@ interface ILyraVolFeed {
     int SVI_m;
     uint SVI_sigma;
     uint SVI_fwd;
+    uint64 SVI_refTao;
     uint64 confidence;
     uint64 timestamp;
     // the latest timestamp you can use this data
@@ -28,6 +29,7 @@ interface ILyraVolFeed {
     int SVI_m;
     uint SVI_sigma;
     uint SVI_fwd;
+    uint64 SVI_refTao;
     uint64 confidence;
     uint64 timestamp;
   }

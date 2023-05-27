@@ -10,32 +10,7 @@ import "src/interfaces/ILyraVolFeed.sol";
 
 // libraries
 import "lyra-utils/math/FixedPointMathLib.sol";
-
-library SVI {
-  // TODO: move to lyra-utils and CLEAN UP A LOT
-  function getVol(uint strike, int SVI_a, uint SVI_b, int SVI_rho, int SVI_m, uint SVI_sigma, uint SVI_fwd)
-    internal
-    pure
-    returns (uint128)
-  {
-    int k = FixedPointMathLib.ln(int(strike * 1e18 / SVI_fwd));
-
-    // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
-    int k_sub_m = int(k) - SVI_m;
-    int k_sub_m_sq = k_sub_m * k_sub_m / 1e18;
-    int sigma_sq = int(SVI_sigma * SVI_sigma / 1e18);
-
-    return uint128(
-      FixedPointMathLib.sqrt(
-        uint(
-          SVI_a
-            + (int(SVI_b) * ((SVI_rho * k_sub_m / 1e18) + int(FixedPointMathLib.sqrt(uint(k_sub_m_sq + sigma_sq)))))
-              / 1e18
-        )
-      )
-    );
-  }
-}
+import "lyra-utils/math/SVI.sol";
 
 /**
  * @title LyraVolFeed
@@ -48,7 +23,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
   //     Constants      //
   ////////////////////////
   bytes32 public constant VOL_DATA_TYPEHASH = keccak256(
-    "VolData(int256 SVI_a,uint256 SVI_b,int256 SVI_rho,int256 SVI_m,uint256 SVI_sigma,uint256 SVI_fwd,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
+    "VolData(int256 SVI_a,uint256 SVI_b,int256 SVI_rho,int256 SVI_m,uint256 SVI_sigma,uint256 SVI_fwd,uint64 SVI_refTao,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
   ////////////////////////
@@ -90,7 +65,8 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       volDetail.SVI_rho,
       volDetail.SVI_m,
       volDetail.SVI_sigma,
-      volDetail.SVI_fwd
+      volDetail.SVI_fwd,
+      volDetail.SVI_refTao
     );
 
     return (vol, volDetail.confidence);
@@ -135,6 +111,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       SVI_m: volData.SVI_m,
       SVI_sigma: volData.SVI_sigma,
       SVI_fwd: volData.SVI_fwd,
+      SVI_refTao: volData.SVI_refTao,
       confidence: volData.confidence,
       timestamp: volData.timestamp
     });
@@ -156,6 +133,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
         volData.SVI_m,
         volData.SVI_sigma,
         volData.SVI_fwd,
+        volData.SVI_refTao,
         volData.confidence,
         volData.timestamp
       )
