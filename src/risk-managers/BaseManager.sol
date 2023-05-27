@@ -172,10 +172,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, 0, bytes32(0)));
   }
 
-  //////////////////////////
-  //   Keeper Functions   //
-  //////////////////////////
-
+  /**
+   * @dev force a cash only account to leave the system if it's not on the allowlist
+   * @param accountId Id of account to force withdraw
+   */
   function forceWithdrawAccount(uint accountId) external {
     if (_allowListed(accountId)) {
       revert BM_OnlyBlockedAccounts();
@@ -184,8 +184,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (balances.length != 1 || address(balances[0].asset) != address(cashAsset)) {
       revert BM_InvalidForceWithdrawAccountState();
     }
+
     cashAsset.forceWithdraw(accountId);
   }
+
+  //////////////////////////
+  //   Keeper Functions   //
+  //////////////////////////
 
   function forceLiquidateAccount(uint accountId) external {
     if (_allowListed(accountId)) {
