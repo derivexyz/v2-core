@@ -12,7 +12,6 @@ import "src/interfaces/ILyraVolFeed.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
 import "lyra-utils/math/SVI.sol";
 
-
 /**
  * @title LyraVolFeed
  * @author Lyra
