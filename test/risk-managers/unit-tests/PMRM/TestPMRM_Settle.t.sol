@@ -34,9 +34,9 @@ contract TestPMRM_Settlement is PMRMTestBase {
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
-    accounts.submitTransfer(transfer, managerData);
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    subAccounts.submitTransfer(transfer, managerData);
 
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashAfter - cashBefore, 100e18);
@@ -72,7 +72,10 @@ contract TestPMRM_Settlement is PMRMTestBase {
     allData[0] = IBaseManager.ManagerData({receiver: address(optionHelper), data: data});
     bytes memory managerData = abi.encode(allData);
 
-    pmrm.settleOptions(option, aliceAcc);
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    subAccounts.submitTransfer(transfer, managerData);
+
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashBefore - cashAfter, 500e18);
   }
@@ -91,11 +94,11 @@ contract TestPMRM_Settlement is PMRMTestBase {
     uint subId = OptionEncoding.toSubId(expiry, strike, true);
 
     option.setMockedSubIdSettled(subId, true);
-    option.setMockedTotalSettlementValue(subId, -500e18);
+    option.setMockedTotalSettlementValue(subId, netValue);
   }
 
   function _transferOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -103,6 +106,6 @@ contract TestPMRM_Settlement is PMRMTestBase {
       amount: amount,
       assetData: ""
     });
-    accounts.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 }

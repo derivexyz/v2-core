@@ -7,15 +7,15 @@ import "forge-std/console2.sol";
 import "../../../shared/mocks/MockManager.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/assets/PerpAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 contract UNIT_PerpAssetFunding is Test {
   PerpAsset perp;
   MockManager manager;
-  Accounts account;
+  SubAccounts subAccounts;
   MockFeeds spotFeed;
   MockFeeds perpFeed;
 
@@ -33,17 +33,17 @@ contract UNIT_PerpAssetFunding is Test {
 
   function setUp() public {
     // deploy contracts
-    account = new Accounts("Lyra", "LYRA");
+    subAccounts = new SubAccounts("Lyra", "LYRA");
     spotFeed = new MockFeeds();
     perpFeed = new MockFeeds();
 
-    manager = new MockManager(address(account));
-    perp = new PerpAsset(IAccounts(account), 0.0075e18);
+    manager = new MockManager(address(subAccounts));
+    perp = new PerpAsset(subAccounts, 0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);
 
-    manager = new MockManager(address(account));
+    manager = new MockManager(address(subAccounts));
 
     spotFeed.setSpot(uint(int(spot)), 1e18);
     perpFeed.setSpot(uint(int(spot)), 1e18);
@@ -53,14 +53,14 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setFundingRateOracle(keeper);
 
     // create account for alice and bob
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
 
     vm.prank(keeper);
     perp.setImpactPrices(spot, spot);
 
     // open trades
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: perp,
@@ -68,7 +68,7 @@ contract UNIT_PerpAssetFunding is Test {
       amount: defaultPosition,
       assetData: ""
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 
   function testSetSpotFeed() public {

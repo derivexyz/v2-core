@@ -4,10 +4,10 @@ import "forge-std/Test.sol";
 
 import "src/risk-managers/PMRM.sol";
 import "src/assets/CashAsset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISubAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -29,14 +29,14 @@ import "forge-std/console2.sol";
 
 contract UNIT_TestPMRM_RiskBypass is PMRMTestBase {
   function testPMRMInsufficientMarginRegularTransfer() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
 
     vm.expectRevert(IPMRM.PMRM_InsufficientMargin.selector);
     _doBalanceTransfer(aliceAcc, bobAcc, balances);
   }
 
   function testPMRMTransferPassesRiskChecks() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
 
     _depositCash(aliceAcc, 200_000 ether);
     _depositCash(bobAcc, 200_000 ether);
@@ -44,21 +44,21 @@ contract UNIT_TestPMRM_RiskBypass is PMRMTestBase {
   }
 
   function testPMRM_TrustedRiskAssessorBypass() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
 
     // only bob's MTM is negative; alice's MTM is positive but IM is negative - yet trade goes through
     _depositCash(bobAcc, 200_000 ether);
 
     pmrm.setTrustedRiskAssessor(alice, true);
     vm.startPrank(bob);
-    accounts.setApprovalForAll(alice, true);
+    subAccounts.setApprovalForAll(alice, true);
     vm.startPrank(alice);
 
     _doBalanceTransfer(aliceAcc, bobAcc, balances);
   }
 
   function testPMRM_TrustedRiskAssessorCanStillRevert() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
 
     // only bob's MTM is negative; alice's MTM is positive but IM is negative - yet trade goes through
     _depositCash(bobAcc, 15_000 ether);
@@ -68,14 +68,14 @@ contract UNIT_TestPMRM_RiskBypass is PMRMTestBase {
     // So should revert with only 15k cash
     pmrm.setTrustedRiskAssessor(alice, true);
     vm.startPrank(bob);
-    accounts.setApprovalForAll(alice, true);
+    subAccounts.setApprovalForAll(alice, true);
     vm.startPrank(alice);
     vm.expectRevert(IPMRM.PMRM_InsufficientMargin.selector);
     _doBalanceTransfer(aliceAcc, bobAcc, balances);
   }
 
   function testPMRM_riskReducingTrade() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
 
     _depositCash(aliceAcc, 200_000 ether);
     _depositCash(bobAcc, 150_000 ether);
@@ -89,11 +89,11 @@ contract UNIT_TestPMRM_RiskBypass is PMRMTestBase {
 
     // Just find one long call rather than hardcode
     for (uint i = 0; i < balances.length; i++) {
-      (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(balances[i].subId));
+      (,, bool isCall) = OptionEncoding.fromSubId(uint96(balances[i].subId));
       if (balances[i].balance < 0 && isCall) {
-        IAccounts.AssetBalance[] memory closeShortCall = new IAccounts.AssetBalance[](1);
+        ISubAccounts.AssetBalance[] memory closeShortCall = new ISubAccounts.AssetBalance[](1);
         closeShortCall[0] =
-          IAccounts.AssetBalance({asset: balances[i].asset, balance: balances[i].balance, subId: balances[i].subId});
+          ISubAccounts.AssetBalance({asset: balances[i].asset, balance: balances[i].balance, subId: balances[i].subId});
         _doBalanceTransfer(bobAcc, aliceAcc, closeShortCall);
         break;
       }

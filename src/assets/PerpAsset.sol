@@ -13,13 +13,15 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 
 import "./ManagerWhitelist.sol";
+
+import "./OITracking.sol";
 
 /**
  * @title PerpAsset
@@ -28,7 +30,7 @@ import "./ManagerWhitelist.sol";
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
  */
-contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
+contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using SignedMath for int;
   using SafeCast for uint;
@@ -43,7 +45,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   ISpotFeed public perpFeed;
 
   ///@dev Mapping from account to position
-  mapping(uint => PositionDetail) public positions;
+  mapping(uint account => PositionDetail) public positions;
 
   ///@dev Mapping from address to whitelisted to push impacted prices
   address public fundingRateOracle;
@@ -65,10 +67,11 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
 
   ///@dev Latest aggregated funding rate
   int128 public aggregatedFundingRate;
+
   ///@dev Last time aggregated funding rate was updated
   uint64 public lastFundingPaidAt;
 
-  constructor(IAccounts _accounts, int maxAbsRatePerHour) ManagerWhitelist(_accounts) {
+  constructor(ISubAccounts _subAccounts, int maxAbsRatePerHour) ManagerWhitelist(_subAccounts) {
     lastFundingPaidAt = uint64(block.timestamp);
 
     maxRatePerHour = maxAbsRatePerHour;
@@ -123,13 +126,17 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
-    uint, /*tradeId*/
+    ISubAccounts.AssetAdjustment memory adjustment,
+    uint tradeId,
     int preBalance,
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
+
+    _takeOISnapshotPreTrade(adjustment.subId, tradeId);
+
+    _updateOIAndTotalPosition(manager, adjustment.subId, preBalance, adjustment.amount);
 
     // calculate funding from the last period, reflect changes in position.funding
     _updateFundingRate();
@@ -147,8 +154,12 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, IManager newManager) external view {
+  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
+
+    // update total position
+    uint pos = subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
+    _migrateTotalPositionAndCheckCaps(pos, subAccounts.manager(accountId), newManager);
   }
 
   //////////////////////////
@@ -370,7 +381,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @dev Get number of contracts open, with 18 decimals
    */
   function _getPositionSize(uint accountId) internal view returns (int) {
-    return accounts.getBalance(accountId, IPerpAsset(address(this)), 0);
+    return subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0);
   }
 
   function _getIndexPrice() internal view returns (int) {
@@ -393,7 +404,7 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   modifier onlyManagerForAccount(uint accountId) {
-    if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
+    if (msg.sender != address(subAccounts.manager(accountId))) revert PA_WrongManager();
     _;
   }
 }

@@ -7,7 +7,7 @@ import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 import "forge-std/console2.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 
@@ -29,7 +29,7 @@ contract OptionToken is IAsset, Ownable2Step {
     bool isCall;
   }
 
-  Accounts account;
+  SubAccounts subAccounts;
   PriceFeeds priceFeeds;
   SettlementPricer settlementPricer;
 
@@ -45,8 +45,8 @@ contract OptionToken is IAsset, Ownable2Step {
 
   mapping(uint96 => Listing) public subIdToListing;
 
-  constructor(Accounts account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Ownable2Step() {
-    account = account_;
+  constructor(SubAccounts account_, PriceFeeds feeds_, SettlementPricer settlementPricer_, uint feedId_) Ownable2Step() {
+    subAccounts = account_;
     priceFeeds = feeds_;
     settlementPricer = settlementPricer_;
     feedId = feedId_;
@@ -66,7 +66,7 @@ contract OptionToken is IAsset, Ownable2Step {
 
   // account.sol already forces amount from = amount to, but at settlement this isnt necessarily true.
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager riskModel,
@@ -189,8 +189,8 @@ contract OptionToken is IAsset, Ownable2Step {
 
     // only shorts can be socialized
     // open interest modified during handleAdjustment
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: insolventAcc,
         asset: IAsset(address(this)),
         subId: subId,

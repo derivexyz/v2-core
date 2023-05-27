@@ -4,10 +4,10 @@ import "forge-std/Test.sol";
 
 import "src/risk-managers/PMRM.sol";
 import "src/assets/CashAsset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISubAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -29,7 +29,7 @@ import "forge-std/console2.sol";
 
 contract UNIT_TestPMRM_EdgeCases is PMRMTestBase {
   function testPMRM_perpTransfer() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
 
     _depositCash(aliceAcc, 2_000 ether);
     _depositCash(bobAcc, 2_000 ether);
@@ -39,16 +39,16 @@ contract UNIT_TestPMRM_EdgeCases is PMRMTestBase {
   }
 
   function testPMRM_unsupportedAsset() public {
-    MockAsset newAsset = new MockAsset(weth, accounts, true);
+    MockAsset newAsset = new MockAsset(weth, subAccounts, true);
 
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
-    balances[0] = IAccounts.AssetBalance({asset: IAsset(address(newAsset)), balance: 1_000 ether, subId: 0});
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({asset: IAsset(address(newAsset)), balance: 1_000 ether, subId: 0});
     vm.expectRevert(IPMRM.PMRM_UnsupportedAsset.selector);
     _doBalanceTransfer(aliceAcc, bobAcc, balances);
   }
 
   function testPMRM_merge() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
 
     _depositCash(aliceAcc, 2_000 ether);
     _depositCash(bobAcc, 2_000 ether);
@@ -63,14 +63,14 @@ contract UNIT_TestPMRM_EdgeCases is PMRMTestBase {
 
     // So then transfer alice's account to bob
     vm.startPrank(alice);
-    accounts.transferFrom(alice, bob, aliceAcc);
+    subAccounts.transferFrom(alice, bob, aliceAcc);
 
     // and now they can merge!
     vm.startPrank(bob);
     pmrm.mergeAccounts(aliceAcc, mergeAccs);
 
     // perps cancel out, leaving bob with double the cash!
-    IAccounts.AssetBalance[] memory bals = accounts.getAccountBalances(aliceAcc);
+    ISubAccounts.AssetBalance[] memory bals = subAccounts.getAccountBalances(aliceAcc);
     assertEq(bals.length, 1);
     assertEq(bals[0].balance, 4_000 ether);
     assertEq(address(bals[0].asset), address(cash));

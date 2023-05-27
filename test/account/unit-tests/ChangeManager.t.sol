@@ -4,8 +4,8 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import "../../../src/interfaces/IAccounts.sol";
-import "../../../src/Accounts.sol";
+import "../../../src/interfaces/ISubAccounts.sol";
+import "../../../src/SubAccounts.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";
@@ -20,7 +20,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
   function setUp() public {
     setUpAccounts();
 
-    newManager = new MockManager(address(account));
+    newManager = new MockManager(address(subAccounts));
     vm.label(address(newManager), "NewManager");
   }
 
@@ -28,17 +28,17 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     vm.prank(alice);
     // expect call to old manager
     vm.expectCall(address(dumbManager), abi.encodeCall(dumbManager.handleManagerChange, (aliceAcc, newManager)));
-    account.changeManager(aliceAcc, newManager, "");
+    subAccounts.changeManager(aliceAcc, newManager, "");
 
     // manager is updated
-    assertEq(address(account.manager(aliceAcc)), address(newManager));
+    assertEq(address(subAccounts.manager(aliceAcc)), address(newManager));
   }
 
   function testCannotMigrateIfOldManagerDisagree() public {
     dumbManager.setRevertHandleManager(true);
     vm.prank(alice);
     vm.expectRevert();
-    account.changeManager(aliceAcc, newManager, "");
+    subAccounts.changeManager(aliceAcc, newManager, "");
 
     vm.clearMockedCalls();
   }
@@ -50,26 +50,26 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
 
     vm.prank(alice);
     vm.expectRevert();
-    account.changeManager(aliceAcc, newManager, "");
+    subAccounts.changeManager(aliceAcc, newManager, "");
   }
 
   function testCannotChangeToSameManager() public {
     vm.prank(alice);
-    vm.expectRevert(abi.encodeWithSelector(IAccounts.AC_CannotChangeToSameManager.selector, alice, aliceAcc));
-    account.changeManager(aliceAcc, dumbManager, "");
+    vm.expectRevert(abi.encodeWithSelector(ISubAccounts.AC_CannotChangeToSameManager.selector, alice, aliceAcc));
+    subAccounts.changeManager(aliceAcc, dumbManager, "");
   }
 
   function testMigrationShouldNotMakeDuplicatedCallToAssets() public {
-    MockAsset mockOptionAsset = new MockAsset(coolToken, IAccounts(address(account)), true); // allow negative balance
+    MockAsset mockOptionAsset = new MockAsset(coolToken, ISubAccounts(address(subAccounts)), true); // allow negative balance
     vm.label(address(mockOptionAsset), "DumbOption");
 
     // create another account just to transfer assets
-    uint newAccount1 = account.createAccount(address(this), dumbManager);
+    uint newAccount1 = subAccounts.createAccount(address(this), dumbManager);
 
     // create new account and grant access to this contract to adjust balance
-    uint accountToTest = account.createAccount(alice, dumbManager);
+    uint accountToTest = subAccounts.createAccount(alice, dumbManager);
     vm.startPrank(alice);
-    account.setApprovalForAll(address(this), true);
+    subAccounts.setApprovalForAll(address(this), true);
     vm.stopPrank();
 
     // adjust asset balances so new account has multiple balances
@@ -87,7 +87,7 @@ contract UNIT_ChangeManager is Test, AccountTestBase {
     usdcAsset.setRecordManagerChangeCalls(true);
 
     vm.startPrank(alice);
-    account.changeManager(accountToTest, newManager, "");
+    subAccounts.changeManager(accountToTest, newManager, "");
     vm.stopPrank();
 
     assertEq(mockOptionAsset.handleManagerCalled(), 1);

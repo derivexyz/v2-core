@@ -4,10 +4,10 @@ import "forge-std/Test.sol";
 
 import "src/risk-managers/PMRM.sol";
 import "src/assets/CashAsset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISubAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -30,7 +30,7 @@ import "./PMRMPublic.sol";
 contract PMRMTestBase is Test {
   using stdJson for string;
 
-  Accounts accounts;
+  SubAccounts subAccounts;
   PMRMPublic pmrm;
   MockCash cash;
   MockERC20 usdc;
@@ -57,7 +57,7 @@ contract PMRMTestBase is Test {
   function setUp() public virtual {
     vm.warp(1640995200); // 1st jan 2022
 
-    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeeds();
     perpFeed = new MockFeeds();
@@ -68,15 +68,15 @@ contract PMRMTestBase is Test {
 
     usdc = new MockERC20("USDC", "USDC");
     weth = new MockERC20("weth", "weth");
-    cash = new MockCash(usdc, accounts);
-    baseAsset = new WrappedERC20Asset(accounts, weth);
-    mockPerp = new MockPerp(accounts);
+    cash = new MockCash(usdc, subAccounts);
+    baseAsset = new WrappedERC20Asset(subAccounts, weth);
+    mockPerp = new MockPerp(subAccounts);
 
-    option = new MockOption(accounts);
+    option = new MockOption(subAccounts);
     optionPricing = new OptionPricing();
 
     pmrm = new PMRMPublic(
-      accounts,
+      subAccounts,
       cash,
       option,
       mockPerp,
@@ -95,6 +95,9 @@ contract PMRMTestBase is Test {
 
     _setupAliceAndBob();
     addScenarios();
+
+    feeRecipient = subAccounts.createAccount(address(this), pmrm);
+    pmrm.setFeeRecipient(feeRecipient);
   }
 
   function _logPortfolio(IPMRM.Portfolio memory portfolio) internal view {
@@ -181,14 +184,14 @@ contract PMRMTestBase is Test {
     vm.label(alice, "alice");
     vm.label(bob, "bob");
 
-    aliceAcc = accounts.createAccount(alice, IManager(address(pmrm)));
-    bobAcc = accounts.createAccount(bob, IManager(address(pmrm)));
+    aliceAcc = subAccounts.createAccount(alice, IManager(address(pmrm)));
+    bobAcc = subAccounts.createAccount(bob, IManager(address(pmrm)));
 
     // allow this contract to submit trades
     vm.prank(alice);
-    accounts.setApprovalForAll(address(this), true);
+    subAccounts.setApprovalForAll(address(this), true);
     vm.prank(bob);
-    accounts.setApprovalForAll(address(this), true);
+    subAccounts.setApprovalForAll(address(this), true);
   }
 
   function _depositCash(uint accId, uint amount) internal {
@@ -304,7 +307,7 @@ contract PMRMTestBase is Test {
 
   function setupTestScenarioAndGetAssetBalances(string memory testId)
     internal
-    returns (IAccounts.AssetBalance[] memory balances)
+    returns (ISubAccounts.AssetBalance[] memory balances)
   {
     uint referenceTime = block.timestamp;
     jsonParser = new JsonMechIO();
@@ -328,11 +331,11 @@ contract PMRMTestBase is Test {
 
     uint totalAssets = optionData.length + otherAssets.count;
 
-    balances = new IAccounts.AssetBalance[](totalAssets);
+    balances = new ISubAccounts.AssetBalance[](totalAssets);
 
     for (uint i = 0; i < optionData.length; ++i) {
       uint expiry = referenceTime + uint(optionData[i].secToExpiry);
-      balances[i] = IAccounts.AssetBalance({
+      balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(option),
         subId: OptionEncoding.toSubId(expiry, uint(optionData[i].strike), optionData[i].isCall),
         balance: optionData[i].amount
@@ -345,31 +348,32 @@ contract PMRMTestBase is Test {
 
     if (otherAssets.cashAmount != 0) {
       balances[balances.length - otherAssets.count--] =
-        IAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: otherAssets.cashAmount});
+        ISubAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: otherAssets.cashAmount});
     }
     if (otherAssets.perpAmount != 0) {
       balances[balances.length - otherAssets.count--] =
-        IAccounts.AssetBalance({asset: IAsset(address(mockPerp)), subId: 0, balance: otherAssets.perpAmount});
+        ISubAccounts.AssetBalance({asset: IAsset(address(mockPerp)), subId: 0, balance: otherAssets.perpAmount});
     }
     if (otherAssets.baseAmount != 0) {
       balances[balances.length - otherAssets.count--] =
-        IAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
+        ISubAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
     }
     return balances;
   }
 
-  function _doBalanceTransfer(uint accA, uint accB, IAccounts.AssetBalance[] memory balances) internal {
-    accounts.submitTransfers(_getTransferBatch(accA, accB, balances), "");
+  function _doBalanceTransfer(uint accA, uint accB, ISubAccounts.AssetBalance[] memory balances) internal {
+    subAccounts.submitTransfers(_getTransferBatch(accA, accB, balances), "");
   }
 
-  function _getTransferBatch(uint accA, uint accB, IAccounts.AssetBalance[] memory balances)
+  function _getTransferBatch(uint accA, uint accB, ISubAccounts.AssetBalance[] memory balances)
     internal
-    returns (IAccounts.AssetTransfer[] memory)
+    pure
+    returns (ISubAccounts.AssetTransfer[] memory)
   {
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](balances.length);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](balances.length);
 
     for (uint i = 0; i < balances.length; i++) {
-      transferBatch[i] = IAccounts.AssetTransfer({
+      transferBatch[i] = ISubAccounts.AssetTransfer({
         fromAcc: accA,
         toAcc: accB,
         asset: balances[i].asset,
@@ -383,6 +387,6 @@ contract PMRMTestBase is Test {
   }
 
   function _getCashBalance(uint acc) public view returns (int) {
-    return accounts.getBalance(acc, cash, 0);
+    return subAccounts.getBalance(acc, cash, 0);
   }
 }

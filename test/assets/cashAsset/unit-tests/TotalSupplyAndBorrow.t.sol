@@ -7,7 +7,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Accounts.sol";
+import "../../../../src/SubAccounts.sol";
 
 /**
  * @dev testing total supply and total borrow (& utilisation rate) before and after
@@ -19,7 +19,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
-  Accounts account;
+  SubAccounts subAccounts;
   IInterestRateModel rateModel;
 
   uint accountId;
@@ -27,14 +27,14 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
   uint depositedAmount = 10000 ether;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(account));
+    manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
 
     rateModel = new MockInterestRateModel(1e18);
-    cashAsset = new CashAsset(account, usdc, rateModel, 0, address(0));
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel, 0, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -42,7 +42,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(cashAsset), type(uint).max);
 
-    accountId = account.createAccount(address(this), manager);
+    accountId = subAccounts.createAccount(address(this), manager);
     cashAsset.deposit(accountId, depositedAmount);
   }
 
@@ -58,10 +58,10 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     uint totalSupplyBefore = cashAsset.totalSupply();
     uint totalBorrowBefore = cashAsset.totalBorrow();
 
-    uint emptyAccount = account.createAccount(address(this), manager);
+    uint emptyAccount = subAccounts.createAccount(address(this), manager);
 
     // transfer cash to an empty account.
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: emptyAccount,
       asset: IAsset(cashAsset),
@@ -69,7 +69,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
       amount: int(trasnsferAmount),
       assetData: bytes32(0)
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
 
     uint totalBorrowAfter = cashAsset.totalBorrow();
     uint totalSupplyAfter = cashAsset.totalSupply();
@@ -85,15 +85,15 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     uint trasnsferAmount = depositedAmount / 2;
 
-    uint borrowAccount = account.createAccount(address(this), manager);
+    uint borrowAccount = subAccounts.createAccount(address(this), manager);
 
     uint totalSupplyBefore = cashAsset.totalSupply();
     uint totalBorrowBefore = cashAsset.totalBorrow();
 
-    uint emptyAccount = account.createAccount(address(this), manager);
+    uint emptyAccount = subAccounts.createAccount(address(this), manager);
 
     // transfer cash to an empty account. (borrow account ended in negative balance)
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: borrowAccount,
       toAcc: emptyAccount,
       asset: IAsset(cashAsset),
@@ -101,7 +101,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
       amount: int(trasnsferAmount),
       assetData: bytes32(0)
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
 
     uint totalBorrowAfter = cashAsset.totalBorrow();
     uint totalSupplyAfter = cashAsset.totalSupply();
@@ -120,16 +120,16 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     vm.assume(trasnsferAmount <= depositedAmount);
 
     // borrow some amount, make both totalSupply and totalBorrow none-negative
-    uint borrowAccount = account.createAccount(address(this), manager);
+    uint borrowAccount = subAccounts.createAccount(address(this), manager);
     cashAsset.withdraw(borrowAccount, amountToBorrow, address(this));
 
     uint totalSupplyBefore = cashAsset.totalSupply();
     uint totalBorrowBefore = cashAsset.totalBorrow();
 
-    uint emptyAccount = account.createAccount(address(this), manager);
+    uint emptyAccount = subAccounts.createAccount(address(this), manager);
 
     // transfer cash to an empty account.
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: emptyAccount,
       asset: IAsset(cashAsset),
@@ -137,7 +137,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
       amount: int(trasnsferAmount),
       assetData: bytes32(0)
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
 
     uint totalBorrowAfter = cashAsset.totalBorrow();
     uint totalSupplyAfter = cashAsset.totalSupply();
@@ -153,14 +153,14 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     vm.assume(anyAmount > type(int96).min); // make sure it does not underflow
 
     // borrow some amount, make both totalSupply and totalBorrow none-negative
-    uint borrowAccount = account.createAccount(address(this), manager);
+    uint borrowAccount = subAccounts.createAccount(address(this), manager);
     cashAsset.withdraw(borrowAccount, amountToBorrow, address(this));
 
     uint totalSupplyBefore = cashAsset.totalSupply();
     uint totalBorrowBefore = cashAsset.totalBorrow();
 
     // transfer cash to an empty account.
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({ // short option and give it to another person
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: accountId,
       toAcc: borrowAccount,
       asset: IAsset(cashAsset),
@@ -168,7 +168,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
       amount: anyAmount, // it can be moving positive and negative witin accounts
       assetData: bytes32(0)
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
 
     uint totalBorrowAfter = cashAsset.totalBorrow();
     uint totalSupplyAfter = cashAsset.totalSupply();
@@ -198,7 +198,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     vm.assume(amountToBorrow <= 1000 ether);
     vm.assume(depositAmount <= amountToBorrow);
 
-    uint newAccount = account.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
@@ -221,7 +221,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     vm.assume(depositAmount >= withdrawAmount);
 
     // create some totalBorrow
-    uint newAccount = account.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
 
     uint usdcBefore = usdc.balanceOf(address(this));
     cashAsset.withdraw(newAccount, withdrawAmount, address(this));
@@ -240,7 +240,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     uint totalSupplyAfter = cashAsset.totalSupply();
     uint totalBorrowAfter = cashAsset.totalBorrow();
 
-    int balance = account.getBalance(newAccount, cashAsset, 0);
+    int balance = subAccounts.getBalance(newAccount, cashAsset, 0);
     assertEq(balance, int(depositAmount) - int(withdrawAmount));
 
     // total supply is increased by amount above 0
@@ -268,7 +268,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     // withdraw will increase totalBorrow if account ended with a negative balance
     vm.assume(amountToBorrow <= 10000 ether);
 
-    uint emptyAccount = account.createAccount(address(this), manager);
+    uint emptyAccount = subAccounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
@@ -288,7 +288,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     vm.assume(depositAmount <= withdrawAmount);
 
     usdc.mint(address(this), depositedAmount);
-    uint newAccount = account.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
     cashAsset.deposit(newAccount, depositAmount);
 
     // test after withdraw
@@ -296,7 +296,7 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
     cashAsset.withdraw(newAccount, withdrawAmount, address(this));
     uint totalBorrow = cashAsset.totalBorrow();
 
-    int balance = account.getBalance(newAccount, cashAsset, 0);
+    int balance = subAccounts.getBalance(newAccount, cashAsset, 0);
     assertEq(balance, int(depositAmount) - int(withdrawAmount));
     assertEq(totalBorrow, withdrawAmount - depositAmount);
   }

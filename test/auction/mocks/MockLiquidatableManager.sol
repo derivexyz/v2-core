@@ -33,7 +33,7 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     // do nothing
   }
 
-  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external {
+  function payLiquidationFee(uint, uint, uint cashAmount) external {
     feePaid += cashAmount;
   }
 

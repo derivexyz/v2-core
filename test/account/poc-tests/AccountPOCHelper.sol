@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -20,7 +20,7 @@ import "../mocks/assets/lending/Lending.sol";
 import "../../shared/mocks/MockERC20.sol";
 
 abstract contract AccountPOCHelper is Test {
-  Accounts account;
+  SubAccounts subAccounts;
   MockERC20 weth;
   MockERC20 usdc;
   MockERC20 dai;
@@ -46,30 +46,30 @@ abstract contract AccountPOCHelper is Test {
     vm.startPrank(owner);
 
     /* Base Layer */
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Feeds | Oracles | Vol Engine */
     priceFeeds = new TestPriceFeeds();
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");
-    usdcAdapter = new QuoteWrapper(IERC20(usdc), account, priceFeeds, 0);
+    usdcAdapter = new QuoteWrapper(IERC20(usdc), subAccounts, priceFeeds, 0);
     weth = new MockERC20("wrapped eth", "wETH");
-    wethAdapter = new BaseWrapper(IERC20(weth), IAccounts(address(account)), priceFeeds, 1);
+    wethAdapter = new BaseWrapper(IERC20(weth), subAccounts, priceFeeds, 1);
 
     /* Lending */
     dai = new MockERC20("dai", "DAI");
     // starts at 5%, increases to 10% at 50% util, then grows by 2% for every 10% util increase
     interestRateModel = new ContinuousJumpRateModel(5e16, 1e17, 2e17, 5e17);
-    daiLending = new Lending(IERC20(dai), IAccounts(address(account)), interestRateModel);
+    daiLending = new Lending(IERC20(dai), subAccounts, interestRateModel);
 
     /* Options */
     settlementPricer = new SettlementPricer(PriceFeeds(priceFeeds));
-    optionAdapter = new OptionToken(account, priceFeeds, settlementPricer, 1);
+    optionAdapter = new OptionToken(subAccounts, priceFeeds, settlementPricer, 1);
 
     /* Risk Manager */
     rm =
-    new PortfolioRiskPOCManager(IAccounts(address(account)), PriceFeeds(priceFeeds), usdcAdapter, wethAdapter, optionAdapter, daiLending);
+    new PortfolioRiskPOCManager(subAccounts, PriceFeeds(priceFeeds), usdcAdapter, wethAdapter, optionAdapter, daiLending);
     usdcAdapter.setManagerAllowed(IManager(rm), true);
     optionAdapter.setManagerAllowed(IManager(rm), true);
     daiLending.setManagerAllowed(IManager(rm), true);
@@ -98,7 +98,7 @@ abstract contract AccountPOCHelper is Test {
   }
 
   function tradeCallOption(uint longAcc, uint shortAcc, uint amount, uint premium, uint optionSubId) public {
-    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory optionTransfer = ISubAccounts.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
       asset: IAsset(optionAdapter),
@@ -107,7 +107,7 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory premiumTransfer = ISubAccounts.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
       asset: IAsset(usdcAdapter),
@@ -116,11 +116,11 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
   }
 
   function setupDefaultScenarios() public {
@@ -138,7 +138,7 @@ abstract contract AccountPOCHelper is Test {
 
   function createAccountAndDepositUSDC(address user, uint balance) public returns (uint accountId) {
     vm.startPrank(user);
-    accountId = account.createAccount(user, IManager(rm));
+    accountId = subAccounts.createAccount(user, IManager(rm));
     vm.stopPrank();
 
     if (balance > 0) {
@@ -156,7 +156,7 @@ abstract contract AccountPOCHelper is Test {
 
   function createAccountAndDepositDaiLending(address user, uint balance) public returns (uint accountId) {
     vm.startPrank(user);
-    accountId = account.createAccount(user, IManager(rm));
+    accountId = subAccounts.createAccount(user, IManager(rm));
     vm.stopPrank();
 
     if (balance > 0) {
@@ -180,7 +180,7 @@ abstract contract AccountPOCHelper is Test {
     assetAllowances[1] =
       IAllowances.AssetAllowance({asset: IAsset(usdcAdapter), positive: type(uint).max, negative: type(uint).max});
 
-    account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
+    subAccounts.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
   }
 
@@ -190,12 +190,12 @@ abstract contract AccountPOCHelper is Test {
     assetAllowances[0] =
       IAllowances.AssetAllowance({asset: IAsset(asset), positive: type(uint).max, negative: type(uint).max});
 
-    account.setAssetAllowances(ownerAcc, delegate, assetAllowances);
+    subAccounts.setAssetAllowances(ownerAcc, delegate, assetAllowances);
     vm.stopPrank();
   }
 
   function tradeOptionWithUSDC(uint fromAcc, uint toAcc, uint optionAmount, uint usdcAmount, uint optionSubId) internal {
-    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory optionTransfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(optionAdapter),
@@ -204,7 +204,7 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory premiumTransfer = ISubAccounts.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: IAsset(usdcAdapter),
@@ -213,11 +213,11 @@ abstract contract AccountPOCHelper is Test {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.

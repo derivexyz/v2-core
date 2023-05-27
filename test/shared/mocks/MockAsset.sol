@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 /**
@@ -18,7 +18,7 @@ contract MockAsset is IAsset {
   using DecimalMath for uint;
 
   IERC20 token;
-  IAccounts account;
+  ISubAccounts subAccounts;
   bool immutable allowNegativeBalance;
 
   // default: don't need positive allowance to increase someone's balance
@@ -38,15 +38,15 @@ contract MockAsset is IAsset {
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
 
-  constructor(IERC20 token_, IAccounts account_, bool allowNegativeBalance_) {
+  constructor(IERC20 token_, ISubAccounts account_, bool allowNegativeBalance_) {
     token = token_;
-    account = account_;
+    subAccounts = account_;
     allowNegativeBalance = allowNegativeBalance_;
   }
 
   function deposit(uint recipientAccount, uint subId, uint amount) external virtual {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: subId,
@@ -61,8 +61,8 @@ contract MockAsset is IAsset {
 
   // subid = 0
   function deposit(uint recipientAccount, uint amount) external virtual {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -76,8 +76,8 @@ contract MockAsset is IAsset {
   }
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external virtual {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -91,7 +91,7 @@ contract MockAsset is IAsset {
   }
 
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager _manager,

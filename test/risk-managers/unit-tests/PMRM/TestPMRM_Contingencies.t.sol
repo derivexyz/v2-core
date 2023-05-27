@@ -4,10 +4,10 @@ import "forge-std/Test.sol";
 
 import "src/risk-managers/PMRM.sol";
 import "src/assets/CashAsset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISubAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -35,15 +35,15 @@ contract UNIT_TestPMRM_Contingencies is PMRMTestBase {
 
   function testPMRMScenario_OptionContingency() public {
     uint expiry = block.timestamp + 1000;
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](2);
-    balances[0] = IAccounts.AssetBalance({
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
+    balances[0] = ISubAccounts.AssetBalance({
       asset: IAsset(address(option)),
-      subId: OptionEncoding.toSubId(block.timestamp + 1000, 1500e18, true),
+      subId: OptionEncoding.toSubId(expiry, 1500e18, true),
       balance: -1e18
     });
-    balances[1] = IAccounts.AssetBalance({
+    balances[1] = ISubAccounts.AssetBalance({
       asset: IAsset(address(option)),
-      subId: OptionEncoding.toSubId(block.timestamp + 1000, 1500e18, false),
+      subId: OptionEncoding.toSubId(expiry, 1500e18, false),
       balance: -1e18
     });
 

@@ -9,7 +9,7 @@ import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {ISecurityModule} from "src/interfaces/ISecurityModule.sol";
@@ -26,7 +26,7 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
   using DecimalMath for uint;
 
   ///@dev Cash Asset contract address
-  IAccounts public immutable accounts;
+  ISubAccounts public immutable subAccounts;
 
   ///@dev Cash Asset contract address
   ICashAsset public immutable cashAsset;
@@ -43,13 +43,13 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
   ///@dev Mapping of (address => isWhitelistedModule)
   mapping(address => bool) public isWhitelisted;
 
-  constructor(IAccounts _accounts, ICashAsset _cashAsset, IManager accountManager) {
-    accounts = _accounts;
+  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IManager accountManager) {
+    subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     stableAsset = cashAsset.stableAsset();
     stableDecimals = stableAsset.decimals();
 
-    accountId = IAccounts(_accounts).createAccount(address(this), accountManager);
+    accountId = ISubAccounts(_subAccounts).createAccount(address(this), accountManager);
     stableAsset.safeApprove(address(_cashAsset), type(uint).max);
   }
 
@@ -101,7 +101,7 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
     returns (uint cashAmountPaid)
   {
     // check if the security module has enough fund. Cap the payout at min(balance, cashAmount)
-    uint useableCash = accounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
+    uint useableCash = subAccounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
 
     // payout up to useable cash
     if (useableCash < cashAmountNeeded) {
@@ -110,7 +110,7 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
       cashAmountPaid = cashAmountNeeded;
     }
 
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: accountId,
       toAcc: targetAccount,
       asset: IAsset(address(cashAsset)),
@@ -119,7 +119,7 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
       assetData: ""
     });
 
-    accounts.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
 
     emit SecurityModulePaidOut(accountId, cashAmountNeeded, cashAmountPaid);
   }

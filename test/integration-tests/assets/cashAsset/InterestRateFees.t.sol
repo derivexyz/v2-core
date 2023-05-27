@@ -22,10 +22,10 @@ pragma solidity ^0.8.18;
 //    // alice and bob accounts are already setup
 //    _setupIntegrationTestComplete();
 //
-//    charlieAcc = accounts.createAccount(charlie, pcrm);
+//    charlieAcc =subAccounts.createAccount(charlie, pcrm);
 //
 //    vm.prank(charlie);
-//    accounts.setApprovalForAll(address(this), true);
+//   subAccounts.setApprovalForAll(address(this), true);
 //
 //    // todo: move the SM fee to the IntegrationTestBase?
 //    cash.setSmFee(0.2e18);
@@ -54,8 +54,8 @@ pragma solidity ^0.8.18;
 //
 //  // todo: test fees paid correct for high util on short time frame (suppliers, borrowers, sm)
 //  // function testInterestPaidForHighUtil() public {
-//  //   aliceAcc = accounts.createAccount(alice, pcrm);
-//  //   bobAcc = accounts.createAccount(bob, pcrm);
+//  //   aliceAcc =subAccounts.createAccount(alice, pcrm);
+//  //   bobAcc =subAccounts.createAccount(bob, pcrm);
 //  //   /// check golden rule pre-trade
 //  //   uint totalBorrow_creation = cash.totalBorrow();
 //  //   uint totalSupply_creation = cash.totalSupply();

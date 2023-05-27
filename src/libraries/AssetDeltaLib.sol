@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 /**
  * @title ArrayDeltaLib
@@ -21,7 +21,7 @@ library AssetDeltaLib {
    * @dev will revert if the delta array is already full (100 entries);
    *
    */
-  function addToAssetDeltaArray(IAccounts.AssetDeltaArrayCache memory cache, IAccounts.AssetDelta memory delta)
+  function addToAssetDeltaArray(ISubAccounts.AssetDeltaArrayCache memory cache, ISubAccounts.AssetDelta memory delta)
     internal
     pure
   {
@@ -45,12 +45,12 @@ library AssetDeltaLib {
     revert DL_DeltasTooLong();
   }
 
-  function getDeltasFromArrayCache(IAccounts.AssetDeltaArrayCache memory cache)
+  function getDeltasFromArrayCache(ISubAccounts.AssetDeltaArrayCache memory cache)
     internal
     pure
-    returns (IAccounts.AssetDelta[] memory)
+    returns (ISubAccounts.AssetDelta[] memory)
   {
-    IAccounts.AssetDelta[] memory deltas = new IAccounts.AssetDelta[](cache.used);
+    ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](cache.used);
     for (uint i; i < deltas.length;) {
       deltas[i] = cache.deltas[i];
 
@@ -64,10 +64,10 @@ library AssetDeltaLib {
   function getDeltasFromSingleAdjustment(IAsset asset, uint subId, int delta)
     internal
     pure
-    returns (IAccounts.AssetDelta[] memory)
+    returns (ISubAccounts.AssetDelta[] memory)
   {
-    IAccounts.AssetDelta[] memory deltas = new IAccounts.AssetDelta[](1);
-    deltas[0] = IAccounts.AssetDelta({asset: asset, subId: uint96(subId), delta: delta});
+    ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](1);
+    deltas[0] = ISubAccounts.AssetDelta({asset: asset, subId: uint96(subId), delta: delta});
     return deltas;
   }
 }

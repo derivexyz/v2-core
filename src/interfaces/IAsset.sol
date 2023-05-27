@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IManager} from "src/interfaces/IManager.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 interface IAsset {
   /**
@@ -17,7 +17,7 @@ interface IAsset {
    * @return needAllowance if this adjustment should require allowance from non-ERC721 approved initiator
    */
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint tradeId,
     int preBalance,
     IManager manager,

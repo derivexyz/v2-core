@@ -8,50 +8,57 @@ import "src/periphery/OptionSettlementHelper.sol";
 
 contract TestPMRM_BaseAsset is PMRMTestBase {
   function testCanDepositBase() public {
+    baseAsset.setWhitelistManager(address(pmrm), true);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     vm.expectRevert(IPMRM.PMRM_ExceededBaseOICap.selector);
     baseAsset.deposit(bobAcc, 100e18);
 
-    pmrm.setBaseOICap(100e18);
+    baseAsset.setOICap(pmrm, 100e18);
     baseAsset.deposit(bobAcc, 100e18);
   }
 
   function testCanTransferEvenPastCap() public {
-    pmrm.setBaseOICap(100e18);
+    baseAsset.setWhitelistManager(address(pmrm), true);
+    baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(bobAcc, 100e18);
 
-    pmrm.setBaseOICap(0);
+    baseAsset.setOICap(pmrm, 0);
 
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
-    balances[0] = IAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
     _doBalanceTransfer(bobAcc, aliceAcc, balances);
   }
 
   function testCanWithdrawEvenPastCap() public {
-    pmrm.setBaseOICap(100e18);
+    baseAsset.setWhitelistManager(address(pmrm), true);
+    baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(bobAcc, 100e18);
 
-    pmrm.setBaseOICap(0);
+    baseAsset.setOICap(pmrm, 0);
 
     vm.startPrank(bob);
     baseAsset.withdraw(bobAcc, 10e18, bob);
   }
 
-  function testCannotTransferFromAnotherManager() public {
-    pmrm.setBaseOICap(100e18);
+  function testCannotTransferBaseFromAnotherManager() public {
+    baseAsset.setWhitelistManager(address(pmrm), true);
+
+    baseAsset.setOICap(pmrm, 100e18);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(bobAcc, 100e18);
-    pmrm.setBaseOICap(0);
+
+    // decrease the cap to 0
+    baseAsset.setOICap(pmrm, 0);
 
     // other PMRM
     PMRM newManager = new PMRMPublic(
-      accounts,
+      subAccounts,
       cash,
       option,
       mockPerp,
@@ -67,20 +74,22 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
         settlementFeed: ISettlementFeed(feed)
       })
     );
+    baseAsset.setWhitelistManager(address(newManager), true);
     // create new account for that manager
-    uint newAcc = accounts.createAccount(address(this), IManager(address(newManager)));
-    newManager.setBaseOICap(type(uint).max);
+    uint newAcc = subAccounts.createAccount(address(this), IManager(address(newManager)));
+    baseAsset.setOICap(newManager, type(uint).max);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(newAcc, 100e18);
 
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
-    balances[0] = IAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({asset: baseAsset, balance: 20e18, subId: 0});
 
     // bob can transfer out
     _doBalanceTransfer(bobAcc, newAcc, balances);
 
     // bob cannot transfer back in
+    vm.expectRevert(IPMRM.PMRM_ExceededBaseOICap.selector);
     _doBalanceTransfer(newAcc, bobAcc, balances);
   }
 }

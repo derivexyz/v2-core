@@ -10,7 +10,7 @@ import "../mocks/MockInterestRateModel.sol";
 
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/assets/InterestRateModel.sol";
-import "../../../../src/Accounts.sol";
+import "../../../../src/SubAccounts.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -21,7 +21,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
-  Accounts account;
+  SubAccounts subAccounts;
   IInterestRateModel rateModel;
 
   uint accountId;
@@ -29,15 +29,15 @@ contract UNIT_CashAssetAccrueInterest is Test {
   uint smAccount;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(account));
+    manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
-    smAccount = account.createAccount(address(this), manager);
+    smAccount = subAccounts.createAccount(address(this), manager);
 
     rateModel = new MockInterestRateModel(0.5 * 1e18);
-    cashAsset = new CashAsset(account, usdc, rateModel, smAccount, address(0));
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel, smAccount, address(0));
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
 
@@ -46,7 +46,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(cashAsset), type(uint).max);
 
-    accountId = account.createAccount(address(this), manager);
+    accountId = subAccounts.createAccount(address(this), manager);
 
     cashAsset.deposit(accountId, depositedAmount);
     vm.warp(block.timestamp + 1 weeks);
@@ -60,7 +60,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
     // Make sure when setting new rateModel indexes are updated
     uint amountToBorrow = 2000e18;
-    uint newAccount = account.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
@@ -114,7 +114,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
   function testSimpleAccrueInterest() public {
     uint amountToBorrow = 2000e18;
-    uint newAccount = account.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
@@ -141,7 +141,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
   function testSmFeeCutFromInterest() public {
     uint amountToBorrow = 2000e18;
-    uint newAccount = account.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
 
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
@@ -167,21 +167,21 @@ contract UNIT_CashAssetAccrueInterest is Test {
     cashAsset.accrueInterest();
     assertGt(cashAsset.accruedSmFees(), 0);
 
-    assertEq(account.getBalance(smAccount, cashAsset, 0), 0);
+    assertEq(subAccounts.getBalance(smAccount, cashAsset, 0), 0);
     cashAsset.transferSmFees();
-    assertGt(account.getBalance(smAccount, cashAsset, 0), 0);
+    assertGt(subAccounts.getBalance(smAccount, cashAsset, 0), 0);
   }
 
   function testAccrueInterestDebtBalance() public {
     uint amountToBorrow = 2000e18;
-    uint debtAccount = account.createAccount(address(this), manager);
+    uint debtAccount = subAccounts.createAccount(address(this), manager);
     assertEq(cashAsset.totalBorrow(), 0);
 
     // Increase total borrow amount
     cashAsset.withdraw(debtAccount, amountToBorrow, address(this));
 
     // Should be equal because no interest accrued
-    int bal = account.getBalance(debtAccount, cashAsset, 0);
+    int bal = subAccounts.getBalance(debtAccount, cashAsset, 0);
     assertEq(bal, -int(amountToBorrow));
 
     // Fast forward time to accrue interest
@@ -189,7 +189,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
     cashAsset.withdraw(debtAccount, amountToBorrow, address(this));
 
     // Borrow amount should be > because bal now includes accrued interest
-    bal = account.getBalance(debtAccount, cashAsset, 0);
+    bal = subAccounts.getBalance(debtAccount, cashAsset, 0);
     assertGt(-int(amountToBorrow) * 2, bal);
   }
 
@@ -197,8 +197,8 @@ contract UNIT_CashAssetAccrueInterest is Test {
     uint amountToBorrow = 2000e18;
     usdc.mint(address(this), amountToBorrow * 2);
 
-    uint posAccount = account.createAccount(address(this), manager);
-    uint debtAccount = account.createAccount(address(this), manager);
+    uint posAccount = subAccounts.createAccount(address(this), manager);
+    uint debtAccount = subAccounts.createAccount(address(this), manager);
 
     // Create positive balance for new account
     cashAsset.deposit(posAccount, amountToBorrow);
@@ -206,22 +206,22 @@ contract UNIT_CashAssetAccrueInterest is Test {
     // Create debt for new account to accrue interest
     cashAsset.withdraw(debtAccount, amountToBorrow, address(this));
 
-    int posBal = account.getBalance(posAccount, cashAsset, 0);
+    int posBal = subAccounts.getBalance(posAccount, cashAsset, 0);
     assertEq(amountToBorrow, uint(posBal));
 
     vm.warp(block.timestamp + 30 days);
     cashAsset.deposit(posAccount, amountToBorrow);
 
     // Positive bal > because it has accrued interest
-    posBal = account.getBalance(posAccount, cashAsset, 0);
+    posBal = subAccounts.getBalance(posAccount, cashAsset, 0);
     assertGt(posBal, int(amountToBorrow * 2));
   }
 
   function testAccrueInterestWithMultipleAccounts() public {
     uint amountToBorrow1 = 2000e18;
     uint amountToBorrow2 = 5000e18;
-    uint account1 = account.createAccount(address(this), manager);
-    uint account2 = account.createAccount(address(this), manager);
+    uint account1 = subAccounts.createAccount(address(this), manager);
+    uint account2 = subAccounts.createAccount(address(this), manager);
     assertEq(cashAsset.totalBorrow(), 0);
 
     cashAsset.withdraw(account1, amountToBorrow1, address(this));
@@ -251,7 +251,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
   function testPositiveSettledCashIncreasesCashBalance() public {
     uint amountToBorrow = 2000e18;
-    uint account1 = account.createAccount(address(this), manager);
+    uint account1 = subAccounts.createAccount(address(this), manager);
 
     uint cashExchangeRate = cashAsset.getCashToStableExchangeRate();
     cashAsset.withdraw(account1, amountToBorrow, address(this));
@@ -269,7 +269,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
   function testNegativeSettledCashDecreasesCashBalance() public {
     uint amountToBorrow = 2000e18;
-    uint account1 = account.createAccount(address(this), manager);
+    uint account1 = subAccounts.createAccount(address(this), manager);
 
     uint cashExchangeRate = cashAsset.getCashToStableExchangeRate();
     cashAsset.withdraw(account1, amountToBorrow, address(this));
@@ -291,7 +291,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
   // todo add to integration test with real rate model
   // function testPositiveSettledCashIncreaseInterest() public {
   //   uint amountToBorrow = 2000e18;
-  //   uint newAccount = account.createAccount(address(this), manager);
+  //   uint newAccount = subAccounts.createAccount(address(this), manager);
   //   uint totalBorrow = cashAsset.totalBorrow();
   //   assertEq(totalBorrow, 0);
 
@@ -318,7 +318,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
   // todo add to integration test with real rate model
   function testNegativeSettledCashDecreaseInterest() public {
     uint amountToBorrow = 2000e18;
-    uint newAccount = account.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
