@@ -24,13 +24,13 @@ pragma solidity ^0.8.18;
 //  function _openStrategy(uint longAcc, uint shortAcc, Position[] memory positions) internal {
 //    // set up long and short accounts to hold max leveraged positions against one another
 //
-//    _depositCash(address(accounts.ownerOf(longAcc)), longAcc, DEFAULT_DEPOSIT);
-//    _depositCash(address(accounts.ownerOf(shortAcc)), shortAcc, DEFAULT_DEPOSIT);
+//    _depositCash(address(subAccounts.ownerOf(longAcc)), longAcc, DEFAULT_DEPOSIT);
+//    _depositCash(address(subAccounts.ownerOf(shortAcc)), shortAcc, DEFAULT_DEPOSIT);
 //
-//    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](positions.length);
+//    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](positions.length);
 //
 //    for (uint i = 0; i < positions.length; i++) {
-//      transferBatch[i] = IAccounts.AssetTransfer({
+//      transferBatch[i] = ISubAccounts.AssetTransfer({
 //        fromAcc: shortAcc,
 //        toAcc: longAcc,
 //        asset: option,
@@ -39,15 +39,15 @@ pragma solidity ^0.8.18;
 //        assetData: bytes32(0)
 //      });
 //    }
-//    accounts.submitTransfers(transferBatch, "");
+//   subAccounts.submitTransfers(transferBatch, "");
 //
 //    cash.transferSmFees();
 //
 //    int longMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(longAcc));
 //    int shortMaxWithdraw = pcrm.getInitialMargin(pcrm.getPortfolio(shortAcc));
 //
-//    _withdrawCash(address(accounts.ownerOf(longAcc)), longAcc, uint(longMaxWithdraw));
-//    _withdrawCash(address(accounts.ownerOf(shortAcc)), shortAcc, uint(shortMaxWithdraw));
+//    _withdrawCash(address(subAccounts.ownerOf(longAcc)), longAcc, uint(longMaxWithdraw));
+//    _withdrawCash(address(subAccounts.ownerOf(shortAcc)), shortAcc, uint(shortMaxWithdraw));
 //  }
 //
 //  /**

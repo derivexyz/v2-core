@@ -14,7 +14,7 @@ import "../../shared/mocks/MockAsset.sol";
 
 contract AccountGasScript is Script {
   uint ownAcc;
-  Accounts account;
+  SubAccounts subAccounts;
   MockERC20 usdc;
   MockERC20 dai;
   MockAsset usdcAdapter;
@@ -62,7 +62,7 @@ contract AccountGasScript is Script {
   function _gasSingleTransferUSDC() public {
     // setup: not counting gas
     uint amount = 50e18;
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: ownAcc,
       toAcc: 2,
       asset: IAsset(usdcAdapter),
@@ -73,7 +73,7 @@ contract AccountGasScript is Script {
 
     // estimate tx cost
     uint initGas = gasleft();
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
     uint endGas = gasleft();
 
     console.log("gas:SingleTransferUSDC:", initGas - endGas);
@@ -82,11 +82,11 @@ contract AccountGasScript is Script {
   function _gasBulkTransferUSDC(uint counts) public {
     // setup: not counting gas
     uint amount = 50e18;
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](counts);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](counts);
 
     // in each round we use fresh from and to. So we test the worst cases when none of the storage is warmed
     for (uint i = 0; i < counts;) {
-      transferBatch[i] = IAccounts.AssetTransfer({
+      transferBatch[i] = ISubAccounts.AssetTransfer({
         fromAcc: 2 * i + 1,
         toAcc: 2 * i + 2,
         asset: IAsset(usdcAdapter),
@@ -101,7 +101,7 @@ contract AccountGasScript is Script {
 
     // estimate tx cost
     uint initGas = gasleft();
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
     console.log("gas:BulkTransferUSDC(", counts, "):", initGas - endGas);
@@ -110,11 +110,11 @@ contract AccountGasScript is Script {
   function _gasSingleTradeUSDCWithOption() public {
     uint amount = 50e18;
     uint usdcAmount = 300e18;
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
 
     uint subId = block.timestamp;
 
-    transferBatch[0] = IAccounts.AssetTransfer({ // short option and give it to another person
+    transferBatch[0] = ISubAccounts.AssetTransfer({ // short option and give it to another person
       fromAcc: ownAcc,
       toAcc: 2,
       asset: IAsset(optionAdapter),
@@ -122,7 +122,7 @@ contract AccountGasScript is Script {
       amount: int(amount),
       assetData: bytes32(0)
     });
-    transferBatch[1] = IAccounts.AssetTransfer({ // premium
+    transferBatch[1] = ISubAccounts.AssetTransfer({ // premium
       fromAcc: 2,
       toAcc: ownAcc,
       asset: IAsset(usdcAdapter),
@@ -133,7 +133,7 @@ contract AccountGasScript is Script {
 
     // estimate tx cost
     uint initGas = gasleft();
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
     console.log("gas:SingleTradeUSDCWithOption:", initGas - endGas);
@@ -144,7 +144,7 @@ contract AccountGasScript is Script {
 
     // setup: not counting gas
     uint amount = 50e18;
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](counts);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](counts);
 
     uint fromAcc = 1;
     uint toAcc = 2;
@@ -152,7 +152,7 @@ contract AccountGasScript is Script {
     for (uint i = 0; i < counts;) {
       uint subId = i + 100;
 
-      transferBatch[i] = IAccounts.AssetTransfer({ // short option and give it to another person
+      transferBatch[i] = ISubAccounts.AssetTransfer({ // short option and give it to another person
         fromAcc: fromAcc,
         toAcc: toAcc, // account 1 is the EOA. start from 2
         asset: IAsset(optionAdapter),
@@ -167,24 +167,24 @@ contract AccountGasScript is Script {
 
     // estimate tx cost
     uint initGas = gasleft();
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
     console.log("gas:TradeMultipleOptions(", counts, "):", initGas - endGas);
   }
 
   function _gasBulkSplitPosition(uint counts) public {
-    IAccounts.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(ownAcc);
 
     if (counts > balances.length + 1) {
       revert("don't have this many asset to settle");
     }
 
     // select bunch of assets to settle
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](counts);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](counts);
 
     for (uint i = 0; i < counts;) {
-      transferBatch[i] = IAccounts.AssetTransfer({
+      transferBatch[i] = ISubAccounts.AssetTransfer({
         fromAcc: ownAcc,
         toAcc: i + 2, // account 1 is the EOA. start from 2
         asset: IAsset(optionAdapter),
@@ -198,21 +198,21 @@ contract AccountGasScript is Script {
     }
 
     uint initGas = gasleft();
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
     uint endGas = gasleft();
 
     console.log("gas:BulkSplitPosition(", counts, "):", initGas - endGas);
   }
 
   function _gasClearAccountBalances(uint counts) public {
-    IAccounts.AssetBalance[] memory balances = account.getAccountBalances(ownAcc);
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(ownAcc);
 
     if (counts > balances.length + 1) revert("don't have this many asset to settle");
 
     // select bunch of assets to settle
-    IAccounts.HeldAsset[] memory assets = new IAccounts.HeldAsset[](counts);
+    ISubAccounts.HeldAsset[] memory assets = new ISubAccounts.HeldAsset[](counts);
     for (uint i; i < counts; i++) {
-      assets[i] = IAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(balances[i + 1].subId)});
+      assets[i] = ISubAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(balances[i + 1].subId)});
     }
     uint initGas = gasleft();
     manager.clearBalances(ownAcc, assets);
@@ -220,38 +220,38 @@ contract AccountGasScript is Script {
 
     console.log("gas:ClearAccountBalances(", counts, "):", initGas - endGas);
 
-    // IAccounts.AssetBalance[] memory balancesAfter = account.getAccountBalances(ownAcc);
+    // ISubAccounts.AssetBalance[] memory balancesAfter = subAccounts.getAccountBalances(ownAcc);
     // console.log("\t - asset left:", balancesAfter.length);
   }
 
   /// @dev deploy mock system
   function deployMockSystem() public {
     /* Base Layer */
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");
 
     // usdc asset: deposit with usdc, cannot be negative
-    usdcAdapter = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
+    usdcAdapter = new MockAsset(IERC20(usdc), subAccounts, false);
 
     // optionAsset: not allow deposit, can be negative
-    optionAdapter = new MockAsset(IERC20(address(0)), IAccounts(address(account)), true);
+    optionAdapter = new MockAsset(IERC20(address(0)), subAccounts, true);
 
     /* Risk Manager */
-    manager = new DumbManager(address(account));
+    manager = new DumbManager(address(subAccounts));
   }
 
   function setupAccounts(uint amount) public {
     // create 1 account for EOA
-    ownAcc = account.createAccount(msg.sender, IManager(address(manager)));
+    ownAcc = subAccounts.createAccount(msg.sender, IManager(address(manager)));
     usdc.mint(msg.sender, 1000_000_000e18);
     usdc.approve(address(usdcAdapter), type(uint).max);
     usdcAdapter.deposit(ownAcc, 0, 100_000_000e18);
     // create bunch of accounts and send to everyone
     for (uint160 i = 1; i <= amount; i++) {
       address owner = address(i);
-      uint acc = account.createAccountWithApproval(owner, msg.sender, IManager(address(manager)));
+      uint acc = subAccounts.createAccountWithApproval(owner, msg.sender, IManager(address(manager)));
 
       // deposit usdc for each account
       usdcAdapter.deposit(acc, 0, 1_000e18);

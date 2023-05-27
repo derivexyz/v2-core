@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "src/interfaces/IManagerWhitelist.sol";
 
 /**
@@ -14,7 +14,7 @@ import "src/interfaces/IManagerWhitelist.sol";
 
 contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
   ///@dev Account contract address
-  IAccounts public immutable accounts;
+  ISubAccounts public immutable subAccounts;
 
   ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
@@ -23,8 +23,8 @@ contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
   //   Constructor   //
   /////////////////////
 
-  constructor(IAccounts _accounts) {
-    accounts = _accounts;
+  constructor(ISubAccounts _subAccounts) {
+    subAccounts = _subAccounts;
   }
 
   //////////////////////////////
@@ -59,7 +59,7 @@ contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
   ///////////////////
 
   modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) revert MW_OnlyAccounts();
+    if (msg.sender != address(subAccounts)) revert MW_OnlyAccounts();
     _;
   }
 }

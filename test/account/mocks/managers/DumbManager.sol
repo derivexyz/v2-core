@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 import "../../../shared/mocks/MockManager.sol";
 
@@ -12,12 +12,12 @@ contract DumbManager is MockManager {
   constructor(address account_) MockManager(account_) {}
 
   /// @dev used to estimate gas cost by setting balances to 0
-  function clearBalances(uint accountId, IAccounts.HeldAsset[] memory assetsToSettle) external {
+  function clearBalances(uint accountId, ISubAccounts.HeldAsset[] memory assetsToSettle) external {
     uint assetLen = assetsToSettle.length;
     for (uint i; i < assetLen; i++) {
-      int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
-      account.managerAdjustment(
-        IAccounts.AssetAdjustment({
+      int balance = subAccounts.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
+      subAccounts.managerAdjustment(
+        ISubAccounts.AssetAdjustment({
           acc: accountId,
           asset: assetsToSettle[i].asset,
           subId: assetsToSettle[i].subId,
@@ -32,13 +32,13 @@ contract DumbManager is MockManager {
     uint accountId,
     uint tradeId,
     address sender,
-    IAccounts.AssetDelta[] memory deltas,
+    ISubAccounts.AssetDelta[] memory deltas,
     bytes memory data
   ) public override {
     super.handleAdjustment(accountId, tradeId, sender, deltas, data);
 
     // read the value, so we calculate the SLOADs
-    IAccounts(account).getAccountBalances(accountId);
+    subAccounts.getAccountBalances(accountId);
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.

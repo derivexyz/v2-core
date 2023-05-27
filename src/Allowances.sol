@@ -5,7 +5,7 @@ import "lyra-utils/math/IntLib.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IAllowances} from "src/interfaces/IAllowances.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 /**
  * @title Allowance
@@ -88,7 +88,7 @@ contract Allowances is IAllowances {
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param caller address of msg.sender initiating change
    */
-  function _spendAllowance(IAccounts.AssetAdjustment memory adjustment, address owner, address caller) internal {
+  function _spendAllowance(ISubAccounts.AssetAdjustment memory adjustment, address owner, address caller) internal {
     /* Early return if amount == 0 */
     if (adjustment.amount == 0) {
       return;

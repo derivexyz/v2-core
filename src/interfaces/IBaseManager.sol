@@ -29,7 +29,18 @@ interface IBaseManager is IManager {
 
   function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external;
 
-  // bad action
+  ////////////////
+  //   Events   //
+  ////////////////
+
+  /// @dev Emitted when OI fee rate is set
+  event OIFeeRateSet(uint oiFeeRate);
+
+  event PerpSettled(uint indexed accountId, int netCash);
+
+  event FeeBypassedCallerSet(address caller, bool bypassed);
+
+  /// @dev bad action
   error BN_InvalidAction();
   /// @dev User is not allowlisted, so trade is blocked
   error BM_CannotTrade();
@@ -44,4 +55,6 @@ interface IBaseManager is IManager {
   error BM_OnlyLiquidationModule();
 
   error BM_OnlyAccounts();
+
+  error BM_AssetCapExceeded();
 }

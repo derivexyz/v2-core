@@ -2,11 +2,11 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/BasicManager.sol";
+import "src/risk-managers/StandardManager.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
@@ -24,9 +24,9 @@ import "test/auction/mocks/MockCashAsset.sol";
 /**
  * Focusing on the margin rules for options
  */
-contract UNIT_TestBasicManager_MultiAsset is Test {
-  Accounts account;
-  BasicManager manager;
+contract UNIT_TestStandardManager_MultiAsset is Test {
+  SubAccounts subAccounts;
+  StandardManager manager;
   MockCash cash;
   MockERC20 usdc;
   MockERC20 weth;
@@ -69,58 +69,58 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   }
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockCash(usdc, account);
+    cash = new MockCash(usdc, subAccounts);
 
     stableFeed = new MockFeeds();
 
     // Setup asset for ETH Markets
-    ethPerp = new MockPerp(account);
-    ethOption = new MockOption(account);
+    ethPerp = new MockPerp(subAccounts);
+    ethOption = new MockOption(subAccounts);
     ethFeed = new MockFeeds();
 
     // setup asset for BTC Markets
-    btcPerp = new MockPerp(account);
-    btcOption = new MockOption(account);
+    btcPerp = new MockPerp(subAccounts);
+    btcOption = new MockOption(subAccounts);
 
     // setup mock base asset (only change mark to market)
     weth = new MockERC20("weth", "weth");
-    wethAsset = new MockAsset(weth, account, false); // false as it cannot go negative
+    wethAsset = new MockAsset(weth, subAccounts, false); // false as it cannot go negative
     wbtc = new MockERC20("wbtc", "wbtc");
-    wbtcAsset = new MockAsset(wbtc, account, false); // false as it cannot go negative
+    wbtcAsset = new MockAsset(wbtc, subAccounts, false); // false as it cannot go negative
 
     btcFeed = new MockFeeds();
 
     ethPricing = new MockOptionPricing();
     btcPricing = new MockOptionPricing();
 
-    manager = new BasicManager(
-      account,
+    manager = new StandardManager(
+      subAccounts,
       ICashAsset(address(cash))
     );
 
     manager.setPricingModule(ethMarketId, ethPricing);
     manager.setPricingModule(btcMarketId, btcPricing);
 
-    manager.whitelistAsset(ethPerp, ethMarketId, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(ethOption, ethMarketId, IBasicManager.AssetType.Option);
-    manager.whitelistAsset(wethAsset, ethMarketId, IBasicManager.AssetType.Base);
+    manager.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);
+    manager.whitelistAsset(wethAsset, ethMarketId, IStandardManager.AssetType.Base);
     manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
 
-    manager.whitelistAsset(btcPerp, btcMarketId, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(btcOption, btcMarketId, IBasicManager.AssetType.Option);
-    manager.whitelistAsset(wbtcAsset, btcMarketId, IBasicManager.AssetType.Base);
+    manager.whitelistAsset(btcPerp, btcMarketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(btcOption, btcMarketId, IStandardManager.AssetType.Option);
+    manager.whitelistAsset(wbtcAsset, btcMarketId, IStandardManager.AssetType.Base);
     manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
-    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
 
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
 
     expiry1 = block.timestamp + 7 days;
     expiry2 = block.timestamp + 14 days;
@@ -144,8 +144,8 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
 
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
+    IStandardManager.OptionMarginParameters memory params =
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
     manager.setOptionMarginParameters(btcMarketId, params);
@@ -281,7 +281,7 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
   function testCanTradeMultiMarketsNotInOrder() public {
     // Setup doge market
-    MockOption dogeOption = new MockOption(account);
+    MockOption dogeOption = new MockOption(subAccounts);
     MockFeeds dogeFeed = new MockFeeds();
     MockOptionPricing pricing = new MockOptionPricing();
 
@@ -289,13 +289,13 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
 
-    manager.whitelistAsset(dogeOption, 5, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(dogeOption, 5, IStandardManager.AssetType.Option);
     manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
 
     manager.setPricingModule(5, pricing);
 
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
+    IStandardManager.OptionMarginParameters memory params =
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
     manager.setOptionMarginParameters(5, params);
 
     // summarize the initial margin for 2 options
@@ -356,10 +356,16 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
 
     cash.deposit(aliceAcc, uint(amount));
 
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: amount, assetData: ""});
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: cash,
+      subId: 0,
+      amount: amount,
+      assetData: ""
+    });
 
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 
   /////////////
@@ -367,9 +373,9 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
   /////////////
 
   function _submitMultipleTrades(uint from, uint to, Trade[] memory trades, bytes memory managerData) internal {
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](trades.length);
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](trades.length);
     for (uint i = 0; i < trades.length; i++) {
-      transfers[i] = IAccounts.AssetTransfer({
+      transfers[i] = ISubAccounts.AssetTransfer({
         fromAcc: from,
         toAcc: to,
         asset: trades[i].asset,
@@ -378,6 +384,6 @@ contract UNIT_TestBasicManager_MultiAsset is Test {
         assetData: ""
       });
     }
-    account.submitTransfers(transfers, managerData);
+    subAccounts.submitTransfers(transfers, managerData);
   }
 }

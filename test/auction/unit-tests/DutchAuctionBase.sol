@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockAsset.sol";
 import "test/shared/mocks/MockSM.sol";
@@ -22,7 +22,7 @@ contract DutchAuctionBase is Test {
   uint bobAcc;
   uint charlieAcc;
 
-  Accounts account;
+  SubAccounts subAccounts;
   MockSM sm;
   MockERC20 usdc;
   MockCash usdcAsset;
@@ -34,7 +34,7 @@ contract DutchAuctionBase is Test {
     _deployMockSystem();
     _setupAccounts();
 
-    dutchAuction = dutchAuction = new DutchAuction(account, sm, usdcAsset);
+    dutchAuction = dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
 
     dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
     dutchAuction.setInsolventAuctionParams(_getDefaultInsolventParams());
@@ -45,22 +45,22 @@ contract DutchAuctionBase is Test {
   /// @dev deploy mock system
   function _deployMockSystem() public {
     /* Base Layer */
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* Wrappers */
     usdc = new MockERC20("usdc", "USDC");
 
     // usdc asset
-    usdcAsset = new MockCash(IERC20(usdc), account);
+    usdcAsset = new MockCash(usdc, subAccounts);
 
     // optionAsset: not allow deposit, can be negative
-    optionAsset = new MockAsset(IERC20(address(0)), account, true);
+    optionAsset = new MockAsset(IERC20(address(0)), subAccounts, true);
 
     /* Risk Manager */
-    manager = new MockLiquidatableManager(address(account));
+    manager = new MockLiquidatableManager(address(subAccounts));
 
     // mock cash
-    sm = new MockSM(account, usdcAsset);
+    sm = new MockSM(subAccounts, usdcAsset);
     sm.createAccountForSM(manager);
   }
 
@@ -86,9 +86,9 @@ contract DutchAuctionBase is Test {
     charlie = address(0xcc);
     usdc.approve(address(usdcAsset), type(uint).max);
 
-    aliceAcc = account.createAccount(alice, manager);
-    bobAcc = account.createAccount(bob, manager);
-    charlieAcc = account.createAccount(charlie, manager);
+    aliceAcc = subAccounts.createAccount(alice, manager);
+    bobAcc = subAccounts.createAccount(bob, manager);
+    charlieAcc = subAccounts.createAccount(charlie, manager);
   }
 
   //////////////////////////
