@@ -174,7 +174,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /**
    * @dev force a cash only account to leave the system if it's not on the allowlist
-   * @param accountId accountId
+   * @param accountId Id of account to force withdraw
    */
   function forceWithdrawAccount(uint accountId) external {
     if (_allowListed(accountId)) {
