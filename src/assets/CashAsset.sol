@@ -476,10 +476,10 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
     uint newTotalSupply =
       (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
-    uint nweTotalBorrow =
+    uint newTotalBorrow =
       (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
     totalSupply = newTotalSupply.toUint128();
-    totalBorrow = nweTotalBorrow.toUint128();
+    totalBorrow = newTotalBorrow.toUint128();
   }
 
   ///////////////////

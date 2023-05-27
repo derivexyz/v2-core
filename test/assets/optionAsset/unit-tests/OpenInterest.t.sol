@@ -204,13 +204,6 @@ contract UNIT_OptionAssetOITest is Test {
     assertEq(totalPos2After, totalPos2Before + uint(tradeAmount));
   }
 
-  function testCannotChangeManagerIfExceedCap() public {
-    option.setTotalPositionCap(manager2, 1);
-
-    vm.expectRevert(IOITracking.OT_ManagerChangeExceedCap.selector);
-    account.changeManager(accountNeg, manager2, "");
-  }
-
   /// @dev util function to transfer
   function _transfer(uint from, uint to, int amount) internal {
     IAccounts.AssetTransfer memory transfer =

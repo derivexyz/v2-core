@@ -68,13 +68,6 @@ contract UNIT_PerpOIAndCap is Test {
     assertEq(perp.totalPosition(manager2), 100e18);
   }
 
-  function testCannotChangeManagerIfExceedCap() public {
-    _transferPerp(aliceAcc, bobAcc, 100e18);
-    perp.setTotalPositionCap(manager2, 1e18);
-    vm.expectRevert(IOITracking.OT_ManagerChangeExceedCap.selector);
-    account.changeManager(aliceAcc, manager2, "");
-  }
-
   function testChangeManagerWillMigrateTotalPosition() public {
     // alice opens short, bob opens long
     _transferPerp(aliceAcc, bobAcc, 100e18);

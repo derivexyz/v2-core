@@ -30,11 +30,4 @@ interface IOITracking {
 
   /// @dev Emitted when OI cap is set
   event TotalPositionCapSet(address manager, uint oiCap);
-
-  ////////////////
-  //   Errors   //
-  ////////////////
-
-  /// @dev total position cap reached while changing manager
-  error OT_ManagerChangeExceedCap();
 }

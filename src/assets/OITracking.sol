@@ -49,8 +49,7 @@ contract OITracking is Ownable2Step, IOITracking {
     totalPosition[oldManager] -= pos;
     totalPosition[newManager] += pos;
 
-    uint cap = totalPositionCap[newManager];
-    if (cap != 0 && totalPosition[newManager] > cap) revert OT_ManagerChangeExceedCap();
+    // will not revert even if cap is exceeded, should be checked by manager in manager hook
   }
 
   function _takeOISnapshotPreTrade(uint subId, uint tradeId) internal {
