@@ -103,6 +103,11 @@ contract UNIT_CashAssetWithdraw is Test {
     assertEq(usdc.balanceOf(address(alice)), depositedAmount);
   }
 
+  function testCannotForceWithdrawFromNonManager() public {
+    vm.expectRevert(ICashAsset.CA_ForceWithdrawNotAuthorized.selector);
+    cashAsset.forceWithdraw(accountId);
+  }
+
   function testCannotForceWithdrawNegativeBalance() public {
     address alice = address(0xaa);
     uint acc2 = subAccounts.createAccount(alice, manager);
