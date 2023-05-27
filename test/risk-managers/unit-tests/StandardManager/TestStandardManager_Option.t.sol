@@ -7,7 +7,7 @@ import "src/periphery/OptionSettlementHelper.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
@@ -25,7 +25,7 @@ import "test/auction/mocks/MockCashAsset.sol";
  * Focusing on the margin rules for options
  */
 contract UNIT_TestStandardManager_Option is Test {
-  Accounts account;
+  SubAccounts subAccounts;
   StandardManager manager;
   MockCash cash;
   MockERC20 usdc;
@@ -48,15 +48,15 @@ contract UNIT_TestStandardManager_Option is Test {
   uint feeRecipient;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockCash(IERC20(usdc), account);
+    cash = new MockCash(IERC20(usdc), subAccounts);
 
-    perp = new MockPerp(account);
+    perp = new MockPerp(subAccounts);
 
-    option = new MockOption(account);
+    option = new MockOption(subAccounts);
 
     feed = new MockFeeds();
 
@@ -65,7 +65,7 @@ contract UNIT_TestStandardManager_Option is Test {
     pricing = new MockOptionPricing();
 
     manager = new StandardManager(
-      account,
+      subAccounts,
       ICashAsset(address(cash))
     );
 
@@ -76,10 +76,10 @@ contract UNIT_TestStandardManager_Option is Test {
 
     manager.setOraclesForMarket(ethMarketId, feed, feed, feed, feed, feed);
 
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
 
-    feeRecipient = account.createAccount(address(this), manager);
+    feeRecipient = subAccounts.createAccount(address(this), manager);
 
     // set a future price that will be used for 90 day options
     expiry = block.timestamp + 91 days;
@@ -378,8 +378,8 @@ contract UNIT_TestStandardManager_Option is Test {
     // the margin needed is the sum of 2 positions
     cash.deposit(aliceAcc, uint(-(callMargin + putMargin)));
 
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
-    transfers[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](2);
+    transfers[0] = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -387,7 +387,7 @@ contract UNIT_TestStandardManager_Option is Test {
       amount: amount,
       assetData: ""
     });
-    transfers[1] = IAccounts.AssetTransfer({
+    transfers[1] = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -395,7 +395,7 @@ contract UNIT_TestStandardManager_Option is Test {
       amount: amount,
       assetData: ""
     });
-    account.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 
   function testAllowRiskReducingTrade() public {
@@ -457,7 +457,7 @@ contract UNIT_TestStandardManager_Option is Test {
     cash.deposit(aliceAcc, 2000e18);
     _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
-    int cashBefore = account.getBalance(aliceAcc, cash, 0);
+    int cashBefore = subAccounts.getBalance(aliceAcc, cash, 0);
 
     vm.warp(expiry + 1);
     uint subId = OptionEncoding.toSubId(expiry, strike, true);
@@ -466,12 +466,12 @@ contract UNIT_TestStandardManager_Option is Test {
 
     manager.settleOptions(option, aliceAcc);
 
-    int cashAfter = account.getBalance(aliceAcc, cash, 0);
+    int cashAfter = subAccounts.getBalance(aliceAcc, cash, 0);
     assertEq(cashBefore - cashAfter, 500e18);
   }
 
   function testCannotSettleWeirdAsset() public {
-    MockOption badAsset = new MockOption(account);
+    MockOption badAsset = new MockOption(subAccounts);
 
     vm.warp(expiry + 1);
     feed.setSpot(2100e19, 1e18);
@@ -484,7 +484,7 @@ contract UNIT_TestStandardManager_Option is Test {
     cash.deposit(aliceAcc, 2000e18);
     _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
-    int cashBefore = account.getBalance(aliceAcc, cash, 0);
+    int cashBefore = subAccounts.getBalance(aliceAcc, cash, 0);
 
     vm.warp(expiry + 1);
     uint subId = OptionEncoding.toSubId(expiry, strike, true);
@@ -497,9 +497,9 @@ contract UNIT_TestStandardManager_Option is Test {
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
-    account.submitTransfer(transfer, managerData);
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    subAccounts.submitTransfer(transfer, managerData);
 
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashBefore - cashAfter, 500e18);
@@ -510,7 +510,7 @@ contract UNIT_TestStandardManager_Option is Test {
   /////////////
 
   function _transferOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -518,7 +518,7 @@ contract UNIT_TestStandardManager_Option is Test {
       amount: amount,
       assetData: ""
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 
   function _tradeOption(
@@ -530,8 +530,8 @@ contract UNIT_TestStandardManager_Option is Test {
     uint strike,
     bool isCall
   ) internal {
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
-    transfers[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](2);
+    transfers[0] = ISubAccounts.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
       asset: option,
@@ -539,7 +539,7 @@ contract UNIT_TestStandardManager_Option is Test {
       amount: optionAmount,
       assetData: ""
     });
-    transfers[1] = IAccounts.AssetTransfer({
+    transfers[1] = ISubAccounts.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
       asset: cash,
@@ -547,7 +547,7 @@ contract UNIT_TestStandardManager_Option is Test {
       amount: premium,
       assetData: ""
     });
-    account.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 
   function _tradeSpread(
@@ -560,8 +560,8 @@ contract UNIT_TestStandardManager_Option is Test {
     uint strike2,
     bool isCall
   ) internal {
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
-    transfers[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](2);
+    transfers[0] = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -569,7 +569,7 @@ contract UNIT_TestStandardManager_Option is Test {
       amount: shortAmount,
       assetData: ""
     });
-    transfers[1] = IAccounts.AssetTransfer({
+    transfers[1] = ISubAccounts.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: option,
@@ -577,10 +577,10 @@ contract UNIT_TestStandardManager_Option is Test {
       amount: longAmount,
       assetData: ""
     });
-    account.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 
   function _getCashBalance(uint acc) public view returns (int) {
-    return account.getBalance(acc, cash, 0);
+    return subAccounts.getBalance(acc, cash, 0);
   }
 }

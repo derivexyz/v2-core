@@ -1,11 +1,11 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const Accounts = await ethers.getContractFactory("Accounts");
-  const account = await Accounts.deploy("Lyra Protocol Accounts", "LPA");
+  const SubAccounts = await ethers.getContractFactory("SubAccounts");
+  const account = await SubAccounts.deploy("Lyra Protocol SubAccounts", "LPA");
 
   console.log(
-    `Accounts deployed to ${account.address}`
+    `SubAccounts deployed to ${account.address}`
   );
 }
 

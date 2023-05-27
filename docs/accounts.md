@@ -1,12 +1,12 @@
-# Account
+# SubAccounts
 
-The Account contract is a permissionless ERC721 contract that can be used by any protocol to (1) handle accounting of asset balances (2) access control (3) enforce proper `Asset` and `Manager` interactions whenever balance adjustments are made.
+The `SubAccounts` contract is a permissionless ERC721 contract that can be used by any protocol to (1) handle accounting of asset balances (2) access control (3) enforce proper `Asset` and `Manager` interactions whenever balance adjustments are made.
 
-There are two at least interfaces you need to implement to comply with `Accounts.sol`: `IAsset` and `IManager`.
+There are two at least interfaces you need to implement to comply with `SubAccounts.sol`: `IAsset` and `IManager`.
 
 ## Accounting
 
-Each account can hold a balance per `Assets` / `subId` pair, where `subId` is an identifier that is used to distinguish different asset sub-types that are codified by the same asset contract (e.g. $1500 Jan 1st ETH Call vs $1600 Jan 1st ETH Call). 
+Each account can hold a balance per `Assets` / `subId` pair, where `subId` is an identifier that is used to distinguish different asset sub-types that are codified by the same asset contract (e.g. $1500 Jan 1st ETH Call vs $1600 Jan 1st ETH Call).
 
 The base layer also tracks `{ asset, subId }`'s with non-zero balances in a `heldAssets` array per account. The actual balances are stored as `BalanceAndOrder` structs in a mapping, and we use the `.order` field to store the index of the `{ asset / subId }` in the `heldAssets` array to gas efficiently remove assets from the `heldAsset` array when the balance returns to 0.
 
@@ -34,9 +34,9 @@ There are three different flows that could update an account's balance. Each flo
 
 ### 1. Symmetric transactions
 
-Transfers that subtract amount `x` from one account and add amount `x` to another account can be initiated by anyone using `Account.submitTransfers`. During the transfer, `Accounts.sol` passes information (the caller, old balance, transfer amount, etc) to the **Asset** through `IAsset.handleAdjustment`. In return, the asset returns the final balance and access requirements. This is called the `asset hook`.
+Transfers that subtract amount `x` from one account and add amount `x` to another account can be initiated by anyone using `Account.submitTransfers`. During the transfer, `SubAccounts.sol` passes information (the caller, old balance, transfer amount, etc) to the **Asset** through `IAsset.handleAdjustment`. In return, the asset returns the final balance and access requirements. This is called the `asset hook`.
 
-`Accounts.sol` also passess relevant information (the caller, accountId) to the **Manager** through `IManager.handleAdjustment` to determine if the final state of the account is valid. This is called the `manager hook`
+`SubAccounts.sol` also passess relevant information (the caller, accountId) to the **Manager** through `IManager.handleAdjustment` to determine if the final state of the account is valid. This is called the `manager hook`
 
 ### 2. Adjustments initiated by managers
 

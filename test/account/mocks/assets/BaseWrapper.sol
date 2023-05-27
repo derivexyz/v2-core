@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 import "../feeds/PriceFeeds.sol";
@@ -13,19 +13,19 @@ import "../feeds/PriceFeeds.sol";
 // TODO: safecast to int
 contract BaseWrapper is IAsset, Ownable2Step {
   IERC20 token;
-  IAccounts account;
+  ISubAccounts subAccounts;
   PriceFeeds priceFeeds;
 
-  constructor(IERC20 token_, IAccounts account_, PriceFeeds feeds_, uint feedId) Ownable2Step() {
+  constructor(IERC20 token_, ISubAccounts account_, PriceFeeds feeds_, uint feedId) Ownable2Step() {
     token = token_;
-    account = account_;
+    subAccounts = account_;
     priceFeeds = feeds_;
     priceFeeds.assignFeedToAsset(IAsset(address(this)), feedId);
   }
 
   function deposit(uint recipientAccount, uint amount) external {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -39,8 +39,8 @@ contract BaseWrapper is IAsset, Ownable2Step {
   }
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
-    int postBalance = account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    int postBalance = subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -54,7 +54,7 @@ contract BaseWrapper is IAsset, Ownable2Step {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(IAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager, address)
+  function handleAdjustment(ISubAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager, address)
     external
     pure
     override

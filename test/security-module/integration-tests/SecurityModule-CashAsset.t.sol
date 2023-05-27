@@ -9,7 +9,7 @@ import "../../shared/mocks/MockManager.sol";
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
 import "../../../src/assets/InterestRateModel.sol";
-import "../../../src/Accounts.sol";
+import "../../../src/SubAccounts.sol";
 
 /**
  * @dev real Accounts contract
@@ -25,7 +25,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
   CashAsset cashAsset = CashAsset(address(0xca7777));
   MockERC20 usdc;
   MockManager manager;
-  Accounts accounts;
+  SubAccounts subAccounts;
   SecurityModule securityModule;
   InterestRateModel rateModel;
 
@@ -33,9 +33,9 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
   uint accountId;
 
   function setUp() public {
-    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(accounts));
+    manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
@@ -51,11 +51,11 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     uint smAccountId;
 
     // security
-    cashAsset = new CashAsset(accounts, usdc, rateModel, smAccountId, liquidation);
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel, smAccountId, liquidation);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
-    securityModule = new SecurityModule(accounts, cashAsset, IManager(manager));
+    securityModule = new SecurityModule(subAccounts, cashAsset, IManager(manager));
 
     smAccId = securityModule.accountId();
 
@@ -63,7 +63,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     usdc.mint(address(this), 20_000_000e6);
     usdc.approve(address(securityModule), type(uint).max);
 
-    accountId = accounts.createAccount(address(this), manager);
+    accountId = subAccounts.createAccount(address(this), manager);
   }
 
   function testDepositIntoSM() public {
@@ -72,7 +72,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     securityModule.donate(depositAmount);
 
     // cash in account is also updated
-    int cashBalance = accounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
+    int cashBalance = subAccounts.getBalance(securityModule.accountId(), IAsset(address(cashAsset)), 0);
     assertEq(cashBalance, 1000e18);
   }
 

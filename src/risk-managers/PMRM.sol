@@ -10,7 +10,7 @@ import "lyra-utils/math/IntLib.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
 
 import "src/interfaces/IManager.sol";
-import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISubAccounts.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IPerpAsset.sol";
 import "src/interfaces/IBaseManager.sol";
@@ -75,14 +75,14 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   ////////////////////////
 
   constructor(
-    IAccounts accounts_,
+    ISubAccounts subAccounts_,
     ICashAsset cashAsset_,
     IOption option_,
     IPerpAsset perp_,
     IOptionPricing optionPricing_,
     IWrappedERC20Asset baseAsset_,
     Feeds memory feeds_
-  ) PMRMLib(optionPricing_) BaseManager(accounts_, cashAsset_, IDutchAuction(address(0))) {
+  ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, IDutchAuction(address(0))) {
     spotFeed = feeds_.spotFeed;
     perpFeed = feeds_.perpFeed;
     stableFeed = feeds_.stableFeed;
@@ -166,7 +166,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     uint accountId,
     uint tradeId,
     address caller,
-    IAccounts.AssetDelta[] calldata assetDeltas,
+    ISubAccounts.AssetDelta[] calldata assetDeltas,
     bytes calldata managerData
   ) public onlyAccounts {
     _verifyCanTrade(accountId);
@@ -220,10 +220,10 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     lastSeenBaseOI = currentBaseOI;
   }
 
-  function _assessRisk(address caller, uint accountId, IAccounts.AssetDelta[] calldata assetDeltas) internal view {
+  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas) internal view {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
-    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
 
     if (isTrustedRiskAssessor) {
@@ -262,7 +262,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(uint accountId, IAccounts.AssetBalance[] memory assets, bool addForwardCont)
+  function _arrangePortfolio(uint accountId, ISubAccounts.AssetBalance[] memory assets, bool addForwardCont)
     internal
     view
     returns (IPMRM.Portfolio memory portfolio)
@@ -288,7 +288,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     return portfolio;
   }
 
-  function _countExpiriesAndOptions(IAccounts.AssetBalance[] memory assets)
+  function _countExpiriesAndOptions(ISubAccounts.AssetBalance[] memory assets)
     internal
     view
     returns (uint seenExpiries, IPMRM.PortfolioExpiryData[] memory expiryCount)
@@ -304,7 +304,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
     // Just count the number of options per expiry
     for (uint i = 0; i < assetLen; ++i) {
-      IAccounts.AssetBalance memory currentAsset = assets[i];
+      ISubAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry,,) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
         if (optionExpiry < block.timestamp) {
@@ -368,11 +368,11 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   function _arrangeOptions(
     uint accountId,
     IPMRM.Portfolio memory portfolio,
-    IAccounts.AssetBalance[] memory assets,
+    ISubAccounts.AssetBalance[] memory assets,
     PortfolioExpiryData[] memory expiryCount
   ) internal view {
     for (uint i = 0; i < assets.length; ++i) {
-      IAccounts.AssetBalance memory currentAsset = assets[i];
+      ISubAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
 
@@ -418,7 +418,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   /**
    * iterate through all asset delta, charge OI fee for perp and option assets
    */
-  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas)
+  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] calldata assetDeltas)
     internal
   {
     if (feeBypassedCaller[caller]) return;
@@ -448,11 +448,11 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
-    return _arrangePortfolio(accountId, accounts.getAccountBalances(accountId), true);
+    return _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
   }
 
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, subAccounts.getAccountBalances(accountId), true);
     (int margin,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
     return margin;
   }
@@ -462,7 +462,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     view
     returns (int margin, int mtm)
   {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, accounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, subAccounts.getAccountBalances(accountId), true);
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
     scenarios[0] = marginScenarios[scenarioId];
 
@@ -486,14 +486,14 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    address owner = accounts.ownerOf(mergeIntoId);
+    address owner = subAccounts.ownerOf(mergeIntoId);
     for (uint i = 0; i < mergeFromIds.length; ++i) {
       // check owner of all accounts is the same - note this ignores
-      if (owner != accounts.ownerOf(mergeFromIds[i])) {
+      if (owner != subAccounts.ownerOf(mergeFromIds[i])) {
         revert PMRM_MergeOwnerMismatch();
       }
       // Move all assets of the other
-      IAccounts.AssetBalance[] memory assets = accounts.getAccountBalances(mergeFromIds[i]);
+      ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(mergeFromIds[i]);
       for (uint j = 0; j < assets.length; ++j) {
         _symmetricManagerAdjustment(
           mergeFromIds[i], mergeIntoId, assets[j].asset, SafeCast.toUint96(assets[j].subId), assets[j].balance

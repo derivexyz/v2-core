@@ -13,7 +13,7 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/IntLib.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
@@ -71,7 +71,7 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
   ///@dev Last time aggregated funding rate was updated
   uint64 public lastFundingPaidAt;
 
-  constructor(IAccounts _accounts, int maxAbsRatePerHour) ManagerWhitelist(_accounts) {
+  constructor(ISubAccounts _subAccounts, int maxAbsRatePerHour) ManagerWhitelist(_subAccounts) {
     lastFundingPaidAt = uint64(block.timestamp);
 
     maxRatePerHour = maxAbsRatePerHour;
@@ -126,7 +126,7 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint tradeId,
     int preBalance,
     IManager manager,
@@ -158,8 +158,8 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
     _checkManager(address(newManager));
 
     // update total position
-    uint pos = accounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
-    _migrateTotalPositionAndCheckCaps(pos, accounts.manager(accountId), newManager);
+    uint pos = subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
+    _migrateTotalPositionAndCheckCaps(pos, subAccounts.manager(accountId), newManager);
   }
 
   //////////////////////////
@@ -381,7 +381,7 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
    * @dev Get number of contracts open, with 18 decimals
    */
   function _getPositionSize(uint accountId) internal view returns (int) {
-    return accounts.getBalance(accountId, IPerpAsset(address(this)), 0);
+    return subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0);
   }
 
   function _getIndexPrice() internal view returns (int) {
@@ -404,7 +404,7 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
   }
 
   modifier onlyManagerForAccount(uint accountId) {
-    if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
+    if (msg.sender != address(subAccounts.manager(accountId))) revert PA_WrongManager();
     _;
   }
 }

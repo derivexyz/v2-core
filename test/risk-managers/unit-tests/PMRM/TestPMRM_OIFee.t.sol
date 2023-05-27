@@ -31,7 +31,7 @@ contract TestPMRM_OIFee is PMRMTestBase {
   }
 
   function _transferOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -39,6 +39,6 @@ contract TestPMRM_OIFee is PMRMTestBase {
       amount: amount,
       assetData: ""
     });
-    accounts.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 }

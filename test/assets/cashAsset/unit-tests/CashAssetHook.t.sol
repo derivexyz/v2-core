@@ -8,7 +8,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/interfaces/IAccounts.sol";
+import "../../../../src/interfaces/ISubAccounts.sol";
 import "../mocks/MockInterestRateModel.sol";
 
 contract UNIT_CashAssetHook is Test {
@@ -25,18 +25,18 @@ contract UNIT_CashAssetHook is Test {
     usdc = new MockERC20("USDC", "USDC");
 
     rateModel = new MockInterestRateModel(0.5 * 1e18);
-    cashAsset = new CashAsset(IAccounts(account), usdc, rateModel, 0, address(0));
+    cashAsset = new CashAsset(ISubAccounts(account), usdc, rateModel, 0, address(0));
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {
     vm.expectRevert(IManagerWhitelist.MW_OnlyAccounts.selector);
-    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
+    ISubAccounts.AssetAdjustment memory adjustment = ISubAccounts.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
     cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
 
   function testCannotExecuteHandleAdjustmentIfManagerIsNotWhitelisted() public {
     /* this could happen if someone is trying to transfer our cash asset to an account controlled by malicious manager */
-    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
+    ISubAccounts.AssetAdjustment memory adjustment = ISubAccounts.AssetAdjustment(0, cashAsset, 0, 0, 0x00);
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
 
     vm.prank(account);
@@ -46,7 +46,7 @@ contract UNIT_CashAssetHook is Test {
   function testAssetHookAccurInterestOnPositiveAdjustment() public {
     cashAsset.setWhitelistManager(address(manager), true);
     int delta = 100;
-    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
+    ISubAccounts.AssetAdjustment memory adjustment = ISubAccounts.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
 
     vm.prank(account);
     (int postBalance, bool needAllowance) = cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
@@ -60,7 +60,7 @@ contract UNIT_CashAssetHook is Test {
   function testAssetHookAccurInterestOnNegativeAdjustment() public {
     cashAsset.setWhitelistManager(address(manager), true);
     int delta = -100;
-    IAccounts.AssetAdjustment memory adjustment = IAccounts.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
+    ISubAccounts.AssetAdjustment memory adjustment = ISubAccounts.AssetAdjustment(0, cashAsset, 0, delta, 0x00);
 
     // stimulate call from account
     vm.prank(account);

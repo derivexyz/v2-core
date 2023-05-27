@@ -7,7 +7,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Accounts.sol";
+import "../../../../src/SubAccounts.sol";
 
 /**
  * @dev tests for scenarios where insolvent is triggered by the liquidation module
@@ -16,7 +16,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
-  Accounts accounts;
+  SubAccounts subAccounts;
   IInterestRateModel rateModel;
   address liquidationModule = address(0xf00d);
 
@@ -24,14 +24,14 @@ contract UNIT_CashAssetWithdrawFee is Test {
   uint depositedAmount;
 
   function setUp() public {
-    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(accounts));
+    manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
 
     rateModel = new MockInterestRateModel(1e18);
-    cashAsset = new CashAsset(accounts, usdc, rateModel, 0, liquidationModule);
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel, 0, liquidationModule);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -39,7 +39,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(cashAsset), type(uint).max);
 
-    accountId = accounts.createAccount(address(this), manager);
+    accountId = subAccounts.createAccount(address(this), manager);
 
     cashAsset.deposit(accountId, depositedAmount);
 
@@ -73,9 +73,9 @@ contract UNIT_CashAssetWithdrawFee is Test {
     assertEq(cashAsset.getCashToStableExchangeRate(), 0.8e18);
 
     uint amountUSDCToWithdraw = 100e18;
-    int cashBalanceBefore = accounts.getBalance(accountId, cashAsset, 0);
+    int cashBalanceBefore = subAccounts.getBalance(accountId, cashAsset, 0);
     cashAsset.withdraw(accountId, amountUSDCToWithdraw, address(this));
-    int cashBalanceAfter = accounts.getBalance(accountId, cashAsset, 0);
+    int cashBalanceAfter = subAccounts.getBalance(accountId, cashAsset, 0);
 
     // needs to burn 125 cash to get 100 USDC outf
     assertEq(cashBalanceBefore - cashBalanceAfter, 125e18);
@@ -103,7 +103,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
   function testSmFeeCanCoverInsolvency() public {
     uint smFeeCut = 1e18;
     cashAsset.setSmFee(smFeeCut);
-    uint newAccount = accounts.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 
@@ -132,7 +132,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     uint smFeeCut = 0.1 * 1e18;
     cashAsset.setSmFee(smFeeCut);
 
-    uint newAccount = accounts.createAccount(address(this), manager);
+    uint newAccount = subAccounts.createAccount(address(this), manager);
     uint totalBorrow = cashAsset.totalBorrow();
     assertEq(totalBorrow, 0);
 

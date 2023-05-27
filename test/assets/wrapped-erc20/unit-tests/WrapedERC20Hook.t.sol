@@ -8,26 +8,26 @@ import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockManager.sol";
 
 import "src/assets/WrappedERC20Asset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 
 contract UNIT_WrappedBaseAssetHook is Test {
   WrappedERC20Asset asset;
   MockERC20 wbtc;
   MockManager manager;
 
-  Accounts accounts;
+  SubAccounts subAccounts;
 
   uint accId;
 
   function setUp() public {
-    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(accounts));
+    manager = new MockManager(address(subAccounts));
     wbtc = new MockERC20("WBTC", "WBTC");
     wbtc.setDecimals(8);
 
-    asset = new WrappedERC20Asset(accounts, wbtc);
-    accId = accounts.createAccount(address(this), manager);
+    asset = new WrappedERC20Asset(subAccounts, wbtc);
+    accId = subAccounts.createAccount(address(this), manager);
     asset.setWhitelistManager(address(manager), true);
   }
 
@@ -43,7 +43,7 @@ contract UNIT_WrappedBaseAssetHook is Test {
     _mintAndDeposit(100e8);
 
     assertEq(wbtc.balanceOf(address(asset)), 100e8);
-    assertEq(accounts.getBalance(accId, asset, 0), 100e18); // 18 decimals
+    assertEq(subAccounts.getBalance(accId, asset, 0), 100e18); // 18 decimals
   }
 
   function testCannotWithdrawFromNonOwner() public {
@@ -60,30 +60,30 @@ contract UNIT_WrappedBaseAssetHook is Test {
     asset.withdraw(accId, 100e8, address(this));
     assertEq(wbtc.balanceOf(address(this)), 100e8);
     assertEq(wbtc.balanceOf(address(asset)), 0);
-    assertEq(accounts.getBalance(accId, asset, 0), 0);
+    assertEq(subAccounts.getBalance(accId, asset, 0), 0);
   }
 
   function testCannotChangeManagerIfExceedCap() public {
     _mintAndDeposit(100e8);
 
     // create a second manager with less cap
-    MockManager manager2 = new MockManager(address(accounts));
+    MockManager manager2 = new MockManager(address(subAccounts));
     asset.setWhitelistManager(address(manager2), true);
     asset.setOICap(manager2, 1e18);
 
     vm.expectRevert(IWrappedERC20Asset.WERC_ManagerChangeExceedOICap.selector);
-    accounts.changeManager(accId, manager2, "");
+    subAccounts.changeManager(accId, manager2, "");
   }
 
   function testCanChangeManagerIfCapIsSafe() public {
     _mintAndDeposit(100e8);
 
     // create a second manager with less cap
-    MockManager manager2 = new MockManager(address(accounts));
+    MockManager manager2 = new MockManager(address(subAccounts));
     asset.setWhitelistManager(address(manager2), true);
 
     asset.setOICap(manager2, 100e18);
 
-    accounts.changeManager(accId, manager2, "");
+    subAccounts.changeManager(accId, manager2, "");
   }
 }

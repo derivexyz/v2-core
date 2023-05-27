@@ -6,7 +6,7 @@ import "forge-std/console2.sol";
 
 import "openzeppelin/utils/cryptography/ECDSA.sol";
 
-import "../../../src/Accounts.sol";
+import "../../../src/SubAccounts.sol";
 import "../../../src/libraries/PermitAllowanceLib.sol";
 
 import {MockManager} from "../../shared/mocks/MockManager.sol";
@@ -38,12 +38,12 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
     setUpAccounts();
 
-    domainSeparator = account.domainSeparator();
+    domainSeparator = subAccounts.domainSeparator();
 
     // get a account for pkOwner
-    accountId = account.createAccount(pkOwner, dumbManager);
+    accountId = subAccounts.createAccount(pkOwner, dumbManager);
 
-    accountId2 = account.createAccount(pkOwner2, dumbManager);
+    accountId2 = subAccounts.createAccount(pkOwner2, dumbManager);
   }
 
   function testPermitCannotPermitWithExpiredSignature() public {
@@ -63,8 +63,8 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
     bytes memory sig = _signPermit(privateKey, permit);
 
-    vm.expectRevert(IAccounts.AC_SignatureExpired.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_SignatureExpired.selector);
+    subAccounts.permit(permit, sig);
   }
 
   function testPermitCannotPermitWithFakeSignature() public {
@@ -82,8 +82,8 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     // use a bad private key to sign
     bytes memory sig = _signPermit(0x0fac, permit);
 
-    vm.expectRevert(IAccounts.AC_InvalidPermitSignature.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_InvalidPermitSignature.selector);
+    subAccounts.permit(permit, sig);
   }
 
   function testPermitCanUpdateAssetAllowance() public {
@@ -91,10 +91,10 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     IAllowances.PermitAllowance memory permit =
       _getAssetPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
-    account.permit(permit, sig);
+    subAccounts.permit(permit, sig);
 
-    assertEq(account.positiveAssetAllowance(accountId, pkOwner, usdcAsset, alice), positiveAmount);
-    assertEq(account.negativeAssetAllowance(accountId, pkOwner, usdcAsset, alice), negativeAmount);
+    assertEq(subAccounts.positiveAssetAllowance(accountId, pkOwner, usdcAsset, alice), positiveAmount);
+    assertEq(subAccounts.negativeAssetAllowance(accountId, pkOwner, usdcAsset, alice), negativeAmount);
   }
 
   function testPermitCanUpdateSubIdAllowance() public {
@@ -114,10 +114,10 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     });
 
     bytes memory sig = _signPermit(privateKey, permit);
-    account.permit(permit, sig);
+    subAccounts.permit(permit, sig);
 
-    assertEq(account.positiveSubIdAllowance(accountId, pkOwner, usdcAsset, subId, alice), positiveAmount);
-    assertEq(account.negativeSubIdAllowance(accountId, pkOwner, usdcAsset, subId, alice), negativeAmount);
+    assertEq(subAccounts.positiveSubIdAllowance(accountId, pkOwner, usdcAsset, subId, alice), positiveAmount);
+    assertEq(subAccounts.negativeSubIdAllowance(accountId, pkOwner, usdcAsset, subId, alice), negativeAmount);
   }
 
   function testCannotReuseSignature() public {
@@ -127,10 +127,10 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
     bytes memory sig = _signPermit(privateKey, permit);
     // first permit should pass
-    account.permit(permit, sig);
+    subAccounts.permit(permit, sig);
 
-    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_InvalidNonce.selector);
+    subAccounts.permit(permit, sig);
   }
 
   function testCanUseNonceInArbitraryOrder() public {
@@ -138,7 +138,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     IAllowances.PermitAllowance memory permit =
       _getAssetPermitUSDC(accountId, alice, nonce1, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
-    account.permit(permit, sig);
+    subAccounts.permit(permit, sig);
 
     // the second permit: use a lower nonce for bob
     uint nonce2 = 1;
@@ -147,7 +147,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     bytes memory sig2 = _signPermit(privateKey, permit2);
 
     // this should still pass
-    account.permit(permit2, sig2);
+    subAccounts.permit(permit2, sig2);
   }
 
   function testCanInvalidateSpecificNoncesInBatch() public {
@@ -161,32 +161,32 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
     // only invalidate these 3 nonces
     vm.prank(pkOwner);
-    account.invalidateUnorderedNonces(wordPos, mask);
+    subAccounts.invalidateUnorderedNonces(wordPos, mask);
 
     // first nonce is invalid
     IAllowances.PermitAllowance memory permit =
       _getAssetPermitUSDC(accountId, alice, nonce1, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
-    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_InvalidNonce.selector);
+    subAccounts.permit(permit, sig);
 
     // second nonce is invalid
     permit = _getAssetPermitUSDC(accountId, alice, nonce2, positiveAmount, negativeAmount);
     sig = _signPermit(privateKey, permit);
-    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_InvalidNonce.selector);
+    subAccounts.permit(permit, sig);
 
     // third nonce is invalid
     permit = _getAssetPermitUSDC(accountId, alice, nonce3, positiveAmount, negativeAmount);
     sig = _signPermit(privateKey, permit);
-    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_InvalidNonce.selector);
+    subAccounts.permit(permit, sig);
 
     // can use any other nonce
     uint validNonce = 2;
     permit = _getAssetPermitUSDC(accountId, bob, validNonce, positiveAmount, negativeAmount);
     sig = _signPermit(privateKey, permit);
-    account.permit(permit, sig);
+    subAccounts.permit(permit, sig);
   }
 
   function testCanInvalidateUpTo256NoncesAtATime() public {
@@ -197,29 +197,29 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
     // only invalidate the first 256 nonces
     vm.prank(pkOwner);
-    account.invalidateUnorderedNonces(wordPos, mask);
+    subAccounts.invalidateUnorderedNonces(wordPos, mask);
 
     uint nonce = 0;
     IAllowances.PermitAllowance memory permit =
       _getAssetPermitUSDC(accountId, alice, nonce, positiveAmount, negativeAmount);
     bytes memory sig = _signPermit(privateKey, permit);
-    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_InvalidNonce.selector);
+    subAccounts.permit(permit, sig);
 
     uint nonce2 = 255;
     IAllowances.PermitAllowance memory permit2 =
       _getAssetPermitUSDC(accountId, bob, nonce2, positiveAmount, negativeAmount);
     bytes memory sig2 = _signPermit(privateKey, permit2);
 
-    vm.expectRevert(IAccounts.AC_InvalidNonce.selector);
-    account.permit(permit2, sig2);
+    vm.expectRevert(ISubAccounts.AC_InvalidNonce.selector);
+    subAccounts.permit(permit2, sig2);
 
     // can use nonce > 255
     uint nonce3 = 256;
     IAllowances.PermitAllowance memory permit3 =
       _getAssetPermitUSDC(accountId, bob, nonce3, positiveAmount, negativeAmount);
     bytes memory sig3 = _signPermit(privateKey, permit3);
-    account.permit(permit3, sig3);
+    subAccounts.permit(permit3, sig3);
   }
 
   function testCannotReplayAttack() public {
@@ -230,8 +230,8 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     bytes memory sig = _signPermit(privateKey, permit);
 
     vm.chainId(31337);
-    vm.expectRevert(IAccounts.AC_InvalidPermitSignature.selector);
-    account.permit(permit, sig);
+    vm.expectRevert(ISubAccounts.AC_InvalidPermitSignature.selector);
+    subAccounts.permit(permit, sig);
   }
 
   function testPermitAndTransfer() public {
@@ -260,7 +260,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     bytes memory sig = _signPermit(privateKey, permit);
 
     // bob send transfer to send money to himself!
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: accountId,
       toAcc: bobAcc,
       asset: usdcAsset,
@@ -269,18 +269,18 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
       assetData: bytes32(0)
     });
 
-    int bobUsdcBefore = account.getBalance(bobAcc, usdcAsset, subId);
+    int bobUsdcBefore = subAccounts.getBalance(bobAcc, usdcAsset, subId);
 
     vm.startPrank(bob);
-    account.permitAndSubmitTransfer(transfer, "", permit, sig);
+    subAccounts.permitAndSubmitTransfer(transfer, "", permit, sig);
 
-    int bobUsdcAfter = account.getBalance(bobAcc, usdcAsset, subId);
+    int bobUsdcAfter = subAccounts.getBalance(bobAcc, usdcAsset, subId);
 
     assertEq(bobUsdcAfter - bobUsdcBefore, 1000e18);
 
     // allowance is consumed immediately
-    assertEq(account.positiveAssetAllowance(accountId, pkOwner, usdcAsset, bob), 0);
-    assertEq(account.negativeAssetAllowance(accountId, pkOwner, usdcAsset, bob), 0);
+    assertEq(subAccounts.positiveAssetAllowance(accountId, pkOwner, usdcAsset, bob), 0);
+    assertEq(subAccounts.negativeAssetAllowance(accountId, pkOwner, usdcAsset, bob), 0);
   }
 
   function testBatchedPermitAndTransfers() public {
@@ -316,8 +316,8 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     signatures[1] = _signPermit(privateKey2, permits[1]);
 
     // orderbook will submit a trade to exchange USDC <> CoolToken
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
-    transferBatch[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
+    transferBatch[0] = ISubAccounts.AssetTransfer({
       fromAcc: accountId,
       toAcc: accountId2,
       asset: IAsset(usdcAsset),
@@ -325,7 +325,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
       amount: int(tradeAmount),
       assetData: bytes32(0)
     });
-    transferBatch[1] = IAccounts.AssetTransfer({
+    transferBatch[1] = ISubAccounts.AssetTransfer({
       fromAcc: accountId2,
       toAcc: accountId,
       asset: IAsset(coolAsset),
@@ -334,22 +334,22 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
       assetData: bytes32(0)
     });
 
-    int acc1UsdBefore = account.getBalance(accountId, usdcAsset, 0);
-    int acc1CoolBefore = account.getBalance(accountId, coolAsset, tokenSubId);
-    int acc2UsdBefore = account.getBalance(accountId2, usdcAsset, 0);
-    int acc2CoolBefore = account.getBalance(accountId2, coolAsset, tokenSubId);
+    int acc1UsdBefore = subAccounts.getBalance(accountId, usdcAsset, 0);
+    int acc1CoolBefore = subAccounts.getBalance(accountId, coolAsset, tokenSubId);
+    int acc2UsdBefore = subAccounts.getBalance(accountId2, usdcAsset, 0);
+    int acc2CoolBefore = subAccounts.getBalance(accountId2, coolAsset, tokenSubId);
 
     vm.prank(orderbook);
-    account.permitAndSubmitTransfers(transferBatch, "", permits, signatures);
+    subAccounts.permitAndSubmitTransfers(transferBatch, "", permits, signatures);
 
     // allowance is consumed immediately
-    assertEq(account.negativeAssetAllowance(accountId, pkOwner, usdcAsset, orderbook), 0);
-    assertEq(account.negativeAssetAllowance(accountId2, pkOwner2, coolAsset, orderbook), 0);
+    assertEq(subAccounts.negativeAssetAllowance(accountId, pkOwner, usdcAsset, orderbook), 0);
+    assertEq(subAccounts.negativeAssetAllowance(accountId2, pkOwner2, coolAsset, orderbook), 0);
 
-    int acc1UsdAfter = account.getBalance(accountId, usdcAsset, 0);
-    int acc1CoolAfter = account.getBalance(accountId, coolAsset, tokenSubId);
-    int acc2UsdAfter = account.getBalance(accountId2, usdcAsset, 0);
-    int acc2CoolAfter = account.getBalance(accountId2, coolAsset, tokenSubId);
+    int acc1UsdAfter = subAccounts.getBalance(accountId, usdcAsset, 0);
+    int acc1CoolAfter = subAccounts.getBalance(accountId, coolAsset, tokenSubId);
+    int acc2UsdAfter = subAccounts.getBalance(accountId2, usdcAsset, 0);
+    int acc2CoolAfter = subAccounts.getBalance(accountId2, coolAsset, tokenSubId);
 
     // make sure trades went through
     assertEq(acc1UsdBefore - acc1UsdAfter, 1000e18);
@@ -361,7 +361,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
   function testDomainSeparator() public view {
     // just for coverage for now
-    account.domainSeparator();
+    subAccounts.domainSeparator();
   }
 
   function _getAssetPermitUSDC(uint _accountId, address spender, uint nonce, uint _positiveAmount, uint _negativeAmount)

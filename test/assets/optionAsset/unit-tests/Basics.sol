@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "src/assets/Option.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
@@ -12,7 +12,7 @@ import "test/shared/mocks/MockManager.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 contract UNIT_TestOptionBasics is Test {
-  Accounts account;
+  SubAccounts subAccounts;
   MockManager manager;
 
   Option option;
@@ -23,18 +23,18 @@ contract UNIT_TestOptionBasics is Test {
   uint bobAcc;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    option = new Option(account, address(0));
-    manager = new MockManager(address(account));
+    option = new Option(subAccounts, address(0));
+    manager = new MockManager(address(subAccounts));
 
     vm.startPrank(alice);
-    aliceAcc = account.createAccount(alice, IManager(manager));
-    bobAcc = account.createAccount(bob, IManager(manager));
+    aliceAcc = subAccounts.createAccount(alice, IManager(manager));
+    bobAcc = subAccounts.createAccount(bob, IManager(manager));
     vm.stopPrank();
 
     vm.startPrank(bob);
-    account.approve(alice, bobAcc);
+    subAccounts.approve(alice, bobAcc);
     vm.stopPrank();
   }
 
@@ -46,7 +46,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -54,13 +54,13 @@ contract UNIT_TestOptionBasics is Test {
       amount: 1e18,
       assetData: ""
     });
-    account.submitTransfer(assetTransfer, "");
+    subAccounts.submitTransfer(assetTransfer, "");
     vm.stopPrank();
   }
 
   function testUnWhitelistedManagerCheck() public {
     vm.startPrank(alice);
-    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -70,7 +70,7 @@ contract UNIT_TestOptionBasics is Test {
     });
 
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
-    account.submitTransfer(assetTransfer, "");
+    subAccounts.submitTransfer(assetTransfer, "");
     vm.stopPrank();
   }
 
@@ -87,7 +87,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -95,16 +95,16 @@ contract UNIT_TestOptionBasics is Test {
       amount: 1e18,
       assetData: ""
     });
-    account.submitTransfer(assetTransfer, "");
+    subAccounts.submitTransfer(assetTransfer, "");
     vm.stopPrank();
 
-    MockManager newManager = new MockManager(address(account));
+    MockManager newManager = new MockManager(address(subAccounts));
 
     // whitelist new manager
     option.setWhitelistManager(address(newManager), true);
 
     vm.startPrank(alice);
-    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    subAccounts.changeManager(aliceAcc, IManager(address(newManager)), "");
   }
 
   function testInvalidManagerChange() public {
@@ -112,7 +112,7 @@ contract UNIT_TestOptionBasics is Test {
     option.setWhitelistManager(address(manager), true);
 
     vm.startPrank(alice);
-    IAccounts.AssetTransfer memory assetTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -120,12 +120,12 @@ contract UNIT_TestOptionBasics is Test {
       amount: 1e18,
       assetData: ""
     });
-    account.submitTransfer(assetTransfer, "");
-    MockManager newManager = new MockManager(address(account));
+    subAccounts.submitTransfer(assetTransfer, "");
+    MockManager newManager = new MockManager(address(subAccounts));
 
     // new manager not whitelisted
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
-    account.changeManager(aliceAcc, IManager(address(newManager)), "");
+    subAccounts.changeManager(aliceAcc, IManager(address(newManager)), "");
     vm.stopPrank();
   }
 

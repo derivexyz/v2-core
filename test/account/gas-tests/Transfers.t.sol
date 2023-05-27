@@ -36,7 +36,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory optionTransfer = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(optionAdapter),
@@ -45,7 +45,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory premiumTransfer = ISubAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(usdcAdapter),
@@ -54,11 +54,11 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
     transferBatch[0] = optionTransfer;
     transferBatch[1] = premiumTransfer;
 
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
     vm.stopPrank();
   }
 
@@ -68,7 +68,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory optionTransfer = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(optionAdapter),
@@ -77,7 +77,7 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer memory premiumTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory premiumTransfer = ISubAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(usdcAdapter),
@@ -86,14 +86,14 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](100);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](100);
 
     for (uint i; i < 50; i++) {
       transferBatch[i * 2] = optionTransfer;
       transferBatch[i * 2 + 1] = premiumTransfer;
     }
 
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
     vm.stopPrank();
   }
 
@@ -103,11 +103,11 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    IAccounts.AssetTransfer[] memory initialTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 5);
-    account.submitTransfers(initialTransfers, "");
+    ISubAccounts.AssetTransfer[] memory initialTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 5);
+    subAccounts.submitTransfers(initialTransfers, "");
 
-    IAccounts.AssetTransfer[] memory finalTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18), 5);
-    account.submitTransfers(finalTransfers, "");
+    ISubAccounts.AssetTransfer[] memory finalTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, -int(1e18), 5);
+    subAccounts.submitTransfers(finalTransfers, "");
 
     vm.stopPrank();
   }
@@ -118,11 +118,11 @@ contract GAS_Transfers is Test, AccountPOCHelper {
 
     // two-way transfer option
     vm.startPrank(alice);
-    IAccounts.AssetTransfer[] memory initialTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 100);
-    account.submitTransfers(initialTransfers, "");
+    ISubAccounts.AssetTransfer[] memory initialTransfers = composeBulkUniqueTransfers(aliceAcc, bobAcc, int(1e18), 100);
+    subAccounts.submitTransfers(initialTransfers, "");
 
-    IAccounts.AssetTransfer[] memory singleTransfer = new IAccounts.AssetTransfer[](1);
-    singleTransfer[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory singleTransfer = new ISubAccounts.AssetTransfer[](1);
+    singleTransfer[0] = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(optionAdapter),
@@ -130,19 +130,19 @@ contract GAS_Transfers is Test, AccountPOCHelper {
       amount: 1e17,
       assetData: bytes32(0)
     });
-    account.submitTransfers(singleTransfer, "");
+    subAccounts.submitTransfers(singleTransfer, "");
 
     vm.stopPrank();
   }
 
   function composeBulkUniqueTransfers(uint fromAcc, uint toAcc, int amount, uint numOfTransfers)
     internal
-    returns (IAccounts.AssetTransfer[] memory transferBatch)
+    returns (ISubAccounts.AssetTransfer[] memory transferBatch)
   {
-    transferBatch = new IAccounts.AssetTransfer[](numOfTransfers);
+    transferBatch = new ISubAccounts.AssetTransfer[](numOfTransfers);
 
     for (uint i; i < numOfTransfers; i++) {
-      transferBatch[i] = IAccounts.AssetTransfer({
+      transferBatch[i] = ISubAccounts.AssetTransfer({
         fromAcc: fromAcc,
         toAcc: toAcc,
         asset: IAsset(optionAdapter),

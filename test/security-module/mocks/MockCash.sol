@@ -8,13 +8,13 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "src/interfaces/ICashAsset.sol";
 import "../../shared/mocks/MockAsset.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into their accounts.
+ * @dev   Users can deposit USDC and credit this cash asset into theirsubAccounts.
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
@@ -24,7 +24,7 @@ contract MockCashAssetWithExchangeRate is MockAsset {
   uint public mockExchangeRate = 1e18;
   int public netSettledCash;
 
-  constructor(IAccounts _accounts, IERC20Metadata _stableAsset) MockAsset(_stableAsset, _accounts, true) {
+  constructor(ISubAccounts _subAccounts, IERC20Metadata _stableAsset) MockAsset(_stableAsset, _subAccounts, true) {
     stableAsset = _stableAsset;
   }
 

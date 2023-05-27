@@ -6,7 +6,7 @@ import "src/risk-managers/StandardManager.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
@@ -25,7 +25,7 @@ import "test/auction/mocks/MockCashAsset.sol";
  * Focusing on the margin rules for options
  */
 contract UNIT_TestStandardManager_MultiAsset is Test {
-  Accounts account;
+  SubAccounts subAccounts;
   StandardManager manager;
   MockCash cash;
   MockERC20 usdc;
@@ -69,28 +69,28 @@ contract UNIT_TestStandardManager_MultiAsset is Test {
   }
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockCash(usdc, account);
+    cash = new MockCash(usdc, subAccounts);
 
     stableFeed = new MockFeeds();
 
     // Setup asset for ETH Markets
-    ethPerp = new MockPerp(account);
-    ethOption = new MockOption(account);
+    ethPerp = new MockPerp(subAccounts);
+    ethOption = new MockOption(subAccounts);
     ethFeed = new MockFeeds();
 
     // setup asset for BTC Markets
-    btcPerp = new MockPerp(account);
-    btcOption = new MockOption(account);
+    btcPerp = new MockPerp(subAccounts);
+    btcOption = new MockOption(subAccounts);
 
     // setup mock base asset (only change mark to market)
     weth = new MockERC20("weth", "weth");
-    wethAsset = new MockAsset(weth, account, false); // false as it cannot go negative
+    wethAsset = new MockAsset(weth, subAccounts, false); // false as it cannot go negative
     wbtc = new MockERC20("wbtc", "wbtc");
-    wbtcAsset = new MockAsset(wbtc, account, false); // false as it cannot go negative
+    wbtcAsset = new MockAsset(wbtc, subAccounts, false); // false as it cannot go negative
 
     btcFeed = new MockFeeds();
 
@@ -98,7 +98,7 @@ contract UNIT_TestStandardManager_MultiAsset is Test {
     btcPricing = new MockOptionPricing();
 
     manager = new StandardManager(
-      account,
+      subAccounts,
       ICashAsset(address(cash))
     );
 
@@ -119,8 +119,8 @@ contract UNIT_TestStandardManager_MultiAsset is Test {
     stableFeed.setSpot(1e18, 1e18);
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
 
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
 
     expiry1 = block.timestamp + 7 days;
     expiry2 = block.timestamp + 14 days;
@@ -281,7 +281,7 @@ contract UNIT_TestStandardManager_MultiAsset is Test {
 
   function testCanTradeMultiMarketsNotInOrder() public {
     // Setup doge market
-    MockOption dogeOption = new MockOption(account);
+    MockOption dogeOption = new MockOption(subAccounts);
     MockFeeds dogeFeed = new MockFeeds();
     MockOptionPricing pricing = new MockOptionPricing();
 
@@ -356,10 +356,16 @@ contract UNIT_TestStandardManager_MultiAsset is Test {
 
     cash.deposit(aliceAcc, uint(amount));
 
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: amount, assetData: ""});
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: cash,
+      subId: 0,
+      amount: amount,
+      assetData: ""
+    });
 
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 
   /////////////
@@ -367,9 +373,9 @@ contract UNIT_TestStandardManager_MultiAsset is Test {
   /////////////
 
   function _submitMultipleTrades(uint from, uint to, Trade[] memory trades, bytes memory managerData) internal {
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](trades.length);
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](trades.length);
     for (uint i = 0; i < trades.length; i++) {
-      transfers[i] = IAccounts.AssetTransfer({
+      transfers[i] = ISubAccounts.AssetTransfer({
         fromAcc: from,
         toAcc: to,
         asset: trades[i].asset,
@@ -378,6 +384,6 @@ contract UNIT_TestStandardManager_MultiAsset is Test {
         assetData: ""
       });
     }
-    account.submitTransfers(transfers, managerData);
+    subAccounts.submitTransfers(transfers, managerData);
   }
 }

@@ -31,7 +31,7 @@ contract POC_Allowances is Test, AccountPOCHelper {
     IAllowances.AssetAllowance[] memory assetAllowances = new IAllowances.AssetAllowance[](1);
     assetAllowances[0] =
       IAllowances.AssetAllowance({asset: IAsset(optionAdapter), positive: 0, negative: type(uint).max});
-    account.setAssetAllowances(aliceAcc, bob, assetAllowances);
+    subAccounts.setAssetAllowances(aliceAcc, bob, assetAllowances);
     vm.stopPrank();
 
     vm.startPrank(bob);
@@ -46,7 +46,7 @@ contract POC_Allowances is Test, AccountPOCHelper {
     IAllowances.SubIdAllowance[] memory allowances = new IAllowances.SubIdAllowance[](1);
     allowances[0] =
       IAllowances.SubIdAllowance({asset: IAsset(optionAdapter), subId: subId, positive: 0, negative: type(uint).max});
-    account.setSubIdAllowances(aliceAcc, bob, allowances);
+    subAccounts.setSubIdAllowances(aliceAcc, bob, allowances);
     vm.stopPrank();
 
     vm.startPrank(bob);
@@ -65,7 +65,7 @@ contract POC_Allowances is Test, AccountPOCHelper {
       positive: 0,
       negative: type(uint).max
     });
-    account.setSubIdAllowances(aliceAcc, bob, allowances);
+    subAccounts.setSubIdAllowances(aliceAcc, bob, allowances);
     vm.stopPrank();
 
     vm.startPrank(bob);
@@ -87,11 +87,11 @@ contract POC_Allowances is Test, AccountPOCHelper {
     assetAllowances[1] = IAllowances.AssetAllowance({asset: IAsset(usdcAdapter), positive: 0, negative: type(uint).max});
 
     vm.startPrank(bob);
-    account.setAssetAllowances(bobAcc, orderbook, assetAllowances);
+    subAccounts.setAssetAllowances(bobAcc, orderbook, assetAllowances);
     vm.stopPrank();
 
     vm.startPrank(alice);
-    account.setAssetAllowances(aliceAcc, orderbook, assetAllowances);
+    subAccounts.setAssetAllowances(aliceAcc, orderbook, assetAllowances);
     vm.stopPrank();
 
     // expect revert

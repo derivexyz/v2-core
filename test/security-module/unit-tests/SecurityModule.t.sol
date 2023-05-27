@@ -9,7 +9,7 @@ import "../../shared/mocks/MockManager.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
-import "../../../src/Accounts.sol";
+import "../../../src/SubAccounts.sol";
 
 /**
  * @dev we use the real Accounts contract in these tests to simplify verification process
@@ -23,25 +23,25 @@ contract UNIT_SecurityModule is Test {
   MockCashAssetWithExchangeRate mockCash;
   MockERC20 usdc;
   MockManager manager;
-  Accounts accounts;
+  SubAccounts subAccounts;
   SecurityModule securityModule;
 
   uint smAccId;
   uint accountId;
 
   function setUp() public {
-    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(accounts));
+    manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
     // // probably use mock
-    mockCash = new MockCashAssetWithExchangeRate(accounts, usdc);
+    mockCash = new MockCashAssetWithExchangeRate(subAccounts, usdc);
     mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
-    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), IManager(manager));
+    securityModule = new SecurityModule(subAccounts, ICashAsset(address(mockCash)), IManager(manager));
 
     smAccId = securityModule.accountId();
 
@@ -49,14 +49,14 @@ contract UNIT_SecurityModule is Test {
     usdc.mint(address(this), 20_000_000e6);
     usdc.approve(address(securityModule), type(uint).max);
 
-    accountId = accounts.createAccount(address(this), manager);
+    accountId = subAccounts.createAccount(address(this), manager);
   }
 
   function testDepositIntoSM() public {
     uint depositAmount = 1000e6;
 
     securityModule.donate(depositAmount);
-    assertEq(uint(accounts.getBalance(smAccId, mockCash, 0)), 1000e18);
+    assertEq(uint(subAccounts.getBalance(smAccId, mockCash, 0)), 1000e18);
     assertEq(usdc.balanceOf(address(mockCash)), depositAmount);
   }
 
@@ -106,17 +106,17 @@ contract UNIT_SecurityModule is Test {
     securityModule.donate(depositAmount);
 
     // create acc to get paid
-    uint receiverAcc = accounts.createAccount(address(this), manager);
+    uint receiverAcc = subAccounts.createAccount(address(this), manager);
     securityModule.setWhitelistModule(liquidation, true);
 
     vm.startPrank(liquidation);
     securityModule.requestPayout(receiverAcc, 1000e18);
     vm.stopPrank();
 
-    int cashLeftInSecurity = accounts.getBalance(smAccId, IAsset(address(mockCash)), 0);
+    int cashLeftInSecurity = subAccounts.getBalance(smAccId, IAsset(address(mockCash)), 0);
     assertEq(cashLeftInSecurity, 999_000e18);
 
-    int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(mockCash)), 0);
+    int cashForReceiver = subAccounts.getBalance(receiverAcc, IAsset(address(mockCash)), 0);
     assertEq(cashForReceiver, 1000e18);
   }
 
@@ -126,7 +126,7 @@ contract UNIT_SecurityModule is Test {
     securityModule.donate(depositAmount);
 
     // create acc to get paid
-    uint receiverAcc = accounts.createAccount(address(this), manager);
+    uint receiverAcc = subAccounts.createAccount(address(this), manager);
     securityModule.setWhitelistModule(liquidation, true);
 
     vm.startPrank(liquidation);

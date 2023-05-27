@@ -7,9 +7,9 @@ import "forge-std/console2.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockFeeds.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/assets/PerpAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {IOITracking} from "src/interfaces/IOITracking.sol";
 
@@ -17,7 +17,7 @@ contract UNIT_PerpOIAndCap is Test {
   PerpAsset perp;
   MockManager manager;
   MockManager manager2;
-  Accounts account;
+  SubAccounts subAccounts;
   MockFeeds feed;
 
   // users
@@ -33,17 +33,17 @@ contract UNIT_PerpOIAndCap is Test {
   int128 spot = 1500e18;
 
   function setUp() public {
-    account = new Accounts("Lyra", "LYRA");
+    subAccounts = new SubAccounts("Lyra", "LYRA");
     feed = new MockFeeds();
 
-    manager = new MockManager(address(account));
-    manager2 = new MockManager(address(account));
-    perp = new PerpAsset(IAccounts(account), 0.0075e18);
+    manager = new MockManager(address(subAccounts));
+    manager2 = new MockManager(address(subAccounts));
+    perp = new PerpAsset(subAccounts, 0.0075e18);
 
     perp.setSpotFeed(feed);
     perp.setPerpFeed(feed);
 
-    manager = new MockManager(address(account));
+    manager = new MockManager(address(subAccounts));
 
     feed.setSpot(uint(int(spot)), 1e18);
 
@@ -52,9 +52,9 @@ contract UNIT_PerpOIAndCap is Test {
     perp.setWhitelistManager(address(manager2), true);
 
     // create account for alice and bob
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
-    charlieAcc = account.createAccountWithApproval(charlie, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
+    charlieAcc = subAccounts.createAccountWithApproval(charlie, address(this), manager);
   }
 
   function testCanSetTotalPositionCapOnManager() public {
@@ -64,7 +64,7 @@ contract UNIT_PerpOIAndCap is Test {
 
   function testCanChangeManagerIfCapNotSet() public {
     _transferPerp(aliceAcc, bobAcc, 100e18);
-    account.changeManager(aliceAcc, manager2, "");
+    subAccounts.changeManager(aliceAcc, manager2, "");
     assertEq(perp.totalPosition(manager2), 100e18);
   }
 
@@ -72,7 +72,7 @@ contract UNIT_PerpOIAndCap is Test {
     // alice opens short, bob opens long
     _transferPerp(aliceAcc, bobAcc, 100e18);
 
-    account.changeManager(aliceAcc, manager2, "");
+    subAccounts.changeManager(aliceAcc, manager2, "");
 
     assertEq(perp.totalPosition(manager), 100e18);
     assertEq(perp.totalPosition(manager2), 100e18);
@@ -109,7 +109,7 @@ contract UNIT_PerpOIAndCap is Test {
   }
 
   function testAndTradeCrossManagers() public {
-    uint newAccount = account.createAccountWithApproval(address(0x1234), address(this), manager2);
+    uint newAccount = subAccounts.createAccountWithApproval(address(0x1234), address(this), manager2);
 
     // alice opens short on manager 1, new account long on manager 2
     _transferPerp(aliceAcc, newAccount, 100e18);
@@ -120,8 +120,8 @@ contract UNIT_PerpOIAndCap is Test {
   }
 
   function _transferPerp(uint from, uint to, int amount) internal {
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: from, toAcc: to, asset: perp, subId: 0, amount: amount, assetData: ""});
-    account.submitTransfer(transfer, "");
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: from, toAcc: to, asset: perp, subId: 0, amount: amount, assetData: ""});
+    subAccounts.submitTransfer(transfer, "");
   }
 }

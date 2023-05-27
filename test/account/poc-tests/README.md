@@ -1,4 +1,4 @@
-# Accounts.sol POC tests
+# SubAccounts.sol POC tests
 
 ## Folder layout
 

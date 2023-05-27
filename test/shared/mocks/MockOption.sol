@@ -6,7 +6,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
 import "src/interfaces/IOption.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 contract MockOption is IOption {
@@ -14,7 +14,7 @@ contract MockOption is IOption {
   using SafeCast for int;
   using SignedDecimalMath for int;
 
-  IAccounts immutable account;
+  ISubAccounts immutable subAccounts;
 
   bool revertHandleManagerChange;
 
@@ -45,12 +45,12 @@ contract MockOption is IOption {
   ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint totalPosition) public totalPosition;
 
-  constructor(IAccounts account_) {
-    account = account_;
+  constructor(ISubAccounts account_) {
+    subAccounts = account_;
   }
 
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager _manager,

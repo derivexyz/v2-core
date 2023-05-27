@@ -9,12 +9,12 @@ import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../assets/cashAsset/mocks/MockInterestRateModel.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/risk-managers/StandardManager.sol";
 import "src/assets/PerpAsset.sol";
 import "src/assets/CashAsset.sol";
 import "src/assets/Option.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 /**
@@ -25,7 +25,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   Option option;
   StandardManager manager;
   CashAsset cash;
-  Accounts account;
+  SubAccounts subAccounts;
   MockFeeds feed;
   MockFeeds perpFeed;
   MockFeeds stableFeed;
@@ -49,7 +49,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
   function setUp() public {
     // deploy contracts
-    account = new Accounts("Lyra", "LYRA");
+    subAccounts = new SubAccounts("Lyra", "LYRA");
     feed = new MockFeeds();
     perpFeed = new MockFeeds();
     stableFeed = new MockFeeds();
@@ -58,16 +58,16 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     usdc.setDecimals(6);
 
     rateModel = new MockInterestRateModel(1e18);
-    cash = new CashAsset(account, usdc, rateModel, 0, address(0));
+    cash = new CashAsset(subAccounts, usdc, rateModel, 0, address(0));
 
-    perp = new PerpAsset(account, 0.0075e18);
+    perp = new PerpAsset(subAccounts, 0.0075e18);
 
     perp.setSpotFeed(feed);
     perp.setPerpFeed(perpFeed);
 
-    option = new Option(account, address(feed));
+    option = new Option(subAccounts, address(feed));
 
-    manager = new StandardManager(account, ICashAsset(cash));
+    manager = new StandardManager(subAccounts, ICashAsset(cash));
 
     manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
@@ -84,9 +84,9 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     perp.setFundingRateOracle(keeper);
 
     // create account for alice, bob, charlie
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
-    charlieAcc = account.createAccountWithApproval(charlie, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
+    charlieAcc = subAccounts.createAccountWithApproval(charlie, address(this), manager);
 
     _setPerpPrices(initPrice);
 
@@ -177,12 +177,12 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
-    account.submitTransfer(transfer, "");
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
+    subAccounts.submitTransfer(transfer, "");
   }
 
   function _getCashBalance(uint acc) public view returns (int) {
-    return account.getBalance(acc, cash, 0);
+    return subAccounts.getBalance(acc, cash, 0);
   }
 }

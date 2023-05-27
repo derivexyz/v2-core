@@ -9,7 +9,7 @@ import {IManager} from "src/interfaces/IManager.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IOption.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/risk-managers/BaseManager.sol";
 
 import "../../shared/mocks/MockAsset.sol";
@@ -27,7 +27,7 @@ contract BaseManagerTester is BaseManager {
   ISettlementFeed public immutable settlementFeed;
 
   constructor(
-    IAccounts accounts_,
+    ISubAccounts subAccounts_,
     IForwardFeed forwardFeed_,
     ISettlementFeed settlementFeed_,
     ISpotFeed spotFeed_,
@@ -35,7 +35,7 @@ contract BaseManagerTester is BaseManager {
     IOption option_,
     IPerpAsset perp_,
     IDutchAuction auction_
-  ) BaseManager(accounts_, cash_, auction_) {
+  ) BaseManager(subAccounts_, cash_, auction_) {
     option = option_;
     perp = perp_;
     forwardFeed = forwardFeed_;
@@ -67,7 +67,7 @@ contract BaseManagerTester is BaseManager {
     uint, /*accountId*/
     uint, /*tradeId*/
     address,
-    IAccounts.AssetDelta[] calldata, /*assetDeltas*/
+    ISubAccounts.AssetDelta[] calldata, /*assetDeltas*/
     bytes memory
   ) public {}
 
@@ -77,7 +77,7 @@ contract BaseManagerTester is BaseManager {
 }
 
 contract UNIT_TestAbstractBaseManager is Test {
-  Accounts accounts;
+  SubAccounts subAccounts;
   BaseManagerTester tester;
 
   MockAsset mockAsset;
@@ -99,23 +99,23 @@ contract UNIT_TestAbstractBaseManager is Test {
   address mockAuction = address(0xdd);
 
   function setUp() public {
-    accounts = new Accounts("Lyra Accounts", "LyraAccount");
+    subAccounts = new SubAccounts("Lyra Accounts", "LyraAccount");
 
     feed = new MockFeeds();
     usdc = new MockERC20("USDC", "USDC");
-    option = new MockOption(accounts);
-    perp = new MockPerp(accounts);
-    cash = new MockCash(usdc, accounts);
+    option = new MockOption(subAccounts);
+    perp = new MockPerp(subAccounts);
+    cash = new MockCash(usdc, subAccounts);
 
-    tester = new BaseManagerTester(accounts, feed, feed, feed, cash, option, perp, IDutchAuction(mockAuction));
+    tester = new BaseManagerTester(subAccounts, feed, feed, feed, cash, option, perp, IDutchAuction(mockAuction));
 
-    mockAsset = new MockAsset(usdc, accounts, true);
+    mockAsset = new MockAsset(usdc, subAccounts, true);
 
-    aliceAcc = accounts.createAccount(alice, IManager(address(tester)));
+    aliceAcc = subAccounts.createAccount(alice, IManager(address(tester)));
 
-    bobAcc = accounts.createAccount(bob, IManager(address(tester)));
+    bobAcc = subAccounts.createAccount(bob, IManager(address(tester)));
 
-    feeRecipientAcc = accounts.createAccount(address(this), IManager(address(tester)));
+    feeRecipientAcc = subAccounts.createAccount(address(this), IManager(address(tester)));
 
     tester.setFeeRecipient(feeRecipientAcc);
 
@@ -130,16 +130,16 @@ contract UNIT_TestAbstractBaseManager is Test {
     int amount = 5000 * 1e18;
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, amount);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), -amount);
-    assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), -amount);
+    assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), amount);
   }
 
   function testTransferWithoutMarginNegativeAmount() public {
     int amount = -5000 * 1e18;
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, amount);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), -amount);
-    assertEq(accounts.getBalance(bobAcc, mockAsset, 0), amount);
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), -amount);
+    assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), amount);
   }
 
   /* ------------------------- *
@@ -239,11 +239,11 @@ contract UNIT_TestAbstractBaseManager is Test {
 
     tester.settleOptions(aliceAcc);
 
-    assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
-    assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
+    assertEq(subAccounts.getBalance(aliceAcc, option, callId), 0);
+    assertEq(subAccounts.getBalance(aliceAcc, option, putId), 0);
 
     // cash increase
-    assertEq(accounts.getBalance(aliceAcc, cash, 0), 500e18);
+    assertEq(subAccounts.getBalance(aliceAcc, cash, 0), 500e18);
   }
 
   function testSettlementNetNegative() external {
@@ -257,18 +257,18 @@ contract UNIT_TestAbstractBaseManager is Test {
 
     tester.settleOptions(aliceAcc);
 
-    assertEq(accounts.getBalance(aliceAcc, option, callId), 0);
-    assertEq(accounts.getBalance(aliceAcc, option, putId), 0);
+    assertEq(subAccounts.getBalance(aliceAcc, option, callId), 0);
+    assertEq(subAccounts.getBalance(aliceAcc, option, putId), 0);
 
     // cash increase
-    assertEq(accounts.getBalance(aliceAcc, cash, 0), -1300e18);
+    assertEq(subAccounts.getBalance(aliceAcc, cash, 0), -1300e18);
   }
 
   function testSettleOnUnsettledAsset() external {
     (uint callId, uint putId) = _openDefaultPositions();
 
-    int callBalanceBefore = accounts.getBalance(aliceAcc, option, callId);
-    int putBalanceBefore = accounts.getBalance(aliceAcc, option, putId);
+    int callBalanceBefore = subAccounts.getBalance(aliceAcc, option, callId);
+    int putBalanceBefore = subAccounts.getBalance(aliceAcc, option, putId);
 
     // mock settlement value: settled still remain false
     option.setMockedTotalSettlementValue(callId, -500e18);
@@ -276,10 +276,10 @@ contract UNIT_TestAbstractBaseManager is Test {
 
     tester.settleOptions(aliceAcc);
 
-    assertEq(accounts.getBalance(aliceAcc, option, callId), callBalanceBefore);
-    assertEq(accounts.getBalance(aliceAcc, option, putId), putBalanceBefore);
+    assertEq(subAccounts.getBalance(aliceAcc, option, callId), callBalanceBefore);
+    assertEq(subAccounts.getBalance(aliceAcc, option, putId), putBalanceBefore);
     // cash increase
-    assertEq(accounts.getBalance(aliceAcc, cash, 0), 0);
+    assertEq(subAccounts.getBalance(aliceAcc, cash, 0), 0);
   }
 
   function testSettleCashInterest() external {
@@ -336,11 +336,11 @@ contract UNIT_TestAbstractBaseManager is Test {
     vm.startPrank(mockAuction);
     tester.executeBid(aliceAcc, bobAcc, 1e18, 0);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), 0);
-    assertEq(accounts.getBalance(bobAcc, mockAsset, 0), 1e18);
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 0);
+    assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 1e18);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 1), 0);
-    assertEq(accounts.getBalance(bobAcc, mockAsset, 1), 1e18);
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 1), 0);
+    assertEq(subAccounts.getBalance(bobAcc, mockAsset, 1), 1e18);
 
     vm.stopPrank();
   }
@@ -359,11 +359,11 @@ contract UNIT_TestAbstractBaseManager is Test {
     // liquidate 80%
     tester.executeBid(aliceAcc, bobAcc, 0.8e18, bid);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), 40e18);
-    assertEq(accounts.getBalance(aliceAcc, cash, 0), int(bid));
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 40e18);
+    assertEq(subAccounts.getBalance(aliceAcc, cash, 0), int(bid));
 
-    assertEq(accounts.getBalance(bobAcc, mockAsset, 0), 160e18);
-    assertEq(accounts.getBalance(bobAcc, cash, 0), 70e18); // cas
+    assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 160e18);
+    assertEq(subAccounts.getBalance(bobAcc, cash, 0), 70e18); // cas
 
     vm.stopPrank();
   }
@@ -387,21 +387,21 @@ contract UNIT_TestAbstractBaseManager is Test {
     vm.startPrank(mockAuction);
     tester.payLiquidationFee(aliceAcc, bobAcc, 1e18);
 
-    assertEq(accounts.getBalance(aliceAcc, mockAsset, 0), int(amount));
-    assertEq(accounts.getBalance(aliceAcc, cash, 0), 199e18);
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), int(amount));
+    assertEq(subAccounts.getBalance(aliceAcc, cash, 0), 199e18);
   }
 
   // alice open 10 long call, 10 short put
   function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {
     vm.prank(bob);
-    accounts.approve(alice, bobAcc);
+    subAccounts.approve(alice, bobAcc);
 
     callSubId = 100;
     putSubId = 200;
 
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](2);
 
-    transfers[0] = IAccounts.AssetTransfer({
+    transfers[0] = ISubAccounts.AssetTransfer({
       fromAcc: bobAcc,
       toAcc: aliceAcc,
       asset: IAsset(option),
@@ -409,7 +409,7 @@ contract UNIT_TestAbstractBaseManager is Test {
       amount: 10e18,
       assetData: ""
     });
-    transfers[1] = IAccounts.AssetTransfer({
+    transfers[1] = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: IAsset(option),
@@ -419,6 +419,6 @@ contract UNIT_TestAbstractBaseManager is Test {
     });
 
     vm.prank(alice);
-    accounts.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 }
