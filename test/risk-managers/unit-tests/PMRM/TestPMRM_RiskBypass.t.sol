@@ -89,7 +89,7 @@ contract UNIT_TestPMRM_RiskBypass is PMRMTestBase {
 
     // Just find one long call rather than hardcode
     for (uint i = 0; i < balances.length; i++) {
-      (, , bool isCall) = OptionEncoding.fromSubId(uint96(balances[i].subId));
+      (,, bool isCall) = OptionEncoding.fromSubId(uint96(balances[i].subId));
       if (balances[i].balance < 0 && isCall) {
         ISubAccounts.AssetBalance[] memory closeShortCall = new ISubAccounts.AssetBalance[](1);
         closeShortCall[0] =
