@@ -4,10 +4,10 @@ import "forge-std/Test.sol";
 
 import "src/risk-managers/PMRM.sol";
 import "src/assets/CashAsset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISubAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -35,40 +35,40 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
 
   function testPMRMArrangePortfolio_MaxExpiries() public {
     uint expiry = block.timestamp + 1000;
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](pmrm.MAX_EXPIRIES() + 1);
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.MAX_EXPIRIES() + 1);
     for (uint i = 0; i < balances.length; i++) {
-      balances[i] = IAccounts.AssetBalance({
+      balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(address(option)),
         subId: OptionEncoding.toSubId(expiry + i, 1500e18, true),
         balance: 1e18
       });
     }
     vm.expectRevert(IPMRM.PMRM_TooManyExpiries.selector);
-    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+    pmrm.arrangePortfolioByBalances(balances);
   }
 
   function testPMRMArrangePortfolio_MaxAssets() public {
     uint expiry = block.timestamp + 1000;
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](pmrm.MAX_ASSETS() + 1);
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.MAX_ASSETS() + 1);
     for (uint i = 0; i < balances.length; i++) {
-      balances[i] = IAccounts.AssetBalance({
+      balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(address(option)),
         subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
         balance: 1e18
       });
     }
     vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
-    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+    pmrm.arrangePortfolioByBalances(balances);
   }
 
   function testPMRMArrangePortfolio_ExpiredOption() public {
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
-    balances[0] = IAccounts.AssetBalance({
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({
       asset: IAsset(address(option)),
       subId: OptionEncoding.toSubId(block.timestamp - 1, 1500e18, true),
       balance: 1e18
     });
     vm.expectRevert(IPMRM.PMRM_OptionExpired.selector);
-    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+    pmrm.arrangePortfolioByBalances(balances);
   }
 }

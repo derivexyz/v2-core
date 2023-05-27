@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
@@ -15,14 +15,14 @@ import "./libraries/AssetDeltaLib.sol";
 import "./libraries/PermitAllowanceLib.sol";
 
 /**
- * @title Accounts
+ * @title SubAccounts
  * @author Lyra
  * @notice Base layer that manages:
- *         1. balances for each (account, asset, subId)
+ *         1. balances for each (subAccounts, asset, subId)
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract Accounts is Allowances, ERC721, EIP712, IAccounts {
+contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;

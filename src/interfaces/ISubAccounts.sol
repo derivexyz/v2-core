@@ -7,8 +7,8 @@ import {IManager} from "src/interfaces/IManager.sol";
 
 import {IAllowances} from "src/interfaces/IAllowances.sol";
 
-// For full documentation refer to src/Accounts.sol";
-interface IAccounts is IERC721 {
+// For full documentation refer to src/SubAccounts.sol";
+interface ISubAccounts is IERC721 {
   struct BalanceAndOrder {
     // balance of (asset, subId)
     int240 balance;

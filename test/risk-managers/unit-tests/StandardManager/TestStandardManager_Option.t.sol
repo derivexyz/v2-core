@@ -2,12 +2,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/BasicManager.sol";
+import "src/risk-managers/StandardManager.sol";
 import "src/periphery/OptionSettlementHelper.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
@@ -24,9 +24,9 @@ import "test/auction/mocks/MockCashAsset.sol";
 /**
  * Focusing on the margin rules for options
  */
-contract UNIT_TestBasicManager_Option is Test {
-  Accounts account;
-  BasicManager manager;
+contract UNIT_TestStandardManager_Option is Test {
+  SubAccounts subAccounts;
+  StandardManager manager;
   MockCash cash;
   MockERC20 usdc;
   MockPerp perp;
@@ -48,15 +48,15 @@ contract UNIT_TestBasicManager_Option is Test {
   uint feeRecipient;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockCash(IERC20(usdc), account);
+    cash = new MockCash(IERC20(usdc), subAccounts);
 
-    perp = new MockPerp(account);
+    perp = new MockPerp(subAccounts);
 
-    option = new MockOption(account);
+    option = new MockOption(subAccounts);
 
     feed = new MockFeeds();
 
@@ -64,22 +64,22 @@ contract UNIT_TestBasicManager_Option is Test {
 
     pricing = new MockOptionPricing();
 
-    manager = new BasicManager(
-      account,
+    manager = new StandardManager(
+      subAccounts,
       ICashAsset(address(cash))
     );
 
     manager.setPricingModule(ethMarketId, pricing);
 
-    manager.whitelistAsset(perp, ethMarketId, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, ethMarketId, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(perp, ethMarketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, ethMarketId, IStandardManager.AssetType.Option);
 
     manager.setOraclesForMarket(ethMarketId, feed, feed, feed, feed, feed);
 
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
 
-    feeRecipient = account.createAccount(address(this), manager);
+    feeRecipient = subAccounts.createAccount(address(this), manager);
 
     // set a future price that will be used for 90 day options
     expiry = block.timestamp + 91 days;
@@ -95,14 +95,14 @@ contract UNIT_TestBasicManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
+    IStandardManager.OptionMarginParameters memory params =
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
-    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
 
     optionHelper = new OptionSettlementHelper();
   }
@@ -112,22 +112,23 @@ contract UNIT_TestBasicManager_Option is Test {
   ////////////////
 
   function testWhitelistAsset() public {
-    manager.whitelistAsset(perp, 2, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 2, IBasicManager.AssetType.Option);
-    (bool isPerpWhitelisted, IBasicManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
-    (bool isOptionWhitelisted, IBasicManager.AssetType optionType, uint8 optionMarketId) = manager.assetDetails(option);
+    manager.whitelistAsset(perp, 2, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 2, IStandardManager.AssetType.Option);
+    (bool isPerpWhitelisted, IStandardManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
+    (bool isOptionWhitelisted, IStandardManager.AssetType optionType, uint8 optionMarketId) =
+      manager.assetDetails(option);
     assertEq(isPerpWhitelisted, true);
-    assertEq(uint(perpType), uint(IBasicManager.AssetType.Perpetual));
+    assertEq(uint(perpType), uint(IStandardManager.AssetType.Perpetual));
     assertEq(marketId, 2);
 
     assertEq(isOptionWhitelisted, true);
-    assertEq(uint(optionType), uint(IBasicManager.AssetType.Option));
+    assertEq(uint(optionType), uint(IStandardManager.AssetType.Option));
     assertEq(optionMarketId, 2);
   }
 
   function testSetOptionParameters() public {
-    IBasicManager.OptionMarginParameters memory params =
-      IBasicManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18);
+    IStandardManager.OptionMarginParameters memory params =
+      IStandardManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18);
     manager.setOptionMarginParameters(ethMarketId, params);
     (int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale) =
       manager.optionMarginParams(ethMarketId);
@@ -156,22 +157,22 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testSetDepegParameters() public {
-    manager.setDepegParameters(IBasicManager.DepegParams(0.99e18, 1.2e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.99e18, 1.2e18));
     (int threshold, int depegFactor) = manager.depegParams();
     assertEq(threshold, 0.99e18);
     assertEq(depegFactor, 1.2e18);
   }
 
   function testCannotSetInvalidDepegParameters() public {
-    vm.expectRevert(IBasicManager.BM_InvalidDepegParams.selector);
-    manager.setDepegParameters(IBasicManager.DepegParams(1.01e18, 1.2e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidDepegParams.selector);
+    manager.setDepegParameters(IStandardManager.DepegParams(1.01e18, 1.2e18));
 
-    vm.expectRevert(IBasicManager.BM_InvalidDepegParams.selector);
-    manager.setDepegParameters(IBasicManager.DepegParams(0.9e18, 4e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidDepegParams.selector);
+    manager.setDepegParameters(IStandardManager.DepegParams(0.9e18, 4e18));
   }
 
   function testSetOracleContingencyParams() public {
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.8e18, 0.9e18, 0.05e18));
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.05e18));
 
     (uint64 prepThreshold, uint64 optionThreshold, int128 factor) = manager.oracleContingencyParams(ethMarketId);
     assertEq(prepThreshold, 0.8e18);
@@ -180,14 +181,14 @@ contract UNIT_TestBasicManager_Option is Test {
   }
 
   function testCannotSetInvalidOracleContingencyParams() public {
-    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(1.01e18, 0.9e18, 0.05e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(1.01e18, 0.9e18, 0.05e18));
 
-    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.9e18, 1.01e18, 0.05e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.9e18, 1.01e18, 0.05e18));
 
-    vm.expectRevert(IBasicManager.BM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.5e18, 0.9e18, 1.2e18));
+    vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.9e18, 1.2e18));
   }
 
   ////////////////////////////////////////////////////
@@ -363,7 +364,7 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike = 2000e18;
     cash.deposit(aliceAcc, 190e18);
 
-    vm.expectRevert(IBasicManager.BM_NoForwardPrice.selector);
+    vm.expectRevert(IStandardManager.SRM_NoForwardPrice.selector);
     _transferOption(aliceAcc, bobAcc, 1e18, expiry + 1, strike, true);
   }
 
@@ -377,8 +378,8 @@ contract UNIT_TestBasicManager_Option is Test {
     // the margin needed is the sum of 2 positions
     cash.deposit(aliceAcc, uint(-(callMargin + putMargin)));
 
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
-    transfers[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](2);
+    transfers[0] = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -386,7 +387,7 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: amount,
       assetData: ""
     });
-    transfers[1] = IAccounts.AssetTransfer({
+    transfers[1] = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: option,
@@ -394,7 +395,7 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: amount,
       assetData: ""
     });
-    account.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 
   function testAllowRiskReducingTrade() public {
@@ -416,7 +417,7 @@ contract UNIT_TestBasicManager_Option is Test {
 
   function testOracleContingencyOnOptions() public {
     // set oracle contingency params
-    manager.setOracleContingencyParams(ethMarketId, IBasicManager.OracleContingencyParams(0.8e18, 0.9e18, 0.1e18));
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.1e18));
 
     // start a trade
     uint strike = 2000e18;
@@ -456,7 +457,7 @@ contract UNIT_TestBasicManager_Option is Test {
     cash.deposit(aliceAcc, 2000e18);
     _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
-    int cashBefore = account.getBalance(aliceAcc, cash, 0);
+    int cashBefore = subAccounts.getBalance(aliceAcc, cash, 0);
 
     vm.warp(expiry + 1);
     uint subId = OptionEncoding.toSubId(expiry, strike, true);
@@ -465,16 +466,16 @@ contract UNIT_TestBasicManager_Option is Test {
 
     manager.settleOptions(option, aliceAcc);
 
-    int cashAfter = account.getBalance(aliceAcc, cash, 0);
+    int cashAfter = subAccounts.getBalance(aliceAcc, cash, 0);
     assertEq(cashBefore - cashAfter, 500e18);
   }
 
   function testCannotSettleWeirdAsset() public {
-    MockOption badAsset = new MockOption(account);
+    MockOption badAsset = new MockOption(subAccounts);
 
     vm.warp(expiry + 1);
     feed.setSpot(2100e19, 1e18);
-    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
+    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
     manager.settleOptions(badAsset, aliceAcc);
   }
 
@@ -483,7 +484,7 @@ contract UNIT_TestBasicManager_Option is Test {
     cash.deposit(aliceAcc, 2000e18);
     _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
-    int cashBefore = account.getBalance(aliceAcc, cash, 0);
+    int cashBefore = subAccounts.getBalance(aliceAcc, cash, 0);
 
     vm.warp(expiry + 1);
     uint subId = OptionEncoding.toSubId(expiry, strike, true);
@@ -496,9 +497,9 @@ contract UNIT_TestBasicManager_Option is Test {
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
-    account.submitTransfer(transfer, managerData);
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    subAccounts.submitTransfer(transfer, managerData);
 
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashBefore - cashAfter, 500e18);
@@ -509,7 +510,7 @@ contract UNIT_TestBasicManager_Option is Test {
   /////////////
 
   function _transferOption(uint fromAcc, uint toAcc, int amount, uint _expiry, uint strike, bool isCall) internal {
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -517,7 +518,7 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: amount,
       assetData: ""
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 
   function _tradeOption(
@@ -529,8 +530,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike,
     bool isCall
   ) internal {
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
-    transfers[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](2);
+    transfers[0] = ISubAccounts.AssetTransfer({
       fromAcc: shortAcc,
       toAcc: longAcc,
       asset: option,
@@ -538,7 +539,7 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: optionAmount,
       assetData: ""
     });
-    transfers[1] = IAccounts.AssetTransfer({
+    transfers[1] = ISubAccounts.AssetTransfer({
       fromAcc: longAcc,
       toAcc: shortAcc,
       asset: cash,
@@ -546,7 +547,7 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: premium,
       assetData: ""
     });
-    account.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 
   function _tradeSpread(
@@ -559,8 +560,8 @@ contract UNIT_TestBasicManager_Option is Test {
     uint strike2,
     bool isCall
   ) internal {
-    IAccounts.AssetTransfer[] memory transfers = new IAccounts.AssetTransfer[](2);
-    transfers[0] = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](2);
+    transfers[0] = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: option,
@@ -568,7 +569,7 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: shortAmount,
       assetData: ""
     });
-    transfers[1] = IAccounts.AssetTransfer({
+    transfers[1] = ISubAccounts.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: option,
@@ -576,10 +577,10 @@ contract UNIT_TestBasicManager_Option is Test {
       amount: longAmount,
       assetData: ""
     });
-    account.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 
   function _getCashBalance(uint acc) public view returns (int) {
-    return account.getBalance(acc, cash, 0);
+    return subAccounts.getBalance(acc, cash, 0);
   }
 }

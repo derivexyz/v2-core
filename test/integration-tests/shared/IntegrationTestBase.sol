@@ -10,7 +10,7 @@ pragma solidity ^0.8.18;
 //import "src/assets/Option.sol";
 //import "src/assets/InterestRateModel.sol";
 //import "src/liquidation/DutchAuction.sol";
-//import "src/Accounts.sol";
+//import "src/SubAccounts.sol";
 //
 //import {IManager} from "src/interfaces/IManager.sol";
 //import "../../../src/risk-managers/PMRM.sol";
@@ -31,7 +31,7 @@ pragma solidity ^0.8.18;
 //  uint public constant DEFAULT_DEPOSIT = 5000e18;
 //  int public constant ETH_PRICE = 2000e18;
 //
-//  Accounts accounts;
+//  SubAccounts subAccounts;
 //  CashAsset cash;
 //  MockERC20 usdc;
 //  Option option;
@@ -61,19 +61,19 @@ pragma solidity ^0.8.18;
 //    vm.label(alice, "alice");
 //    vm.label(bob, "bob");
 //
-//    aliceAcc = accounts.createAccount(alice, pmrm);
-//    bobAcc = accounts.createAccount(bob, pmrm);
+//    aliceAcc =subAccounts.createAccount(alice, pmrm);
+//    bobAcc =subAccounts.createAccount(bob, pmrm);
 //
 //    // allow this contract to submit trades
 //    vm.prank(alice);
-//    accounts.setApprovalForAll(address(this), true);
+//   subAccounts.setApprovalForAll(address(this), true);
 //    vm.prank(bob);
-//    accounts.setApprovalForAll(address(this), true);
+//   subAccounts.setApprovalForAll(address(this), true);
 //  }
 //
 //  function _deployAllV2Contracts() internal {
 //    // nonce: 1 => Deploy Accounts
-//    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+//   subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 //
 //    // nonce: 2 => Deploy USDC
 //    usdc = new MockERC20("USDC", "USDC");
@@ -94,7 +94,7 @@ pragma solidity ^0.8.18;
 //
 //    // nonce: 6 => Deploy CashAsset
 //    address auctionAddr = _predictAddress(address(this), 10);
-//    cash = new CashAsset(accounts, usdc, rateModel, smAcc, auctionAddr);
+//    cash = new CashAsset(subAccounts, usdc, rateModel, smAcc, auctionAddr);
 //
 //    // nonce: 7 => Deploy OptionAsset
 //    option = new Option(accounts, address(feed));
@@ -143,7 +143,7 @@ pragma solidity ^0.8.18;
 //    option.setWhitelistManager(address(pmrm), true);
 //
 //    // pmrm setups
-//    pmrmFeeAcc = accounts.createAccount(address(this), pmrm);
+//    pmrmFeeAcc =subAccounts.createAccount(address(this), pmrm);
 //    pmrm.setFeeRecipient(pmrmFeeAcc);
 //
 //    // set parameter for auction
@@ -186,10 +186,10 @@ pragma solidity ^0.8.18;
 //    uint subIdB,
 //    int amountB
 //  ) internal {
-//    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
+//    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
 //
 //    // accA transfer asset A to accB
-//    transferBatch[0] = IAccounts.AssetTransfer({
+//    transferBatch[0] = ISubAccounts.AssetTransfer({
 //      fromAcc: accA,
 //      toAcc: accB,
 //      asset: assetA,
@@ -199,7 +199,7 @@ pragma solidity ^0.8.18;
 //    });
 //
 //    // accB transfer asset B to accA
-//    transferBatch[1] = IAccounts.AssetTransfer({
+//    transferBatch[1] = ISubAccounts.AssetTransfer({
 //      fromAcc: accB,
 //      toAcc: accA,
 //      asset: assetB,
@@ -208,7 +208,7 @@ pragma solidity ^0.8.18;
 //      assetData: bytes32(0)
 //    });
 //
-//    accounts.submitTransfers(transferBatch, "");
+//   subAccounts.submitTransfers(transferBatch, "");
 //  }
 //
 //  function _depositSecurityModule(address user, uint amountCash) internal {
@@ -267,14 +267,14 @@ pragma solidity ^0.8.18;
 //   * @dev view function to help writing integration test
 //   */
 //  function getCashBalance(uint acc) public view returns (int) {
-//    return accounts.getBalance(acc, cash, 0);
+//    return subAccounts.getBalance(acc, cash, 0);
 //  }
 //
 //  /**
 //   * @dev view function to help writing integration test
 //   */
 //  function getOptionBalance(uint acc, uint96 subId) public view returns (int) {
-//    return accounts.getBalance(acc, option, subId);
+//    return subAccounts.getBalance(acc, option, subId);
 //  }
 //
 //  function getAccInitMargin(uint acc) public view returns (int) {

@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 import "../../../../src/assets/Option.sol";
-import "../../../../src/Accounts.sol";
+import "../../../../src/SubAccounts.sol";
 
 import {IOITracking} from "src/interfaces/IOITracking.sol";
 
@@ -19,7 +19,7 @@ contract UNIT_OptionAssetOITest is Test {
   Option option;
   MockManager manager;
   MockManager manager2;
-  Accounts account;
+  SubAccounts subAccounts;
 
   int tradeAmount = 100e18;
   uint accountPos; // balance: 100
@@ -29,22 +29,22 @@ contract UNIT_OptionAssetOITest is Test {
   uint subId = 99999;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(account));
+    manager = new MockManager(address(subAccounts));
 
-    manager2 = new MockManager(address(account));
+    manager2 = new MockManager(address(subAccounts));
 
-    option = new Option(account, address(0));
+    option = new Option(subAccounts, address(0));
     option.setWhitelistManager(address(manager), true);
     option.setWhitelistManager(address(manager2), true);
 
-    accountPos = account.createAccount(address(this), manager);
-    accountNeg = account.createAccount(address(this), manager);
+    accountPos = subAccounts.createAccount(address(this), manager);
+    accountNeg = subAccounts.createAccount(address(this), manager);
     // init these 2 accounts with positive and negative balance
     _transfer(accountNeg, accountPos, tradeAmount);
 
-    accountEmpty = account.createAccount(address(this), manager);
+    accountEmpty = subAccounts.createAccount(address(this), manager);
 
     option.setTotalPositionCap(manager, uint(10 * tradeAmount));
     option.setTotalPositionCap(manager2, uint(10 * tradeAmount));
@@ -179,7 +179,7 @@ contract UNIT_OptionAssetOITest is Test {
     uint totalPos1Before = option.totalPosition(manager);
 
     // new account under manager 2
-    uint newAcc = account.createAccount(address(this), manager2);
+    uint newAcc = subAccounts.createAccount(address(this), manager2);
 
     // AccountNeg => -100 -> 0
     // newAcc => 0 -> -100
@@ -195,7 +195,7 @@ contract UNIT_OptionAssetOITest is Test {
     uint totalPos1Before = option.totalPosition(manager);
     uint totalPos2Before = option.totalPosition(manager2);
 
-    account.changeManager(accountNeg, manager2, "");
+    subAccounts.changeManager(accountNeg, manager2, "");
 
     uint totalPos1After = option.totalPosition(manager);
     uint totalPos2After = option.totalPosition(manager2);
@@ -206,8 +206,8 @@ contract UNIT_OptionAssetOITest is Test {
 
   /// @dev util function to transfer
   function _transfer(uint from, uint to, int amount) internal {
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: from, toAcc: to, asset: option, subId: subId, amount: amount, assetData: ""});
-    account.submitTransfer(transfer, "");
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: from, toAcc: to, asset: option, subId: subId, amount: amount, assetData: ""});
+    subAccounts.submitTransfer(transfer, "");
   }
 }

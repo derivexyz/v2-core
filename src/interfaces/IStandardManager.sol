@@ -5,7 +5,7 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 
-interface IBasicManager {
+interface IStandardManager {
   enum AssetType {
     NotSet,
     Option,
@@ -20,10 +20,10 @@ interface IBasicManager {
   }
 
   /**
-   * @dev a basic manager portfolio contains up to 5 marketHoldings assets
+   * @dev a standard manager portfolio contains up to 5 marketHoldings assets
    * each marketHolding contains multiple derivative type
    */
-  struct BasicManagerPortfolio {
+  struct StandardManagerPortfolio {
     // @dev each marketHolding take care of 1 base asset, for example ETH and BTC.
     MarketHolding[] marketHoldings;
     int cash;
@@ -97,31 +97,31 @@ interface IBasicManager {
   ///////////////
 
   /// @dev Caller is not the Accounts contract
-  error BM_NotAccounts();
+  error SRM_NotAccounts();
 
   /// @dev Not whitelist manager
-  error BM_NotWhitelistManager();
+  error SRM_NotWhitelistManager();
 
   /// @dev Not supported asset
-  error BM_UnsupportedAsset();
+  error SRM_UnsupportedAsset();
 
   /// @dev Account is under water, need more cash
-  error BM_PortfolioBelowMargin(uint accountId, int margin);
+  error SRM_PortfolioBelowMargin(uint accountId, int margin);
 
   /// @dev Invalid Parameters for perp margin requirements
-  error BM_InvalidMarginRequirement();
+  error SRM_InvalidMarginRequirement();
 
   /// @dev Forward Price for an asset is 0
-  error BM_NoForwardPrice();
+  error SRM_NoForwardPrice();
 
   /// @dev Invalid depeg parameters
-  error BM_InvalidDepegParams();
+  error SRM_InvalidDepegParams();
 
   /// @dev Invalid Oracle contingency params
-  error BM_InvalidOracleContingencyParams();
+  error SRM_InvalidOracleContingencyParams();
 
   /// @dev No negative cash
-  error BM_NoNegativeCash();
+  error SRM_NoNegativeCash();
 
   ///////////////////
   //    Events     //

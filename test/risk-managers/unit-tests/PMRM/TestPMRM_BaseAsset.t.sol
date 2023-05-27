@@ -27,8 +27,8 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
 
     baseAsset.setOICap(pmrm, 0);
 
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
-    balances[0] = IAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
     _doBalanceTransfer(bobAcc, aliceAcc, balances);
   }
 
@@ -58,7 +58,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
 
     // other PMRM
     PMRM newManager = new PMRMPublic(
-      accounts,
+      subAccounts,
       cash,
       option,
       mockPerp,
@@ -76,14 +76,14 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     );
     baseAsset.setWhitelistManager(address(newManager), true);
     // create new account for that manager
-    uint newAcc = accounts.createAccount(address(this), IManager(address(newManager)));
+    uint newAcc = subAccounts.createAccount(address(this), IManager(address(newManager)));
     baseAsset.setOICap(newManager, type(uint).max);
     weth.mint(address(this), 100e18);
     weth.approve(address(baseAsset), 100e18);
     baseAsset.deposit(newAcc, 100e18);
 
-    IAccounts.AssetBalance[] memory balances = new IAccounts.AssetBalance[](1);
-    balances[0] = IAccounts.AssetBalance({asset: baseAsset, balance: 20e18, subId: 0});
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({asset: baseAsset, balance: 20e18, subId: 0});
 
     // bob can transfer out
     _doBalanceTransfer(bobAcc, newAcc, balances);

@@ -8,7 +8,7 @@ import "forge-std/console2.sol";
 
 contract TestPMRM_PerpFeed is PMRMTestBase {
   function test_perpFeedAffectsPMRM() public {
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
     _depositCash(aliceAcc, 1_000_000e18);
     _depositCash(bobAcc, 1_000_000e18);
     _doBalanceTransfer(aliceAcc, bobAcc, balances);

@@ -10,7 +10,7 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
@@ -19,7 +19,7 @@ import "./ManagerWhitelist.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into their accounts.
+ * @dev   Users can deposit USDC and credit this cash asset into theirsubAccounts.
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
@@ -94,12 +94,12 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   /////////////////////
 
   constructor(
-    IAccounts _accounts,
+    ISubAccounts _subAccounts,
     IERC20Metadata _stableAsset,
     IInterestRateModel _rateModel,
     uint _smId,
     address _liquidationModule
-  ) ManagerWhitelist(_accounts) {
+  ) ManagerWhitelist(_subAccounts) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     smId = _smId;
@@ -149,8 +149,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     stableAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
     uint amountInAccount = stableAmount.to18Decimals(stableDecimals);
 
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -173,7 +173,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @param recipient USDC recipient
    */
   function withdraw(uint accountId, uint stableAmount, address recipient) external {
-    if (msg.sender != accounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
+    if (msg.sender != subAccounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
 
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
@@ -205,7 +205,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    */
   function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
     _accrueInterest();
-    return _calculateBalanceWithInterest(accounts.getBalance(accountId, ICashAsset(address(this)), 0), accountId);
+    return _calculateBalanceWithInterest(subAccounts.getBalance(accountId, ICashAsset(address(this)), 0), accountId);
   }
 
   /// @notice Allows anyone to transfer accrued SM fees to the SM
@@ -213,8 +213,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     int amountToSend = accruedSmFees.toInt256();
     accruedSmFees = 0;
 
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: smId,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -248,7 +248,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBalance,
     IManager manager,
@@ -309,8 +309,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     }
 
     // mint this amount in target account
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountToReceive,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -333,11 +333,11 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   }
 
   function forceWithdraw(uint accountId) external {
-    if (msg.sender != address(accounts.manager(accountId))) {
+    if (msg.sender != address(subAccounts.manager(accountId))) {
       revert CA_ForceWithdrawNotAuthorized();
     }
-    address owner = accounts.ownerOf(accountId);
-    int balance = accounts.getBalance(accountId, ICashAsset(address(this)), 0);
+    address owner = subAccounts.ownerOf(accountId);
+    int balance = subAccounts.getBalance(accountId, ICashAsset(address(this)), 0);
     if (balance < 0) {
       revert CA_ForceWithdrawNegativeBalance();
     }
@@ -377,8 +377,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     // transfer the asset out after potentially needing to calculate exchange rate
     stableAsset.safeTransfer(recipient, stableAmount);
 
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: ICashAsset(address(this)),
         subId: 0,

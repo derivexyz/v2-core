@@ -10,7 +10,7 @@ import "openzeppelin/access/Ownable2Step.sol";
 import "forge-std/console2.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 import "./../assets/QuoteWrapper.sol";
 import "./../assets/BaseWrapper.sol";
@@ -28,7 +28,7 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
     uint ivShock;
   }
 
-  IAccounts account;
+  ISubAccounts subAccounts;
 
   ////
   // Allowed assets
@@ -49,14 +49,14 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
   address nextManager;
 
   constructor(
-    IAccounts account_,
+    ISubAccounts account_,
     PriceFeeds priceFeed_,
     QuoteWrapper quoteAsset_,
     BaseWrapper baseAsset_,
     OptionToken optionToken_,
     Lending lending_
   ) Ownable2Step() {
-    account = account_;
+    subAccounts = account_;
     priceFeeds = priceFeed_;
     quoteAsset = quoteAsset_;
     baseAsset = baseAsset_;
@@ -83,7 +83,7 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
   // Liquidations
 
   function flagLiquidation(uint accountId) external {
-    IAccounts.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory assetBals = subAccounts.getAccountBalances(accountId);
     if (!liquidationFlagged[accountId] && _isAccountLiquidatable(accountId, assetBals)) {
       liquidationFlagged[accountId] = true;
     } else {
@@ -102,11 +102,11 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
     // TODO: SM and socialised losses, this require blocks that
     require(liquidationFlagged[accountId] && extraCollateral >= 0);
 
-    require(msg.sender == account.ownerOf(accountForCollateral), "not auth");
+    require(msg.sender == subAccounts.ownerOf(accountForCollateral), "not auth");
 
     // TODO: check owner of accountForCollat
-    account.managerAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.managerAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountForCollateral,
         asset: quoteAsset,
         subId: 0,
@@ -114,10 +114,10 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
         assetData: bytes32(0)
       })
     );
-    assessRisk(accountForCollateral, account.getAccountBalances(accountForCollateral));
+    assessRisk(accountForCollateral, subAccounts.getAccountBalances(accountForCollateral));
 
-    account.managerAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.managerAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: quoteAsset,
         subId: 0,
@@ -126,7 +126,7 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
       })
     );
 
-    IAccounts.AssetBalance[] memory assetBals = account.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory assetBals = subAccounts.getAccountBalances(accountId);
     for (uint i; i < assetBals.length; i++) {
       if (assetBals[i].asset == IAsset(optionToken)) {
         optionToken.decrementLiquidations(assetBals[i].subId);
@@ -134,28 +134,28 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
     }
     // reset flag
     liquidationFlagged[accountId] = false;
-    assessRisk(accountId, account.getAccountBalances(accountId));
+    assessRisk(accountId, subAccounts.getAccountBalances(accountId));
 
     // transfer account to liquidator
-    account.transferFrom(account.ownerOf(accountId), msg.sender, accountId);
+    subAccounts.transferFrom(subAccounts.ownerOf(accountId), msg.sender, accountId);
   }
 
   ////
   // Settlement
 
-  function settleAssets(uint accountId, IAccounts.HeldAsset[] memory assetsToSettle) external {
+  function settleAssets(uint accountId, ISubAccounts.HeldAsset[] memory assetsToSettle) external {
     // iterate through all held assets and trigger settlement
     uint assetLen = assetsToSettle.length;
     for (uint i; i < assetLen; i++) {
-      int balance = account.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
+      int balance = subAccounts.getBalance(accountId, assetsToSettle[i].asset, assetsToSettle[i].subId);
 
       (int pnl, bool settled) =
         ISettleable(address(assetsToSettle[i].asset)).calculateSettlement(assetsToSettle[i].subId, balance);
 
       if (settled) {
         // NOTE: RM A at risk of RM B not properly implementing settling
-        account.managerAdjustment(
-          IAccounts.AssetAdjustment({
+        subAccounts.managerAdjustment(
+          ISubAccounts.AssetAdjustment({
             acc: accountId,
             asset: assetsToSettle[i].asset,
             subId: assetsToSettle[i].subId,
@@ -165,21 +165,21 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
         );
 
         // this could leave daiLending balance to negative value
-        account.managerAdjustment(
-          IAccounts.AssetAdjustment({acc: accountId, asset: lending, subId: 0, amount: pnl, assetData: bytes32(0)})
+        subAccounts.managerAdjustment(
+          ISubAccounts.AssetAdjustment({acc: accountId, asset: lending, subId: 0, amount: pnl, assetData: bytes32(0)})
         );
       }
     }
   }
 
-  function handleAdjustment(uint accountId, uint, /*tradeId*/ address, IAccounts.AssetDelta[] memory, bytes memory)
+  function handleAdjustment(uint accountId, uint, /*tradeId*/ address, ISubAccounts.AssetDelta[] memory, bytes memory)
     public
     override
   {
-    assessRisk(accountId, account.getAccountBalances(accountId));
+    assessRisk(accountId, subAccounts.getAccountBalances(accountId));
   }
 
-  function assessRisk(uint accountId, IAccounts.AssetBalance[] memory assets) public {
+  function assessRisk(uint accountId, ISubAccounts.AssetBalance[] memory assets) public {
     if (liquidationFlagged[accountId]) {
       revert("Account flagged for liquidation");
     }
@@ -188,7 +188,7 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
     }
   }
 
-  function _isAccountLiquidatable(uint accountId, IAccounts.AssetBalance[] memory assets) internal returns (bool) {
+  function _isAccountLiquidatable(uint accountId, ISubAccounts.AssetBalance[] memory assets) internal returns (bool) {
     // Get fresh lending balance once in the beginning
     int freshLendingBalance = lending.getBalance(accountId);
 
@@ -204,7 +204,7 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
       int scenarioValue = 0;
       uint shockedSpot = baseSpotPrice.multiplyDecimal(scenarios[j].spotShock);
       for (uint k; k < assetLen; k++) {
-        IAccounts.AssetBalance memory assetBalance = assets[k];
+        ISubAccounts.AssetBalance memory assetBalance = assets[k];
 
         if (assetBalance.asset == IAsset(optionToken)) {
           scenarioValue +=

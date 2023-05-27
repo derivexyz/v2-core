@@ -11,7 +11,7 @@ import "lyra-utils/math/IntLib.sol";
 import "./ManagerWhitelist.sol";
 
 import {IOption} from "src/interfaces/IOption.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
@@ -42,7 +42,7 @@ contract Option is IOption, OITracking, ManagerWhitelist {
   //    Constructor     //
   ////////////////////////
 
-  constructor(IAccounts _accounts, address _settlementFeed) ManagerWhitelist(_accounts) {
+  constructor(ISubAccounts _subAccounts, address _settlementFeed) ManagerWhitelist(_subAccounts) {
     settlementFeed = ISettlementFeed(_settlementFeed);
   }
 
@@ -51,7 +51,7 @@ contract Option is IOption, OITracking, ManagerWhitelist {
   /////////////////////
 
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint tradeId,
     int preBalance,
     IManager manager,
@@ -86,7 +86,7 @@ contract Option is IOption, OITracking, ManagerWhitelist {
 
     // migrate OI cap to new manager
     uint pos = accountTotalPosition[accountId];
-    _migrateTotalPositionAndCheckCaps(pos, accounts.manager(accountId), newManager);
+    _migrateTotalPositionAndCheckCaps(pos, subAccounts.manager(accountId), newManager);
   }
 
   //////////

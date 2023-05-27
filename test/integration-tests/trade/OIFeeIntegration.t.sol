@@ -18,9 +18,9 @@ pragma solidity ^0.8.18;
 //
 //    // allow this contract to submit trades
 //    vm.prank(alice);
-//    accounts.setApprovalForAll(address(this), true);
+//   subAccounts.setApprovalForAll(address(this), true);
 //    vm.prank(bob);
-//    accounts.setApprovalForAll(address(this), true);
+//   subAccounts.setApprovalForAll(address(this), true);
 //
 //    // init setup for both accounts
 //    _depositCash(alice, aliceAcc, initCash);

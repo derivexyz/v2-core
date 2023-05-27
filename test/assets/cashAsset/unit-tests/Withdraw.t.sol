@@ -8,7 +8,7 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/Accounts.sol";
+import "../../../../src/SubAccounts.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -18,7 +18,7 @@ contract UNIT_CashAssetWithdraw is Test {
   MockERC20 usdc;
   MockManager manager;
   MockManager badManager;
-  Accounts account;
+  SubAccounts subAccounts;
   IInterestRateModel rateModel;
   address badActor = address(0x0fac);
 
@@ -26,15 +26,15 @@ contract UNIT_CashAssetWithdraw is Test {
   uint depositedAmount;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(account));
-    badManager = new MockManager(address(account));
+    manager = new MockManager(address(subAccounts));
+    badManager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
 
     rateModel = new MockInterestRateModel(1e18);
-    cashAsset = new CashAsset(account, usdc, rateModel, 0, address(0));
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel, 0, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -43,7 +43,7 @@ contract UNIT_CashAssetWithdraw is Test {
     usdc.mint(address(this), depositedAmount);
     usdc.approve(address(cashAsset), type(uint).max);
 
-    accountId = account.createAccount(address(this), manager);
+    accountId = subAccounts.createAccount(address(this), manager);
 
     cashAsset.deposit(accountId, depositedAmount);
   }
@@ -57,7 +57,7 @@ contract UNIT_CashAssetWithdraw is Test {
     assertEq(usdcAfter - usdcBefore, withdrawAmount);
 
     // cash balance updated in account
-    int accBalance = account.getBalance(accountId, cashAsset, 0);
+    int accBalance = subAccounts.getBalance(accountId, cashAsset, 0);
     assertEq(accBalance, int(depositedAmount - withdrawAmount));
   }
 
@@ -68,7 +68,7 @@ contract UNIT_CashAssetWithdraw is Test {
   }
 
   function testCannotWithdrawFromAccountNotControlledByTrustedManager() public {
-    uint badAccount = account.createAccount(address(this), badManager);
+    uint badAccount = subAccounts.createAccount(address(this), badManager);
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     cashAsset.withdraw(badAccount, 100 ether, address(this));
   }
@@ -76,7 +76,7 @@ contract UNIT_CashAssetWithdraw is Test {
   function testBorrowIfManagerAllows() public {
     // user with an empty account (no cash balance) can withdraw USDC
     // essentially borrow from the cashAsset contract
-    uint emptyAccount = account.createAccount(address(this), manager);
+    uint emptyAccount = subAccounts.createAccount(address(this), manager);
 
     uint amountToBorrow = 1000 ether;
 
@@ -86,7 +86,7 @@ contract UNIT_CashAssetWithdraw is Test {
 
     assertEq(usdcAfter - usdcBefore, amountToBorrow);
 
-    int accBalance = account.getBalance(emptyAccount, cashAsset, 0);
+    int accBalance = subAccounts.getBalance(emptyAccount, cashAsset, 0);
 
     // todo: number might change based on interest
     assertEq(accBalance, -(int(amountToBorrow)));
@@ -100,15 +100,15 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
-  Accounts accounts;
+  SubAccounts subAccounts;
   IInterestRateModel rateModel;
 
   uint accountId;
 
   function setUp() public {
-    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockManager(address(accounts));
+    manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
 
@@ -116,7 +116,7 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
     usdc.setDecimals(20);
 
     rateModel = new MockInterestRateModel(1e18);
-    cashAsset = new CashAsset(accounts, usdc, rateModel, 0, address(0));
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel, 0, address(0));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -125,7 +125,7 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
     usdc.mint(address(this), depositAmount);
     usdc.approve(address(cashAsset), type(uint).max);
 
-    accountId = accounts.createAccount(address(this), manager);
+    accountId = subAccounts.createAccount(address(this), manager);
 
     cashAsset.deposit(accountId, depositAmount);
   }
@@ -134,11 +134,11 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
     // amount (7 * 1e-20) should be round up to (1 * 1e-18) in our account
     uint amountToWithdraw = 7;
 
-    int cashBalanceBefore = accounts.getBalance(accountId, cashAsset, 0);
+    int cashBalanceBefore = subAccounts.getBalance(accountId, cashAsset, 0);
 
     cashAsset.withdraw(accountId, amountToWithdraw, address(this));
 
-    int cashBalanceAfter = accounts.getBalance(accountId, cashAsset, 0);
+    int cashBalanceAfter = subAccounts.getBalance(accountId, cashAsset, 0);
 
     // cash balance in account is deducted by 1 wei
     assertEq(cashBalanceBefore - cashBalanceAfter, 1);

@@ -2,10 +2,10 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/BasicManager.sol";
+import "src/risk-managers/StandardManager.sol";
 import "src/periphery/PerpSettlementHelper.sol";
 
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
@@ -19,9 +19,9 @@ import "test/shared/mocks/MockOptionPricing.sol";
 
 import "test/auction/mocks/MockCashAsset.sol";
 
-contract UNIT_TestBasicManager is Test {
-  Accounts account;
-  BasicManager manager;
+contract UNIT_TestStandardManager is Test {
+  SubAccounts subAccounts;
+  StandardManager manager;
   MockCash cash;
   MockERC20 usdc;
   MockPerp perp;
@@ -37,35 +37,35 @@ contract UNIT_TestBasicManager is Test {
   uint bobAcc;
 
   function setUp() public {
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     usdc = new MockERC20("USDC", "USDC");
 
-    cash = new MockCash(usdc, account);
+    cash = new MockCash(usdc, subAccounts);
 
-    perp = new MockPerp(account);
+    perp = new MockPerp(subAccounts);
 
-    option = new MockOption(account);
+    option = new MockOption(subAccounts);
 
     feed = new MockFeeds();
     stableFeed = new MockFeeds();
 
-    manager = new BasicManager(
-      account,
+    manager = new StandardManager(
+      subAccounts,
       ICashAsset(address(cash))
     );
 
-    manager.whitelistAsset(perp, 1, IBasicManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 1, IBasicManager.AssetType.Option);
+    manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
 
     manager.setOraclesForMarket(1, feed, feed, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
-    manager.setDepegParameters(IBasicManager.DepegParams(0.98e18, 1.3e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
 
-    aliceAcc = account.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = account.createAccountWithApproval(bob, address(this), manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
 
     feed.setSpot(1500e18, 1e18);
 
@@ -110,20 +110,20 @@ contract UNIT_TestBasicManager is Test {
   }
 
   function testCannotSetPerpMMLargerThanIM() public {
-    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidPerpMarginRequirement() public {
-    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 0);
 
-    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 1e18);
 
-    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 1e18, 0.1e18);
-    vm.expectRevert(IBasicManager.BM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
     manager.setPerpMarginRequirements(1, 0, 0.1e18);
   }
 
@@ -132,9 +132,9 @@ contract UNIT_TestBasicManager is Test {
   ////////////////////
 
   function testCannotHaveUnrecognizedAsset() public {
-    MockAsset badAsset = new MockAsset(usdc, account, true);
-    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    MockAsset badAsset = new MockAsset(usdc, subAccounts, true);
+    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,
       toAcc: bobAcc,
       asset: badAsset,
@@ -142,7 +142,7 @@ contract UNIT_TestBasicManager is Test {
       amount: 1e18,
       assetData: ""
     });
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 
   function testCanTradePerpWithEnoughMargin() public {
@@ -164,14 +164,14 @@ contract UNIT_TestBasicManager is Test {
     cash.deposit(bobAcc, 1499e18);
 
     // trade cannot go through: -1$ under collateralized
-    vm.expectRevert(abi.encodeWithSelector(IBasicManager.BM_PortfolioBelowMargin.selector, aliceAcc, 1e18));
+    vm.expectRevert(abi.encodeWithSelector(IStandardManager.SRM_PortfolioBelowMargin.selector, aliceAcc, 1e18));
     _tradePerpContract(aliceAcc, bobAcc, 10e18);
   }
 
   function testOracleContingencyOnPerps() public {
     // set oracle contingency params
     manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
-    manager.setOracleContingencyParams(1, IBasicManager.OracleContingencyParams(0.75e18, 0, 0.1e18));
+    manager.setOracleContingencyParams(1, IStandardManager.OracleContingencyParams(0.75e18, 0, 0.1e18));
 
     // requirement: 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1500e18);
@@ -206,8 +206,8 @@ contract UNIT_TestBasicManager is Test {
 
   // tests around settling perp's unrealized PNL with spot
   function testCannotSettleWithMaliciousPerpContract() public {
-    MockPerp badPerp = new MockPerp(account);
-    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
+    MockPerp badPerp = new MockPerp(subAccounts);
+    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
     manager.settlePerpsWithIndex(badPerp, aliceAcc);
   }
 
@@ -237,16 +237,16 @@ contract UNIT_TestBasicManager is Test {
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
-    account.submitTransfer(transfer, managerData);
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    subAccounts.submitTransfer(transfer, managerData);
 
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashAfter - cashBefore, 100e18);
   }
 
   function testCannotSettleWithBadPerp() public {
-    MockPerp badPerp = new MockPerp(account);
+    MockPerp badPerp = new MockPerp(subAccounts);
     badPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
 
     bytes memory data = abi.encode(address(manager), address(badPerp), aliceAcc);
@@ -255,11 +255,11 @@ contract UNIT_TestBasicManager is Test {
     bytes memory managerData = abi.encode(allData);
 
     // only transfer 0 cash
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
 
-    vm.expectRevert(IBasicManager.BM_UnsupportedAsset.selector);
-    account.submitTransfer(transfer, managerData);
+    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
+    subAccounts.submitTransfer(transfer, managerData);
   }
 
   function testCanSettleIntoNegativeCash() public {
@@ -271,20 +271,26 @@ contract UNIT_TestBasicManager is Test {
   function testCannotHaveNegativeCash() public {
     // assume alice has 1000 unrealized pnl (report by perp contract)
     perp.mockAccountPnlAndFunding(aliceAcc, 0, 1000e18);
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 1000e18, assetData: ""});
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: cash,
+      subId: 0,
+      amount: 1000e18,
+      assetData: ""
+    });
 
-    vm.expectRevert(IBasicManager.BM_NoNegativeCash.selector);
-    account.submitTransfer(transfer, "");
+    vm.expectRevert(IStandardManager.SRM_NoNegativeCash.selector);
+    subAccounts.submitTransfer(transfer, "");
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
-    IAccounts.AssetTransfer memory transfer =
-      IAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
-    account.submitTransfer(transfer, "");
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
+    subAccounts.submitTransfer(transfer, "");
   }
 
   function _getCashBalance(uint acc) public view returns (int) {
-    return account.getBalance(acc, cash, 0);
+    return subAccounts.getBalance(acc, cash, 0);
   }
 }

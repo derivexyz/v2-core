@@ -8,7 +8,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/math/IntLib.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
@@ -38,7 +38,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ///////////////
 
   /// @dev Account contract address
-  IAccounts public immutable accounts;
+  ISubAccounts public immutable subAccounts;
 
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
@@ -62,8 +62,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
   mapping(address sender => bool) public feeBypassedCaller;
 
-  constructor(IAccounts _accounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
-    accounts = _accounts;
+  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
+    subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;
   }
@@ -86,7 +86,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function setFeeRecipient(uint _newAcc) external onlyOwner {
     // this line will revert if the owner tries to set an invalid account
-    accounts.ownerOf(_newAcc);
+    subAccounts.ownerOf(_newAcc);
 
     feeRecipientAcc = _newAcc;
   }
@@ -132,7 +132,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (portion > 1e18) revert BM_InvalidBidPortion();
 
     // check that liquidator only has cash and nothing else
-    IAccounts.AssetBalance[] memory liquidatorAssets = accounts.getAccountBalances(liquidatorId);
+    ISubAccounts.AssetBalance[] memory liquidatorAssets = subAccounts.getAccountBalances(liquidatorId);
     if (
       liquidatorAssets.length != 0
         && (liquidatorAssets.length != 1 || address(liquidatorAssets[0].asset) != address(cashAsset))
@@ -140,7 +140,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       revert BM_LiquidatorCanOnlyHaveCash();
     }
 
-    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
     // transfer liquidated account's asset to liquidator
     for (uint i; i < assetBalances.length; i++) {
@@ -169,7 +169,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param accountId account id
    */
   function settleInterest(uint accountId) external {
-    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, 0, bytes32(0)));
+    subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, 0, bytes32(0)));
   }
 
   //////////////////////////
@@ -180,7 +180,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (_allowListed(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
-    IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
     if (balances.length != 1 || address(balances[0].asset) != address(cashAsset)) {
       revert BM_InvalidForceWithdrawAccountState();
     }
@@ -191,7 +191,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (_allowListed(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
-    IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
     if (balances.length == 1 || address(balances[0].asset) == address(cashAsset) || balances[0].balance > 0) {
       revert BM_InvalidForceLiquidateAccountState();
     }
@@ -278,7 +278,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param accountId Account Id to settle
    */
   function _settleAccountOptions(IOption option, uint accountId) internal {
-    IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
       // skip non option asset
@@ -290,13 +290,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       cashDelta += value;
 
       // update user option balance
-      accounts.managerAdjustment(
-        IAccounts.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
+      subAccounts.managerAdjustment(
+        ISubAccounts.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
       );
     }
 
     // update user cash amount
-    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
+    subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
     // report total print / burn to cash asset
     cashAsset.updateSettledCash(cashDelta);
   }
@@ -316,7 +316,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     cashAsset.updateSettledCash(netCash);
 
     // update user cash amount
-    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
+    subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
 
     emit PerpSettled(accountId, netCash);
   }
@@ -341,36 +341,36 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function _symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) internal {
     // deduct amount in from account
-    accounts.managerAdjustment(
-      IAccounts.AssetAdjustment({acc: from, asset: asset, subId: subId, amount: -amount, assetData: bytes32(0)})
+    subAccounts.managerAdjustment(
+      ISubAccounts.AssetAdjustment({acc: from, asset: asset, subId: subId, amount: -amount, assetData: bytes32(0)})
     );
 
     // increase "to" account
-    accounts.managerAdjustment(
-      IAccounts.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
+    subAccounts.managerAdjustment(
+      ISubAccounts.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
     );
   }
 
-  function _undoAssetDeltas(uint accountId, IAccounts.AssetDelta[] memory assetDeltas)
+  function _undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
     view
-    returns (IAccounts.AssetBalance[] memory newAssetBalances)
+    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
   {
-    IAccounts.AssetBalance[] memory assetBalances = accounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
     // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
     uint removedBalances = 0;
     uint newBalances = 0;
-    IAccounts.AssetBalance[] memory preBalances = new IAccounts.AssetBalance[](assetDeltas.length);
+    ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
 
     for (uint i = 0; i < assetDeltas.length; ++i) {
-      IAccounts.AssetDelta memory delta = assetDeltas[i];
+      ISubAccounts.AssetDelta memory delta = assetDeltas[i];
       if (delta.delta == 0) {
         continue;
       }
       bool found = false;
       for (uint j = 0; j < assetBalances.length; ++j) {
-        IAccounts.AssetBalance memory balance = assetBalances[j];
+        ISubAccounts.AssetBalance memory balance = assetBalances[j];
         if (balance.asset == delta.asset && balance.subId == delta.subId) {
           found = true;
           assetBalances[j].balance = balance.balance - delta.delta;
@@ -382,15 +382,15 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       }
       if (!found) {
         preBalances[newBalances++] =
-          IAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
+          ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
       }
     }
 
-    newAssetBalances = new IAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
+    newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
 
     uint newBalancesIndex = 0;
     for (uint i = 0; i < assetBalances.length; ++i) {
-      IAccounts.AssetBalance memory balance = assetBalances[i];
+      ISubAccounts.AssetBalance memory balance = assetBalances[i];
       if (balance.balance != 0) {
         newAssetBalances[newBalancesIndex++] = balance;
       }
@@ -412,7 +412,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (allowList == IAllowList(address(0))) {
       return true;
     }
-    address user = accounts.ownerOf(accountId);
+    address user = subAccounts.ownerOf(accountId);
     return allowList.canTrade(user);
   }
 
@@ -436,7 +436,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   modifier onlyAccounts() {
-    if (msg.sender != address(accounts)) revert BM_OnlyAccounts();
+    if (msg.sender != address(subAccounts)) revert BM_OnlyAccounts();
     _;
   }
 }

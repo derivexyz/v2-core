@@ -4,10 +4,10 @@ import "forge-std/Test.sol";
 
 import "src/risk-managers/PMRM.sol";
 import "src/assets/CashAsset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 import "src/interfaces/IManager.sol";
 import "src/interfaces/IAsset.sol";
-import "src/interfaces/IAccounts.sol";
+import "src/interfaces/ISubAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -47,7 +47,7 @@ contract UNIT_TestPMRM_AllowList is PMRMTestBase {
   function testPMRM_blocksTradesForNonAllowListedUsers() public {
     pmrm.setTrustedRiskAssessor(alice, true);
 
-    IAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
 
     vm.expectRevert(IBaseManager.BM_CannotTrade.selector);
     cash.deposit(bobAcc, 200_000 ether);
@@ -57,19 +57,19 @@ contract UNIT_TestPMRM_AllowList is PMRMTestBase {
     _depositCash(bobAcc, 200_000 ether);
 
     vm.startPrank(bob);
-    accounts.setApprovalForAll(alice, true);
+    subAccounts.setApprovalForAll(alice, true);
     vm.startPrank(alice);
-    IAccounts.AssetTransfer[] memory transfers = _getTransferBatch(aliceAcc, bobAcc, balances);
+    ISubAccounts.AssetTransfer[] memory transfers = _getTransferBatch(aliceAcc, bobAcc, balances);
 
     // now that alice can't trade, it reverts
     vm.expectRevert(IBaseManager.BM_CannotTrade.selector);
-    accounts.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
 
     // alice can submit the signature so no need to undo prank
     setAllowListed(alice, true, block.timestamp - 5);
 
     // now that alice can trade, it doesn't revert
-    accounts.submitTransfers(transfers, "");
+    subAccounts.submitTransfers(transfers, "");
   }
 
   function testPMRM_forceWithdraw() public {

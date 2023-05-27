@@ -6,7 +6,7 @@ import "src/interfaces/ILiquidatableManager.sol";
 import "src/interfaces/ISecurityModule.sol";
 import "src/interfaces/ICashAsset.sol";
 import "src/interfaces/IDutchAuction.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 
 // inherited
 import "openzeppelin/utils/math/SafeMath.sol";
@@ -61,7 +61,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   ICashAsset public immutable cash;
 
   /// @dev The accounts contract for resolving address to accountIds
-  Accounts public immutable accounts;
+  SubAccounts public immutable subAccounts;
 
   /// @dev The parameters for the dutch auction
   SolventAuctionParams public solventAuctionParams;
@@ -72,8 +72,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   //    Constructor     //
   ////////////////////////
 
-  constructor(Accounts _accounts, ISecurityModule _securityModule, ICashAsset _cash) Ownable2Step() {
-    accounts = _accounts;
+  constructor(SubAccounts _subAccounts, ISecurityModule _securityModule, ICashAsset _cash) Ownable2Step() {
+    subAccounts = _subAccounts;
     securityModule = _securityModule;
     cash = _cash;
   }
@@ -114,11 +114,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /**
    * @dev anyone can start an auction for an account
    * @param accountId The id of the account being liquidated
-   * @param scenarioId id to compute the IM with for PMRM, ignored for basic manager
+   * @param scenarioId id to compute the IM with for PMRM, ignored for standard manager
    */
   function startAuction(uint accountId, uint scenarioId) external {
     // settle pending interest rate on an account
-    address manager = address(accounts.manager(accountId));
+    address manager = address(subAccounts.manager(accountId));
     ILiquidatableManager(manager).settleInterest(accountId);
 
     (int maintenanceMargin, int bufferMargin, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
@@ -164,7 +164,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
 
     // get bidder address and make sure that they own the account
-    if (accounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
+    if (subAccounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
 
     // margin is buffer margin for solvent auction, maintenance margin for insolvent auction
     (bool canTerminate, int markToMarket, int margin) = getAuctionStatus(accountId);
@@ -421,7 +421,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     auctions[accountId].percentageLeft -= finalPercentage;
 
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
-    ILiquidatableManager(address(accounts.manager(accountId))).executeBid(
+    ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
       accountId, bidderId, requestedPercentage, cashFromBidder
     );
   }
@@ -455,7 +455,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     auctions[accountId].percentageLeft -= finalPercentage;
 
-    ILiquidatableManager(address(accounts.manager(accountId))).executeBid(accountId, bidderId, percentageOfCurrent, 0);
+    ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
+      accountId, bidderId, percentageOfCurrent, 0
+    );
     canTerminate = auctions[accountId].percentageLeft == 0;
   }
 
@@ -539,7 +541,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   function _getMarginAndMarkToMarket(uint accountId, uint scenarioId) internal view returns (int, int, int) {
-    address manager = address(accounts.manager(accountId));
+    address manager = address(subAccounts.manager(accountId));
     (int maintenanceMargin, int markToMarket) =
       ILiquidatableManager(manager).getMarginAndMarkToMarket(accountId, false, scenarioId);
     // derive Buffer margin from maintenance margin and mark to market

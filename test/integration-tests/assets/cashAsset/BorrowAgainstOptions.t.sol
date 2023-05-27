@@ -20,7 +20,7 @@ pragma solidity ^0.8.18;
 //    _setupIntegrationTestComplete();
 //
 //    vm.prank(charlie);
-//    accounts.setApprovalForAll(address(this), true);
+//   subAccounts.setApprovalForAll(address(this), true);
 //  }
 //
 //  function testBorrowAgainstITMCall() public {
@@ -28,7 +28,7 @@ pragma solidity ^0.8.18;
 //    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
 //    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 //
-//    charlieAcc = accounts.createAccount(charlie, pcrm);
+//    charlieAcc =subAccounts.createAccount(charlie, pcrm);
 //
 //    // Charlie borrows money against his ITM Call
 //    uint callExpiry = block.timestamp + 4 weeks;
@@ -62,7 +62,7 @@ pragma solidity ^0.8.18;
 //    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
 //    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 //
-//    charlieAcc = accounts.createAccount(charlie, pcrm);
+//    charlieAcc =subAccounts.createAccount(charlie, pcrm);
 //    _depositCash(address(charlie), charlieAcc, 2e18); // deposit $2 to pay init OI fee
 //    _depositCash(address(charlie), charlieAcc, 50e18); // deposit $50 for min offset
 //
@@ -84,7 +84,7 @@ pragma solidity ^0.8.18;
 //    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
 //    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 //
-//    charlieAcc = accounts.createAccount(charlie, pcrm);
+//    charlieAcc =subAccounts.createAccount(charlie, pcrm);
 //
 //    // Charlie borrows money against his ITM Put
 //    uint putExpiry = block.timestamp + 4 weeks;
@@ -101,7 +101,7 @@ pragma solidity ^0.8.18;
 //
 //    // Charlie balance should be -borrowed amount + oiFee
 //    uint oiFee = pcrm.OIFeeRateBPS().multiplyDecimal(_getForwardPrice(putExpiry));
-//    assertEq(accounts.getBalance(charlieAcc, cash, 0), -int(50e18 + oiFee));
+//    assertEq(subAccounts.getBalance(charlieAcc, cash, 0), -int(50e18 + oiFee));
 //
 //    vm.warp(block.timestamp + 1 weeks);
 //    cash.accrueInterest();
@@ -115,7 +115,7 @@ pragma solidity ^0.8.18;
 //    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
 //    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
 //
-//    charlieAcc = accounts.createAccount(charlie, pcrm);
+//    charlieAcc =subAccounts.createAccount(charlie, pcrm);
 //    _depositCash(address(charlie), charlieAcc, 2e18); // deposit $2 to pay init OI fee
 //    _depositCash(address(charlie), charlieAcc, 50e18); // deposit $50 to pay init OI fee
 //

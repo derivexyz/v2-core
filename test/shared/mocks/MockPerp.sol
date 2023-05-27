@@ -20,7 +20,7 @@ contract MockPerp is MockAsset, IPerpAsset {
 
   mapping(IManager => uint) public mockedTotalPositionCap;
 
-  constructor(IAccounts account) MockAsset(IERC20(address(0)), account, true) {}
+  constructor(ISubAccounts account) MockAsset(IERC20(address(0)), account, true) {}
 
   function updateFundingRate() external {}
 
