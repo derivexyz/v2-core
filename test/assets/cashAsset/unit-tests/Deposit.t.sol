@@ -57,6 +57,19 @@ contract UNIT_CashAssetDeposit is Test {
     int balance = subAccounts.getBalance(accountId, cashAsset, 0);
     assertEq(balance, int(depositAmount));
   }
+
+  function testDepositToANewAccount() public {
+    uint depositAmount = 100 ether;
+    uint newAccount = cashAsset.depositToNewAccount(address(this), depositAmount, manager);
+    int balance = subAccounts.getBalance(newAccount, cashAsset, 0);
+    assertEq(balance, int(depositAmount));
+  }
+
+  function testCannotDepositToANewAccountWithBadManager() public {
+    uint depositAmount = 100 ether;
+    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
+    cashAsset.depositToNewAccount(address(this), depositAmount, badManager);
+  }
 }
 
 contract UNIT_LendingDeposit6Decimals is Test {

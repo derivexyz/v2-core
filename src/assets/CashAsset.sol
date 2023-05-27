@@ -146,6 +146,29 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @param stableAmount amount of stable coins to deposit
    */
   function deposit(uint recipientAccount, uint stableAmount) external {
+    _deposit(recipientAccount, stableAmount);
+  }
+
+  /**
+   * @dev Deposit USDC and create a new account
+   * @param recipient user for who the new account is created
+   * @param stableAmount amount of stable coins to deposit
+   * @param manager manager of the new account
+   */
+  function depositToNewAccount(address recipient, uint stableAmount, IManager manager)
+    external
+    returns (uint newAccountId)
+  {
+    newAccountId = subAccounts.createAccount(recipient, manager);
+    _deposit(newAccountId, stableAmount);
+  }
+
+  /**
+   * @dev Deposit USDC and increase account balance
+   * @param recipientAccount account id to receive the cash asset
+   * @param stableAmount amount of stable coins to deposit
+   */
+  function _deposit(uint recipientAccount, uint stableAmount) internal {
     stableAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
     uint amountInAccount = stableAmount.to18Decimals(stableDecimals);
 
@@ -160,8 +183,6 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
       true, // do trigger callback on handleAdjustment so we apply interest
       ""
     );
-
-    // invoke handleAdjustment hook so the manager is checked, and interest is applied.
 
     emit Deposit(recipientAccount, msg.sender, amountInAccount, stableAmount);
   }

@@ -38,12 +38,12 @@ contract UNIT_TestPMRM_Contingencies is PMRMTestBase {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
     balances[0] = ISubAccounts.AssetBalance({
       asset: IAsset(address(option)),
-      subId: OptionEncoding.toSubId(block.timestamp + 1000, 1500e18, true),
+      subId: OptionEncoding.toSubId(expiry, 1500e18, true),
       balance: -1e18
     });
     balances[1] = ISubAccounts.AssetBalance({
       asset: IAsset(address(option)),
-      subId: OptionEncoding.toSubId(block.timestamp + 1000, 1500e18, false),
+      subId: OptionEncoding.toSubId(expiry, 1500e18, false),
       balance: -1e18
     });
 

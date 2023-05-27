@@ -72,7 +72,10 @@ contract TestPMRM_Settlement is PMRMTestBase {
     allData[0] = IBaseManager.ManagerData({receiver: address(optionHelper), data: data});
     bytes memory managerData = abi.encode(allData);
 
-    pmrm.settleOptions(option, aliceAcc);
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+    subAccounts.submitTransfer(transfer, managerData);
+
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashBefore - cashAfter, 500e18);
   }

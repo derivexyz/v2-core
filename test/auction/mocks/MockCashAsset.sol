@@ -44,7 +44,19 @@ contract MockCash is ICashAsset, MockAsset {
     );
   }
 
-  function deposit(uint recipientAccount, uint amount) external override(MockAsset, ICashAsset) {
+  function deposit(uint recipientAccount, uint stableAmount) external override(MockAsset, ICashAsset) {
+    _deposit(recipientAccount, stableAmount);
+  }
+
+  function depositToNewAccount(address recipient, uint stableAmount, IManager manager)
+    external
+    returns (uint newAccountId)
+  {
+    newAccountId = subAccounts.createAccount(recipient, manager);
+    _deposit(newAccountId, stableAmount);
+  }
+
+  function _deposit(uint recipientAccount, uint amount) internal {
     subAccounts.assetAdjustment(
       ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
