@@ -12,6 +12,8 @@ import "src/interfaces/IOption.sol";
 import "src/SubAccounts.sol";
 import "src/risk-managers/BaseManager.sol";
 
+import "src/feeds/AllowList.sol";
+
 import "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeeds.sol";
@@ -394,6 +396,50 @@ contract UNIT_TestAbstractBaseManager is Test {
   // ------------------------
   //      force withdraw
   // ------------------------
+
+  function testCanSetAllowlist() public {
+    AllowList allowlist = new AllowList();
+    tester.setAllowList(allowlist);
+
+    assertEq(address(tester.allowList()), address(allowlist));
+  }
+
+  function testCannotForceWithdrawIFOnAllowlist() public {
+    vm.expectRevert(IBaseManager.BM_OnlyBlockedAccounts.selector);
+    tester.forceWithdrawAccount(aliceAcc);
+  }
+
+  function testCanForceWithdrawCashAccounts() public {
+    AllowList allowlist = new AllowList();
+    tester.setAllowList(allowlist);
+    allowlist.setAllowListEnabled(true);
+
+    // alice with -$1000 cash, bob with +1000 cash
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1000e18);
+
+    tester.forceWithdrawAccount(aliceAcc);
+  }
+
+  function testCanForceWithdrawNonCashAccount() public {
+    AllowList allowlist = new AllowList();
+    tester.setAllowList(allowlist);
+    allowlist.setAllowListEnabled(true);
+
+    // alice has no asset
+    vm.expectRevert(IBaseManager.BM_InvalidForceWithdrawAccountState.selector);
+    tester.forceWithdrawAccount(aliceAcc);
+
+    // alice with -$1000 mockAsset
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1000e18);
+
+    vm.expectRevert(IBaseManager.BM_InvalidForceWithdrawAccountState.selector);
+    tester.forceWithdrawAccount(aliceAcc);
+
+    // alice has cash and other assets
+    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1000e18);
+    vm.expectRevert(IBaseManager.BM_InvalidForceWithdrawAccountState.selector);
+    tester.forceWithdrawAccount(aliceAcc);
+  }
 
   // alice open 10 long call, 10 short put
   function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {
