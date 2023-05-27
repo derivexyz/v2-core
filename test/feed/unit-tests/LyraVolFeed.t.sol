@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 
+import "lyra-utils/math/Black76.sol";
 import "src/feeds/LyraVolFeed.sol";
 
 /**
@@ -131,6 +132,7 @@ contract UNIT_LyraVolFeed is Test {
       SVI_m: -0.05e18,
       SVI_sigma: 0.05e18,
       SVI_fwd: 1200e18,
+      SVI_refTao: uint64(Black76.annualise(uint64(defaultExpiry - block.timestamp))),
       confidence: 1e18,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
