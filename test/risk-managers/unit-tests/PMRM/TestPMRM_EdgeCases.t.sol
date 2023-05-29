@@ -57,16 +57,16 @@ contract UNIT_TestPMRM_EdgeCases is PMRMTestBase {
     mergeAccs[0] = bobAcc;
 
     // Fails when not owned by the same user
-    vm.startPrank(bob);
-    vm.expectRevert(IPMRM.PMRM_MergeOwnerMismatch.selector);
+    vm.prank(alice);
+    vm.expectRevert(IBaseManager.BM_MergeOwnerMismatch.selector);
     pmrm.mergeAccounts(aliceAcc, mergeAccs);
 
     // So then transfer alice's account to bob
-    vm.startPrank(alice);
+    vm.prank(alice);
     subAccounts.transferFrom(alice, bob, aliceAcc);
 
     // and now they can merge!
-    vm.startPrank(bob);
+    vm.prank(bob);
     pmrm.mergeAccounts(aliceAcc, mergeAccs);
 
     // perps cancel out, leaving bob with double the cash!
