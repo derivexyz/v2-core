@@ -5,4 +5,5 @@ import "src/interfaces/IDutchAuction.sol";
 
 contract MockDutchAuction is IDutchAuction {
   function startAuction(uint accountId, uint scenarioId) external {}
+  function startForcedAuction(uint accountId, uint scenarioId) external {}
 }

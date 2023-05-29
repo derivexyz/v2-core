@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "test/shared/mocks/MockManager.sol";
 
 import "src/interfaces/ILiquidatableManager.sol";
+import "src/interfaces/IDutchAuction.sol";
 
 contract MockLiquidatableManager is MockManager, ILiquidatableManager {
   mapping(uint tradeId => mapping(uint account => uint fee)) mockFeeCharged;
@@ -59,4 +60,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public override {}
+
+  function forceAuction(IDutchAuction auction, uint accountId, uint scenario) external {
+    auction.startForcedAuction(accountId, scenario);
+  }
 }
