@@ -316,6 +316,30 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.terminateAuction(aliceAcc);
   }
 
+  function testCanRevertAuctionWithHighCashReserve() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    // fast forward to half way through the fast auction
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
+
+    uint percentage = 0.1e18;
+
+    vm.prank(bob);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
+
+    // We set the MTM to be lower than the reserved cash
+    manager.setMarkToMarket(aliceAcc, int(cashFromBob) - 1);
+
+    vm.prank(charlie);
+    vm.expectRevert(IDutchAuction.DA_AuctionShouldBeTerminated.selector);
+    dutchAuction.bid(aliceAcc, charlieAcc, percentage);
+
+    vm.expectRevert(IDutchAuction.DA_ReservedCashGreaterThanMtM.selector);
+    dutchAuction.convertToInsolventAuction(aliceAcc);
+
+    dutchAuction.terminateAuction(aliceAcc);
+  }
+
   function _startDefaultSolventAuction(uint acc) internal {
     // -100 maintenance margin
     manager.setMockMargin(acc, false, scenario, -100e18);

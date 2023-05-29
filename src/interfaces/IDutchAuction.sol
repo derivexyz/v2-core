@@ -132,4 +132,7 @@ interface IDutchAuction {
 
   /// @dev emitted when IncrementInsolventAuction is spammed
   error DA_InCoolDown();
+
+  /// @dev emitted when where reserved cash exceeds MTM. Auction should be terminated and restarted.
+  error DA_ReservedCashGreaterThanMtM();
 }
