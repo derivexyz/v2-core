@@ -415,7 +415,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     int bufferMargin,
     int markToMarket
   ) internal returns (bool canTerminate, uint finalPercentage, uint cashFromBidder) {
-
     // calculate the max percentage of "current portfolio" that can be liquidated. Priced using original portfolio.
     int bidPrice = _getSolventAuctionBidPrice(accountId, markToMarket);
     if (bidPrice <= 0) revert DA_SolventAuctionEnded();
@@ -519,8 +518,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param discountPercentage the discount percentage of MtM the auction is offering at (dropping from 98% to 0%)
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function _getMaxProportion(int markToMarket, int bufferMargin, uint discountPercentage, uint reservedCash) internal pure returns (uint) {
-    int denominator = bufferMargin - (markToMarket.multiplyDecimal(int(discountPercentage))) - int(reservedCash.multiplyDecimal(1e18 - discountPercentage));
+  function _getMaxProportion(int markToMarket, int bufferMargin, uint discountPercentage, uint reservedCash)
+    internal
+    pure
+    returns (uint)
+  {
+    int denominator = bufferMargin - (markToMarket.multiplyDecimal(int(discountPercentage)))
+      - int(reservedCash.multiplyDecimal(1e18 - discountPercentage));
 
     return bufferMargin.divideDecimal(denominator).toUint256();
   }
