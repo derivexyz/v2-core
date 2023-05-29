@@ -17,6 +17,8 @@ interface IDutchAuction {
     uint startTime;
     /// The total amount of cash paid into the account during the auction
     uint reservedCash;
+    /// Is this a forced liquidation
+    bool isForce;
     /*------------------------- *
      * Insolvent Auction Params *
     /*------------------------- */
@@ -133,6 +135,9 @@ interface IDutchAuction {
   /// @dev emitted when IncrementInsolventAuction is spammed
   error DA_InCoolDown();
 
-  /// @dev emitted when where reserved cash exceeds MTM. Auction should be terminated and restarted.
+  /// @dev emitted when reserved cash exceeds MTM. Auction should be terminated and restarted.
   error DA_ReservedCashGreaterThanMtM();
+
+  /// @dev emitted when trying to continue a forced auction when MM > 0.
+  error DA_CannotStepSolventForcedAuction();
 }

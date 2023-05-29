@@ -126,17 +126,16 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     vm.prank(bob);
     (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
     // after the first liquidation, mtm should only be slightly reduced (10% reduced, and cash added from bob)
-    console.log(cashFromBob);
     manager.setMarkToMarket(aliceAcc, 270e18 + int(cashFromBob));
 
     vm.prank(charlie);
     (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage);
 
-    assertEq(cashFromCharlie, cashFromBob); // they should pay the same amount. (+dust amount)
-    assertEq(charliePercentage, bobPercentage);
+    assertEq(cashFromCharlie, cashFromBob, "charlie and bob should pay the same amount");
+    assertEq(charliePercentage, bobPercentage, "charlie should receive the same percentage as bob");
 
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-    assertEq(auction.percentageLeft, 0.8e18);
+    assertEq(auction.percentageLeft, 0.8e18, "percentageLeft should be 0.8");
   }
 
   function testBidMarkToMarketChange() public {
