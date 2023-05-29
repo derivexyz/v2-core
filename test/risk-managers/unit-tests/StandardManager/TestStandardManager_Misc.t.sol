@@ -59,4 +59,31 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
 
     assertEq(_getCashBalance(bobAcc), 0);
   }
+
+  function testCannotMergeIfEndAccountIsInsolvent() public {
+    // example: alice short a call spread
+    // merging another account with a little more calls will "break" the max loss
+
+    uint aliceAcc2 = subAccounts.createAccountWithApproval(alice, address(this), manager);
+
+    // alice short a 2000 call spread, with 100 cash (max loss)
+    cash.deposit(aliceAcc, uint(100e18));
+    Trade[] memory trade1 = new Trade[](2);
+    trade1[0] = Trade(ethOption, 1e18, OptionEncoding.toSubId(expiry1, 2000e18, true));
+    trade1[1] = Trade(ethOption, -1e18, OptionEncoding.toSubId(expiry1, 2100e18, true));
+    _submitMultipleTrades(aliceAcc, bobAcc, trade1, "");
+
+    // alice short another 0.1 of 2000 calls, which requires isolated margin
+    cash.deposit(aliceAcc2, uint(50e18));
+    Trade[] memory trade2 = new Trade[](1);
+    trade2[0] = Trade(ethOption, 0.1e18, OptionEncoding.toSubId(expiry1, 2000e18, true));
+    _submitMultipleTrades(aliceAcc2, bobAcc, trade2, "");
+
+    uint[] memory accsToMerge = new uint[](1);
+    accsToMerge[0] = aliceAcc2;
+    vm.prank(alice);
+
+    vm.expectRevert(abi.encodeWithSelector(IStandardManager.SRM_PortfolioBelowMargin.selector, aliceAcc, 15e18));
+    manager.mergeAccounts(aliceAcc, accsToMerge);
+  }
 }
