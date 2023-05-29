@@ -486,7 +486,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * @dev merge multiple PMRM accounts into 1
+   * @dev merge multiple PMRM accounts into one
    * @param mergeIntoId the account id to merge into
    * @param mergeFromIds the account ids to merge from
    */
