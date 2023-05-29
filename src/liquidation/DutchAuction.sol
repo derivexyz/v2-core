@@ -444,12 +444,14 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     cashFromBidder = bidPrice.toUint256().multiplyDecimal(percentOfAccount);
 
+    uint convertedPercentOfAccount = percentOfAccount.divideDecimal(currentAuction.percentageLeft);
+
     currentAuction.percentageLeft -= percentOfAccount;
     currentAuction.reservedCash += cashFromBidder;
 
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
-      accountId, bidderId, percentOfAccount.divideDecimal(currentAuction.percentageLeft), cashFromBidder
+      accountId, bidderId, convertedPercentOfAccount, cashFromBidder
     );
 
     return (canTerminate, percentOfAccount, cashFromBidder);
@@ -524,7 +526,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    *    f = --------------------------
    *         BM - MtM * d - R * (1-d)
    *
-   *
+   *  where:
+   *    BM is the buffer margin
+   *    MtM is the mark to market
+   *    d is the discount percentage
+   *    R is the reserved cash
    * @param bufferMargin expect to be negative
    * @param discountPercentage the discount percentage of MtM the auction is offering at (dropping from 98% to 0%)
    * @return uint the proportion of the portfolio that could be bought at the current price
