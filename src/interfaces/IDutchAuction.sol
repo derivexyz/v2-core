@@ -16,7 +16,7 @@ interface IDutchAuction {
     /// The startTime of the auction
     uint startTime;
     /// The total amount of cash paid into the account during the auction
-    uint cashPaid;
+    uint reservedCash;
     /*------------------------- *
      * Insolvent Auction Params *
     /*------------------------- */

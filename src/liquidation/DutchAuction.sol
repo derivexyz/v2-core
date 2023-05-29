@@ -324,7 +324,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
-    return _getMaxProportion(markToMarket, bufferMargin, discount);
+    return _getMaxProportion(markToMarket, bufferMargin, discount, auctions[accountId].reservedCash);
   }
 
   /**
@@ -366,7 +366,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
-      cashPaid: 0,
+      reservedCash: 0,
       stepSize: 0,
       stepInsolvent: 0,
       lastStepUpdate: 0
@@ -393,7 +393,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
-      cashPaid: 0,
+      reservedCash: 0,
       stepSize: stepSize,
       stepInsolvent: 0,
       lastStepUpdate: block.timestamp
@@ -415,37 +415,34 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     int bufferMargin,
     int markToMarket
   ) internal returns (bool canTerminate, uint finalPercentage, uint cashFromBidder) {
-    finalPercentage = percentOfAccount;
 
-    // calculate the max percentage of "current portfolio" that can be liquidated
+    // calculate the max percentage of "current portfolio" that can be liquidated. Priced using original portfolio.
     int bidPrice = _getSolventAuctionBidPrice(accountId, markToMarket);
     if (bidPrice <= 0) revert DA_SolventAuctionEnded();
 
-    (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
+    Auction storage currentAuction = auctions[accountId];
+
+    (uint discount,) = _getDiscountPercentage(currentAuction.startTime, block.timestamp);
 
     // max percentage of the "current" portfolio that can be liquidated
+    uint maxOfCurrent = _getMaxProportion(markToMarket, bufferMargin, discount, currentAuction.reservedCash);
 
-    uint maxOfCurrent = _getMaxProportion(markToMarket, bufferMargin, discount);
-
-    // the percentage the user requested to liquidate, in form percentage of current portfolio
-    uint requestedPercentage = percentOfAccount.divideDecimal(auctions[accountId].percentageLeft);
-
-    if (requestedPercentage > maxOfCurrent) {
-      requestedPercentage = maxOfCurrent;
+    if (percentOfAccount > maxOfCurrent) {
+      percentOfAccount = maxOfCurrent;
       canTerminate = true;
-
-      // scaled down finalPercentage- amount of original that was liquidated
-      finalPercentage = requestedPercentage.multiplyDecimal(auctions[accountId].percentageLeft);
     }
 
-    cashFromBidder = bidPrice.toUint256().multiplyDecimal(requestedPercentage);
+    cashFromBidder = bidPrice.toUint256().multiplyDecimal(percentOfAccount);
 
-    auctions[accountId].percentageLeft -= finalPercentage;
+    currentAuction.percentageLeft -= percentOfAccount;
+    currentAuction.reservedCash += cashFromBidder;
 
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
-      accountId, bidderId, requestedPercentage, cashFromBidder
+      accountId, bidderId, percentOfAccount.divideDecimal(currentAuction.percentageLeft), cashFromBidder
     );
+
+    return (canTerminate, percentOfAccount, cashFromBidder);
   }
 
   /**
@@ -503,7 +500,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev this function should only be called in solvent auction
    */
   function _getLiquidationFee(int markToMarket, int bufferMargin) internal view returns (uint fee) {
-    uint maxProportion = _getMaxProportion(markToMarket, bufferMargin, 1e18);
+    uint maxProportion = _getMaxProportion(markToMarket, bufferMargin, 1e18, 0);
 
     fee =
       maxProportion.multiplyDecimal(IntLib.abs(markToMarket)).multiplyDecimal(solventAuctionParams.liquidatorFeeRate);
@@ -513,17 +510,17 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @notice Gets the maximum size of the portfolio that could be bought at the current price
    * @dev assuming negative BM and positive MtM, the formula for max portion is:
    *
-   *                        BM
-   *    f = ----------------------------------
-   *         BM - MtM * discount_percentage
+   *                   BM
+   *    f = --------------------------
+   *         BM - MtM * d - R * (1-d)
    *
    *
    * @param bufferMargin expect to be negative
    * @param discountPercentage the discount percentage of MtM the auction is offering at (dropping from 98% to 0%)
    * @return uint the proportion of the portfolio that could be bought at the current price
    */
-  function _getMaxProportion(int markToMarket, int bufferMargin, uint discountPercentage) internal pure returns (uint) {
-    int denominator = bufferMargin - (markToMarket.multiplyDecimal(int(discountPercentage)));
+  function _getMaxProportion(int markToMarket, int bufferMargin, uint discountPercentage, uint reservedCash) internal pure returns (uint) {
+    int denominator = bufferMargin - (markToMarket.multiplyDecimal(int(discountPercentage))) - int(reservedCash.multiplyDecimal(1e18 - discountPercentage));
 
     return bufferMargin.divideDecimal(denominator).toUint256();
   }
@@ -592,8 +589,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // calculate discount percentage
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp); //getDiscount;
 
-    int bidPrice = markToMarket.multiplyDecimal(int(discount));
-    return bidPrice;
+    int scaledMtM = (markToMarket - int(auction.reservedCash)).divideDecimal(int(auction.percentageLeft));
+
+    return scaledMtM.multiplyDecimal(int(discount));
   }
 
   /**
