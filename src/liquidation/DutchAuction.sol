@@ -298,6 +298,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     } else {
       // get buffer margin and mark to market
       (, netMargin, markToMarket) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
+      // Handle edge case where MTM moves a lot and then reserved cash is worth more than MTM.
+      // In this case, the original portfolio margin would've been negative, but reserved cash is held by the account.
+      // We terminate the auction and allow it to restart in this rare case. In the case MTM < 0, we would start an
+      // insolvent auction.
+      if (netMargin > 0 && int(auctions[accountId].reservedCash) >= netMargin) {
+        return (true, markToMarket, netMargin);
+      }
     }
 
     canTerminate = netMargin > 0;
