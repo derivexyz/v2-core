@@ -81,8 +81,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     IPerpAsset perp_,
     IOptionPricing optionPricing_,
     IWrappedERC20Asset baseAsset_,
+    IDutchAuction liquidation_,
     Feeds memory feeds_
-  ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, IDutchAuction(address(0))) {
+  ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, liquidation_) {
     spotFeed = feeds_.spotFeed;
     perpFeed = feeds_.perpFeed;
     stableFeed = feeds_.stableFeed;

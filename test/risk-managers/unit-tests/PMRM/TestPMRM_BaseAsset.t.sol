@@ -64,6 +64,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
       mockPerp,
       IOptionPricing(optionPricing),
       baseAsset,
+      IDutchAuction(address(0)),
       IPMRM.Feeds({
         spotFeed: ISpotFeed(feed),
         perpFeed: ISpotFeed(perpFeed),
