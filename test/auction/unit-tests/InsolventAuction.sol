@@ -76,7 +76,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
   function testIncreaseStepMax() public {
     dutchAuction.setInsolventAuctionParams(
-      IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0, bufferMarginScaler: 1e18})
+      IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0, bufferMarginScalar: 1e18})
     );
     _startDefaultInsolventAuction(aliceAcc);
 
@@ -98,7 +98,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // cannot spam even if "coolDown" config is not set
     dutchAuction.setInsolventAuctionParams(
-      IDutchAuction.InsolventAuctionParams({totalSteps: 0, coolDown: 0, bufferMarginScaler: 1e18})
+      IDutchAuction.InsolventAuctionParams({totalSteps: 0, coolDown: 0, bufferMarginScalar: 1e18})
     );
     vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);

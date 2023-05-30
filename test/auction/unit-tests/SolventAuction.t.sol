@@ -125,13 +125,14 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
-    // after the first liquidation, mtm should be 0.9 now
-    manager.setMarkToMarket(aliceAcc, 270e18);
+    // after the first liquidation, mtm should only be slightly reduced (10% reduced, and cash added from bob)
+    console.log(cashFromBob);
+    manager.setMarkToMarket(aliceAcc, 270e18 + int(cashFromBob));
 
     vm.prank(charlie);
     (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage);
 
-    assertEq(cashFromCharlie + 27, cashFromBob); // they should pay the same amount. (+dust amount)
+    assertEq(cashFromCharlie, cashFromBob); // they should pay the same amount. (+dust amount)
     assertEq(charliePercentage, bobPercentage);
 
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
@@ -152,8 +153,8 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     vm.prank(bob);
     (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
 
-    assertEq(cashFromBob, 90e18);
-    assertEq(bobPercentage, percentage);
+    assertEq(cashFromBob, 90e18, "cashFromBob should be 90");
+    assertEq(bobPercentage, percentage, "bobPercentage should be 10%");
   }
 
   function testCannotBidWithInvalidPercentage() public {
@@ -312,6 +313,30 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     vm.expectRevert(IDutchAuction.DA_AuctionCannotTerminate.selector);
     // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+  }
+
+  function testCanRevertAuctionWithHighCashReserve() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    // fast forward to half way through the fast auction
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
+
+    uint percentage = 0.1e18;
+
+    vm.prank(bob);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
+
+    // We set the MTM to be lower than the reserved cash
+    manager.setMarkToMarket(aliceAcc, int(cashFromBob) - 1);
+
+    vm.prank(charlie);
+    vm.expectRevert(IDutchAuction.DA_AuctionShouldBeTerminated.selector);
+    dutchAuction.bid(aliceAcc, charlieAcc, percentage);
+
+    vm.expectRevert(IDutchAuction.DA_ReservedCashGreaterThanMtM.selector);
+    dutchAuction.convertToInsolventAuction(aliceAcc);
+
     dutchAuction.terminateAuction(aliceAcc);
   }
 

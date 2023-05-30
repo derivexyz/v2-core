@@ -15,6 +15,8 @@ interface IDutchAuction {
     uint percentageLeft;
     /// The startTime of the auction
     uint startTime;
+    /// The total amount of cash paid into the account during the auction
+    uint reservedCash;
     /*------------------------- *
      * Insolvent Auction Params *
     /*------------------------- */
@@ -44,8 +46,8 @@ interface IDutchAuction {
     uint32 totalSteps;
     // Amount of seconds to go to next step
     uint32 coolDown;
-    /// buffer margin scaler. liquidation will go from 0 to (buffer margin) * scaler
-    int64 bufferMarginScaler;
+    /// buffer margin scalar. liquidation will go from 0 to (buffer margin) * scalar
+    int64 bufferMarginScalar;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
@@ -130,4 +132,7 @@ interface IDutchAuction {
 
   /// @dev emitted when IncrementInsolventAuction is spammed
   error DA_InCoolDown();
+
+  /// @dev emitted when where reserved cash exceeds MTM. Auction should be terminated and restarted.
+  error DA_ReservedCashGreaterThanMtM();
 }
