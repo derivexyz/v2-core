@@ -274,6 +274,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // if all trades are only reducing risk, return early
     if (isRiskReducing) return;
 
+    _performRiskCheck(accountId, assetDeltas);
+  }
+
+  /**
+   * @dev perform a risk check on the account.
+   */
+  function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal {
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     StandardManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
@@ -293,6 +300,103 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
       revert SRM_PortfolioBelowMargin(accountId, -(postIM));
     }
+  }
+
+  /**
+   * @notice Arrange balances into portfolio struct
+   * @param assets Array of balances for given asset and subId.
+   */
+  function _arrangePortfolio(ISubAccounts.AssetBalance[] memory assets)
+    internal
+    view
+    returns (StandardManagerPortfolio memory)
+  {
+    (uint marketCount, int cashBalance, uint marketBitMap) = _countMarketsAndParseCash(assets);
+
+    StandardManagerPortfolio memory portfolio =
+      StandardManagerPortfolio({cash: cashBalance, marketHoldings: new MarketHolding[](marketCount)});
+
+    // for each market, need to count how many expires there are
+    // and initiate a ExpiryHolding[] array in the corresponding marketHolding
+    for (uint i; i < marketCount; i++) {
+      // 1. find the first market id
+      uint8 marketId;
+      for (uint8 id = 1; id < 256; id++) {
+        uint masked = (1 << id);
+        if (marketBitMap & masked == 0) continue;
+        // mark this market id as used => flip it back to 0 with xor
+        marketBitMap ^= masked;
+        marketId = id;
+        break;
+      }
+      portfolio.marketHoldings[i].marketId = marketId;
+
+      // 2. filter through all balances and only find perp or option for this market
+      uint numExpires;
+      uint[] memory seenExpires = new uint[](assets.length);
+      uint[] memory expiryOptionCounts = new uint[](assets.length);
+
+      for (uint j; j < assets.length; j++) {
+        ISubAccounts.AssetBalance memory currentAsset = assets[j];
+        if (currentAsset.asset == cashAsset) continue;
+
+        AssetDetail memory detail = assetDetails[currentAsset.asset];
+        if (detail.marketId != marketId) continue;
+
+        if (detail.assetType == AssetType.Perpetual) {
+          // if it's perp asset, update the perp position directly
+          portfolio.marketHoldings[i].perp = IPerpAsset(address(currentAsset.asset));
+          portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
+        } else if (detail.assetType == AssetType.Option) {
+          portfolio.marketHoldings[i].option = IOption(address(currentAsset.asset));
+          (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+          uint expiryIndex;
+          (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);
+          // print all seen expiries
+          expiryOptionCounts[expiryIndex]++;
+        } else {
+          // base asset, update holding.basePosition directly. This balance should always be positive
+          portfolio.marketHoldings[i].basePosition = currentAsset.balance;
+        }
+      }
+
+      // 3. initiate expiry holdings in a marketHolding
+      portfolio.marketHoldings[i].expiryHoldings = new ExpiryHolding[](numExpires);
+      // 4. initiate the option array in each expiry holding
+      for (uint j; j < numExpires; j++) {
+        portfolio.marketHoldings[i].expiryHoldings[j].expiry = seenExpires[j];
+        portfolio.marketHoldings[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
+        // portfolio.marketHoldings[i].expiryHoldings[j].minConfidence = 1e18;
+      }
+
+      // 5. put options into expiry holdings
+      for (uint j; j < assets.length; j++) {
+        ISubAccounts.AssetBalance memory currentAsset = assets[j];
+        if (currentAsset.asset == cashAsset) continue;
+
+        AssetDetail memory detail = assetDetails[currentAsset.asset];
+        if (detail.marketId != marketId) continue;
+
+        if (detail.assetType == AssetType.Option) {
+          (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
+          uint expiryIndex = seenExpires.findInArray(expiry, numExpires).toUint256();
+          uint nextIndex = portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions;
+          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].options[nextIndex] =
+            Option({strike: strike, isCall: isCall, balance: currentAsset.balance});
+
+          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions++;
+          if (isCall) {
+            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
+          }
+          if (currentAsset.balance < 0) {
+            portfolio.marketHoldings[i].totalShortPositions -= currentAsset.balance;
+            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].totalShortPositions -= currentAsset.balance;
+          }
+        }
+      }
+    }
+
+    return portfolio;
   }
 
   /**
@@ -462,105 +566,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @notice Arrange portfolio into cash + arranged
-   *         array of [strikes][calls / puts].
-   *         Unlike PCRM, the forwards are purposefully not filtered.
-   * @param assets Array of balances for given asset and subId.
-   */
-  function _arrangePortfolio(ISubAccounts.AssetBalance[] memory assets)
-    internal
-    view
-    returns (StandardManagerPortfolio memory)
-  {
-    (uint marketCount, int cashBalance, uint marketBitMap) = _countMarketsAndParseCash(assets);
-
-    StandardManagerPortfolio memory portfolio =
-      StandardManagerPortfolio({cash: cashBalance, marketHoldings: new MarketHolding[](marketCount)});
-
-    // for each market, need to count how many expires there are
-    // and initiate a ExpiryHolding[] array in the corresponding
-    for (uint i; i < marketCount; i++) {
-      // 1. find the first market id
-      uint8 marketId;
-      for (uint8 id = 1; id < 256; id++) {
-        uint masked = (1 << id);
-        if (marketBitMap & masked == 0) continue;
-        // mark this market id as used => flip it back to 0 with xor
-        marketBitMap ^= masked;
-        marketId = id;
-        break;
-      }
-      portfolio.marketHoldings[i].marketId = marketId;
-
-      // 2. filter through all balances and only find perp or option for this market
-      uint numExpires;
-      uint[] memory seenExpires = new uint[](assets.length);
-      uint[] memory expiryOptionCounts = new uint[](assets.length);
-
-      for (uint j; j < assets.length; j++) {
-        ISubAccounts.AssetBalance memory currentAsset = assets[j];
-        if (currentAsset.asset == cashAsset) continue;
-
-        AssetDetail memory detail = assetDetails[currentAsset.asset];
-        if (detail.marketId != marketId) continue;
-
-        if (detail.assetType == AssetType.Perpetual) {
-          // if it's perp asset, update the perp position directly
-          portfolio.marketHoldings[i].perp = IPerpAsset(address(currentAsset.asset));
-          portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
-        } else if (detail.assetType == AssetType.Option) {
-          portfolio.marketHoldings[i].option = IOption(address(currentAsset.asset));
-          (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
-          uint expiryIndex;
-          (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);
-          // print all seen expiries
-          expiryOptionCounts[expiryIndex]++;
-        } else {
-          // base asset, update holding.basePosition directly. This balance should always be positive
-          portfolio.marketHoldings[i].basePosition = currentAsset.balance;
-        }
-      }
-
-      // 3. initiate expiry holdings in a marketHolding
-      portfolio.marketHoldings[i].expiryHoldings = new ExpiryHolding[](numExpires);
-      // 4. initiate the option array in each expiry holding
-      for (uint j; j < numExpires; j++) {
-        portfolio.marketHoldings[i].expiryHoldings[j].expiry = seenExpires[j];
-        portfolio.marketHoldings[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
-        // portfolio.marketHoldings[i].expiryHoldings[j].minConfidence = 1e18;
-      }
-
-      // 5. put options into expiry holdings
-      for (uint j; j < assets.length; j++) {
-        ISubAccounts.AssetBalance memory currentAsset = assets[j];
-        if (currentAsset.asset == cashAsset) continue;
-
-        AssetDetail memory detail = assetDetails[currentAsset.asset];
-        if (detail.marketId != marketId) continue;
-
-        if (detail.assetType == AssetType.Option) {
-          (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
-          uint expiryIndex = seenExpires.findInArray(expiry, numExpires).toUint256();
-          uint nextIndex = portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions;
-          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].options[nextIndex] =
-            Option({strike: strike, isCall: isCall, balance: currentAsset.balance});
-
-          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions++;
-          if (isCall) {
-            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
-          }
-          if (currentAsset.balance < 0) {
-            portfolio.marketHoldings[i].totalShortPositions -= currentAsset.balance;
-            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].totalShortPositions -= currentAsset.balance;
-          }
-        }
-      }
-    }
-
-    return portfolio;
-  }
-
-  /**
    * @notice Calculate the required margin of the account.
    *      If the account's option require 10K cash, this function will return -10K
    *
@@ -617,6 +622,18 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function settlePerpsWithIndex(IPerpAsset perp, uint accountId) external {
     if (!assetDetails[perp].isWhitelisted) revert SRM_UnsupportedAsset();
     _settlePerpUnrealizedPNL(perp, accountId);
+  }
+
+  /**
+   * @dev merge multiple standard accounts into one. A risk check is performed at the end to make sure it's valid
+   * @param mergeIntoId the account id to merge into
+   * @param mergeFromIds the account ids to merge from
+   */
+  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
+    _mergeAccounts(mergeIntoId, mergeFromIds);
+
+    // make sure ending account is solvent (above initial margin)
+    _performRiskCheck(mergeIntoId, new ISubAccounts.AssetDelta[](0));
   }
 
   ////////////////////////

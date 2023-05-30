@@ -486,20 +486,12 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _settleAccountOptions(_option, accountId);
   }
 
+  /**
+   * @dev merge multiple PMRM accounts into one
+   * @param mergeIntoId the account id to merge into
+   * @param mergeFromIds the account ids to merge from
+   */
   function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    address owner = subAccounts.ownerOf(mergeIntoId);
-    for (uint i = 0; i < mergeFromIds.length; ++i) {
-      // check owner of all accounts is the same - note this ignores
-      if (owner != subAccounts.ownerOf(mergeFromIds[i])) {
-        revert PMRM_MergeOwnerMismatch();
-      }
-      // Move all assets of the other
-      ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(mergeFromIds[i]);
-      for (uint j = 0; j < assets.length; ++j) {
-        _symmetricManagerAdjustment(
-          mergeFromIds[i], mergeIntoId, assets[j].asset, SafeCast.toUint96(assets[j].subId), assets[j].balance
-        );
-      }
-    }
+    _mergeAccounts(mergeIntoId, mergeFromIds);
   }
 }

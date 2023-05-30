@@ -229,7 +229,9 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     return _calculateBalanceWithInterest(subAccounts.getBalance(accountId, ICashAsset(address(this)), 0), accountId);
   }
 
-  /// @notice Allows anyone to transfer accrued SM fees to the SM
+  /**
+   * @notice Allows anyone to transfer accrued SM fees to the SM
+   */
   function transferSmFees() external {
     int amountToSend = accruedSmFees.toInt256();
     accruedSmFees = 0;
@@ -354,7 +356,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
-   * @dev Manager can trigger forge withdraw that burn cash and give up stable asset
+   * @dev Manager can trigger forge withdraw that burn cash and give out stable asset
    */
   function forceWithdraw(uint accountId) external {
     if (msg.sender != address(subAccounts.manager(accountId))) {
