@@ -30,14 +30,16 @@ contract PMRMPublic is PMRM {
   }
 
   function setBalances(uint accountId, ISubAccounts.AssetBalance[] memory assets) external {
-    for (uint i = 0; i<assets.length; ++i) {
-      subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment({
-        acc: accountId,
-        asset: assets[i].asset,
-        subId: assets[i].subId,
-        amount: assets[i].balance,
-        assetData: bytes32(0)
-      }));
+    for (uint i = 0; i < assets.length; ++i) {
+      subAccounts.managerAdjustment(
+        ISubAccounts.AssetAdjustment({
+          acc: accountId,
+          asset: assets[i].asset,
+          subId: assets[i].subId,
+          amount: assets[i].balance,
+          assetData: bytes32(0)
+        })
+      );
     }
   }
 }

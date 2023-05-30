@@ -107,8 +107,6 @@ contract LiquidationPMRMTestBase is LiquidationSimLoading, Test {
     feeRecipient = subAccounts.createAccount(address(this), pmrm);
     pmrm.setFeeRecipient(feeRecipient);
 
-
-
     auction.setSolventAuctionParams(_getDefaultSolventParams());
     auction.setInsolventAuctionParams(_getDefaultInsolventParams());
     auction.setBufferMarginPercentage(0.2e18);
@@ -224,10 +222,9 @@ contract LiquidationPMRMTestBase is LiquidationSimLoading, Test {
     subAccounts.setApprovalForAll(address(this), true);
   }
 
-
   function setupTestScenarioAndGetAssetBalances(LiquidationSimLoading.LiquidationSim memory data)
-  internal
-  returns (ISubAccounts.AssetBalance[] memory balances)
+    internal
+    returns (ISubAccounts.AssetBalance[] memory balances)
   {
     vm.warp(data.StartTime);
 
@@ -247,22 +244,28 @@ contract LiquidationPMRMTestBase is LiquidationSimLoading, Test {
           data.InitialPortfolio.OptionExpiry[i],
           data.InitialPortfolio.OptionStrikes[i],
           data.InitialPortfolio.OptionIsCall[i]
-        ),
+          ),
         balance: data.InitialPortfolio.OptionAmount[i]
       });
     }
 
     if (data.InitialPortfolio.Cash != 0) {
       balances[i++] =
-      ISubAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: data.InitialPortfolio.Cash});
+        ISubAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: data.InitialPortfolio.Cash});
     }
     if (data.InitialPortfolio.PerpPosition != 0) {
-      balances[i++] =
-      ISubAccounts.AssetBalance({asset: IAsset(address(mockPerp)), subId: 0, balance: data.InitialPortfolio.PerpPosition});
+      balances[i++] = ISubAccounts.AssetBalance({
+        asset: IAsset(address(mockPerp)),
+        subId: 0,
+        balance: data.InitialPortfolio.PerpPosition
+      });
     }
     if (data.InitialPortfolio.BasePosition != 0) {
-      balances[i++] =
-      ISubAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: data.InitialPortfolio.BasePosition});
+      balances[i++] = ISubAccounts.AssetBalance({
+        asset: IAsset(address(baseAsset)),
+        subId: 0,
+        balance: data.InitialPortfolio.BasePosition
+      });
     }
 
     return balances;
@@ -275,7 +278,6 @@ contract LiquidationPMRMTestBase is LiquidationSimLoading, Test {
   function _getCashBalance(uint acc) public view returns (int) {
     return subAccounts.getBalance(acc, cash, 0);
   }
-
 
   function _getDefaultSolventParams() internal pure returns (IDutchAuction.SolventAuctionParams memory) {
     return IDutchAuction.SolventAuctionParams({
@@ -291,4 +293,3 @@ contract LiquidationPMRMTestBase is LiquidationSimLoading, Test {
     return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5, bufferMarginScalar: 1.2e18});
   }
 }
-

@@ -478,7 +478,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // max percentage of the "current" portfolio that can be liquidated
     uint maxOfCurrent;
     if (currentAuction.isForce) {
-      maxOfCurrent = currentAuction.percentageLeft;
+      maxOfCurrent = 1e18;
     } else {
       maxOfCurrent = _getMaxProportion(markToMarket, bufferMargin, discount, currentAuction.reservedCash);
     }

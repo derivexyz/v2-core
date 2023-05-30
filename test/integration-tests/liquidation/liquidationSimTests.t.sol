@@ -1,9 +1,7 @@
-
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "test/shared/utils/JsonMechIO.sol";
 import "./util/LiquidationPMRMTestBase.sol";
-
 
 contract LiquidationSimTests is LiquidationPMRMTestBase {
   using stdJson for string;
@@ -18,7 +16,7 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
     vm.warp(data.StartTime);
     startAuction(aliceAcc);
 
-    for (uint i=0; i<data.Actions.length; ++i) {
+    for (uint i = 0; i < data.Actions.length; ++i) {
       console2.log("\n=== STEP:", i);
       updateToActionState(data, i);
       checkPreLiquidation(data, i);
@@ -36,10 +34,11 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
   function doLiquidation(LiquidationSim memory data, uint auctionId) internal {
     console2.log("\n-Do liquidation", auctionId);
 
-    address liquidator = address(uint160(2**60 + auctionId));
+    address liquidator = address(uint160(2 ** 60 + auctionId));
     uint liqAcc = subAccounts.createAccount(address(this), IManager(address(pmrm)));
     _depositCash(liqAcc, data.Actions[auctionId].Liquidator.CashBalance);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = auction.bid(aliceAcc, liqAcc, data.Actions[auctionId].Liquidator.PercentLiquidated);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
+      auction.bid(aliceAcc, liqAcc, data.Actions[auctionId].Liquidator.PercentLiquidated);
     console2.log("finalPercentage", finalPercentage);
     console2.log("cashFromBidder", cashFromBidder);
     console2.log("cashToBidder", cashToBidder);
@@ -72,9 +71,9 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
   function getWorstScenario(uint account) internal returns (uint worstScenario) {
     worstScenario = 0;
     int worstMM = 0;
-    for (uint i=0; i<pmrm.getScenarios().length; ++i) {
+    for (uint i = 0; i < pmrm.getScenarios().length; ++i) {
       (int mm_,,) = auction.getMarginAndMarkToMarket(aliceAcc, i);
-      if (mm_ < worstMM){
+      if (mm_ < worstMM) {
         worstMM = mm_;
         worstScenario = i;
       }

@@ -1,11 +1,10 @@
 import "test/shared/utils/JsonMechIO.sol";
 
-
 contract LiquidationSimLoading {
   using stdJson for string;
 
   struct LiquidationSim {
-    uint256 StartTime;
+    uint StartTime;
     bool IsForce;
     Portfolio InitialPortfolio;
     LiquidationAction[] Actions;
@@ -22,45 +21,44 @@ contract LiquidationSimLoading {
   }
 
   struct LiquidationAction {
-    uint256 Time;
+    uint Time;
     Feeds Feeds;
     Liquidator Liquidator;
     Results Results;
   }
 
   struct Feeds {
-    uint256 StablePrice;
-    uint256 StableConfidence;
-    uint256 SpotPrice;
-    uint256 SpotConfidence;
-    uint256[] FeedExpiries;
-    uint256[] Forwards;
-    uint256[] ForwardConfidences;
-    int256[] Rates;
-    uint256[] RateConfidences;
-    uint256[] VolFeedStrikes;
-    uint256[] VolFeedExpiries;
-    uint256[] VolFeedVols;
+    uint StablePrice;
+    uint StableConfidence;
+    uint SpotPrice;
+    uint SpotConfidence;
+    uint[] FeedExpiries;
+    uint[] Forwards;
+    uint[] ForwardConfidences;
+    int[] Rates;
+    uint[] RateConfidences;
+    uint[] VolFeedStrikes;
+    uint[] VolFeedExpiries;
+    uint[] VolFeedVols;
   }
 
   struct Liquidator {
-    uint256 CashBalance;
-    uint256 PercentLiquidated;
+    uint CashBalance;
+    uint PercentLiquidated;
   }
 
   struct Results {
-    int256 PreMtM;
-    int256 PreMM;
-    int256 PreBM;
-    uint256 PreFMax;
-    int256 ExpectedBidPrice;
-    uint256 FinalPercentageReceived;
-    int256 PostMtM;
-    int256 PostMM;
-    int256 PostBM;
-    uint256 PostFMax;
+    int PreMtM;
+    int PreMM;
+    int PreBM;
+    uint PreFMax;
+    int ExpectedBidPrice;
+    uint FinalPercentageReceived;
+    int PostMtM;
+    int PostMM;
+    int PostBM;
+    uint PostFMax;
   }
-
 
   function getTestData(string memory testName) internal returns (LiquidationSim memory sim) {
     JsonMechIO jsonParser = new JsonMechIO();
@@ -85,12 +83,13 @@ contract LiquidationSimLoading {
     return sim;
   }
 
-  function getActionData(string memory json, string memory testName, uint actionNum) internal returns (LiquidationAction memory action) {
+  function getActionData(string memory json, string memory testName, uint actionNum)
+    internal
+    returns (LiquidationAction memory action)
+  {
     // E.g. Test1.Actions[0]
-    string memory baseActionIndex = string.concat(
-      string.concat(string.concat(testName, ".Actions["), lookupNum(actionNum)),
-      "]"
-    );
+    string memory baseActionIndex =
+      string.concat(string.concat(string.concat(testName, ".Actions["), lookupNum(actionNum)), "]");
 
     action.Time = json.readUint(string.concat(baseActionIndex, ".Time"));
     action.Feeds.StablePrice = json.readUint(string.concat(baseActionIndex, ".Feeds.StablePrice"));
@@ -112,7 +111,8 @@ contract LiquidationSimLoading {
     action.Results.PreBM = json.readInt(string.concat(baseActionIndex, ".Results.PreBM"));
     action.Results.PreFMax = json.readUint(string.concat(baseActionIndex, ".Results.PreFMax"));
     action.Results.ExpectedBidPrice = json.readInt(string.concat(baseActionIndex, ".Results.ExpectedBidPrice"));
-    action.Results.FinalPercentageReceived = json.readUint(string.concat(baseActionIndex, ".Results.FinalPercentageReceived"));
+    action.Results.FinalPercentageReceived =
+      json.readUint(string.concat(baseActionIndex, ".Results.FinalPercentageReceived"));
     action.Results.PostMtM = json.readInt(string.concat(baseActionIndex, ".Results.PostMtM"));
     action.Results.PostMM = json.readInt(string.concat(baseActionIndex, ".Results.PostMM"));
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));
@@ -120,7 +120,6 @@ contract LiquidationSimLoading {
 
     return action;
   }
-
 
   function lookupNum(uint num) internal returns (string memory) {
     // return the string version of num
