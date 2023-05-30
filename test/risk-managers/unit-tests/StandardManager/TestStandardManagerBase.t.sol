@@ -54,6 +54,9 @@ contract TestStandardManagerBase is Test {
   MockFeeds btcFeed;
   MockFeeds stableFeed;
 
+  MockFeeds ethPerpFeed;
+  MockFeeds btcPerpFeed;
+
   uint8 ethMarketId = 1;
   uint8 btcMarketId = 2;
 
@@ -84,6 +87,9 @@ contract TestStandardManagerBase is Test {
     ethOption = new MockOption(subAccounts);
     ethFeed = new MockFeeds();
 
+    ethPerpFeed = new MockFeeds();
+    btcPerpFeed = new MockFeeds();
+
     // setup asset for BTC Markets
     btcPerp = new MockPerp(subAccounts);
     btcOption = new MockOption(subAccounts);
@@ -110,12 +116,12 @@ contract TestStandardManagerBase is Test {
     manager.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wethAsset, ethMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
+    manager.setOraclesForMarket(ethMarketId, ethFeed, ethPerpFeed, ethFeed, ethFeed, ethFeed);
 
     manager.whitelistAsset(btcPerp, btcMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wbtcAsset, btcMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed, btcFeed);
+    manager.setOraclesForMarket(btcMarketId, btcFeed, btcPerpFeed, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -131,6 +137,8 @@ contract TestStandardManagerBase is Test {
 
     ethFeed.setSpot(ethSpot, 1e18);
     btcFeed.setSpot(btcSpot, 1e18);
+    ethPerpFeed.setSpot(ethSpot, 1e18);
+    btcPerpFeed.setSpot(btcSpot, 1e18);
 
     ethFeed.setForwardPrice(expiry1, ethSpot, 1e18);
     ethFeed.setForwardPrice(expiry2, ethSpot, 1e18);
