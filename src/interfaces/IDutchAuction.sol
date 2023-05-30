@@ -141,4 +141,7 @@ interface IDutchAuction {
 
   /// @dev emitted when trying to continue a forced auction when MM > 0.
   error DA_CannotStepSolventForcedAuction();
+
+
+  error DA_OnlyManager();
 }

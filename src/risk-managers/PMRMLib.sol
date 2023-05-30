@@ -177,7 +177,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       minSPAN -= portfolio.confidenceContingency.toInt256();
     }
 
-    return (minSPAN + portfolio.totalMtM + portfolio.cash, portfolio.totalMtM);
+    return (minSPAN + portfolio.totalMtM + portfolio.cash, portfolio.totalMtM + portfolio.cash);
   }
 
   function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
