@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "./fStandardManagerPublic.sol";
+import "./StandardManagerPublic.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
@@ -26,7 +26,7 @@ import "test/auction/mocks/MockCashAsset.sol";
  */
 contract TestStandardManagerBase is Test {
   SubAccounts subAccounts;
-  StandardManager manager;
+  StandardManagerPublic manager;
   MockCash cash;
   MockERC20 usdc;
   MockERC20 weth;
@@ -73,7 +73,7 @@ contract TestStandardManagerBase is Test {
     uint subId;
   }
 
-  function setUp() public {
+  function setUp() public virtual {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     usdc = new MockERC20("USDC", "USDC");

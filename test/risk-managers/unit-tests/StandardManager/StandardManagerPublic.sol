@@ -8,9 +8,13 @@ contract StandardManagerPublic is StandardManager {
     StandardManager(subAccounts_, cashAsset_, _dutchAuction)
   {}
 
-  function getMarginByBalances(ISubAccounts.AssetBalance[] memory balances, uint accountId, bool isInitial) external view returns (int) {
+  function getMarginByBalances(ISubAccounts.AssetBalance[] memory balances, uint accountId)
+    external
+    view
+    returns (int im, int mm, int mtm)
+  {
     StandardManagerPortfolio memory portfolio = _arrangePortfolio(balances);
-    (int margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
-    return margin;
+    (im, mtm) = _getMarginAndMarkToMarket(accountId, portfolio, true);
+    (mm,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
   }
 }
