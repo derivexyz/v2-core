@@ -93,8 +93,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   //    Constructor     //
   ////////////////////////
 
-  constructor(ISubAccounts subAccounts_, ICashAsset cashAsset_)
-    BaseManager(subAccounts_, cashAsset_, IDutchAuction(address(0)))
+  constructor(ISubAccounts subAccounts_, ICashAsset cashAsset_, IDutchAuction _dutchAuction)
+    BaseManager(subAccounts_, cashAsset_, _dutchAuction)
   {}
 
   ////////////////////////

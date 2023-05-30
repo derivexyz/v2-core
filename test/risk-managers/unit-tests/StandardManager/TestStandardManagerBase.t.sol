@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/StandardManager.sol";
+import "./fStandardManagerPublic.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
@@ -105,9 +105,10 @@ contract TestStandardManagerBase is Test {
     ethPricing = new MockOptionPricing();
     btcPricing = new MockOptionPricing();
 
-    manager = new StandardManager(
+    manager = new StandardManagerPublic(
       subAccounts,
-      ICashAsset(address(cash))
+      ICashAsset(address(cash)),
+      IDutchAuction(address(0))
     );
 
     manager.setPricingModule(ethMarketId, ethPricing);
