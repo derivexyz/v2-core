@@ -37,9 +37,8 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
     console2.log("\n-Do liquidation", auctionId);
 
     address liquidator = address(uint160(2**60 + auctionId));
-    uint liqAcc = _setupAccount(liquidator);
+    uint liqAcc = subAccounts.createAccount(address(this), IManager(address(pmrm)));
     _depositCash(liqAcc, data.Actions[auctionId].Liquidator.CashBalance);
-    vm.startPrank(liquidator);
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = auction.bid(aliceAcc, liqAcc, data.Actions[auctionId].Liquidator.PercentLiquidated);
     console2.log("finalPercentage", finalPercentage);
     console2.log("cashFromBidder", cashFromBidder);

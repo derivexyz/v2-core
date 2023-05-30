@@ -250,7 +250,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
 
     // get bidder address and make sure that they own the account
-// TODO:   if (subAccounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
+    if (subAccounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
 
     // margin is buffer margin for solvent auction, maintenance margin for insolvent auction
     (bool canTerminate, int markToMarket, int margin) = getAuctionStatus(accountId);
