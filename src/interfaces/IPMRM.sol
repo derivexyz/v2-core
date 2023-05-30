@@ -92,5 +92,4 @@ interface IPMRM {
   error PMRM_OptionExpired();
   error PMRM_TooManyExpiries();
   error PMRM_TooManyAssets();
-  error PMRM_MergeOwnerMismatch();
 }

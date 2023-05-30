@@ -44,8 +44,11 @@ interface IBaseManager is IManager {
   error BN_InvalidAction();
   /// @dev User is not allowlisted, so trade is blocked
   error BM_CannotTrade();
+
   error BM_OnlyBlockedAccounts();
+
   error BM_InvalidForceWithdrawAccountState();
+
   error BM_InvalidForceLiquidateAccountState();
 
   error BM_InvalidBidPortion();
@@ -57,4 +60,8 @@ interface IBaseManager is IManager {
   error BM_OnlyAccounts();
 
   error BM_AssetCapExceeded();
+
+  error BM_OnlySubAccountOwner();
+
+  error BM_MergeOwnerMismatch();
 }
