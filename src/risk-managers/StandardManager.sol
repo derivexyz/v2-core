@@ -599,9 +599,16 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     }
 
     if (expiryHolding.netCalls < 0) {
+      // console2.log("expiryHolding.netCalls", expiryHolding.netCalls);
       int unpairedScale = optionMarginParams[marketId].unpairedScale;
+      // console2.log("penalty", expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice));
+      // console2.log("forwardPrice", forwardPrice);
       maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice);
     }
+
+    // case 7: expected: 365091660724209385472
+    // case 7: actual: -410116659103539134464
+    // console2.log("maxLossMargin", maxLossMargin);
 
     // return the better of the 2 is the margin
     return (SignedMath.max(totalIsolatedMargin, maxLossMargin), totalMarkToMarket);
@@ -780,7 +787,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ) internal view returns (int) {
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
-    int maintenanceMargin = SignedMath.max(
+    // console2.log("markToMarket", markToMarket);
+
+    int maintenanceMargin = SignedMath.min(
       params.mmSPSpot.multiplyDecimal(indexPrice).multiplyDecimal(amount), params.mmSPMtm.multiplyDecimal(markToMarket)
     ) + markToMarket;
 
@@ -792,6 +801,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // max or min?
     int margin =
       SignedMath.min(imMultiplier.multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket, maintenanceMargin);
+
     return margin;
   }
 

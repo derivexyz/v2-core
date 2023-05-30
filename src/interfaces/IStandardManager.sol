@@ -75,8 +75,8 @@ interface IStandardManager {
   struct OptionMarginParameters {
     int scOffset1;
     int scOffset2;
-    int mmSCSpot;
-    int mmSPSpot;
+    int mmSCSpot; // call static percentage from spot
+    int mmSPSpot; // put static percentage from spot
     int mmSPMtm;
     int unpairedScale;
   }

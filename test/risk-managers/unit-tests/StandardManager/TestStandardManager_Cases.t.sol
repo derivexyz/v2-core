@@ -30,12 +30,116 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
   function testCase1() public {
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-
     ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test1");
-
     (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-
     _checkResult(json, ".Test1", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase2() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test2");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test2", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase3() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test3");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test3", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase4() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test4");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test4", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase5() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test5");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test5", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase6() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test6");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test6", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase7() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test7");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test7", im, mm, mtm, 0.001e18); // 0.1% diff
+
+    // should be -410: -200 max loss and 410 penalty
+  }
+
+  function testCase8() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test8");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test8", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase9() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test9");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test9", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase10() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test10");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test10", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase11() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test11");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test11", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase12() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test12");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test12", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase13() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test13");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test13", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase14() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test14");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test14", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase15() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test15");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test15", im, mm, mtm, 0.001e18); // 0.1% diff
+  }
+
+  function testCase16() public {
+    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test16");
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    _checkResult(json, ".Test16", im, mm, mtm, 0.001e18); // 0.1% diff
   }
 
   function _setUpScenario(string memory json, string memory testId)
@@ -51,8 +155,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       uint ethSpotPrice = json.readUint(string.concat(testId, ".Scenario.ETHSpotPrice"));
       uint btcSpotPrice = json.readUint(string.concat(testId, ".Scenario.BTCSpotPrice"));
 
-      ethFeed.setSpot(ethSpotPrice, confs[0][0] * 1e18);
-      btcFeed.setSpot(btcSpotPrice, confs[1][0] * 1e18);
+      ethFeed.setSpot(ethSpotPrice, confs[0][0]);
+      btcFeed.setSpot(btcSpotPrice, confs[1][0]);
     }
 
     // set forwards: assume they are all eth
@@ -74,8 +178,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     {
       // set perp feed
       uint[] memory perpPrices = json.readUintArray(string.concat(testId, ".Scenario.PerpPrice"));
-      ethPerpFeed.setSpot(perpPrices[0], confs[0][1] * 1e18);
-      btcPerpFeed.setSpot(perpPrices[1], confs[1][1] * 1e18);
+      ethPerpFeed.setSpot(perpPrices[0], confs[0][1]);
+      btcPerpFeed.setSpot(perpPrices[1], confs[1][1]);
 
       // set stable feed
       uint usdcPrice = json.readUint(string.concat(testId, ".Scenario.USDCValue"));
@@ -134,9 +238,9 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     int expectedMM = json.readInt(string.concat(testId, ".Result.realMM"));
     int expectedMtM = json.readInt(string.concat(testId, ".Result.PortfolioMtM"));
 
-    assertApproxEqRel(expectedIM, im, deltaPercentage);
-    assertApproxEqRel(expectedMM, mm, deltaPercentage);
-    assertApproxEqRel(expectedMtM, mtm, deltaPercentage);
+    assertApproxEqRel(im, expectedIM, deltaPercentage);
+    assertApproxEqRel(mm, expectedMM, deltaPercentage);
+    assertApproxEqRel(mtm, expectedMtM, deltaPercentage);
   }
 
   // helper
