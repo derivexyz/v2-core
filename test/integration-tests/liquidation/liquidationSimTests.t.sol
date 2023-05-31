@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.18;
+
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "test/shared/utils/JsonMechIO.sol";
@@ -11,7 +14,6 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
     ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(data);
     setBalances(aliceAcc, balances);
     updateToActionState(data, 0);
-    checkPreLiquidation(data, 0);
 
     vm.warp(data.StartTime);
     startAuction(aliceAcc);
@@ -27,25 +29,25 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
 
   function startAuction(uint accountId) internal {
     console2.log("Start auction");
-    uint worstScenario = getWorstScenario(aliceAcc);
-    auction.startAuction(aliceAcc, worstScenario);
+    uint worstScenario = getWorstScenario(accountId);
+    auction.startAuction(accountId, worstScenario);
   }
 
-  function doLiquidation(LiquidationSim memory data, uint auctionId) internal {
-    console2.log("\n-Do liquidation", auctionId);
+  function doLiquidation(LiquidationSim memory data, uint actionId) internal {
+    console2.log("\n-Do liquidation", actionId);
 
-    address liquidator = address(uint160(2 ** 60 + auctionId));
     uint liqAcc = subAccounts.createAccount(address(this), IManager(address(pmrm)));
-    _depositCash(liqAcc, data.Actions[auctionId].Liquidator.CashBalance);
+    _depositCash(liqAcc, data.Actions[actionId].Liquidator.CashBalance);
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
-      auction.bid(aliceAcc, liqAcc, data.Actions[auctionId].Liquidator.PercentLiquidated);
+      auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated);
     console2.log("finalPercentage", finalPercentage);
     console2.log("cashFromBidder", cashFromBidder);
     console2.log("cashToBidder", cashToBidder);
+
   }
 
-  function checkPreLiquidation(LiquidationSim memory data, uint auctionId) internal {
-    console2.log("\n-Pre check", auctionId);
+  function checkPreLiquidation(LiquidationSim memory data, uint actionId) internal {
+    console2.log("\n-Pre check", actionId);
 
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
@@ -53,11 +55,13 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
     console2.log("Worst MM", mm);
     console2.log("Worst BM", bm);
     console2.log("Worst MTM", mtm);
-    console2.log("max prorton", auction.getMaxProportion(aliceAcc, worstScenario));
+    console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
+    // TODO: check all results
+    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PreMtM, 1e6);
   }
 
-  function checkPostLiquidation(LiquidationSim memory data, uint auctionId) internal {
-    console2.log("\n-Post check", auctionId);
+  function checkPostLiquidation(LiquidationSim memory data, uint actionId) internal {
+    console2.log("\n-Post check", actionId);
 
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
@@ -65,14 +69,15 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
     console2.log("Worst MM", mm);
     console2.log("Worst BM", bm);
     console2.log("Worst MTM", mtm);
-    console2.log("max prorton", auction.getMaxProportion(aliceAcc, worstScenario));
+    console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
+    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PostMtM, 1e6);
   }
 
-  function getWorstScenario(uint account) internal returns (uint worstScenario) {
+  function getWorstScenario(uint account) internal view returns (uint worstScenario) {
     worstScenario = 0;
     int worstMM = 0;
     for (uint i = 0; i < pmrm.getScenarios().length; ++i) {
-      (int mm_,,) = auction.getMarginAndMarkToMarket(aliceAcc, i);
+      (int mm_,,) = auction.getMarginAndMarkToMarket(account, i);
       if (mm_ < worstMM) {
         worstMM = mm_;
         worstScenario = i;

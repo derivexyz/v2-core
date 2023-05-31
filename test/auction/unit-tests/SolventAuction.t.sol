@@ -324,7 +324,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     uint percentage = 0.1e18;
 
     vm.prank(bob);
-    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
+    (, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage);
 
     // We set the MTM to be lower than the reserved cash
     manager.setMarkToMarket(aliceAcc, int(cashFromBob) - 1);

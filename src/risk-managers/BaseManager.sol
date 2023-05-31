@@ -28,6 +28,11 @@ import {IAllowList} from "src/interfaces/IAllowList.sol";
 
 import "forge-std/console2.sol";
 
+/**
+ * @title BaseManager
+ * @notice Base contract for all managers. Handles OI fee, settling, liquidations and allowList. Also provides other
+ *        utility functions.
+ */
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using IntLib for int;
   using DecimalMath for uint;
@@ -43,6 +48,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
+  /// @dev AllowList contract address
   IAllowList public allowList;
 
   /// @dev account id that receive OI fee
@@ -192,7 +198,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //   Keeper Functions   //
   //////////////////////////
 
-  function forceLiquidateAccount(uint accountId) external {
+  /**
+   * @dev keeper can call this function to force liquidate an account that has been removed from the allowlist
+   * @param accountId Id of account to force liquidate
+   * @param scenarioId Id of scenario used within liquidation module. Ignored for standard manager.
+   */
+  function forceLiquidateAccount(uint accountId, uint scenarioId) external {
     if (_allowListed(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
@@ -200,7 +211,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (balances.length == 1 || address(balances[0].asset) == address(cashAsset) || balances[0].balance > 0) {
       revert BM_InvalidForceLiquidateAccountState();
     }
-    // TODO: force the account to go through liquidation process for the full account
+    liquidation.startForcedAuction(accountId, scenarioId);
   }
 
   //////////////////////////

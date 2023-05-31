@@ -280,7 +280,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev perform a risk check on the account.
    */
-  function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal {
+  function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     StandardManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 

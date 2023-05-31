@@ -27,7 +27,7 @@ import "../../../shared/mocks/MockPerp.sol";
 import "../../../../src/feeds/OptionPricing.sol";
 import "./PMRMPublic.sol";
 
-contract PMRMTestBase is Test {
+contract PMRMTestBase is JsonMechIO {
   using stdJson for string;
 
   SubAccounts subAccounts;
@@ -36,8 +36,6 @@ contract PMRMTestBase is Test {
   MockERC20 usdc;
   MockERC20 weth;
   WrappedERC20Asset baseAsset;
-
-  JsonMechIO jsonParser;
 
   MockOption option;
   MockDutchAuction auction;
@@ -311,8 +309,7 @@ contract PMRMTestBase is Test {
     returns (ISubAccounts.AssetBalance[] memory balances)
   {
     uint referenceTime = block.timestamp;
-    jsonParser = new JsonMechIO();
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testScenarios.json");
+    string memory json = JsonMechIO.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testScenarios.json");
 
     FeedData memory feedData = readFeedData(json, testId);
     OptionData[] memory optionData = readOptionData(json, testId);

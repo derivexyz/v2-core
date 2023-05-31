@@ -29,7 +29,7 @@ import "test/risk-managers/unit-tests/PMRM/PMRMPublic.sol";
 import "./LiquidationSimLoading.sol";
 import "../../../../src/liquidation/DutchAuction.sol";
 
-contract LiquidationPMRMTestBase is LiquidationSimLoading, Test {
+contract LiquidationPMRMTestBase is LiquidationSimLoading {
   using stdJson for string;
 
   SubAccounts subAccounts;
@@ -38,8 +38,6 @@ contract LiquidationPMRMTestBase is LiquidationSimLoading, Test {
   MockERC20 usdc;
   MockERC20 weth;
   WrappedERC20Asset baseAsset;
-
-  JsonMechIO jsonParser;
 
   MockOption option;
   DutchAuction auction;
