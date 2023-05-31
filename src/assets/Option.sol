@@ -5,8 +5,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
-// import "openzeppelin/access/Ownable2Step.sol";
-import "lyra-utils/math/IntLib.sol";
 
 import "./ManagerWhitelist.sol";
 
@@ -26,7 +24,6 @@ contract Option is IOption, OITracking, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
-  using IntLib for int;
 
   /// @dev Contract to get spot prices which are locked in at settlement
   ISettlementFeed public settlementFeed;
@@ -72,7 +69,8 @@ contract Option is IOption, OITracking, ManagerWhitelist {
 
     // update total position for account
     int postBalance = preBalance + adjustment.amount;
-    accountTotalPosition[adjustment.acc] = accountTotalPosition[adjustment.acc] + postBalance.abs() - preBalance.abs();
+    accountTotalPosition[adjustment.acc] =
+      accountTotalPosition[adjustment.acc] + SignedMath.abs(postBalance) - SignedMath.abs(preBalance);
 
     return (postBalance, adjustment.amount < 0);
   }

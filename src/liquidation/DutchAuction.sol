@@ -15,7 +15,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
-import "lyra-utils/math/IntLib.sol";
 
 import "forge-std/console2.sol";
 
@@ -433,7 +432,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function _startInsolventAuction(uint accountId, uint scenarioId, int lowerBound, bool isForce) internal {
     // decrease value every step
     uint numSteps = insolventAuctionParams.totalSteps;
-    uint stepSize = IntLib.abs(lowerBound) / numSteps;
+    uint stepSize = SignedMath.abs(lowerBound) / numSteps;
 
     auctions[accountId] = Auction({
       accountId: accountId,
@@ -561,8 +560,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     uint maxProportion = _getMaxProportion(markToMarket, bufferMargin, 1e18, 0);
     console2.log("maxProportion", maxProportion);
     console2.log("solventAuctionParams.liquidatorFeeRate", solventAuctionParams.liquidatorFeeRate);
-    fee =
-      maxProportion.multiplyDecimal(IntLib.abs(markToMarket)).multiplyDecimal(solventAuctionParams.liquidatorFeeRate);
+    fee = maxProportion.multiplyDecimal(SignedMath.abs(markToMarket)).multiplyDecimal(
+      solventAuctionParams.liquidatorFeeRate
+    );
   }
 
   /**

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "lyra-utils/math/IntLib.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IAllowances} from "src/interfaces/IAllowances.sol";
@@ -13,8 +13,6 @@ import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
  * @notice Allow more granular allowance setting, supposed to be used by Account
  */
 contract Allowances is IAllowances {
-  using IntLib for int;
-
   ///////////////
   // Variables //
   ///////////////
@@ -133,7 +131,7 @@ contract Allowances is IAllowances {
     uint subIdAllowance = allowancesForSubId[spender];
     uint assetAllowance = allowancesForAsset[spender];
 
-    uint absAmount = amount.abs();
+    uint absAmount = SignedMath.abs(amount);
     /* subId allowances are decremented before asset allowances */
     if (absAmount <= subIdAllowance) {
       allowancesForSubId[spender] = subIdAllowance - absAmount;

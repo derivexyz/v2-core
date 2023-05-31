@@ -43,7 +43,6 @@ contract LiquidationSimTests is LiquidationPMRMTestBase {
     console2.log("finalPercentage", finalPercentage);
     console2.log("cashFromBidder", cashFromBidder);
     console2.log("cashToBidder", cashToBidder);
-
   }
 
   function checkPreLiquidation(LiquidationSim memory data, uint actionId) internal {

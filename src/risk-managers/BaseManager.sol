@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
+import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
-import "lyra-utils/math/IntLib.sol";
-import "openzeppelin/access/Ownable2Step.sol";
 
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IOption} from "src/interfaces/IOption.sol";
@@ -34,7 +34,6 @@ import "forge-std/console2.sol";
  *        utility functions.
  */
 abstract contract BaseManager is IBaseManager, Ownable2Step {
-  using IntLib for int;
   using DecimalMath for uint;
   using SignedDecimalMath for int;
 
@@ -252,7 +251,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
-    fee = delta.abs().multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
+    fee = SignedMath.abs(delta).multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
   }
 
   /**
@@ -268,7 +267,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     if (!oiIncreased) return 0;
 
     (uint perpPrice,) = perpFeed.getSpot();
-    fee = delta.abs().multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS);
+    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS);
   }
 
   /**

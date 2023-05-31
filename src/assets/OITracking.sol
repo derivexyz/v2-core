@@ -4,7 +4,6 @@ pragma solidity ^0.8.18;
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "lyra-utils/math/IntLib.sol";
 
 import {IOITracking} from "src/interfaces/IOITracking.sol";
 import {IManager} from "src/interfaces/IManager.sol";
@@ -17,7 +16,6 @@ import {IManager} from "src/interfaces/IManager.sol";
 contract OITracking is Ownable2Step, IOITracking {
   using SafeCast for uint;
   using SafeCast for int;
-  using IntLib for int;
 
   ///@dev SubId => tradeId => open interest snapshot
   mapping(uint subId => mapping(uint tradeId => OISnapshot)) public openInterestBeforeTrade;
@@ -75,6 +73,6 @@ contract OITracking is Ownable2Step, IOITracking {
       (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
 
     // update total position for manager, won't revert if it exceeds the cap, should only be checked by manager by the end of all transfers
-    totalPosition[manager] = totalPosition[manager] + postBalance.abs() - preBalance.abs();
+    totalPosition[manager] = totalPosition[manager] + SignedMath.abs(postBalance) - SignedMath.abs(preBalance);
   }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import "src/interfaces/IManagerWhitelist.sol";
+import {IManagerWhitelist} from "src/interfaces/IManagerWhitelist.sol";
 
 /**
  * @title ManagerWhitelist

@@ -206,67 +206,67 @@ contract TestPMRM_Admin is PMRMTestBase {
     assertEq(resVolShockParams.dteFloor, 5);
 
     fwdContParams.spotShock1 = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidForwardContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidForwardContingencyParameters.selector);
     pmrm.setForwardContingencyParams(fwdContParams);
     fwdContParams.spotShock1 = 1;
 
     fwdContParams.spotShock2 = 1;
-    vm.expectRevert(IPMRMLib.InvalidForwardContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidForwardContingencyParameters.selector);
     pmrm.setForwardContingencyParams(fwdContParams);
     fwdContParams.spotShock2 = 1e18 + 1;
 
     fwdContParams.multiplicativeFactor = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidForwardContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidForwardContingencyParameters.selector);
     pmrm.setForwardContingencyParams(fwdContParams);
     fwdContParams.multiplicativeFactor = 1;
 
     otherContParams.pegLossThreshold = 1e18;
-    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidOtherContingencyParameters.selector);
     pmrm.setOtherContingencyParams(otherContParams);
     otherContParams.pegLossThreshold = 1;
 
     otherContParams.confidenceThreshold = 1e18;
-    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidOtherContingencyParameters.selector);
     pmrm.setOtherContingencyParams(otherContParams);
     otherContParams.confidenceThreshold = 1;
 
     otherContParams.confidenceFactor = 2e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidOtherContingencyParameters.selector);
     pmrm.setOtherContingencyParams(otherContParams);
     otherContParams.confidenceFactor = 2e18;
 
     otherContParams.basePercent = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidOtherContingencyParameters.selector);
     pmrm.setOtherContingencyParams(otherContParams);
     otherContParams.basePercent = 1;
 
     otherContParams.perpPercent = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidOtherContingencyParameters.selector);
     pmrm.setOtherContingencyParams(otherContParams);
     otherContParams.perpPercent = 1;
 
     otherContParams.optionPercent = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidOtherContingencyParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidOtherContingencyParameters.selector);
     pmrm.setOtherContingencyParams(otherContParams);
     otherContParams.optionPercent = 1;
 
     staticDiscountParams.baseStaticDiscount = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidStaticDiscountParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidStaticDiscountParameters.selector);
     pmrm.setStaticDiscountParams(staticDiscountParams);
     staticDiscountParams.baseStaticDiscount = 1;
 
     staticDiscountParams.rateMultiplicativeFactor = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidStaticDiscountParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidStaticDiscountParameters.selector);
     pmrm.setStaticDiscountParams(staticDiscountParams);
     staticDiscountParams.rateMultiplicativeFactor = 1;
 
     staticDiscountParams.rateAdditiveFactor = 1e18 + 1;
-    vm.expectRevert(IPMRMLib.InvalidStaticDiscountParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidStaticDiscountParameters.selector);
     pmrm.setStaticDiscountParams(staticDiscountParams);
     staticDiscountParams.rateAdditiveFactor = 1;
 
     volShockParams.dteFloor = 10 days + 1;
-    vm.expectRevert(IPMRMLib.InvalidVolShockParameters.selector);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidVolShockParameters.selector);
     pmrm.setVolShockParams(volShockParams);
     volShockParams.dteFloor = 10 days;
   }
