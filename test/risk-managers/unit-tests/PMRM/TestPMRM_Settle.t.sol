@@ -1,10 +1,11 @@
 pragma solidity ^0.8.18;
 
-import "./PMRMTestBase.sol";
-
-import "forge-std/console2.sol";
 import "src/periphery/PerpSettlementHelper.sol";
 import "src/periphery/OptionSettlementHelper.sol";
+
+import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
+
+import "forge-std/console2.sol";
 
 contract TestPMRM_Settlement is PMRMTestBase {
   PerpSettlementHelper perpHelper;

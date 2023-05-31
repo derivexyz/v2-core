@@ -1,97 +1,37 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../interfaces/IPMRM.sol";
-import "../interfaces/IOptionPricing.sol";
+import "openzeppelin/access/Ownable2Step.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
+import "openzeppelin/utils/math/Math.sol";
+import "lyra-utils/math/Black76.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-import "openzeppelin/access/Ownable2Step.sol";
-import "openzeppelin/utils/math/SafeCast.sol";
-import "lyra-utils/math/IntLib.sol";
-import "lyra-utils/math/UintLib.sol";
-import "lyra-utils/math/Black76.sol";
-import "../interfaces/ISubAccounts.sol";
+import "src/interfaces/IOptionPricing.sol";
+import "src/interfaces/IPMRM.sol";
+import "src/interfaces/IPMRMLib.sol";
+import "src/interfaces/ISubAccounts.sol";
 
 import "forge-std/console2.sol";
-
-contract IPMRMLib {
-  struct VolShockParameters {
-    uint volRangeUp;
-    uint volRangeDown;
-    uint shortTermPower;
-    uint longTermPower;
-    uint dteFloor;
-  }
-
-  struct StaticDiscountParameters {
-    uint rateMultiplicativeFactor;
-    uint rateAdditiveFactor;
-    uint baseStaticDiscount;
-  }
-
-  struct ForwardContingencyParameters {
-    uint spotShock1;
-    uint spotShock2;
-    uint additiveFactor;
-    uint multiplicativeFactor;
-  }
-
-  struct OtherContingencyParameters {
-    uint pegLossThreshold;
-    uint pegLossFactor;
-    uint confidenceThreshold;
-    uint confidenceFactor;
-    uint basePercent;
-    uint perpPercent;
-    /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio
-    uint optionPercent;
-  }
-
-  error InvalidForwardContingencyParameters();
-  error InvalidOtherContingencyParameters();
-  error InvalidStaticDiscountParameters();
-  error InvalidVolShockParameters();
-}
 
 contract PMRMLib is IPMRMLib, Ownable2Step {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
+  using SafeCast for int;
 
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public optionPricing;
 
-  IPMRMLib.ForwardContingencyParameters fwdContParams;
-  IPMRMLib.OtherContingencyParameters otherContParams;
-  IPMRMLib.StaticDiscountParameters staticDiscountParams;
-  IPMRMLib.VolShockParameters volShockParams;
+  ForwardContingencyParameters fwdContParams;
+  OtherContingencyParameters otherContParams;
+  StaticDiscountParameters staticDiscountParams;
+  VolShockParameters volShockParams;
 
   constructor(IOptionPricing _optionPricing) Ownable2Step() {
     optionPricing = _optionPricing;
-
-    fwdContParams.spotShock1 = 0.95e18;
-    fwdContParams.spotShock2 = 1.05e18;
-    fwdContParams.additiveFactor = 0.25e18;
-    fwdContParams.multiplicativeFactor = 0.01e18;
-
-    otherContParams.pegLossThreshold = 0.98e18;
-    otherContParams.pegLossFactor = 0.01e18;
-    otherContParams.confidenceThreshold = 0.6e18;
-    otherContParams.confidenceFactor = 0.5e18;
-    otherContParams.basePercent = 0.02e18;
-    otherContParams.perpPercent = 0.02e18;
-    otherContParams.optionPercent = 0.01e18;
-
-    staticDiscountParams.baseStaticDiscount = 0.95e18;
-    staticDiscountParams.rateMultiplicativeFactor = 4e18;
-    staticDiscountParams.rateAdditiveFactor = 0.05e18;
-
-    volShockParams.volRangeUp = 0.45e18;
-    volShockParams.volRangeDown = 0.3e18;
-    volShockParams.shortTermPower = 0.3e18;
-    volShockParams.longTermPower = 0.13e18;
-    volShockParams.dteFloor = 1 days;
   }
 
   ///////////
@@ -107,7 +47,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       _fwdContParams.spotShock1 >= 1e18 || _fwdContParams.spotShock2 <= 1e18
         || _fwdContParams.multiplicativeFactor > 1e18
     ) {
-      revert InvalidForwardContingencyParameters();
+      revert PMRML_InvalidForwardContingencyParameters();
     }
     fwdContParams = _fwdContParams;
   }
@@ -118,17 +58,17 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
         || _otherContParams.confidenceFactor > 2e18 || _otherContParams.basePercent > 1e18
         || _otherContParams.perpPercent > 1e18 || _otherContParams.optionPercent > 1e18
     ) {
-      revert InvalidOtherContingencyParameters();
+      revert PMRML_InvalidOtherContingencyParameters();
     }
     otherContParams = _otherContParams;
   }
 
   function setStaticDiscountParams(IPMRMLib.StaticDiscountParameters memory _staticDiscountParams) external onlyOwner {
     if (
-      _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 1e18
+      _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 10e18
         || _staticDiscountParams.rateAdditiveFactor > 1e18
     ) {
-      revert InvalidStaticDiscountParameters();
+      revert PMRML_InvalidStaticDiscountParameters();
     }
     staticDiscountParams = _staticDiscountParams;
   }
@@ -136,7 +76,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
     // TODO: more bounds (for this and the above)
     if (_volShockParams.dteFloor > 10 days) {
-      revert InvalidVolShockParameters();
+      revert PMRML_InvalidVolShockParameters();
     }
     volShockParams = _volShockParams;
   }
@@ -172,7 +112,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
           (otherContParams.pegLossThreshold - portfolio.stablePrice).multiplyDecimal(otherContParams.pegLossFactor);
       }
 
-      minSPAN = minSPAN.multiplyDecimal(int(mFactor));
+      minSPAN = minSPAN.multiplyDecimal(mFactor.toInt256());
 
       minSPAN -= portfolio.confidenceContingency.toInt256();
     }
@@ -190,7 +130,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
       int expiryMtM;
       // Check cached values
-      if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == 1e18) {
+      if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == DecimalMath.UNIT) {
         // we've already calculated this previously, so just use that
         expiryMtM = expiry.mtm;
       } else if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == fwdContParams.spotShock1) {
@@ -221,7 +161,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     uint spotShock,
     IPMRM.VolShockDirection volShockDirection
   ) internal view returns (int mtm) {
-    uint volShock = 1e18;
+    uint volShock = DecimalMath.UNIT;
     if (volShockDirection == IPMRM.VolShockDirection.Up) {
       volShock = expiry.volShockUp;
     } else if (volShockDirection == IPMRM.VolShockDirection.Down) {
@@ -232,7 +172,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
       secToExpiry: expiry.secToExpiry.toUint64(),
       forwardPrice: (expiry.forwardVariablePortion.multiplyDecimal(spotShock) + expiry.forwardFixedPortion).toUint128(),
-      discountFactor: 1e18
+      discountFactor: DecimalMath.UNIT.toUint64()
     });
 
     IOptionPricing.Option[] memory optionDetails = new IOptionPricing.Option[](expiry.options.length);
@@ -273,23 +213,24 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
   function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addForwardCont) internal view {
-    portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, 1e18);
+    portfolio.baseValue =
+      _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, DecimalMath.UNIT);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
     portfolio.totalMtM += portfolio.perpValue;
 
-    uint basePerpContingencyFactor = IntLib.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent);
+    uint basePerpContingencyFactor = SignedMath.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent);
     basePerpContingencyFactor += portfolio.basePosition.multiplyDecimal(otherContParams.basePercent);
     portfolio.staticContingency = basePerpContingencyFactor.multiplyDecimal(portfolio.spotPrice);
 
     portfolio.confidenceContingency = _getConfidenceContingency(
-      portfolio.minConfidence, IntLib.abs(portfolio.perpPosition) + portfolio.basePosition, portfolio.spotPrice
+      portfolio.minConfidence, SignedMath.abs(portfolio.perpPosition) + portfolio.basePosition, portfolio.spotPrice
     );
 
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       IPMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
 
       // Current MtM and forward contingency MtMs
-      expiry.mtm = _getExpiryShockedMTM(expiry, 1e18, IPMRM.VolShockDirection.None);
+      expiry.mtm = _getExpiryShockedMTM(expiry, DecimalMath.UNIT, IPMRM.VolShockDirection.None);
       portfolio.totalMtM += expiry.mtm;
 
       if (addForwardCont) {
@@ -308,7 +249,6 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function _addStaticDiscount(IPMRM.ExpiryHoldings memory expiry) internal view {
     uint tAnnualised = expiry.secToExpiry * DecimalMath.UNIT / 365 days;
-    // TODO: this casting to uint is sus
     uint cappedRate = expiry.rate < 0 ? 0 : uint(int(expiry.rate));
     uint shockRFR = cappedRate.multiplyDecimal(staticDiscountParams.rateMultiplicativeFactor)
       + staticDiscountParams.rateAdditiveFactor;
@@ -318,9 +258,9 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function _addVolShocks(IPMRM.ExpiryHoldings memory expiry) internal view {
-    int tao = int(30 days * DecimalMath.UNIT / UintLib.max(expiry.secToExpiry, volShockParams.dteFloor));
+    int tao = (30 days * DecimalMath.UNIT / Math.max(expiry.secToExpiry, volShockParams.dteFloor)).toInt256();
     uint multShock = FixedPointMathLib.decPow(
-      tao, expiry.secToExpiry <= 30 days ? int(volShockParams.shortTermPower) : int(volShockParams.longTermPower)
+      tao, expiry.secToExpiry <= 30 days ? volShockParams.shortTermPower : volShockParams.longTermPower
     );
 
     expiry.volShockUp = DecimalMath.UNIT + volShockParams.volRangeUp.multiplyDecimal(multShock);
@@ -336,7 +276,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     expiry.fwdShock1MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock1, IPMRM.VolShockDirection.None);
     expiry.fwdShock2MtM = _getExpiryShockedMTM(expiry, fwdContParams.spotShock2, IPMRM.VolShockDirection.None);
 
-    int fwdContingency = IntLib.min(IntLib.min(expiry.fwdShock1MtM - expiry.mtm, expiry.fwdShock2MtM - expiry.mtm), 0);
+    int fwdContingency =
+      SignedMath.min(SignedMath.min(expiry.fwdShock1MtM - expiry.mtm, expiry.fwdShock2MtM - expiry.mtm), 0);
     int fwdContingencyFactor = int(
       fwdContParams.additiveFactor //
         + fwdContParams.multiplicativeFactor.multiplyDecimal(Black76.annualise(uint64(expiry.secToExpiry)))
@@ -346,8 +287,9 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function _getConfidenceContingency(uint minConfidence, uint amtAffected, uint spotPrice) internal view returns (uint) {
     if (minConfidence < otherContParams.confidenceThreshold) {
-      return (1e18 - minConfidence).multiplyDecimal(otherContParams.confidenceFactor).multiplyDecimal(amtAffected)
-        .multiplyDecimal(spotPrice);
+      return (DecimalMath.UNIT - minConfidence).multiplyDecimal(otherContParams.confidenceFactor).multiplyDecimal(
+        amtAffected
+      ).multiplyDecimal(spotPrice);
     }
     return 0;
   }
@@ -370,22 +312,21 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
           if (option.amount * option2.amount < 0) {
             // one is negative, one is positive
-            uint amountCancelled = IntLib.absMin(option.amount, option2.amount);
             if (option.amount < 0) {
-              nakedShorts += IntLib.abs(option.amount) - amountCancelled;
+              nakedShorts += SignedMath.abs(option.amount) - SignedMath.min(-option.amount, option2.amount).toUint256();
             } else {
-              nakedShorts += IntLib.abs(option2.amount) - amountCancelled;
+              nakedShorts += SignedMath.abs(option2.amount) - SignedMath.min(option.amount, -option2.amount).toUint256();
             }
           } else if (option.amount < 0) {
             // both negative
-            nakedShorts += IntLib.abs(option.amount) + IntLib.abs(option2.amount);
+            nakedShorts += SignedMath.abs(option.amount) + SignedMath.abs(option2.amount);
           }
 
           found = true;
         }
       }
       if (!found && option.amount < 0) {
-        nakedShorts += IntLib.abs(option.amount);
+        nakedShorts += SignedMath.abs(option.amount);
       }
     }
 

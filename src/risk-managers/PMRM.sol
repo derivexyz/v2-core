@@ -2,11 +2,11 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/Math.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/math/IntLib.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
 
 import "src/interfaces/IManager.sol";
@@ -23,7 +23,7 @@ import "src/interfaces/IInterestRateFeed.sol";
 import "src/interfaces/IPMRM.sol";
 import "src/interfaces/IWrappedERC20Asset.sol";
 
-import "./BaseManager.sol";
+import "src/risk-managers/BaseManager.sol";
 
 import "forge-std/console2.sol";
 import "src/risk-managers/PMRMLib.sol";
@@ -39,7 +39,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   using DecimalMath for uint;
   using SafeCast for uint;
   using SafeCast for int;
-  using IntLib for int;
 
   ///////////////
   // Constants //
@@ -274,7 +273,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
     (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
     portfolio.perpPrice = perpPrice;
-    portfolio.minConfidence = UintLib.min(portfolio.minConfidence, perpConfidence);
+    portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
 
     (uint stablePrice, uint stableConfidence) = stableFeed.getSpot();
     if (stableConfidence < portfolio.minConfidence) {
@@ -343,8 +342,8 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       (uint forwardFixedPortion, uint forwardVariablePortion, uint fwdConfidence) =
         forwardFeed.getForwardPricePortions(expiryCount[i].expiry);
       (int64 rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
-      uint minConfidence = UintLib.min(fwdConfidence, rateConfidence);
-      minConfidence = UintLib.min(portfolio.minConfidence, minConfidence);
+      uint minConfidence = Math.min(fwdConfidence, rateConfidence);
+      minConfidence = Math.min(portfolio.minConfidence, minConfidence);
 
       uint64 secToExpiry = expiryCount[i].expiry - uint64(block.timestamp);
       portfolio.expiries[i] = ExpiryHoldings({
@@ -383,9 +382,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
         (uint vol, uint confidence) = volFeed.getVol(strike.toUint128(), optionExpiry.toUint64());
 
-        expiry.minConfidence = UintLib.min(confidence, expiry.minConfidence);
+        expiry.minConfidence = Math.min(confidence, expiry.minConfidence);
 
-        expiry.netOptions += IntLib.abs(currentAsset.balance);
+        expiry.netOptions += SignedMath.abs(currentAsset.balance);
 
         uint index = --expiryCount[expiryIndex].optionCount;
         expiry.options[index] =

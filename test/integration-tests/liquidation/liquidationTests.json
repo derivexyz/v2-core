@@ -123,13 +123,13 @@
           "PercentLiquidated": 200000000000000000
         },
         "Results": {
-          "PreMtM": 69,
+          "PreMtM": 119307117944266004190,
           "PreMM": 69,
           "PreBM": 69,
           "PreFMax": 552997955336412500,
           "ExpectedBidPrice": 69,
           "FinalPercentageReceived": 65373121411004020000,
-          "PostMtM": 69,
+          "PostMtM": 118591275236600408165,
           "PostMM": 69,
           "PostBM": 0,
           "PostFMax": 69
@@ -172,13 +172,13 @@
           "PercentLiquidated": 200000000000000000
         },
         "Results": {
-          "PreMtM": 69,
+          "PreMtM": 118592535677160276950,
           "PreMM": 69,
           "PreBM": 69,
           "PreFMax": 552997955336412500,
           "ExpectedBidPrice": 69,
           "FinalPercentageReceived": 65373121411004020000,
-          "PostMtM": 69,
+          "PostMtM": 111135818747933853984,
           "PostMM": 69,
           "PostBM": 0,
           "PostFMax": 69

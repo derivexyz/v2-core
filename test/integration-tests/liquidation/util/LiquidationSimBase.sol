@@ -1,6 +1,10 @@
-import "test/shared/utils/JsonMechIO.sol";
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.18;
 
-contract LiquidationSimLoading {
+import "test/shared/utils/JsonMechIO.sol";
+import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
+
+contract LiquidationSimBase is PMRMTestBase {
   using stdJson for string;
 
   struct LiquidationSim {
@@ -60,10 +64,9 @@ contract LiquidationSimLoading {
     uint PostFMax;
   }
 
-  function getTestData(string memory testName) internal returns (LiquidationSim memory sim) {
-    JsonMechIO jsonParser = new JsonMechIO();
+  function getTestData(string memory testName) internal view returns (LiquidationSim memory sim) {
     testName = string.concat(".", testName);
-    string memory json = jsonParser.jsonFromRelPath("/test/integration-tests/liquidation/liquidationTests.json");
+    string memory json = JsonMechIO.jsonFromRelPath("/test/integration-tests/liquidation/liquidationTests.json");
     sim.StartTime = json.readUint(string.concat(testName, ".StartTime"));
     sim.IsForce = json.readBool(string.concat(testName, ".IsForce"));
     sim.InitialPortfolio.Cash = json.readInt(string.concat(testName, ".InitialPortfolio.Cash"));
@@ -85,6 +88,7 @@ contract LiquidationSimLoading {
 
   function getActionData(string memory json, string memory testName, uint actionNum)
     internal
+    pure
     returns (LiquidationAction memory action)
   {
     // E.g. Test1.Actions[0]
@@ -121,7 +125,7 @@ contract LiquidationSimLoading {
     return action;
   }
 
-  function lookupNum(uint num) internal returns (string memory) {
+  function lookupNum(uint num) internal pure returns (string memory) {
     // return the string version of num
     if (num == 0) {
       return "0";
@@ -139,5 +143,54 @@ contract LiquidationSimLoading {
       return "6";
     }
     revert("out of lookupNums");
+  }
+
+  function setupTestScenarioAndGetAssetBalances(LiquidationSim memory data)
+    internal
+    returns (ISubAccounts.AssetBalance[] memory balances)
+  {
+    vm.warp(data.StartTime);
+
+    uint totalAssets = data.InitialPortfolio.OptionStrikes.length;
+
+    totalAssets += data.InitialPortfolio.Cash != 0 ? 1 : 0;
+    totalAssets += data.InitialPortfolio.PerpPosition != 0 ? 1 : 0;
+    totalAssets += data.InitialPortfolio.BasePosition != 0 ? 1 : 0;
+
+    balances = new ISubAccounts.AssetBalance[](totalAssets);
+
+    uint i = 0;
+    for (; i < data.InitialPortfolio.OptionStrikes.length; ++i) {
+      balances[i] = ISubAccounts.AssetBalance({
+        asset: IAsset(option),
+        subId: OptionEncoding.toSubId(
+          data.InitialPortfolio.OptionExpiry[i],
+          data.InitialPortfolio.OptionStrikes[i],
+          data.InitialPortfolio.OptionIsCall[i]
+          ),
+        balance: data.InitialPortfolio.OptionAmount[i]
+      });
+    }
+
+    if (data.InitialPortfolio.Cash != 0) {
+      balances[i++] =
+        ISubAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: data.InitialPortfolio.Cash});
+    }
+    if (data.InitialPortfolio.PerpPosition != 0) {
+      balances[i++] = ISubAccounts.AssetBalance({
+        asset: IAsset(address(mockPerp)),
+        subId: 0,
+        balance: data.InitialPortfolio.PerpPosition
+      });
+    }
+    if (data.InitialPortfolio.BasePosition != 0) {
+      balances[i++] = ISubAccounts.AssetBalance({
+        asset: IAsset(address(baseAsset)),
+        subId: 0,
+        balance: data.InitialPortfolio.BasePosition
+      });
+    }
+
+    return balances;
   }
 }

@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "openzeppelin/utils/math/SignedMath.sol";
-import "openzeppelin/utils/math/SafeCast.sol";
-import "lyra-utils/decimals/ConvertDecimals.sol";
-import "lyra-utils/decimals/DecimalMath.sol";
+import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "openzeppelin/utils/math/SafeCast.sol";
+import {ConvertDecimals} from "lyra-utils/decimals/ConvertDecimals.sol";
 
+import {IERC20Metadata} from "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
@@ -17,19 +15,13 @@ import {ManagerWhitelist} from "src/assets/ManagerWhitelist.sol";
 /**
  * @title Wrapped ERC20 Asset
  * @dev   Users can deposit the given ERC20, and can only have positive balances.
- *        The USD value of the asset can be computed for the given shocked scenario.
  * @author Lyra
  */
 contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
-  // TODO: IWrappedERC20Asset
-  // TODO: cleanup libs
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
-  using SafeCast for uint128;
   using SafeCast for int;
-  using SafeCast for int128;
-  using DecimalMath for uint;
 
   ///@dev The token address for the wrapped asset
   IERC20Metadata public immutable wrappedAsset;
@@ -147,8 +139,8 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
   }
 
   /**
-   * @notice Triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
+   * @notice Triggered when a user wants to migrate an account to a new manager.
+   * @dev Blocks updating to non-whitelisted manager.
    */
   function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));

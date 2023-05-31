@@ -3,11 +3,10 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
+import "openzeppelin/utils/math/Math.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/math/IntLib.sol";
-import "lyra-utils/math/UintLib.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
@@ -46,7 +45,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   using DecimalMath for uint;
   using SafeCast for uint;
   using SafeCast for int;
-  using IntLib for int;
   using UnorderedMemoryArray for uint[];
 
   ///////////////
@@ -280,7 +278,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev perform a risk check on the account.
    */
-  function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal {
+  function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     StandardManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
@@ -456,7 +454,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     int depegMargin = 0;
     if (depegMultiplier != 0) {
       // depeg multiplier should be 0 for maintenance margin, or when there is no depeg
-      int num = marketHolding.perpPosition.abs().toInt256() + marketHolding.totalShortPositions;
+      int num = SignedMath.abs(marketHolding.perpPosition).toInt256() + marketHolding.totalShortPositions;
       depegMargin = -num.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
     }
 
@@ -499,7 +497,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     // while calculating margin for perp, we use the perp market price oracle
     (uint perpPrice, uint confidence) = perpFeeds[marketHolding.marketId].getSpot();
-    uint notional = position.abs().multiplyDecimal(perpPrice);
+    uint notional = SignedMath.abs(position).multiplyDecimal(perpPrice);
     uint requirement = isInitial
       ? perpMarginRequirements[marketHolding.marketId].imRequirement
       : perpMarginRequirements[marketHolding.marketId].mmRequirement;
@@ -508,12 +506,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     if (!isInitial) return netMargin;
 
     // if the min of two confidences is below threshold, apply penalty (becomes more negative)
-    uint minConf = UintLib.min(confidence, indexConf);
+    uint minConf = Math.min(confidence, indexConf);
     OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
     if (ocParam.perpThreshold != 0 && minConf < ocParam.perpThreshold) {
       int diff = 1e18 - int(minConf);
-      int penalty =
-        diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(int(position.abs()));
+      int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(
+        int(SignedMath.abs(position))
+      );
       netMargin -= penalty;
     }
   }
@@ -533,12 +532,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
       (int forwardPrice, uint fwdConf) =
         _getForwardPrice(marketHolding.marketId, marketHolding.expiryHoldings[i].expiry);
-      minConfidence = UintLib.min(minConfidence, fwdConf);
+      minConfidence = Math.min(minConfidence, fwdConf);
 
       {
         uint volConf =
           volFeeds[marketHolding.marketId].getExpiryMinConfidence(uint64(marketHolding.expiryHoldings[i].expiry));
-        minConfidence = UintLib.min(minConfidence, volConf);
+        minConfidence = Math.min(minConfidence, volConf);
       }
 
       (int margin, int mtm) = _calcNetBasicMarginSingleExpiry(
