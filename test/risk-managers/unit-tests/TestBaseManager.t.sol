@@ -65,7 +65,7 @@ contract BaseManagerTester is BaseManager {
     fee = _getPerpOIFee(asset, spotFeed, delta, tradeId);
   }
 
-  function checkAssetCap(IOITracking asset, uint tradeId) external view {
+  function checkAssetCap(IPositionTracking asset, uint tradeId) external view {
     return _checkAssetCap(asset, tradeId);
   }
 

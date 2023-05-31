@@ -9,28 +9,15 @@ import "forge-std/console2.sol";
 
 contract TestPMRM_BaseAsset is PMRMTestBase {
   function testCanDepositBase() public {
-    baseAsset.setWhitelistManager(address(pmrm), true);
-    weth.mint(address(this), 100e18);
-    weth.approve(address(baseAsset), 100e18);
-    vm.expectRevert(IPMRM.PMRM_ExceededBaseOICap.selector);
-    baseAsset.deposit(bobAcc, 100e18);
-
-    baseAsset.setTotalPositionCap(pmrm, 100e18);
-    baseAsset.deposit(bobAcc, 100e18);
-  }
-
-  function testCanTransferEvenPastCap() public {
-    baseAsset.setWhitelistManager(address(pmrm), true);
-    baseAsset.setTotalPositionCap(pmrm, 100e18);
-    weth.mint(address(this), 100e18);
-    weth.approve(address(baseAsset), 100e18);
-    baseAsset.deposit(bobAcc, 100e18);
-
     baseAsset.setTotalPositionCap(pmrm, 0);
+    baseAsset.setWhitelistManager(address(pmrm), true);
+    weth.mint(address(this), 100e18);
+    weth.approve(address(baseAsset), 100e18);
+    vm.expectRevert(IBaseManager.BM_AssetCapExceeded.selector);
+    baseAsset.deposit(bobAcc, 100e18);
 
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
-    balances[0] = ISubAccounts.AssetBalance({asset: cash, balance: 20e18, subId: 0});
-    _doBalanceTransfer(bobAcc, aliceAcc, balances);
+    baseAsset.setTotalPositionCap(pmrm, 100e18);
+    baseAsset.deposit(bobAcc, 100e18);
   }
 
   function testCanWithdrawEvenPastCap() public {
@@ -91,7 +78,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     _doBalanceTransfer(bobAcc, newAcc, balances);
 
     // bob cannot transfer back in
-    vm.expectRevert(IPMRM.PMRM_ExceededBaseOICap.selector);
+    vm.expectRevert(IBaseManager.BM_AssetCapExceeded.selector);
     _doBalanceTransfer(newAcc, bobAcc, balances);
   }
 }

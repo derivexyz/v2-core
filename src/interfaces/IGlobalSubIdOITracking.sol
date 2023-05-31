@@ -8,6 +8,7 @@ interface IGlobalSubIdOITracking {
   }
 
   function openInterestBeforeTrade(uint subId, uint tradeId) external view returns (bool, uint240);
+
   function openInterest(uint subId) external view returns (uint);
 
   /// @dev Emitted when oi is snapshot for given subId

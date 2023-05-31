@@ -152,6 +152,12 @@ contract TestStandardManagerBase is Test {
 
     manager.setOptionMarginParameters(ethMarketId, params);
     manager.setOptionMarginParameters(btcMarketId, params);
+
+    // set caps
+    // ethOption.setTotalPositionCap(manager, 1000e18);
+    // btcOption.setTotalPositionCap(manager, 1000e18);
+    // ethOption.setTotalPositionCap(manager, 1000e18);
+    // btcOption.setTotalPositionCap(manager, 1000e18);
   }
 
   /////////////

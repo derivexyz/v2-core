@@ -11,14 +11,14 @@ import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IWrappedERC20Asset} from "src/interfaces/IWrappedERC20Asset.sol";
 import {ManagerWhitelist} from "src/assets/utils/ManagerWhitelist.sol";
-import {OITracking} from "src/assets/utils/OITracking.sol";
+import {PositionTracking} from "src/assets/utils/PositionTracking.sol";
 
 /**
  * @title Wrapped ERC20 Asset
  * @dev   Users can deposit the given ERC20, and can only have positive balances.
  * @author Lyra
  */
-contract WrappedERC20Asset is ManagerWhitelist, OITracking, IWrappedERC20Asset {
+contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20Asset {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;

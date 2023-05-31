@@ -13,7 +13,7 @@ import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
-import {OITracking} from "src/assets/utils/OITracking.sol";
+import {PositionTracking} from "src/assets/utils/PositionTracking.sol";
 import {GlobalSubIdOITracking} from "src/assets/utils/GlobalSubIdOITracking.sol";
 
 /**
@@ -21,7 +21,7 @@ import {GlobalSubIdOITracking} from "src/assets/utils/GlobalSubIdOITracking.sol"
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, OITracking, GlobalSubIdOITracking, ManagerWhitelist {
+contract Option is IOption, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;

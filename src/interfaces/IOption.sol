@@ -4,10 +4,10 @@ pragma solidity ^0.8.18;
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
-import {IOITracking} from "src/interfaces/IOITracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
 import "./IGlobalSubIdOITracking.sol";
 
-interface IOption is IAsset, IOITracking, IGlobalSubIdOITracking {
+interface IOption is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   ///////////////////
   //   Functions   //
   ///////////////////

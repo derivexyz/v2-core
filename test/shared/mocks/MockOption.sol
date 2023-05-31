@@ -6,11 +6,12 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
 import "src/interfaces/IOption.sol";
+import "./MockPositionTracking.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import "../../../src/interfaces/IGlobalSubIdOITracking.sol";
 
-contract MockOption is IOption {
+contract MockOption is MockPositionTracking, IOption {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
@@ -36,10 +37,6 @@ contract MockOption is IOption {
 
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
-
-  ///@dev SubId => tradeId => open interest snapshot
-  mapping(uint => mapping(uint => SubIdOISnapshot)) public openInterestBeforeTrade;
-  mapping(IManager => mapping(uint => OISnapshot)) public totalPositionBeforeTrade;
 
   ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
@@ -80,22 +77,6 @@ contract MockOption is IOption {
     recordMangerChangeCalls = _record;
   }
 
-  function setMockedOI(uint _subId, uint _oi) external {
-    openInterest[_subId] = _oi;
-  }
-
-  function setMockedOISnapshotBeforeTrade(uint _subId, uint _tradeId, uint _oi) external {
-    openInterestBeforeTrade[_subId][_tradeId] = SubIdOISnapshot(true, uint240(_oi));
-  }
-
-  function setTotalPositionCap(IManager manager, uint oiCap) external {
-    // just to comply with interface
-  }
-
-  function setTotalPositionBeforeTrade(IManager _manager, uint _tradeId, uint _oi) external {
-    totalPositionBeforeTrade[_manager][_tradeId] = OISnapshot(true, uint240(_oi));
-  }
-
   function setSettlementPrice(uint /*expiry*/ ) external {
     // just to comply with interface
   }
@@ -106,14 +87,6 @@ contract MockOption is IOption {
 
   function setMockedSubIdSettled(uint subId, bool settled) external {
     mockedSubSettled[subId] = settled;
-  }
-
-  function setMockTotalPositionCap(IManager manager, uint cap) external {
-    totalPositionCap[manager] = cap;
-  }
-
-  function setMockTotalPosition(IManager manager, uint position) external {
-    totalPosition[manager] = position;
   }
 
   function calcSettlementValue(uint subId, int /*balance*/ ) external view returns (int payout, bool priceSettled) {

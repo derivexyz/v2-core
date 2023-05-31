@@ -20,7 +20,7 @@ import {IManager} from "src/interfaces/IManager.sol";
 
 import "src/assets/utils/ManagerWhitelist.sol";
 
-import "src/assets/utils/OITracking.sol";
+import "src/assets/utils/PositionTracking.sol";
 import "src/assets/utils/GlobalSubIdOITracking.sol";
 
 /**
@@ -30,7 +30,7 @@ import "src/assets/utils/GlobalSubIdOITracking.sol";
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
  */
-contract PerpAsset is IPerpAsset, OITracking, GlobalSubIdOITracking, ManagerWhitelist {
+contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using SignedMath for int;
   using SafeCast for uint;

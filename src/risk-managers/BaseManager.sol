@@ -16,7 +16,7 @@ import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
 import {IGlobalSubIdOITracking} from "src/interfaces/IGlobalSubIdOITracking.sol";
-import {IOITracking} from "src/interfaces/IOITracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
 import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
 
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
@@ -293,11 +293,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     for (uint i; i < assets.length; i++) {
       if (assets[i] == address(cashAsset)) continue;
 
-      _checkAssetCap(IOITracking(assets[i]), tradeId);
+      _checkAssetCap(IPositionTracking(assets[i]), tradeId);
     }
   }
 
-  function _checkAssetCap(IOITracking asset, uint tradeId) internal view {
+  function _checkAssetCap(IPositionTracking asset, uint tradeId) internal view {
     uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
     (, uint preTradePos) = asset.totalPositionBeforeTrade(IManager(address(this)), tradeId);
     uint postTradePos = asset.totalPosition(IManager(address(this)));

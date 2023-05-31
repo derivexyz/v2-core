@@ -5,15 +5,15 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
-import {IOITracking} from "src/interfaces/IOITracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 /**
- * @title OITracking
+ * @title PositionTracking
  * @author Lyra
  * @notice contract helping assets to track OI and total supply, useful for charging fees, caps.. etc
  */
-contract OITracking is Ownable2Step, IOITracking {
+contract PositionTracking is Ownable2Step, IPositionTracking {
   using SafeCast for uint;
   using SafeCast for int;
 

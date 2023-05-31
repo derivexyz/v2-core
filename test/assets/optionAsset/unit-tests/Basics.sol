@@ -85,6 +85,7 @@ contract UNIT_TestOptionBasics is Test {
   function testValidManagerChange() public {
     /* ensure account holds asset before manager changed*/
     option.setWhitelistManager(address(manager), true);
+    option.setTotalPositionCap(manager, 1000e18);
 
     vm.startPrank(alice);
     ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
@@ -102,6 +103,7 @@ contract UNIT_TestOptionBasics is Test {
 
     // whitelist new manager
     option.setWhitelistManager(address(newManager), true);
+    option.setTotalPositionCap(newManager, 1000e18);
 
     vm.startPrank(alice);
     subAccounts.changeManager(aliceAcc, IManager(address(newManager)), "");
