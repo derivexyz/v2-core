@@ -141,14 +141,12 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       uint[] memory feedExpiries = json.readUintArray(string.concat(testId, ".Scenario.FeedExpiries"));
       uint[] memory forwardPrices = json.readUintArray(string.concat(testId, ".Scenario.Forwards"));
       uint[] memory forwardConfs = json.readUintArray(string.concat(testId, ".Scenario.ForwardConfidences"));
-      // todo: add discounts
-      uint[] memory discounts = json.readUintArray(string.concat(testId, ".Scenario.Discounts"));
-      uint[] memory discountConfs = json.readUintArray(string.concat(testId, ".Scenario.DiscountConfidences"));
+      // todo: add discounts?
+      // uint[] memory discounts = json.readUintArray(string.concat(testId, ".Scenario.Discounts"));
+      // uint[] memory discountConfs = json.readUintArray(string.concat(testId, ".Scenario.DiscountConfidences"));
 
       for (uint i = 0; i < feedExpiries.length; i++) {
         ethFeed.setForwardPrice(block.timestamp + feedExpiries[i], forwardPrices[i], forwardConfs[i]);
-        // todo: set discounts?
-        // todo: always set eth feed
       }
     }
 
@@ -180,17 +178,22 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       balances[2] = ISubAccounts.AssetBalance(btcPerp, 0, btcPerpBalance);
 
       // set mocked pnl
-      int ethEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryETH"));
-      // int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
+      {
+        int ethEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryETH"));
 
-      (uint perpPrice,) = ethPerpFeed.getSpot();
-      int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
-      int funding = json.readInt(string.concat(testId, ".Scenario.AccountETHFundingIndex"));
-      ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
+        (uint perpPrice,) = ethPerpFeed.getSpot();
+        int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
+        int funding = json.readInt(string.concat(testId, ".Scenario.AccountETHFundingIndex"));
+        ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
+      }
 
-      // (perpPrice,) = btcPerpFeed.getSpot();
-      // pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
-      // btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
+      {
+        int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
+        (uint perpPrice,) = btcPerpFeed.getSpot();
+        int pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
+        int funding = json.readInt(string.concat(testId, ".Scenario.AccountBTCFundingIndex"));
+        btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
+      }
     }
 
     // put options assets into balances, also set vol for each strike
