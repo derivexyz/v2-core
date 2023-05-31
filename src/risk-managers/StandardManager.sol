@@ -162,7 +162,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       params.mmSCSpot,
       params.mmSPSpot,
       params.mmSPMtm,
-      params.unpairedScale
+      params.unpairedMMScale,
+      params.unpairedIMScale,
+      params.mmOffsetScale
     );
   }
 
@@ -599,7 +601,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     }
 
     if (expiryHolding.netCalls < 0) {
-      int unpairedScale = optionMarginParams[marketId].unpairedScale;
+      int unpairedScale =
+        isInitial ? optionMarginParams[marketId].unpairedIMScale : optionMarginParams[marketId].unpairedMMScale;
       maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice);
     }
 
@@ -789,9 +792,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     int otmRatio = (indexPrice - strike.toInt256()).divideDecimal(indexPrice);
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
-    // max or min?
-    int margin =
-      SignedMath.min(imMultiplier.multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket, maintenanceMargin);
+    int margin = SignedMath.min(
+      imMultiplier.multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket,
+      maintenanceMargin.multiplyDecimal(params.mmOffsetScale)
+    );
 
     return margin;
   }

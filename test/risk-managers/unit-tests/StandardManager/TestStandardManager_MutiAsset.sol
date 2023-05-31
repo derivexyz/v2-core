@@ -150,7 +150,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     manager.setPricingModule(5, pricing);
 
     IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
     manager.setOptionMarginParameters(5, params);
 
     // summarize the initial margin for 2 options

@@ -98,7 +98,7 @@ contract UNIT_TestStandardManager_Option is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
     IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
 
@@ -130,16 +130,26 @@ contract UNIT_TestStandardManager_Option is Test {
 
   function testSetOptionParameters() public {
     IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18);
+      IStandardManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18, 1.2e18, 1.05e18);
     manager.setOptionMarginParameters(ethMarketId, params);
-    (int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale) =
-      manager.optionMarginParams(ethMarketId);
+    (
+      int scOffset1,
+      int scOffset2,
+      int mmSCSpot,
+      int mmSPSpot,
+      int mmSPMtm,
+      int unpairedIMScale,
+      int unpairedMMScale,
+      int mmOffsetScale
+    ) = manager.optionMarginParams(ethMarketId);
     assertEq(scOffset1, 0.2e18);
     assertEq(scOffset2, 0.15e18);
     assertEq(mmSCSpot, 0.1e18);
     assertEq(mmSPSpot, 0.07e18);
     assertEq(mmSPMtm, 0.09e18);
-    assertEq(unpairedScale, 1.4e18);
+    assertEq(unpairedIMScale, 1.4e18);
+    assertEq(unpairedMMScale, 1.2e18);
+    assertEq(mmOffsetScale, 1.05e18);
   }
 
   function testSetOracles() public {
