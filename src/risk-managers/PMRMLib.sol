@@ -65,8 +65,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function setStaticDiscountParams(IPMRMLib.StaticDiscountParameters memory _staticDiscountParams) external onlyOwner {
     if (
-      _staticDiscountParams.baseStaticDiscount >= 1e18
-        || _staticDiscountParams.rateMultiplicativeFactor > 10e18
+      _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 10e18
         || _staticDiscountParams.rateAdditiveFactor > 1e18
     ) {
       revert PMRML_InvalidStaticDiscountParameters();
@@ -214,7 +213,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
   function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addForwardCont) internal view {
-    portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, DecimalMath.UNIT);
+    portfolio.baseValue =
+      _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, DecimalMath.UNIT);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
     portfolio.totalMtM += portfolio.perpValue;
 
@@ -287,8 +287,9 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function _getConfidenceContingency(uint minConfidence, uint amtAffected, uint spotPrice) internal view returns (uint) {
     if (minConfidence < otherContParams.confidenceThreshold) {
-      return (DecimalMath.UNIT - minConfidence).multiplyDecimal(otherContParams.confidenceFactor).multiplyDecimal(amtAffected)
-        .multiplyDecimal(spotPrice);
+      return (DecimalMath.UNIT - minConfidence).multiplyDecimal(otherContParams.confidenceFactor).multiplyDecimal(
+        amtAffected
+      ).multiplyDecimal(spotPrice);
     }
     return 0;
   }

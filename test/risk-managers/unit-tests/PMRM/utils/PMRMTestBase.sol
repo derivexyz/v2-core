@@ -130,7 +130,6 @@ contract PMRMTestBase is JsonMechIO {
       optionPercent: 0.01e18
     });
 
-
     IPMRMLib.StaticDiscountParameters memory staticDiscountParams = IPMRMLib.StaticDiscountParameters({
       baseStaticDiscount: 0.95e18,
       rateMultiplicativeFactor: 4e18,
@@ -150,8 +149,6 @@ contract PMRMTestBase is JsonMechIO {
     pmrm.setStaticDiscountParams(staticDiscountParams);
     pmrm.setVolShockParams(volShockParams);
   }
-
-
 
   function _logPortfolio(IPMRM.Portfolio memory portfolio) internal view {
     console2.log("cash balance:", portfolio.cash);
@@ -288,11 +285,11 @@ contract PMRMTestBase is JsonMechIO {
 
   function _getDefaultSolventParams() internal pure returns (IDutchAuction.SolventAuctionParams memory) {
     return IDutchAuction.SolventAuctionParams({
-    startingMtMPercentage: 0.98e18,
-    fastAuctionCutoffPercentage: 0.8e18,
-    fastAuctionLength: 100,
-    slowAuctionLength: 7200,
-    liquidatorFeeRate: 0.02e18
+      startingMtMPercentage: 0.98e18,
+      fastAuctionCutoffPercentage: 0.8e18,
+      fastAuctionLength: 100,
+      slowAuctionLength: 7200,
+      liquidatorFeeRate: 0.02e18
     });
   }
 

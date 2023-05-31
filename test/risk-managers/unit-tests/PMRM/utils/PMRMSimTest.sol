@@ -73,12 +73,12 @@ contract PMRMSimTest is PMRMTestBase {
 
     for (uint i = 0; i < expiries.length; ++i) {
       data[i] = OptionData({
-      secToExpiry: expiries[i],
-      strike: strikes[i],
-      isCall: isCall[i] == 1,
-      amount: amounts[i],
-      vol: vols[i],
-      volConfidence: confidences[i]
+        secToExpiry: expiries[i],
+        strike: strikes[i],
+        isCall: isCall[i] == 1,
+        amount: amounts[i],
+        vol: vols[i],
+        volConfidence: confidences[i]
       });
     }
 
@@ -120,21 +120,21 @@ contract PMRMSimTest is PMRMTestBase {
     require(expiries.length == rateConfidences.length, "rateConfidences length mismatch");
 
     return FeedData({
-    spotPrice: spotPrice,
-    spotConfidence: spotConfidence,
-    stablePrice: stablePrice,
-    stableConfidence: stableConfidence,
-    expiries: expiries,
-    forwards: forwards,
-    forwardConfidences: forwardConfidences,
-    rates: rates,
-    rateConfidences: rateConfidences
+      spotPrice: spotPrice,
+      spotConfidence: spotConfidence,
+      stablePrice: stablePrice,
+      stableConfidence: stableConfidence,
+      expiries: expiries,
+      forwards: forwards,
+      forwardConfidences: forwardConfidences,
+      rates: rates,
+      rateConfidences: rateConfidences
     });
   }
 
   function setupTestScenarioAndGetAssetBalances(string memory testId)
-  internal
-  returns (ISubAccounts.AssetBalance[] memory balances)
+    internal
+    returns (ISubAccounts.AssetBalance[] memory balances)
   {
     uint referenceTime = block.timestamp;
     string memory json = JsonMechIO.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testScenarios.json");
@@ -162,9 +162,9 @@ contract PMRMSimTest is PMRMTestBase {
     for (uint i = 0; i < optionData.length; ++i) {
       uint expiry = referenceTime + uint(optionData[i].secToExpiry);
       balances[i] = ISubAccounts.AssetBalance({
-      asset: IAsset(option),
-      subId: OptionEncoding.toSubId(expiry, uint(optionData[i].strike), optionData[i].isCall),
-      balance: optionData[i].amount
+        asset: IAsset(option),
+        subId: OptionEncoding.toSubId(expiry, uint(optionData[i].strike), optionData[i].isCall),
+        balance: optionData[i].amount
       });
 
       feed.setVol(
@@ -174,17 +174,16 @@ contract PMRMSimTest is PMRMTestBase {
 
     if (otherAssets.cashAmount != 0) {
       balances[balances.length - otherAssets.count--] =
-      ISubAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: otherAssets.cashAmount});
+        ISubAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: otherAssets.cashAmount});
     }
     if (otherAssets.perpAmount != 0) {
       balances[balances.length - otherAssets.count--] =
-      ISubAccounts.AssetBalance({asset: IAsset(address(mockPerp)), subId: 0, balance: otherAssets.perpAmount});
+        ISubAccounts.AssetBalance({asset: IAsset(address(mockPerp)), subId: 0, balance: otherAssets.perpAmount});
     }
     if (otherAssets.baseAmount != 0) {
       balances[balances.length - otherAssets.count--] =
-      ISubAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
+        ISubAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
     }
     return balances;
   }
-
 }
