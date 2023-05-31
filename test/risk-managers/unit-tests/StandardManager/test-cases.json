@@ -41,7 +41,7 @@
       "ETHOptionIsolatedMM": -191871585189059952640,
       "ETHOptionIsolatedIM": -304371585189059952640,
       "ETHOptionBoundedMM": -1650916607242093461504,
-      "ETHOptionBoundedIM": -1650916607242093461504,
+      "ETHOptionBoundedIM": -1800999935173192581120,
       "BTCOptionIsolatedMM": 0,
       "BTCOptionIsolatedIM": 0,
       "BTCOptionBoundedMM": 0,
@@ -54,7 +54,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -191871585189059952640,
-      "HandIM": -304371585189059952640,
+      "HandIM": -3.0437158518905995e20,
       "realMM": -191871585189059952640,
       "realIM": -304371585189059952640
     }
@@ -114,7 +114,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -161,7 +161,7 @@
       "ETHOptionIsolatedMM": -118508261835426660352,
       "ETHOptionIsolatedIM": -156008261835426660352,
       "ETHOptionBoundedMM": -1650916607242093461504,
-      "ETHOptionBoundedIM": -1650916607242093461504,
+      "ETHOptionBoundedIM": -1800999935173192581120,
       "BTCOptionIsolatedMM": 0,
       "BTCOptionIsolatedIM": 0,
       "BTCOptionBoundedMM": 0,
@@ -174,7 +174,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -118508261835426660352,
-      "HandIM": -156008261835426660352,
+      "HandIM": -1.5600826183542666e20,
       "realMM": -118508261835426660352,
       "realIM": -156008261835426660352
     }
@@ -234,7 +234,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -126822794294374039552,
-      "HandIM": -164322794294374039552,
+      "HandIM": -1.6432279429437404e20,
       "realMM": -126822794294374039552,
       "realIM": -164322794294374039552
     }
@@ -294,7 +294,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -200000000000000000000,
-      "HandIM": -200000000000000000000,
+      "HandIM": -2e20,
       "realMM": -200000000000000000000,
       "realIM": -200000000000000000000
     }
@@ -354,7 +354,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -135604014466582446080,
-      "HandIM": -173104014466582446080,
+      "HandIM": -1.7310401446658245e20,
       "realMM": -135604014466582446080,
       "realIM": -173104014466582446080
     }
@@ -414,7 +414,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -365091660724209385472,
-      "HandIM": -365091660724209385472,
+      "HandIM": -3.8009999351731926e20,
       "realMM": -365091660724209385472,
       "realIM": -365091660724209385472
     }
@@ -474,7 +474,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -534,7 +534,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -581,7 +581,7 @@
       "ETHOptionIsolatedMM": -191871585189059952640,
       "ETHOptionIsolatedIM": -304371585189059952640,
       "ETHOptionBoundedMM": -1650916607242093461504,
-      "ETHOptionBoundedIM": -1650916607242093461504,
+      "ETHOptionBoundedIM": -1800999935173192581120,
       "BTCOptionIsolatedMM": 0,
       "BTCOptionIsolatedIM": 0,
       "BTCOptionBoundedMM": 0,
@@ -594,7 +594,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -191871585189059952640,
-      "HandIM": -304371585189059952640,
+      "HandIM": -3.0437158518905995e20,
       "realMM": -191871585189059952640,
       "realIM": -304371585189059952640
     }
@@ -654,7 +654,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -714,7 +714,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -774,7 +774,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -834,7 +834,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -894,7 +894,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": 0,
-      "HandIM": 0,
+      "HandIM": 0.0,
       "realMM": 0,
       "realIM": 0
     }
@@ -941,7 +941,7 @@
       "ETHOptionIsolatedMM": -191871585189059952640,
       "ETHOptionIsolatedIM": -304371585189059952640,
       "ETHOptionBoundedMM": -1650916607242093461504,
-      "ETHOptionBoundedIM": -1650916607242093461504,
+      "ETHOptionBoundedIM": -1800999935173192581120,
       "BTCOptionIsolatedMM": 0,
       "BTCOptionIsolatedIM": 0,
       "BTCOptionBoundedMM": 0,
@@ -951,12 +951,12 @@
       "UnsettledFunding": 0,
       "PerpMargin": 0,
       "OracleConts": 0,
-      "DepegIMs": 1019999999999999868928,
+      "DepegIMs": -1223999999999999737856,
       "Cash": 0,
       "HandMM": -191871585189059952640,
-      "HandIM": 715628414810939981824,
-      "realMM": 828128414810939981824,
-      "realIM": 715628414810939981824
+      "HandIM": -1.5283715851890598e21,
+      "realMM": -191871585189059952640,
+      "realIM": -1528371585189059756032
     }
   },
   "Test17": {
@@ -990,8 +990,7 @@
       "DiscountConfidences": [],
       "USDCValue": 1000000000000000000,
       "SVIParams": [1, 1.5, -0.1, -0.05, 0.05],
-      "PerpPrice": [1505000000000000000000, 27990000000000000000000],
-      "PerpsETH": 1000000000000000000
+      "PerpPrice": [1505000000000000000000, 27990000000000000000000]
     },
     "Result": {
       "ETHOptionMM": 0,
@@ -1014,7 +1013,7 @@
       "DepegIMs": 0,
       "Cash": 0,
       "HandMM": -95250000000000000000,
-      "HandIM": -117825000000000000000,
+      "HandIM": -1.17825e20,
       "realMM": -95250000000000000000,
       "realIM": -117825000000000000000
     }

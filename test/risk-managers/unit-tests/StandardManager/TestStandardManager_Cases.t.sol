@@ -38,6 +38,10 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
     manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.5e18, 0.4e18));
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
+
+    // maintenance margin is 5% of perp price, maintenance margin = 1.3x 
+    manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
+    manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
   }
 
   function testCase1() public {
@@ -66,8 +70,6 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
   function testCase7() public {
     _runTestCases(".Test7");
-
-    // should be -410: -200 max loss and 410 penalty
   }
 
   function testCase8() public {
@@ -103,11 +105,11 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
   }
 
   function testCase16() public {
-    // _runTestCases(".Test16");
+    _runTestCases(".Test16");
   }
 
   function testCase17() public {
-    // _runTestCases(".Test17");
+    _runTestCases(".Test17");
   }
 
   function _runTestCases(string memory testId) internal {
@@ -179,15 +181,16 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
       // set mocked pnl
       int ethEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryETH"));
-      int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
+      // int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
 
       (uint perpPrice,) = ethPerpFeed.getSpot();
       int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
-      ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
+      int funding = json.readInt(string.concat(testId, ".Scenario.AccountETHFundingIndex"));
+      ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
 
-      (perpPrice,) = btcPerpFeed.getSpot();
-      pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
-      btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
+      // (perpPrice,) = btcPerpFeed.getSpot();
+      // pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
+      // btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
     }
 
     // put options assets into balances, also set vol for each strike
