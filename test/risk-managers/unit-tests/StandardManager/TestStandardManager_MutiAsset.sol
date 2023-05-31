@@ -88,6 +88,11 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     assertEq(mtm, 40_000e18);
   }
 
+  function testCannotSetInvalidBaseMarginFactor() public {
+    vm.expectRevert(IStandardManager.SRM_InvalidBaseDiscountFactor.selector);
+    manager.setBaseMarginDiscountFactor(btcMarketId, 1.01e18);
+  }
+
   function testBaseAssetCanAddMargin() public {
     // enable a discount factor of 50%
     manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
