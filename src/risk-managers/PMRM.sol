@@ -96,9 +96,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     perp = perp_;
   }
 
-  ////////////////////////
-  //    Admin-Only     //
-  ///////////////////////
+  ////////////////////
+  //   Admin-Only   //
+  ////////////////////
 
   /**
    * @notice Sets the scenarios for managing margin positions.
@@ -171,15 +171,14 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   ) public onlyAccounts {
     _verifyCanTrade(accountId);
 
-    _checkBaseOICap();
-
     _processManagerData(tradeId, managerData);
 
     _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
 
-    // check cap is not exceeded
-    _checkAssetCap(option);
-    _checkAssetCap(perp);
+    // check caps are not exceeded
+    _checkAssetCap(baseAsset, tradeId);
+    _checkAssetCap(option, tradeId);
+    _checkAssetCap(perp, tradeId);
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -203,21 +202,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       return;
     }
     _assessRisk(caller, accountId, assetDeltas);
-  }
-
-  /**
-   * @dev check that the base OI doesn't increase beyond the cap
-   */
-  function _checkBaseOICap() internal {
-    uint currentBaseOI = baseAsset.managerOI(IManager(address(this)));
-    if (lastSeenBaseOI == currentBaseOI) return;
-
-    uint baseOICap = baseAsset.managerOICap(IManager(address(this)));
-    if (currentBaseOI > lastSeenBaseOI && currentBaseOI > baseOICap) {
-      revert PMRM_ExceededBaseOICap();
-    }
-
-    lastSeenBaseOI = currentBaseOI;
   }
 
   function _assessRisk(address caller, uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas) internal view {

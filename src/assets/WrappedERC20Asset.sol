@@ -10,14 +10,15 @@ import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IWrappedERC20Asset} from "src/interfaces/IWrappedERC20Asset.sol";
-import {ManagerWhitelist} from "src/assets/ManagerWhitelist.sol";
+import {ManagerWhitelist} from "src/assets/utils/ManagerWhitelist.sol";
+import {OITracking} from "src/assets/utils/OITracking.sol";
 
 /**
  * @title Wrapped ERC20 Asset
  * @dev   Users can deposit the given ERC20, and can only have positive balances.
  * @author Lyra
  */
-contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
+contract WrappedERC20Asset is ManagerWhitelist, OITracking, IWrappedERC20Asset {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
@@ -27,22 +28,9 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
   IERC20Metadata public immutable wrappedAsset;
   uint8 public immutable assetDecimals;
 
-  mapping(IManager => uint) public managerOI;
-
-  mapping(IManager => uint) public managerOICap;
-
   constructor(ISubAccounts _subAccounts, IERC20Metadata _wrappedAsset) ManagerWhitelist(_subAccounts) {
     wrappedAsset = _wrappedAsset;
     assetDecimals = _wrappedAsset.decimals();
-  }
-
-  ////////////////////////////
-  //      Admin - Only      //
-  ////////////////////////////
-  function setOICap(IManager manager, uint cap) external onlyOwner {
-    managerOICap[manager] = cap;
-
-    emit OICapSet(address(manager), cap);
   }
 
   ////////////////////////////
@@ -70,7 +58,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
       ""
     );
 
-    // emit Deposit(accountId, msg.sender, cashAmount, stableAmount);
+    emit Deposit(recipientAccount, msg.sender, assetAmount);
   }
 
   /**
@@ -100,7 +88,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
       ""
     );
 
-    // emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
+    emit Withdraw(accountId, msg.sender, assetAmount);
   }
 
   //////////////////////////
@@ -118,19 +106,18 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
    */
   function handleAdjustment(
     ISubAccounts.AssetAdjustment memory adjustment,
-    uint, /*tradeId*/
+    uint tradeId,
     int preBalance,
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
-    // only update the OI for each manager but didn't check cap. It should be checked by the manager if needed at the end of all transfer
-    // otherwise a transfer might fail if += amount is processed first
-    managerOI[manager] = (managerOI[manager].toInt256() + adjustment.amount).toUint256();
 
-    if (adjustment.amount == 0) {
-      return (preBalance, false);
-    }
+    _takeTotalOISnapshotPreTrade(manager, tradeId);
+    _updateTotalOI(manager, preBalance, adjustment.amount);
+
+    if (adjustment.amount == 0) return (preBalance, false);
+
     finalBalance = preBalance + adjustment.amount;
 
     if (finalBalance < 0) revert WERC_CannotBeNegative();
@@ -145,10 +132,7 @@ contract WrappedERC20Asset is ManagerWhitelist, IWrappedERC20Asset {
   function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
 
-    uint balance = subAccounts.getBalance(accountId, IAsset(address(this)), 0).toUint256();
-    managerOI[subAccounts.manager(accountId)] -= balance;
-    managerOI[newManager] += balance;
-
-    if (managerOI[newManager] > managerOICap[newManager]) revert WERC_ManagerChangeExceedOICap();
+    uint pos = subAccounts.getBalance(accountId, IAsset(address(this)), 0).toUint256();
+    _migrateManagerOI(pos, subAccounts.manager(accountId), newManager);
   }
 }

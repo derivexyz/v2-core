@@ -69,7 +69,7 @@ contract UNIT_WrappedBaseAssetHook is Test {
     // create a second manager with less cap
     MockManager manager2 = new MockManager(address(subAccounts));
     asset.setWhitelistManager(address(manager2), true);
-    asset.setOICap(manager2, 1e18);
+    asset.setTotalPositionCap(manager2, 1e18);
 
     vm.expectRevert(IWrappedERC20Asset.WERC_ManagerChangeExceedOICap.selector);
     subAccounts.changeManager(accId, manager2, "");
@@ -82,7 +82,7 @@ contract UNIT_WrappedBaseAssetHook is Test {
     MockManager manager2 = new MockManager(address(subAccounts));
     asset.setWhitelistManager(address(manager2), true);
 
-    asset.setOICap(manager2, 100e18);
+    asset.setTotalPositionCap(manager2, 100e18);
 
     subAccounts.changeManager(accId, manager2, "");
   }

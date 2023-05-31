@@ -3,17 +3,19 @@ pragma solidity ^0.8.18;
 
 import {IManager} from "./IManager.sol";
 import {IAsset} from "./IAsset.sol";
+import "./IOITracking.sol";
 
-interface IWrappedERC20Asset is IAsset {
-  function managerOI(IManager manager) external view returns (uint);
+interface IWrappedERC20Asset is IAsset, IOITracking {
+  function deposit(uint recipientAccount, uint assetAmount) external;
+  function withdraw(uint accountId, uint assetAmount, address recipient) external;
 
-  function managerOICap(IManager manager) external view returns (uint);
+  event Deposit(uint indexed accountId, address indexed depositor, uint amountAsset);
+  event Withdraw(uint indexed accountId, address indexed recipient, uint amountAsset);
 
-  event OICapSet(address manager, uint oiCap);
-
+  //////////////
+  //  Errors  //
+  //////////////
   error WERC_ManagerChangeExceedOICap();
-
   error WERC_OnlyAccountOwner();
-
   error WERC_CannotBeNegative();
 }

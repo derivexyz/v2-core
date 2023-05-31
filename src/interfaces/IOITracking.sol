@@ -13,20 +13,17 @@ interface IOITracking {
     uint240 oi;
   }
 
-  function openInterestBeforeTrade(uint subId, uint tradeId) external view returns (bool initialized, uint240 oi);
-
-  function openInterest(uint subId) external view returns (uint oi);
-
+  function setTotalPositionCap(IManager manager, uint oiCap) external;
   function totalPositionCap(IManager manager) external view returns (uint);
-
+  function totalPositionBeforeTrade(IManager manager, uint tradeId) external view returns (bool, uint240);
   function totalPosition(IManager manager) external view returns (uint);
 
   ////////////////
   //   Events   //
   ////////////////
 
-  /// @dev Emitted when interest related state variables are updated
-  event SnapshotTaken(uint subId, uint tradeId, uint oi);
+  /// @dev Emitted when snapshot is taken for totalOi
+  event SnapshotTaken(address manager, uint tradeId, uint oi);
 
   /// @dev Emitted when OI cap is set
   event TotalPositionCapSet(address manager, uint oiCap);

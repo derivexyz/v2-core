@@ -247,7 +247,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
         // settle perp PNL into cash if the user traded perp in this tx.
         _settlePerpRealizedPNL(perp, accountId);
-        _checkAssetCap(perp);
+        _checkAssetCap(perp, tradeId);
 
         if (isRiskReducing) {
           // check if the delta and position has same sign
@@ -259,11 +259,11 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         }
       } else if (detail.assetType == AssetType.Option) {
         // if the user is only reducing option position, we don't need to check margin
-        _checkAssetCap(IOption(address(assetDeltas[i].asset)));
+        _checkAssetCap(IOption(address(assetDeltas[i].asset)), tradeId);
         if (assetDeltas[i].delta < 0) {
           isRiskReducing = false;
         }
-      }
+      } // TODO: check asset cap for baseAsset
     }
 
     // iterate through delta again and charge all fees

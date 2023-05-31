@@ -8,6 +8,7 @@ import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "src/interfaces/IOption.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
+import "../../../src/interfaces/IGlobalSubIdOITracking.sol";
 
 contract MockOption is IOption {
   using SafeCast for uint;
@@ -37,7 +38,8 @@ contract MockOption is IOption {
   mapping(address => bool) revertFromManager;
 
   ///@dev SubId => tradeId => open interest snapshot
-  mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
+  mapping(uint => mapping(uint => SubIdOISnapshot)) public openInterestBeforeTrade;
+  mapping(IManager => mapping(uint => OISnapshot)) public totalPositionBeforeTrade;
 
   ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
@@ -83,7 +85,15 @@ contract MockOption is IOption {
   }
 
   function setMockedOISnapshotBeforeTrade(uint _subId, uint _tradeId, uint _oi) external {
-    openInterestBeforeTrade[_subId][_tradeId] = OISnapshot(true, uint240(_oi));
+    openInterestBeforeTrade[_subId][_tradeId] = SubIdOISnapshot(true, uint240(_oi));
+  }
+
+  function setTotalPositionCap(IManager manager, uint oiCap) external {
+    // just to comply with interface
+  }
+
+  function setTotalPositionBeforeTrade(IManager _manager, uint _tradeId, uint _oi) external {
+    totalPositionBeforeTrade[_manager][_tradeId] = OISnapshot(true, uint240(_oi));
   }
 
   function setSettlementPrice(uint /*expiry*/ ) external {

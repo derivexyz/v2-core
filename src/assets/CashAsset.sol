@@ -15,7 +15,7 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
 
-import "src/assets/ManagerWhitelist.sol";
+import "src/assets/utils/ManagerWhitelist.sol";
 
 /**
  * @title Cash asset with built-in lending feature.

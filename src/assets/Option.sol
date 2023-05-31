@@ -6,21 +6,22 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "./ManagerWhitelist.sol";
+import "src/assets/utils/ManagerWhitelist.sol";
 
 import {IOption} from "src/interfaces/IOption.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
 
-import {OITracking} from "./OITracking.sol";
+import {OITracking} from "src/assets/utils/OITracking.sol";
+import {GlobalSubIdOITracking} from "src/assets/utils/GlobalSubIdOITracking.sol";
 
 /**
  * @title Option
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, OITracking, ManagerWhitelist {
+contract Option is IOption, OITracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
@@ -64,8 +65,15 @@ contract Option is IOption, OITracking, ManagerWhitelist {
       openInterestBeforeTrade[adjustment.subId][tradeId].oi = openInterest[adjustment.subId].toUint240();
     }
 
-    // update the OI based on pre balance and change amount
-    _updateOIAndTotalPosition(manager, adjustment.subId, preBalance, adjustment.amount);
+    // take snapshot for subId globally (if its the first time an adjustment is seen in the trade)
+    _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
+    // then update the subId OI
+    _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
+
+    // TotalOI snapshot
+    _takeTotalOISnapshotPreTrade(manager, tradeId);
+    // update totalOI
+    _updateTotalOI(manager, preBalance, adjustment.amount);
 
     // update total position for account
     int postBalance = preBalance + adjustment.amount;
@@ -84,7 +92,7 @@ contract Option is IOption, OITracking, ManagerWhitelist {
 
     // migrate OI cap to new manager
     uint pos = accountTotalPosition[accountId];
-    _migrateTotalPositionAndCheckCaps(pos, subAccounts.manager(accountId), newManager);
+    _migrateManagerOI(pos, subAccounts.manager(accountId), newManager);
   }
 
   //////////
