@@ -5,12 +5,14 @@ import "./TestStandardManagerBase.t.sol";
 import "src/feeds/OptionPricing.sol";
 
 import "test/shared/utils/JsonMechIO.sol";
+import "lyra-utils/decimals/SignedDecimalMath.sol";
 
 /**
  * Focusing on the margin rules for options
  */
 contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
   using stdJson for string;
+  using SignedDecimalMath for int;
 
   JsonMechIO immutable jsonParser;
 
@@ -26,120 +28,93 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
     manager.setPricingModule(ethMarketId, pricing);
     manager.setPricingModule(btcMarketId, pricing);
+
+    // override settings
+
+    IStandardManager.OptionMarginParameters memory params =
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.1e18);
+    manager.setOptionMarginParameters(ethMarketId, params);
+    manager.setOptionMarginParameters(btcMarketId, params);
+
+    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.5e18, 0.4e18));
+    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
   }
 
   function testCase1() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test1");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test1", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test1");
   }
 
   function testCase2() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test2");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test2", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test2");
   }
 
   function testCase3() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test3");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test3", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test3");
   }
 
   function testCase4() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test4");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test4", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test4");
   }
 
   function testCase5() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test5");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test5", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test5");
   }
 
   function testCase6() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test6");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test6", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test6");
   }
 
   function testCase7() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test7");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test7", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test7");
 
     // should be -410: -200 max loss and 410 penalty
   }
 
   function testCase8() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test8");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test8", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test8");
   }
 
   function testCase9() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test9");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test9", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test9");
   }
 
   function testCase10() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test10");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test10", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test10");
   }
 
   function testCase11() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test11");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test11", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test11");
   }
 
   function testCase12() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test12");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test12", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test12");
   }
 
   function testCase13() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test13");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test13", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test13");
   }
 
   function testCase14() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test14");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test14", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test14");
   }
 
   function testCase15() public {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test15");
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test15", im, mm, mtm, 0.001e18); // 0.1% diff
+    _runTestCases(".Test15");
   }
 
   function testCase16() public {
+    // _runTestCases(".Test16");
+  }
+
+  function testCase17() public {
+    // _runTestCases(".Test17");
+  }
+
+  function _runTestCases(string memory testId) internal {
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
-    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, ".Test16");
+    ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, testId);
     (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
-    _checkResult(json, ".Test16", im, mm, mtm, 0.001e18); // 0.1% diff
+    _checkResult(json, testId, im, mm, mtm, 0.001e18); // 0.1% diff
   }
 
   function _setUpScenario(string memory json, string memory testId)
@@ -200,7 +175,20 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       int btcPerpBalance = json.readInt(string.concat(testId, ".Scenario.Perps_BTC"));
       balances[0] = ISubAccounts.AssetBalance(cash, 0, cashBalance);
       balances[1] = ISubAccounts.AssetBalance(ethPerp, 0, ethPerpBalance);
+      console2.log("ethPerpBalance", ethPerpBalance);
       balances[2] = ISubAccounts.AssetBalance(btcPerp, 0, btcPerpBalance);
+
+      // set mocked pnl
+      int ethEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryETH"));
+      int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
+
+      (uint perpPrice,) = ethPerpFeed.getSpot();
+      int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
+      ethPerp.mockAccountPnlAndFunding(1, pnl, 0);
+
+      (perpPrice,) = btcPerpFeed.getSpot();
+      pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
+      btcPerp.mockAccountPnlAndFunding(1, pnl, 0);
     }
 
     // put options assets into balances, also set vol for each strike
@@ -228,6 +216,9 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       }
     }
 
+    // mock perp scenario
+    {}
+
     return balances;
   }
 
@@ -238,9 +229,9 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     int expectedMM = json.readInt(string.concat(testId, ".Result.realMM"));
     int expectedMtM = json.readInt(string.concat(testId, ".Result.PortfolioMtM"));
 
-    assertApproxEqRel(im, expectedIM, deltaPercentage);
-    assertApproxEqRel(mm, expectedMM, deltaPercentage);
-    assertApproxEqRel(mtm, expectedMtM, deltaPercentage);
+    assertApproxEqRel(im, expectedIM, deltaPercentage, "IM assertion failed");
+    assertApproxEqRel(mm, expectedMM, deltaPercentage, "MM assertion failed");
+    assertApproxEqRel(mtm, expectedMtM, deltaPercentage, "MtM assertion failed");
   }
 
   // helper

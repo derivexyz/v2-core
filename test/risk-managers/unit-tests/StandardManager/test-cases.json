@@ -969,7 +969,7 @@
       "OptionVols": [],
       "OptionVolConfidences": [],
       "Cash": 0,
-      "Perps_ETH": 0,
+      "Perps_ETH": 1000000000000000000,
       "Perps_BTC": 0,
       "LastEntryETH": 1535000000000000000000,
       "LastEntryBTC": null,

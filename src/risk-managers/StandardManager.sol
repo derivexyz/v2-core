@@ -599,7 +599,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     }
 
     if (expiryHolding.netCalls < 0) {
-      // console2.log("expiryHolding.netCalls", expiryHolding.netCalls);
       int unpairedScale = optionMarginParams[marketId].unpairedScale;
       // console2.log("penalty", expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice));
       // console2.log("forwardPrice", forwardPrice);
