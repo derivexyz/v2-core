@@ -176,9 +176,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
 
     // check caps are not exceeded
-    _checkAssetCap(baseAsset, tradeId);
-    _checkAssetCap(option, tradeId);
-    _checkAssetCap(perp, tradeId);
+    _checkAllAssetCaps(accountId, tradeId);
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -203,6 +201,10 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     }
     _assessRisk(caller, accountId, assetDeltas);
   }
+
+  ///////////////////////
+  // Arrange Portfolio //
+  ///////////////////////
 
   function _assessRisk(address caller, uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas) internal view {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
@@ -235,10 +237,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       }
     }
   }
-
-  ///////////////////////
-  // Arrange Portfolio //
-  ///////////////////////
 
   /**
    * @notice Arrange portfolio into cash + arranged
@@ -423,6 +421,35 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     }
   }
 
+  //////////////
+  // External //
+  //////////////
+
+  /**
+   * @notice can be called by anyone to settle a perp asset in an account
+   */
+  function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {
+    if (_perp != perp) revert PMRM_UnsupportedAsset();
+    _settlePerpUnrealizedPNL(perp, accountId);
+  }
+
+  /**
+   * @notice can be called by anyone to settle a perp asset in an account
+   */
+  function settleOptions(IOption _option, uint accountId) external {
+    if (_option != option) revert PMRM_UnsupportedAsset();
+    _settleAccountOptions(_option, accountId);
+  }
+
+  /**
+   * @dev merge multiple PMRM accounts into one
+   * @param mergeIntoId the account id to merge into
+   * @param mergeFromIds the account ids to merge from
+   */
+  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
+    _mergeAccounts(mergeIntoId, mergeFromIds);
+  }
+
   //////////
   // View //
   //////////
@@ -451,30 +478,5 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     scenarios[0] = marginScenarios[scenarioId];
 
     return _getMarginAndMarkToMarket(portfolio, isInitial, scenarios, true);
-  }
-
-  /**
-   * @notice can be called by anyone to settle a perp asset in an account
-   */
-  function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {
-    if (_perp != perp) revert PMRM_UnsupportedAsset();
-    _settlePerpUnrealizedPNL(perp, accountId);
-  }
-
-  /**
-   * @notice can be called by anyone to settle a perp asset in an account
-   */
-  function settleOptions(IOption _option, uint accountId) external {
-    if (_option != option) revert PMRM_UnsupportedAsset();
-    _settleAccountOptions(_option, accountId);
-  }
-
-  /**
-   * @dev merge multiple PMRM accounts into one
-   * @param mergeIntoId the account id to merge into
-   * @param mergeFromIds the account ids to merge from
-   */
-  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    _mergeAccounts(mergeIntoId, mergeFromIds);
   }
 }

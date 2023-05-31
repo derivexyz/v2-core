@@ -40,7 +40,7 @@ contract OITracking is Ownable2Step, IOITracking {
   //////////////
 
   /**
-   * @dev update global OI for an subId, base on adjustment of a single account
+   * @dev update global OI for an subId, base on adjustment of a single account - note manager must check if it exceeds the cap
    * @param preBalance Account balance before an adjustment
    * @param change Change of balance
    */
@@ -66,10 +66,13 @@ contract OITracking is Ownable2Step, IOITracking {
 
   /**
    * @dev Move OI from one manager to another, to be called in manager change hook of the asset inheriting this.
-   *      NOTE: This does not revert if the cap is exceeded, that must be checked by the manager.
    */
   function _migrateManagerOI(uint pos, IManager oldManager, IManager newManager) internal {
     totalPosition[oldManager] -= pos;
     totalPosition[newManager] += pos;
+
+    if (totalPosition[newManager] > totalPositionCap[newManager]) {
+      revert OIT_CapExceeded();
+    }
   }
 }

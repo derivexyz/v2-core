@@ -15,7 +15,6 @@ interface IWrappedERC20Asset is IAsset, IOITracking {
   //////////////
   //  Errors  //
   //////////////
-  error WERC_ManagerChangeExceedOICap();
   error WERC_OnlyAccountOwner();
   error WERC_CannotBeNegative();
 }

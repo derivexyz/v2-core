@@ -288,6 +288,15 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   // OI Cap //
   ////////////
 
+  function _checkAllAssetCaps(uint accountId, uint tradeId) internal view {
+    address[] memory assets = subAccounts.getUniqueAssets(accountId);
+    for (uint i; i < assets.length; i++) {
+      if (assets[i] == address(cashAsset)) continue;
+
+      _checkAssetCap(IOITracking(assets[i]), tradeId);
+    }
+  }
+
   function _checkAssetCap(IOITracking asset, uint tradeId) internal view {
     uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
     (, uint preTradePos) = asset.totalPositionBeforeTrade(IManager(address(this)), tradeId);
@@ -296,6 +305,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     // If the trade increased OI and we are past the cap, revert.
     if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
   }
+
+  ////////////////
+  // Settlement //
+  ////////////////
 
   /**
    * @dev settle an account by removing all expired option positions and adjust cash balance
