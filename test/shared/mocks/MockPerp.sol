@@ -5,10 +5,11 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 
 import "./MockAsset.sol";
 import "./MockPositionTracking.sol";
+import "./MockGlobalSubIdOITracking.sol";
 
 import "src/interfaces/IPerpAsset.sol";
 
-contract MockPerp is MockAsset, MockPositionTracking, IPerpAsset {
+contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking, IPerpAsset {
   mapping(uint => int) mockedFunding;
   mapping(uint => int) mockedPNL;
 

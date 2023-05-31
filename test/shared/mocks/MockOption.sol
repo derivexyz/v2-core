@@ -7,11 +7,12 @@ import "lyra-utils/decimals/SignedDecimalMath.sol";
 
 import "src/interfaces/IOption.sol";
 import "./MockPositionTracking.sol";
+import "./MockGlobalSubIdOITracking.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import "../../../src/interfaces/IGlobalSubIdOITracking.sol";
 
-contract MockOption is MockPositionTracking, IOption {
+contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOption {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
@@ -33,16 +34,8 @@ contract MockOption is MockPositionTracking, IOption {
   // expiry => price
   mapping(uint => uint) mockedExpiryPrice;
 
-  mapping(uint => uint) public openInterest;
-
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
-
-  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
-  mapping(IManager manager => uint maxTotalPosition) public totalPositionCap;
-
-  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
-  mapping(IManager manager => uint totalPosition) public totalPosition;
 
   constructor(ISubAccounts account_) {
     subAccounts = account_;

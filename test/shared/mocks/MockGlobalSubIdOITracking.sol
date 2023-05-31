@@ -11,4 +11,8 @@ contract MockGlobalSubIdOITracking is IGlobalSubIdOITracking {
   function setMockedOISnapshotBeforeTrade(uint _subId, uint _tradeId, uint _oi) external {
     openInterestBeforeTrade[_subId][_tradeId] = SubIdOISnapshot(true, uint240(_oi));
   }
+
+  function setMockedOI(uint _subId, uint _oi) external {
+    openInterest[_subId] = _oi;
+  }
 }
