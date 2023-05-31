@@ -258,7 +258,7 @@ contract UNIT_TestStandardManager_Option is Test {
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     // 0.15 * 1500 + 100 = 325
     assertEq(im / 1e18, -325);
-    assertEq(mm / 1e18, -107);
+    assertEq(mm / 1e18, -212);
   }
 
   function testGetIsolatedMarginShortITMPut() public {
@@ -276,7 +276,7 @@ contract UNIT_TestStandardManager_Option is Test {
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     assertEq(im / 1e18, -160);
-    assertEq(mm / 1e18, -10);
+    assertEq(mm / 1e18, -122);
   }
 
   ////////////////////

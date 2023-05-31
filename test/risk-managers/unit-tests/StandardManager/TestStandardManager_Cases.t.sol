@@ -113,7 +113,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
   function _runTestCases(string memory testId) internal {
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
     ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, testId);
-    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, 1);
+    (int im, int mm, int mtm) = manager.getMarginByBalances(balances, aliceAcc);
     _checkResult(json, testId, im, mm, mtm, 0.001e18); // 0.1% diff
   }
 
@@ -175,7 +175,6 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       int btcPerpBalance = json.readInt(string.concat(testId, ".Scenario.Perps_BTC"));
       balances[0] = ISubAccounts.AssetBalance(cash, 0, cashBalance);
       balances[1] = ISubAccounts.AssetBalance(ethPerp, 0, ethPerpBalance);
-      console2.log("ethPerpBalance", ethPerpBalance);
       balances[2] = ISubAccounts.AssetBalance(btcPerp, 0, btcPerpBalance);
 
       // set mocked pnl
@@ -184,11 +183,11 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
       (uint perpPrice,) = ethPerpFeed.getSpot();
       int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
-      ethPerp.mockAccountPnlAndFunding(1, pnl, 0);
+      ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
 
       (perpPrice,) = btcPerpFeed.getSpot();
       pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
-      btcPerp.mockAccountPnlAndFunding(1, pnl, 0);
+      btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
     }
 
     // put options assets into balances, also set vol for each strike
