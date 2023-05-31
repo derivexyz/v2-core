@@ -66,6 +66,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
   mapping(uint marketId => OptionMarginParameters) public optionMarginParams;
 
+  /// @dev Base margin discount: each base asset be treated as "spot * discount_factor" amount of cash
+  mapping(uint marketId => uint) public baseMarginDiscountFactor;
+
   /// @dev Oracle Contingency parameters. used to increase margin requirement if oracle has low confidence
   mapping(uint marketId => OracleContingencyParams) public oracleContingencyParams;
 
@@ -144,7 +147,21 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     perpMarginRequirements[marketId] = PerpMarginRequirements(_mmRequirement, _imRequirement);
 
-    emit MarginRequirementsSet(marketId, _mmRequirement, _imRequirement);
+    emit PerpMarginRequirementsSet(marketId, _mmRequirement, _imRequirement);
+  }
+
+  /**
+   * @dev Set discount factor for base asset
+   * @dev if this factor is 0 (unset), base asset won't contribute to margin
+   */
+  function setBaseMarginDiscountFactor(uint8 marketId, uint discountFactor) external onlyOwner {
+    if (discountFactor >= 1e18) {
+      revert SRM_InvalidBaseDiscountFactor();
+    }
+
+    baseMarginDiscountFactor[marketId] = discountFactor;
+
+    emit BaseMarginDiscountFactorSet(marketId, discountFactor);
   }
 
   /**
@@ -470,18 +487,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     }
 
     // base value is the mark to market value of ETH or BTC hold in the account
-    int baseValue;
-    if (marketHolding.basePosition > 0) {
-      int basePosition = marketHolding.basePosition;
-      (uint usdcPrice,) = stableFeed.getSpot();
-      // convert to denominate in USDC
-      baseValue = basePosition.multiplyDecimal(indexPrice).divideDecimal(usdcPrice.toInt256());
-    }
+    (, int baseMtM) = _getBaseMarginAndMtM(marketHolding, indexPrice, indexConf, isInitial);
 
     margin = netPerpMargin + netOptionMargin + depegMargin + unrealizedPerpPNL;
 
     // unrealized pnl is the mark to market value of a perp position
-    markToMarket = optionMtm + unrealizedPerpPNL + baseValue;
+    markToMarket = optionMtm + unrealizedPerpPNL + baseMtM;
   }
 
   /**
@@ -563,6 +574,35 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         );
         netMargin -= penalty;
       }
+    }
+  }
+
+  /**
+   * @dev calculate the margin contributed by base asset, and the mark to market value
+   */
+  function _getBaseMarginAndMtM(MarketHolding memory marketHolding, int indexPrice, uint indexConf, bool isInitial)
+    internal
+    view
+    returns (int baseMargin, int baseMarkToMarket)
+  {
+    if (marketHolding.basePosition == 0) return (0, 0);
+
+    // the margin contributed by base asset is spot * positionSize * haircut
+
+    int basePosition = marketHolding.basePosition;
+    (uint usdcPrice,) = stableFeed.getSpot();
+    // convert to denominate in USDC
+    baseMarkToMarket = basePosition.multiplyDecimal(indexPrice).divideDecimal(usdcPrice.toInt256());
+
+    // add oracle contingency for spot asset, only for IM
+    if (!isInitial) return (baseMargin, baseMarkToMarket);
+
+    OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
+    if (ocParam.optionThreshold != 0 && indexConf < uint(ocParam.optionThreshold)) {
+      int diff = 1e18 - int(indexConf);
+      int penalty =
+        diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(marketHolding.basePosition);
+      baseMargin -= penalty;
     }
   }
 

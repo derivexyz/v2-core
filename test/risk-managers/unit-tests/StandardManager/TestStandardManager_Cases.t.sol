@@ -192,7 +192,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         (uint perpPrice,) = btcPerpFeed.getSpot();
         int pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
         int funding = json.readInt(string.concat(testId, ".Scenario.AccountBTCFundingIndex"));
-        btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, 0);
+        btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
       }
     }
 
