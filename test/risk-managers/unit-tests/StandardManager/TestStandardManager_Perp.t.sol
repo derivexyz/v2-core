@@ -9,6 +9,7 @@ import "src/SubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
+import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
@@ -52,7 +53,8 @@ contract UNIT_TestStandardManager is Test {
 
     manager = new StandardManager(
       subAccounts,
-      ICashAsset(address(cash))
+      ICashAsset(address(cash)),
+      IDutchAuction(address(0))
     );
 
     manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);

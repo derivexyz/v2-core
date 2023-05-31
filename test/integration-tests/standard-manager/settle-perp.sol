@@ -15,6 +15,7 @@ import "src/assets/PerpAsset.sol";
 import "src/assets/CashAsset.sol";
 import "src/assets/Option.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/IPerpAsset.sol";
 
 /**
@@ -67,7 +68,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
     option = new Option(subAccounts, address(feed));
 
-    manager = new StandardManager(subAccounts, ICashAsset(cash));
+    manager = new StandardManager(subAccounts, ICashAsset(cash), IDutchAuction(address(0)));
 
     manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);

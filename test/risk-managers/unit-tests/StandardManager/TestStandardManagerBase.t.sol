@@ -2,7 +2,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/StandardManager.sol";
+import "./StandardManagerPublic.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
@@ -26,7 +26,7 @@ import "test/auction/mocks/MockCashAsset.sol";
  */
 contract TestStandardManagerBase is Test {
   SubAccounts subAccounts;
-  StandardManager manager;
+  StandardManagerPublic manager;
   MockCash cash;
   MockERC20 usdc;
   MockERC20 weth;
@@ -54,6 +54,9 @@ contract TestStandardManagerBase is Test {
   MockFeeds btcFeed;
   MockFeeds stableFeed;
 
+  MockFeeds ethPerpFeed;
+  MockFeeds btcPerpFeed;
+
   uint8 ethMarketId = 1;
   uint8 btcMarketId = 2;
 
@@ -70,7 +73,7 @@ contract TestStandardManagerBase is Test {
     uint subId;
   }
 
-  function setUp() public {
+  function setUp() public virtual {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     usdc = new MockERC20("USDC", "USDC");
@@ -83,6 +86,9 @@ contract TestStandardManagerBase is Test {
     ethPerp = new MockPerp(subAccounts);
     ethOption = new MockOption(subAccounts);
     ethFeed = new MockFeeds();
+
+    ethPerpFeed = new MockFeeds();
+    btcPerpFeed = new MockFeeds();
 
     // setup asset for BTC Markets
     btcPerp = new MockPerp(subAccounts);
@@ -99,9 +105,10 @@ contract TestStandardManagerBase is Test {
     ethPricing = new MockOptionPricing();
     btcPricing = new MockOptionPricing();
 
-    manager = new StandardManager(
+    manager = new StandardManagerPublic(
       subAccounts,
-      ICashAsset(address(cash))
+      ICashAsset(address(cash)),
+      IDutchAuction(address(0))
     );
 
     manager.setPricingModule(ethMarketId, ethPricing);
@@ -110,12 +117,12 @@ contract TestStandardManagerBase is Test {
     manager.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wethAsset, ethMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
+    manager.setOraclesForMarket(ethMarketId, ethFeed, ethPerpFeed, ethFeed, ethFeed, ethFeed);
 
     manager.whitelistAsset(btcPerp, btcMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wbtcAsset, btcMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed, btcFeed);
+    manager.setOraclesForMarket(btcMarketId, btcFeed, btcPerpFeed, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -131,6 +138,8 @@ contract TestStandardManagerBase is Test {
 
     ethFeed.setSpot(ethSpot, 1e18);
     btcFeed.setSpot(btcSpot, 1e18);
+    ethPerpFeed.setSpot(ethSpot, 1e18);
+    btcPerpFeed.setSpot(btcSpot, 1e18);
 
     ethFeed.setForwardPrice(expiry1, ethSpot, 1e18);
     ethFeed.setForwardPrice(expiry2, ethSpot, 1e18);
@@ -148,7 +157,7 @@ contract TestStandardManagerBase is Test {
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
 
     IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18);
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
 
     manager.setOptionMarginParameters(ethMarketId, params);
     manager.setOptionMarginParameters(btcMarketId, params);
