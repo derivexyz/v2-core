@@ -156,15 +156,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       if (!isForce) {
         // charge the account a fee to security module
         // fee is a percentage of percentage of mtm, so paying fee will never make mtm < 0
-        console2.log("markToMarket", markToMarket);
-        console2.log("bufferMargin", bufferMargin);
         fee = _getLiquidationFee(markToMarket, bufferMargin);
         if (fee > 0) {
           ILiquidatableManager(manager).payLiquidationFee(accountId, securityModule.accountId(), fee);
         }
       }
-
-      console2.log("fee", fee);
 
       // solvent auction goes from mark to market * static discount -> 0
       _startSolventAuction(accountId, scenarioId, markToMarket, fee, isForce);
@@ -362,11 +358,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     (uint discount,) = _getDiscountPercentage(auctions[accountId].startTime, block.timestamp);
 
-    console2.log("BM", bufferMargin);
-    console2.log("MTM", markToMarket);
-    console2.log("D", discount);
-    console2.log("RC", auctions[accountId].reservedCash);
-
     return _getMaxProportion(markToMarket, bufferMargin, discount, auctions[accountId].reservedCash);
   }
 
@@ -558,8 +549,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function _getLiquidationFee(int markToMarket, int bufferMargin) internal view returns (uint fee) {
     uint maxProportion = _getMaxProportion(markToMarket, bufferMargin, 1e18, 0);
-    console2.log("maxProportion", maxProportion);
-    console2.log("solventAuctionParams.liquidatorFeeRate", solventAuctionParams.liquidatorFeeRate);
     fee = maxProportion.multiplyDecimal(SignedMath.abs(markToMarket)).multiplyDecimal(
       solventAuctionParams.liquidatorFeeRate
     );
@@ -609,10 +598,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     SolventAuctionParams memory params = solventAuctionParams;
 
     uint timeElapsed = currentTimestamp - startTimestamp;
-
-    console2.log("currentTimestamp", currentTimestamp);
-    console2.log("startTimestamp", startTimestamp);
-    console2.log("timeElapsed", timeElapsed);
 
     // still during the fast auction
     if (timeElapsed < params.fastAuctionLength) {

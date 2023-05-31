@@ -91,6 +91,7 @@ interface IStandardManager {
   struct OracleContingencyParams {
     uint64 perpThreshold;
     uint64 optionThreshold;
+    uint64 baseThreshold;
     int64 OCFactor;
   }
 
@@ -163,7 +164,7 @@ interface IStandardManager {
 
   event DepegParametersSet(int128 threshold, int128 depegFactor);
 
-  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, int128 ocFactor);
+  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int64 ocFactor);
 
   event StableFeedUpdated(address stableFeed);
 }

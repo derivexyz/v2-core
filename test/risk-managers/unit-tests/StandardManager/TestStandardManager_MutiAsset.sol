@@ -79,22 +79,55 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     assertEq(im, 0);
   }
 
-  function testCanTradeBaseAsset() public {
-    // mint and deposit some "weth asset token"
-    uint amount = 10e18;
-    weth.mint(address(this), amount);
-    weth.approve(address(wethAsset), amount);
-    wethAsset.deposit(aliceAcc, 0, amount);
+  function testBaseAssetMarginDefaultToZero() public {
+    // without setting discount factor, base asset contribute 0 to margin
+    _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
 
     (int im, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
-    assertEq(im, 0); // doesn't contribute to margin
+    assertEq(im, 0);
+    assertEq(mtm, 40_000e18);
+  }
+
+  function testBaseAssetCanAddMargin() public {
+    // enable a discount factor of 50%
+    manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
+
+    _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
+
+    int im = manager.getMargin(aliceAcc, true);
+    assertEq(im, int(btcSpot));
+  }
+
+  function testBaseAssetMarginWithContingency() public {
+    manager.setOracleContingencyParams(
+      btcMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.5e18, 0.5e18, 0.1e18)
+    );
+    // enable a discount factor of 50%
+    manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
+    btcFeed.setSpot(btcSpot, 0.3e18);
+
+    _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
+
+    // 2 * 20000 * 0.7 * 0.1 = 2800
+    int expectedPenalty = 2800e18;
+
+    int im = manager.getMargin(aliceAcc, true);
+    assertEq(im, int(btcSpot) - expectedPenalty);
+
+    // oracle contingency doesn't affect mm
+    int mm = manager.getMargin(aliceAcc, false);
+    assertEq(mm, int(btcSpot));
+  }
+
+  function testCanTradeBaseAsset() public {
+    // mint and deposit some "weth asset token"
+    _deposit(weth, wethAsset, aliceAcc, 10e18);
+
+    (, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
     assertEq(mtm, int(ethSpot) * 10);
 
     // add 2 wbtc into the account!
-    uint btcAmount = 2e18;
-    wbtc.mint(address(this), btcAmount);
-    wbtc.approve(address(wbtcAsset), btcAmount);
-    wbtcAsset.deposit(aliceAcc, 0, btcAmount);
+    _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
 
     // mark to market now include wbtc value!
     (, int newMtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 1);
@@ -204,5 +237,11 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     (uint _btcSpot,) = btcFeed.getSpot();
     assertEq(_ethSpot, newEthSpot);
     assertEq(_btcSpot, newBtcSpot);
+  }
+
+  function _deposit(MockERC20 token, MockAsset asset, uint account, uint amount) internal {
+    token.mint(address(this), amount);
+    token.approve(address(asset), amount);
+    asset.deposit(account, 0, amount);
   }
 }
