@@ -18,7 +18,7 @@ import "test/shared/mocks/MockPerp.sol";
 import "test/shared/mocks/MockOption.sol";
 import "test/shared/mocks/MockFeeds.sol";
 import "test/shared/mocks/MockOptionPricing.sol";
-import "test/shared/mocks/MockAsset.sol";
+import "test/shared/mocks/MockTrackableAsset.sol";
 import "test/auction/mocks/MockCashAsset.sol";
 
 /**
@@ -37,8 +37,8 @@ contract TestStandardManagerBase is Test {
   MockOption ethOption;
   MockOption btcOption;
   // mocked base asset!
-  MockAsset wethAsset;
-  MockAsset wbtcAsset;
+  MockTrackableAsset wethAsset;
+  MockTrackableAsset wbtcAsset;
 
   MockOptionPricing btcPricing;
   MockOptionPricing ethPricing;
@@ -90,9 +90,9 @@ contract TestStandardManagerBase is Test {
 
     // setup mock base asset (only change mark to market)
     weth = new MockERC20("weth", "weth");
-    wethAsset = new MockAsset(weth, subAccounts, false); // false as it cannot go negative
+    wethAsset = new MockTrackableAsset(weth, subAccounts, false); // false as it cannot go negative
     wbtc = new MockERC20("wbtc", "wbtc");
-    wbtcAsset = new MockAsset(wbtc, subAccounts, false); // false as it cannot go negative
+    wbtcAsset = new MockTrackableAsset(wbtc, subAccounts, false); // false as it cannot go negative
 
     btcFeed = new MockFeeds();
 
@@ -154,10 +154,6 @@ contract TestStandardManagerBase is Test {
     manager.setOptionMarginParameters(btcMarketId, params);
 
     // set caps
-    // ethOption.setTotalPositionCap(manager, 1000e18);
-    // btcOption.setTotalPositionCap(manager, 1000e18);
-    // ethOption.setTotalPositionCap(manager, 1000e18);
-    // btcOption.setTotalPositionCap(manager, 1000e18);
   }
 
   /////////////
