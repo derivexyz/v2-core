@@ -39,7 +39,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.5e18, 0.4e18));
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
-    // maintenance margin is 5% of perp price, maintenance margin = 1.3x 
+    // maintenance margin is 5% of perp price, maintenance margin = 1.3x
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
   }
