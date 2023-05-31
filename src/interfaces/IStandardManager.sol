@@ -78,7 +78,8 @@ interface IStandardManager {
     int mmSCSpot; // call static percentage from spot
     int mmSPSpot; // put static percentage from spot
     int mmSPMtm; // static percentage from mtm, for maintenance margin
-    int unpairedScale;
+    int unpairedIMScale;
+    int unpairedMMScale;
     int mmOffsetScale; // IM = mmOffsetScale * MM, make sure it's always lower (more negative)
   }
 
@@ -144,7 +145,15 @@ interface IStandardManager {
   event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
   event OptionMarginParametersSet(
-    uint8 marketId, int scOffset1, int scOffset2, int mmSCSpot, int mmSPSpot, int mmSPMtm, int unpairedScale
+    uint8 marketId,
+    int scOffset1,
+    int scOffset2,
+    int mmSCSpot,
+    int mmSPSpot,
+    int mmSPMtm,
+    int unpairedIMScale,
+    int unpairedMMScale,
+    int mmOffsetScale
   );
 
   event DepegParametersSet(int128 threshold, int128 depegFactor);

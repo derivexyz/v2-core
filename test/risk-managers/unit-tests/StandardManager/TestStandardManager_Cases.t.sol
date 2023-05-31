@@ -32,7 +32,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     // override settings
 
     IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.1e18);
+      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.2e18, 1.1e18, 1.05e18);
     manager.setOptionMarginParameters(ethMarketId, params);
     manager.setOptionMarginParameters(btcMarketId, params);
 
