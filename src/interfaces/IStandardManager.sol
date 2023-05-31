@@ -77,8 +77,9 @@ interface IStandardManager {
     int scOffset2;
     int mmSCSpot; // call static percentage from spot
     int mmSPSpot; // put static percentage from spot
-    int mmSPMtm;
+    int mmSPMtm; // static percentage from mtm, for maintenance margin
     int unpairedScale;
+    int mmOffsetScale; // IM = mmOffsetScale * MM, make sure it's always lower (more negative)
   }
 
   struct DepegParams {

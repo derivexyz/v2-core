@@ -162,7 +162,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       params.mmSCSpot,
       params.mmSPSpot,
       params.mmSPMtm,
-      params.unpairedScale
+      params.unpairedScale,
+      params.mmOffsetScale
     );
   }
 
