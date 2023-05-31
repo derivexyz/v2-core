@@ -25,36 +25,13 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   /// @dev Pricing module to get option mark-to-market price
   IOptionPricing public optionPricing;
 
-  IPMRMLib.ForwardContingencyParameters fwdContParams;
-  IPMRMLib.OtherContingencyParameters otherContParams;
-  IPMRMLib.StaticDiscountParameters staticDiscountParams;
-  IPMRMLib.VolShockParameters volShockParams;
+  ForwardContingencyParameters fwdContParams;
+  OtherContingencyParameters otherContParams;
+  StaticDiscountParameters staticDiscountParams;
+  VolShockParameters volShockParams;
 
   constructor(IOptionPricing _optionPricing) Ownable2Step() {
     optionPricing = _optionPricing;
-
-    fwdContParams.spotShock1 = 0.95e18;
-    fwdContParams.spotShock2 = 1.05e18;
-    fwdContParams.additiveFactor = 0.25e18;
-    fwdContParams.multiplicativeFactor = 0.01e18;
-
-    otherContParams.pegLossThreshold = 0.98e18;
-    otherContParams.pegLossFactor = 0.01e18;
-    otherContParams.confidenceThreshold = 0.6e18;
-    otherContParams.confidenceFactor = 0.5e18;
-    otherContParams.basePercent = 0.02e18;
-    otherContParams.perpPercent = 0.02e18;
-    otherContParams.optionPercent = 0.01e18;
-
-    staticDiscountParams.baseStaticDiscount = 0.95e18;
-    staticDiscountParams.rateMultiplicativeFactor = 4e18;
-    staticDiscountParams.rateAdditiveFactor = 0.05e18;
-
-    volShockParams.volRangeUp = 0.45e18;
-    volShockParams.volRangeDown = 0.3e18;
-    volShockParams.shortTermPower = 0.3e18;
-    volShockParams.longTermPower = 0.13e18;
-    volShockParams.dteFloor = 1 days;
   }
 
   ///////////
@@ -88,7 +65,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function setStaticDiscountParams(IPMRMLib.StaticDiscountParameters memory _staticDiscountParams) external onlyOwner {
     if (
-      _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 1e18
+      _staticDiscountParams.baseStaticDiscount >= 1e18
+        || _staticDiscountParams.rateMultiplicativeFactor > 10e18
         || _staticDiscountParams.rateAdditiveFactor > 1e18
     ) {
       revert PMRML_InvalidStaticDiscountParameters();
@@ -153,7 +131,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
       int expiryMtM;
       // Check cached values
-      if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == 1e18) {
+      if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == DecimalMath.UNIT) {
         // we've already calculated this previously, so just use that
         expiryMtM = expiry.mtm;
       } else if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == fwdContParams.spotShock1) {
@@ -184,7 +162,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     uint spotShock,
     IPMRM.VolShockDirection volShockDirection
   ) internal view returns (int mtm) {
-    uint volShock = 1e18;
+    uint volShock = DecimalMath.UNIT;
     if (volShockDirection == IPMRM.VolShockDirection.Up) {
       volShock = expiry.volShockUp;
     } else if (volShockDirection == IPMRM.VolShockDirection.Down) {
@@ -195,7 +173,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
       secToExpiry: expiry.secToExpiry.toUint64(),
       forwardPrice: (expiry.forwardVariablePortion.multiplyDecimal(spotShock) + expiry.forwardFixedPortion).toUint128(),
-      discountFactor: 1e18
+      discountFactor: DecimalMath.UNIT.toUint64()
     });
 
     IOptionPricing.Option[] memory optionDetails = new IOptionPricing.Option[](expiry.options.length);
@@ -236,7 +214,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
   function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addForwardCont) internal view {
-    portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, 1e18);
+    portfolio.baseValue = _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, DecimalMath.UNIT);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
     portfolio.totalMtM += portfolio.perpValue;
 
@@ -252,7 +230,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       IPMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
 
       // Current MtM and forward contingency MtMs
-      expiry.mtm = _getExpiryShockedMTM(expiry, 1e18, IPMRM.VolShockDirection.None);
+      expiry.mtm = _getExpiryShockedMTM(expiry, DecimalMath.UNIT, IPMRM.VolShockDirection.None);
       portfolio.totalMtM += expiry.mtm;
 
       if (addForwardCont) {
@@ -309,7 +287,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function _getConfidenceContingency(uint minConfidence, uint amtAffected, uint spotPrice) internal view returns (uint) {
     if (minConfidence < otherContParams.confidenceThreshold) {
-      return (1e18 - minConfidence).multiplyDecimal(otherContParams.confidenceFactor).multiplyDecimal(amtAffected)
+      return (DecimalMath.UNIT - minConfidence).multiplyDecimal(otherContParams.confidenceFactor).multiplyDecimal(amtAffected)
         .multiplyDecimal(spotPrice);
     }
     return 0;

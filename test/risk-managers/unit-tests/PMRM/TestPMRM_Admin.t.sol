@@ -2,7 +2,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 
-import "./PMRMTestBase.sol";
+import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import "forge-std/console2.sol";
 
@@ -113,47 +113,6 @@ contract TestPMRM_Admin is PMRMTestBase {
     assertEq(address(pmrm.optionPricing()), address(0));
   }
 
-  //
-  //  function setForwardContingencyParams(IPMRMLib.ForwardContingencyParameters memory _fwdContParams) external onlyOwner {
-  //    if (
-  //      _fwdContParams.spotShock1 >= 1e18 || _fwdContParams.spotShock2 <= 1e18
-  //      || _fwdContParams.multiplicativeFactor > 1e18
-  //    ) {
-  //      revert InvalidForwardContingencyParameters();
-  //    }
-  //    fwdContParams = _fwdContParams;
-  //  }
-  //
-  //  function setOtherContingencyParams(IPMRMLib.OtherContingencyParameters memory _otherContParams) external onlyOwner {
-  //    if (
-  //      _otherContParams.pegLossThreshold >= 1e18
-  //      || _otherContParams.confidenceThreshold >= 1e18 || _otherContParams.confidenceFactor > 2e18
-  //      || _otherContParams.basePercent > 1e18 || _otherContParams.perpPercent > 1e18
-  //      || _otherContParams.optionPercent > 1e18
-  //    ) {
-  //      revert InvalidOtherContingencyParameters();
-  //    }
-  //    otherContParams = _otherContParams;
-  //  }
-  //
-  //  function setStaticDiscountParams(IPMRMLib.StaticDiscountParameters memory _staticDiscountParams) external onlyOwner {
-  //    if (
-  //      _staticDiscountParams.baseStaticDiscount >= 1e18 || _staticDiscountParams.rateMultiplicativeFactor > 1e18
-  //      || _staticDiscountParams.rateAdditiveFactor > 1e18
-  //    ) {
-  //      revert InvalidStaticDiscountParameters();
-  //    }
-  //    staticDiscountParams = _staticDiscountParams;
-  //  }
-  //
-  //  function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
-  //    // TODO: more bounds (for this and the above)
-  //    if (_volShockParams.dteFloor > 10 days) {
-  //      revert InvalidVolShockParameters();
-  //    }
-  //    volShockParams = _volShockParams;
-  //  }
-  //
   function testSetParameters() public {
     IPMRMLib.ForwardContingencyParameters memory fwdContParams = IPMRMLib.ForwardContingencyParameters({
       spotShock1: 1,
@@ -255,7 +214,7 @@ contract TestPMRM_Admin is PMRMTestBase {
     pmrm.setStaticDiscountParams(staticDiscountParams);
     staticDiscountParams.baseStaticDiscount = 1;
 
-    staticDiscountParams.rateMultiplicativeFactor = 1e18 + 1;
+    staticDiscountParams.rateMultiplicativeFactor = 10e18 + 1;
     vm.expectRevert(IPMRMLib.PMRML_InvalidStaticDiscountParameters.selector);
     pmrm.setStaticDiscountParams(staticDiscountParams);
     staticDiscountParams.rateMultiplicativeFactor = 1;

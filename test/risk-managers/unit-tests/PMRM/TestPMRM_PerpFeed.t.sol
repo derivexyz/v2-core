@@ -2,11 +2,11 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 
-import "./PMRMTestBase.sol";
+import "test/risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
 
 import "forge-std/console2.sol";
 
-contract TestPMRM_PerpFeed is PMRMTestBase {
+contract TestPMRM_PerpFeed is PMRMSimTest {
   function test_perpFeedAffectsPMRM() public {
     ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
     _depositCash(aliceAcc, 1_000_000e18);

@@ -23,11 +23,11 @@ import "test/shared/mocks/MockFeeds.sol";
 import "src/assets/WrappedERC20Asset.sol";
 import "test/shared/mocks/MockPerp.sol";
 
-import "./PMRMTestBase.sol";
+import "test/risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
 
 import "forge-std/console2.sol";
 
-contract UNIT_TestPMRM_EdgeCases is PMRMTestBase {
+contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
   function testPMRM_perpTransfer() public {
     ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
 

@@ -4,13 +4,13 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "test/shared/utils/JsonMechIO.sol";
-import "./util/LiquidationPMRMTestBase.sol";
+import "./util/LiquidationSimBase.sol";
 
-contract LiquidationSimTests is LiquidationPMRMTestBase {
+contract LiquidationSimTests is LiquidationSimBase {
   using stdJson for string;
 
   function testLiquidationSim() public {
-    LiquidationSim memory data = LiquidationSimLoading.getTestData("Test2");
+    LiquidationSim memory data = LiquidationSimBase.getTestData("Test2");
     ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(data);
     setBalances(aliceAcc, balances);
     updateToActionState(data, 0);

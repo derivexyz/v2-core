@@ -23,7 +23,7 @@ import "test/shared/mocks/MockFeeds.sol";
 import "src/assets/WrappedERC20Asset.sol";
 import "test/shared/mocks/MockPerp.sol";
 
-import "./PMRMTestBase.sol";
+import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import "forge-std/console2.sol";
 

@@ -3,7 +3,9 @@ pragma solidity ^0.8.18;
 
 contract IPMRMLib {
   struct VolShockParameters {
+    /// @dev The max vol shock, that can be scaled down
     uint volRangeUp;
+    /// @dev The maxx
     uint volRangeDown;
     int shortTermPower;
     int longTermPower;
@@ -24,13 +26,19 @@ contract IPMRMLib {
   }
 
   struct OtherContingencyParameters {
+    /// @dev Below this threshold, we consider the stable asset de-pegged, so we add additional contingency
     uint pegLossThreshold;
+    /// @dev If below the peg loss threshold, we add this contingency
     uint pegLossFactor;
+    /// @dev Below this threshold, IM is affected by confidence contingency
     uint confidenceThreshold;
+    /// @dev Percentage of spot used for confidence contingency, scales with the minimum contingency seen.
     uint confidenceFactor;
+    /// @dev Contingency applied to base held in the portfolio, multiplied by spot.
     uint basePercent;
+    /// @dev Contingency applied to perps held in the portfolio, multiplied by spot.
     uint perpPercent;
-    /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio
+    /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio, multipled by spot.
     uint optionPercent;
   }
 
