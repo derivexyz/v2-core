@@ -333,7 +333,8 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardFixedPortion: forwardFixedPortion,
         forwardVariablePortion: forwardVariablePortion,
-        rate: rate,
+        // We assume the rate is always positive
+        rate: SignedMath.max(0, rate).toUint256(),
         minConfidence: minConfidence,
         netOptions: 0,
         // vol shocks are added in addPrecomputes
