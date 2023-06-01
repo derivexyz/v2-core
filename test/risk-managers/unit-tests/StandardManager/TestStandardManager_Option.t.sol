@@ -251,7 +251,7 @@ contract UNIT_TestStandardManager_Option is Test {
 
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
-    assertEq(im / 1e18, -2424);
+    assertEq(im / 1e18, -1325);
     assertEq(mm / 1e18, -1212);
   }
 
@@ -291,7 +291,7 @@ contract UNIT_TestStandardManager_Option is Test {
     pricing.setMockMTM(strike, expiry, false, 1500e18);
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
-    assertEq(im / 1e18, -3225);
+    assertEq(im / 1e18, -1725);
     assertEq(mm / 1e18, -1612);
   }
 

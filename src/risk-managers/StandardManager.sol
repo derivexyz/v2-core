@@ -628,7 +628,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     bool isInitial
   ) internal view returns (int, int totalMarkToMarket) {
     // We make sure the evaluate the scenario at price = 0
-    int maxLossMargin = _calcPayoffAtPrice(option, expiryHolding, 0);
+    int maxLossMargin = _calcMaxLoss(option, expiryHolding, 0);
     int totalIsolatedMargin = 0;
 
     for (uint i; i < expiryHolding.options.length; i++) {
@@ -641,7 +641,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       totalMarkToMarket += markToMarket;
 
       // calculate the max loss margin, update the maxLossMargin if it's lower than current
-      maxLossMargin = SignedMath.min(_calcPayoffAtPrice(option, expiryHolding, optionPos.strike), maxLossMargin);
+      maxLossMargin = SignedMath.min(_calcMaxLoss(option, expiryHolding, optionPos.strike), maxLossMargin);
     }
 
     if (expiryHolding.netCalls < 0) {
@@ -833,7 +833,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     if (!isInitial) return maintenanceMargin;
 
-    int otmRatio = (indexPrice - strike.toInt256()).divideDecimal(indexPrice);
+    int otmRatio = SignedMath.max((indexPrice - strike.toInt256()), 0).divideDecimal(indexPrice);
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
     int margin = SignedMath.min(
@@ -858,16 +858,16 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ) internal view returns (int) {
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
-    if (!isInitial) {
-      return (params.mmSCSpot.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
-    }
+    int maintenanceMargin = (params.mmSCSpot.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
 
-    // this ratio become negative if option is ITM
-    int otmRatio = (strike.toInt256() - indexPrice).divideDecimal(indexPrice);
+    if (!isInitial) return maintenanceMargin;
+
+    int otmRatio = SignedMath.max((strike.toInt256() - indexPrice), 0).divideDecimal(indexPrice);
 
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
     int margin = (imMultiplier.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
+
     return margin;
   }
 
@@ -877,7 +877,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcPayoffAtPrice(IOption option, ExpiryHolding memory expiryHolding, uint price)
+  function _calcMaxLoss(IOption option, ExpiryHolding memory expiryHolding, uint price)
     internal
     pure
     returns (int payoff)
@@ -887,6 +887,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         expiryHolding.options[i].strike, expiryHolding.options[i].balance, price, expiryHolding.options[i].isCall
       );
     }
+
+    return SignedMath.min(payoff, 0);
   }
 
   /**

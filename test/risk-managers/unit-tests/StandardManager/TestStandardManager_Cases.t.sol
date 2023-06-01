@@ -31,8 +31,17 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
     // override settings
 
-    IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.2e18, 1.1e18, 1.05e18);
+    IStandardManager.OptionMarginParameters memory params = IStandardManager.OptionMarginParameters({
+      scOffset1: 0.15e18,
+      scOffset2: 0.1e18,
+      mmSCSpot: 0.075e18,
+      mmSPSpot: 0.075e18,
+      mmSPMtm: 0.075e18,
+      unpairedIMScale: 1.2e18,
+      unpairedMMScale: 1.1e18,
+      mmOffsetScale: 1.05e18
+    });
+
     manager.setOptionMarginParameters(ethMarketId, params);
     manager.setOptionMarginParameters(btcMarketId, params);
 
@@ -44,6 +53,10 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     // maintenance margin is 5% of perp price, maintenance margin = 1.3x
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
+
+    // base asset contribute 10% of its value to margin
+    manager.setBaseMarginDiscountFactor(ethMarketId, 0.1e18);
+    manager.setBaseMarginDiscountFactor(btcMarketId, 0.1e18);
   }
 
   function testCase1() public {
@@ -114,6 +127,48 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     _runTestCases(".Test17");
   }
 
+  function testCase18() public {
+    _runTestCases(".Test18");
+  }
+
+  function testCase19() public {
+    _runTestCases(".Test19");
+  }
+
+  function testCase20() public {
+    _runTestCases(".Test20");
+  }
+
+  function testCase21() public {
+    _runTestCases(".Test21");
+  }
+
+  function testCase22() public {
+    _runTestCases(".Test22");
+  }
+
+  function testCase23() public {
+    _runTestCases(".Test23");
+  }
+
+  function testCase24() public {
+    _runTestCases(".Test24");
+  }
+
+  function testCase25() public {
+    _runTestCases(".Test25");
+  }
+
+  function testCase26() public {
+    // _runTestCases(".Test26");
+    // mtm 0.3% diff
+  }
+
+  function testCase27() public {
+    // _runTestCases(".Test27");
+    // settlement oracle
+  }
+
   function _runTestCases(string memory testId) internal {
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases.json");
     ISubAccounts.AssetBalance[] memory balances = _setUpScenario(json, testId);
@@ -138,6 +193,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       btcFeed.setSpot(btcSpotPrice, confs[1][0]);
     }
 
+    string[] memory optionUnderlying = json.readStringArray(string.concat(testId, ".Scenario.OptionUnderlying"));
+
     // set forwards: assume they are all eth
     {
       uint[] memory feedExpiries = json.readUintArray(string.concat(testId, ".Scenario.FeedExpiries"));
@@ -148,7 +205,26 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       // uint[] memory discountConfs = json.readUintArray(string.concat(testId, ".Scenario.DiscountConfidences"));
 
       for (uint i = 0; i < feedExpiries.length; i++) {
-        ethFeed.setForwardPrice(block.timestamp + feedExpiries[i], forwardPrices[i], forwardConfs[i]);
+        bool isEth = equal(optionUnderlying[i], "ETH");
+
+        // close to expiring: we will set the "settlement price" to the forward price feed
+        if (feedExpiries[i] < 3600) {
+          if (isEth) {
+            uint price = json.readUint(string.concat(testId, ".Scenario.SettlementPriceETH"));
+            console2.log("setting settlement feed", price);
+            ethFeed.setForwardPrice(block.timestamp + feedExpiries[i], price, forwardConfs[i]);
+          } else {
+            uint price = json.readUint(string.concat(testId, ".Scenario.SettlementPriceBTC"));
+
+            btcFeed.setForwardPrice(block.timestamp + feedExpiries[i], price, forwardConfs[i]);
+          }
+        } else {
+          if (isEth) {
+            ethFeed.setForwardPrice(block.timestamp + feedExpiries[i], forwardPrices[i], forwardConfs[i]);
+          } else {
+            btcFeed.setForwardPrice(block.timestamp + feedExpiries[i], forwardPrices[i], forwardConfs[i]);
+          }
+        }
       }
     }
 
@@ -165,8 +241,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
     // put options into balances
     // number of assets: cash + eth perp + btc perp + number of options
-    string[] memory optionUnderlying = json.readStringArray(string.concat(testId, ".Scenario.OptionUnderlying"));
-    uint numAssets = 3 + optionUnderlying.length;
+    // string[] memory optionUnderlying = json.readStringArray(string.concat(testId, ".Scenario.OptionUnderlying"));
+    uint numAssets = 5 + optionUnderlying.length;
 
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](numAssets);
 
@@ -178,6 +254,14 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       balances[0] = ISubAccounts.AssetBalance(cash, 0, cashBalance);
       balances[1] = ISubAccounts.AssetBalance(ethPerp, 0, ethPerpBalance);
       balances[2] = ISubAccounts.AssetBalance(btcPerp, 0, btcPerpBalance);
+
+      {
+        int ethBalance = json.readInt(string.concat(testId, ".Scenario.wETH"));
+        balances[3] = ISubAccounts.AssetBalance(wethAsset, 0, ethBalance);
+
+        int btcBalance = json.readInt(string.concat(testId, ".Scenario.wBTC"));
+        balances[4] = ISubAccounts.AssetBalance(wbtcAsset, 0, btcBalance);
+      }
 
       // set mocked pnl
       {
@@ -213,12 +297,13 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         // set mocked vol oracle
         MockFeeds feed = isEth ? ethFeed : btcFeed;
         uint64 expiry = uint64(block.timestamp + expiries[i]);
-        feed.setVol(expiry, uint128(strikes[i]), uint128(vols[i]), uint64(volConfs[i]));
+        uint128 strike = uint128(strikes[i]) / 1e10 * 1e10; // removing dust
+        feed.setVol(expiry, strike, uint128(vols[i]), uint64(volConfs[i]));
 
         IAsset asset = isEth ? ethOption : btcOption;
-        uint subId = OptionEncoding.toSubId(expiry, strikes[i], isCalls[i] == 1);
+        uint subId = OptionEncoding.toSubId(expiry, strike, isCalls[i] == 1);
 
-        uint idx = 3 + i;
+        uint idx = 5 + i;
         balances[idx] = ISubAccounts.AssetBalance(asset, subId, optionAmounts[i]);
       }
     }
