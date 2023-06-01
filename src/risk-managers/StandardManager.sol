@@ -250,6 +250,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // send data to oracles if needed
     _processManagerData(tradeId, managerData);
 
+    _checkAllAssetCaps(accountId, tradeId);
+
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
     bool isRiskReducing = true;
 
@@ -269,7 +271,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
         // settle perp PNL into cash if the user traded perp in this tx.
         _settlePerpRealizedPNL(perp, accountId);
-        _checkAssetCap(perp);
 
         if (isRiskReducing) {
           // check if the delta and position has same sign
@@ -281,7 +282,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         }
       } else if (detail.assetType == AssetType.Option) {
         // if the user is only reducing option position, we don't need to check margin
-        _checkAssetCap(IOption(address(assetDeltas[i].asset)));
         if (assetDeltas[i].delta < 0) {
           isRiskReducing = false;
         }

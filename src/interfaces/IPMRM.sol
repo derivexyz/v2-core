@@ -52,7 +52,8 @@ interface IPMRM {
     uint forwardFixedPortion;
     // portion affected by spot shocks
     uint forwardVariablePortion;
-    int64 rate;
+    // We always assume the rate is >= 0
+    uint rate;
     uint minConfidence;
     uint netOptions;
     int mtm;

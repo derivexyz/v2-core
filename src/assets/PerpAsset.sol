@@ -18,9 +18,10 @@ import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 
-import "./ManagerWhitelist.sol";
+import "src/assets/utils/ManagerWhitelist.sol";
 
-import "./OITracking.sol";
+import "src/assets/utils/PositionTracking.sol";
+import "src/assets/utils/GlobalSubIdOITracking.sol";
 
 /**
  * @title PerpAsset
@@ -29,7 +30,7 @@ import "./OITracking.sol";
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
  */
-contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
+contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using SignedMath for int;
   using SafeCast for uint;
@@ -77,9 +78,9 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
     minRatePerHour = -maxAbsRatePerHour;
   }
 
-  //////////////////////////
-  // Owner Only Functions //
-  //////////////////////////
+  //////////////////////////////
+  //   Owner Only Functions   //
+  //////////////////////////////
 
   /**
    * @notice Set new spot feed address
@@ -111,9 +112,9 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
     emit FundingRateOracleUpdated(_oracle);
   }
 
-  //////////////////////////
-  //    Account Hooks     //
-  //////////////////////////
+  ///////////////////////
+  //   Account Hooks   //
+  ///////////////////////
 
   /**
    * @notice This function is called by the Account contract whenever a PerpAsset balance is modified.
@@ -133,9 +134,13 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
 
-    _takeOISnapshotPreTrade(adjustment.subId, tradeId);
+    // Track total OI per manager, for OI caps
+    _takeTotalOISnapshotPreTrade(manager, tradeId);
+    _updateTotalOI(manager, preBalance, adjustment.amount);
 
-    _updateOIAndTotalPosition(manager, adjustment.subId, preBalance, adjustment.amount);
+    // Also track global subId OI (only subId == 0)
+    _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
+    _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
     // calculate funding from the last period, reflect changes in position.funding
     _updateFundingRate();
@@ -158,12 +163,12 @@ contract PerpAsset is IPerpAsset, OITracking, ManagerWhitelist {
 
     // update total position
     uint pos = subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
-    _migrateTotalPositionAndCheckCaps(pos, subAccounts.manager(accountId), newManager);
+    _migrateManagerOI(pos, subAccounts.manager(accountId), newManager);
   }
 
-  //////////////////////////
-  // Privileged Functions //
-  //////////////////////////
+  //////////////////////////////
+  //   Privileged Functions   //
+  //////////////////////////////
 
   /**
    * @notice Manager-only function to clear pnl and funding before risk checks

@@ -679,6 +679,21 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
   }
 
   /**
+   * @dev get unique assets from heldAssets.
+   *      heldAssets can hold multiple entries with same asset but different subId
+   * @return uniqueAssets list of address
+   */
+  function getUniqueAssets(uint accountId) external view returns (address[] memory uniqueAssets) {
+    uint length;
+    (uniqueAssets, length) = _getUniqueAssets(heldAssets[accountId]);
+    // TODO: move to array lib
+    assembly {
+      mstore(uniqueAssets, length)
+    }
+    return uniqueAssets;
+  }
+
+  /**
    * @dev get domain separator for signing
    */
   function domainSeparator() external view returns (bytes32) {

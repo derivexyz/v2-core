@@ -11,7 +11,7 @@ import "src/SubAccounts.sol";
 import "src/assets/PerpAsset.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IOITracking} from "src/interfaces/IOITracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
 
 contract UNIT_PerpOIAndCap is Test {
   PerpAsset perp;
@@ -62,13 +62,14 @@ contract UNIT_PerpOIAndCap is Test {
     assertEq(perp.totalPositionCap(manager), 100e18);
   }
 
-  function testCanChangeManagerIfCapNotSet() public {
+  function testCannotChangeManagerIfCapNotSet() public {
     _transferPerp(aliceAcc, bobAcc, 100e18);
+    vm.expectRevert(IPositionTracking.OIT_CapExceeded.selector);
     subAccounts.changeManager(aliceAcc, manager2, "");
-    assertEq(perp.totalPosition(manager2), 100e18);
   }
 
   function testChangeManagerWillMigrateTotalPosition() public {
+    perp.setTotalPositionCap(manager2, 100e18);
     // alice opens short, bob opens long
     _transferPerp(aliceAcc, bobAcc, 100e18);
 

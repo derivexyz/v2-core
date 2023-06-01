@@ -39,7 +39,8 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
   }
 
   function testPMRM_unsupportedAsset() public {
-    MockAsset newAsset = new MockAsset(weth, subAccounts, true);
+    MockOption newAsset = new MockOption(subAccounts);
+    // newAsset.setWhitelistManager(address(pmrm), true);
 
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
     balances[0] = ISubAccounts.AssetBalance({asset: IAsset(address(newAsset)), balance: 1_000 ether, subId: 0});

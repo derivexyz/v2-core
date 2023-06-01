@@ -134,7 +134,7 @@ contract UNIT_TestStandardManager is Test {
   ////////////////////
 
   function testCannotHaveUnrecognizedAsset() public {
-    MockAsset badAsset = new MockAsset(usdc, subAccounts, true);
+    MockOption badAsset = new MockOption(subAccounts);
     vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
     ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: aliceAcc,

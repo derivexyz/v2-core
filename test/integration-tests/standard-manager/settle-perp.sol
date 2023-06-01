@@ -97,6 +97,8 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     cash.deposit(bobAcc, 40_000e6);
     cash.deposit(charlieAcc, 40_000e6);
 
+    perp.setTotalPositionCap(manager, 10000e18);
+
     // open trades: Alice is Short, Bob is Long
     _tradePerpContract(aliceAcc, bobAcc, oneContract);
   }

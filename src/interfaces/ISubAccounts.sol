@@ -203,6 +203,14 @@ interface ISubAccounts is IERC721 {
    */
   function getAccountBalances(uint accountId) external view returns (AssetBalance[] memory assetBalances);
 
+  /**
+   * @dev get unique assets from heldAssets.
+   *      heldAssets can hold multiple entries with same asset but different subId
+   * @param accountId ID of account
+   * @return uniqueAssets list of address
+   */
+  function getUniqueAssets(uint accountId) external view returns (address[] memory uniqueAssets);
+
   ////////////
   // Events //
   ////////////

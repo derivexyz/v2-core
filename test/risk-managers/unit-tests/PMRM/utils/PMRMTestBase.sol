@@ -95,10 +95,11 @@ contract PMRMTestBase is JsonMechIO {
     settlementFeed: ISettlementFeed(feed)
     })
     );
-    setDefualtParameters();
+    setDefaultParameters();
     addScenarios();
 
     baseAsset.setWhitelistManager(address(pmrm), true);
+    baseAsset.setTotalPositionCap(pmrm, 100e18);
 
     _setupAliceAndBob();
 
@@ -112,7 +113,7 @@ contract PMRMTestBase is JsonMechIO {
     sm.createAccountForSM(pmrm);
   }
 
-  function setDefualtParameters() internal {
+  function setDefaultParameters() internal {
     IPMRMLib.ForwardContingencyParameters memory fwdContParams = IPMRMLib.ForwardContingencyParameters({
       spotShock1: 0.95e18,
       spotShock2: 1.05e18,

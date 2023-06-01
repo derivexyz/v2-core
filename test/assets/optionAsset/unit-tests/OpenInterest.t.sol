@@ -8,7 +8,7 @@ import "../../../shared/mocks/MockManager.sol";
 import "../../../../src/assets/Option.sol";
 import "../../../../src/SubAccounts.sol";
 
-import {IOITracking} from "src/interfaces/IOITracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
 
 /**
  * @dev testing open interest before and after

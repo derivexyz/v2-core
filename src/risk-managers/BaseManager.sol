@@ -15,7 +15,8 @@ import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
-import {IOITracking} from "src/interfaces/IOITracking.sol";
+import {IGlobalSubIdOITracking} from "src/interfaces/IGlobalSubIdOITracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
 import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
 
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
@@ -233,6 +234,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
   }
 
+  ////////////////
+  //   OI Fee   //
+  ////////////////
+
   /**
    * @dev calculate the option OI fee for a specific option + subId combination
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
@@ -241,7 +246,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param delta Change in this trade
    * @param subId SubId of the option
    */
-  function _getOptionOIFee(IOITracking asset, IForwardFeed forwardFeed, int delta, uint subId, uint tradeId)
+  function _getOptionOIFee(IGlobalSubIdOITracking asset, IForwardFeed forwardFeed, int delta, uint subId, uint tradeId)
     internal
     view
     returns (uint fee)
@@ -258,7 +263,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @notice calculate the perpetual OI fee.
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
    */
-  function _getPerpOIFee(IOITracking asset, ISpotFeed perpFeed, int delta, uint tradeId)
+  function _getPerpOIFee(IGlobalSubIdOITracking asset, ISpotFeed perpFeed, int delta, uint tradeId)
     internal
     view
     returns (uint fee)
@@ -273,20 +278,37 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /**
    * @dev check if OI increased for a given asset and subId in a trade
    */
-  function _getOIIncreased(IOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
+  function _getOIIncreased(IGlobalSubIdOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
     (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
     uint oi = asset.openInterest(subId);
     return oi > oiBefore;
   }
 
-  function _checkAssetCap(IOITracking asset) internal view {
-    // todo: if totalPositionCap is updated to a lower number, it might revert even if it's reducing
-    uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
-    if (totalPosCap == 0) return;
+  ////////////
+  // OI Cap //
+  ////////////
 
-    uint totalPos = asset.totalPosition(IManager(address(this)));
-    if (totalPos > totalPosCap) revert BM_AssetCapExceeded();
+  function _checkAllAssetCaps(uint accountId, uint tradeId) internal view {
+    address[] memory assets = subAccounts.getUniqueAssets(accountId);
+    for (uint i; i < assets.length; i++) {
+      if (assets[i] == address(cashAsset)) continue;
+
+      _checkAssetCap(IPositionTracking(assets[i]), tradeId);
+    }
   }
+
+  function _checkAssetCap(IPositionTracking asset, uint tradeId) internal view {
+    uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
+    (, uint preTradePos) = asset.totalPositionBeforeTrade(IManager(address(this)), tradeId);
+    uint postTradePos = asset.totalPosition(IManager(address(this)));
+
+    // If the trade increased OI and we are past the cap, revert.
+    if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
+  }
+
+  ////////////////
+  // Settlement //
+  ////////////////
 
   /**
    * @dev settle an account by removing all expired option positions and adjust cash balance

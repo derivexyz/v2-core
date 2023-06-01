@@ -6,7 +6,7 @@ import "forge-std/console2.sol";
 
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockManager.sol";
-
+import "src/interfaces/IPositionTracking.sol";
 import "src/assets/WrappedERC20Asset.sol";
 import "src/SubAccounts.sol";
 
@@ -69,9 +69,9 @@ contract UNIT_WrappedBaseAssetHook is Test {
     // create a second manager with less cap
     MockManager manager2 = new MockManager(address(subAccounts));
     asset.setWhitelistManager(address(manager2), true);
-    asset.setOICap(manager2, 1e18);
+    asset.setTotalPositionCap(manager2, 1e18);
 
-    vm.expectRevert(IWrappedERC20Asset.WERC_ManagerChangeExceedOICap.selector);
+    vm.expectRevert(IPositionTracking.OIT_CapExceeded.selector);
     subAccounts.changeManager(accId, manager2, "");
   }
 
@@ -82,7 +82,7 @@ contract UNIT_WrappedBaseAssetHook is Test {
     MockManager manager2 = new MockManager(address(subAccounts));
     asset.setWhitelistManager(address(manager2), true);
 
-    asset.setOICap(manager2, 100e18);
+    asset.setTotalPositionCap(manager2, 100e18);
 
     subAccounts.changeManager(accId, manager2, "");
   }

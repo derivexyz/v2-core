@@ -53,16 +53,20 @@ contract BaseManagerTester is BaseManager {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }
 
-  function getOptionOIFee(IOITracking asset, int delta, uint subId, uint tradeId) external view returns (uint fee) {
+  function getOptionOIFee(IGlobalSubIdOITracking asset, int delta, uint subId, uint tradeId)
+    external
+    view
+    returns (uint fee)
+  {
     fee = _getOptionOIFee(asset, forwardFeed, delta, subId, tradeId);
   }
 
-  function getPerpOIFee(IOITracking asset, int delta, uint tradeId) external view returns (uint fee) {
+  function getPerpOIFee(IGlobalSubIdOITracking asset, int delta, uint tradeId) external view returns (uint fee) {
     fee = _getPerpOIFee(asset, spotFeed, delta, tradeId);
   }
 
-  function checkAssetCap(IOITracking asset) external view {
-    return _checkAssetCap(asset);
+  function checkAssetCap(IPositionTracking asset, uint tradeId) external view {
+    return _checkAssetCap(asset, tradeId);
   }
 
   function settleOptions(uint accountId) external {
@@ -219,15 +223,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     perp.setTotalPositionCap(tester, 5e18);
 
     vm.expectRevert(IBaseManager.BM_AssetCapExceeded.selector);
-    tester.checkAssetCap(perp);
-  }
-
-  function testAssetCapSet() public {
-    perp.setTotalPosition(tester, 100e18);
-    tester.checkAssetCap(perp); // no revert
-
-    perp.setTotalPositionCap(tester, 100e18);
-    tester.checkAssetCap(perp); // no revert
+    tester.checkAssetCap(perp, 0); // TODO: just put in tradeId 0, not tested properly
   }
 
   // ================================

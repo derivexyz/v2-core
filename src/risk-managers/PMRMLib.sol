@@ -128,24 +128,23 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     for (uint j = 0; j < portfolio.expiries.length; ++j) {
       IPMRM.ExpiryHoldings memory expiry = portfolio.expiries[j];
 
-      int expiryMtM;
+      int shockedExpiryMTM;
       // Check cached values
       if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == DecimalMath.UNIT) {
         // we've already calculated this previously, so just use that
-        expiryMtM = expiry.mtm;
+        shockedExpiryMTM = expiry.mtm;
       } else if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == fwdContParams.spotShock1) {
         // NOTE: this value may not be cached depending on how _addPrecomputes was called; so be careful.
-        expiryMtM = expiry.fwdShock1MtM;
+        shockedExpiryMTM = expiry.fwdShock1MtM;
       } else if (scenario.volShock == IPMRM.VolShockDirection.None && scenario.spotShock == fwdContParams.spotShock2) {
         // NOTE: this value may not be cached depending on how _addPrecomputes was called; so be careful.
-        expiryMtM = expiry.fwdShock2MtM;
+        shockedExpiryMTM = expiry.fwdShock2MtM;
       } else {
-        expiryMtM = _getExpiryShockedMTM(expiry, scenario.spotShock, scenario.volShock);
+        shockedExpiryMTM = _getExpiryShockedMTM(expiry, scenario.spotShock, scenario.volShock);
       }
 
       // we subtract expiry MtM as we only care about the difference from the current mtm at this stage
-      // TODO: do we use static discount the same for MM? seems a bit punishing
-      scenarioMtM += _applyMTMDiscount(expiryMtM, expiry.staticDiscount) - expiry.mtm;
+      scenarioMtM += _applyMTMDiscount(shockedExpiryMTM, expiry.staticDiscount) - expiry.mtm;
     }
 
     uint shockedBaseValue =
@@ -189,12 +188,12 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     return optionPricing.getExpiryOptionsValue(expiryDetails, optionDetails);
   }
 
-  function _applyMTMDiscount(int expiryMTM, uint staticDiscount) internal pure returns (int) {
-    if (expiryMTM > 0) {
+  function _applyMTMDiscount(int shockedExpiryMTM, uint staticDiscount) internal pure returns (int) {
+    if (shockedExpiryMTM > 0) {
       // TODO: just store staticDiscount as int
-      return expiryMTM.multiplyDecimal(staticDiscount.toInt256());
+      return shockedExpiryMTM.multiplyDecimal(staticDiscount.toInt256());
     } else {
-      return expiryMTM;
+      return shockedExpiryMTM;
     }
   }
 
@@ -247,10 +246,11 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
   }
 
+  // TODO: maybe rename to MTMDiscount
   function _addStaticDiscount(IPMRM.ExpiryHoldings memory expiry) internal view {
+    // tODO: use annualise function
     uint tAnnualised = expiry.secToExpiry * DecimalMath.UNIT / 365 days;
-    uint cappedRate = expiry.rate < 0 ? 0 : uint(int(expiry.rate));
-    uint shockRFR = cappedRate.multiplyDecimal(staticDiscountParams.rateMultiplicativeFactor)
+    uint shockRFR = expiry.rate.multiplyDecimal(staticDiscountParams.rateMultiplicativeFactor)
       + staticDiscountParams.rateAdditiveFactor;
     expiry.staticDiscount = staticDiscountParams.baseStaticDiscount.multiplyDecimal(
       FixedPointMathLib.exp(-tAnnualised.multiplyDecimal(shockRFR).toInt256())
