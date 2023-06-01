@@ -46,7 +46,10 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     manager.setOptionMarginParameters(btcMarketId, params);
 
     manager.setOracleContingencyParams(
-      ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.5e18, 0.5e18, 0.4e18)
+      ethMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)
+    );
+    manager.setOracleContingencyParams(
+      btcMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)
     );
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
@@ -160,13 +163,16 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
   }
 
   function testCase26() public {
-    // _runTestCases(".Test26");
+    _runTestCases(".Test26");
     // mtm 0.3% diff
   }
 
   function testCase27() public {
-    // _runTestCases(".Test27");
-    // settlement oracle
+    _runTestCases(".Test27");
+  }
+
+  function testCase28() public {
+    _runTestCases(".Test28");
   }
 
   function _runTestCases(string memory testId) internal {
@@ -200,9 +206,6 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       uint[] memory feedExpiries = json.readUintArray(string.concat(testId, ".Scenario.FeedExpiries"));
       uint[] memory forwardPrices = json.readUintArray(string.concat(testId, ".Scenario.Forwards"));
       uint[] memory forwardConfs = json.readUintArray(string.concat(testId, ".Scenario.ForwardConfidences"));
-      // todo: add discounts?
-      // uint[] memory discounts = json.readUintArray(string.concat(testId, ".Scenario.Discounts"));
-      // uint[] memory discountConfs = json.readUintArray(string.concat(testId, ".Scenario.DiscountConfidences"));
 
       for (uint i = 0; i < feedExpiries.length; i++) {
         bool isEth = equal(optionUnderlying[i], "ETH");
@@ -211,7 +214,6 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         if (feedExpiries[i] < 3600) {
           if (isEth) {
             uint price = json.readUint(string.concat(testId, ".Scenario.SettlementPriceETH"));
-            console2.log("setting settlement feed", price);
             ethFeed.setForwardPrice(block.timestamp + feedExpiries[i], price, forwardConfs[i]);
           } else {
             uint price = json.readUint(string.concat(testId, ".Scenario.SettlementPriceBTC"));
@@ -266,10 +268,9 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       // set mocked pnl
       {
         int ethEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryETH"));
-
         (uint perpPrice,) = ethPerpFeed.getSpot();
         int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
-        int funding = json.readInt(string.concat(testId, ".Scenario.AccountETHFundingIndex"));
+        int funding = _getPerpFunding(json, testId, ethPerpBalance, true);
         ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
       }
 
@@ -277,7 +278,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
         (uint perpPrice,) = btcPerpFeed.getSpot();
         int pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
-        int funding = json.readInt(string.concat(testId, ".Scenario.AccountBTCFundingIndex"));
+        int funding = _getPerpFunding(json, testId, btcPerpBalance, false);
         btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
       }
     }
@@ -298,6 +299,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         MockFeeds feed = isEth ? ethFeed : btcFeed;
         uint64 expiry = uint64(block.timestamp + expiries[i]);
         uint128 strike = uint128(strikes[i]) / 1e10 * 1e10; // removing dust
+
         feed.setVol(expiry, strike, uint128(vols[i]), uint64(volConfs[i]));
 
         IAsset asset = isEth ? ethOption : btcOption;
@@ -314,6 +316,28 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     return balances;
   }
 
+  function _getPerpFunding(string memory json, string memory testId, int position, bool isETH)
+    internal
+    view
+    returns (int)
+  {
+    int globalFundingIdx;
+    int accFundingIdx;
+    uint indexPrice;
+    if (isETH) {
+      globalFundingIdx = json.readInt(string.concat(testId, ".Scenario.ETHGlobalFundingIndex"));
+      accFundingIdx = json.readInt(string.concat(testId, ".Scenario.AccountETHFundingIndex"));
+      (indexPrice,) = ethFeed.getSpot();
+    } else {
+      globalFundingIdx = json.readInt(string.concat(testId, ".Scenario.BTCGlobalFundingIndex"));
+      accFundingIdx = json.readInt(string.concat(testId, ".Scenario.AccountBTCFundingIndex"));
+      (indexPrice,) = btcFeed.getSpot();
+    }
+    int rate = globalFundingIdx - accFundingIdx;
+
+    return -position.multiplyDecimal(rate);
+  }
+
   function _checkResult(string memory json, string memory testId, int im, int mm, int mtm, uint deltaPercentage)
     internal
   {
@@ -323,6 +347,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
     assertApproxEqRel(im, expectedIM, deltaPercentage, "IM assertion failed");
     assertApproxEqRel(mm, expectedMM, deltaPercentage, "MM assertion failed");
+
+    // mtm should have higher tolerance cuz we only assume mtm gas no discount from standard manager
     assertApproxEqRel(mtm, expectedMtM, deltaPercentage, "MtM assertion failed");
   }
 

@@ -367,6 +367,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
           // if it's perp asset, update the perp position directly
           portfolio.marketHoldings[i].perp = IPerpAsset(address(currentAsset.asset));
           portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
+          portfolio.marketHoldings[i].depegPenaltyPos += SignedMath.abs(currentAsset.balance).toInt256();
         } else if (detail.assetType == AssetType.Option) {
           portfolio.marketHoldings[i].option = IOption(address(currentAsset.asset));
           (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
@@ -409,7 +410,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
             portfolio.marketHoldings[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
           }
           if (currentAsset.balance < 0) {
-            portfolio.marketHoldings[i].totalShortPositions -= currentAsset.balance;
+            // short option will be added to depegPenaltyPos
+            portfolio.marketHoldings[i].depegPenaltyPos -= currentAsset.balance;
             portfolio.marketHoldings[i].expiryHoldings[expiryIndex].totalShortPositions -= currentAsset.balance;
           }
         }
@@ -480,8 +482,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // apply depeg IM penalty
     if (depegMultiplier != 0) {
       // depeg multiplier should be 0 for maintenance margin, or when there is no depeg
-      int num = SignedMath.abs(marketHolding.perpPosition).toInt256() + marketHolding.totalShortPositions;
-      margin = -num.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
+      margin = -marketHolding.depegPenaltyPos.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
     }
 
     int unrealizedPerpPNL;
@@ -545,16 +546,17 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     bool isInitial,
     uint minConfidence
   ) internal view returns (int netMargin, int totalMarkToMarket) {
-    // for each expiry, sum up the margin requirement
+    // for each expiry, sum up the margin requirement.
+    // Also keep track of min confidence so we can apply oracle contingency on each expiry's bases
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
-      (int forwardPrice, uint fwdConf) =
+      (int forwardPrice, uint localMin) =
         _getForwardPrice(marketHolding.marketId, marketHolding.expiryHoldings[i].expiry);
-      minConfidence = Math.min(minConfidence, fwdConf);
+      localMin = Math.min(minConfidence, localMin);
 
       {
         uint volConf =
           volFeeds[marketHolding.marketId].getExpiryMinConfidence(uint64(marketHolding.expiryHoldings[i].expiry));
-        minConfidence = Math.min(minConfidence, volConf);
+        localMin = Math.min(localMin, volConf);
       }
 
       (int margin, int mtm) = _calcNetBasicMarginSingleExpiry(
@@ -568,11 +570,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       netMargin += margin;
       totalMarkToMarket += mtm;
 
-      // add oracle contingency on each expiry, only for IM
+      // add oracle contingency on this expiry if min conf is too low, only for IM
       if (!isInitial) continue;
       OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
-      if (ocParam.optionThreshold != 0 && minConfidence < uint(ocParam.optionThreshold)) {
-        int diff = 1e18 - int(minConfidence);
+
+      if (ocParam.optionThreshold != 0 && localMin < uint(ocParam.optionThreshold)) {
+        int diff = 1e18 - int(localMin);
         int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(
           marketHolding.expiryHoldings[i].totalShortPositions
         );
@@ -833,7 +836,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     if (!isInitial) return maintenanceMargin;
 
-    int otmRatio = SignedMath.max((indexPrice - strike.toInt256()), 0).divideDecimal(indexPrice);
+    int otmRatio = SignedMath.max(indexPrice - strike.toInt256(), 0).divideDecimal(indexPrice);
     int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
 
     int margin = SignedMath.min(
