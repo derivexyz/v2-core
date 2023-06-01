@@ -173,7 +173,7 @@ contract UNIT_TestStandardManager is Test {
   function testOracleContingencyOnPerps() public {
     // set oracle contingency params
     manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
-    manager.setOracleContingencyParams(1, IStandardManager.OracleContingencyParams(0.75e18, 0, 0.1e18));
+    manager.setOracleContingencyParams(1, IStandardManager.OracleContingencyParams(0.75e18, 0, 0, 0.1e18));
 
     // requirement: 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1500e18);

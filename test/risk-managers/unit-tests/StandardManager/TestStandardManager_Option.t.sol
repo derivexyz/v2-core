@@ -184,23 +184,38 @@ contract UNIT_TestStandardManager_Option is Test {
   }
 
   function testSetOracleContingencyParams() public {
-    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.05e18));
+    manager.setOracleContingencyParams(
+      ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.7e18, 0.05e18)
+    );
 
-    (uint64 prepThreshold, uint64 optionThreshold, int128 factor) = manager.oracleContingencyParams(ethMarketId);
+    (uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int128 factor) =
+      manager.oracleContingencyParams(ethMarketId);
     assertEq(prepThreshold, 0.8e18);
     assertEq(optionThreshold, 0.9e18);
+    assertEq(baseThreshold, 0.7e18);
     assertEq(factor, 0.05e18);
   }
 
   function testCannotSetInvalidOracleContingencyParams() public {
     vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(1.01e18, 0.9e18, 0.05e18));
+    manager.setOracleContingencyParams(
+      ethMarketId, IStandardManager.OracleContingencyParams(1.01e18, 0.9e18, 0.8e18, 0.05e18)
+    );
 
     vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.9e18, 1.01e18, 0.05e18));
+    manager.setOracleContingencyParams(
+      ethMarketId, IStandardManager.OracleContingencyParams(0.9e18, 1.01e18, 0.8e18, 0.05e18)
+    );
 
     vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
-    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.9e18, 1.2e18));
+    manager.setOracleContingencyParams(
+      ethMarketId, IStandardManager.OracleContingencyParams(0.9e18, 0.8e18, 1.01e18, 0.05e18)
+    );
+
+    vm.expectRevert(IStandardManager.SRM_InvalidOracleContingencyParams.selector);
+    manager.setOracleContingencyParams(
+      ethMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.9e18, 0.9e18, 1.2e18)
+    );
   }
 
   ////////////////////////////////////////////////////
@@ -429,7 +444,9 @@ contract UNIT_TestStandardManager_Option is Test {
 
   function testOracleContingencyOnOptions() public {
     // set oracle contingency params
-    manager.setOracleContingencyParams(ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.1e18));
+    manager.setOracleContingencyParams(
+      ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.8e18, 0.1e18)
+    );
 
     // start a trade
     uint strike = 2000e18;

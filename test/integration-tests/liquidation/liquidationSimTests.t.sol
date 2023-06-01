@@ -19,7 +19,7 @@ contract LiquidationSimTests is LiquidationSimBase {
     startAuction(aliceAcc);
 
     for (uint i = 0; i < data.Actions.length; ++i) {
-      console2.log("\n=== STEP:", i);
+      // console2.log("\n=== STEP:", i);
       updateToActionState(data, i);
       checkPreLiquidation(data, i);
       doLiquidation(data, i);
@@ -28,47 +28,47 @@ contract LiquidationSimTests is LiquidationSimBase {
   }
 
   function startAuction(uint accountId) internal {
-    console2.log("Start auction");
+    // console2.log("Start auction");
     uint worstScenario = getWorstScenario(accountId);
     auction.startAuction(accountId, worstScenario);
   }
 
   function doLiquidation(LiquidationSim memory data, uint actionId) internal {
-    console2.log("\n-Do liquidation", actionId);
+    // console2.log("\n-Do liquidation", actionId);
 
     uint liqAcc = subAccounts.createAccount(address(this), IManager(address(pmrm)));
     _depositCash(liqAcc, data.Actions[actionId].Liquidator.CashBalance);
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
       auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated);
-    console2.log("finalPercentage", finalPercentage);
-    console2.log("cashFromBidder", cashFromBidder);
-    console2.log("cashToBidder", cashToBidder);
+    // console2.log("finalPercentage", finalPercentage);
+    // console2.log("cashFromBidder", cashFromBidder);
+    // console2.log("cashToBidder", cashToBidder);
   }
 
   function checkPreLiquidation(LiquidationSim memory data, uint actionId) internal {
-    console2.log("\n-Pre check", actionId);
+    // console2.log("\n-Pre check", actionId);
 
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
-    console2.log("Worst Scenario", worstScenario);
-    console2.log("Worst MM", mm);
-    console2.log("Worst BM", bm);
-    console2.log("Worst MTM", mtm);
-    console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
+    // console2.log("Worst Scenario", worstScenario);
+    // console2.log("Worst MM", mm);
+    // console2.log("Worst BM", bm);
+    // console2.log("Worst MTM", mtm);
+    // console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
     // TODO: check all results
     assertApproxEqAbs(mtm, data.Actions[actionId].Results.PreMtM, 1e6);
   }
 
   function checkPostLiquidation(LiquidationSim memory data, uint actionId) internal {
-    console2.log("\n-Post check", actionId);
+    // console2.log("\n-Post check", actionId);
 
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
-    console2.log("Worst Scenario", worstScenario);
-    console2.log("Worst MM", mm);
-    console2.log("Worst BM", bm);
-    console2.log("Worst MTM", mtm);
-    console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
+    // console2.log("Worst Scenario", worstScenario);
+    // console2.log("Worst MM", mm);
+    // console2.log("Worst BM", bm);
+    // console2.log("Worst MTM", mtm);
+    // console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
     assertApproxEqAbs(mtm, data.Actions[actionId].Results.PostMtM, 1e6);
   }
 

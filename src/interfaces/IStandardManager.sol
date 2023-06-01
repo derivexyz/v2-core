@@ -91,6 +91,7 @@ interface IStandardManager {
   struct OracleContingencyParams {
     uint64 perpThreshold;
     uint64 optionThreshold;
+    uint64 baseThreshold;
     int64 OCFactor;
   }
 
@@ -122,6 +123,9 @@ interface IStandardManager {
   /// @dev Invalid Oracle contingency params
   error SRM_InvalidOracleContingencyParams();
 
+  /// @dev Invalid base asset margin discount factor
+  error SRM_InvalidBaseDiscountFactor();
+
   /// @dev No negative cash
   error SRM_NoNegativeCash();
 
@@ -142,7 +146,7 @@ interface IStandardManager {
 
   event PricingModuleSet(uint8 marketId, address pricingModule);
 
-  event MarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
+  event PerpMarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
   event OptionMarginParametersSet(
     uint8 marketId,
@@ -156,9 +160,11 @@ interface IStandardManager {
     int mmOffsetScale
   );
 
+  event BaseMarginDiscountFactorSet(uint8 marketId, uint baseMarginDiscountFactor);
+
   event DepegParametersSet(int128 threshold, int128 depegFactor);
 
-  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, int128 ocFactor);
+  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int64 ocFactor);
 
   event StableFeedUpdated(address stableFeed);
 }
