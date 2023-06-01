@@ -137,9 +137,9 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
     oldManager.handleManagerChange(accountId, newManager);
 
     /* get unique assets to only call to asset once */
-    (address[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(heldAssets[accountId]);
+    address[] memory uniqueAssets = _getUniqueAssets(heldAssets[accountId]);
 
-    for (uint i; i < uniqueLength; ++i) {
+    for (uint i; i < uniqueAssets.length; ++i) {
       IAsset(uniqueAssets[i]).handleManagerChange(accountId, newManager);
     }
 
@@ -631,18 +631,20 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    * @dev get unique assets from heldAssets.
    *      heldAssets can hold multiple entries with same asset but different subId
    * @return uniqueAssets list of address
-   * @return length max index of returned address that is non-zero
    */
   function _getUniqueAssets(HeldAsset[] memory assets)
     internal
     pure
-    returns (address[] memory uniqueAssets, uint length)
+    returns (address[] memory uniqueAssets)
   {
     uniqueAssets = new address[](assets.length);
 
+    uint length;
     for (uint i; i < assets.length; ++i) {
       length = UnorderedMemoryArray.addUniqueToArray(uniqueAssets, address(assets[i].asset), length);
     }
+
+    UnorderedMemoryArray.trimArray(uniqueAssets, length);
   }
 
   //////////
@@ -684,13 +686,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    * @return uniqueAssets list of address
    */
   function getUniqueAssets(uint accountId) external view returns (address[] memory uniqueAssets) {
-    uint length;
-    (uniqueAssets, length) = _getUniqueAssets(heldAssets[accountId]);
-    // TODO: move to array lib
-    assembly {
-      mstore(uniqueAssets, length)
-    }
-    return uniqueAssets;
+    return _getUniqueAssets(heldAssets[accountId]);
   }
 
   /**
