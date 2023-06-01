@@ -39,8 +39,9 @@ interface IStandardManager {
     // option position detail
     IOption option;
     ExpiryHolding[] expiryHoldings;
-    /// sum of all short positions. used to increase margin requirement if USDC depeg. Should be positive
-    int totalShortPositions;
+    /// sum of all short positions, abs(perps) and base positions.
+    /// used to increase margin requirement if USDC depeg. Should be positive
+    int depegPenaltyPos;
   }
 
   ///@dev contains portfolio struct for single expiry assets
