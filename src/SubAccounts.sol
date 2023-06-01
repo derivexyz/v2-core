@@ -632,11 +632,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    *      heldAssets can hold multiple entries with same asset but different subId
    * @return uniqueAssets list of address
    */
-  function _getUniqueAssets(HeldAsset[] memory assets)
-    internal
-    pure
-    returns (address[] memory uniqueAssets)
-  {
+  function _getUniqueAssets(HeldAsset[] memory assets) internal pure returns (address[] memory uniqueAssets) {
     uniqueAssets = new address[](assets.length);
 
     uint length;
