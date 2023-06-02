@@ -90,6 +90,16 @@ contract UNIT_TestBaseManager is Test {
     assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), amount);
   }
 
+  function testSettingOIFeeTooHigh() public {
+    tester.setOIFeeRateBPS(0.2e18);
+    vm.expectRevert(IBaseManager.BM_OIFeeRateTooHigh.selector);
+    tester.setOIFeeRateBPS(0.2e18 + 1);
+
+    tester.setMinOIFee(100e18);
+    vm.expectRevert(IBaseManager.BM_MinOIFeeTooHigh.selector);
+    tester.setMinOIFee(100e18 + 1);
+  }
+
   /* ------------------------- *
    *    Test OI fee getters    *
    * ------------------------- **/

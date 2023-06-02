@@ -109,13 +109,22 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param newFeeRate OI fee rate in BPS
    */
   function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
-    if (OIFeeRateBPS > 0.2e18) {
+    if (newFeeRate > 0.2e18) {
       revert BM_OIFeeRateTooHigh();
     }
 
     OIFeeRateBPS = newFeeRate;
 
     emit OIFeeRateSet(OIFeeRateBPS);
+  }
+
+  function setMinOIFee(uint newMinOIFee) external onlyOwner {
+    if (newMinOIFee > 100e18) {
+      revert BM_MinOIFeeTooHigh();
+    }
+    minOIFee = newMinOIFee;
+
+    emit MinOIFeeSet(minOIFee);
   }
 
   /**
