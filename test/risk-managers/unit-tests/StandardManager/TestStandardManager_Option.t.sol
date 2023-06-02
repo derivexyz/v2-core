@@ -380,6 +380,14 @@ contract UNIT_TestStandardManager_Option is Test {
     _tradeSpread(aliceAcc, bobAcc, 1.01e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
   }
 
+  function testCanHoldExpiredOption() public {
+    cash.deposit(aliceAcc, 400e18);
+
+    uint strike = 2000e18;
+    vm.warp(expiry + 1 hours);
+    _transferOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
+  }
+
   function testCanTradeZeroStrikeSpreadWithMaxLoss() public {
     uint aliceShortLeg = 0;
     uint aliceLongLeg = 400e18;

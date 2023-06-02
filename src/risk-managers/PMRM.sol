@@ -60,9 +60,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
   uint public maxAccountSize = 128;
 
-  /// @dev within this buffer time, allow people to hold expired options in case the settlement price is not ready
-  uint public optionSettlementBuffer = 5 minutes;
-
   IPMRM.Scenario[] public marginScenarios;
   mapping(address => bool) public trustedRiskAssessor;
 
