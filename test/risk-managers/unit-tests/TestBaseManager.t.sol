@@ -20,7 +20,7 @@ import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockOption.sol";
 import "../../auction/mocks/MockCashAsset.sol";
 import "../../shared/mocks/MockPerp.sol";
-import "../mocks/MockBasicManager.sol";
+import "../mocks/BaseManagerTester.sol";
 import "../mocks/MockDutchAuction.sol";
 
 contract UNIT_TestBaseManager is Test {
