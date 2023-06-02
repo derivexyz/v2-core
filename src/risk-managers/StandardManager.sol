@@ -922,11 +922,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ) internal view returns (int value) {
     IOptionPricing pricing = IOptionPricing(pricingModules[marketId]);
 
-    IOptionPricing.Expiry memory expiryData = IOptionPricing.Expiry({
-      secToExpiry: uint64(expiry - block.timestamp),
-      forwardPrice: uint128(uint(forwardPrice)),
-      discountFactor: 1e18
-    });
+    uint64 secToExpiry = expiry > block.timestamp ? uint64(expiry - block.timestamp) : 0;
+
+    IOptionPricing.Expiry memory expiryData =
+      IOptionPricing.Expiry({secToExpiry: secToExpiry, forwardPrice: uint128(uint(forwardPrice)), discountFactor: 1e18});
 
     IOptionPricing.Option memory option =
       IOptionPricing.Option({strike: uint128(strike), vol: uint128(vol), amount: amount, isCall: isCall});

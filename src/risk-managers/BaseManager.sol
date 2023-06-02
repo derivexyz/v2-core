@@ -346,6 +346,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /**
    * @dev settle an account by removing all expired option positions and adjust cash balance
+   * @dev this function will not revert even if settlement price is not updated
    * @param accountId Account Id to settle
    */
   function _settleAccountOptions(IOption option, uint accountId) internal {

@@ -63,13 +63,32 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
   }
 
   function testPMRMArrangePortfolio_ExpiredOption() public {
+    uint buffer = pmrm.optionSettlementBuffer();
+
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({
+      asset: IAsset(address(option)),
+      subId: OptionEncoding.toSubId(block.timestamp - buffer - 1, 1500e18, true),
+      balance: 1e18
+    });
+    vm.expectRevert(IPMRM.PMRM_OptionExpired.selector);
+    pmrm.arrangePortfolioByBalances(balances);
+  }
+
+  function testPMRMArrangePortfolio_SlightlyExpiredOption() public {
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+
+    uint expiry = block.timestamp - 1;
+
     balances[0] = ISubAccounts.AssetBalance({
       asset: IAsset(address(option)),
       subId: OptionEncoding.toSubId(block.timestamp - 1, 1500e18, true),
       balance: 1e18
     });
-    vm.expectRevert(IPMRM.PMRM_OptionExpired.selector);
-    pmrm.arrangePortfolioByBalances(balances);
+    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+
+    assertEq(portfolio.expiries.length, 1);
+    assertEq(portfolio.expiries[0].expiry, expiry);
+    assertEq(portfolio.expiries[0].secToExpiry, 0);
   }
 }
