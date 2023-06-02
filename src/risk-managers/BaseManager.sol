@@ -315,6 +315,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   // OI Cap //
   ////////////
 
+  /**
+   * @notice check that all assets in an account is below the cap
+   * @dev this function assume all assets are compliant to IPositionTracking interface
+   */
   function _checkAllAssetCaps(uint accountId, uint tradeId) internal view {
     address[] memory assets = subAccounts.getUniqueAssets(accountId);
     for (uint i; i < assets.length; i++) {
@@ -324,6 +328,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
   }
 
+  /**
+   * @dev check that an asset is not over the total position cap for this manager
+   */
   function _checkAssetCap(IPositionTracking asset, uint tradeId) internal view {
     uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
     (, uint preTradePos) = asset.totalPositionBeforeTrade(IManager(address(this)), tradeId);
