@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
+import "openzeppelin/utils/math/Math.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
@@ -54,8 +55,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
-  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
+  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   uint public OIFeeRateBPS = 0;
+
+  /// @dev minimum OI fee charged, given fee is > 0.
+  uint public minOIFee = 0;
 
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
@@ -84,6 +88,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function setAllowList(IAllowList _allowList) external onlyOwner {
     allowList = _allowList;
+    emit AllowListSet(_allowList);
   }
 
   /**
@@ -95,6 +100,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     subAccounts.ownerOf(_newAcc);
 
     feeRecipientAcc = _newAcc;
+    emit FeeRecipientSet(_newAcc);
   }
 
   /**
@@ -103,9 +109,22 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param newFeeRate OI fee rate in BPS
    */
   function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
+    if (newFeeRate > 0.2e18) {
+      revert BM_OIFeeRateTooHigh();
+    }
+
     OIFeeRateBPS = newFeeRate;
 
     emit OIFeeRateSet(OIFeeRateBPS);
+  }
+
+  function setMinOIFee(uint newMinOIFee) external onlyOwner {
+    if (newMinOIFee > 100e18) {
+      revert BM_MinOIFeeTooHigh();
+    }
+    minOIFee = newMinOIFee;
+
+    emit MinOIFeeSet(minOIFee);
   }
 
   /**
@@ -183,7 +202,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param accountId Id of account to force withdraw
    */
   function forceWithdrawAccount(uint accountId) external {
-    if (_allowListed(accountId)) {
+    if (_canTrade(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
@@ -204,11 +223,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param scenarioId Id of scenario used within liquidation module. Ignored for standard manager.
    */
   function forceLiquidateAccount(uint accountId, uint scenarioId) external {
-    if (_allowListed(accountId)) {
+    if (_canTrade(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
-    if (balances.length == 1 || address(balances[0].asset) == address(cashAsset) || balances[0].balance > 0) {
+    if (balances.length == 1 && address(balances[0].asset) == address(cashAsset) && balances[0].balance > 0) {
       revert BM_InvalidForceLiquidateAccountState();
     }
     liquidation.startForcedAuction(accountId, scenarioId);
@@ -282,6 +301,14 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
     uint oi = asset.openInterest(subId);
     return oi > oiBefore;
+  }
+
+  function _payFee(uint accountId, uint fee) internal {
+    // Only consider min fee if expected fee is > 0
+    if (fee == 0 || feeRecipientAcc == 0) return;
+
+    // transfer cash to fee recipient account
+    _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(Math.max(fee, minOIFee)));
   }
 
   ////////////
@@ -476,7 +503,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev revert if the accountID is not on the allow list
    */
   function _verifyCanTrade(uint accountId) internal view {
-    if (!_allowListed(accountId)) {
+    if (!_canTrade(accountId)) {
       revert BM_CannotTrade();
     }
   }
@@ -484,7 +511,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /**
    * @dev return true if the owner of an account ID is on the allow list
    */
-  function _allowListed(uint accountId) internal view returns (bool) {
+  function _canTrade(uint accountId) internal view returns (bool) {
     if (allowList == IAllowList(address(0))) {
       return true;
     }

@@ -35,7 +35,7 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
 
   function testPMRMArrangePortfolio_MaxExpiries() public {
     uint expiry = block.timestamp + 1000;
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.MAX_EXPIRIES() + 1);
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.maxExpiries() + 1);
     for (uint i = 0; i < balances.length; i++) {
       balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(address(option)),
@@ -49,7 +49,8 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
 
   function testPMRMArrangePortfolio_MaxAssets() public {
     uint expiry = block.timestamp + 1000;
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.MAX_ASSETS() + 1);
+    pmrm.setMaxAccountSize(10);
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.maxAccountSize() + 1);
     for (uint i = 0; i < balances.length; i++) {
       balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(address(option)),
