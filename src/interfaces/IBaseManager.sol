@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./IManager.sol";
+import "./IAllowList.sol";
 
 interface IBaseManager is IManager {
   /////////////
@@ -39,6 +40,15 @@ interface IBaseManager is IManager {
   event PerpSettled(uint indexed accountId, int netCash);
 
   event FeeBypassedCallerSet(address caller, bool bypassed);
+
+  event AllowListSet(IAllowList _allowList);
+  event FeeRecipientSet(uint _newAcc);
+
+  ////////////
+  // Errors //
+  ////////////
+
+  error BM_OIFeeRateTooHigh();
 
   /// @dev bad action
   error BN_InvalidAction();

@@ -41,12 +41,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   using SafeCast for int;
 
   ///////////////
-  // Constants //
-  ///////////////
-  uint public constant MAX_EXPIRIES = 11;
-  uint public constant MAX_ASSETS = 128;
-
-  ///////////////
   // Variables //
   ///////////////
 
@@ -62,12 +56,13 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   IForwardFeed public forwardFeed;
   ISettlementFeed public settlementFeed;
 
+  /// @dev Value to help optimise the arranging of portfolio. Should be minimised if possible.
+  uint public maxExpiries = 11;
+  /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
+  uint public maxAccountSize = 128;
+
   IPMRM.Scenario[] public marginScenarios;
-
   mapping(address => bool) public trustedRiskAssessor;
-
-  /// @dev keep track of last seen baseOI to enable transferring when cap is reduced
-  uint lastSeenBaseOI;
 
   ////////////////////////
   //    Constructor     //
@@ -100,6 +95,57 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   //   Admin-Only   //
   ////////////////////
 
+  function setMaxExpiries(uint _maxExpiries) external onlyOwner {
+    if (maxExpiries < 6 || maxExpiries > 30) {
+      revert PMRM_InvalidMaxExpiries();
+    }
+    maxExpiries = _maxExpiries;
+    emit MaxExpiriesUpdated(_maxExpiries);
+  }
+
+  function setMaxAccountSize(uint _maxAccountSize) external onlyOwner {
+    if (maxAccountSize < 8 || maxAccountSize > 500) {
+      revert PMRM_InvalidMaxAccountSize();
+    }
+    maxAccountSize = _maxAccountSize;
+    emit MaxAccountSizeUpdated(_maxAccountSize);
+  }
+
+  function setInterestRateFeed(IInterestRateFeed _interestRateFeed) external onlyOwner {
+    interestRateFeed = _interestRateFeed;
+    emit InterestRateFeedUpdated(_interestRateFeed);
+  }
+
+  function setVolFeed(IVolFeed _volFeed) external onlyOwner {
+    volFeed = _volFeed;
+    emit VolFeedUpdated(_volFeed);
+  }
+
+  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
+    spotFeed = _spotFeed;
+    emit SpotFeedUpdated(_spotFeed);
+  }
+
+  function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
+    stableFeed = _stableFeed;
+    emit StableFeedUpdated(_stableFeed);
+  }
+
+  function setForwardFeed(IForwardFeed _forwardFeed) external onlyOwner {
+    forwardFeed = _forwardFeed;
+    emit ForwardFeedUpdated(_forwardFeed);
+  }
+
+  function setSettlementFeed(ISettlementFeed _settlementFeed) external onlyOwner {
+    settlementFeed = _settlementFeed;
+    emit SettlementFeedUpdated(_settlementFeed);
+  }
+
+  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
+    trustedRiskAssessor[riskAssessor] = trusted;
+    emit TrustedRiskAssessorUpdated(riskAssessor, trusted);
+  }
+
   /**
    * @notice Sets the scenarios for managing margin positions.
    * @dev Only the contract owner can invoke this function.
@@ -108,6 +154,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
    */
   function setScenarios(IPMRM.Scenario[] memory _scenarios) external onlyOwner {
     for (uint i = 0; i < _scenarios.length; i++) {
+      if (_scenarios[i].spotShock > 3e18) {
+        revert PMRM_InvalidSpotShock();
+      }
       if (marginScenarios.length <= i) {
         marginScenarios.push(_scenarios[i]);
       } else {
@@ -119,34 +168,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     for (uint i = _scenarios.length; i < marginScenariosLength; i++) {
       marginScenarios.pop();
     }
-  }
-
-  function setInterestRateFeed(IInterestRateFeed _interestRateFeed) external onlyOwner {
-    interestRateFeed = _interestRateFeed;
-  }
-
-  function setVolFeed(IVolFeed _volFeed) external onlyOwner {
-    volFeed = _volFeed;
-  }
-
-  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
-    spotFeed = _spotFeed;
-  }
-
-  function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
-    stableFeed = _stableFeed;
-  }
-
-  function setForwardFeed(IForwardFeed _forwardFeed) external onlyOwner {
-    forwardFeed = _forwardFeed;
-  }
-
-  function setSettlementFeed(ISettlementFeed _settlementFeed) external onlyOwner {
-    settlementFeed = _settlementFeed;
-  }
-
-  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
-    trustedRiskAssessor[riskAssessor] = trusted;
+    emit ScenariosUpdated(_scenarios);
   }
 
   ///////////////////////
@@ -277,12 +299,12 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   {
     uint assetLen = assets.length;
 
-    if (assetLen > MAX_ASSETS) {
+    if (assetLen > maxAccountSize) {
       revert PMRM_TooManyAssets();
     }
 
     seenExpiries = 0;
-    expiryCount = new IPMRM.PortfolioExpiryData[](MAX_EXPIRIES > assetLen ? assetLen : MAX_EXPIRIES);
+    expiryCount = new IPMRM.PortfolioExpiryData[](maxExpiries > assetLen ? assetLen : maxExpiries);
 
     // Just count the number of options per expiry
     for (uint i = 0; i < assetLen; ++i) {
@@ -302,7 +324,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
           }
         }
         if (!found) {
-          if (seenExpiries == MAX_EXPIRIES) {
+          if (seenExpiries == maxExpiries) {
             revert PMRM_TooManyExpiries();
           }
           expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: uint64(optionExpiry), optionCount: 1});
@@ -339,8 +361,8 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
         netOptions: 0,
         // vol shocks are added in addPrecomputes
         mtm: 0,
-        fwdShock1MtM: 0,
-        fwdShock2MtM: 0,
+        basisScenarioUpMtM: 0,
+        basisScenarioDownMtM: 0,
         volShockUp: 0,
         volShockDown: 0,
         staticDiscount: 0
@@ -416,10 +438,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       }
     }
 
-    if (fee > 0 && feeRecipientAcc != 0) {
-      // transfer cash to fee recipient account
-      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
-    }
+    _payFee(accountId, fee);
   }
 
   //////////////

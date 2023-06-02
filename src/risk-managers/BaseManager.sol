@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
+import "openzeppelin/utils/math/Math.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
@@ -54,8 +55,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
-  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
+  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   uint public OIFeeRateBPS = 0;
+
+  /// @dev minimum OI fee charged, given fee is > 0.
+  uint public minOIFee = 0;
 
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
@@ -84,6 +88,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function setAllowList(IAllowList _allowList) external onlyOwner {
     allowList = _allowList;
+    emit AllowListSet(_allowList);
   }
 
   /**
@@ -95,6 +100,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     subAccounts.ownerOf(_newAcc);
 
     feeRecipientAcc = _newAcc;
+    emit FeeRecipientSet(_newAcc);
   }
 
   /**
@@ -103,6 +109,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param newFeeRate OI fee rate in BPS
    */
   function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
+    if (OIFeeRateBPS > 0.2e18) {
+      revert BM_OIFeeRateTooHigh();
+    }
+
     OIFeeRateBPS = newFeeRate;
 
     emit OIFeeRateSet(OIFeeRateBPS);
@@ -282,6 +292,14 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
     uint oi = asset.openInterest(subId);
     return oi > oiBefore;
+  }
+
+  function _payFee(uint accountId, uint fee) internal {
+    // Only consider min fee if expected fee is > 0
+    if (fee == 0 || feeRecipientAcc == 0) return;
+
+    // transfer cash to fee recipient account
+    _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(Math.max(fee, minOIFee)));
   }
 
   ////////////

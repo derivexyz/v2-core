@@ -748,10 +748,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       }
     }
 
-    if (fee > 0 && feeRecipientAcc != 0) {
-      // transfer cash to fee recipient account. This might fail if feeRecipientAcc is not owned by manager
-      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
-    }
+    _payFee(accountId, fee);
   }
 
   /**
