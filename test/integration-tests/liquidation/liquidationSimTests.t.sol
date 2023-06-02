@@ -38,8 +38,8 @@ contract LiquidationSimTests is LiquidationSimBase {
 
     uint liqAcc = subAccounts.createAccount(address(this), IManager(address(pmrm)));
     _depositCash(liqAcc, data.Actions[actionId].Liquidator.CashBalance);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
-      auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated);
+    // (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
+    auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated);
     // console2.log("finalPercentage", finalPercentage);
     // console2.log("cashFromBidder", cashFromBidder);
     // console2.log("cashToBidder", cashToBidder);
