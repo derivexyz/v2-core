@@ -323,7 +323,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       (uint forwardFixedPortion, uint forwardVariablePortion, uint fwdConfidence) =
         forwardFeed.getForwardPricePortions(expiryCount[i].expiry);
-      (int64 rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
+      (int96 rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
       uint minConfidence = Math.min(fwdConfidence, rateConfidence);
       minConfidence = Math.min(portfolio.minConfidence, minConfidence);
 
