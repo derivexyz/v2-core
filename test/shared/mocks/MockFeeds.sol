@@ -8,17 +8,24 @@ import "src/interfaces/IForwardFeed.sol";
 import "src/interfaces/ISettlementFeed.sol";
 
 import "src/interfaces/IDataReceiver.sol";
+import "src/interfaces/IAllowList.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver {
+contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver, IAllowList {
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
+  mapping(uint => uint) fwdFixedPortion;
   mapping(uint => uint) forwardPriceConfidences;
   mapping(uint => int96) interestRates;
   mapping(uint => uint64) interestRateConfidences;
   mapping(uint => uint) settlementPrice;
   mapping(uint64 => mapping(uint128 => uint128)) vols;
   mapping(uint64 => uint64) volConfidences;
+  mapping(address => bool) public canTrade;
+
+  function setCanTrade(address account, bool _canTrade) external {
+    canTrade[account] = _canTrade;
+  }
 
   function setSpot(uint _spot, uint _confidence) external {
     spot = _spot;
@@ -44,6 +51,13 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   function setForwardPrice(uint expiry, uint price, uint confidence) external {
     forwardPrices[expiry] = price;
+    fwdFixedPortion[expiry] = 0;
+    forwardPriceConfidences[expiry] = confidence;
+  }
+
+  function setForwardPricePortions(uint expiry, uint fixedPortion, uint price, uint confidence) external {
+    forwardPrices[expiry] = price;
+    fwdFixedPortion[expiry] = fixedPortion;
     forwardPriceConfidences[expiry] = confidence;
   }
 
@@ -65,7 +79,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   // IForwardFeed
 
   function getForwardPrice(uint64 expiry) external view returns (uint forwardPrice, uint confidence) {
-    return (forwardPrices[expiry], forwardPriceConfidences[expiry]);
+    return (forwardPrices[expiry] + fwdFixedPortion[expiry], forwardPriceConfidences[expiry]);
   }
 
   function getForwardPricePortions(uint64 expiry)
@@ -73,7 +87,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     view
     returns (uint forwardFixedPortion, uint forwardVariablePortion, uint confidence)
   {
-    return (0, forwardPrices[expiry], forwardPriceConfidences[expiry]);
+    return (fwdFixedPortion[expiry], forwardPrices[expiry], forwardPriceConfidences[expiry]);
   }
 
   // ISettlementPrice

@@ -35,7 +35,7 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
 
   function testPMRMArrangePortfolio_MaxExpiries() public {
     uint expiry = block.timestamp + 1000;
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.MAX_EXPIRIES() + 1);
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.maxExpiries() + 1);
     for (uint i = 0; i < balances.length; i++) {
       balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(address(option)),
@@ -49,7 +49,8 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
 
   function testPMRMArrangePortfolio_MaxAssets() public {
     uint expiry = block.timestamp + 1000;
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.MAX_ASSETS() + 1);
+    pmrm.setMaxAccountSize(10);
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.maxAccountSize() + 1);
     for (uint i = 0; i < balances.length; i++) {
       balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(address(option)),
@@ -62,13 +63,32 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
   }
 
   function testPMRMArrangePortfolio_ExpiredOption() public {
+    uint buffer = pmrm.optionSettlementBuffer();
+
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({
+      asset: IAsset(address(option)),
+      subId: OptionEncoding.toSubId(block.timestamp - buffer - 1, 1500e18, true),
+      balance: 1e18
+    });
+    vm.expectRevert(IPMRM.PMRM_OptionExpired.selector);
+    pmrm.arrangePortfolioByBalances(balances);
+  }
+
+  function testPMRMArrangePortfolio_SlightlyExpiredOption() public {
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+
+    uint expiry = block.timestamp - 1;
+
     balances[0] = ISubAccounts.AssetBalance({
       asset: IAsset(address(option)),
       subId: OptionEncoding.toSubId(block.timestamp - 1, 1500e18, true),
       balance: 1e18
     });
-    vm.expectRevert(IPMRM.PMRM_OptionExpired.selector);
-    pmrm.arrangePortfolioByBalances(balances);
+    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolioByBalances(balances);
+
+    assertEq(portfolio.expiries.length, 1);
+    assertEq(portfolio.expiries[0].expiry, expiry);
+    assertEq(portfolio.expiries[0].secToExpiry, 0);
   }
 }

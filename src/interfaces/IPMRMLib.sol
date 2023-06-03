@@ -5,24 +5,25 @@ contract IPMRMLib {
   struct VolShockParameters {
     /// @dev The max vol shock, that can be scaled down
     uint volRangeUp;
-    /// @dev The maxx
+    /// @dev The max
     uint volRangeDown;
     int shortTermPower;
     int longTermPower;
     uint dteFloor;
   }
 
-  struct StaticDiscountParameters {
-    uint rateMultiplicativeFactor;
-    uint rateAdditiveFactor;
+  struct MarginParameters {
+    uint imFactor;
+    uint rateMultScale;
+    uint rateAddScale;
     uint baseStaticDiscount;
   }
 
-  struct ForwardContingencyParameters {
-    uint spotShock1;
-    uint spotShock2;
-    uint additiveFactor;
-    uint multiplicativeFactor;
+  struct BasisContingencyParameters {
+    uint scenarioSpotUp;
+    uint scenarioSpotDown;
+    uint basisContAddFactor;
+    uint basisContMultFactor;
   }
 
   struct OtherContingencyParameters {
@@ -31,9 +32,9 @@ contract IPMRMLib {
     /// @dev If below the peg loss threshold, we add this contingency
     uint pegLossFactor;
     /// @dev Below this threshold, IM is affected by confidence contingency
-    uint confidenceThreshold;
+    uint confThreshold;
     /// @dev Percentage of spot used for confidence contingency, scales with the minimum contingency seen.
-    uint confidenceFactor;
+    uint confMargin;
     /// @dev Contingency applied to base held in the portfolio, multiplied by spot.
     uint basePercent;
     /// @dev Contingency applied to perps held in the portfolio, multiplied by spot.
@@ -47,11 +48,11 @@ contract IPMRMLib {
   ////////////
 
   /// @dev emitted when provided forward contingency parameters are invalid
-  error PMRML_InvalidForwardContingencyParameters();
+  error PMRML_InvalidBasisContingencyParameters();
   /// @dev emitted when provided other contingency parameters are invalid
   error PMRML_InvalidOtherContingencyParameters();
   /// @dev emitted when provided static discount parameters are invalid
-  error PMRML_InvalidStaticDiscountParameters();
+  error PMRML_InvalidMarginParameters();
   /// @dev emitted when provided vol shock parameters are invalid
   error PMRML_InvalidVolShockParameters();
 }

@@ -37,7 +37,7 @@ interface IPMRM {
     uint baseValue;
     int totalMtM;
     // Calculated values
-    int fwdContingency;
+    int basisContingency;
     // option + base + perp; excludes fwd/oracle
     uint staticContingency;
     uint confidenceContingency;
@@ -46,6 +46,8 @@ interface IPMRM {
   }
 
   struct ExpiryHoldings {
+    // used as key
+    uint expiry;
     uint secToExpiry;
     StrikeHolding[] options;
     // portion unaffected by spot shocks
@@ -57,8 +59,8 @@ interface IPMRM {
     uint minConfidence;
     uint netOptions;
     int mtm;
-    int fwdShock1MtM;
-    int fwdShock2MtM;
+    int basisScenarioUpMtM;
+    int basisScenarioDownMtM;
     uint volShockUp;
     uint volShockDown;
     uint staticDiscount;
@@ -83,10 +85,26 @@ interface IPMRM {
     VolShockDirection volShock; // i.e. [Up, Down, None]
   }
 
+  ////////////////
+  //   Events   //
+  ////////////////
+  event MaxExpiriesUpdated(uint maxExpiries);
+  event MaxAccountSizeUpdated(uint maxAccountSize);
+  event InterestRateFeedUpdated(IInterestRateFeed interestRateFeed);
+  event VolFeedUpdated(IVolFeed volFeed);
+  event SpotFeedUpdated(ISpotFeed spotFeed);
+  event StableFeedUpdated(ISpotFeed stableFeed);
+  event ForwardFeedUpdated(IForwardFeed forwardFeed);
+  event SettlementFeedUpdated(ISettlementFeed settlementFeed);
+  event TrustedRiskAssessorUpdated(address riskAssessor, bool trusted);
+  event ScenariosUpdated(IPMRM.Scenario[] scenarios);
+
   ////////////
   // Errors //
   ////////////
-  error PMRM_ExceededBaseOICap();
+  error PMRM_InvalidSpotShock();
+  error PMRM_InvalidMaxExpiries();
+  error PMRM_InvalidMaxAccountSize();
   error PMRM_UnsupportedAsset();
   error PMRM_InsufficientMargin();
   error PMRM_FindInArrayError();

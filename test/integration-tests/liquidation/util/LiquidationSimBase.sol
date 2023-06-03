@@ -19,9 +19,10 @@ contract LiquidationSimBase is PMRMTestBase {
     int PerpPosition;
     int BasePosition;
     uint[] OptionStrikes;
-    uint[] OptionExpiry;
-    bool[] OptionIsCall;
-    int[] OptionAmount;
+    uint[] OptionExpiries;
+    uint[] OptionIsCall;
+    int[] OptionAmounts;
+    Feeds initialFeeds;
   }
 
   struct LiquidationAction {
@@ -47,7 +48,6 @@ contract LiquidationSimBase is PMRMTestBase {
   }
 
   struct Liquidator {
-    uint CashBalance;
     uint PercentLiquidated;
   }
 
@@ -58,11 +58,13 @@ contract LiquidationSimBase is PMRMTestBase {
     uint PreFMax;
     int ExpectedBidPrice;
     uint FinalPercentageReceived;
+    uint LiquidatedOfOriginal;
     int PostMtM;
     int PostMM;
     int PostBM;
     uint PostFMax;
   }
+  //    uint PostFMax;
 
   function getTestData(string memory testName) internal view returns (LiquidationSim memory sim) {
     testName = string.concat(".", testName);
@@ -70,12 +72,36 @@ contract LiquidationSimBase is PMRMTestBase {
     sim.StartTime = json.readUint(string.concat(testName, ".StartTime"));
     sim.IsForce = json.readBool(string.concat(testName, ".IsForce"));
     sim.InitialPortfolio.Cash = json.readInt(string.concat(testName, ".InitialPortfolio.Cash"));
-    sim.InitialPortfolio.PerpPosition = json.readInt(string.concat(testName, ".InitialPortfolio.PerpPosition"));
-    sim.InitialPortfolio.BasePosition = json.readInt(string.concat(testName, ".InitialPortfolio.BasePosition"));
+    sim.InitialPortfolio.PerpPosition = json.readInt(string.concat(testName, ".InitialPortfolio.Perps"));
+    sim.InitialPortfolio.BasePosition = json.readInt(string.concat(testName, ".InitialPortfolio.Base"));
     sim.InitialPortfolio.OptionStrikes = json.readUintArray(string.concat(testName, ".InitialPortfolio.OptionStrikes"));
-    sim.InitialPortfolio.OptionExpiry = json.readUintArray(string.concat(testName, ".InitialPortfolio.OptionExpiry"));
-    sim.InitialPortfolio.OptionIsCall = json.readBoolArray(string.concat(testName, ".InitialPortfolio.OptionIsCall"));
-    sim.InitialPortfolio.OptionAmount = json.readIntArray(string.concat(testName, ".InitialPortfolio.OptionAmount"));
+    sim.InitialPortfolio.OptionExpiries =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.OptionExpiries"));
+    sim.InitialPortfolio.OptionIsCall = json.readUintArray(string.concat(testName, ".InitialPortfolio.OptionIsCall"));
+    sim.InitialPortfolio.OptionAmounts = json.readIntArray(string.concat(testName, ".InitialPortfolio.OptionAmounts"));
+
+    sim.InitialPortfolio.initialFeeds.StablePrice =
+      json.readUint(string.concat(testName, ".InitialPortfolio.StablePrice"));
+    sim.InitialPortfolio.initialFeeds.StableConfidence =
+      json.readUint(string.concat(testName, ".InitialPortfolio.StableConfidence"));
+    sim.InitialPortfolio.initialFeeds.SpotPrice = json.readUint(string.concat(testName, ".InitialPortfolio.SpotPrice"));
+    sim.InitialPortfolio.initialFeeds.SpotConfidence =
+      json.readUint(string.concat(testName, ".InitialPortfolio.SpotConfidence"));
+    sim.InitialPortfolio.initialFeeds.FeedExpiries =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.FeedExpiries"));
+    sim.InitialPortfolio.initialFeeds.Forwards =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.Forwards"));
+    sim.InitialPortfolio.initialFeeds.ForwardConfidences =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.ForwardConfidences"));
+    sim.InitialPortfolio.initialFeeds.Rates = json.readIntArray(string.concat(testName, ".InitialPortfolio.Rates"));
+    sim.InitialPortfolio.initialFeeds.RateConfidences =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.RateConfidences"));
+    sim.InitialPortfolio.initialFeeds.VolFeedStrikes =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.OptionStrikes"));
+    sim.InitialPortfolio.initialFeeds.VolFeedExpiries =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.OptionExpiries"));
+    sim.InitialPortfolio.initialFeeds.VolFeedVols =
+      json.readUintArray(string.concat(testName, ".InitialPortfolio.OptionVols"));
 
     // add actions
     uint actionCount = json.readUint(string.concat(testName, ".ActionCount"));
@@ -96,20 +122,23 @@ contract LiquidationSimBase is PMRMTestBase {
       string.concat(string.concat(string.concat(testName, ".Actions["), lookupNum(actionNum)), "]");
 
     action.Time = json.readUint(string.concat(baseActionIndex, ".Time"));
-    action.Feeds.StablePrice = json.readUint(string.concat(baseActionIndex, ".Feeds.StablePrice"));
-    action.Feeds.StableConfidence = json.readUint(string.concat(baseActionIndex, ".Feeds.StableConfidence"));
-    action.Feeds.SpotPrice = json.readUint(string.concat(baseActionIndex, ".Feeds.SpotPrice"));
-    action.Feeds.SpotConfidence = json.readUint(string.concat(baseActionIndex, ".Feeds.SpotConfidence"));
-    action.Feeds.FeedExpiries = json.readUintArray(string.concat(baseActionIndex, ".Feeds.FeedExpiries"));
-    action.Feeds.Forwards = json.readUintArray(string.concat(baseActionIndex, ".Feeds.Forwards"));
-    action.Feeds.ForwardConfidences = json.readUintArray(string.concat(baseActionIndex, ".Feeds.ForwardConfidences"));
-    action.Feeds.Rates = json.readIntArray(string.concat(baseActionIndex, ".Feeds.Rates"));
-    action.Feeds.RateConfidences = json.readUintArray(string.concat(baseActionIndex, ".Feeds.RateConfidences"));
-    action.Feeds.VolFeedStrikes = json.readUintArray(string.concat(baseActionIndex, ".Feeds.VolFeedStrikes"));
-    action.Feeds.VolFeedExpiries = json.readUintArray(string.concat(baseActionIndex, ".Feeds.VolFeedExpiries"));
-    action.Feeds.VolFeedVols = json.readUintArray(string.concat(baseActionIndex, ".Feeds.VolFeedVols"));
-    action.Liquidator.CashBalance = json.readUint(string.concat(baseActionIndex, ".Liquidator.CashBalance"));
-    action.Liquidator.PercentLiquidated = json.readUint(string.concat(baseActionIndex, ".Liquidator.PercentLiquidated"));
+    action.Feeds.StablePrice = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.StablePrice"));
+    action.Feeds.StableConfidence = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.StableConfidence"));
+    action.Feeds.SpotPrice = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.SpotPrice"));
+    action.Feeds.SpotConfidence = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.SpotConfidence"));
+    action.Feeds.FeedExpiries = json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.FeedExpiries"));
+    action.Feeds.Forwards = json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.Forwards"));
+    action.Feeds.ForwardConfidences =
+      json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.ForwardConfidences"));
+    action.Feeds.Rates = json.readIntArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.Rates"));
+    action.Feeds.RateConfidences =
+      json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.RateConfidences"));
+    action.Feeds.VolFeedStrikes = json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.OptionStrikes"));
+    action.Feeds.VolFeedExpiries =
+      json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.OptionExpiries"));
+    action.Feeds.VolFeedVols = json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.OptionVols"));
+
+    action.Liquidator.PercentLiquidated = json.readUint(string.concat(baseActionIndex, ".Liquidator.PercentWant"));
     action.Results.PreMtM = json.readInt(string.concat(baseActionIndex, ".Results.PreMtM"));
     action.Results.PreMM = json.readInt(string.concat(baseActionIndex, ".Results.PreMM"));
     action.Results.PreBM = json.readInt(string.concat(baseActionIndex, ".Results.PreBM"));
@@ -117,6 +146,8 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.ExpectedBidPrice = json.readInt(string.concat(baseActionIndex, ".Results.ExpectedBidPrice"));
     action.Results.FinalPercentageReceived =
       json.readUint(string.concat(baseActionIndex, ".Results.FinalPercentageReceived"));
+    action.Results.LiquidatedOfOriginal =
+      json.readUint(string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"));
     action.Results.PostMtM = json.readInt(string.concat(baseActionIndex, ".Results.PostMtM"));
     action.Results.PostMM = json.readInt(string.concat(baseActionIndex, ".Results.PostMM"));
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));
@@ -145,10 +176,7 @@ contract LiquidationSimBase is PMRMTestBase {
     revert("out of lookupNums");
   }
 
-  function setupTestScenarioAndGetAssetBalances(LiquidationSim memory data)
-    internal
-    returns (ISubAccounts.AssetBalance[] memory balances)
-  {
+  function setupTestScenario(LiquidationSim memory data) internal returns (ISubAccounts.AssetBalance[] memory balances) {
     vm.warp(data.StartTime);
 
     uint totalAssets = data.InitialPortfolio.OptionStrikes.length;
@@ -164,11 +192,11 @@ contract LiquidationSimBase is PMRMTestBase {
       balances[i] = ISubAccounts.AssetBalance({
         asset: IAsset(option),
         subId: OptionEncoding.toSubId(
-          data.InitialPortfolio.OptionExpiry[i],
+          data.InitialPortfolio.OptionExpiries[i],
           data.InitialPortfolio.OptionStrikes[i],
-          data.InitialPortfolio.OptionIsCall[i]
+          data.InitialPortfolio.OptionIsCall[i] == 1
           ),
-        balance: data.InitialPortfolio.OptionAmount[i]
+        balance: data.InitialPortfolio.OptionAmounts[i]
       });
     }
 
@@ -191,6 +219,26 @@ contract LiquidationSimBase is PMRMTestBase {
       });
     }
 
-    return balances;
+    setBalances(aliceAcc, balances);
+    updateFeeds(data.InitialPortfolio.initialFeeds);
+  }
+
+  function updateFeeds(Feeds memory feedData) internal {
+    stableFeed.setSpot(feedData.StablePrice, feedData.StableConfidence);
+    feed.setSpot(feedData.SpotPrice, feedData.SpotConfidence);
+
+    for (uint i = 0; i < feedData.FeedExpiries.length; i++) {
+      feed.setForwardPrice(feedData.FeedExpiries[i], feedData.Forwards[i], feedData.ForwardConfidences[i]);
+      feed.setInterestRate(feedData.FeedExpiries[i], int64(feedData.Rates[i]), uint64(feedData.RateConfidences[i]));
+    }
+
+    for (uint i = 0; i < feedData.VolFeedStrikes.length; ++i) {
+      feed.setVol(
+        uint64(feedData.VolFeedExpiries[i]),
+        uint128(feedData.VolFeedStrikes[i]),
+        uint128(feedData.VolFeedVols[i]),
+        uint64(1e18)
+      );
+    }
   }
 }

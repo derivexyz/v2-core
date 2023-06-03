@@ -114,27 +114,28 @@ contract PMRMTestBase is JsonMechIO {
   }
 
   function setDefaultParameters() internal {
-    IPMRMLib.ForwardContingencyParameters memory fwdContParams = IPMRMLib.ForwardContingencyParameters({
-      spotShock1: 0.95e18,
-      spotShock2: 1.05e18,
-      additiveFactor: 0.25e18,
-      multiplicativeFactor: 0.01e18
+    IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
+      scenarioSpotUp: 1.05e18,
+      scenarioSpotDown: 0.95e18,
+      basisContAddFactor: 0.25e18,
+      basisContMultFactor: 0.01e18
     });
 
     IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
       pegLossThreshold: 0.98e18,
-      pegLossFactor: 0.01e18,
-      confidenceThreshold: 0.6e18,
-      confidenceFactor: 0.5e18,
+      pegLossFactor: 2e18,
+      confThreshold: 0.6e18,
+      confMargin: 0.5e18,
       basePercent: 0.02e18,
       perpPercent: 0.02e18,
       optionPercent: 0.01e18
     });
 
-    IPMRMLib.StaticDiscountParameters memory staticDiscountParams = IPMRMLib.StaticDiscountParameters({
+    IPMRMLib.MarginParameters memory marginParams = IPMRMLib.MarginParameters({
+      imFactor: 1.3e18,
       baseStaticDiscount: 0.95e18,
-      rateMultiplicativeFactor: 4e18,
-      rateAdditiveFactor: 0.05e18
+      rateMultScale: 4e18,
+      rateAddScale: 0.05e18
     });
 
     IPMRMLib.VolShockParameters memory volShockParams = IPMRMLib.VolShockParameters({
@@ -145,9 +146,9 @@ contract PMRMTestBase is JsonMechIO {
       dteFloor: 1 days
     });
 
-    pmrm.setForwardContingencyParams(fwdContParams);
+    pmrm.setBasisContingencyParams(basisContParams);
     pmrm.setOtherContingencyParams(otherContParams);
-    pmrm.setStaticDiscountParams(staticDiscountParams);
+    pmrm.setMarginParams(marginParams);
     pmrm.setVolShockParams(volShockParams);
   }
 
@@ -169,7 +170,7 @@ contract PMRMTestBase is JsonMechIO {
     console2.log("basePosition", portfolio.basePosition);
     console2.log("baseValue", portfolio.baseValue);
     console2.log("totalMtM", portfolio.totalMtM);
-    console2.log("fwdContingency", portfolio.fwdContingency);
+    console2.log("basisContingency", portfolio.basisContingency);
     console2.log("staticContingency", portfolio.staticContingency);
     console2.log("confidenceContingency", portfolio.confidenceContingency);
 
@@ -187,15 +188,15 @@ contract PMRMTestBase is JsonMechIO {
       console2.log("volShockUp", expiry.volShockUp);
       console2.log("volShockDown", expiry.volShockDown);
       console2.log("mtm", expiry.mtm);
-      console2.log("fwdShock1MtM", expiry.fwdShock1MtM);
-      console2.log("fwdShock2MtM", expiry.fwdShock2MtM);
+      console2.log("basisScenarioUpMtM", expiry.basisScenarioUpMtM);
+      console2.log("basisScenarioDownMtM", expiry.basisScenarioDownMtM);
       console2.log("staticDiscount", expiry.staticDiscount);
       console2.log("minConfidence", expiry.minConfidence);
 
       for (uint j = 0; j < expiry.options.length; j++) {
         console2.log(expiry.options[j].isCall ? "- CALL" : "- PUT");
-        console2.log("- strike:", expiry.options[j].strike / 1e18);
-        console2.log("- amount:", expiry.options[j].amount / 1e18);
+        console2.log("- strike:", expiry.options[j].strike);
+        console2.log("- amount:", expiry.options[j].amount);
       }
     }
   }

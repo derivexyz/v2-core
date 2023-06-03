@@ -7,7 +7,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/math/FixedPointMathLib.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/ISubAccounts.sol";
@@ -41,12 +40,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   using SafeCast for int;
 
   ///////////////
-  // Constants //
-  ///////////////
-  uint public constant MAX_EXPIRIES = 11;
-  uint public constant MAX_ASSETS = 128;
-
-  ///////////////
   // Variables //
   ///////////////
 
@@ -62,12 +55,13 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   IForwardFeed public forwardFeed;
   ISettlementFeed public settlementFeed;
 
+  /// @dev Value to help optimise the arranging of portfolio. Should be minimised if possible.
+  uint public maxExpiries = 11;
+  /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
+  uint public maxAccountSize = 128;
+
   IPMRM.Scenario[] public marginScenarios;
-
   mapping(address => bool) public trustedRiskAssessor;
-
-  /// @dev keep track of last seen baseOI to enable transferring when cap is reduced
-  uint lastSeenBaseOI;
 
   ////////////////////////
   //    Constructor     //
@@ -100,6 +94,57 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   //   Admin-Only   //
   ////////////////////
 
+  function setMaxExpiries(uint _maxExpiries) external onlyOwner {
+    if (maxExpiries < 6 || maxExpiries > 30) {
+      revert PMRM_InvalidMaxExpiries();
+    }
+    maxExpiries = _maxExpiries;
+    emit MaxExpiriesUpdated(_maxExpiries);
+  }
+
+  function setMaxAccountSize(uint _maxAccountSize) external onlyOwner {
+    if (maxAccountSize < 8 || maxAccountSize > 500) {
+      revert PMRM_InvalidMaxAccountSize();
+    }
+    maxAccountSize = _maxAccountSize;
+    emit MaxAccountSizeUpdated(_maxAccountSize);
+  }
+
+  function setInterestRateFeed(IInterestRateFeed _interestRateFeed) external onlyOwner {
+    interestRateFeed = _interestRateFeed;
+    emit InterestRateFeedUpdated(_interestRateFeed);
+  }
+
+  function setVolFeed(IVolFeed _volFeed) external onlyOwner {
+    volFeed = _volFeed;
+    emit VolFeedUpdated(_volFeed);
+  }
+
+  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
+    spotFeed = _spotFeed;
+    emit SpotFeedUpdated(_spotFeed);
+  }
+
+  function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
+    stableFeed = _stableFeed;
+    emit StableFeedUpdated(_stableFeed);
+  }
+
+  function setForwardFeed(IForwardFeed _forwardFeed) external onlyOwner {
+    forwardFeed = _forwardFeed;
+    emit ForwardFeedUpdated(_forwardFeed);
+  }
+
+  function setSettlementFeed(ISettlementFeed _settlementFeed) external onlyOwner {
+    settlementFeed = _settlementFeed;
+    emit SettlementFeedUpdated(_settlementFeed);
+  }
+
+  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
+    trustedRiskAssessor[riskAssessor] = trusted;
+    emit TrustedRiskAssessorUpdated(riskAssessor, trusted);
+  }
+
   /**
    * @notice Sets the scenarios for managing margin positions.
    * @dev Only the contract owner can invoke this function.
@@ -108,6 +153,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
    */
   function setScenarios(IPMRM.Scenario[] memory _scenarios) external onlyOwner {
     for (uint i = 0; i < _scenarios.length; i++) {
+      if (_scenarios[i].spotShock > 3e18) {
+        revert PMRM_InvalidSpotShock();
+      }
       if (marginScenarios.length <= i) {
         marginScenarios.push(_scenarios[i]);
       } else {
@@ -119,34 +167,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     for (uint i = _scenarios.length; i < marginScenariosLength; i++) {
       marginScenarios.pop();
     }
-  }
-
-  function setInterestRateFeed(IInterestRateFeed _interestRateFeed) external onlyOwner {
-    interestRateFeed = _interestRateFeed;
-  }
-
-  function setVolFeed(IVolFeed _volFeed) external onlyOwner {
-    volFeed = _volFeed;
-  }
-
-  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
-    spotFeed = _spotFeed;
-  }
-
-  function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
-    stableFeed = _stableFeed;
-  }
-
-  function setForwardFeed(IForwardFeed _forwardFeed) external onlyOwner {
-    forwardFeed = _forwardFeed;
-  }
-
-  function setSettlementFeed(ISettlementFeed _settlementFeed) external onlyOwner {
-    settlementFeed = _settlementFeed;
-  }
-
-  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
-    trustedRiskAssessor[riskAssessor] = trusted;
+    emit ScenariosUpdated(_scenarios);
   }
 
   ///////////////////////
@@ -253,18 +274,18 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
-    (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
-    portfolio.perpPrice = perpPrice;
-    portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
-
-    (uint stablePrice, uint stableConfidence) = stableFeed.getSpot();
-    if (stableConfidence < portfolio.minConfidence) {
-      portfolio.minConfidence = stableConfidence;
-    }
+    (uint stablePrice,) = stableFeed.getSpot();
     portfolio.stablePrice = stablePrice;
 
     _initialiseExpiries(portfolio, expiryCount);
     _arrangeOptions(accountId, portfolio, assets, expiryCount);
+
+    if (portfolio.perpPosition != 0) {
+      (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
+      portfolio.perpPrice = perpPrice;
+      portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
+    }
+
     _addPrecomputes(portfolio, addForwardCont);
 
     return portfolio;
@@ -277,19 +298,19 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   {
     uint assetLen = assets.length;
 
-    if (assetLen > MAX_ASSETS) {
+    if (assetLen > maxAccountSize) {
       revert PMRM_TooManyAssets();
     }
 
     seenExpiries = 0;
-    expiryCount = new IPMRM.PortfolioExpiryData[](MAX_EXPIRIES > assetLen ? assetLen : MAX_EXPIRIES);
+    expiryCount = new IPMRM.PortfolioExpiryData[](maxExpiries > assetLen ? assetLen : maxExpiries);
 
     // Just count the number of options per expiry
     for (uint i = 0; i < assetLen; ++i) {
       ISubAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry,,) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
-        if (optionExpiry < block.timestamp) {
+        if (optionExpiry + optionSettlementBuffer < block.timestamp) {
           revert PMRM_OptionExpired();
         }
 
@@ -302,7 +323,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
           }
         }
         if (!found) {
-          if (seenExpiries == MAX_EXPIRIES) {
+          if (seenExpiries == maxExpiries) {
             revert PMRM_TooManyExpiries();
           }
           expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: uint64(optionExpiry), optionCount: 1});
@@ -314,7 +335,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   *
+   * @dev initial array of empty ExpiryHolding structs in the portfolio struct
    */
   function _initialiseExpiries(IPMRM.Portfolio memory portfolio, PortfolioExpiryData[] memory expiryCount)
     internal
@@ -324,11 +345,14 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       (uint forwardFixedPortion, uint forwardVariablePortion, uint fwdConfidence) =
         forwardFeed.getForwardPricePortions(expiryCount[i].expiry);
       (int96 rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
+      // We dont compare this to the portfolio.minConfidence yet - we do that in preComputes
       uint minConfidence = Math.min(fwdConfidence, rateConfidence);
-      minConfidence = Math.min(portfolio.minConfidence, minConfidence);
 
-      uint64 secToExpiry = expiryCount[i].expiry - uint64(block.timestamp);
+      // if an option just expired few seconds ago, also set secToExpiry to 0
+      uint64 secToExpiry =
+        expiryCount[i].expiry > uint64(block.timestamp) ? uint64(expiryCount[i].expiry - block.timestamp) : 0;
       portfolio.expiries[i] = ExpiryHoldings({
+        expiry: expiryCount[i].expiry,
         secToExpiry: secToExpiry,
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardFixedPortion: forwardFixedPortion,
@@ -339,8 +363,8 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
         netOptions: 0,
         // vol shocks are added in addPrecomputes
         mtm: 0,
-        fwdShock1MtM: 0,
-        fwdShock2MtM: 0,
+        basisScenarioUpMtM: 0,
+        basisScenarioDownMtM: 0,
         volShockUp: 0,
         volShockDown: 0,
         staticDiscount: 0
@@ -359,7 +383,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
 
-        uint expiryIndex = findInArray(portfolio.expiries, optionExpiry - block.timestamp, portfolio.expiries.length);
+        uint expiryIndex = findInArray(portfolio.expiries, optionExpiry, portfolio.expiries.length);
 
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
 
@@ -383,14 +407,17 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     }
   }
 
-  function findInArray(ExpiryHoldings[] memory expiryData, uint secToExpiryToFind, uint arrayLen)
+  /**
+   * @dev return index of expiry in the array, revert if not found
+   */
+  function findInArray(ExpiryHoldings[] memory expiryData, uint expiryToFind, uint arrayLen)
     internal
     pure
     returns (uint index)
   {
     unchecked {
       for (uint i; i < arrayLen; ++i) {
-        if (expiryData[i].secToExpiry == secToExpiryToFind) {
+        if (expiryData[i].expiry == expiryToFind) {
           return i;
         }
       }
@@ -399,7 +426,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * iterate through all asset delta, charge OI fee for perp and option assets
+   * @dev iterate through all asset delta, charge OI fee for perp and option assets
    */
   function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] calldata assetDeltas)
     internal
@@ -416,10 +443,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       }
     }
 
-    if (fee > 0 && feeRecipientAcc != 0) {
-      // transfer cash to fee recipient account
-      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
-    }
+    _payFee(accountId, fee);
   }
 
   //////////////
@@ -451,24 +475,37 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _mergeAccounts(mergeIntoId, mergeFromIds);
   }
 
-  //////////
-  // View //
-  //////////
+  ////////////
+  //  View  //
+  ////////////
 
+  /**
+   * @notice return all scenarios
+   */
   function getScenarios() external view returns (IPMRM.Scenario[] memory) {
     return marginScenarios;
   }
 
+  /**
+   * @notice turn balance into an arranged portfolio struct
+   */
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
     return _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
   }
 
+  /**
+   * @notice get the initial margin or maintenance margin of an account
+   * @dev if the returned value is negative, it means the account is under margin requirement
+   */
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, subAccounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
     (int margin,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
     return margin;
   }
 
+  /**
+   * @notice get margin level and mark to market of an account
+   */
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId)
     external
     view

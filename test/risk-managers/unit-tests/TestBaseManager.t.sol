@@ -20,73 +20,10 @@ import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockOption.sol";
 import "../../auction/mocks/MockCashAsset.sol";
 import "../../shared/mocks/MockPerp.sol";
+import "../mocks/BaseManagerTester.sol";
+import "../mocks/MockDutchAuction.sol";
 
-contract BaseManagerTester is BaseManager {
-  IOption public immutable option;
-  IPerpAsset public immutable perp;
-  IForwardFeed public immutable forwardFeed;
-  ISpotFeed public immutable spotFeed;
-  ISettlementFeed public immutable settlementFeed;
-
-  constructor(
-    ISubAccounts subAccounts_,
-    IForwardFeed forwardFeed_,
-    ISettlementFeed settlementFeed_,
-    ISpotFeed spotFeed_,
-    ICashAsset cash_,
-    IOption option_,
-    IPerpAsset perp_,
-    IDutchAuction auction_
-  ) BaseManager(subAccounts_, cash_, auction_) {
-    option = option_;
-    perp = perp_;
-    forwardFeed = forwardFeed_;
-    settlementFeed = settlementFeed_;
-    spotFeed = spotFeed_;
-  }
-
-  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    _mergeAccounts(mergeIntoId, mergeFromIds);
-  }
-
-  function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
-    _symmetricManagerAdjustment(from, to, asset, subId, amount);
-  }
-
-  function getOptionOIFee(IGlobalSubIdOITracking asset, int delta, uint subId, uint tradeId)
-    external
-    view
-    returns (uint fee)
-  {
-    fee = _getOptionOIFee(asset, forwardFeed, delta, subId, tradeId);
-  }
-
-  function getPerpOIFee(IGlobalSubIdOITracking asset, int delta, uint tradeId) external view returns (uint fee) {
-    fee = _getPerpOIFee(asset, spotFeed, delta, tradeId);
-  }
-
-  function checkAssetCap(IPositionTracking asset, uint tradeId) external view {
-    return _checkAssetCap(asset, tradeId);
-  }
-
-  function settleOptions(uint accountId) external {
-    _settleAccountOptions(option, accountId);
-  }
-
-  function handleAdjustment(
-    uint, /*accountId*/
-    uint, /*tradeId*/
-    address,
-    ISubAccounts.AssetDelta[] calldata, /*assetDeltas*/
-    bytes memory
-  ) public {}
-
-  function getMargin(uint, bool) external view returns (int) {}
-
-  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int) {}
-}
-
-contract UNIT_TestAbstractBaseManager is Test {
+contract UNIT_TestBaseManager is Test {
   SubAccounts subAccounts;
   BaseManagerTester tester;
 
@@ -106,7 +43,7 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   uint expiry;
 
-  address mockAuction = address(0xdd);
+  MockDutchAuction mockAuction;
 
   function setUp() public {
     subAccounts = new SubAccounts("Lyra Accounts", "LyraAccount");
@@ -116,6 +53,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     option = new MockOption(subAccounts);
     perp = new MockPerp(subAccounts);
     cash = new MockCash(usdc, subAccounts);
+    mockAuction = new MockDutchAuction();
 
     tester = new BaseManagerTester(subAccounts, feed, feed, feed, cash, option, perp, IDutchAuction(mockAuction));
 
@@ -136,6 +74,16 @@ contract UNIT_TestAbstractBaseManager is Test {
     usdc.approve(address(cash), 2000_000e18);
   }
 
+  function testSetSettlementBuffer() public {
+    tester.setSettlementBuffer(10 minutes);
+    assertEq(tester.optionSettlementBuffer(), 10 minutes);
+  }
+
+  function testCannotSetInvalidSettlementBuffer() public {
+    vm.expectRevert(IBaseManager.BM_InvalidSettlementBuffer.selector);
+    tester.setSettlementBuffer(3 days);
+  }
+
   function testTransferWithoutMarginPositiveAmount() public {
     int amount = 5000 * 1e18;
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, amount);
@@ -152,12 +100,22 @@ contract UNIT_TestAbstractBaseManager is Test {
     assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), amount);
   }
 
+  function testSettingOIFeeTooHigh() public {
+    tester.setOIFeeRateBPS(address(option), 0.2e18);
+    vm.expectRevert(IBaseManager.BM_OIFeeRateTooHigh.selector);
+    tester.setOIFeeRateBPS(address(option), 0.2e18 + 1);
+
+    tester.setMinOIFee(100e18);
+    vm.expectRevert(IBaseManager.BM_MinOIFeeTooHigh.selector);
+    tester.setMinOIFee(100e18 + 1);
+  }
+
   /* ------------------------- *
    *    Test OI fee getters    *
    * ------------------------- **/
 
   function testOptionFeeIfOIIncrease() public {
-    tester.setOIFeeRateBPS(0.001e18);
+    tester.setOIFeeRateBPS(address(option), 0.001e18);
     feed.setForwardPrice(expiry, 2000e18, 1e18);
 
     uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
@@ -172,7 +130,7 @@ contract UNIT_TestAbstractBaseManager is Test {
   }
 
   function testNoOptionFeeIfOIDecrease() public {
-    tester.setOIFeeRateBPS(0.001e18);
+    tester.setOIFeeRateBPS(address(option), 0.001e18);
     feed.setForwardPrice(expiry, 2000e18, 1e18);
 
     uint96 subId = OptionEncoding.toSubId(expiry, 2500e18, true);
@@ -188,7 +146,7 @@ contract UNIT_TestAbstractBaseManager is Test {
   // OI Fee on Perps
 
   function testPerpFeeIfOIIncrease() public {
-    tester.setOIFeeRateBPS(0.001e18);
+    tester.setOIFeeRateBPS(address(perp), 0.001e18);
 
     feed.setSpot(5000e18, 1e18);
     uint tradeId = 5;
@@ -202,7 +160,7 @@ contract UNIT_TestAbstractBaseManager is Test {
   }
 
   function testNoPerpFeeIfOIDecrease() public {
-    tester.setOIFeeRateBPS(0.001e18);
+    tester.setOIFeeRateBPS(address(option), 0.001e18);
     feed.setSpot(6000e18, 1e18);
     uint tradeId = 5;
 
@@ -294,35 +252,35 @@ contract UNIT_TestAbstractBaseManager is Test {
 
   function testCannotExecuteBidFromNonLiquidation() external {
     vm.expectRevert(IBaseManager.BM_OnlyLiquidationModule.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
   }
 
   function testCannotExecuteInvalidBid() external {
-    vm.startPrank(mockAuction);
+    vm.startPrank(address(mockAuction));
     vm.expectRevert(IBaseManager.BM_InvalidBidPortion.selector);
-    tester.executeBid(aliceAcc, bobAcc, 1.2e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 1.2e18, 0, 0);
     vm.stopPrank();
   }
 
   function testCannotExecuteBidIfLiquidatorHoldsNonCash() external {
-    vm.startPrank(mockAuction);
+    vm.startPrank(address(mockAuction));
 
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
     vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
     vm.stopPrank();
   }
 
   function testCannotExecuteBidIfHoldTooManyAssets() external {
-    vm.startPrank(mockAuction);
+    vm.startPrank(address(mockAuction));
 
     // balance[0] is cash
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1e18);
     // balance[1] is not cash
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
     vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
     vm.stopPrank();
   }
@@ -335,8 +293,8 @@ contract UNIT_TestAbstractBaseManager is Test {
     mockAsset.deposit(aliceAcc, 0, 1e18);
     mockAsset.deposit(aliceAcc, 1, 1e18);
 
-    vm.startPrank(mockAuction);
-    tester.executeBid(aliceAcc, bobAcc, 1e18, 0);
+    vm.startPrank(address(mockAuction));
+    tester.executeBid(aliceAcc, bobAcc, 1e18, 0, 0);
 
     assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 0);
     assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 1e18);
@@ -356,16 +314,42 @@ contract UNIT_TestAbstractBaseManager is Test {
     cash.deposit(bobAcc, 0, 100e18);
     uint bid = 30e18;
 
-    vm.startPrank(mockAuction);
+    vm.startPrank(address(mockAuction));
 
     // liquidate 80%
-    tester.executeBid(aliceAcc, bobAcc, 0.8e18, bid);
+    tester.executeBid(aliceAcc, bobAcc, 0.8e18, bid, 0);
 
     assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 40e18);
     assertEq(subAccounts.getBalance(aliceAcc, cash, 0), int(bid));
 
     assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 160e18);
     assertEq(subAccounts.getBalance(bobAcc, cash, 0), 70e18); // cas
+
+    vm.stopPrank();
+  }
+
+  function testExecuteBidWithReservedCash() external {
+    // alice' portfolio: 300 cash, 200 other asset
+    cash.deposit(aliceAcc, 0, 300e18);
+    mockAsset.deposit(aliceAcc, 0, 200e18);
+
+    // bob's portfolio 100 cash
+    cash.deposit(bobAcc, 0, 100e18);
+    uint bid = 30e18;
+
+    // bob pays 30 to get 20% of (300 - 20 (reserved)) cash and 20% of 200 other asset
+
+    vm.startPrank(address(mockAuction));
+
+    // liquidate 80%, but reserve 20 cash
+    tester.executeBid(aliceAcc, bobAcc, 0.2e18, bid, 20e18);
+
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 160e18, "alice asset");
+    // alice should have: (300 - 20) * 0.8 + bid + reserved
+    assertEq(subAccounts.getBalance(aliceAcc, cash, 0), int(bid + 224e18 + 20e18), "alice cash");
+
+    assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 40e18, "bob asset");
+    assertEq(subAccounts.getBalance(bobAcc, cash, 0), 70e18 + 56e18, "bob cash");
 
     vm.stopPrank();
   }
@@ -386,7 +370,7 @@ contract UNIT_TestAbstractBaseManager is Test {
     mockAsset.deposit(aliceAcc, 0, amount);
     cash.deposit(aliceAcc, 0, amount);
 
-    vm.startPrank(mockAuction);
+    vm.startPrank(address(mockAuction));
     tester.payLiquidationFee(aliceAcc, bobAcc, 1e18);
 
     assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), int(amount));
@@ -482,6 +466,87 @@ contract UNIT_TestAbstractBaseManager is Test {
     assertEq(result[0].subId, 1);
     assertEq(result[0].balance, 2 * amount);
   }
+
+  //////////////////////////
+  //   Force Withdrawal   //
+  //////////////////////////
+
+  function testCantForceWithdrawWithNoAllowlist() public {
+    vm.expectRevert(IBaseManager.BM_OnlyBlockedAccounts.selector);
+    tester.forceLiquidateAccount(aliceAcc, 0);
+  }
+
+  function testCantForceLiquidateOnlyCashAccount() public {
+    tester.setAllowList(feed);
+
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
+
+    tester.setBalances(aliceAcc, balances);
+
+    vm.expectRevert(IBaseManager.BM_InvalidForceLiquidateAccountState.selector);
+    tester.forceLiquidateAccount(aliceAcc, 0);
+  }
+
+  function testCanForceLiquidateAccountSuccessfully() public {
+    tester.setAllowList(feed);
+
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
+    balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
+    balances[1] = ISubAccounts.AssetBalance({asset: IAsset(mockAsset), subId: 0, balance: 10e18});
+
+    tester.setBalances(aliceAcc, balances);
+
+    tester.forceLiquidateAccount(aliceAcc, 0);
+  }
+
+  ///////////////////////////
+  //   Undo Asset Deltas   //
+  ///////////////////////////
+
+  function testUndoAssetDeltasToZero() public {
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
+    balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
+    balances[1] = ISubAccounts.AssetBalance({asset: IAsset(mockAsset), subId: 0, balance: 10e18});
+
+    tester.setBalances(aliceAcc, balances);
+
+    ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](2);
+    deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: 100e18});
+    deltas[1] = ISubAccounts.AssetDelta({asset: IAsset(mockAsset), subId: 0, delta: 10e18});
+    ISubAccounts.AssetBalance[] memory res = tester.undoAssetDeltas(aliceAcc, deltas);
+    assertEq(res.length, 0);
+  }
+
+  function testUndoAssetDeltasEmptyCurrentAccount() public {
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](0);
+    tester.setBalances(aliceAcc, balances);
+
+    ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](2);
+    deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: -100e18});
+    // 0 delta is ignored
+    deltas[1] = ISubAccounts.AssetDelta({asset: IAsset(mockAsset), subId: 0, delta: 0});
+    ISubAccounts.AssetBalance[] memory res = tester.undoAssetDeltas(aliceAcc, deltas);
+    assertEq(res.length, 1);
+    assertEq(res[0].balance, 100e18);
+  }
+
+  function testUndoAssetDeltasZeroDelta() public {
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
+    balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
+    tester.setBalances(aliceAcc, balances);
+
+    ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](1);
+    deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: 0});
+
+    ISubAccounts.AssetBalance[] memory res = tester.undoAssetDeltas(aliceAcc, deltas);
+    assertEq(res.length, 1);
+    assertEq(res[0].balance, 100e18);
+  }
+
+  /////////////////
+  //   Helpers   //
+  /////////////////
 
   // alice open 10 long call, 10 short put
   function _openDefaultPositions() internal returns (uint callSubId, uint putSubId) {

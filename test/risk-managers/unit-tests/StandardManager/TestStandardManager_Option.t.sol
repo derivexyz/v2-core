@@ -329,7 +329,7 @@ contract UNIT_TestStandardManager_Option is Test {
     uint strike = 3000e18;
     uint subId = OptionEncoding.toSubId(expiry, 3000e18, true);
 
-    manager.setOIFeeRateBPS(0.001e18);
+    manager.setOIFeeRateBPS(address(option), 0.001e18);
     manager.setFeeRecipient(feeRecipient);
 
     cash.deposit(aliceAcc, 300e18);
@@ -351,7 +351,7 @@ contract UNIT_TestStandardManager_Option is Test {
     uint strike = 3000e18;
     uint subId = OptionEncoding.toSubId(expiry, 3000e18, true);
 
-    manager.setOIFeeRateBPS(0.001e18);
+    manager.setOIFeeRateBPS(address(option), 0.001e18);
     manager.setFeeRecipient(feeRecipient);
     manager.setFeeBypassedCaller(address(this), true);
 
@@ -378,6 +378,14 @@ contract UNIT_TestStandardManager_Option is Test {
     // 1500 * 0.01 * 1.4 = 21
     // max loss 0.01 @ price 1600 = 1
     _tradeSpread(aliceAcc, bobAcc, 1.01e18, 1e18, expiry, aliceShortLeg, aliceLongLeg, true);
+  }
+
+  function testCanHoldExpiredOption() public {
+    cash.deposit(aliceAcc, 400e18);
+
+    uint strike = 2000e18;
+    vm.warp(expiry + 1 hours);
+    _transferOption(aliceAcc, bobAcc, 1e18, expiry, strike, true);
   }
 
   function testCanTradeZeroStrikeSpreadWithMaxLoss() public {

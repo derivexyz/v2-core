@@ -9,17 +9,39 @@ import "./util/LiquidationSimBase.sol";
 contract LiquidationSimTests is LiquidationSimBase {
   using stdJson for string;
 
-  function testLiquidationSim() public {
-    LiquidationSim memory data = LiquidationSimBase.getTestData("Test2");
-    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(data);
-    setBalances(aliceAcc, balances);
-    updateToActionState(data, 0);
+  function testLiquidationSim1() public {
+    runLiquidationSim("Test1");
+  }
+
+  function testLiquidationSim2() public {
+    runLiquidationSim("Test2");
+  }
+
+  function testLiquidationSim3() public {
+    runLiquidationSim("Test3");
+  }
+
+  function testLiquidationSim4() public {
+    runLiquidationSim("Test4");
+  }
+  // TODO:
+  //  function testLiquidationSim5() public {
+  //    runLiquidationSim("Test5");
+  //  }
+  //
+  //  function testLiquidationSim6() public {
+  //    runLiquidationSim("Test6");
+  //  }
+
+  function runLiquidationSim(string memory testName) internal {
+    LiquidationSim memory data = LiquidationSimBase.getTestData(testName);
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenario(data);
 
     vm.warp(data.StartTime);
-    startAuction(aliceAcc);
+    startAuction();
 
     for (uint i = 0; i < data.Actions.length; ++i) {
-      // console2.log("\n=== STEP:", i);
+      console2.log("\n=== STEP:", i);
       updateToActionState(data, i);
       checkPreLiquidation(data, i);
       doLiquidation(data, i);
@@ -27,49 +49,49 @@ contract LiquidationSimTests is LiquidationSimBase {
     }
   }
 
-  function startAuction(uint accountId) internal {
-    // console2.log("Start auction");
-    uint worstScenario = getWorstScenario(accountId);
-    auction.startAuction(accountId, worstScenario);
+  function startAuction() internal {
+    uint worstScenario = getWorstScenario(aliceAcc);
+    auction.startAuction(aliceAcc, worstScenario);
   }
 
   function doLiquidation(LiquidationSim memory data, uint actionId) internal {
-    // console2.log("\n-Do liquidation", actionId);
-
     uint liqAcc = subAccounts.createAccount(address(this), IManager(address(pmrm)));
-    _depositCash(liqAcc, data.Actions[actionId].Liquidator.CashBalance);
+    _depositCash(liqAcc, 1000000000e18);
+
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
       auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated);
-    // console2.log("finalPercentage", finalPercentage);
-    // console2.log("cashFromBidder", cashFromBidder);
-    // console2.log("cashToBidder", cashToBidder);
+
+    if (data.Actions[actionId].Results.ExpectedBidPrice < 0) {
+      // insolvent
+      assertApproxEqAbs(int(cashToBidder), -data.Actions[actionId].Results.ExpectedBidPrice, 1e6, "bid price insolvent");
+    } else {
+      assertApproxEqAbs(int(cashFromBidder), data.Actions[actionId].Results.ExpectedBidPrice, 1e6, "bid price solvent");
+    }
+
+    // TODO: % of remaining assets received?
+    assertApproxEqAbs(finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 1e6, "final percentage");
   }
 
   function checkPreLiquidation(LiquidationSim memory data, uint actionId) internal {
-    // console2.log("\n-Pre check", actionId);
-
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
-    // console2.log("Worst Scenario", worstScenario);
-    // console2.log("Worst MM", mm);
-    // console2.log("Worst BM", bm);
-    // console2.log("Worst MTM", mtm);
-    // console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
-    // TODO: check all results
-    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PreMtM, 1e6);
+    uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
+
+    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PreMtM, 1e6, "pre mtm");
+    assertApproxEqAbs(mm, data.Actions[actionId].Results.PreMM, 1e6, "pre mm");
+    assertApproxEqAbs(bm, data.Actions[actionId].Results.PreBM, 1e6, "pre bm");
+    assertApproxEqAbs(fMax, data.Actions[actionId].Results.PreFMax, 1e6, "pre fmax");
   }
 
   function checkPostLiquidation(LiquidationSim memory data, uint actionId) internal {
-    // console2.log("\n-Post check", actionId);
-
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
-    // console2.log("Worst Scenario", worstScenario);
-    // console2.log("Worst MM", mm);
-    // console2.log("Worst BM", bm);
-    // console2.log("Worst MTM", mtm);
-    // console2.log("max portion", auction.getMaxProportion(aliceAcc, worstScenario));
-    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PostMtM, 1e6);
+    uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
+
+    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PostMtM, 1e6, "post mtm");
+    assertApproxEqAbs(mm, data.Actions[actionId].Results.PostMM, 1e6, "post mm");
+    assertApproxEqAbs(bm, data.Actions[actionId].Results.PostBM, 1e6, "post bm");
+    assertApproxEqAbs(fMax, data.Actions[actionId].Results.PostFMax, 1e6, "post fmax");
   }
 
   function getWorstScenario(uint account) internal view returns (uint worstScenario) {
@@ -87,24 +109,5 @@ contract LiquidationSimTests is LiquidationSimBase {
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {
     vm.warp(data.Actions[actionId].Time);
     updateFeeds(data.Actions[actionId].Feeds);
-  }
-
-  function updateFeeds(Feeds memory feedData) internal {
-    stableFeed.setSpot(feedData.StablePrice, feedData.StableConfidence);
-    feed.setSpot(feedData.SpotPrice, feedData.SpotConfidence);
-
-    for (uint i = 0; i < feedData.FeedExpiries.length; i++) {
-      feed.setForwardPrice(feedData.FeedExpiries[i], feedData.Forwards[i], feedData.ForwardConfidences[i]);
-      feed.setInterestRate(feedData.FeedExpiries[i], int64(feedData.Rates[i]), uint64(feedData.RateConfidences[i]));
-    }
-
-    for (uint i = 0; i < feedData.VolFeedStrikes.length; ++i) {
-      feed.setVol(
-        uint64(feedData.VolFeedExpiries[i]),
-        uint128(feedData.VolFeedStrikes[i]),
-        uint128(feedData.VolFeedVols[i]),
-        uint64(1e18)
-      );
-    }
   }
 }

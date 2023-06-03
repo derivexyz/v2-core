@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 interface ILyraRateFeed {
   struct RateData {
+    uint64 expiry;
     int96 rate;
     uint64 confidence;
     uint64 timestamp;
@@ -23,7 +24,7 @@ interface ILyraRateFeed {
   ////////////////////////
   //       Events       //
   ////////////////////////
-  event RateUpdated(address indexed signer, int96 rate, uint96 confidence, uint64 timestamp);
+  event RateUpdated(address indexed signer, uint64 indexed expiry, int96 rate, uint96 confidence, uint64 timestamp);
 
   ////////////////////////
   //       Errors       //

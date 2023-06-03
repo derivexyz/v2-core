@@ -15,11 +15,11 @@ import "src/interfaces/IInterestRateFeed.sol";
  */
 contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
   bytes32 public constant SPOT_DATA_TYPEHASH = keccak256(
-    "RateData(int96 rate,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
+    "RateData(uint64 expiry,int96 rate,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
   // pack the following into 1 storage slot
-  RateDetail private rateDetail;
+  mapping(uint64 expiry => RateDetail) private rateDetails;
 
   ////////////////////////
   //    Constructor     //
@@ -35,8 +35,8 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
    * @notice Gets rate
    * @return ratePrice Rate with 18 decimals.
    */
-  function getRate(uint expiry) public view returns (uint, uint) {
-    RateDetail memory rate = rateDetail;
+  function getInterestRate(uint64 expiry) public view returns (int96, uint64) {
+    RateDetail memory rate = rateDetails[expiry];
 
     return (rate.rate, rate.confidence);
   }
@@ -53,22 +53,22 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
     _verifySignatureDetails(rateData.signer, structHash, rateData.signature, rateData.deadline, rateData.timestamp);
 
     // ignore if timestamp is lower or equal to current
-    if (rateData.timestamp <= rateDetail.timestamp) return;
+    if (rateData.timestamp <= rateDetails[rateData.expiry].timestamp) return;
 
     if (rateData.confidence > 1e18) {
       revert LSF_InvalidConfidence();
     }
 
     // update rate
-    rateDetail = RateDetail(rateData.rate, rateData.confidence, rateData.timestamp);
+    rateDetails[rateData.expiry] = RateDetail(rateData.rate, rateData.confidence, rateData.timestamp);
 
-    emit RatePriceUpdated(rateData.signer, rateData.rate, rateData.confidence, rateData.timestamp);
+    emit RateUpdated(rateData.signer, rateData.expiry, rateData.rate, rateData.confidence, rateData.timestamp);
   }
 
   /**
    * @dev return the hash of the rateData object
    */
   function hashRateData(RateData memory rateData) public pure returns (bytes32) {
-    return keccak256(abi.encode(SPOT_DATA_TYPEHASH, rateData.rate, rateData.confidence, rateData.timestamp));
+    return keccak256(abi.encode(SPOT_DATA_TYPEHASH, rateData.expiry, rateData.rate, rateData.confidence, rateData.timestamp));
   }
 }
