@@ -457,7 +457,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     int bufferMargin,
     int markToMarket
   ) internal returns (bool canTerminate, uint percentLiquidated, uint cashFromBidder) {
-    console2.log("bidOnSolvent");
     percentLiquidated = percentOfAccount;
 
     // calculate the max percentage of "current portfolio" that can be liquidated. Priced using original portfolio.
@@ -506,7 +505,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     internal
     returns (bool canTerminate, uint percentLiquidated, uint cashToBidder)
   {
-    uint percentageOfOriginalLeft = auctions[accountId].percentageLeft;
+    Auction storage currentAuction = auctions[accountId];
+
+    uint percentageOfOriginalLeft = currentAuction.percentageLeft;
     percentLiquidated = percentOfAccount > percentageOfOriginalLeft ? percentageOfOriginalLeft : percentOfAccount;
 
     // the account is insolvent when the bid price for the account falls below zero
@@ -523,12 +524,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // risk manager transfers portion of the account to the bidder, liquidator pays 0
     uint percentageOfCurrent = percentLiquidated.divideDecimal(percentageOfOriginalLeft);
 
-    auctions[accountId].percentageLeft -= percentLiquidated;
+    currentAuction.percentageLeft -= percentLiquidated;
 
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
-      accountId, bidderId, percentageOfCurrent, 0, 0
+      accountId, bidderId, percentageOfCurrent, 0, currentAuction.reservedCash
     );
-    canTerminate = auctions[accountId].percentageLeft == 0;
+    canTerminate = currentAuction.percentageLeft == 0;
   }
 
   /**

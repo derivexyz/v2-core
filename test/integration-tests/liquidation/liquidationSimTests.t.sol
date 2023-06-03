@@ -42,7 +42,7 @@ contract LiquidationSimTests is LiquidationSimBase {
     startAuction();
 
     for (uint i = 0; i < data.Actions.length; ++i) {
-      console2.log("\n=== STEP:", i);
+      //      console2.log("\n=== STEP:", i);
       updateToActionState(data, i);
       checkPreLiquidation(data, i);
       doLiquidation(data, i);
@@ -108,7 +108,6 @@ contract LiquidationSimTests is LiquidationSimBase {
 
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {
     vm.warp(data.Actions[actionId].Time);
-    console2.log(actionId);
     updateFeeds(data.Actions[actionId].Feeds);
   }
 }

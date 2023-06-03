@@ -58,7 +58,6 @@ contract UNIT_LyraVolFeed is Test {
     feed.acceptData(data);
 
     (uint vol, uint confidence) = feed.getVol(uint128(uint(1500e18)), defaultExpiry);
-    console2.log("1500 vol", vol);
     assertApproxEqAbs(vol, 1.1728e18, 0.0001e18);
     assertEq(confidence, 1e18);
   }

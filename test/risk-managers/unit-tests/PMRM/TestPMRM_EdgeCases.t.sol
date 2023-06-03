@@ -34,8 +34,6 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     _depositCash(aliceAcc, 2_000 ether);
     _depositCash(bobAcc, 2_000 ether);
     _doBalanceTransfer(aliceAcc, bobAcc, balances);
-
-    _logPortfolio(pmrm.arrangePortfolio(aliceAcc));
   }
 
   function testPMRM_unsupportedAsset() public {
