@@ -46,6 +46,8 @@ interface IPMRM {
   }
 
   struct ExpiryHoldings {
+    // used as key
+    uint expiry;
     uint secToExpiry;
     StrikeHolding[] options;
     // portion unaffected by spot shocks

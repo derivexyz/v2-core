@@ -7,7 +7,6 @@ import "openzeppelin/utils/math/SignedMath.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/math/FixedPointMathLib.sol";
 
 import "src/interfaces/IManager.sol";
 import "src/interfaces/ISubAccounts.sol";
@@ -311,7 +310,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       ISubAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry,,) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
-        if (optionExpiry < block.timestamp) {
+        if (optionExpiry + optionSettlementBuffer < block.timestamp) {
           revert PMRM_OptionExpired();
         }
 
@@ -336,7 +335,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   *
+   * @dev initial array of empty ExpiryHolding structs in the portfolio struct
    */
   function _initialiseExpiries(IPMRM.Portfolio memory portfolio, PortfolioExpiryData[] memory expiryCount)
     internal
@@ -349,8 +348,11 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       uint minConfidence = Math.min(fwdConfidence, rateConfidence);
       minConfidence = Math.min(portfolio.minConfidence, minConfidence);
 
-      uint64 secToExpiry = expiryCount[i].expiry - uint64(block.timestamp);
+      // if an option just expired few seconds ago, also set secToExpiry to 0
+      uint64 secToExpiry =
+        expiryCount[i].expiry > uint64(block.timestamp) ? uint64(expiryCount[i].expiry - block.timestamp) : 0;
       portfolio.expiries[i] = ExpiryHoldings({
+        expiry: expiryCount[i].expiry,
         secToExpiry: secToExpiry,
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardFixedPortion: forwardFixedPortion,
@@ -381,7 +383,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry, uint strike, bool isCall) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
 
-        uint expiryIndex = findInArray(portfolio.expiries, optionExpiry - block.timestamp, portfolio.expiries.length);
+        uint expiryIndex = findInArray(portfolio.expiries, optionExpiry, portfolio.expiries.length);
 
         ExpiryHoldings memory expiry = portfolio.expiries[expiryIndex];
 
@@ -405,14 +407,17 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     }
   }
 
-  function findInArray(ExpiryHoldings[] memory expiryData, uint secToExpiryToFind, uint arrayLen)
+  /**
+   * @dev return index of expiry in the array, revert if not found
+   */
+  function findInArray(ExpiryHoldings[] memory expiryData, uint expiryToFind, uint arrayLen)
     internal
     pure
     returns (uint index)
   {
     unchecked {
       for (uint i; i < arrayLen; ++i) {
-        if (expiryData[i].secToExpiry == secToExpiryToFind) {
+        if (expiryData[i].expiry == expiryToFind) {
           return i;
         }
       }
@@ -421,7 +426,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * iterate through all asset delta, charge OI fee for perp and option assets
+   * @dev iterate through all asset delta, charge OI fee for perp and option assets
    */
   function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] calldata assetDeltas)
     internal
@@ -470,24 +475,37 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _mergeAccounts(mergeIntoId, mergeFromIds);
   }
 
-  //////////
-  // View //
-  //////////
+  ////////////
+  //  View  //
+  ////////////
 
+  /**
+   * @notice return all scenarios
+   */
   function getScenarios() external view returns (IPMRM.Scenario[] memory) {
     return marginScenarios;
   }
 
+  /**
+   * @notice turn balance into an arranged portfolio struct
+   */
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
     return _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
   }
 
+  /**
+   * @notice get the initial margin or maintenance margin of an account
+   * @dev if the returned value is negative, it means the account is under margin requirement
+   */
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, subAccounts.getAccountBalances(accountId), true);
     (int margin,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
     return margin;
   }
 
+  /**
+   * @notice get margin level and mark to market of an account
+   */
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId)
     external
     view

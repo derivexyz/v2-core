@@ -55,7 +55,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       revert LVF_MissingExpiryData();
     }
 
-    _verifyTimestamp(volDetail.timestamp);
+    _checkNotStale(volDetail.timestamp);
 
     // calculate the vol
     vol = SVI.getVol(
@@ -80,7 +80,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       revert LVF_MissingExpiryData();
     }
 
-    _verifyTimestamp(volDetail.timestamp);
+    _checkNotStale(volDetail.timestamp);
 
     return volDetail.confidence;
   }

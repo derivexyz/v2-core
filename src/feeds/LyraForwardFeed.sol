@@ -24,9 +24,14 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
   uint64 public constant SETTLEMENT_TWAP_DURATION = 30 minutes;
 
-  // @dev secondary heartbeat for when the forward price is close to expiry
-  uint64 settlementHeartbeat = 5 minutes;
+  /// @dev secondary heartbeat for when the forward price is close to expiry
+  uint64 public settlementHeartbeat = 5 minutes;
+
+  /// @dev forward price data
   mapping(uint64 => ForwardDetails) private forwardDetails;
+
+  /// @dev settlement price data, as time approach expiry
+  ///      the spot data stored here start contributing to forward price
   mapping(uint64 => SettlementDetails) private settlementDetails;
 
   ////////////////////////
@@ -39,6 +44,10 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   // Admin //
   ///////////
 
+  /**
+   * @dev in the last SETTLEMENT_TWAP_DURATION before expiry, we require constant update on settlement data
+   * the call to get forward price will revert if last updated time is longer than settlementHeartbeat seconds ago
+   */
   function setSettlementHeartbeat(uint64 _settlementHeartbeat) external onlyOwner {
     settlementHeartbeat = _settlementHeartbeat;
     emit SettlementHeartbeatUpdated(_settlementHeartbeat);
@@ -50,6 +59,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
   /**
    * @notice Gets forward price for a given expiry
+   * @dev as time approach expiry, the forward price will be a twap of the forward price & settlement price (twap of spot)
    */
   function getForwardPrice(uint64 expiry) external view returns (uint, uint) {
     (uint forwardFixedPortion, uint forwardVariablePortion, uint confidence) = getForwardPricePortions(expiry);
@@ -71,7 +81,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   {
     ForwardDetails memory fwdDeets = forwardDetails[uint64(expiry)];
 
-    _verifyDetailTimestamp(fwdDeets.timestamp, expiry - SETTLEMENT_TWAP_DURATION);
+    _verifyDetailTimestamp(expiry, fwdDeets.timestamp, expiry - SETTLEMENT_TWAP_DURATION);
 
     (forwardFixedPortion, forwardVariablePortion) =
       _getSettlementPricePortions(fwdDeets, settlementDetails[expiry], expiry);
@@ -95,11 +105,10 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   }
 
   function acceptData(bytes calldata data) external override {
-    // parse data as SpotData
+    // parse data as ForwardData
     ForwardData memory forwardData = abi.decode(data, (ForwardData));
     // verify signature
     bytes32 structHash = hashForwardData(forwardData);
-
     _verifySignatureDetails(
       forwardData.signer, structHash, forwardData.signature, forwardData.deadline, forwardData.timestamp
     );
@@ -160,13 +169,20 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   ////////////////////////
 
   /// @dev Checks the cached data timestamp against the heartbeat, and settlement heartbeat if applicable
-  function _verifyDetailTimestamp(uint64 fwdDetailsTimestamp, uint64 settlementFeedStart) internal view {
+  function _verifyDetailTimestamp(uint64 expiry, uint64 fwdDetailsTimestamp, uint64 settlementFeedStart) internal view {
     if (fwdDetailsTimestamp == 0) {
       revert LFF_MissingExpiryData();
     }
 
-    _verifyTimestamp(fwdDetailsTimestamp);
+    // if price is settled, return early cause we will only rely on settlement data
+    if (fwdDetailsTimestamp == expiry) {
+      return;
+    }
 
+    // if price is not settled, check that the last updated forward data is not stales
+    _checkNotStale(fwdDetailsTimestamp);
+
+    // user should attach the latest settlement data to the forward data
     if (block.timestamp > settlementFeedStart && fwdDetailsTimestamp + settlementHeartbeat < block.timestamp) {
       revert LFF_SettlementDataTooOld();
     }

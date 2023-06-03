@@ -38,20 +38,21 @@ interface IBaseManager is IManager {
   event OIFeeRateSet(address asset, uint oiFeeRate);
 
   event MinOIFeeSet(uint minOIFee);
-
   event PerpSettled(uint indexed accountId, int netCash);
-
   event FeeBypassedCallerSet(address caller, bool bypassed);
-
   event AllowListSet(IAllowList _allowList);
   event FeeRecipientSet(uint _newAcc);
+  event OptionSettlementBufferUpdated(uint optionSettlementBuffer);
 
   ////////////
   // Errors //
   ////////////
 
   error BM_OIFeeRateTooHigh();
+
   error BM_MinOIFeeTooHigh();
+
+  error BM_InvalidSettlementBuffer();
 
   /// @dev bad action
   error BN_InvalidAction();

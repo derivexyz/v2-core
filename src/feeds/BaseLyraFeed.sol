@@ -86,7 +86,7 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
   ////////////////////////
   //  Helper Functions  //
   ////////////////////////
-  function _verifyTimestamp(uint64 timestamp) internal view {
+  function _checkNotStale(uint64 timestamp) internal view {
     if (timestamp + heartbeat < block.timestamp) {
       revert BLF_DataTooOld();
     }
