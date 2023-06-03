@@ -58,6 +58,7 @@ contract LiquidationSimBase is PMRMTestBase {
     uint PreFMax;
     int ExpectedBidPrice;
     uint FinalPercentageReceived;
+    uint LiquidatedOfOriginal;
     int PostMtM;
     int PostMM;
     int PostBM;
@@ -145,6 +146,8 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.ExpectedBidPrice = json.readInt(string.concat(baseActionIndex, ".Results.ExpectedBidPrice"));
     action.Results.FinalPercentageReceived =
       json.readUint(string.concat(baseActionIndex, ".Results.FinalPercentageReceived"));
+    action.Results.LiquidatedOfOriginal =
+      json.readUint(string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"));
     action.Results.PostMtM = json.readInt(string.concat(baseActionIndex, ".Results.PostMtM"));
     action.Results.PostMM = json.readInt(string.concat(baseActionIndex, ".Results.PostMM"));
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));

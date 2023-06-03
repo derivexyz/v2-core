@@ -16,16 +16,15 @@ contract LiquidationSimTests is LiquidationSimBase {
   function testLiquidationSim2() public {
     runLiquidationSim("Test2");
   }
-  //  TODO: these 4 still fail...
-  //
-  //  function testLiquidationSim3() public {
-  //    runLiquidationSim("Test3");
-  //  }
-  //
-  //  function testLiquidationSim4() public {
-  //    runLiquidationSim("Test4");
-  //  }
-  //
+
+  function testLiquidationSim3() public {
+    runLiquidationSim("Test3");
+  }
+
+  function testLiquidationSim4() public {
+    runLiquidationSim("Test4");
+  }
+  // TODO:
   //  function testLiquidationSim5() public {
   //    runLiquidationSim("Test5");
   //  }
@@ -42,7 +41,7 @@ contract LiquidationSimTests is LiquidationSimBase {
     startAuction();
 
     for (uint i = 0; i < data.Actions.length; ++i) {
-      //      console2.log("\n=== STEP:", i);
+      console2.log("\n=== STEP:", i);
       updateToActionState(data, i);
       checkPreLiquidation(data, i);
       doLiquidation(data, i);
@@ -69,7 +68,8 @@ contract LiquidationSimTests is LiquidationSimBase {
       assertApproxEqAbs(int(cashFromBidder), data.Actions[actionId].Results.ExpectedBidPrice, 1e6, "bid price solvent");
     }
 
-    assertApproxEqAbs(finalPercentage, data.Actions[actionId].Results.FinalPercentageReceived, 1e6, "final percentage");
+    // TODO: % of remaining assets received?
+    assertApproxEqAbs(finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 1e6, "final percentage");
   }
 
   function checkPreLiquidation(LiquidationSim memory data, uint actionId) internal {

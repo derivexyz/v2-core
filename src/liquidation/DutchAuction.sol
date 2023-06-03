@@ -606,8 +606,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // still during the fast auction
     if (timeElapsed < params.fastAuctionLength) {
       uint totalChangeInFastAuction = params.startingMtMPercentage - params.fastAuctionCutoffPercentage;
-      discount = params.startingMtMPercentage
-        - totalChangeInFastAuction.multiplyDecimal(timeElapsed).divideDecimal(params.fastAuctionLength);
+      discount = params.startingMtMPercentage - totalChangeInFastAuction * timeElapsed / params.fastAuctionLength;
       isFast = true;
     } else if (timeElapsed > params.fastAuctionLength + params.slowAuctionLength) {
       // whole solvent auction is over
