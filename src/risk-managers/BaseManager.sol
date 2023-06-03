@@ -165,9 +165,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param accountId ID of account which is being liquidated.
    * @param liquidatorId Liquidator account ID.
    * @param portion Portion of account that is requested to be liquidated.
-   * @param cashAmount Cash amount liquidator is offering for portion of account.
+   * @param bidAmount Cash amount liquidator is offering for portion of account.
+   * @param reservedCash Cash amount to ignore in liquidated account's balance.
    */
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyLiquidations {
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint bidAmount, uint reservedCash)
+    external
+    onlyLiquidations
+  {
     if (portion > 1e18) revert BM_InvalidBidPortion();
 
     // check that liquidator only has cash and nothing else
@@ -183,17 +187,24 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     // transfer liquidated account's asset to liquidator
     for (uint i; i < assetBalances.length; i++) {
+      int ignoreAmount = 0;
+      if (assetBalances[i].asset == cashAsset) {
+        ignoreAmount = int(reservedCash);
+      }
+
       _symmetricManagerAdjustment(
         accountId,
         liquidatorId,
         assetBalances[i].asset,
         uint96(assetBalances[i].subId),
-        assetBalances[i].balance.multiplyDecimal(int(portion))
+        (assetBalances[i].balance - ignoreAmount).multiplyDecimal(int(portion))
       );
     }
 
-    // transfer cash (bid amount) to liquidated account
-    _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
+    if (bidAmount != 0) {
+      // transfer cash (bid amount) to liquidated account
+      _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(bidAmount));
+    }
   }
 
   /**

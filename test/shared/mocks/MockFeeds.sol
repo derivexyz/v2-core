@@ -14,6 +14,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
+  mapping(uint => uint) fwdFixedPortion;
   mapping(uint => uint) forwardPriceConfidences;
   mapping(uint => int64) interestRates;
   mapping(uint => uint64) interestRateConfidences;
@@ -50,6 +51,13 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   function setForwardPrice(uint expiry, uint price, uint confidence) external {
     forwardPrices[expiry] = price;
+    fwdFixedPortion[expiry] = 0;
+    forwardPriceConfidences[expiry] = confidence;
+  }
+
+  function setForwardPricePortions(uint expiry, uint fixedPortion, uint price, uint confidence) external {
+    forwardPrices[expiry] = price;
+    fwdFixedPortion[expiry] = fixedPortion;
     forwardPriceConfidences[expiry] = confidence;
   }
 
@@ -71,7 +79,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   // IForwardFeed
 
   function getForwardPrice(uint64 expiry) external view returns (uint forwardPrice, uint confidence) {
-    return (forwardPrices[expiry], forwardPriceConfidences[expiry]);
+    return (forwardPrices[expiry] + fwdFixedPortion[expiry], forwardPriceConfidences[expiry]);
   }
 
   function getForwardPricePortions(uint64 expiry)
@@ -79,7 +87,7 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     view
     returns (uint forwardFixedPortion, uint forwardVariablePortion, uint confidence)
   {
-    return (0, forwardPrices[expiry], forwardPriceConfidences[expiry]);
+    return (fwdFixedPortion[expiry], forwardPrices[expiry], forwardPriceConfidences[expiry]);
   }
 
   // ISettlementPrice

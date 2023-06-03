@@ -123,7 +123,7 @@ contract PMRMTestBase is JsonMechIO {
 
     IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
       pegLossThreshold: 0.98e18,
-      pegLossFactor: 0.01e18,
+      pegLossFactor: 2e18,
       confThreshold: 0.6e18,
       confMargin: 0.5e18,
       basePercent: 0.02e18,
@@ -195,8 +195,8 @@ contract PMRMTestBase is JsonMechIO {
 
       for (uint j = 0; j < expiry.options.length; j++) {
         console2.log(expiry.options[j].isCall ? "- CALL" : "- PUT");
-        console2.log("- strike:", expiry.options[j].strike / 1e18);
-        console2.log("- amount:", expiry.options[j].amount / 1e18);
+        console2.log("- strike:", expiry.options[j].strike);
+        console2.log("- amount:", expiry.options[j].amount);
       }
     }
   }
