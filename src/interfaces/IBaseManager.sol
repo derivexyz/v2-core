@@ -26,7 +26,7 @@ interface IBaseManager is IManager {
 
   function feeCharged(uint tradeId, uint account) external view returns (uint);
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external;
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint reservedCash) external;
 
   function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external;
 

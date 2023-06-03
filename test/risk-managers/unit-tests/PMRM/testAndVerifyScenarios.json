@@ -1,0 +1,2459 @@
+{
+  "Test1": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": -15000000000000000000,
+      "ForwardContingency": -11275911269415124992,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -207396949671304364032,
+      "Cash": 0,
+      "PortfolioMTM": -79371585189059936256,
+      "InitialMarginHand": -368487619761755586560,
+      "MaintenanceMarginHand": -301768534860364300288,
+      "InitialMarginCalc": -368487619761755652096,
+      "MaintenanceMarginCalc": -301768534860364316672
+    }
+  },
+  "Test2": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1200000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1138939398828297472
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -17381590857176696832,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -224417592168536834048,
+      "Cash": 0,
+      "PortfolioMTM": 305747334449295720448,
+      "InitialMarginHand": 14004464630197813248,
+      "MaintenanceMarginHand": 81329742280758886400,
+      "InitialMarginCalc": 14004464630197843968,
+      "MaintenanceMarginCalc": 81329742280758919168
+    }
+  },
+  "Test3": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400,
+        500400
+      ],
+      "OptionStrikes": [
+        500000000000000000000,
+        900000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000,
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        1653152366370104064,
+        1328657463897111040
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400,
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600,
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000,
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746,
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217,
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600,
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": -15000000000000000000,
+      "ForwardContingency": -27442547681155032,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -36996092905724313600,
+      "Cash": 0,
+      "PortfolioMTM": 399939159236298342400,
+      "InitialMarginHand": 332344238458856734720,
+      "MaintenanceMarginHand": 347943066330574028800,
+      "InitialMarginCalc": 332344238458856734720,
+      "MaintenanceMarginCalc": 347943066330574028800
+    }
+  },
+  "Test4": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 500000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": -375000000000000000000,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -398511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -398511886412749864960,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test5": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 100000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": -675000000000000000000,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -698511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -698511886412749864960,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test6": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 800000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -23511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -23511886412749873152,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test7": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 800000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 300000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -23511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -23511886412749873152,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test8": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        400000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        400000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        400000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": -450000000000000000000,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -473511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -473511886412749864960,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test9": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        100000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        400000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        400000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": -675000000000000000000,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -698511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -698511886412749864960,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test10": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -23511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -23511886412749873152,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test11": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        300000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": -525000000000000000000,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -548511886412749881344,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -548511886412749864960,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test12": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 900000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -8477300890208880640,
+      "OracleContingency": 0,
+      "LossFactor": 1460000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -79141132001392164864,
+      "Cash": 0,
+      "PortfolioMTM": 79371585189059936256,
+      "InitialMarginHand": -36174467532972621824,
+      "MaintenanceMarginHand": 230453187667771392,
+      "InitialMarginCalc": -36174467532972613632,
+      "MaintenanceMarginCalc": 230453187667777120
+    }
+  },
+  "Test13": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400,
+        500400,
+        500400,
+        500400,
+        500400,
+        1191600,
+        1191600,
+        1191600,
+        1191600,
+        1191600
+      ],
+      "OptionStrikes": [
+        1000000000000000000,
+        1500000000000000000000,
+        1500000000000000000000,
+        2700000000000000000000,
+        2700000000000000000000,
+        2950000000000000000000,
+        1500000000000000000000,
+        1500000000000000000000,
+        2700000000000000000000,
+        2700000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      "OptionAmounts": [
+        1000000000000000000,
+        -1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        -1000000000000000000,
+        1000000000000000000,
+        -1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        3603538277664962048,
+        1047884494084986240,
+        1047884494084986240,
+        1364990899660472832,
+        1364990899660472832,
+        1407606763626377984,
+        1047554809415723648,
+        1047554809415723648,
+        1364612791185947904,
+        1364612791185947904
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400,
+        500400,
+        500400,
+        500400,
+        500400,
+        1191600,
+        1191600,
+        1191600,
+        1191600,
+        1191600
+      ],
+      "Forwards": [
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1501985045187195830272,
+        1501985045187195830272,
+        1501985045187195830272,
+        1501985045187195830272,
+        1501985045187195830272
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000,
+        30000000000000000,
+        30000000000000000,
+        30000000000000000,
+        30000000000000000,
+        50000000000000000,
+        50000000000000000,
+        50000000000000000,
+        50000000000000000,
+        50000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.5681511166375728,
+        1.5681511166375728,
+        1.5681511166375728,
+        1.5681511166375728,
+        1.5681511166375728
+      ],
+      "VolShockDown": [
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217,
+        0.6212325889082848,
+        0.6212325889082848,
+        0.6212325889082848,
+        0.6212325889082848,
+        0.6212325889082848
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1501985045187195830272,
+        1501985045187195830272,
+        1501985045187195830272,
+        1501985045187195830272,
+        1501985045187195830272
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -37338005151424528384,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -32914999692489859072,
+      "Cash": 0,
+      "PortfolioMTM": 549116259026096947200,
+      "InitialMarginHand": 500576852329245048832,
+      "MaintenanceMarginHand": 511778253874672418816,
+      "InitialMarginCalc": 500576852329245048832,
+      "MaintenanceMarginCalc": 511778253874672435200
+    }
+  },
+  "Test14": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 1000000000000000000,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": -30000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": -15000000000000000000,
+      "ForwardContingency": -11275911269415124992,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -190293615226489634816,
+      "Cash": 0,
+      "PortfolioMTM": 1420628414810939981824,
+      "InitialMarginHand": 1114746715016503492608,
+      "MaintenanceMarginHand": 1185334799584450347008,
+      "InitialMarginCalc": 1114746715016503492608,
+      "MaintenanceMarginCalc": 1185334799584450314240
+    }
+  },
+  "Test15": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400,
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000,
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        0
+      ],
+      "OptionAmounts": [
+        1000000000000000000,
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240,
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400,
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600,
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000,
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746,
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217,
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600,
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -18772323287381979136,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -225124991896649138176,
+      "Cash": 0,
+      "PortfolioMTM": 833279310993930240,
+      "InitialMarginHand": -291829210154649976832,
+      "MaintenanceMarginHand": -224291712585655207936,
+      "InitialMarginCalc": -291829210154649944064,
+      "MaintenanceMarginCalc": -224291712585655189504
+    }
+  },
+  "Test16": {
+    "Scenario": {
+      "OptionExpiries": [],
+      "OptionStrikes": [],
+      "OptionIsCall": [],
+      "OptionAmounts": [],
+      "OptionVols": [],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [],
+      "Cash": 0,
+      "Perps": 1000000000000000000,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [],
+      "Forwards": [],
+      "ForwardConfidences": [],
+      "Rates": [],
+      "RateConfidences": [],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [],
+      "VolShockDown": [],
+      "SettlementPrice": null,
+      "PercentFixed": null,
+      "ForwardsFixed": [],
+      "ForwardsVariable": []
+    },
+    "Result": {
+      "PerpContingency": -30000000000000000000,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": 0,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": null,
+      "SettlementPrice": null,
+      "MinSpan": -225750000000000000000,
+      "Cash": 0,
+      "PortfolioMTM": 0,
+      "InitialMarginHand": -332475000000000032768,
+      "MaintenanceMarginHand": -255750000000000000000,
+      "InitialMarginCalc": -332475000000000032768,
+      "MaintenanceMarginCalc": -255750000000000000000
+    }
+  },
+  "Test17": {
+    "Scenario": {
+      "OptionExpiries": [],
+      "OptionStrikes": [],
+      "OptionIsCall": [],
+      "OptionAmounts": [],
+      "OptionVols": [],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [],
+      "Cash": 1000000000000000000000,
+      "Perps": 1000000000000000000,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [],
+      "Forwards": [],
+      "ForwardConfidences": [],
+      "Rates": [],
+      "RateConfidences": [],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 55000000000000000000,
+      "UnrealizedFunding": 10000000000000000000,
+      "VolShockUp": [],
+      "VolShockDown": [],
+      "SettlementPrice": null,
+      "PercentFixed": null,
+      "ForwardsFixed": [],
+      "ForwardsVariable": []
+    },
+    "Result": {
+      "PerpContingency": -30000000000000000000,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 55000000000000000000,
+      "UnrealizedFunding": 10000000000000000000,
+      "OptionContingency": 0,
+      "ForwardContingency": 0,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": null,
+      "SettlementPrice": null,
+      "MinSpan": -225750000000000000000,
+      "Cash": 1000000000000000000000,
+      "PortfolioMTM": 1065000000000000000000,
+      "InitialMarginHand": 732524999999999967232,
+      "MaintenanceMarginHand": 809250000000000000000,
+      "InitialMarginCalc": 732524999999999967232,
+      "MaintenanceMarginCalc": 809249999999999934464
+    }
+  },
+  "Test18": {
+    "Scenario": {
+      "OptionExpiries": [
+        900
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        1048124566815733120
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        900
+      ],
+      "Forwards": [
+        1500001498288419766272
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        10000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        2.2483860016024813
+      ],
+      "VolShockDown": [
+        0.16774266559834583
+      ],
+      "SettlementPrice": 1476667041238771564544,
+      "PercentFixed": 0.75,
+      "ForwardsFixed": [
+        1101666666666666754048
+      ],
+      "ForwardsVariable": [
+        375000374572104941568
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": -15000000000000000000,
+      "ForwardContingency": -383812812253066880,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0.75,
+      "SettlementPrice": 1476667041238771564544,
+      "MinSpan": -33239733602679336960,
+      "Cash": 0,
+      "PortfolioMTM": -6343786253127703,
+      "InitialMarginHand": -62717997469736271872,
+      "MaintenanceMarginHand": -48246077388932464663,
+      "InitialMarginCalc": -62717997469736271872,
+      "MaintenanceMarginCalc": -48246077388932464640
+    }
+  },
+  "Test19": {
+    "Scenario": {
+      "OptionExpiries": [
+        1191600,
+        500400,
+        7758000,
+        900,
+        900,
+        7758000,
+        500400,
+        900,
+        900,
+        7758000,
+        7758000,
+        900,
+        900,
+        900,
+        7758000,
+        2487600,
+        900,
+        2487600,
+        2487600,
+        500400,
+        2487600,
+        500400,
+        500400,
+        500400,
+        500400,
+        1191600,
+        900,
+        7758000,
+        1191600,
+        2487600
+      ],
+      "OptionStrikes": [
+        1600000000000000000000,
+        4800000000000000000000,
+        4400000000000000000000,
+        2300000000000000000000,
+        4800000000000000000000,
+        1200000000000000000000,
+        1600000000000000000000,
+        2900000000000000000000,
+        1200000000000000000000,
+        3700000000000000000000,
+        1600000000000000000000,
+        3900000000000000000000,
+        2700000000000000000000,
+        5000000000000000000000,
+        1000000000000000000000,
+        1400000000000000000000,
+        3500000000000000000000,
+        4400000000000000000000,
+        1600000000000000000000,
+        1200000000000000000000,
+        5000000000000000000000,
+        4600000000000000000000,
+        3100000000000000000000,
+        5000000000000000000000,
+        5000000000000000000000,
+        3300000000000000000000,
+        1400000000000000000000,
+        3900000000000000000000,
+        2900000000000000000000,
+        2500000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      "OptionAmounts": [
+        -3000000000000000000,
+        -3000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        -1000000000000000000,
+        1000000000000000000,
+        5000000000000000000,
+        -1000000000000000000,
+        -3000000000000000000,
+        1000000000000000000,
+        -1000000000000000000,
+        5000000000000000000,
+        5000000000000000000,
+        -3000000000000000000,
+        -1000000000000000000,
+        5000000000000000000,
+        -3000000000000000000,
+        -3000000000000000000,
+        5000000000000000000,
+        5000000000000000000,
+        1000000000000000000,
+        -20000000000000000000,
+        -20000000000000000000,
+        5000000000000000000,
+        -1000000000000000000,
+        -20000000000000000000,
+        1000000000000000000,
+        -20000000000000000000,
+        -3000000000000000000,
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1081048412239005184,
+        1624361247821863424,
+        1584405720806435328,
+        1283925438991429120,
+        1624591380140235520,
+        1144561774965308544,
+        1081482216317601280,
+        1400043082070291712,
+        1138552060953866880,
+        1508884353397713152,
+        1076946882275319424,
+        1536002173036551168,
+        1365264078859387136,
+        1641449540030406400,
+        1267221436484928256,
+        1041659241854383488,
+        1487763002948945408,
+        1586892983259962880,
+        1080236019562821504,
+        1138939398828297472,
+        1640315242477901056,
+        1606595828047296768,
+        1431496024043739648,
+        1641221757810627584,
+        1641221757810627584,
+        1460263628725004032,
+        1040710473518362496,
+        1532219430053102336,
+        1399407566479993088,
+        1325420899566138112
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": 10000000000000000000000,
+      "Perps": 420000000000000000000,
+      "Base": 69000000000000000000,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        1191600,
+        500400,
+        7758000,
+        900,
+        900,
+        7758000,
+        500400,
+        900,
+        900,
+        7758000,
+        7758000,
+        900,
+        900,
+        900,
+        7758000,
+        2487600,
+        900,
+        2487600,
+        2487600,
+        500400,
+        2487600,
+        500400,
+        500400,
+        500400,
+        500400,
+        1191600,
+        900,
+        7758000,
+        1191600,
+        2487600
+      ],
+      "Forwards": [
+        1501985045187195830272,
+        1500833279310993817600,
+        1512971000787409567744,
+        1500001498288419766272,
+        1500001498288419766272,
+        1512971000787409567744,
+        1500833279310993817600,
+        1500001498288419766272,
+        1500001498288419766272,
+        1512971000787409567744,
+        1512971000787409567744,
+        1500001498288419766272,
+        1500001498288419766272,
+        1500001498288419766272,
+        1512971000787409567744,
+        1504146989085687808000,
+        1500001498288419766272,
+        1504146989085687808000,
+        1504146989085687808000,
+        1500833279310993817600,
+        1504146989085687808000,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1501985045187195830272,
+        1500001498288419766272,
+        1512971000787409567744,
+        1501985045187195830272,
+        1504146989085687808000
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        50000000000000000,
+        30000000000000000,
+        100000000000000000,
+        10000000000000000,
+        10000000000000000,
+        100000000000000000,
+        30000000000000000,
+        10000000000000000,
+        10000000000000000,
+        100000000000000000,
+        100000000000000000,
+        10000000000000000,
+        10000000000000000,
+        10000000000000000,
+        100000000000000000,
+        40000000000000000,
+        10000000000000000,
+        40000000000000000,
+        40000000000000000,
+        30000000000000000,
+        40000000000000000,
+        30000000000000000,
+        30000000000000000,
+        30000000000000000,
+        30000000000000000,
+        50000000000000000,
+        10000000000000000,
+        100000000000000000,
+        50000000000000000,
+        40000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 2100000000000000000000,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.5681511166375728,
+        1.7370684514926746,
+        1.3902272493224166,
+        2.2483860016024813,
+        2.2483860016024813,
+        1.3902272493224166,
+        1.7370684514926746,
+        2.2483860016024813,
+        2.2483860016024813,
+        1.3902272493224166,
+        1.3902272493224166,
+        2.2483860016024813,
+        2.2483860016024813,
+        2.2483860016024813,
+        1.3902272493224166,
+        1.4555844040146944,
+        2.2483860016024813,
+        1.4555844040146944,
+        1.4555844040146944,
+        1.7370684514926746,
+        1.4555844040146944,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.5681511166375728,
+        2.2483860016024813,
+        1.3902272493224166,
+        1.5681511166375728,
+        1.4555844040146944
+      ],
+      "VolShockDown": [
+        0.6212325889082848,
+        0.508621032338217,
+        0.7398485004517223,
+        0.16774266559834583,
+        0.16774266559834583,
+        0.7398485004517223,
+        0.508621032338217,
+        0.16774266559834583,
+        0.16774266559834583,
+        0.7398485004517223,
+        0.7398485004517223,
+        0.16774266559834583,
+        0.16774266559834583,
+        0.16774266559834583,
+        0.7398485004517223,
+        0.6962770639902038,
+        0.16774266559834583,
+        0.6962770639902038,
+        0.6962770639902038,
+        0.508621032338217,
+        0.6962770639902038,
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217,
+        0.6212325889082848,
+        0.16774266559834583,
+        0.7398485004517223,
+        0.6212325889082848,
+        0.6962770639902038
+      ],
+      "SettlementPrice": 1476667041238771564544,
+      "PercentFixed": 0.75,
+      "ForwardsFixed": [
+        0,
+        0,
+        0,
+        1101666666666666754048,
+        1101666666666666754048,
+        0,
+        0,
+        1101666666666666754048,
+        1101666666666666754048,
+        0,
+        0,
+        1101666666666666754048,
+        1101666666666666754048,
+        1101666666666666754048,
+        0,
+        0,
+        1101666666666666754048,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1101666666666666754048,
+        0,
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1501985045187195830272,
+        1500833279310993817600,
+        1512971000787409567744,
+        375000374572104941568,
+        375000374572104941568,
+        1512971000787409567744,
+        1500833279310993817600,
+        375000374572104941568,
+        375000374572104941568,
+        1512971000787409567744,
+        1512971000787409567744,
+        375000374572104941568,
+        375000374572104941568,
+        375000374572104941568,
+        1512971000787409567744,
+        1504146989085687808000,
+        375000374572104941568,
+        1504146989085687808000,
+        1504146989085687808000,
+        1500833279310993817600,
+        1504146989085687808000,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1501985045187195830272,
+        375000374572104941568,
+        1512971000787409567744,
+        1501985045187195830272,
+        1504146989085687808000
+      ]
+    },
+    "Result": {
+      "PerpContingency": -12600000000000000000000,
+      "BaseContingency": -2070000000000000000000,
+      "UnrealizedPerpPNL": 2100000000000000000000,
+      "UnrealizedFunding": 0,
+      "OptionContingency": -1575000000000000000000,
+      "ForwardContingency": -369522665124689674240,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0.75,
+      "SettlementPrice": 1476667041238771564544,
+      "MinSpan": -111775247374716894183424,
+      "Cash": 10000000000000000000000,
+      "PortfolioMTM": 102480898555903899336704,
+      "InitialMarginHand": -63945423031228061188096,
+      "MaintenanceMarginHand": -25539348818812994846720,
+      "InitialMarginCalc": -63945423031228069576704,
+      "MaintenanceMarginCalc": -25539348818813012410368
+    }
+  },
+  "Test20": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400,
+        500400,
+        500400,
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000,
+        1500000000000000000000,
+        2500000000000000000000,
+        2500000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "OptionAmounts": [
+        -1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240,
+        1047884494084986240,
+        1326538658030860032,
+        1326538658030860032
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400,
+        500400,
+        500400,
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000,
+        30000000000000000,
+        30000000000000000,
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": 0,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": 0,
+      "Cash": 0,
+      "PortfolioMTM": -1000000000000000000000,
+      "InitialMarginHand": -1000000000000000000000,
+      "MaintenanceMarginHand": -1000000000000000000000,
+      "InitialMarginCalc": -1000000000000000000000,
+      "MaintenanceMarginCalc": -1000000000000000000000
+    }
+  },
+  "Test21": {
+    "Scenario": {
+      "OptionExpiries": [
+        500400,
+        500400,
+        500400,
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000,
+        1500000000000000000000,
+        2500000000000000000000,
+        2500000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "OptionAmounts": [
+        1000000000000000000,
+        -1000000000000000000,
+        -1000000000000000000,
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240,
+        1047884494084986240,
+        1326538658030860032,
+        1326538658030860032
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": 0,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400,
+        500400,
+        500400,
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        30000000000000000,
+        30000000000000000,
+        30000000000000000,
+        30000000000000000
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StablePrice": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746,
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217,
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600,
+        1500833279310993817600
+      ]
+    },
+    "Result": {
+      "PerpContingency": 0,
+      "BaseContingency": 0,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
+      "OptionContingency": 0,
+      "ForwardContingency": -28439,
+      "OracleContingency": 0,
+      "LossFactor": 1300000000000000000,
+      "PercentFixed": 0,
+      "SettlementPrice": 1500833279310993817600,
+      "MinSpan": -52559160949728264192,
+      "Cash": 0,
+      "PortfolioMTM": 1000000000000000000000,
+      "InitialMarginHand": 931673090765353254912,
+      "MaintenanceMarginHand": 947440839050271735808,
+      "InitialMarginCalc": 931673090765353254912,
+      "MaintenanceMarginCalc": 947440839050271784960
+    }
+  }
+}

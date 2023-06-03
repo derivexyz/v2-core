@@ -242,13 +242,13 @@ contract UNIT_TestBaseManager is Test {
 
   function testCannotExecuteBidFromNonLiquidation() external {
     vm.expectRevert(IBaseManager.BM_OnlyLiquidationModule.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
   }
 
   function testCannotExecuteInvalidBid() external {
     vm.startPrank(address(mockAuction));
     vm.expectRevert(IBaseManager.BM_InvalidBidPortion.selector);
-    tester.executeBid(aliceAcc, bobAcc, 1.2e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 1.2e18, 0, 0);
     vm.stopPrank();
   }
 
@@ -257,7 +257,7 @@ contract UNIT_TestBaseManager is Test {
 
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
     vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
     vm.stopPrank();
   }
@@ -270,7 +270,7 @@ contract UNIT_TestBaseManager is Test {
     // balance[1] is not cash
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
     vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
     vm.stopPrank();
   }
@@ -284,7 +284,7 @@ contract UNIT_TestBaseManager is Test {
     mockAsset.deposit(aliceAcc, 1, 1e18);
 
     vm.startPrank(address(mockAuction));
-    tester.executeBid(aliceAcc, bobAcc, 1e18, 0);
+    tester.executeBid(aliceAcc, bobAcc, 1e18, 0, 0);
 
     assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 0);
     assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 1e18);
@@ -307,13 +307,39 @@ contract UNIT_TestBaseManager is Test {
     vm.startPrank(address(mockAuction));
 
     // liquidate 80%
-    tester.executeBid(aliceAcc, bobAcc, 0.8e18, bid);
+    tester.executeBid(aliceAcc, bobAcc, 0.8e18, bid, 0);
 
     assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 40e18);
     assertEq(subAccounts.getBalance(aliceAcc, cash, 0), int(bid));
 
     assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 160e18);
     assertEq(subAccounts.getBalance(bobAcc, cash, 0), 70e18); // cas
+
+    vm.stopPrank();
+  }
+
+  function testExecuteBidWithReservedCash() external {
+    // alice' portfolio: 300 cash, 200 other asset
+    cash.deposit(aliceAcc, 0, 300e18);
+    mockAsset.deposit(aliceAcc, 0, 200e18);
+
+    // bob's portfolio 100 cash
+    cash.deposit(bobAcc, 0, 100e18);
+    uint bid = 30e18;
+
+    // bob pays 30 to get 20% of (300 - 20 (reserved)) cash and 20% of 200 other asset
+
+    vm.startPrank(address(mockAuction));
+
+    // liquidate 80%, but reserve 20 cash
+    tester.executeBid(aliceAcc, bobAcc, 0.2e18, bid, 20e18);
+
+    assertEq(subAccounts.getBalance(aliceAcc, mockAsset, 0), 160e18, "alice asset");
+    // alice should have: (300 - 20) * 0.8 + bid + reserved
+    assertEq(subAccounts.getBalance(aliceAcc, cash, 0), int(bid + 224e18 + 20e18), "alice cash");
+
+    assertEq(subAccounts.getBalance(bobAcc, mockAsset, 0), 40e18, "bob asset");
+    assertEq(subAccounts.getBalance(bobAcc, cash, 0), 70e18 + 56e18, "bob cash");
 
     vm.stopPrank();
   }
