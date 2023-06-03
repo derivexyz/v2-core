@@ -329,7 +329,7 @@ contract UNIT_TestStandardManager_Option is Test {
     uint strike = 3000e18;
     uint subId = OptionEncoding.toSubId(expiry, 3000e18, true);
 
-    manager.setOIFeeRateBPS(0.001e18);
+    manager.setOIFeeRateBPS(address(option), 0.001e18);
     manager.setFeeRecipient(feeRecipient);
 
     cash.deposit(aliceAcc, 300e18);
@@ -351,7 +351,7 @@ contract UNIT_TestStandardManager_Option is Test {
     uint strike = 3000e18;
     uint subId = OptionEncoding.toSubId(expiry, 3000e18, true);
 
-    manager.setOIFeeRateBPS(0.001e18);
+    manager.setOIFeeRateBPS(address(option), 0.001e18);
     manager.setFeeRecipient(feeRecipient);
     manager.setFeeBypassedCaller(address(this), true);
 

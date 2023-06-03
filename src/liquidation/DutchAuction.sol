@@ -279,6 +279,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @return uint the step that the auction is on
    */
   function continueInsolventAuction(uint accountId) external returns (uint) {
+    // todo: check terminated
+
     Auction storage auction = auctions[accountId];
     if (!auction.insolvent) {
       revert DA_SolventAuctionCannotIncrement();

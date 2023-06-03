@@ -35,7 +35,8 @@ interface IBaseManager is IManager {
   ////////////////
 
   /// @dev Emitted when OI fee rate is set
-  event OIFeeRateSet(uint oiFeeRate);
+  event OIFeeRateSet(address asset, uint oiFeeRate);
+
   event MinOIFeeSet(uint minOIFee);
 
   event PerpSettled(uint indexed accountId, int netCash);
