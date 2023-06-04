@@ -60,9 +60,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /// @dev The accounts contract for resolving address to accountIds
   SubAccounts public immutable subAccounts;
 
-  /// @dev The parameters for the dutch auction
+  /// @dev The parameters for the solvent auction phase
   SolventAuctionParams public solventAuctionParams;
 
+  /// @dev The parameters for the insolvent auction phase
   InsolventAuctionParams public insolventAuctionParams;
 
   ////////////////////////
@@ -75,9 +76,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     cash = _cash;
   }
 
-  ///////////
-  // Admin //
-  ///////////
+  /////////////
+  //  Admin  //
+  /////////////
 
   /**
    * @notice Set buffer margin that will be used to determine the target margin level we liquidate to
@@ -112,9 +113,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     insolventAuctionParams = _params;
   }
 
-  ///////////////////
-  // Begin Auction //
-  ///////////////////
+  /////////////////////
+  //  Begin Auction  //
+  /////////////////////
 
   /**
    * @dev anyone can start an auction for an account
@@ -262,11 +263,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     if (canTerminateAfterwards) {
       _terminateAuction(accountId);
     }
+
+    emit Bid(accountId, bidderId, finalPercentage, cashFromBidder, cashToBidder);
   }
 
-  ////////////////////////
-  //  Insolvent Auction //
-  ////////////////////////
+  /////////////////////////
+  //  Insolvent Auction  //
+  /////////////////////////
 
   /**
    * @notice This function can only be used for when the auction is insolvent and is a safety mechanism for
@@ -277,7 +280,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @return uint the step that the auction is on
    */
   function continueInsolventAuction(uint accountId) external returns (uint) {
-    // todo: check terminated
+    if (!auctions[accountId].ongoing) revert DA_NotOngoingAuction();
 
     Auction storage auction = auctions[accountId];
     if (!auction.insolvent) {
@@ -300,6 +303,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     if (newStep > insolventAuctionParams.totalSteps) revert DA_MaxStepReachedInsolventAuction();
 
     auction.lastStepUpdate = block.timestamp;
+
+    emit InsolventAuctionStepIncremented(accountId, newStep);
 
     return newStep;
   }

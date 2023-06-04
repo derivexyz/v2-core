@@ -74,6 +74,20 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     assertEq(usdcAsset.isSocialized(), true);
   }
 
+  function testCannotIncreaseStepAfterTerminate() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    // increase step to 5
+    _increaseInsolventStep(5, aliceAcc);
+
+    // bid 100% of the portfolio
+    vm.prank(bob);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+
+    vm.expectRevert(IDutchAuction.DA_NotOngoingAuction.selector);
+    dutchAuction.continueInsolventAuction(aliceAcc);
+  }
+
   function testIncreaseStepMax() public {
     dutchAuction.setInsolventAuctionParams(
       IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0, bufferMarginScalar: 1e18})
