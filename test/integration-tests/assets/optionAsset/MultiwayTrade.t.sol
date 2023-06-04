@@ -121,7 +121,7 @@ pragma solidity ^0.8.18;
 //
 //    vm.warp(callExpiry);
 //    int priceIncrease = 1000e18;
-//    _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, callExpiry);
+//    _setSettlementPrice(ETH_PRICE + priceIncrease, callExpiry);
 //    pcrm.settleOptions(aliceAcc);
 //    pcrm.settleOptions(bobAcc);
 //    pcrm.settleOptions(charlieAcc);
@@ -170,7 +170,7 @@ pragma solidity ^0.8.18;
 //
 //    vm.warp(putExpiry);
 //    int priceDecrease = 1000e18;
-//    _setSpotPriceAndSubmitForExpiry(ETH_PRICE - priceDecrease, putExpiry);
+//    _setSettlementPrice(ETH_PRICE - priceDecrease, putExpiry);
 //    pcrm.settleOptions(aliceAcc);
 //    pcrm.settleOptions(bobAcc);
 //    pcrm.settleOptions(charlieAcc);
@@ -244,7 +244,7 @@ pragma solidity ^0.8.18;
 //    // Settle OTM
 //    vm.warp(callExpiry);
 //    int priceDecrease = 1000e18;
-//    _setSpotPriceAndSubmitForExpiry(ETH_PRICE - priceDecrease, callExpiry);
+//    _setSettlementPrice(ETH_PRICE - priceDecrease, callExpiry);
 //    pcrm.settleOptions(aliceAcc);
 //    pcrm.settleOptions(bobAcc);
 //    pcrm.settleOptions(charlieAcc);
@@ -317,7 +317,7 @@ pragma solidity ^0.8.18;
 //    // Settle OTM
 //    vm.warp(putExpiry);
 //    int priceIncrease = 1000e18;
-//    _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, putExpiry);
+//    _setSettlementPrice(ETH_PRICE + priceIncrease, putExpiry);
 //    pcrm.settleOptions(aliceAcc);
 //    pcrm.settleOptions(bobAcc);
 //    pcrm.settleOptions(charlieAcc);
@@ -376,7 +376,7 @@ pragma solidity ^0.8.18;
 //
 //    vm.warp(callExpiry);
 //    int priceIncrease = 1000e18;
-//    _setSpotPriceAndSubmitForExpiry(ETH_PRICE + priceIncrease, callExpiry);
+//    _setSettlementPrice(ETH_PRICE + priceIncrease, callExpiry);
 //    pcrm.settleOptions(aliceAcc);
 //    pcrm.settleOptions(bobAcc);
 //    pcrm.settleOptions(charlieAcc);
