@@ -66,13 +66,12 @@ interface IDutchAuction {
   event InsolventAuctionStarted(uint accountId, uint steps, uint stepSize);
 
   // emitted when a bid is placed
-  event Bid(uint accountId, uint bidderId, uint percentagePortfolio, uint cash);
-
-  // emitted when an auction results in insolvency
-  event Insolvent(uint accountId);
+  event Bid(uint accountId, uint bidderId, uint finalPercentage, uint cashFromBidder, uint cashToBidder);
 
   // emitted when an auction ends, either by insolvency or by the assets of an account being purchased.
   event AuctionEnded(uint accountId, uint endTime);
+
+  event InsolventAuctionStepIncremented(uint accountId, uint newStep);
 
   event ScenarioIdUpdated(uint accountId, uint newScenarioId);
 
