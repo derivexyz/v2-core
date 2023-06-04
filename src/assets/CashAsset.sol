@@ -19,11 +19,10 @@ import "src/assets/utils/ManagerWhitelist.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into theirsubAccounts.
+ * @dev   Users can deposit a stable token and credit this cash asset into their subAccounts.
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
-
 contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
@@ -79,7 +78,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   ///@dev The stored security module fee to return to after an insolvency event
   uint public previousSmFeePercentage;
 
-  ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
+  ///@dev True if the cash system is insolvent (stable balance < total cash asset)
   ///     In which case we turn on the withdraw fee to prevent bank-run
   bool public temporaryWithdrawFeeEnabled;
 
@@ -141,7 +140,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   ////////////////////////////
 
   /**
-   * @dev Deposit USDC and increase account balance
+   * @dev Deposit stable token and increase account balance
    * @param recipientAccount account id to receive the cash asset
    * @param stableAmount amount of stable coins to deposit
    */
@@ -150,7 +149,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
-   * @dev Deposit USDC and create a new account
+   * @dev Deposit stable token and create a new account
    * @param recipient user for who the new account is created
    * @param stableAmount amount of stable coins to deposit
    * @param manager manager of the new account
@@ -164,7 +163,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
-   * @dev Deposit USDC and increase account balance
+   * @dev Deposit stable token and increase account balance
    * @param recipientAccount account id to receive the cash asset
    * @param stableAmount amount of stable coins to deposit
    */
@@ -188,10 +187,10 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
-   * @notice Withdraw USDC from a Lyra account
+   * @notice Withdraw stable token from a Lyra account
    * @param accountId account id to withdraw
    * @param stableAmount amount of stable asset in its native decimals
-   * @param recipient USDC recipient
+   * @param recipient stable token recipient
    */
   function withdraw(uint accountId, uint stableAmount, address recipient) external {
     if (msg.sender != subAccounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
@@ -447,6 +446,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     // Update timestamp even if there are no borrows
     uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = (block.timestamp).toUint64();
+
+    // TODO: what if there was a borrow and then it was zeroed out, is interest trapped?
     if (totalBorrow == 0) return;
 
     // Calculate interest since last timestamp using compounded interest rate
@@ -457,6 +458,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     if (netSettledCash < 0) {
       realSupply += (-netSettledCash).toUint256(); // util = totalBorrow/(totalSupply + netBurned)
     }
+    // Note: we ignore including netSettledCash in totalBorrow intentionally since all it would do is increase/spike
+    // the interest rate temporarily (which causes unintentional side-effects with a large enough settlement amount)
 
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);

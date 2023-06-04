@@ -2,12 +2,5 @@
 pragma solidity ^0.8.18;
 
 interface IInterestRateFeed {
-  function getInterestRate(uint64 expiry) external view returns (int64 interestRate, uint64 confidence);
-
-  ////////////
-  // Events //
-  ////////////
-
-  /// @dev Emitted when spot price for option settlement determined
-  event InterestRateSet(int64 interestRate, uint64 confidence);
+  function getInterestRate(uint64 expiry) external view returns (int interestRate, uint confidence);
 }

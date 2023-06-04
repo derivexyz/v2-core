@@ -212,9 +212,7 @@ contract PMRMSimTest is PMRMTestBase {
         balance: optionData[i].amount
       });
 
-      feed.setVol(
-        uint64(expiry), uint128(optionData[i].strike), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
-      );
+      feed.setVol(uint64(expiry), uint128(optionData[i].strike), optionData[i].vol, optionData[i].volConfidence);
     }
 
     if (otherAssets.cashAmount != 0) {
@@ -269,9 +267,7 @@ contract PMRMSimTest is PMRMTestBase {
         balance: optionData[i].amount
       });
 
-      feed.setVol(
-        uint64(expiry), uint128(optionData[i].strike), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
-      );
+      feed.setVol(uint64(expiry), uint128(optionData[i].strike), optionData[i].vol, optionData[i].volConfidence);
     }
 
     if (otherAssets.cashAmount != 0) {
@@ -290,10 +286,10 @@ contract PMRMSimTest is PMRMTestBase {
 
     mockPerp.mockAccountPnlAndFunding(aliceAcc, otherAssets.perpUnrealisedFunding, otherAssets.perpUnrealisedPNL);
 
-    verify(balances, readResults(json, testId));
+    verify(readResults(json, testId));
   }
 
-  function verify(ISubAccounts.AssetBalance[] memory balances, Result memory results) internal {
+  function verify(Result memory results) internal {
     IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolio(aliceAcc);
 
     assertApproxEqAbs(portfolio.totalMtM, results.portfolioMTM - results.cash, 1e8, "Portfolio MTM");

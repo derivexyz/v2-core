@@ -111,6 +111,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    // TODO: do we even need whitelist?
     _checkManager(address(manager));
 
     _takeTotalOISnapshotPreTrade(manager, tradeId);

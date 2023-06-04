@@ -14,8 +14,6 @@ import "src/interfaces/IPMRM.sol";
 import "src/interfaces/IPMRMLib.sol";
 import "src/interfaces/ISubAccounts.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title PMRMLib
  * @notice Functions for helping compute PMRM value and risk (maintenance/initial margin and MTM)
@@ -84,7 +82,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     if (
       _volShockParams.volRangeUp > 2e18 //
         || _volShockParams.volRangeDown > 2e18 || _volShockParams.shortTermPower > 2e18
-        || _volShockParams.longTermPower > 2e18 || _volShockParams.dteFloor > 10 days //
+        || _volShockParams.longTermPower > 2e18 || _volShockParams.dteFloor > 100 days //
         || _volShockParams.dteFloor < 0.01 days // 864 seconds
     ) {
       revert PMRML_InvalidVolShockParameters();
@@ -211,7 +209,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
   }
 
-  function _getShockedPerpValue(int position, uint perpPrice, uint spotShock) internal view returns (int) {
+  function _getShockedPerpValue(int position, uint perpPrice, uint spotShock) internal pure returns (int) {
     if (position == 0) {
       return 0;
     }

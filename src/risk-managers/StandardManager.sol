@@ -32,8 +32,6 @@ import {BaseManager} from "./BaseManager.sol";
 
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title StandardManager
  * @author Lyra
@@ -315,6 +313,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
       (int preIM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, true);
 
+      // TODO: use MM not im
       // allow the trade to pass if the net margin increased
       if (postIM > preIM) return;
 

@@ -127,12 +127,14 @@ contract Option is IOption, PositionTracking, GlobalSubIdOITracking, ManagerWhit
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
-    uint settlementPrice = settlementFeed.getSettlementPrice(uint64(expiry));
 
     // Return false if settlement price has not been locked in
-    if (settlementPrice == 0) {
+    if (expiry > block.timestamp) {
       return (0, false);
     }
+
+    // Note; this reverts if there is no settlement value yet TODO: check this flow
+    uint settlementPrice = settlementFeed.getSettlementPrice(uint64(expiry));
 
     return (getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }

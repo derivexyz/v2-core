@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
-
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
@@ -41,12 +39,14 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   ///@dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
   ISpotFeed public spotFeed;
 
+  // TODO: make a ISpotDiff feed for perps
   ///@dev perp feed, used for settling pnl before each trades
   ISpotFeed public perpFeed;
 
   ///@dev Mapping from account to position
   mapping(uint account => PositionDetail) public positions;
 
+  // TODO: make a funding rate feed...
   ///@dev Mapping from address to whitelisted to push impacted prices
   address public fundingRateOracle;
 
@@ -138,7 +138,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     _takeTotalOISnapshotPreTrade(manager, tradeId);
     _updateTotalOI(manager, preBalance, adjustment.amount);
 
-    // Also track global subId OI (only subId == 0)
+    // Also track global subId OI (only subId == 0) TODO: do we actually limit the subId anywhere
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
