@@ -4,12 +4,14 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "src/feeds/LyraVolFeed.sol";
-import "../../../src/feeds/LyraForwardFeed.sol";
+import "src/feeds/LyraForwardFeed.sol";
+import "../../shared/mocks/MockFeeds.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
  */
 contract UNIT_LyraForwardFeed is Test {
+  MockFeeds mockSpot;
   LyraForwardFeed feed;
 
   bytes32 domainSeparator;
@@ -21,7 +23,10 @@ contract UNIT_LyraForwardFeed is Test {
   uint64 defaultExpiry;
 
   function setUp() public {
-    feed = new LyraForwardFeed();
+    mockSpot = new MockFeeds();
+    mockSpot.setSpot(990e18, 1e18);
+
+    feed = new LyraForwardFeed(ISpotFeed(address(mockSpot)));
 
     domainSeparator = feed.domainSeparator();
 
@@ -42,7 +47,7 @@ contract UNIT_LyraForwardFeed is Test {
   }
 
   function testCanPassInDataAndUpdateFwdFeed() public {
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     bytes memory data = _getSignedForwardData(pk, fwdData);
 
     feed.acceptData(data);
@@ -52,11 +57,29 @@ contract UNIT_LyraForwardFeed is Test {
     assertEq(confidence, 1e18);
   }
 
+  function testCannotGetInvalidForwardDiff() public {
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
+    fwdData.fwdSpotDifference = -1000e18;
+    feed.acceptData(_getSignedForwardData(pk, fwdData));
+
+    vm.expectRevert("SafeCast: value must be positive");
+    feed.getForwardPrice(defaultExpiry);
+
+    vm.warp(block.timestamp + 1);
+
+    // but can return 0
+    fwdData.fwdSpotDifference = -990e18;
+    fwdData.timestamp += 1;
+    feed.acceptData(_getSignedForwardData(pk, fwdData));
+    (uint fwdPrice,) = feed.getForwardPrice(defaultExpiry);
+    assertEq(fwdPrice, 0);
+  }
+
   function testCannotUpdateFwdFeedFromInvalidSigner() public {
     // we didn't whitelist the pk owner this time
     feed.addSigner(pkOwner, false);
 
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     bytes memory data = _getSignedForwardData(pk, fwdData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSigner.selector);
@@ -64,7 +87,7 @@ contract UNIT_LyraForwardFeed is Test {
   }
 
   function testCannotUpdateFwdFeedAfterDeadline() public {
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     bytes memory data = _getSignedForwardData(pk, fwdData);
 
     vm.warp(block.timestamp + 10);
@@ -74,7 +97,7 @@ contract UNIT_LyraForwardFeed is Test {
   }
 
   function testCannotSetFwdInTheFuture() public {
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     fwdData.timestamp = uint64(block.timestamp + 1000);
     bytes memory data = _getSignedForwardData(pk, fwdData);
 
@@ -84,7 +107,7 @@ contract UNIT_LyraForwardFeed is Test {
 
   function testCannotSetFwdPastExpiry() public {
     vm.warp(defaultExpiry + 1);
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     fwdData.timestamp = uint64(defaultExpiry + 1);
     bytes memory data = _getSignedForwardData(pk, fwdData);
 
@@ -94,7 +117,7 @@ contract UNIT_LyraForwardFeed is Test {
 
   function testCanSetSettlementData() public {
     vm.warp(defaultExpiry);
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     fwdData.timestamp = uint64(defaultExpiry);
     bytes memory data = _getSignedForwardData(pk, fwdData);
     feed.acceptData(data);
@@ -104,7 +127,7 @@ contract UNIT_LyraForwardFeed is Test {
   }
 
   function testIgnoreUpdateIfOlderDataIsPushed() public {
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
 
     bytes memory data = _getSignedForwardData(pk, fwdData);
     feed.acceptData(data);
@@ -124,7 +147,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.setHeartbeat(1 days);
 
     vm.warp(defaultExpiry - 10 minutes);
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     fwdData.currentSpotAggregate = 1050e18 * uint(defaultExpiry - 10 minutes);
     fwdData.timestamp = uint64(block.timestamp);
     fwdData.confidence = 0.99e18;
@@ -151,7 +174,7 @@ contract UNIT_LyraForwardFeed is Test {
     // use a different private key to sign the data but still specify pkOwner as signer
     uint pk2 = 0xBEEF2222;
 
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     bytes memory data = _getSignedForwardData(pk2, fwdData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
@@ -162,7 +185,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.setHeartbeat(10 minutes);
     // set a forward price entry as settlement data
     vm.warp(defaultExpiry);
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     fwdData.timestamp = uint64(defaultExpiry);
     bytes memory data = _getSignedForwardData(pk, fwdData);
     feed.acceptData(data);
@@ -181,7 +204,7 @@ contract UNIT_LyraForwardFeed is Test {
 
   function testCannotSetInvalidSettlementData() public {
     vm.warp(defaultExpiry - 10 minutes);
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     fwdData.currentSpotAggregate = 0;
     bytes memory data = _getSignedForwardData(pk, fwdData);
 
@@ -190,7 +213,7 @@ contract UNIT_LyraForwardFeed is Test {
   }
 
   function testCannotSetInvalidForwardConfidence() public {
-    ILyraForwardFeed.ForwardData memory fwdData = _getDefaultForwardData();
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = _getDefaultForwardData();
     fwdData.confidence = 1.01e18;
     bytes memory data = _getSignedForwardData(pk, fwdData);
 
@@ -198,10 +221,10 @@ contract UNIT_LyraForwardFeed is Test {
     feed.acceptData(data);
   }
 
-  function _getDefaultForwardData() internal view returns (ILyraForwardFeed.ForwardData memory) {
-    return ILyraForwardFeed.ForwardData({
+  function _getDefaultForwardData() internal view returns (ILyraForwardFeed.ForwardAndSettlementData memory) {
+    return ILyraForwardFeed.ForwardAndSettlementData({
       expiry: defaultExpiry,
-      forwardPrice: 1000e18,
+      fwdSpotDifference: 10e18,
       settlementStartAggregate: 1050e18 * uint(defaultExpiry - feed.SETTLEMENT_TWAP_DURATION()),
       currentSpotAggregate: 1050e18 * uint(defaultExpiry),
       confidence: 1e18,
@@ -212,7 +235,7 @@ contract UNIT_LyraForwardFeed is Test {
     });
   }
 
-  function _getSignedForwardData(uint privateKey, ILyraForwardFeed.ForwardData memory fwdData)
+  function _getSignedForwardData(uint privateKey, ILyraForwardFeed.ForwardAndSettlementData memory fwdData)
     internal
     view
     returns (bytes memory data)
@@ -221,7 +244,7 @@ contract UNIT_LyraForwardFeed is Test {
     return abi.encode(fwdData);
   }
 
-  function _signForwardData(uint privateKey, ILyraForwardFeed.ForwardData memory fwdData)
+  function _signForwardData(uint privateKey, ILyraForwardFeed.ForwardAndSettlementData memory fwdData)
     internal
     view
     returns (bytes memory)

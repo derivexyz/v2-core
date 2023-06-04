@@ -12,6 +12,7 @@ import "src/assets/PerpAsset.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
+import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract UNIT_PerpOIAndCap is Test {
   PerpAsset perp;
@@ -19,6 +20,7 @@ contract UNIT_PerpOIAndCap is Test {
   MockManager manager2;
   SubAccounts subAccounts;
   MockFeeds feed;
+  MockSpotDiffFeed perpFeed;
 
   // users
   address alice = address(0xaaaa);
@@ -35,13 +37,14 @@ contract UNIT_PerpOIAndCap is Test {
   function setUp() public {
     subAccounts = new SubAccounts("Lyra", "LYRA");
     feed = new MockFeeds();
+    perpFeed = new MockSpotDiffFeed(feed);
 
     manager = new MockManager(address(subAccounts));
     manager2 = new MockManager(address(subAccounts));
     perp = new PerpAsset(subAccounts, 0.0075e18);
 
     perp.setSpotFeed(feed);
-    perp.setPerpFeed(feed);
+    perp.setPerpFeed(perpFeed);
 
     manager = new MockManager(address(subAccounts));
 

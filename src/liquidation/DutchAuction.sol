@@ -16,8 +16,6 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title Dutch Auction
  * @author Lyra
@@ -279,6 +277,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @return uint the step that the auction is on
    */
   function continueInsolventAuction(uint accountId) external returns (uint) {
+    // todo: check terminated
+
     Auction storage auction = auctions[accountId];
     if (!auction.insolvent) {
       revert DA_SolventAuctionCannotIncrement();
@@ -482,13 +482,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     cashFromBidder = bidPrice.toUint256().multiplyDecimal(percentLiquidated);
 
-    currentAuction.percentageLeft -= percentLiquidated;
-    currentAuction.reservedCash += cashFromBidder;
-
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
-      accountId, bidderId, convertedPercentage, cashFromBidder
+      accountId, bidderId, convertedPercentage, cashFromBidder, currentAuction.reservedCash
     );
+
+    currentAuction.reservedCash += cashFromBidder;
+    currentAuction.percentageLeft -= percentLiquidated;
 
     return (canTerminate, percentLiquidated, cashFromBidder);
   }
@@ -503,7 +503,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     internal
     returns (bool canTerminate, uint percentLiquidated, uint cashToBidder)
   {
-    uint percentageOfOriginalLeft = auctions[accountId].percentageLeft;
+    Auction storage currentAuction = auctions[accountId];
+
+    uint percentageOfOriginalLeft = currentAuction.percentageLeft;
     percentLiquidated = percentOfAccount > percentageOfOriginalLeft ? percentageOfOriginalLeft : percentOfAccount;
 
     // the account is insolvent when the bid price for the account falls below zero
@@ -520,12 +522,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // risk manager transfers portion of the account to the bidder, liquidator pays 0
     uint percentageOfCurrent = percentLiquidated.divideDecimal(percentageOfOriginalLeft);
 
-    auctions[accountId].percentageLeft -= percentLiquidated;
+    currentAuction.percentageLeft -= percentLiquidated;
 
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
-      accountId, bidderId, percentageOfCurrent, 0
+      accountId, bidderId, percentageOfCurrent, 0, currentAuction.reservedCash
     );
-    canTerminate = auctions[accountId].percentageLeft == 0;
+    canTerminate = currentAuction.percentageLeft == 0;
   }
 
   /**
@@ -602,8 +604,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // still during the fast auction
     if (timeElapsed < params.fastAuctionLength) {
       uint totalChangeInFastAuction = params.startingMtMPercentage - params.fastAuctionCutoffPercentage;
-      discount = params.startingMtMPercentage
-        - totalChangeInFastAuction.multiplyDecimal(timeElapsed).divideDecimal(params.fastAuctionLength);
+      discount = params.startingMtMPercentage - totalChangeInFastAuction * timeElapsed / params.fastAuctionLength;
       isFast = true;
     } else if (timeElapsed > params.fastAuctionLength + params.slowAuctionLength) {
       // whole solvent auction is over

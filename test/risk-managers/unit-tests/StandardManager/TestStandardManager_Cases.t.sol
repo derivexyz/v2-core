@@ -196,6 +196,15 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
       ethFeed.setSpot(ethSpotPrice, confs[0][0]);
       btcFeed.setSpot(btcSpotPrice, confs[1][0]);
+
+      // set perp feed
+      uint[] memory perpPrices = json.readUintArray(string.concat(testId, ".Scenario.PerpPrice"));
+      ethPerp.setMockPerpPrice(perpPrices[0], confs[0][1]);
+      btcPerp.setMockPerpPrice(perpPrices[1], confs[1][1]);
+
+      // set stable feed
+      uint usdcPrice = json.readUint(string.concat(testId, ".Scenario.USDCValue"));
+      stableFeed.setSpot(usdcPrice, 1e18);
     }
 
     string[] memory optionUnderlying = json.readStringArray(string.concat(testId, ".Scenario.OptionUnderlying"));
@@ -229,17 +238,6 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       }
     }
 
-    {
-      // set perp feed
-      uint[] memory perpPrices = json.readUintArray(string.concat(testId, ".Scenario.PerpPrice"));
-      ethPerpFeed.setSpot(perpPrices[0], confs[0][1]);
-      btcPerpFeed.setSpot(perpPrices[1], confs[1][1]);
-
-      // set stable feed
-      uint usdcPrice = json.readUint(string.concat(testId, ".Scenario.USDCValue"));
-      stableFeed.setSpot(usdcPrice, 1e18);
-    }
-
     // put options into balances
     // number of assets: cash + eth perp + btc perp + number of options
     // string[] memory optionUnderlying = json.readStringArray(string.concat(testId, ".Scenario.OptionUnderlying"));
@@ -267,7 +265,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       // set mocked pnl
       {
         int ethEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryETH"));
-        (uint perpPrice,) = ethPerpFeed.getSpot();
+        (uint perpPrice,) = ethPerp.getPerpPrice();
         int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
         int funding = _getPerpFunding(json, testId, ethPerpBalance, true);
         ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
@@ -275,7 +273,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
       {
         int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
-        (uint perpPrice,) = btcPerpFeed.getSpot();
+        (uint perpPrice,) = btcPerp.getPerpPrice();
         int pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);
         int funding = _getPerpFunding(json, testId, btcPerpBalance, false);
         btcPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
@@ -299,7 +297,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         uint64 expiry = uint64(block.timestamp + expiries[i]);
         uint128 strike = uint128(strikes[i]) / 1e10 * 1e10; // removing dust
 
-        feed.setVol(expiry, strike, uint128(vols[i]), uint64(volConfs[i]));
+        feed.setVol(expiry, strike, vols[i], volConfs[i]);
 
         IAsset asset = isEth ? ethOption : btcOption;
         uint subId = OptionEncoding.toSubId(expiry, strike, isCalls[i] == 1);

@@ -6,6 +6,7 @@ import "./IForwardFeed.sol";
 import "./IInterestRateFeed.sol";
 import "./IVolFeed.sol";
 import "./ISettlementFeed.sol";
+import "./ISpotDiffFeed.sol";
 
 interface IPMRM {
   enum VolShockDirection {
@@ -16,7 +17,6 @@ interface IPMRM {
 
   struct Feeds {
     ISpotFeed spotFeed;
-    ISpotFeed perpFeed;
     ISpotFeed stableFeed;
     IForwardFeed forwardFeed;
     IInterestRateFeed interestRateFeed;

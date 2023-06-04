@@ -20,8 +20,10 @@ import "src/risk-managers/PMRM.sol";
 
 import "src/feeds/OptionPricing.sol";
 
+
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
+import "../../shared/mocks/MockSpotDiffFeed.sol";
 
 /**
  * @dev real Accounts contract
@@ -61,6 +63,9 @@ contract IntegrationTestBase is Test {
   MockFeeds ethFeed;
   MockFeeds btcFeed;
   MockFeeds stableFeed;
+
+  MockSpotDiffFeed ethPerpFeed;
+  MockSpotDiffFeed btcPerpFeed;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
@@ -141,6 +146,9 @@ contract IntegrationTestBase is Test {
     pricing = new OptionPricing();
 
     stableFeed = new MockFeeds();
+
+    ethPerpFeed = new MockSpotDiffFeed(ethFeed);
+    // btcPerpFeed = new MockSpotDiffFeed(feed);
   }
 
   function _setupAssets() internal {
@@ -167,7 +175,7 @@ contract IntegrationTestBase is Test {
     srm.whitelistAsset(ethBase, ethMarketId, IStandardManager.AssetType.Base);
 
     // set oracles
-    srm.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
+    srm.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed);
 
     // set params
     IStandardManager.OptionMarginParameters memory params = IStandardManager.OptionMarginParameters({

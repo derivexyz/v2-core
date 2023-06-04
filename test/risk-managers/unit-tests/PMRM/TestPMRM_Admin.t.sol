@@ -276,7 +276,7 @@ contract TestPMRM_Admin is PMRMTestBase {
     pmrm.setVolShockParams(volShockParams);
     volShockParams.longTermPower = 4;
 
-    volShockParams.dteFloor = 10 days + 1;
+    volShockParams.dteFloor = 100 days + 1;
     vm.expectRevert(IPMRMLib.PMRML_InvalidVolShockParameters.selector);
     pmrm.setVolShockParams(volShockParams);
     volShockParams.dteFloor = 864;

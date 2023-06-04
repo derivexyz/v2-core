@@ -24,7 +24,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
   using SafeCast for uint;
   using SafeCast for int;
 
-  ///@dev The token address for the wrapped asset
+  /// @dev The token address for the wrapped asset
   IERC20Metadata public immutable wrappedAsset;
   uint8 public immutable assetDecimals;
 
@@ -111,6 +111,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    // TODO: do we even need whitelist?
     _checkManager(address(manager));
 
     _takeTotalOISnapshotPreTrade(manager, tradeId);

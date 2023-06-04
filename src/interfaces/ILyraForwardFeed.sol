@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
+import "./ISpotFeed.sol";
+
 interface ILyraForwardFeed {
-  struct ForwardData {
+  struct ForwardAndSettlementData {
     uint64 expiry;
-    uint96 forwardPrice;
+    // Difference between forward price and spot price
+    int96 fwdSpotDifference;
     uint settlementStartAggregate;
     uint currentSpotAggregate;
     uint64 confidence;
@@ -18,7 +21,7 @@ interface ILyraForwardFeed {
 
   /// @dev structure to store in contract storage
   struct ForwardDetails {
-    uint96 forwardPrice;
+    int96 fwdSpotDifference;
     uint64 confidence;
     uint64 timestamp;
   }
@@ -31,6 +34,7 @@ interface ILyraForwardFeed {
   ////////////////////////
   //       Events       //
   ////////////////////////
+  event SpotFeedUpdated(ISpotFeed spotFeed);
   event SettlementHeartbeatUpdated(uint64 settlementHeartbeat);
   event ForwardDataUpdated(
     uint64 indexed expiry, address indexed signer, ForwardDetails fwdDetails, SettlementDetails settlementDetails

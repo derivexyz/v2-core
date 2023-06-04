@@ -32,8 +32,6 @@ import {BaseManager} from "./BaseManager.sol";
 
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title StandardManager
  * @author Lyra
@@ -75,9 +73,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /// @dev Mapping from marketId to spot price oracle
   mapping(uint marketId => ISpotFeed) public spotFeeds;
 
-  /// @dev Mapping from marketId to market price of perps
-  mapping(uint marketId => ISpotFeed) public perpFeeds;
-
   /// @dev Mapping from marketId to settlement price oracle
   mapping(uint marketId => ISettlementFeed) public settlementFeeds;
 
@@ -118,21 +113,17 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function setOraclesForMarket(
     uint8 marketId,
     ISpotFeed spotFeed,
-    ISpotFeed perpFeed,
     IForwardFeed forwardFeed,
     ISettlementFeed settlementFeed,
     IVolFeed volFeed
   ) external onlyOwner {
     // registered asset
     spotFeeds[marketId] = spotFeed;
-    perpFeeds[marketId] = perpFeed;
     forwardFeeds[marketId] = forwardFeed;
     settlementFeeds[marketId] = settlementFeed;
     volFeeds[marketId] = volFeed;
 
-    emit OraclesSet(
-      marketId, address(spotFeed), address(perpFeed), address(forwardFeed), address(settlementFeed), address(volFeed)
-    );
+    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(settlementFeed), address(volFeed));
   }
 
   /**
@@ -315,6 +306,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
       (int preIM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, true);
 
+      // TODO: use MM not im
       // allow the trade to pass if the net margin increased
       if (postIM > preIM) return;
 
@@ -514,7 +506,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     if (position == 0) return 0;
 
     // while calculating margin for perp, we use the perp market price oracle
-    (uint perpPrice, uint confidence) = perpFeeds[marketHolding.marketId].getSpot();
+    (uint perpPrice, uint confidence) = marketHolding.perp.getPerpPrice();
     uint notional = SignedMath.abs(position).multiplyDecimal(perpPrice);
     uint requirement = isInitial
       ? perpMarginRequirements[marketHolding.marketId].imRequirement
@@ -742,8 +734,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
       if (detail.assetType == AssetType.Perpetual) {
         IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
-        ISpotFeed perpFeed = perpFeeds[detail.marketId];
-        fee += _getPerpOIFee(perp, perpFeed, assetDeltas[i].delta, tradeId);
+        fee += _getPerpOIFee(perp, assetDeltas[i].delta, tradeId);
       } else if (detail.assetType == AssetType.Option) {
         IOption option = IOption(address(assetDeltas[i].asset));
         IForwardFeed forwardFeed = forwardFeeds[detail.marketId];
@@ -800,8 +791,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     (uint vol,) = volFeeds[marketId].getVol(uint128(optionPos.strike), uint64(expiry));
     markToMarket =
       _getMarkToMarket(marketId, optionPos.balance, forwardPrice, optionPos.strike, expiry, vol, optionPos.isCall);
-
-    console2.log("indexPrice", indexPrice);
 
     // a long position doesn't have any "margin", cannot be used to offset other positions
     if (optionPos.balance > 0) return (margin, markToMarket);

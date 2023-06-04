@@ -7,7 +7,7 @@ import "forge-std/console2.sol";
 contract TestPMRM_OIFee is PMRMTestBase {
   function testChargeOIFees() public {
     _depositCash(aliceAcc, 20000e18); // trade id = 1
-    pmrm.setOIFeeRateBPS(0.001e18);
+    pmrm.setOIFeeRateBPS(address(option), 0.001e18);
 
     uint expiry = block.timestamp + 1 days;
     uint strike = 3000e18;
@@ -32,7 +32,7 @@ contract TestPMRM_OIFee is PMRMTestBase {
 
   function chargesMinOIFeeIfLarger() public {
     _depositCash(aliceAcc, 20000e18); // trade id = 1
-    pmrm.setOIFeeRateBPS(0.001e18);
+    pmrm.setOIFeeRateBPS(address(option), 0.001e18);
 
     uint expiry = block.timestamp + 1 days;
     uint strike = 3000e18;

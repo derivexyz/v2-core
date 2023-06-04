@@ -28,8 +28,6 @@ import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAllowList} from "src/interfaces/IAllowList.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title BaseManager
  * @notice Base contract for all managers. Handles OI fee, settling, liquidations and allowList. Also provides other
@@ -49,6 +47,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
+  /// @dev Dutch auction contract address, can trigger execute bid
+  IDutchAuction public immutable liquidation;
+
   /// @dev AllowList contract address
   IAllowList public allowList;
 
@@ -57,9 +58,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
-
-  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
-  uint public OIFeeRateBPS = 0;
 
   /// @dev minimum OI fee charged, given fee is > 0.
   uint public minOIFee = 0;
@@ -70,10 +68,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev keep track of the last tradeId that this manager updated before, to prevent double update
   uint public lastOracleUpdateTradeId;
 
-  IDutchAuction public immutable liquidation;
-
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
   mapping(address sender => bool) public feeBypassedCaller;
+
+  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
+  mapping(address asset => uint) public OIFeeRateBPS;
 
   constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
     subAccounts = _subAccounts;
@@ -111,14 +110,14 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev Charged fee = contract traded * OIFee * spot
    * @param newFeeRate OI fee rate in BPS
    */
-  function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
+  function setOIFeeRateBPS(address asset, uint newFeeRate) external onlyOwner {
     if (newFeeRate > 0.2e18) {
       revert BM_OIFeeRateTooHigh();
     }
 
-    OIFeeRateBPS = newFeeRate;
+    OIFeeRateBPS[asset] = newFeeRate;
 
-    emit OIFeeRateSet(OIFeeRateBPS);
+    emit OIFeeRateSet(asset, newFeeRate);
   }
 
   function setMinOIFee(uint newMinOIFee) external onlyOwner {
@@ -164,9 +163,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param accountId ID of account which is being liquidated.
    * @param liquidatorId Liquidator account ID.
    * @param portion Portion of account that is requested to be liquidated.
-   * @param cashAmount Cash amount liquidator is offering for portion of account.
+   * @param bidAmount Cash amount liquidator is offering for portion of account.
+   * @param reservedCash Cash amount to ignore in liquidated account's balance.
    */
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external onlyLiquidations {
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint bidAmount, uint reservedCash)
+    external
+    onlyLiquidations
+  {
     if (portion > 1e18) revert BM_InvalidBidPortion();
 
     // check that liquidator only has cash and nothing else
@@ -182,17 +185,24 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     // transfer liquidated account's asset to liquidator
     for (uint i; i < assetBalances.length; i++) {
+      int ignoreAmount = 0;
+      if (assetBalances[i].asset == cashAsset) {
+        ignoreAmount = int(reservedCash);
+      }
+
       _symmetricManagerAdjustment(
         accountId,
         liquidatorId,
         assetBalances[i].asset,
         uint96(assetBalances[i].subId),
-        assetBalances[i].balance.multiplyDecimal(int(portion))
+        (assetBalances[i].balance - ignoreAmount).multiplyDecimal(int(portion))
       );
     }
 
-    // transfer cash (bid amount) to liquidated account
-    _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(cashAmount));
+    if (bidAmount != 0) {
+      // transfer cash (bid amount) to liquidated account
+      _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(bidAmount));
+    }
   }
 
   /**
@@ -288,23 +298,19 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
-    fee = SignedMath.abs(delta).multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS);
+    fee = SignedMath.abs(delta).multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS[address(asset)]);
   }
 
   /**
    * @notice calculate the perpetual OI fee.
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
    */
-  function _getPerpOIFee(IGlobalSubIdOITracking asset, ISpotFeed perpFeed, int delta, uint tradeId)
-    internal
-    view
-    returns (uint fee)
-  {
-    bool oiIncreased = _getOIIncreased(asset, 0, tradeId);
+  function _getPerpOIFee(IPerpAsset perpAsset, int delta, uint tradeId) internal view returns (uint fee) {
+    bool oiIncreased = _getOIIncreased(perpAsset, 0, tradeId);
     if (!oiIncreased) return 0;
 
-    (uint perpPrice,) = perpFeed.getSpot();
-    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS);
+    (uint perpPrice,) = perpAsset.getPerpPrice();
+    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS[address(perpAsset)]);
   }
 
   /**
@@ -316,6 +322,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     return oi > oiBefore;
   }
 
+  /**
+   * @dev pay fee, carry up to minFee
+   */
   function _payFee(uint accountId, uint fee) internal {
     // Only consider min fee if expected fee is > 0
     if (fee == 0 || feeRecipientAcc == 0) return;
@@ -369,6 +378,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       // skip non option asset
       if (balances[i].asset != option) continue;
 
+      // TODO: this is very broken, settlement feed reverts not returns 0 - pass in exact subIds? Or just check expiry?
       (int value, bool isSettled) = option.calcSettlementValue(balances[i].subId, balances[i].balance);
       if (!isSettled) continue;
 

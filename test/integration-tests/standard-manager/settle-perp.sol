@@ -14,6 +14,7 @@ contract INTEGRATION_PerpAssetSettlement is IntegrationTestBase {
 
   function setUp() public {
     // deploy contracts
+
     _setupIntegrationTestComplete();
 
     // open trades: Alice is Short, Bob is Long
@@ -88,11 +89,12 @@ contract INTEGRATION_PerpAssetSettlement is IntegrationTestBase {
   }
 
   function _setPerpPrices(uint price) internal {
-    perpFeed.setSpot(price, 1e18);
+  (uint spot,) = ethFeed.getSpot();
+    ethPerpFeed.setSpotDiff(int(price) - int(spot), 1e18);
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {
-    (uint entryPrice,, int pnl,,) = perp.positions(acc);
+    (uint entryPrice,, int pnl,,) = ethPerp.positions(acc);
     return (entryPrice, pnl);
   }
 

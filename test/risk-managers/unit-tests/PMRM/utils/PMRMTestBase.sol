@@ -27,6 +27,7 @@ import "test/shared/mocks/MockPerp.sol";
 import "src/feeds/OptionPricing.sol";
 import "test/risk-managers/unit-tests/PMRM/utils/PMRMPublic.sol";
 import "src/liquidation/DutchAuction.sol";
+import "../../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract PMRMTestBase is JsonMechIO {
   using stdJson for string;
@@ -42,7 +43,7 @@ contract PMRMTestBase is JsonMechIO {
   DutchAuction auction;
   MockSM sm;
   MockFeeds feed;
-  MockFeeds perpFeed;
+  MockSpotDiffFeed perpFeed;
   MockFeeds stableFeed;
   uint feeRecipient;
   OptionPricing optionPricing;
@@ -59,11 +60,10 @@ contract PMRMTestBase is JsonMechIO {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeeds();
-    perpFeed = new MockFeeds();
+    perpFeed = new MockSpotDiffFeed(feed);
     stableFeed = new MockFeeds();
     feed.setSpot(1500e18, 1e18);
     stableFeed.setSpot(1e18, 1e18);
-    perpFeed.setSpot(1500e18, 1e18);
 
     usdc = new MockERC20("USDC", "USDC");
     weth = new MockERC20("weth", "weth");
@@ -87,7 +87,6 @@ contract PMRMTestBase is JsonMechIO {
       auction,
       IPMRM.Feeds({
     spotFeed: ISpotFeed(feed),
-    perpFeed: ISpotFeed(perpFeed),
     stableFeed: ISpotFeed(stableFeed),
     forwardFeed: IForwardFeed(feed),
     interestRateFeed: IInterestRateFeed(feed),
@@ -123,7 +122,7 @@ contract PMRMTestBase is JsonMechIO {
 
     IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
       pegLossThreshold: 0.98e18,
-      pegLossFactor: 0.01e18,
+      pegLossFactor: 2e18,
       confThreshold: 0.6e18,
       confMargin: 0.5e18,
       basePercent: 0.02e18,
@@ -195,8 +194,8 @@ contract PMRMTestBase is JsonMechIO {
 
       for (uint j = 0; j < expiry.options.length; j++) {
         console2.log(expiry.options[j].isCall ? "- CALL" : "- PUT");
-        console2.log("- strike:", expiry.options[j].strike / 1e18);
-        console2.log("- amount:", expiry.options[j].amount / 1e18);
+        console2.log("- strike:", expiry.options[j].strike);
+        console2.log("- amount:", expiry.options[j].amount);
       }
     }
   }

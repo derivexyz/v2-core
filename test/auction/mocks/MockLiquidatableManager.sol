@@ -30,7 +30,7 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   function settleInterest(uint accountId) external {}
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external {
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint reservedCash) external {
     // do nothing
   }
 

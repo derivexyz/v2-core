@@ -8,19 +8,20 @@ import "../../../shared/mocks/MockFeeds.sol";
 
 import "../../../../src/assets/PerpAsset.sol";
 import "../../../../src/interfaces/ISubAccounts.sol";
+import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract UNIT_PerpAssetHook is Test {
   PerpAsset perp;
   MockManager manager;
   address account;
   MockFeeds spotFeed;
-  MockFeeds perpFeed;
+  MockSpotDiffFeed perpFeed;
 
   function setUp() public {
     account = address(0xaa);
 
     spotFeed = new MockFeeds();
-    perpFeed = new MockFeeds();
+    perpFeed = new MockSpotDiffFeed(spotFeed);
 
     manager = new MockManager(account);
 
@@ -30,7 +31,6 @@ contract UNIT_PerpAssetHook is Test {
     perp.setPerpFeed(perpFeed);
 
     spotFeed.setSpot(1500e18, 1e18);
-    perpFeed.setSpot(1500e18, 1e18);
   }
 
   function testCannotCallHandleAdjustmentFromNonAccount() public {

@@ -26,7 +26,7 @@ interface IBaseManager is IManager {
 
   function feeCharged(uint tradeId, uint account) external view returns (uint);
 
-  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount) external;
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint cashAmount, uint reservedCash) external;
 
   function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external;
 
@@ -35,7 +35,7 @@ interface IBaseManager is IManager {
   ////////////////
 
   /// @dev Emitted when OI fee rate is set
-  event OIFeeRateSet(uint oiFeeRate);
+  event OIFeeRateSet(address asset, uint oiFeeRate);
   event MinOIFeeSet(uint minOIFee);
   event PerpSettled(uint indexed accountId, int netCash);
   event FeeBypassedCallerSet(address caller, bool bypassed);

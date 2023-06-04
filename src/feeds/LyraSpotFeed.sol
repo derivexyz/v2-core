@@ -36,9 +36,9 @@ contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
    * @return spotPrice Spot price with 18 decimals.
    */
   function getSpot() public view returns (uint, uint) {
-    SpotDetail memory spot = spotDetail;
+    _checkNotStale(spotDetail.timestamp);
 
-    return (spot.price, spot.confidence);
+    return (spotDetail.price, spotDetail.confidence);
   }
 
   /**

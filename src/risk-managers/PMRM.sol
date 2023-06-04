@@ -24,8 +24,10 @@ import "src/interfaces/IWrappedERC20Asset.sol";
 
 import "src/risk-managers/BaseManager.sol";
 
-import "forge-std/console2.sol";
 import "src/risk-managers/PMRMLib.sol";
+import "../interfaces/ISpotDiffFeed.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title PMRM
@@ -48,7 +50,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   IWrappedERC20Asset public immutable baseAsset;
 
   ISpotFeed public spotFeed;
-  ISpotFeed public perpFeed;
   IInterestRateFeed public interestRateFeed;
   IVolFeed public volFeed;
   ISpotFeed public stableFeed;
@@ -78,7 +79,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     Feeds memory feeds_
   ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, liquidation_) {
     spotFeed = feeds_.spotFeed;
-    perpFeed = feeds_.perpFeed;
     stableFeed = feeds_.stableFeed;
     forwardFeed = feeds_.forwardFeed;
     interestRateFeed = feeds_.interestRateFeed;
@@ -252,6 +252,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
           _arrangePortfolio(accountId, _undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
         (int preIM,) = _getMarginAndMarkToMarket(prePortfolio, true, marginScenarios, true);
+        // TODO: use MM
         if (postIM < preIM) {
           revert PMRM_InsufficientMargin();
         }
@@ -274,18 +275,18 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
-    (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
-    portfolio.perpPrice = perpPrice;
-    portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
-
-    (uint stablePrice, uint stableConfidence) = stableFeed.getSpot();
-    if (stableConfidence < portfolio.minConfidence) {
-      portfolio.minConfidence = stableConfidence;
-    }
+    (uint stablePrice,) = stableFeed.getSpot();
     portfolio.stablePrice = stablePrice;
 
     _initialiseExpiries(portfolio, expiryCount);
     _arrangeOptions(accountId, portfolio, assets, expiryCount);
+
+    if (portfolio.perpPosition != 0) {
+      (uint perpPrice, uint perpConfidence) = perp.getPerpPrice();
+      portfolio.perpPrice = perpPrice;
+      portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
+    }
+
     _addPrecomputes(portfolio, addForwardCont);
 
     return portfolio;
@@ -344,9 +345,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       (uint forwardFixedPortion, uint forwardVariablePortion, uint fwdConfidence) =
         forwardFeed.getForwardPricePortions(expiryCount[i].expiry);
-      (int64 rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
+      (int rate, uint rateConfidence) = interestRateFeed.getInterestRate(expiryCount[i].expiry);
+      // We dont compare this to the portfolio.minConfidence yet - we do that in preComputes
       uint minConfidence = Math.min(fwdConfidence, rateConfidence);
-      minConfidence = Math.min(portfolio.minConfidence, minConfidence);
 
       // if an option just expired few seconds ago, also set secToExpiry to 0
       uint64 secToExpiry =
@@ -439,7 +440,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       if (address(assetDeltas[i].asset) == address(option)) {
         fee += _getOptionOIFee(option, forwardFeed, assetDeltas[i].delta, assetDeltas[i].subId, tradeId);
       } else if (address(assetDeltas[i].asset) == address(perp)) {
-        fee += _getPerpOIFee(perp, perpFeed, assetDeltas[i].delta, tradeId);
+        fee += _getPerpOIFee(perp, assetDeltas[i].delta, tradeId);
       }
     }
 
@@ -498,7 +499,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
    * @dev if the returned value is negative, it means the account is under margin requirement
    */
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, subAccounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
     (int margin,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
     return margin;
   }

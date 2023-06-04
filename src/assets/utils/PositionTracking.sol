@@ -17,10 +17,10 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
   using SafeCast for uint;
   using SafeCast for int;
 
-  ///@dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
+  /// @dev Cap on each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager => uint) public totalPositionCap;
 
-  ///@dev Each manager's max position sum. This aggregates .abs() of all opened position
+  /// @dev Each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint) public totalPosition;
 
   mapping(IManager manager => mapping(uint tradeId => OISnapshot)) public totalPositionBeforeTrade;

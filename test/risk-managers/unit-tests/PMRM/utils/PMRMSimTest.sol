@@ -41,27 +41,53 @@ contract PMRMSimTest is PMRMTestBase {
     int cashAmount;
     int perpAmount;
     uint baseAmount;
+    int perpUnrealisedPNL;
+    int perpUnrealisedFunding;
   }
 
   struct FeedData {
+    uint perpPrice;
+    uint perpConfidence;
     uint spotPrice;
     uint spotConfidence;
     uint stablePrice;
     uint stableConfidence;
     uint[] expiries;
     uint[] forwards;
+    uint[] forwardsVariable;
+    uint[] forwardsFixed;
     uint[] forwardConfidences;
     int[] rates;
     uint[] rateConfidences;
   }
 
+  struct Result {
+    int perpContingency;
+    int baseContingency;
+    int unrealisedPerpPNL;
+    int unrealisedFunding;
+    int optionContingency;
+    int forwardContingency;
+    int oracleContingency;
+    int lossFactor;
+    int worstCaseSpotShock;
+    int worstCaseVolShock;
+    int worstCaseMTM;
+    int cash;
+    int portfolioMTM;
+    int initialMarginHand;
+    int maintenanceMarginHand;
+    int initialMarginCalc;
+    int maintenanceMarginCalc;
+  }
+
   function readOptionData(string memory json, string memory testId) internal pure returns (OptionData[] memory) {
-    uint[] memory expiries = json.readUintArray(string.concat(testId, ".OptionExpiries"));
-    uint[] memory strikes = json.readUintArray(string.concat(testId, ".OptionStrikes"));
-    uint[] memory isCall = json.readUintArray(string.concat(testId, ".OptionIsCall"));
-    int[] memory amounts = json.readIntArray(string.concat(testId, ".OptionAmounts"));
-    uint[] memory vols = json.readUintArray(string.concat(testId, ".OptionVols"));
-    uint[] memory confidences = json.readUintArray(string.concat(testId, ".OptionVolConfidences"));
+    uint[] memory expiries = json.readUintArray(string.concat(testId, ".Scenario.OptionExpiries"));
+    uint[] memory strikes = json.readUintArray(string.concat(testId, ".Scenario.OptionStrikes"));
+    uint[] memory isCall = json.readUintArray(string.concat(testId, ".Scenario.OptionIsCall"));
+    int[] memory amounts = json.readIntArray(string.concat(testId, ".Scenario.OptionAmounts"));
+    uint[] memory vols = json.readUintArray(string.concat(testId, ".Scenario.OptionVols"));
+    uint[] memory confidences = json.readUintArray(string.concat(testId, ".Scenario.OptionVolConfidences"));
 
     OptionData[] memory data = new OptionData[](expiries.length);
 
@@ -87,48 +113,67 @@ contract PMRMSimTest is PMRMTestBase {
 
   function readOtherAssetData(string memory json, string memory testId) internal pure returns (OtherAssets memory) {
     uint count = 0;
-    int cashAmount = json.readInt(string.concat(testId, ".Cash"));
+    int cashAmount = json.readInt(string.concat(testId, ".Scenario.Cash"));
     if (cashAmount != 0) {
       count++;
     }
-    int perpAmount = json.readInt(string.concat(testId, ".Perps"));
+    int perpAmount = json.readInt(string.concat(testId, ".Scenario.Perps"));
     if (perpAmount != 0) {
       count++;
     }
-    uint baseAmount = json.readUint(string.concat(testId, ".Base"));
+    uint baseAmount = json.readUint(string.concat(testId, ".Scenario.Base"));
     if (baseAmount != 0) {
       count++;
     }
 
-    return OtherAssets({count: count, cashAmount: cashAmount, perpAmount: perpAmount, baseAmount: baseAmount});
+    return OtherAssets({
+      count: count,
+      cashAmount: cashAmount,
+      perpAmount: perpAmount,
+      baseAmount: baseAmount,
+      perpUnrealisedPNL: json.readInt(string.concat(testId, ".Scenario.UnrealizedPerpPNL")),
+      perpUnrealisedFunding: json.readInt(string.concat(testId, ".Scenario.UnrealizedFunding"))
+    });
   }
 
-  function readFeedData(string memory json, string memory testId) internal pure returns (FeedData memory) {
-    uint spotPrice = json.readUint(string.concat(testId, ".SpotPrice"));
-    uint spotConfidence = json.readUint(string.concat(testId, ".SpotConfidence"));
-    uint stablePrice = json.readUint(string.concat(testId, ".StablePrice"));
-    uint stableConfidence = json.readUint(string.concat(testId, ".StableConfidence"));
-    uint[] memory expiries = json.readUintArray(string.concat(testId, ".FeedExpiries"));
-    uint[] memory forwards = json.readUintArray(string.concat(testId, ".Forwards"));
-    uint[] memory forwardConfidences = json.readUintArray(string.concat(testId, ".ForwardConfidences"));
-    int[] memory rates = json.readIntArray(string.concat(testId, ".Rates"));
-    uint[] memory rateConfidences = json.readUintArray(string.concat(testId, ".RateConfidences"));
+  function readFeedData(string memory json, string memory testId) internal pure returns (FeedData memory feedData) {
+    feedData.spotPrice = json.readUint(string.concat(testId, ".Scenario.SpotPrice"));
+    feedData.spotConfidence = json.readUint(string.concat(testId, ".Scenario.SpotConfidence"));
+    feedData.stablePrice = json.readUint(string.concat(testId, ".Scenario.StablePrice"));
+    feedData.stableConfidence = json.readUint(string.concat(testId, ".Scenario.StableConfidence"));
+    feedData.expiries = json.readUintArray(string.concat(testId, ".Scenario.FeedExpiries"));
+    // TODO: this should only be variable and fixed
+    feedData.forwards = json.readUintArray(string.concat(testId, ".Scenario.Forwards"));
+    feedData.forwardsVariable = json.readUintArray(string.concat(testId, ".Scenario.ForwardsVariable"));
+    feedData.forwardsFixed = json.readUintArray(string.concat(testId, ".Scenario.ForwardsFixed"));
+    feedData.forwardConfidences = json.readUintArray(string.concat(testId, ".Scenario.ForwardConfidences"));
+    feedData.rates = json.readIntArray(string.concat(testId, ".Scenario.Rates"));
+    feedData.rateConfidences = json.readUintArray(string.concat(testId, ".Scenario.RateConfidences"));
+    feedData.perpPrice = json.readUint(string.concat(testId, ".Scenario.PerpPrice"));
+    feedData.perpConfidence = json.readUint(string.concat(testId, ".Scenario.PerpConfidence"));
 
-    require(expiries.length == forwards.length, "forwards length mismatch");
-    require(expiries.length == forwardConfidences.length, "forwardConfidences length mismatch");
-    require(expiries.length == rates.length, "rates length mismatch");
-    require(expiries.length == rateConfidences.length, "rateConfidences length mismatch");
+    return feedData;
+  }
 
-    return FeedData({
-      spotPrice: spotPrice,
-      spotConfidence: spotConfidence,
-      stablePrice: stablePrice,
-      stableConfidence: stableConfidence,
-      expiries: expiries,
-      forwards: forwards,
-      forwardConfidences: forwardConfidences,
-      rates: rates,
-      rateConfidences: rateConfidences
+  function readResults(string memory json, string memory testId) internal pure returns (Result memory) {
+    return Result({
+      perpContingency: json.readInt(string.concat(testId, ".Result.PerpContingency")),
+      baseContingency: json.readInt(string.concat(testId, ".Result.BaseContingency")),
+      unrealisedPerpPNL: json.readInt(string.concat(testId, ".Result.UnrealisedPerpPNL")),
+      unrealisedFunding: json.readInt(string.concat(testId, ".Result.UnrealisedFunding")),
+      optionContingency: json.readInt(string.concat(testId, ".Result.OptionContingency")),
+      forwardContingency: json.readInt(string.concat(testId, ".Result.ForwardContingency")),
+      oracleContingency: json.readInt(string.concat(testId, ".Result.OracleContingency")),
+      lossFactor: json.readInt(string.concat(testId, ".Result.LossFactor")),
+      worstCaseSpotShock: json.readInt(string.concat(testId, ".Result.MinSpan[0][0]")),
+      worstCaseVolShock: json.readInt(string.concat(testId, ".Result.MinSpan[0][1]")),
+      worstCaseMTM: json.readInt(string.concat(testId, ".Result.MinSpan[1]")),
+      cash: json.readInt(string.concat(testId, ".Result.Cash")),
+      portfolioMTM: json.readInt(string.concat(testId, ".Result.PortfolioMTM")),
+      initialMarginHand: json.readInt(string.concat(testId, ".Result.InitialMarginHand")),
+      maintenanceMarginHand: json.readInt(string.concat(testId, ".Result.MaintenanceMarginHand")),
+      initialMarginCalc: json.readInt(string.concat(testId, ".Result.InitialMarginCalc")),
+      maintenanceMarginCalc: json.readInt(string.concat(testId, ".Result.MaintenanceMarginCalc"))
     });
   }
 
@@ -152,6 +197,7 @@ contract PMRMSimTest is PMRMTestBase {
     }
 
     stableFeed.setSpot(feedData.stablePrice, feedData.stableConfidence);
+    mockPerp.setMockPerpPrice(feedData.perpPrice, feedData.perpConfidence);
 
     /// Get assets for user
 
@@ -167,9 +213,7 @@ contract PMRMSimTest is PMRMTestBase {
         balance: optionData[i].amount
       });
 
-      feed.setVol(
-        uint64(expiry), uint128(optionData[i].strike), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
-      );
+      feed.setVol(uint64(expiry), uint128(optionData[i].strike), optionData[i].vol, optionData[i].volConfidence);
     }
 
     if (otherAssets.cashAmount != 0) {
@@ -185,5 +229,79 @@ contract PMRMSimTest is PMRMTestBase {
         ISubAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
     }
     return balances;
+  }
+
+  function setupTestScenarioAndVerifyResults(string memory testId)
+    internal
+    returns (ISubAccounts.AssetBalance[] memory balances)
+  {
+    uint referenceTime = block.timestamp;
+    string memory json = JsonMechIO.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM/testAndVerifyScenarios.json");
+
+    FeedData memory feedData = readFeedData(json, testId);
+    OptionData[] memory optionData = readOptionData(json, testId);
+    OtherAssets memory otherAssets = readOtherAssetData(json, testId);
+
+    /// Set feed values
+    feed.setSpot(feedData.spotPrice, feedData.spotConfidence);
+    for (uint i = 0; i < feedData.expiries.length; i++) {
+      uint expiry = referenceTime + uint(feedData.expiries[i]);
+      feed.setForwardPricePortions(
+        expiry, feedData.forwardsFixed[i], feedData.forwardsVariable[i], feedData.forwardConfidences[i]
+      );
+      feed.setInterestRate(expiry, int64(feedData.rates[i]), uint64(feedData.rateConfidences[i]));
+    }
+
+    stableFeed.setSpot(feedData.stablePrice, feedData.stableConfidence);
+    mockPerp.setMockPerpPrice(feedData.perpPrice, feedData.perpConfidence);
+    /// Get assets for user
+
+    uint totalAssets = optionData.length + otherAssets.count;
+
+    balances = new ISubAccounts.AssetBalance[](totalAssets);
+
+    for (uint i = 0; i < optionData.length; ++i) {
+      uint expiry = referenceTime + uint(optionData[i].secToExpiry);
+      balances[i] = ISubAccounts.AssetBalance({
+        asset: IAsset(option),
+        subId: OptionEncoding.toSubId(expiry, uint(optionData[i].strike), optionData[i].isCall),
+        balance: optionData[i].amount
+      });
+
+      feed.setVol(uint64(expiry), uint128(optionData[i].strike), optionData[i].vol, optionData[i].volConfidence);
+    }
+
+    if (otherAssets.cashAmount != 0) {
+      balances[balances.length - otherAssets.count--] =
+        ISubAccounts.AssetBalance({asset: IAsset(address(cash)), subId: 0, balance: otherAssets.cashAmount});
+    }
+    if (otherAssets.perpAmount != 0) {
+      balances[balances.length - otherAssets.count--] =
+        ISubAccounts.AssetBalance({asset: IAsset(address(mockPerp)), subId: 0, balance: otherAssets.perpAmount});
+    }
+    if (otherAssets.baseAmount != 0) {
+      balances[balances.length - otherAssets.count--] =
+        ISubAccounts.AssetBalance({asset: IAsset(address(baseAsset)), subId: 0, balance: int(otherAssets.baseAmount)});
+    }
+    pmrm.setBalances(aliceAcc, balances);
+
+    mockPerp.mockAccountPnlAndFunding(aliceAcc, otherAssets.perpUnrealisedFunding, otherAssets.perpUnrealisedPNL);
+
+    verify(readResults(json, testId));
+  }
+
+  function verify(Result memory results) internal {
+    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolio(aliceAcc);
+
+    assertApproxEqAbs(portfolio.totalMtM, results.portfolioMTM - results.cash, 1e8, "Portfolio MTM");
+    assertApproxEqAbs(portfolio.basisContingency, results.forwardContingency, 1e8, "Basis Contingency");
+    assertApproxEqAbs(
+      portfolio.staticContingency,
+      uint(-(results.perpContingency + results.baseContingency + results.optionContingency)),
+      1e8,
+      "asset contingencies"
+    );
+    assertApproxEqAbs(pmrm.getMargin(aliceAcc, true), results.initialMarginHand, 1e8, "Initial Margin Hand");
+    assertApproxEqAbs(pmrm.getMargin(aliceAcc, false), results.maintenanceMarginHand, 1e8, "Maintenance Margin Hand");
   }
 }

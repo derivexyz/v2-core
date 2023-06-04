@@ -183,7 +183,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
 
     manager.whitelistAsset(dogeOption, 5, IStandardManager.AssetType.Option);
-    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
+    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
 
     manager.setPricingModule(5, pricing);
 

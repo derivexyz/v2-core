@@ -14,8 +14,6 @@ import "src/interfaces/IPMRM.sol";
 import "src/interfaces/IPMRMLib.sol";
 import "src/interfaces/ISubAccounts.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title PMRMLib
  * @notice Functions for helping compute PMRM value and risk (maintenance/initial margin and MTM)
@@ -84,7 +82,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     if (
       _volShockParams.volRangeUp > 2e18 //
         || _volShockParams.volRangeDown > 2e18 || _volShockParams.shortTermPower > 2e18
-        || _volShockParams.longTermPower > 2e18 || _volShockParams.dteFloor > 10 days //
+        || _volShockParams.longTermPower > 2e18 || _volShockParams.dteFloor > 100 days //
         || _volShockParams.dteFloor < 0.01 days // 864 seconds
     ) {
       revert PMRML_InvalidVolShockParameters();
@@ -211,12 +209,18 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
   }
 
-  function _getShockedPerpValue(int position, uint spotPrice, uint spotShock) internal pure returns (int) {
-    int value = (spotShock.toInt256() - SignedDecimalMath.UNIT).multiplyDecimal(spotPrice.toInt256());
+  function _getShockedPerpValue(int position, uint perpPrice, uint spotShock) internal pure returns (int) {
+    if (position == 0) {
+      return 0;
+    }
+    int value = (spotShock.toInt256() - SignedDecimalMath.UNIT).multiplyDecimal(perpPrice.toInt256());
     return position.multiplyDecimal(value);
   }
 
   function _getBaseValue(uint position, uint spot, uint stablePrice, uint spotShock) internal pure returns (uint) {
+    if (position == 0) {
+      return 0;
+    }
     return position.multiplyDecimal(spot).multiplyDecimal(spotShock).divideDecimal(stablePrice);
   }
 
@@ -241,6 +245,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
     for (uint i = 0; i < portfolio.expiries.length; ++i) {
       IPMRM.ExpiryHoldings memory expiry = portfolio.expiries[i];
+
+      expiry.minConfidence = Math.min(portfolio.minConfidence, expiry.minConfidence);
 
       // Current MtM and forward contingency MtMs
       expiry.mtm = _getExpiryShockedMTM(expiry, DecimalMath.UNIT, IPMRM.VolShockDirection.None);

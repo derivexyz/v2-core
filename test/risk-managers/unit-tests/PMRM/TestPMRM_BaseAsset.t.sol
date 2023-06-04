@@ -55,7 +55,6 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
       IDutchAuction(address(0)),
       IPMRM.Feeds({
         spotFeed: ISpotFeed(feed),
-        perpFeed: ISpotFeed(perpFeed),
         stableFeed: ISpotFeed(stableFeed),
         forwardFeed: IForwardFeed(feed),
         interestRateFeed: IInterestRateFeed(feed),
