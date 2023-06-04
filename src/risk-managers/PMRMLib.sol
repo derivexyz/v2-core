@@ -84,7 +84,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     if (
       _volShockParams.volRangeUp > 2e18 //
         || _volShockParams.volRangeDown > 2e18 || _volShockParams.shortTermPower > 2e18
-        || _volShockParams.longTermPower > 2e18 || _volShockParams.dteFloor > 10 days //
+        || _volShockParams.longTermPower > 2e18 || _volShockParams.dteFloor > 100 days //
         || _volShockParams.dteFloor < 0.01 days // 864 seconds
     ) {
       revert PMRML_InvalidVolShockParameters();

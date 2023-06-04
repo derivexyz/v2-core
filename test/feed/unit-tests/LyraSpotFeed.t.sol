@@ -5,9 +5,6 @@ import "forge-std/Test.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
 
-/**
- * @dev we deploy actual Account contract in these tests to simplify verification process
- */
 contract UNIT_LyraSpotFeed is Test {
   LyraSpotFeed feed;
 

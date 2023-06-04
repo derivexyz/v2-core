@@ -18,7 +18,6 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
     "RateData(uint64 expiry,int96 rate,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
-  // pack the following into 1 storage slot
   mapping(uint64 expiry => RateDetail) private rateDetails;
 
   ////////////////////////
