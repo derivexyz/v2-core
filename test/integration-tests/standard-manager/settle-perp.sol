@@ -1,106 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-import "forge-std/Test.sol";
+pragma solidity ^0.8.18;
 import "forge-std/console2.sol";
-
-import "../../shared/mocks/MockManager.sol";
-import "../../shared/mocks/MockFeeds.sol";
-import "../../shared/mocks/MockERC20.sol";
-import "../../assets/cashAsset/mocks/MockInterestRateModel.sol";
-
-import "src/SubAccounts.sol";
-import "src/risk-managers/StandardManager.sol";
-import "src/assets/PerpAsset.sol";
-import "src/assets/CashAsset.sol";
-import "src/assets/Option.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
-import "src/interfaces/IPerpAsset.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
+import "../shared/IntegrationTestBase.sol";
 
 /**
  * This test use the real StandardManager & PerpAsset to test the settlement flow
  */
-contract INTEGRATION_PerpAssetSettlement is Test {
-  PerpAsset perp;
-  Option option;
-  StandardManager manager;
-  CashAsset cash;
-  SubAccounts subAccounts;
-  MockFeeds feed;
-  MockFeeds perpFeed;
-  MockFeeds stableFeed;
-  MockERC20 usdc;
-  MockInterestRateModel rateModel;
-
-  // keeper address to set impact prices
-  address keeper = address(0xb0ba);
-  // users
-  address alice = address(0xaaaa);
-  address bob = address(0xbbbb);
-  address charlie = address(0xcccc);
-  // accounts
-  uint aliceAcc;
-  uint bobAcc;
-  uint charlieAcc;
-
+contract INTEGRATION_PerpAssetSettlement is IntegrationTestBase {  
+  
   int oneContract = 1e18;
 
-  uint initPrice = 1500e18;
 
   function setUp() public {
     // deploy contracts
-    subAccounts = new SubAccounts("Lyra", "LYRA");
-    feed = new MockFeeds();
-    perpFeed = new MockFeeds();
-    stableFeed = new MockFeeds();
-
-    usdc = new MockERC20("USDC", "USDC");
-    usdc.setDecimals(6);
-
-    rateModel = new MockInterestRateModel(1e18);
-    cash = new CashAsset(subAccounts, usdc, rateModel, 0, address(0));
-
-    perp = new PerpAsset(subAccounts, 0.0075e18);
-
-    perp.setSpotFeed(feed);
-    perp.setPerpFeed(perpFeed);
-
-    option = new Option(subAccounts, address(feed));
-
-    manager = new StandardManager(subAccounts, ICashAsset(cash), IDutchAuction(address(0)));
-
-    manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
-
-    manager.setOraclesForMarket(1, feed, feed, feed, feed, feed);
-
-    manager.setStableFeed(stableFeed);
-    stableFeed.setSpot(1e18, 1e18);
-    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
-
-    cash.setWhitelistManager(address(manager), true);
-
-    perp.setWhitelistManager(address(manager), true);
-    perp.setFundingRateOracle(keeper);
-
-    // create account for alice, bob, charlie
-    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
-    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
-    charlieAcc = subAccounts.createAccountWithApproval(charlie, address(this), manager);
-
-    _setPerpPrices(initPrice);
-
-    usdc.mint(address(this), 120_000e6);
-    usdc.approve(address(cash), 120_000e6);
-    cash.deposit(aliceAcc, 40_000e6);
-    cash.deposit(bobAcc, 40_000e6);
-    cash.deposit(charlieAcc, 40_000e6);
-
-    perp.setTotalPositionCap(manager, 10000e18);
+    _setupIntegrationTestComplete();
 
     // open trades: Alice is Short, Bob is Long
-    _tradePerpContract(aliceAcc, bobAcc, oneContract);
+    _tradePerpContract(ethPerp, aliceAcc, bobAcc, oneContract);
   }
 
   function testSettleLongPosition() public {
@@ -109,7 +26,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     _setPerpPrices(1600e18);
 
     // bobAcc close his position and has $100 in PNL
-    _tradePerpContract(bobAcc, aliceAcc, oneContract);
+    _tradePerpContract(ethPerp, bobAcc, aliceAcc, oneContract);
 
     int cashAfter = _getCashBalance(bobAcc);
 
@@ -124,7 +41,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     _setPerpPrices(1600e18);
 
     // alice close his position and has $100 in PNL
-    _tradePerpContract(bobAcc, aliceAcc, oneContract);
+    _tradePerpContract(ethPerp, bobAcc, aliceAcc, oneContract);
 
     int cashAfter = _getCashBalance(aliceAcc);
 
@@ -138,7 +55,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     // alice is short, bob is long
     _setPerpPrices(1600e18);
 
-    manager.settlePerpsWithIndex(perp, aliceAcc);
+    srm.settlePerpsWithIndex(ethPerp, aliceAcc);
 
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashBefore - 100e18, cashAfter);
@@ -151,8 +68,8 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     // alice is short, bob is long
     _setPerpPrices(1600e18);
 
-    manager.settlePerpsWithIndex(perp, aliceAcc);
-    manager.settlePerpsWithIndex(perp, bobAcc);
+    srm.settlePerpsWithIndex(ethPerp, aliceAcc);
+    srm.settlePerpsWithIndex(ethPerp, bobAcc);
 
     int aliceCashAfter = _getCashBalance(aliceAcc);
     int bobCashAfter = _getCashBalance(bobAcc);
@@ -166,7 +83,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
 
   function testCanSettleIntoNegativeCash() public {
     _setPerpPrices(200_000e18);
-    manager.settlePerpsWithIndex(perp, aliceAcc);
+    srm.settlePerpsWithIndex(ethPerp, aliceAcc);
     assertLt(_getCashBalance(aliceAcc), 0);
   }
 
@@ -179,7 +96,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     return (entryPrice, pnl);
   }
 
-  function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
+  function _tradePerpContract(IPerpAsset perp, uint fromAcc, uint toAcc, int amount) internal {
     ISubAccounts.AssetTransfer memory transfer =
       ISubAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});
     subAccounts.submitTransfer(transfer, "");
