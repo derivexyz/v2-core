@@ -114,15 +114,15 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
    * @notice Gets settlement price for a given expiry
    * @dev Will revert if the provided data timestamp does not match the expiry
    */
-  function getSettlementPrice(uint64 expiry) external view returns (uint price) {
+  function getSettlementPrice(uint64 expiry) external view returns (bool settled, uint price) {
     // The data must have the exact same timestamp as the expiry to be considered valid for settlement
     if (forwardDetails[expiry].timestamp != expiry) {
-      revert LFF_InvalidDataTimestampForSettlement();
+      return (false, 0);
     }
 
     SettlementDetails memory settlementData = settlementDetails[expiry];
 
-    return (settlementData.currentSpotAggregate - settlementData.settlementStartAggregate) / SETTLEMENT_TWAP_DURATION;
+    return (true, (settlementData.currentSpotAggregate - settlementData.settlementStartAggregate) / SETTLEMENT_TWAP_DURATION);
   }
 
   ////////////////////////

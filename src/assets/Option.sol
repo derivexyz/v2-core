@@ -134,7 +134,8 @@ contract Option is IOption, PositionTracking, GlobalSubIdOITracking, ManagerWhit
     }
 
     // Note; this reverts if there is no settlement value yet TODO: check this flow
-    uint settlementPrice = settlementFeed.getSettlementPrice(uint64(expiry));
+    (bool isSettled, uint settlementPrice) = settlementFeed.getSettlementPrice(uint64(expiry));
+    if (!isSettled) return (0, false);
 
     return (getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
