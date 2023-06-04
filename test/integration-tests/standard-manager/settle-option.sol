@@ -167,7 +167,17 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     vm.warp(expiry);
     _setSettlementPrice(ethFeed, 1500e18, expiry);
 
+    // only settle shorted date option
     srm.settleOptions(ethOption, bobAcc);
+
+    ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(bobAcc);
+    assertEq(assets.length, 2);
+
+    // time at second expiry, but no settlement price available
+    vm.warp(longExpiry);
+    srm.settleOptions(ethOption, bobAcc);
+    assets = subAccounts.getAccountBalances(bobAcc);
+    assertEq(assets.length, 2);
   }
 
   /// These should be tests for PMRM, because they can borrow cash
