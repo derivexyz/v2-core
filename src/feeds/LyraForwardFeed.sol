@@ -122,7 +122,8 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
     SettlementDetails memory settlementData = settlementDetails[expiry];
 
-    return (true, (settlementData.currentSpotAggregate - settlementData.settlementStartAggregate) / SETTLEMENT_TWAP_DURATION);
+    return
+      (true, (settlementData.currentSpotAggregate - settlementData.settlementStartAggregate) / SETTLEMENT_TWAP_DURATION);
   }
 
   ////////////////////////

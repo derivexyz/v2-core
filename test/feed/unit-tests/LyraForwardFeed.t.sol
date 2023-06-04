@@ -122,7 +122,7 @@ contract UNIT_LyraForwardFeed is Test {
     bytes memory data = _getSignedForwardData(pk, fwdData);
     feed.acceptData(data);
 
-    (bool settled,uint settlementPrice) = feed.getSettlementPrice(defaultExpiry);
+    (bool settled, uint settlementPrice) = feed.getSettlementPrice(defaultExpiry);
     assertEq(settlementPrice, 1050e18);
     assertTrue(settled);
   }
@@ -167,7 +167,7 @@ contract UNIT_LyraForwardFeed is Test {
     feed.getForwardPricePortions(defaultExpiry);
 
     vm.warp(defaultExpiry);
-    (bool settled, ) = feed.getSettlementPrice(defaultExpiry);
+    (bool settled,) = feed.getSettlementPrice(defaultExpiry);
     assertEq(settled, false);
   }
 
