@@ -12,7 +12,6 @@ import "src/interfaces/IDataReceiver.sol";
 import "src/interfaces/IVolFeed.sol";
 import "src/interfaces/IBaseLyraFeed.sol";
 
-
 /**
  * @title BaseLyraFeed
  * @author Lyra

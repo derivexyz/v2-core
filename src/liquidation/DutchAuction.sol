@@ -16,7 +16,6 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-
 /**
  * @title Dutch Auction
  * @author Lyra

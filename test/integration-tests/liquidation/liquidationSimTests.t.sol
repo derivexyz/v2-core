@@ -35,7 +35,7 @@ contract LiquidationSimTests is LiquidationSimBase {
 
   function runLiquidationSim(string memory testName) internal {
     LiquidationSim memory data = LiquidationSimBase.getTestData(testName);
-    ISubAccounts.AssetBalance[] memory balances = setupTestScenario(data);
+    setupTestScenario(data);
 
     vm.warp(data.StartTime);
     startAuction();

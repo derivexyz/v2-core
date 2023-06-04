@@ -14,7 +14,6 @@ import "src/interfaces/IForwardFeed.sol";
 import "src/interfaces/ISettlementFeed.sol";
 import "src/interfaces/ISpotFeed.sol";
 
-
 /**
  * @title LyraForwardFeed
  * @author Lyra
@@ -157,7 +156,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     ForwardDetails memory fwdDeets,
     SettlementDetails memory settlementData,
     uint64 expiry
-  ) internal view returns (uint fixedPortion, uint variablePortion) {
+  ) internal pure returns (uint fixedPortion, uint variablePortion) {
     // UNSCALED variable portion (must be scaled down if close to expiry)
     variablePortion = SafeCast.toUint256(SafeCast.toInt256(spotPrice) + int(fwdDeets.fwdSpotDifference));
 

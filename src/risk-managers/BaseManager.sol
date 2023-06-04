@@ -28,7 +28,6 @@ import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAllowList} from "src/interfaces/IAllowList.sol";
 
-
 /**
  * @title BaseManager
  * @notice Base contract for all managers. Handles OI fee, settling, liquidations and allowList. Also provides other

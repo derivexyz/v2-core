@@ -32,7 +32,6 @@ import {BaseManager} from "./BaseManager.sol";
 
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-
 /**
  * @title StandardManager
  * @author Lyra

@@ -176,7 +176,7 @@ contract LiquidationSimBase is PMRMTestBase {
     revert("out of lookupNums");
   }
 
-  function setupTestScenario(LiquidationSim memory data) internal returns (ISubAccounts.AssetBalance[] memory balances) {
+  function setupTestScenario(LiquidationSim memory data) internal {
     vm.warp(data.StartTime);
 
     uint totalAssets = data.InitialPortfolio.OptionStrikes.length;
@@ -185,7 +185,7 @@ contract LiquidationSimBase is PMRMTestBase {
     totalAssets += data.InitialPortfolio.PerpPosition != 0 ? 1 : 0;
     totalAssets += data.InitialPortfolio.BasePosition != 0 ? 1 : 0;
 
-    balances = new ISubAccounts.AssetBalance[](totalAssets);
+    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](totalAssets);
 
     uint i = 0;
     for (; i < data.InitialPortfolio.OptionStrikes.length; ++i) {

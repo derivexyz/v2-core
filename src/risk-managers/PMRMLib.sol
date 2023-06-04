@@ -14,7 +14,6 @@ import "src/interfaces/IPMRM.sol";
 import "src/interfaces/IPMRMLib.sol";
 import "src/interfaces/ISubAccounts.sol";
 
-
 /**
  * @title PMRMLib
  * @notice Functions for helping compute PMRM value and risk (maintenance/initial margin and MTM)
@@ -210,7 +209,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
   }
 
-  function _getShockedPerpValue(int position, uint perpPrice, uint spotShock) internal view returns (int) {
+  function _getShockedPerpValue(int position, uint perpPrice, uint spotShock) internal pure returns (int) {
     if (position == 0) {
       return 0;
     }
