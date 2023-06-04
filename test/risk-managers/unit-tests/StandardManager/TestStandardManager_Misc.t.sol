@@ -60,6 +60,18 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     assertEq(_getCashBalance(bobAcc), 0);
   }
 
+  function testCannotSetInvalidMarginParams() public {
+    IStandardManager.OptionMarginParams memory params = _getDefaultOptionMarginParams();
+
+    vm.expectRevert(IStandardManager.SRM_InvalidOptionMarginParams.selector);
+    params.maxSpotReq = 1.5e18;
+    manager.setOptionMarginParams(ethMarketId, params);
+
+    vm.expectRevert(IStandardManager.SRM_InvalidOptionMarginParams.selector);
+    params.maxSpotReq = -1;
+    manager.setOptionMarginParams(ethMarketId, params);
+  }
+
   function testCannotMergeIfEndAccountIsInsolvent() public {
     // example: alice short a call spread
     // merging another account with a little more calls will "break" the max loss

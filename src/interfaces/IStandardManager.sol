@@ -57,8 +57,6 @@ interface IStandardManager {
     /// total short position size. should be positive
     int totalShortPositions;
   }
-  /// temporary variable to keep track of the lowest confidence level of all oracles
-  // uint minConfidence;
 
   struct Option {
     uint strike;
@@ -68,20 +66,30 @@ interface IStandardManager {
 
   /// @dev Struct for Perp Margin Requirements
   struct PerpMarginRequirements {
-    uint mmRequirement;
-    uint imRequirement;
+    /// @dev minimum amount of spot required as maintenance margin for each perp position
+    uint mmPerpReq;
+    /// @dev minimum amount of spot required as initial margin for each perp position
+    uint imPerpReq;
   }
 
   /// @dev Struct for Option Margin Parameters
-  struct OptionMarginParameters {
-    int scOffset1;
-    int scOffset2;
-    int mmSCSpot; // call static percentage from spot
-    int mmSPSpot; // put static percentage from spot
-    int mmSPMtm; // static percentage from mtm, for maintenance margin
+  struct OptionMarginParams {
+    /// @dev Percentage of spot to add to initial margin if option is ITM. Decreases as option becomes more OTM.
+    int maxSpotReq;
+    /// @dev Minimum amount of spot price to add as initial margin.
+    int minSpotReq;
+    /// @dev Minimum amount of spot price to add as maintenance margin.
+    int mmCallSpotReq;
+    /// @dev Minimum amount of spot to add for maintenance margin
+    int mmPutSpotReq;
+    /// @dev Minimum amount of mtm to add for maintenance margin for puts
+    int MMPutMtMReq;
+    /// @dev Scaler applied to forward by amount if max loss is unbounded, when calculating IM
     int unpairedIMScale;
+    /// @dev Scaler applied to forward by amount if max loss is unbounded, when calculating MM
     int unpairedMMScale;
-    int mmOffsetScale; // IM = mmOffsetScale * MM, make sure it's always lower (more negative)
+    /// @dev Scale the MM for a put as minimum of IM
+    int mmOffsetScale;
   }
 
   struct DepegParams {
@@ -113,7 +121,9 @@ interface IStandardManager {
   error SRM_PortfolioBelowMargin(uint accountId, int margin);
 
   /// @dev Invalid Parameters for perp margin requirements
-  error SRM_InvalidMarginRequirement();
+  error SRM_InvalidPerpMarginParams();
+
+  error SRM_InvalidOptionMarginParams();
 
   /// @dev Forward Price for an asset is 0
   error SRM_NoForwardPrice();
@@ -144,13 +154,13 @@ interface IStandardManager {
 
   event PerpMarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
-  event OptionMarginParametersSet(
+  event OptionMarginParamsSet(
     uint8 marketId,
-    int scOffset1,
-    int scOffset2,
-    int mmSCSpot,
-    int mmSPSpot,
-    int mmSPMtm,
+    int maxSpotReq,
+    int minSpotReq,
+    int mmCallSpotReq,
+    int mmPutSpotReq,
+    int MMPutMtMReq,
     int unpairedIMScale,
     int unpairedMMScale,
     int mmOffsetScale

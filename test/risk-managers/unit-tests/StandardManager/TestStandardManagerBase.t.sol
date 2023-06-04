@@ -150,11 +150,8 @@ contract TestStandardManagerBase is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
 
-    IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
-
-    manager.setOptionMarginParameters(ethMarketId, params);
-    manager.setOptionMarginParameters(btcMarketId, params);
+    manager.setOptionMarginParams(ethMarketId, _getDefaultOptionMarginParams());
+    manager.setOptionMarginParams(btcMarketId, _getDefaultOptionMarginParams());
 
     // set caps
   }
@@ -184,5 +181,18 @@ contract TestStandardManagerBase is Test {
 
   function _getPerpBalance(IPerpAsset perp, uint acc) public view returns (int) {
     return subAccounts.getBalance(acc, perp, 0);
+  }
+
+  function _getDefaultOptionMarginParams() internal pure returns (IStandardManager.OptionMarginParams memory) {
+    return IStandardManager.OptionMarginParams({
+      maxSpotReq: 0.15e18,
+      minSpotReq: 0.1e18,
+      mmCallSpotReq: 0.075e18,
+      mmPutSpotReq: 0.075e18,
+      MMPutMtMReq: 0.075e18,
+      unpairedIMScale: 1.4e18,
+      unpairedMMScale: 1.2e18,
+      mmOffsetScale: 1.05e18
+    });
   }
 }

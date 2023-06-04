@@ -106,27 +106,27 @@ contract UNIT_TestStandardManager is Test {
 
   function setPerpMarginRequirementsRatios() public {
     manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
-    (uint mmRequirement, uint imRequirement) = manager.perpMarginRequirements(1);
+    (uint mmPerpReq, uint imPerpReq) = manager.perpMarginRequirements(1);
 
-    assertEq(mmRequirement, 0.1e18);
-    assertEq(imRequirement, 0.05e18);
+    assertEq(mmPerpReq, 0.1e18);
+    assertEq(imPerpReq, 0.05e18);
   }
 
   function testCannotSetPerpMMLargerThanIM() public {
-    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidPerpMarginRequirement() public {
-    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 0);
 
-    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
     manager.setPerpMarginRequirements(1, 0.1e18, 1e18);
 
-    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
     manager.setPerpMarginRequirements(1, 1e18, 0.1e18);
-    vm.expectRevert(IStandardManager.SRM_InvalidMarginRequirement.selector);
+    vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
     manager.setPerpMarginRequirements(1, 0, 0.1e18);
   }
 
