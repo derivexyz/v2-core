@@ -62,7 +62,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   mapping(uint marketId => PerpMarginRequirements) public perpMarginRequirements;
 
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
-  mapping(uint marketId => OptionMarginParameters) public optionMarginParams;
+  mapping(uint marketId => OptionMarginParams) public optionMarginParams;
 
   /// @dev Base margin discount: each base asset be treated as "spot * discount_factor" amount of cash
   mapping(uint marketId => int) public baseMarginDiscountFactor;
@@ -158,24 +158,20 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the option margin parameters for an market
    */
-  function setOptionMarginParameters(uint8 marketId, OptionMarginParameters calldata params) external onlyOwner {
-
+  function setOptionMarginParams(uint8 marketId, OptionMarginParams calldata params) external onlyOwner {
     if (
-        params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 || 
-        params.minSpotReq < 0 || params.minSpotReq > 1.2e18 || 
-        params.mmCallSpotReq < 0 || params.mmCallSpotReq > 1e18 || 
-        params.mmPutSpotReq < 0 || params.mmPutSpotReq > 1e18 || 
-        params.MMPutMtMReq < 0 || params.MMPutMtMReq > 1e18 || 
-        params.unpairedMMScale < 1e18 || params.unpairedMMScale > 3e18 || 
-        params.unpairedIMScale < 1e18 || params.unpairedIMScale > 3e18 ||
-        params.mmOffsetScale < 1e18 || params.mmOffsetScale > 3e18
+      params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 || params.minSpotReq < 0 || params.minSpotReq > 1.2e18
+        || params.mmCallSpotReq < 0 || params.mmCallSpotReq > 1e18 || params.mmPutSpotReq < 0
+        || params.mmPutSpotReq > 1e18 || params.MMPutMtMReq < 0 || params.MMPutMtMReq > 1e18
+        || params.unpairedMMScale < 1e18 || params.unpairedMMScale > 3e18 || params.unpairedIMScale < 1e18
+        || params.unpairedIMScale > 3e18 || params.mmOffsetScale < 1e18 || params.mmOffsetScale > 3e18
     ) {
       revert SRM_InvalidOptionMarginParams();
     }
 
     optionMarginParams[marketId] = params;
 
-    emit OptionMarginParametersSet(
+    emit OptionMarginParamsSet(
       marketId,
       params.maxSpotReq,
       params.minSpotReq,
@@ -830,7 +826,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     int indexPrice,
     bool isInitial
   ) internal view returns (int) {
-    OptionMarginParameters memory params = optionMarginParams[marketId];
+    OptionMarginParams memory params = optionMarginParams[marketId];
 
     int maintenanceMargin = SignedMath.min(
       params.mmPutSpotReq.multiplyDecimal(indexPrice).multiplyDecimal(amount),
@@ -862,7 +858,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     int indexPrice,
     bool isInitial
   ) internal view returns (int) {
-    OptionMarginParameters memory params = optionMarginParams[marketId];
+    OptionMarginParams memory params = optionMarginParams[marketId];
 
     int maintenanceMargin = (params.mmCallSpotReq.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
 

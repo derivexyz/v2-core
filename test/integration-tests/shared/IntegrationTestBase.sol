@@ -182,7 +182,7 @@ contract IntegrationTestBase is Test {
     srm.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed);
 
     // set params
-    IStandardManager.OptionMarginParameters memory params = IStandardManager.OptionMarginParameters({
+    IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({
       maxSpotReq: 0.15e18,
       minSpotReq: 0.1e18,
       mmCallSpotReq: 0.075e18,
@@ -192,7 +192,7 @@ contract IntegrationTestBase is Test {
       unpairedMMScale: 1.1e18,
       mmOffsetScale: 1.05e18
     });
-    srm.setOptionMarginParameters(ethMarketId, params);
+    srm.setOptionMarginParams(ethMarketId, params);
 
     srm.setOracleContingencyParams(
       ethMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)

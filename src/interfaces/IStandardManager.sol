@@ -73,7 +73,7 @@ interface IStandardManager {
   }
 
   /// @dev Struct for Option Margin Parameters
-  struct OptionMarginParameters {
+  struct OptionMarginParams {
     /// @dev Percentage of spot to add to initial margin if option is ITM. Decreases as option becomes more OTM.
     int maxSpotReq;
     /// @dev Minimum amount of spot price to add as initial margin.
@@ -154,7 +154,7 @@ interface IStandardManager {
 
   event PerpMarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
 
-  event OptionMarginParametersSet(
+  event OptionMarginParamsSet(
     uint8 marketId,
     int maxSpotReq,
     int minSpotReq,

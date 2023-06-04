@@ -97,10 +97,10 @@ contract UNIT_TestStandardManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
-    IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
+    IStandardManager.OptionMarginParams memory params =
+      IStandardManager.OptionMarginParams(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
 
-    manager.setOptionMarginParameters(ethMarketId, params);
+    manager.setOptionMarginParams(ethMarketId, params);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -129,9 +129,9 @@ contract UNIT_TestStandardManager_Option is Test {
   }
 
   function testSetOptionParameters() public {
-    IStandardManager.OptionMarginParameters memory params =
-      IStandardManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18, 1.2e18, 1.05e18);
-    manager.setOptionMarginParameters(ethMarketId, params);
+    IStandardManager.OptionMarginParams memory params =
+      IStandardManager.OptionMarginParams(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18, 1.2e18, 1.05e18);
+    manager.setOptionMarginParams(ethMarketId, params);
     (
       int maxSpotReq,
       int minSpotReq,

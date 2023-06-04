@@ -31,7 +31,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
     // override settings
 
-    IStandardManager.OptionMarginParameters memory params = IStandardManager.OptionMarginParameters({
+    IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({
       maxSpotReq: 0.15e18,
       minSpotReq: 0.1e18,
       mmCallSpotReq: 0.075e18,
@@ -42,8 +42,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       mmOffsetScale: 1.05e18
     });
 
-    manager.setOptionMarginParameters(ethMarketId, params);
-    manager.setOptionMarginParameters(btcMarketId, params);
+    manager.setOptionMarginParams(ethMarketId, params);
+    manager.setOptionMarginParams(btcMarketId, params);
 
     manager.setOracleContingencyParams(
       ethMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)
