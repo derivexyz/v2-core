@@ -14,10 +14,10 @@ contract GlobalSubIdOITracking is IGlobalSubIdOITracking {
   using SafeCast for uint;
   using SafeCast for int;
 
-  ///@dev SubId => tradeId => open interest snapshot
+  /// @dev SubId => tradeId => open interest snapshot
   mapping(uint subId => mapping(uint tradeId => SubIdOISnapshot)) public openInterestBeforeTrade;
 
-  ///@dev Open interest for a subId. OI is the sum of all positive balance
+  /// @dev Open interest for a subId. OI is the sum of all positive balance
   mapping(uint subId => uint) public openInterest;
 
   /**

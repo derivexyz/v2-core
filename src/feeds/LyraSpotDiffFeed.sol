@@ -36,7 +36,6 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
     emit SpotFeedUpdated(_spotFeed);
   }
 
-
   ///////////
   // Admin //
   ///////////

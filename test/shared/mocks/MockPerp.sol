@@ -12,6 +12,8 @@ import "src/interfaces/IPerpAsset.sol";
 contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking, IPerpAsset {
   mapping(uint => int) mockedFunding;
   mapping(uint => int) mockedPNL;
+  uint mockedPerpPrice;
+  uint confidence;
 
   constructor(ISubAccounts account) MockAsset(IERC20(address(0)), account, true) {}
 
@@ -32,7 +34,18 @@ contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking,
     return mockedFunding[accountId] + mockedPNL[accountId];
   }
 
-  function getIndexPrice() external view returns (uint) {}
+  function setMockPerpPrice(uint price, uint conf) external {
+    mockedPerpPrice = price;
+    confidence = conf;
+  }
+
+  function getIndexPrice() external view returns (uint, uint) {}
+
+  function getPerpPrice() external view returns (uint, uint) {
+    return (mockedPerpPrice, confidence);
+  }
+
+  function getImpactPrices() external view returns (uint, uint) {}
 
   function realizePNLWithIndex(uint account) external {}
 }

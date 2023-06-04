@@ -305,16 +305,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @notice calculate the perpetual OI fee.
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
    */
-  function _getPerpOIFee(IGlobalSubIdOITracking asset, ISpotFeed perpFeed, int delta, uint tradeId)
-    internal
-    view
-    returns (uint fee)
-  {
-    bool oiIncreased = _getOIIncreased(asset, 0, tradeId);
+  function _getPerpOIFee(IPerpAsset perpAsset, int delta, uint tradeId) internal view returns (uint fee) {
+    bool oiIncreased = _getOIIncreased(perpAsset, 0, tradeId);
     if (!oiIncreased) return 0;
 
-    (uint perpPrice,) = perpFeed.getSpot();
-    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS[address(asset)]);
+    (uint perpPrice,) = perpAsset.getPerpPrice();
+    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS[address(perpAsset)]);
   }
 
   /**

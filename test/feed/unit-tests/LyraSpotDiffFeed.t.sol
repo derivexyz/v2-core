@@ -96,7 +96,6 @@ contract UNIT_LyraSpotDiffFeed is Test {
     feed.acceptData(data);
   }
 
-
   function testIgnoreUpdateIfOlderDataIsPushed() public {
     ILyraSpotDiffFeed.SpotDiffData memory spotDiffData = _getDefaultSpotDiffData();
 

@@ -20,6 +20,7 @@ import "src/assets/utils/ManagerWhitelist.sol";
 
 import "src/assets/utils/PositionTracking.sol";
 import "src/assets/utils/GlobalSubIdOITracking.sol";
+import "../interfaces/ISpotDiffFeed.sol";
 
 /**
  * @title PerpAsset
@@ -36,19 +37,16 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-  ///@dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
+  /// @dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
   ISpotFeed public spotFeed;
 
-  // TODO: make a ISpotDiff feed for perps
-  ///@dev perp feed, used for settling pnl before each trades
-  ISpotFeed public perpFeed;
+  /// @dev perp feed, used for settling pnl before each trades
+  ISpotDiffFeed public perpFeed;
+  ISpotDiffFeed public impactAskPriceFeed;
+  ISpotDiffFeed public impactBidPriceFeed;
 
-  ///@dev Mapping from account to position
-  mapping(uint account => PositionDetail) public positions;
-
-  // TODO: make a funding rate feed...
-  ///@dev Mapping from address to whitelisted to push impacted prices
-  address public fundingRateOracle;
+  /// @dev Mapping from account to position
+  mapping(uint accountId => PositionDetail) public positions;
 
   /// @dev Max hourly funding rate
   int public immutable maxRatePerHour;
@@ -56,19 +54,13 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   /// @dev Min hourly funding rate
   int public immutable minRatePerHour;
 
-  /// @dev Impact ask price
-  int128 public impactAskPrice;
-
-  /// @dev Impact bid price
-  int128 public impactBidPrice;
-
   /// @dev static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
-  ///@dev Latest aggregated funding rate
+  /// @dev Latest aggregated funding rate
   int128 public aggregatedFundingRate;
 
-  ///@dev Last time aggregated funding rate was updated
+  /// @dev Last time aggregated funding rate was updated
   uint64 public lastFundingPaidAt;
 
   constructor(ISubAccounts _subAccounts, int maxAbsRatePerHour) ManagerWhitelist(_subAccounts) {
@@ -96,20 +88,17 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @notice Set new perp feed address
    * @param _perpFeed address of the new perp feed
    */
-  function setPerpFeed(ISpotFeed _perpFeed) external onlyOwner {
+  function setPerpFeed(ISpotDiffFeed _perpFeed) external onlyOwner {
     perpFeed = _perpFeed;
 
     emit PerpFeedUpdated(address(_perpFeed));
   }
 
-  /**
-   * @notice Set an oracle address that can update funding rate
-   * @param _oracle address of the new funding rate oracle
-   */
-  function setFundingRateOracle(address _oracle) external onlyOwner {
-    fundingRateOracle = _oracle;
+  function setImpactFeeds(ISpotDiffFeed _impactAskPriceFeed, ISpotDiffFeed _impactBidPriceFeed) external onlyOwner {
+    impactAskPriceFeed = _impactAskPriceFeed;
+    impactBidPriceFeed = _impactBidPriceFeed;
 
-    emit FundingRateOracleUpdated(_oracle);
+    emit ImpactFeedsUpdated(address(_impactAskPriceFeed), address(_impactBidPriceFeed));
   }
 
   ///////////////////////
@@ -185,22 +174,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
-   * @notice allow oracle to set impact prices
-   */
-  function setImpactPrices(int128 _impactAskPrice, int128 _impactBidPrice) external onlyImpactPriceOracle {
-    if (_impactAskPrice < 0 || _impactBidPrice < 0) {
-      revert PA_ImpactPriceMustBePositive();
-    }
-    if (_impactAskPrice < _impactBidPrice) {
-      revert PA_InvalidImpactPrices();
-    }
-    impactAskPrice = _impactAskPrice;
-    impactBidPrice = _impactBidPrice;
-
-    emit ImpactPricesSet(_impactAskPrice, _impactBidPrice);
-  }
-
-  /**
    * @notice Set new static interest rate
    * @param _staticInterestRate New static interest rate for the asset.
    */
@@ -257,17 +230,21 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   /**
    * @dev Return the current index price for the perp asset
    */
-  function getIndexPrice() external view returns (uint) {
-    (uint spotPrice,) = spotFeed.getSpot();
-    return spotPrice;
+  function getIndexPrice() external view returns (uint, uint) {
+    return spotFeed.getSpot();
   }
 
   /**
    * @dev Return the current mark price for the perp asset
    */
-  function getPerpPrice() external view returns (uint) {
-    (uint perpPrice,) = perpFeed.getSpot();
-    return perpPrice;
+  function getPerpPrice() external view returns (uint, uint) {
+    return perpFeed.getResult();
+  }
+
+  function getImpactPrices() external view returns (uint bid, uint ask) {
+    (bid,) = impactBidPriceFeed.getResult();
+    (ask,) = impactAskPriceFeed.getResult();
+    return (bid, ask);
   }
 
   /**
@@ -334,6 +311,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     aggregatedFundingRate += (fundingRate * timeElapsed / 1 hours).toInt128();
 
     lastFundingPaidAt = (block.timestamp).toUint64();
+
+    emit FundingRateUpdated(aggregatedFundingRate, fundingRate, lastFundingPaidAt);
   }
 
   /**
@@ -356,9 +335,15 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * Premium = (Max(0, Impact Bid Price - Index Price) - Max(0, Index Price - Impact Ask Price)) / Index Price
    */
   function _getPremium(int indexPrice) internal view returns (int premium) {
-    premium = (
-      SignedMath.max(int(impactBidPrice) - indexPrice, 0) - SignedMath.max(int(indexPrice) - impactAskPrice, 0)
-    ).divideDecimal(indexPrice);
+    (uint impactAskPrice,) = impactAskPriceFeed.getResult();
+    (uint impactBidPrice,) = impactBidPriceFeed.getResult();
+
+    if (impactAskPrice < impactBidPrice) revert PA_InvalidImpactPrices();
+
+    int bidDiff = SignedMath.max(impactBidPrice.toInt256() - indexPrice, 0);
+    int askDiff = SignedMath.max(indexPrice - impactAskPrice.toInt256(), 0);
+
+    premium = (bidDiff - askDiff).divideDecimal(indexPrice);
   }
 
   /**
@@ -394,18 +379,13 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   function _getPerpPrice() internal view returns (int) {
-    (uint perpPrice,) = perpFeed.getSpot();
+    (uint perpPrice,) = perpFeed.getResult();
     return perpPrice.toInt256();
   }
 
   //////////////////////////
   //     Modifiers        //
   //////////////////////////
-
-  modifier onlyImpactPriceOracle() {
-    if (msg.sender != fundingRateOracle) revert PA_OnlyImpactPriceOracle();
-    _;
-  }
 
   modifier onlyManagerForAccount(uint accountId) {
     if (msg.sender != address(subAccounts.manager(accountId))) revert PA_WrongManager();

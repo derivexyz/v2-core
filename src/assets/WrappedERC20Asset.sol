@@ -24,7 +24,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
   using SafeCast for uint;
   using SafeCast for int;
 
-  ///@dev The token address for the wrapped asset
+  /// @dev The token address for the wrapped asset
   IERC20Metadata public immutable wrappedAsset;
   uint8 public immutable assetDecimals;
 

@@ -33,7 +33,7 @@ contract Option is IOption, PositionTracking, GlobalSubIdOITracking, ManagerWhit
   // Variables //
   ///////////////
 
-  ///@dev Each account's total position: (sum of .abs() of all option positions)
+  /// @dev Each account's total position: (sum of .abs() of all option positions)
   mapping(uint accountId => uint) public accountTotalPosition;
 
   ////////////////////////

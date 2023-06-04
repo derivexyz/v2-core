@@ -40,7 +40,11 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   function realizePNLWithIndex(uint account) external;
 
-  function getIndexPrice() external view returns (uint);
+  function getIndexPrice() external view returns (uint, uint);
+
+  function getPerpPrice() external view returns (uint, uint);
+
+  function getImpactPrices() external view returns (uint bid, uint ask);
 
   //////////////////
   //   Events     //
@@ -56,7 +60,9 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   event PerpFeedUpdated(address perpFeed);
 
-  event ImpactPricesSet(int impactAskPrice, int impactBidPrice);
+  event ImpactFeedsUpdated(address askImpactFeed, address bidImpactFeed);
+
+  event FundingRateUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
 
   ////////////////
   //   Errors   //

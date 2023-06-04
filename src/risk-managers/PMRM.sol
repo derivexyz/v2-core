@@ -25,6 +25,9 @@ import "src/interfaces/IWrappedERC20Asset.sol";
 import "src/risk-managers/BaseManager.sol";
 
 import "src/risk-managers/PMRMLib.sol";
+import "../interfaces/ISpotDiffFeed.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title PMRM
@@ -47,7 +50,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   IWrappedERC20Asset public immutable baseAsset;
 
   ISpotFeed public spotFeed;
-  ISpotFeed public perpFeed;
   IInterestRateFeed public interestRateFeed;
   IVolFeed public volFeed;
   ISpotFeed public stableFeed;
@@ -77,7 +79,6 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     Feeds memory feeds_
   ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, liquidation_) {
     spotFeed = feeds_.spotFeed;
-    perpFeed = feeds_.perpFeed;
     stableFeed = feeds_.stableFeed;
     forwardFeed = feeds_.forwardFeed;
     interestRateFeed = feeds_.interestRateFeed;
@@ -281,7 +282,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _arrangeOptions(accountId, portfolio, assets, expiryCount);
 
     if (portfolio.perpPosition != 0) {
-      (uint perpPrice, uint perpConfidence) = perpFeed.getSpot();
+      (uint perpPrice, uint perpConfidence) = perp.getPerpPrice();
       portfolio.perpPrice = perpPrice;
       portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
     }
@@ -439,7 +440,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       if (address(assetDeltas[i].asset) == address(option)) {
         fee += _getOptionOIFee(option, forwardFeed, assetDeltas[i].delta, assetDeltas[i].subId, tradeId);
       } else if (address(assetDeltas[i].asset) == address(perp)) {
-        fee += _getPerpOIFee(perp, perpFeed, assetDeltas[i].delta, tradeId);
+        fee += _getPerpOIFee(perp, assetDeltas[i].delta, tradeId);
       }
     }
 

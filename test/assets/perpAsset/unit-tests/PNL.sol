@@ -11,13 +11,14 @@ import "src/SubAccounts.sol";
 import "src/assets/PerpAsset.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
+import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract UNIT_PerpAssetPNL is Test {
   PerpAsset perp;
   MockManager manager;
   SubAccounts subAccounts;
   MockFeeds spotFeed;
-  MockFeeds perpFeed;
+  MockSpotDiffFeed perpFeed;
 
   // keeper address to set impact prices
   address keeper = address(0xb0ba);
@@ -39,7 +40,9 @@ contract UNIT_PerpAssetPNL is Test {
     subAccounts = new SubAccounts("Lyra", "LYRA");
 
     spotFeed = new MockFeeds();
-    perpFeed = new MockFeeds();
+    spotFeed.setSpot(initPrice, 1e18);
+
+    perpFeed = new MockSpotDiffFeed(spotFeed);
 
     manager = new MockManager(address(subAccounts));
     perp = new PerpAsset(subAccounts, 0.0075e18);
@@ -48,7 +51,6 @@ contract UNIT_PerpAssetPNL is Test {
     perp.setPerpFeed(perpFeed);
 
     perp.setWhitelistManager(address(manager), true);
-    perp.setFundingRateOracle(keeper);
 
     // create account for alice, bob, charlie
     aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
@@ -300,7 +302,8 @@ contract UNIT_PerpAssetPNL is Test {
   }
 
   function _setMarkPrices(uint price) internal {
-    perpFeed.setSpot(price, 1e18);
+    (uint spot,) = spotFeed.getSpot();
+    perpFeed.setSpotDiff(int(price) - int(spot), 1e18);
   }
 
   function _getPNL(uint acc) internal view returns (int) {
