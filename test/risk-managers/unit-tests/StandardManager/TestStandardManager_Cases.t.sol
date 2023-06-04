@@ -187,7 +187,6 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     returns (ISubAccounts.AssetBalance[] memory)
   {
     // get spot and perp confidence
-    // todo: use 1e18 based number!
     uint[][] memory confs = readUintArray2D(json, string.concat(testId, ".Scenario.SpotPerpConfidences"));
 
     // set spot feed

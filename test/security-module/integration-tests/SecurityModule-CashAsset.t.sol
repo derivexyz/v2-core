@@ -40,7 +40,6 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
-    // todo: cleanup
     uint minRate = 0.06 * 1e18;
     uint rateMultiplier = 0.2 * 1e18;
     uint highRateMultiplier = 0.4 * 1e18;

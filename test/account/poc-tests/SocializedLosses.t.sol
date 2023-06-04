@@ -147,7 +147,6 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
       toAcc: toAcc,
       asset: IAsset(optionAdapter),
       subId: subId,
-      // TODO: this breaks when amount == totalShortOI
       amount: amount,
       assetData: bytes32(0)
     });

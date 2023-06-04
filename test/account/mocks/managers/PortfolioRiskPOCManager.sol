@@ -99,12 +99,10 @@ contract PortfolioRiskPOCManager is Ownable2Step, IManager {
 
   // Note: this should be an auction
   function liquidateAccount(uint accountId, uint accountForCollateral, int extraCollateral) external {
-    // TODO: SM and socialised losses, this require blocks that
     require(liquidationFlagged[accountId] && extraCollateral >= 0);
 
     require(msg.sender == subAccounts.ownerOf(accountForCollateral), "not auth");
 
-    // TODO: check owner of accountForCollat
     subAccounts.managerAdjustment(
       ISubAccounts.AssetAdjustment({
         acc: accountForCollateral,
