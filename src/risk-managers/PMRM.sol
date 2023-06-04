@@ -24,7 +24,6 @@ import "src/interfaces/IWrappedERC20Asset.sol";
 
 import "src/risk-managers/BaseManager.sol";
 
-import "forge-std/console2.sol";
 import "src/risk-managers/PMRMLib.sol";
 
 /**
@@ -252,6 +251,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
           _arrangePortfolio(accountId, _undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
         (int preIM,) = _getMarginAndMarkToMarket(prePortfolio, true, marginScenarios, true);
+        // TODO: use MM
         if (postIM < preIM) {
           revert PMRM_InsufficientMargin();
         }

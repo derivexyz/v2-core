@@ -57,7 +57,7 @@ contract UNIT_LyraRateFeed is Test {
     rateData.confidence = 1.01e18;
     bytes memory data = _getSignedRateData(pk, rateData);
 
-    vm.expectRevert(ILyraRateFeed.LSF_InvalidConfidence.selector);
+    vm.expectRevert(ILyraRateFeed.LRF_InvalidConfidence.selector);
     feed.acceptData(data);
   }
 

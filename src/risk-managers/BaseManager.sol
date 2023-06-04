@@ -28,7 +28,6 @@ import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IAllowList} from "src/interfaces/IAllowList.sol";
 
-import "forge-std/console2.sol";
 
 /**
  * @title BaseManager
@@ -384,6 +383,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       // skip non option asset
       if (balances[i].asset != option) continue;
 
+      // TODO: this is very broken, settlement feed reverts not returns 0 - pass in exact subIds? Or just check expiry?
       (int value, bool isSettled) = option.calcSettlementValue(balances[i].subId, balances[i].balance);
       if (!isSettled) continue;
 

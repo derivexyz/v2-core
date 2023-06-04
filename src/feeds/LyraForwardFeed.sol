@@ -14,7 +14,6 @@ import "src/interfaces/IForwardFeed.sol";
 import "src/interfaces/ISettlementFeed.sol";
 import "src/interfaces/ISpotFeed.sol";
 
-import "forge-std/console2.sol";
 
 /**
  * @title LyraForwardFeed

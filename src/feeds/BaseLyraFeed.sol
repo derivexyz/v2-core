@@ -10,40 +10,13 @@ import "lyra-utils/math/FixedPointMathLib.sol";
 // interfaces
 import "src/interfaces/IDataReceiver.sol";
 import "src/interfaces/IVolFeed.sol";
+import "src/interfaces/IBaseLyraFeed.sol";
 
-interface IBaseLyraFeed {
-  ////////////////////////
-  //       Errors       //
-  ////////////////////////
-
-  /// @dev bad signature
-  error BLF_InvalidSignature();
-
-  /// @dev Invalid signer
-  error BLF_InvalidSigner();
-
-  /// @dev submission is expired
-  error BLF_DataExpired();
-
-  /// @dev invalid nonce
-  error BLF_InvalidTimestamp();
-
-  /// @dev Data has crossed heartbeat threshold
-  error BLF_DataTooOld();
-
-  ////////////////////////
-  //       Events       //
-  ////////////////////////
-
-  event SignerUpdated(address indexed signer, bool isWhitelisted);
-  event HeartbeatUpdated(address indexed signer, uint heartbeat);
-}
 
 /**
- * @title LyraVolFeed
+ * @title BaseLyraFeed
  * @author Lyra
- * @notice Vol feed that takes off-chain updates, verify signature and update on-chain
- * @dev Uses SVI curve parameters to generate the full expiry of volatilities
+ * @dev Base contract for feeds that use multiple signers and signed messages to update their own data types.
  */
 abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyraFeed {
   ////////////////////////

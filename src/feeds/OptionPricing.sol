@@ -1,8 +1,8 @@
 pragma solidity ^0.8.13;
 
 import "lyra-utils/math/Black76.sol";
-import "forge-std/console2.sol";
-import "../interfaces/IOptionPricing.sol";
+import "src/interfaces/IOptionPricing.sol";
+
 
 contract OptionPricing is IOptionPricing {
   function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external pure returns (int) {

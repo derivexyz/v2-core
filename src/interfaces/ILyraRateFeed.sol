@@ -29,5 +29,5 @@ interface ILyraRateFeed {
   ////////////////////////
   //       Errors       //
   ////////////////////////
-  error LSF_InvalidConfidence();
+  error LRF_InvalidConfidence();
 }

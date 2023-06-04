@@ -57,7 +57,7 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
     if (rateData.timestamp <= rateDetails[rateData.expiry].timestamp) return;
 
     if (rateData.confidence > 1e18) {
-      revert LSF_InvalidConfidence();
+      revert LRF_InvalidConfidence();
     }
 
     // update rate

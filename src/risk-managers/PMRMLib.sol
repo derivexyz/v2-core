@@ -14,7 +14,6 @@ import "src/interfaces/IPMRM.sol";
 import "src/interfaces/IPMRMLib.sol";
 import "src/interfaces/ISubAccounts.sol";
 
-import "forge-std/console2.sol";
 
 /**
  * @title PMRMLib
