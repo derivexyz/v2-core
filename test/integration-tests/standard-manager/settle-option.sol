@@ -169,7 +169,6 @@ contract INTEGRATION_SRM_Settlement is IntegrationTestBase {
     vm.warp(expiry);
     _setSettlementPrice(ethFeed, 1500e18, expiry);
 
-
     srm.settleOptions(ethOption, bobAcc);
   }
 
