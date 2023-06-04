@@ -185,13 +185,13 @@ contract TestStandardManagerBase is Test {
 
   function _getDefaultOptionMarginParams() internal pure returns (IStandardManager.OptionMarginParams memory) {
     return IStandardManager.OptionMarginParams({
-      maxSpotReq: 0.15e18, 
-      minSpotReq: 0.1e18, 
-      mmCallSpotReq: 0.075e18, 
-      mmPutSpotReq: 0.075e18, 
-      MMPutMtMReq: 0.075e18, 
-      unpairedIMScale: 1.4e18, 
-      unpairedMMScale: 1.2e18, 
+      maxSpotReq: 0.15e18,
+      minSpotReq: 0.1e18,
+      mmCallSpotReq: 0.075e18,
+      mmPutSpotReq: 0.075e18,
+      MMPutMtMReq: 0.075e18,
+      unpairedIMScale: 1.4e18,
+      unpairedMMScale: 1.2e18,
       mmOffsetScale: 1.05e18
     });
   }
