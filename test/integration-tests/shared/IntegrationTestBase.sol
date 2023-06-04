@@ -54,25 +54,31 @@ contract IntegrationTestBase is Test {
   OptionPricing pricing;
 
   StandardManager srm;
-  PMRM pmrm;
 
   SecurityModule securityModule;
   InterestRateModel rateModel;
   DutchAuction auction;
   MockFeeds ethFeed;
+  MockFeeds btcFeed;
+  MockFeeds stableFeed;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
 
-  // updatable
-  uint pmrmFeeAcc;
+  uint8 ethMarketId = 1;
+  uint8 btcMarketId = 2;
 
   function _setupIntegrationTestComplete() internal {
     // deployment
     _deployAllV2Contracts();
 
-    // necessary shared setup
-    _finishContractSetups();
+    // setup config on assets
+    _setupAssets();
+
+    // setup managers
+    _setupStandardManager();
+
+    _setupAuctionAndSM();
 
     _setupAliceAndBob();
   }
@@ -81,8 +87,8 @@ contract IntegrationTestBase is Test {
     vm.label(alice, "alice");
     vm.label(bob, "bob");
 
-    aliceAcc = subAccounts.createAccount(alice, pmrm);
-    bobAcc = subAccounts.createAccount(bob, pmrm);
+    aliceAcc = subAccounts.createAccount(alice, srm);
+    bobAcc = subAccounts.createAccount(bob, srm);
 
     // allow this contract to submit trades
     vm.prank(alice);
@@ -131,17 +137,60 @@ contract IntegrationTestBase is Test {
 
     // nonce: 11 => Deploy Auction
     auction = new DutchAuction(subAccounts, securityModule, cash);
+
+    pricing = new OptionPricing();
+
+    stableFeed = new MockFeeds();
   }
 
-  function _finishContractSetups() internal {
+  function _setupAssets() internal {
     // whitelist setting in cash asset and option assert
     cash.setWhitelistManager(address(srm), true);
     ethOption.setWhitelistManager(address(srm), true);
+    ethBase.setWhitelistManager(address(srm), true);
+    ethPerp.setWhitelistManager(address(srm), true);
 
-    // pmrm setups
-    //  pmrmFeeAcc = subAccounts.createAccount(address(this), pmrm);
-    //  pmrm.setFeeRecipient(pmrmFeeAcc);
+    // set caps
+    ethOption.setTotalPositionCap(srm, 10000e18);
+    ethPerp.setTotalPositionCap(srm, 10000e18);
+    ethBase.setTotalPositionCap(srm, 10000e18);
+  }
 
+  function _setupStandardManager() internal {
+    srm.setStableFeed(stableFeed);
+
+    srm.setPricingModule(ethMarketId, pricing);
+
+    // set assets per market
+    srm.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
+    srm.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);
+    srm.whitelistAsset(ethBase, ethMarketId, IStandardManager.AssetType.Base);
+
+    // set oracles
+    srm.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed, ethFeed);
+
+    // set params
+    IStandardManager.OptionMarginParameters memory params = IStandardManager.OptionMarginParameters({
+      scOffset1: 0.15e18,
+      scOffset2: 0.1e18,
+      mmSCSpot: 0.075e18,
+      mmSPSpot: 0.075e18,
+      mmSPMtm: 0.075e18,
+      unpairedIMScale: 1.2e18,
+      unpairedMMScale: 1.1e18,
+      mmOffsetScale: 1.05e18
+    });
+    srm.setOptionMarginParameters(ethMarketId, params);
+
+    srm.setOracleContingencyParams(
+      ethMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)
+    );
+    srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
+
+    srm.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
+  }
+
+  function _setupAuctionAndSM() internal {
     // set parameter for auction
     auction.setSolventAuctionParams(_getDefaultAuctionParam());
 
@@ -256,11 +305,11 @@ contract IntegrationTestBase is Test {
   }
 
   function getAccInitMargin(uint acc) public view returns (int) {
-    return pmrm.getMargin(acc, true);
+    return srm.getMargin(acc, true);
   }
 
   function getAccMaintenanceMargin(uint acc) public view returns (int) {
-    return pmrm.getMargin(acc, false);
+    return srm.getMargin(acc, false);
   }
 
   /**

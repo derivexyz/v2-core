@@ -801,6 +801,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     markToMarket =
       _getMarkToMarket(marketId, optionPos.balance, forwardPrice, optionPos.strike, expiry, vol, optionPos.isCall);
 
+    console2.log("indexPrice", indexPrice);
+
     // a long position doesn't have any "margin", cannot be used to offset other positions
     if (optionPos.balance > 0) return (margin, markToMarket);
 

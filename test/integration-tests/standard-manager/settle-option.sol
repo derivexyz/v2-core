@@ -44,6 +44,10 @@ contract INTEGRATION_SRM_Settlement is IntegrationTestBase {
 
     callId = OptionEncoding.toSubId(expiry, strike, true);
     putId = OptionEncoding.toSubId(expiry, strike, false);
+
+    ethFeed.setSpot(2000e18, 1e18);
+    ethFeed.setForwardPrice(expiry, 2000e18, 1e18);
+    ethFeed.setVol(uint64(expiry), uint128(strike), 1e18, 1e18);
   }
 
   // only settle alice's account at expiry
