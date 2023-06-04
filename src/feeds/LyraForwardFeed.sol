@@ -32,6 +32,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   uint64 public constant SETTLEMENT_TWAP_DURATION = 30 minutes;
 
   ISpotFeed public spotFeed;
+
   /// @dev secondary heartbeat for when the forward price is close to expiry
   uint64 public settlementHeartbeat = 5 minutes;
 
@@ -48,6 +49,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
   constructor(ISpotFeed _spotFeed) BaseLyraFeed("LyraForwardFeed", "1") {
     spotFeed = _spotFeed;
+    emit SpotFeedUpdated(_spotFeed);
   }
 
   ///////////
