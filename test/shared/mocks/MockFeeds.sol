@@ -16,11 +16,11 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   mapping(uint => uint) forwardPrices;
   mapping(uint => uint) fwdFixedPortion;
   mapping(uint => uint) forwardPriceConfidences;
-  mapping(uint => int96) interestRates;
-  mapping(uint => uint64) interestRateConfidences;
+  mapping(uint => int) interestRates;
+  mapping(uint => uint) interestRateConfidences;
   mapping(uint => uint) settlementPrice;
-  mapping(uint64 => mapping(uint128 => uint128)) vols;
-  mapping(uint64 => uint64) volConfidences;
+  mapping(uint64 => mapping(uint128 => uint)) vols;
+  mapping(uint64 => uint) volConfidences;
   mapping(address => bool) public canTrade;
 
   function setCanTrade(address account, bool _canTrade) external {
@@ -36,16 +36,16 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
     settlementPrice[expiry] = price;
   }
 
-  function setVol(uint64 expiry, uint128 strike, uint128 vol, uint64 confidence) external {
+  function setVol(uint64 expiry, uint128 strike, uint vol, uint confidence) external {
     vols[expiry][strike] = vol;
     volConfidences[expiry] = confidence;
   }
 
-  function setVolConfidence(uint64 expiry, uint64 confidence) external {
+  function setVolConfidence(uint64 expiry, uint confidence) external {
     volConfidences[expiry] = confidence;
   }
 
-  function getExpiryMinConfidence(uint64 expiry) external view returns (uint64) {
+  function getExpiryMinConfidence(uint64 expiry) external view returns (uint) {
     return volConfidences[expiry];
   }
 
@@ -98,12 +98,12 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   // IVolFeed
 
-  function getVol(uint128 strike, uint64 expiry) external view returns (uint128 vol, uint64 confidence) {
+  function getVol(uint128 strike, uint64 expiry) external view returns (uint vol, uint confidence) {
     return (vols[expiry][strike], volConfidences[expiry]);
   }
 
   // IInterestRateFeed
-  function getInterestRate(uint64 expiry) external view returns (int96 interestRate, uint64 confidence) {
+  function getInterestRate(uint64 expiry) external view returns (int interestRate, uint confidence) {
     return (interestRates[expiry], interestRateConfidences[expiry]);
   }
 }

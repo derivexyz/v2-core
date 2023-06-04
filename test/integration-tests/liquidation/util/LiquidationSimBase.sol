@@ -234,10 +234,7 @@ contract LiquidationSimBase is PMRMTestBase {
 
     for (uint i = 0; i < feedData.VolFeedStrikes.length; ++i) {
       feed.setVol(
-        uint64(feedData.VolFeedExpiries[i]),
-        uint128(feedData.VolFeedStrikes[i]),
-        uint128(feedData.VolFeedVols[i]),
-        uint64(1e18)
+        uint64(feedData.VolFeedExpiries[i]), uint128(feedData.VolFeedStrikes[i]), feedData.VolFeedVols[i], 1e18
       );
     }
   }

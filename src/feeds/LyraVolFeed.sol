@@ -47,7 +47,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
    * @notice Gets vol for a given strike and expiry
    * @return vol Vol of the given strike and expiry to 18dp.
    */
-  function getVol(uint128 strike, uint64 expiry) public view returns (uint128 vol, uint64 confidence) {
+  function getVol(uint128 strike, uint64 expiry) public view returns (uint vol, uint confidence) {
     VolDetails memory volDetail = volDetails[expiry];
 
     // Revert if no data for given expiry
@@ -72,7 +72,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
     return (vol, volDetail.confidence);
   }
 
-  function getExpiryMinConfidence(uint64 expiry) external view override returns (uint64 confidence) {
+  function getExpiryMinConfidence(uint64 expiry) external view override returns (uint confidence) {
     VolDetails memory volDetail = volDetails[expiry];
 
     // Revert if no data for given expiry

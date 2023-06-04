@@ -35,10 +35,12 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
    * @notice Gets rate
    * @return ratePrice Rate with 18 decimals.
    */
-  function getInterestRate(uint64 expiry) public view returns (int96, uint64) {
-    RateDetail memory rate = rateDetails[expiry];
+  function getInterestRate(uint64 expiry) public view returns (int, uint) {
+    RateDetail memory rateDetail = rateDetails[expiry];
 
-    return (rate.rate, rate.confidence);
+    _checkNotStale(rateDetail.timestamp);
+
+    return (rateDetail.rate, rateDetail.confidence);
   }
 
   /**
@@ -69,6 +71,7 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
    * @dev return the hash of the rateData object
    */
   function hashRateData(RateData memory rateData) public pure returns (bytes32) {
-    return keccak256(abi.encode(SPOT_DATA_TYPEHASH, rateData.expiry, rateData.rate, rateData.confidence, rateData.timestamp));
+    return
+      keccak256(abi.encode(SPOT_DATA_TYPEHASH, rateData.expiry, rateData.rate, rateData.confidence, rateData.timestamp));
   }
 }

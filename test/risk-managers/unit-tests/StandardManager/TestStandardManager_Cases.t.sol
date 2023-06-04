@@ -300,7 +300,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         uint64 expiry = uint64(block.timestamp + expiries[i]);
         uint128 strike = uint128(strikes[i]) / 1e10 * 1e10; // removing dust
 
-        feed.setVol(expiry, strike, uint128(vols[i]), uint64(volConfs[i]));
+        feed.setVol(expiry, strike, vols[i], volConfs[i]);
 
         IAsset asset = isEth ? ethOption : btcOption;
         uint subId = OptionEncoding.toSubId(expiry, strike, isCalls[i] == 1);

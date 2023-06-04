@@ -212,9 +212,7 @@ contract PMRMSimTest is PMRMTestBase {
         balance: optionData[i].amount
       });
 
-      feed.setVol(
-        uint64(expiry), uint128(optionData[i].strike), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
-      );
+      feed.setVol(uint64(expiry), uint128(optionData[i].strike), optionData[i].vol, optionData[i].volConfidence);
     }
 
     if (otherAssets.cashAmount != 0) {
@@ -269,9 +267,7 @@ contract PMRMSimTest is PMRMTestBase {
         balance: optionData[i].amount
       });
 
-      feed.setVol(
-        uint64(expiry), uint128(optionData[i].strike), uint128(optionData[i].vol), uint64(optionData[i].volConfidence)
-      );
+      feed.setVol(uint64(expiry), uint128(optionData[i].strike), optionData[i].vol, optionData[i].volConfidence);
     }
 
     if (otherAssets.cashAmount != 0) {

@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-// inherited
+// Libraries
+import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/Math.sol";
+
+// Inherited
 import "src/feeds/BaseLyraFeed.sol";
 
-// interfaces
+// Interfaces
 import "src/interfaces/ILyraForwardFeed.sol";
 import "src/interfaces/IForwardFeed.sol";
 import "src/interfaces/ISettlementFeed.sol";
+import "src/interfaces/ISpotFeed.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title LyraForwardFeed
@@ -16,14 +23,17 @@ import "src/interfaces/ISettlementFeed.sol";
  *  also includes a twap average as the expiry approaches 0. This is used to ensure option value is predictable as it
  *  approaches expiry. Will also use the aggregate (spot * time) values to determine the final settlement price of the
  *  options.
+ *  Forward price is computed as a difference between the current spot price and the forward rate. This means only the
+ *  spot feed needs to be updated more frequently.
  */
 contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettlementFeed {
   bytes32 public constant FORWARD_DATA_TYPEHASH = keccak256(
-    "ForwardData(uint64 expiry,uint256 settlementStartAggregate,uint256 currentSpotAggregate,uint96 forwardPrice,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
+    "ForwardData(uint64 expiry,uint256 settlementStartAggregate,uint256 currentSpotAggregate,int96 fwdSpotDifference,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
   uint64 public constant SETTLEMENT_TWAP_DURATION = 30 minutes;
 
+  ISpotFeed public spotFeed;
   /// @dev secondary heartbeat for when the forward price is close to expiry
   uint64 public settlementHeartbeat = 5 minutes;
 
@@ -38,7 +48,9 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   //    Constructor     //
   ////////////////////////
 
-  constructor() BaseLyraFeed("LyraForwardFeed", "1") {}
+  constructor(ISpotFeed _spotFeed) BaseLyraFeed("LyraForwardFeed", "1") {
+    spotFeed = _spotFeed;
+  }
 
   ///////////
   // Admin //
@@ -51,6 +63,11 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   function setSettlementHeartbeat(uint64 _settlementHeartbeat) external onlyOwner {
     settlementHeartbeat = _settlementHeartbeat;
     emit SettlementHeartbeatUpdated(_settlementHeartbeat);
+  }
+
+  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
+    spotFeed = _spotFeed;
+    emit SpotFeedUpdated(_spotFeed);
   }
 
   ////////////////////////
@@ -79,14 +96,16 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     view
     returns (uint forwardFixedPortion, uint forwardVariablePortion, uint confidence)
   {
-    ForwardDetails memory fwdDeets = forwardDetails[uint64(expiry)];
+    (uint spotPrice, uint spotConfidence) = spotFeed.getSpot();
+
+    ForwardDetails memory fwdDeets = forwardDetails[expiry];
 
     _verifyDetailTimestamp(expiry, fwdDeets.timestamp, expiry - SETTLEMENT_TWAP_DURATION);
 
     (forwardFixedPortion, forwardVariablePortion) =
-      _getSettlementPricePortions(fwdDeets, settlementDetails[expiry], expiry);
+      _getSettlementPricePortions(spotPrice, fwdDeets, settlementDetails[expiry], expiry);
 
-    return (forwardFixedPortion, forwardVariablePortion, fwdDeets.confidence);
+    return (forwardFixedPortion, forwardVariablePortion, Math.min(fwdDeets.confidence, spotConfidence));
   }
 
   /**
@@ -104,9 +123,78 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     return (settlementData.currentSpotAggregate - settlementData.settlementStartAggregate) / SETTLEMENT_TWAP_DURATION;
   }
 
+  ////////////////////////
+  // Internal Functions //
+  ////////////////////////
+
+  /// @dev Checks the cached data timestamp against the heartbeat, and settlement heartbeat if applicable
+  function _verifyDetailTimestamp(uint64 expiry, uint64 fwdDetailsTimestamp, uint64 settlementFeedStart) internal view {
+    if (fwdDetailsTimestamp == 0) {
+      revert LFF_MissingExpiryData();
+    }
+
+    // If price is settled, return early cause we will only rely on settlement data
+    if (fwdDetailsTimestamp == expiry) {
+      return;
+    }
+
+    // If price is not settled, check that the last updated forward data is not stale
+    _checkNotStale(fwdDetailsTimestamp);
+
+    // user should attach the latest settlement data to the forward data
+    if (block.timestamp > settlementFeedStart && fwdDetailsTimestamp + settlementHeartbeat < block.timestamp) {
+      revert LFF_SettlementDataTooOld();
+    }
+  }
+
+  /**
+   * @return fixedPortion The portion of the settlement price that is guaranteed to be included.
+   *  Options have no further delta exposure to this portion.
+   * @return variablePortion The part of the price that can still change until expiry (current forward price applied to
+   *  the remaining time until expiry)
+   */
+  function _getSettlementPricePortions(
+    uint spotPrice,
+    ForwardDetails memory fwdDeets,
+    SettlementDetails memory settlementData,
+    uint64 expiry
+  ) internal view returns (uint fixedPortion, uint variablePortion) {
+    // UNSCALED variable portion (must be scaled down if close to expiry)
+    variablePortion = SafeCast.toUint256(SafeCast.toInt256(spotPrice) + int(fwdDeets.fwdSpotDifference));
+
+    // It's possible at the start of the period these values are equal, so just ignore them
+    if (expiry - fwdDeets.timestamp >= SETTLEMENT_TWAP_DURATION) {
+      return (0, variablePortion);
+    }
+
+    // SCALED fixed portion (must be scaled down if not at expiry)
+    uint aggregateDiff = settlementData.currentSpotAggregate - settlementData.settlementStartAggregate;
+    fixedPortion = aggregateDiff / SETTLEMENT_TWAP_DURATION;
+
+    // Now scale the variable portion down since we're past the settlement threshold
+    // timestamp cannot exceed expiry, so this will be 0 if we're at expiry
+    variablePortion = variablePortion * (expiry - fwdDeets.timestamp) / SETTLEMENT_TWAP_DURATION;
+
+    return (fixedPortion, variablePortion);
+  }
+
+  function _verifySettlementDataValid(ForwardAndSettlementData memory forwardData) internal pure {
+    if (
+      forwardData.settlementStartAggregate == 0 //
+        || forwardData.currentSpotAggregate == 0
+        || forwardData.settlementStartAggregate >= forwardData.currentSpotAggregate
+    ) {
+      revert LFF_InvalidSettlementData();
+    }
+  }
+
+  /////////////////////////
+  // Parsing signed data //
+  /////////////////////////
+
   function acceptData(bytes calldata data) external override {
     // parse data as ForwardData
-    ForwardData memory forwardData = abi.decode(data, (ForwardData));
+    ForwardAndSettlementData memory forwardData = abi.decode(data, (ForwardAndSettlementData));
     // verify signature
     bytes32 structHash = hashForwardData(forwardData);
     _verifySignatureDetails(
@@ -139,7 +227,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
     // always update forward
     ForwardDetails memory forwardDetail = ForwardDetails({
-      forwardPrice: forwardData.forwardPrice,
+      fwdSpotDifference: forwardData.fwdSpotDifference,
       confidence: forwardData.confidence,
       timestamp: forwardData.timestamp
     });
@@ -151,75 +239,16 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   /**
    * @dev return the hash of the spotData object
    */
-  function hashForwardData(ForwardData memory forwardData) public pure returns (bytes32) {
+  function hashForwardData(ForwardAndSettlementData memory forwardData) public pure returns (bytes32) {
     return keccak256(
       abi.encode(
         FORWARD_DATA_TYPEHASH,
-        forwardData.forwardPrice,
+        forwardData.fwdSpotDifference,
         forwardData.settlementStartAggregate,
         forwardData.currentSpotAggregate,
         forwardData.confidence,
         forwardData.timestamp
       )
     );
-  }
-
-  ////////////////////////
-  // Internal Functions //
-  ////////////////////////
-
-  /// @dev Checks the cached data timestamp against the heartbeat, and settlement heartbeat if applicable
-  function _verifyDetailTimestamp(uint64 expiry, uint64 fwdDetailsTimestamp, uint64 settlementFeedStart) internal view {
-    if (fwdDetailsTimestamp == 0) {
-      revert LFF_MissingExpiryData();
-    }
-
-    // if price is settled, return early cause we will only rely on settlement data
-    if (fwdDetailsTimestamp == expiry) {
-      return;
-    }
-
-    // if price is not settled, check that the last updated forward data is not stales
-    _checkNotStale(fwdDetailsTimestamp);
-
-    // user should attach the latest settlement data to the forward data
-    if (block.timestamp > settlementFeedStart && fwdDetailsTimestamp + settlementHeartbeat < block.timestamp) {
-      revert LFF_SettlementDataTooOld();
-    }
-  }
-
-  /**
-   * @return fixedPortion The portion of the settlement price that is guaranteed to be included.
-   *  Options have no further delta exposure to this portion.
-   * @return variablePortion The part of the price that can still change until expiry (current forward price applied to
-   *  the remaining time until expiry)
-   */
-  function _getSettlementPricePortions(
-    ForwardDetails memory fwdDeets,
-    SettlementDetails memory settlementData,
-    uint64 expiry
-  ) internal pure returns (uint fixedPortion, uint variablePortion) {
-    // It's possible at the start of the period these values are equal, so just ignore them
-    if (expiry - fwdDeets.timestamp >= SETTLEMENT_TWAP_DURATION) {
-      return (0, fwdDeets.forwardPrice);
-    }
-
-    // fixedPortion is the part of settlement which cannot change from here on out
-    uint aggregateDiff = settlementData.currentSpotAggregate - settlementData.settlementStartAggregate;
-    fixedPortion = aggregateDiff / SETTLEMENT_TWAP_DURATION;
-
-    variablePortion = fwdDeets.forwardPrice * (expiry - fwdDeets.timestamp) / SETTLEMENT_TWAP_DURATION;
-
-    return (fixedPortion, variablePortion);
-  }
-
-  function _verifySettlementDataValid(ForwardData memory forwardData) internal pure {
-    if (
-      forwardData.settlementStartAggregate == 0 //
-        || forwardData.currentSpotAggregate == 0
-        || forwardData.settlementStartAggregate >= forwardData.currentSpotAggregate
-    ) {
-      revert LFF_InvalidSettlementData();
-    }
   }
 }
