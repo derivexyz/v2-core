@@ -197,6 +197,7 @@ contract PMRMSimTest is PMRMTestBase {
     }
 
     stableFeed.setSpot(feedData.stablePrice, feedData.stableConfidence);
+    mockPerp.setMockPerpPrice(feedData.perpPrice, feedData.perpConfidence);
 
     /// Get assets for user
 
@@ -252,7 +253,7 @@ contract PMRMSimTest is PMRMTestBase {
     }
 
     stableFeed.setSpot(feedData.stablePrice, feedData.stableConfidence);
-    perpFeed.setSpot(feedData.perpPrice, feedData.perpConfidence);
+    mockPerp.setMockPerpPrice(feedData.perpPrice, feedData.perpConfidence);
     /// Get assets for user
 
     uint totalAssets = optionData.length + otherAssets.count;

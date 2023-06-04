@@ -31,14 +31,14 @@ interface IInterestRateModel {
   // Events //
   ////////////
 
-  ///@dev Emitted when interest rate parameters are set
+  /// @dev Emitted when interest rate parameters are set
   event InterestRateParamsSet(uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil);
 
   ////////////
   // Errors //
   ////////////
 
-  ///@dev Revert when the parameter set is greater than 1e18
+  /// @dev Revert when the parameter set is greater than 1e18
   error IRM_ParameterMustBeLessThanOne(uint param);
   error IRM_NoElapsedTime(uint elapsedTime);
 }

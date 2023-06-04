@@ -23,16 +23,16 @@ contract InterestRateModel is IInterestRateModel {
   // State Variables //
   /////////////////////
 
-  ///@dev The base yearly interest rate represented as a mantissa (0-1e18)
+  /// @dev The base yearly interest rate represented as a mantissa (0-1e18)
   uint public immutable minRate;
 
-  ///@dev The multiplier of utilization rate that gives the slope of the interest rate as a mantissa
+  /// @dev The multiplier of utilization rate that gives the slope of the interest rate as a mantissa
   uint public immutable rateMultiplier;
 
-  ///@dev The multiplier after hitting the optimal utilization point
+  /// @dev The multiplier after hitting the optimal utilization point
   uint public immutable highRateMultiplier;
 
-  ///@dev The utilization point at which the highRateMultiplier is applied, represented as a mantissa
+  /// @dev The utilization point at which the highRateMultiplier is applied, represented as a mantissa
   uint public immutable optimalUtil;
 
   ////////////////////////

@@ -25,22 +25,22 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
   using SafeERC20 for IERC20Metadata;
   using DecimalMath for uint;
 
-  ///@dev Cash Asset contract address
+  /// @dev Cash Asset contract address
   ISubAccounts public immutable subAccounts;
 
-  ///@dev Cash Asset contract address
+  /// @dev Cash Asset contract address
   ICashAsset public immutable cashAsset;
 
-  ///@dev The token address for stable coin
+  /// @dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
 
-  ///@dev Store stable coin decimal as immutable
+  /// @dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
 
-  ///@dev The account id security module is holding
+  /// @dev The account id security module is holding
   uint public immutable accountId;
 
-  ///@dev Mapping of (address => isWhitelistedModule)
+  /// @dev Mapping of (address => isWhitelistedModule)
   mapping(address => bool) public isWhitelisted;
 
   constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IManager accountManager) {

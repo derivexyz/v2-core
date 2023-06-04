@@ -44,7 +44,7 @@ interface IStandardManager {
     int depegPenaltyPos;
   }
 
-  ///@dev contains portfolio struct for single expiry assets
+  /// @dev contains portfolio struct for single expiry assets
   struct ExpiryHolding {
     /// expiry timestamp
     uint expiry;
@@ -66,13 +66,13 @@ interface IStandardManager {
     bool isCall;
   }
 
-  ///@dev Struct for Perp Margin Requirements
+  /// @dev Struct for Perp Margin Requirements
   struct PerpMarginRequirements {
     uint mmRequirement;
     uint imRequirement;
   }
 
-  ///@dev Struct for Option Margin Parameters
+  /// @dev Struct for Option Margin Parameters
   struct OptionMarginParameters {
     int scOffset1;
     int scOffset2;
@@ -137,12 +137,7 @@ interface IStandardManager {
   event AssetWhitelisted(address asset, uint8 marketId, AssetType assetType);
 
   event OraclesSet(
-    uint8 marketId,
-    address spotOracle,
-    address perpOracle,
-    address forwardOracle,
-    address settlementOracle,
-    address volFeed
+    uint8 marketId, address spotOracle, address forwardOracle, address settlementOracle, address volFeed
   );
 
   event PricingModuleSet(uint8 marketId, address pricingModule);

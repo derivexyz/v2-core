@@ -73,9 +73,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /// @dev Mapping from marketId to spot price oracle
   mapping(uint marketId => ISpotFeed) public spotFeeds;
 
-  /// @dev Mapping from marketId to market price of perps
-  mapping(uint marketId => ISpotFeed) public perpFeeds;
-
   /// @dev Mapping from marketId to settlement price oracle
   mapping(uint marketId => ISettlementFeed) public settlementFeeds;
 
@@ -116,21 +113,17 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function setOraclesForMarket(
     uint8 marketId,
     ISpotFeed spotFeed,
-    ISpotFeed perpFeed,
     IForwardFeed forwardFeed,
     ISettlementFeed settlementFeed,
     IVolFeed volFeed
   ) external onlyOwner {
     // registered asset
     spotFeeds[marketId] = spotFeed;
-    perpFeeds[marketId] = perpFeed;
     forwardFeeds[marketId] = forwardFeed;
     settlementFeeds[marketId] = settlementFeed;
     volFeeds[marketId] = volFeed;
 
-    emit OraclesSet(
-      marketId, address(spotFeed), address(perpFeed), address(forwardFeed), address(settlementFeed), address(volFeed)
-    );
+    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(settlementFeed), address(volFeed));
   }
 
   /**
@@ -513,7 +506,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     if (position == 0) return 0;
 
     // while calculating margin for perp, we use the perp market price oracle
-    (uint perpPrice, uint confidence) = perpFeeds[marketHolding.marketId].getSpot();
+    (uint perpPrice, uint confidence) = marketHolding.perp.getPerpPrice();
     uint notional = SignedMath.abs(position).multiplyDecimal(perpPrice);
     uint requirement = isInitial
       ? perpMarginRequirements[marketHolding.marketId].imRequirement
@@ -741,8 +734,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
       if (detail.assetType == AssetType.Perpetual) {
         IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
-        ISpotFeed perpFeed = perpFeeds[detail.marketId];
-        fee += _getPerpOIFee(perp, perpFeed, assetDeltas[i].delta, tradeId);
+        fee += _getPerpOIFee(perp, assetDeltas[i].delta, tradeId);
       } else if (detail.assetType == AssetType.Option) {
         IOption option = IOption(address(assetDeltas[i].asset));
         IForwardFeed forwardFeed = forwardFeeds[detail.marketId];

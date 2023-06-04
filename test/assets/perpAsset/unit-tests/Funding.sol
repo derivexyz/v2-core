@@ -11,16 +11,17 @@ import "src/SubAccounts.sol";
 import "src/assets/PerpAsset.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "src/interfaces/IPerpAsset.sol";
+import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract UNIT_PerpAssetFunding is Test {
   PerpAsset perp;
   MockManager manager;
   SubAccounts subAccounts;
   MockFeeds spotFeed;
-  MockFeeds perpFeed;
+  MockSpotDiffFeed perpFeed;
+  MockSpotDiffFeed askImpactFeed;
+  MockSpotDiffFeed bidImpactFeed;
 
-  // keeper address to set impact prices
-  address keeper = address(0xb0ba);
   // users
   address alice = address(0xaaaa);
   address bob = address(0xbbbb);
@@ -35,29 +36,26 @@ contract UNIT_PerpAssetFunding is Test {
     // deploy contracts
     subAccounts = new SubAccounts("Lyra", "LYRA");
     spotFeed = new MockFeeds();
-    perpFeed = new MockFeeds();
+    perpFeed = new MockSpotDiffFeed(spotFeed);
+    askImpactFeed = new MockSpotDiffFeed(spotFeed);
+    bidImpactFeed = new MockSpotDiffFeed(spotFeed);
 
     manager = new MockManager(address(subAccounts));
     perp = new PerpAsset(subAccounts, 0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);
+    perp.setImpactFeeds(askImpactFeed, bidImpactFeed);
 
     manager = new MockManager(address(subAccounts));
 
     spotFeed.setSpot(uint(int(spot)), 1e18);
-    perpFeed.setSpot(uint(int(spot)), 1e18);
 
-    // whitelist keepers
     perp.setWhitelistManager(address(manager), true);
-    perp.setFundingRateOracle(keeper);
 
     // create account for alice and bob
     aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
     bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
-
-    vm.prank(keeper);
-    perp.setImpactPrices(spot, spot);
 
     // open trades
     ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
@@ -77,21 +75,20 @@ contract UNIT_PerpAssetFunding is Test {
   }
 
   function testSetPerpFeed() public {
-    perp.setPerpFeed(ISpotFeed(address(0)));
+    perp.setPerpFeed(ISpotDiffFeed(address(0)));
     assertEq(address(perp.perpFeed()), address(0));
+  }
+
+  function testSetImpactPriceFeeds() public {
+    perp.setImpactFeeds(ISpotDiffFeed(address(0)), ISpotDiffFeed(address(0)));
+    assertEq(address(perp.impactBidPriceFeed()), address(0));
+    assertEq(address(perp.impactAskPriceFeed()), address(0));
   }
 
   function testCannotSetSpotFeedFromNonOwner() public {
     vm.prank(alice);
     vm.expectRevert(bytes("Ownable: caller is not the owner"));
     perp.setSpotFeed(ISpotFeed(address(0)));
-  }
-
-  function testUnWhitelistBot() public {
-    perp.setFundingRateOracle(address(this));
-    vm.prank(keeper);
-    vm.expectRevert(IPerpAsset.PA_OnlyImpactPriceOracle.selector);
-    perp.setImpactPrices(0, 0);
   }
 
   function testSetInterestRate() public {
@@ -104,49 +101,40 @@ contract UNIT_PerpAssetFunding is Test {
     perp.setStaticInterestRate(-0.000001e16);
   }
 
-  function testCannotSetNegativeImpactPrices() public {
-    vm.prank(keeper);
-    vm.expectRevert(IPerpAsset.PA_ImpactPriceMustBePositive.selector);
-    perp.setImpactPrices(-1, 1);
-  }
-
-  function testCannotSetAskPriceLowerThanAskBid() public {
-    vm.prank(keeper);
-    vm.expectRevert(IPerpAsset.PA_InvalidImpactPrices.selector);
-    perp.setImpactPrices(1, 2);
-  }
-
   function testSetImpactPrices() public {
     // set impact price
-    vm.prank(keeper);
-    perp.setImpactPrices(1540e18, 1520e18);
-    assertEq(perp.impactAskPrice(), 1540e18);
-    assertEq(perp.impactBidPrice(), 1520e18);
+    bidImpactFeed.setSpotDiff(20e18, 1e18);
+    askImpactFeed.setSpotDiff(40e18, 1e18);
+    (uint bid, uint ask) = perp.getImpactPrices();
+    assertEq(bid, 1520e18);
+    assertEq(ask, 1540e18);
   }
 
   function testPositiveFundingRate() public {
-    vm.prank(keeper);
-    perp.setImpactPrices(spot + 6e18, spot + 6e18);
+    bidImpactFeed.setSpotDiff(6e18, 1e18);
+    askImpactFeed.setSpotDiff(6e18, 1e18);
 
     assertEq(perp.getFundingRate(), 0.0005e18);
   }
 
   function testPositiveFundingRateCapped() public {
-    vm.prank(keeper);
-    perp.setImpactPrices(spot + 200e18, spot + 200e18);
+    bidImpactFeed.setSpotDiff(200e18, 1e18);
+    askImpactFeed.setSpotDiff(200e18, 1e18);
+
     assertEq(perp.getFundingRate(), 0.0075e18);
   }
 
   function testNegativeFundingRate() public {
-    vm.prank(keeper);
-    perp.setImpactPrices(spot - 6e18, spot - 6e18);
+    bidImpactFeed.setSpotDiff(-6e18, 1e18);
+    askImpactFeed.setSpotDiff(-6e18, 1e18);
 
     assertEq(perp.getFundingRate(), -0.0005e18);
   }
 
   function testNegativeFundingRateCapped() public {
-    vm.prank(keeper);
-    perp.setImpactPrices(spot - 200e18, spot - 200e18);
+    bidImpactFeed.setSpotDiff(-200e18, 1e18);
+    askImpactFeed.setSpotDiff(-200e18, 1e18);
+
     assertEq(perp.getFundingRate(), -0.0075e18);
   }
 
@@ -202,25 +190,21 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testIndexPrice() public {
     spotFeed.setSpot(500e18, 1e18);
-    assertEq(perp.getIndexPrice(), 500e18);
+    (uint spotPrice,) = perp.getIndexPrice();
+    assertEq(spotPrice, 500e18);
 
-    perpFeed.setSpot(550e18, 1e18);
-    assertEq(perp.getPerpPrice(), 550e18);
+    perpFeed.setSpotDiff(50e18, 1e18);
+    (uint perpPrice,) = perp.getPerpPrice();
+    assertEq(perpPrice, 550e18);
   }
 
   function _setPricesPositiveFunding() internal {
-    int128 iap = spot + 6e18;
-    int128 ibp = spot + 6e18;
-
-    vm.prank(keeper);
-    perp.setImpactPrices(iap, ibp);
+    bidImpactFeed.setSpotDiff(6e18, 1e18);
+    askImpactFeed.setSpotDiff(6e18, 1e18);
   }
 
   function _setPricesNegativeFunding() internal {
-    int128 iap = spot - 6e18;
-    int128 ibp = spot - 6e18;
-
-    vm.prank(keeper);
-    perp.setImpactPrices(iap, ibp);
+    bidImpactFeed.setSpotDiff(-6e18, 1e18);
+    askImpactFeed.setSpotDiff(-6e18, 1e18);
   }
 }

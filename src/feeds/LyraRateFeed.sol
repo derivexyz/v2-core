@@ -14,7 +14,7 @@ import "src/interfaces/IInterestRateFeed.sol";
  * @notice Rate feed that takes off-chain updates, verify signature and update on-chain
  */
 contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
-  bytes32 public constant SPOT_DATA_TYPEHASH = keccak256(
+  bytes32 public constant RATE_DATA_TYPEHASH = keccak256(
     "RateData(uint64 expiry,int96 rate,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
@@ -71,6 +71,6 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
    */
   function hashRateData(RateData memory rateData) public pure returns (bytes32) {
     return
-      keccak256(abi.encode(SPOT_DATA_TYPEHASH, rateData.expiry, rateData.rate, rateData.confidence, rateData.timestamp));
+      keccak256(abi.encode(RATE_DATA_TYPEHASH, rateData.expiry, rateData.rate, rateData.confidence, rateData.timestamp));
   }
 }

@@ -13,10 +13,10 @@ import {IManagerWhitelist} from "src/interfaces/IManagerWhitelist.sol";
  */
 
 contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
-  ///@dev Account contract address
+  /// @dev Account contract address
   ISubAccounts public immutable subAccounts;
 
-  ///@dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
+  /// @dev Whitelisted managers. Only accounts controlled by whitelisted managers can trade this asset.
   mapping(address => bool) public whitelistedManager;
 
   /////////////////////

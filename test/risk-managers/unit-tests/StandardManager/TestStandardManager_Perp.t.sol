@@ -60,7 +60,7 @@ contract UNIT_TestStandardManager is Test {
     manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
 
-    manager.setOraclesForMarket(1, feed, feed, feed, feed, feed);
+    manager.setOraclesForMarket(1, feed, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -70,6 +70,7 @@ contract UNIT_TestStandardManager is Test {
     bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
 
     feed.setSpot(1500e18, 1e18);
+    perp.setMockPerpPrice(1500e18, 1e18);
 
     usdc.mint(address(this), 10000e18);
     usdc.approve(address(cash), type(uint).max);

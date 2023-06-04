@@ -27,6 +27,7 @@ import "test/shared/mocks/MockPerp.sol";
 import "src/feeds/OptionPricing.sol";
 import "test/risk-managers/unit-tests/PMRM/utils/PMRMPublic.sol";
 import "src/liquidation/DutchAuction.sol";
+import "../../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract PMRMTestBase is JsonMechIO {
   using stdJson for string;
@@ -42,7 +43,7 @@ contract PMRMTestBase is JsonMechIO {
   DutchAuction auction;
   MockSM sm;
   MockFeeds feed;
-  MockFeeds perpFeed;
+  MockSpotDiffFeed perpFeed;
   MockFeeds stableFeed;
   uint feeRecipient;
   OptionPricing optionPricing;
@@ -59,11 +60,10 @@ contract PMRMTestBase is JsonMechIO {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeeds();
-    perpFeed = new MockFeeds();
+    perpFeed = new MockSpotDiffFeed(feed);
     stableFeed = new MockFeeds();
     feed.setSpot(1500e18, 1e18);
     stableFeed.setSpot(1e18, 1e18);
-    perpFeed.setSpot(1500e18, 1e18);
 
     usdc = new MockERC20("USDC", "USDC");
     weth = new MockERC20("weth", "weth");
@@ -87,7 +87,6 @@ contract PMRMTestBase is JsonMechIO {
       auction,
       IPMRM.Feeds({
     spotFeed: ISpotFeed(feed),
-    perpFeed: ISpotFeed(perpFeed),
     stableFeed: ISpotFeed(stableFeed),
     forwardFeed: IForwardFeed(feed),
     interestRateFeed: IInterestRateFeed(feed),

@@ -17,6 +17,7 @@ import "src/assets/Option.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import "src/interfaces/IPerpAsset.sol";
+import "../../shared/mocks/MockSpotDiffFeed.sol";
 
 /**
  * This test use the real StandardManager & PerpAsset to test the settlement flow
@@ -28,7 +29,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   CashAsset cash;
   SubAccounts subAccounts;
   MockFeeds feed;
-  MockFeeds perpFeed;
+  MockSpotDiffFeed perpFeed;
   MockFeeds stableFeed;
   MockERC20 usdc;
   MockInterestRateModel rateModel;
@@ -52,7 +53,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     // deploy contracts
     subAccounts = new SubAccounts("Lyra", "LYRA");
     feed = new MockFeeds();
-    perpFeed = new MockFeeds();
+    perpFeed = new MockSpotDiffFeed(feed);
     stableFeed = new MockFeeds();
 
     usdc = new MockERC20("USDC", "USDC");
@@ -73,7 +74,7 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
 
-    manager.setOraclesForMarket(1, feed, feed, feed, feed, feed);
+    manager.setOraclesForMarket(1, feed, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -82,7 +83,6 @@ contract INTEGRATION_PerpAssetSettlement is Test {
     cash.setWhitelistManager(address(manager), true);
 
     perp.setWhitelistManager(address(manager), true);
-    perp.setFundingRateOracle(keeper);
 
     // create account for alice, bob, charlie
     aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
@@ -171,7 +171,8 @@ contract INTEGRATION_PerpAssetSettlement is Test {
   }
 
   function _setPerpPrices(uint price) internal {
-    perpFeed.setSpot(price, 1e18);
+    (uint spot,) = feed.getSpot();
+    perpFeed.setSpotDiff(int(price) - int(spot), 1e18);
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {

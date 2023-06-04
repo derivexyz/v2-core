@@ -149,6 +149,8 @@ contract UNIT_TestBaseManager is Test {
     tester.setOIFeeRateBPS(address(perp), 0.001e18);
 
     feed.setSpot(5000e18, 1e18);
+    perp.setMockPerpPrice(5000e18, 1e18);
+
     uint tradeId = 5;
 
     // OI increase
