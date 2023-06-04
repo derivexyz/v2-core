@@ -135,7 +135,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     _updateFundingRate();
 
     // update last index price and settle unrealized pnl into position.pnl
-    _realizePNLWithIndex(adjustment.acc, preBalance);
+    _realizePNLWithMark(adjustment.acc, preBalance);
 
     // have a new position
     finalBalance = preBalance + adjustment.amount;
@@ -201,8 +201,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @notice a public function to settle position with index, update lastIndex price and move
    * @param accountId Account Id to settle
    */
-  function realizePNLWithIndex(uint accountId) external {
-    _realizePNLWithIndex(accountId, _getPositionSize(accountId));
+  function realizePNLWithMark(uint accountId) external {
+    _realizePNLWithMark(accountId, _getPositionSize(accountId));
   }
 
   /**
@@ -248,10 +248,10 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
-   * @notice real perp position pnl based on current index price
+   * @notice real perp position pnl based on current market price
    * @dev This function will update position.PNL, but not initiate any real payment in cash
    */
-  function _realizePNLWithIndex(uint accountId, int preBalance) internal {
+  function _realizePNLWithMark(uint accountId, int preBalance) internal {
     PositionDetail storage position = positions[accountId];
 
     int perpPrice = _getPerpPrice();

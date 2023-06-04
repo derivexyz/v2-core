@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
+
 import "forge-std/console2.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "../shared/IntegrationTestBase.sol";
@@ -7,15 +8,20 @@ import "../shared/IntegrationTestBase.sol";
 /**
  * This test use the real StandardManager & PerpAsset to test the settlement flow
  */
-contract INTEGRATION_PerpAssetSettlement is IntegrationTestBase {  
-  
+contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
   int oneContract = 1e18;
 
+  uint initPrice = 1500e18;
 
   function setUp() public {
     // deploy contracts
-
     _setupIntegrationTestComplete();
+
+    // init setup for both accounts
+    _depositCash(alice, aliceAcc, DEFAULT_DEPOSIT);
+    _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
+
+    _setPerpPrices(1500e18);
 
     // open trades: Alice is Short, Bob is Long
     _tradePerpContract(ethPerp, aliceAcc, bobAcc, oneContract);
@@ -48,6 +54,8 @@ contract INTEGRATION_PerpAssetSettlement is IntegrationTestBase {
 
     // alice has lost $100
     assertEq(cashBefore - 100e18, cashAfter);
+
+    ethFeed.setSpot(2000e18, 1e18);
   }
 
   function testCanSettleUnrealizedLossForAnyAccount() public {
@@ -89,7 +97,7 @@ contract INTEGRATION_PerpAssetSettlement is IntegrationTestBase {
   }
 
   function _setPerpPrices(uint price) internal {
-  (uint spot,) = ethFeed.getSpot();
+    (uint spot,) = ethFeed.getSpot();
     ethPerpFeed.setSpotDiff(int(price) - int(spot), 1e18);
   }
 

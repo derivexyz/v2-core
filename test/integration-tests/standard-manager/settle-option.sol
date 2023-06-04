@@ -9,7 +9,7 @@ import "../shared/IntegrationTestBase.sol";
 /**
  * @dev testing settlement logic for Standard Manager
  */
-contract INTEGRATION_SRM_Settlement is IntegrationTestBase {
+contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
   using DecimalMath for uint;
 
   address charlie = address(0xcc);

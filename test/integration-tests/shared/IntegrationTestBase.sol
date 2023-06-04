@@ -20,7 +20,6 @@ import "src/risk-managers/PMRM.sol";
 
 import "src/feeds/OptionPricing.sol";
 
-
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockSpotDiffFeed.sol";
@@ -162,6 +161,11 @@ contract IntegrationTestBase is Test {
     ethOption.setTotalPositionCap(srm, 10000e18);
     ethPerp.setTotalPositionCap(srm, 10000e18);
     ethBase.setTotalPositionCap(srm, 10000e18);
+
+    ethPerp.setSpotFeed(ethFeed);
+    ethPerp.setPerpFeed(ethPerpFeed);
+
+    ethFeed.setSpot(2000e18, 1e18);
   }
 
   function _setupStandardManager() internal {
@@ -262,26 +266,6 @@ contract IntegrationTestBase is Test {
     });
 
     subAccounts.submitTransfers(transferBatch, "");
-  }
-
-  /**
-   * @dev set current price of aggregator
-   * @param price price in 18 decimals
-   */
-  function _setSpotPriceE18(int price) internal {
-    uint80 round = 1;
-    // convert to chainlink decimals
-    //  int answerE8 = price / 1e10;
-    //  aggregator.updateRoundData(round, answerE8, block.timestamp, block.timestamp, round);
-  }
-
-  /**
-   * @dev set future price for feed
-   * @param price price in 18 decimals
-   */
-  function _setForwardPrice(uint, /*expiry*/ int price) internal {
-    // currently the same as set spot price
-    _setSpotPriceE18(price);
   }
 
   /**

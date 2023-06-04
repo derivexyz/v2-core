@@ -421,7 +421,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev calling function should make sure perp address is trusted
    */
   function _settlePerpUnrealizedPNL(IPerpAsset perp, uint accountId) internal {
-    perp.realizePNLWithIndex(accountId);
+    perp.realizePNLWithMark(accountId);
 
     _settlePerpRealizedPNL(perp, accountId);
   }

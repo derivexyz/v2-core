@@ -38,7 +38,7 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   /// TODO: docs
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash);
 
-  function realizePNLWithIndex(uint account) external;
+  function realizePNLWithMark(uint account) external;
 
   function getIndexPrice() external view returns (uint, uint);
 
