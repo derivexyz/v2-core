@@ -160,11 +160,14 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function setOptionMarginParams(uint8 marketId, OptionMarginParams calldata params) external onlyOwner {
     if (
-      params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 || params.minSpotReq < 0 || params.minSpotReq > 1.2e18
-        || params.mmCallSpotReq < 0 || params.mmCallSpotReq > 1e18 || params.mmPutSpotReq < 0
-        || params.mmPutSpotReq > 1e18 || params.MMPutMtMReq < 0 || params.MMPutMtMReq > 1e18
-        || params.unpairedMMScale < 1e18 || params.unpairedMMScale > 3e18 || params.unpairedIMScale < 1e18
-        || params.unpairedIMScale > 3e18 || params.mmOffsetScale < 1e18 || params.mmOffsetScale > 3e18
+      params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 // 0 < x < 1.2
+        || params.minSpotReq < 0 || params.minSpotReq > 1.2e18 // 0 < x < 1,2
+        || params.mmCallSpotReq < 0 || params.mmCallSpotReq > 1e18 // 0 < x < 1
+        || params.mmPutSpotReq < 0 || params.mmPutSpotReq > 1e18 // 0 < x < 1
+        || params.MMPutMtMReq < 0 || params.MMPutMtMReq > 1e18 // 0 < x < 1
+        || params.unpairedMMScale < 1e18 || params.unpairedMMScale > 3e18 // 1 < x < 3
+        || params.unpairedIMScale < 1e18 || params.unpairedIMScale > 3e18 // 1 < x < 3
+        || params.mmOffsetScale < 1e18 || params.mmOffsetScale > 3e18 // 1 < x < 3
     ) {
       revert SRM_InvalidOptionMarginParams();
     }
