@@ -133,7 +133,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function setPerpMarginRequirements(uint8 marketId, uint _mmPerpReq, uint _imPerpReq) external onlyOwner {
     if (_mmPerpReq > _imPerpReq || _mmPerpReq == 0 || _mmPerpReq >= 1e18 || _imPerpReq >= 1e18) {
-      revert SRM_InvalidMarginRequirement();
+      revert SRM_InvalidPerpMarginParams();
     }
 
     perpMarginRequirements[marketId] = PerpMarginRequirements(_mmPerpReq, _imPerpReq);
@@ -159,6 +159,20 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Set the option margin parameters for an market
    */
   function setOptionMarginParameters(uint8 marketId, OptionMarginParameters calldata params) external onlyOwner {
+
+    if (
+        params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 || 
+        params.minSpotReq < 0 || params.minSpotReq > 1.2e18 || 
+        params.mmCallSpotReq < 0 || params.mmCallSpotReq > 1e18 || 
+        params.mmPutSpotReq < 0 || params.mmPutSpotReq > 1e18 || 
+        params.MMPutMtMReq < 0 || params.MMPutMtMReq > 1e18 || 
+        params.unpairedMMScale < 1e18 || params.unpairedMMScale > 3e18 || 
+        params.unpairedIMScale < 1e18 || params.unpairedIMScale > 3e18 ||
+        params.mmOffsetScale < 1e18 || params.mmOffsetScale > 3e18
+    ) {
+      revert SRM_InvalidOptionMarginParams();
+    }
+
     optionMarginParams[marketId] = params;
 
     emit OptionMarginParametersSet(

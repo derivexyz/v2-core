@@ -121,7 +121,9 @@ interface IStandardManager {
   error SRM_PortfolioBelowMargin(uint accountId, int margin);
 
   /// @dev Invalid Parameters for perp margin requirements
-  error SRM_InvalidMarginRequirement();
+  error SRM_InvalidPerpMarginParams();
+
+  error SRM_InvalidOptionMarginParams();
 
   /// @dev Forward Price for an asset is 0
   error SRM_NoForwardPrice();
