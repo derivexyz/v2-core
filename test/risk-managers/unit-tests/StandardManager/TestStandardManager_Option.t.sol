@@ -444,7 +444,7 @@ contract UNIT_TestStandardManager_Option is Test {
 
     // alice can still close position (pay premium), bob short, alice long,
     int closeAmount = 1e18;
-    int premium = 100e18;
+    int premium = 20e18;
     // this trade can go through
     _tradeOption(bobAcc, aliceAcc, closeAmount, premium, expiry, strike, true);
   }

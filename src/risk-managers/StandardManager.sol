@@ -32,6 +32,8 @@ import {BaseManager} from "./BaseManager.sol";
 
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title StandardManager
  * @author Lyra
@@ -304,11 +306,11 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     if (postIM < 0) {
       StandardManagerPortfolio memory prePortfolio = _arrangePortfolio(_undoAssetDeltas(accountId, assetDeltas));
 
-      (int preIM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, true);
+      (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
+      (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
 
-      // TODO: use MM not im
-      // allow the trade to pass if the net margin increased
-      if (postIM > preIM) return;
+      // allow the trade to pass if the net margin increased (risk reduced)
+      if (postMM > preMM) return;
 
       revert SRM_PortfolioBelowMargin(accountId, -(postIM));
     }
