@@ -128,17 +128,17 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
   /**
    * @notice Set perp maintenance margin requirement for an market
-   * @param _mmRequirement new maintenance margin requirement
-   * @param _imRequirement new initial margin requirement
+   * @param _mmPerpReq new maintenance margin requirement
+   * @param _imPerpReq new initial margin requirement
    */
-  function setPerpMarginRequirements(uint8 marketId, uint _mmRequirement, uint _imRequirement) external onlyOwner {
-    if (_mmRequirement > _imRequirement || _mmRequirement == 0 || _mmRequirement >= 1e18 || _imRequirement >= 1e18) {
+  function setPerpMarginRequirements(uint8 marketId, uint _mmPerpReq, uint _imPerpReq) external onlyOwner {
+    if (_mmPerpReq > _imPerpReq || _mmPerpReq == 0 || _mmPerpReq >= 1e18 || _imPerpReq >= 1e18) {
       revert SRM_InvalidMarginRequirement();
     }
 
-    perpMarginRequirements[marketId] = PerpMarginRequirements(_mmRequirement, _imRequirement);
+    perpMarginRequirements[marketId] = PerpMarginRequirements(_mmPerpReq, _imPerpReq);
 
-    emit PerpMarginRequirementsSet(marketId, _mmRequirement, _imRequirement);
+    emit PerpMarginRequirementsSet(marketId, _mmPerpReq, _imPerpReq);
   }
 
   /**
@@ -163,11 +163,11 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     emit OptionMarginParametersSet(
       marketId,
-      params.scOffset1,
-      params.scOffset2,
-      params.mmSCSpot,
-      params.mmSPSpot,
-      params.mmSPMtm,
+      params.maxSpotReq,
+      params.minSpotReq,
+      params.mmCallSpotReq,
+      params.mmPutSpotReq,
+      params.MMPutMtMReq,
       params.unpairedMMScale,
       params.unpairedIMScale,
       params.mmOffsetScale
@@ -509,8 +509,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     (uint perpPrice, uint confidence) = marketHolding.perp.getPerpPrice();
     uint notional = SignedMath.abs(position).multiplyDecimal(perpPrice);
     uint requirement = isInitial
-      ? perpMarginRequirements[marketHolding.marketId].imRequirement
-      : perpMarginRequirements[marketHolding.marketId].mmRequirement;
+      ? perpMarginRequirements[marketHolding.marketId].imPerpReq
+      : perpMarginRequirements[marketHolding.marketId].mmPerpReq;
     netMargin = -notional.multiplyDecimal(requirement).toInt256();
 
     if (!isInitial) return netMargin;
@@ -819,13 +819,14 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
     int maintenanceMargin = SignedMath.min(
-      params.mmSPSpot.multiplyDecimal(indexPrice).multiplyDecimal(amount), params.mmSPMtm.multiplyDecimal(markToMarket)
+      params.mmPutSpotReq.multiplyDecimal(indexPrice).multiplyDecimal(amount),
+      params.MMPutMtMReq.multiplyDecimal(markToMarket)
     ) + markToMarket;
 
     if (!isInitial) return maintenanceMargin;
 
     int otmRatio = SignedMath.max(indexPrice - strike.toInt256(), 0).divideDecimal(indexPrice);
-    int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
+    int imMultiplier = SignedMath.max(params.maxSpotReq - otmRatio, params.minSpotReq);
 
     int margin = SignedMath.min(
       imMultiplier.multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket,
@@ -849,13 +850,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ) internal view returns (int) {
     OptionMarginParameters memory params = optionMarginParams[marketId];
 
-    int maintenanceMargin = (params.mmSCSpot.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
+    int maintenanceMargin = (params.mmCallSpotReq.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
 
     if (!isInitial) return maintenanceMargin;
 
     int otmRatio = SignedMath.max((strike.toInt256() - indexPrice), 0).divideDecimal(indexPrice);
 
-    int imMultiplier = SignedMath.max(params.scOffset1 - otmRatio, params.scOffset2);
+    int imMultiplier = SignedMath.max(params.maxSpotReq - otmRatio, params.minSpotReq);
 
     int margin = (imMultiplier.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
 

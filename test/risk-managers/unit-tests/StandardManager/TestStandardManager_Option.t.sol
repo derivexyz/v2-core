@@ -133,20 +133,20 @@ contract UNIT_TestStandardManager_Option is Test {
       IStandardManager.OptionMarginParameters(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18, 1.2e18, 1.05e18);
     manager.setOptionMarginParameters(ethMarketId, params);
     (
-      int scOffset1,
-      int scOffset2,
-      int mmSCSpot,
-      int mmSPSpot,
-      int mmSPMtm,
+      int maxSpotReq,
+      int minSpotReq,
+      int mmCallSpotReq,
+      int mmPutSpotReq,
+      int MMPutMtMReq,
       int unpairedIMScale,
       int unpairedMMScale,
       int mmOffsetScale
     ) = manager.optionMarginParams(ethMarketId);
-    assertEq(scOffset1, 0.2e18);
-    assertEq(scOffset2, 0.15e18);
-    assertEq(mmSCSpot, 0.1e18);
-    assertEq(mmSPSpot, 0.07e18);
-    assertEq(mmSPMtm, 0.09e18);
+    assertEq(maxSpotReq, 0.2e18);
+    assertEq(minSpotReq, 0.15e18);
+    assertEq(mmCallSpotReq, 0.1e18);
+    assertEq(mmPutSpotReq, 0.07e18);
+    assertEq(MMPutMtMReq, 0.09e18);
     assertEq(unpairedIMScale, 1.4e18);
     assertEq(unpairedMMScale, 1.2e18);
     assertEq(mmOffsetScale, 1.05e18);

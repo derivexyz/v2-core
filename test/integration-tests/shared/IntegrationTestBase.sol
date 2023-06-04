@@ -183,11 +183,11 @@ contract IntegrationTestBase is Test {
 
     // set params
     IStandardManager.OptionMarginParameters memory params = IStandardManager.OptionMarginParameters({
-      scOffset1: 0.15e18,
-      scOffset2: 0.1e18,
-      mmSCSpot: 0.075e18,
-      mmSPSpot: 0.075e18,
-      mmSPMtm: 0.075e18,
+      maxSpotReq: 0.15e18,
+      minSpotReq: 0.1e18,
+      mmCallSpotReq: 0.075e18,
+      mmPutSpotReq: 0.075e18,
+      MMPutMtMReq: 0.075e18,
       unpairedIMScale: 1.2e18,
       unpairedMMScale: 1.1e18,
       mmOffsetScale: 1.05e18
