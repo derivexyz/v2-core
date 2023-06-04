@@ -32,8 +32,6 @@ import {BaseManager} from "./BaseManager.sol";
 
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title StandardManager
  * @author Lyra
