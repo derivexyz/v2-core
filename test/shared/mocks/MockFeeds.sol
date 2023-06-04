@@ -92,8 +92,8 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   // ISettlementPrice
 
-  function getSettlementPrice(uint64 expiry) external view returns (uint) {
-    return settlementPrice[expiry];
+  function getSettlementPrice(uint64 expiry) external view returns (bool, uint) {
+    return (settlementPrice[expiry] != 0, settlementPrice[expiry]);
   }
 
   // IVolFeed

@@ -378,7 +378,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       // skip non option asset
       if (balances[i].asset != option) continue;
 
-      // TODO: this is very broken, settlement feed reverts not returns 0 - pass in exact subIds? Or just check expiry?
       (int value, bool isSettled) = option.calcSettlementValue(balances[i].subId, balances[i].balance);
       if (!isSettled) continue;
 
@@ -421,7 +420,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev calling function should make sure perp address is trusted
    */
   function _settlePerpUnrealizedPNL(IPerpAsset perp, uint accountId) internal {
-    perp.realizePNLWithIndex(accountId);
+    perp.realizePNLWithMark(accountId);
 
     _settlePerpRealizedPNL(perp, accountId);
   }

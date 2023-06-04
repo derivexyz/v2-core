@@ -47,5 +47,5 @@ contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking,
 
   function getImpactPrices() external view returns (uint, uint) {}
 
-  function realizePNLWithIndex(uint account) external {}
+  function realizePNLWithMark(uint account) external {}
 }

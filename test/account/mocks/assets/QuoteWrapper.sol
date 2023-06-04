@@ -9,7 +9,6 @@ import "src/SubAccounts.sol";
 
 import "../feeds/PriceFeeds.sol";
 
-// TODO: interest rates, not really needed for account system PoC
 contract QuoteWrapper is IAsset, Ownable2Step {
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;

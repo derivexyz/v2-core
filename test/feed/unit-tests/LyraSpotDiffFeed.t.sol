@@ -37,6 +37,12 @@ contract UNIT_LyraSpotDiffFeed is Test {
     feed.addSigner(pkOwner, true);
   }
 
+  function testSetSpotFeed() public {
+    MockFeeds newSpotFeed = new MockFeeds();
+    feed.setSpotFeed(newSpotFeed);
+    assertEq(address(feed.spotFeed()), address(newSpotFeed));
+  }
+
   function testCanPassInDataAndUpdateSpotDiffFeed() public {
     ILyraSpotDiffFeed.SpotDiffData memory spotDiffData = _getDefaultSpotDiffData();
     bytes memory data = _getSignedSpotDiffData(pk, spotDiffData);

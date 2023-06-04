@@ -5,7 +5,7 @@ interface ISettlementFeed {
   /**
    * @dev Get settlement price for the underlying asset
    */
-  function getSettlementPrice(uint64 expiry) external view returns (uint price);
+  function getSettlementPrice(uint64 expiry) external view returns (bool settled, uint price);
 
   ////////////
   // Events //

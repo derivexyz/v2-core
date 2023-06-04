@@ -81,7 +81,6 @@ contract Lending is IAsset, Ownable2Step {
     }
 
     /* (b) updates totalBorrows and totalSupply according to adjustment */
-    // TODO: need to clean up
     if (freshBal <= 0 && finalBal <= 0) {
       totalBorrow = (totalBorrow.toInt256() + (freshBal - finalBal)).toUint256();
     } else if (freshBal >= 0 && finalBal >= 0) {
@@ -234,8 +233,6 @@ contract Lending is IAsset, Ownable2Step {
   ///////////
 
   function socializeLoss(uint accountId, uint borrowAmountToSocialize) public {
-    // TODO: this will need some onlyManager modifier
-
     uint supplyPrior = totalSupply;
     uint newSupplyIndex = (supplyPrior - borrowAmountToSocialize) * supplyIndex / supplyPrior;
 
@@ -316,7 +313,6 @@ contract Lending is IAsset, Ownable2Step {
 
     accruedFees = accruedFeesPrior - reduceAmount;
 
-    // TODO: implement token specific transfer for various types of stables
     // doTransferOut(admin, reduceAmount);
     token.transfer(recipientAccount, reduceAmount);
 
