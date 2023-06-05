@@ -48,6 +48,7 @@ contract IntegrationTestBase is Test {
     MockFeeds feed;
     MockSpotDiffFeed perpFeed;
     OptionPricing pricing;
+    PMRM pmrm;
   }
 
   SubAccounts subAccounts;
@@ -81,13 +82,13 @@ contract IntegrationTestBase is Test {
 
   function _setupIntegrationTestComplete() internal {
     // deploy Accounts, cash, security module, auction
-    _deployAllV2Contracts();
-    _setupAuctionAndSM();
+    _deployV2Core();
+    _setupCoreContracts();
 
     _deployMarket("weth");
 
     // setup config on assets
-    _setupMarketAssets("weth");
+    _setupAssetsForManager(srm, "weth");
 
     // setup managers
     _setupStandardManager("weth");
@@ -104,7 +105,7 @@ contract IntegrationTestBase is Test {
     bobAcc = subAccounts.createAccountWithApproval(bob, address(this), srm);
   }
 
-  function _deployAllV2Contracts() internal {
+  function _deployV2Core() internal {
     // nonce: 1 => Deploy Accounts
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
@@ -156,6 +157,26 @@ contract IntegrationTestBase is Test {
 
     OptionPricing pricing = new OptionPricing();
 
+    IPMRM.Feeds memory feeds = IPMRM.Feeds({
+      spotFeed: feed,
+      stableFeed: stableFeed,
+      forwardFeed: feed,
+      interestRateFeed: feed,
+      volFeed: feed,
+      settlementFeed: feed
+    });
+
+    PMRM pmrm = new PMRM(
+      subAccounts, 
+      cash, 
+      option, 
+      perp, 
+      pricing,
+      base, 
+      auction,
+      feeds
+    );
+
     perp.setSpotFeed(feed);
     perp.setPerpFeed(perpFeed);
 
@@ -167,22 +188,24 @@ contract IntegrationTestBase is Test {
       base: base,
       feed: feed,
       perpFeed: perpFeed,
-      pricing: pricing
+      pricing: pricing,
+      pmrm: pmrm
     });
+
+    _setupPMRM(pmrm);
   }
 
-  function _setupMarketAssets(string memory key) internal {
+  function _setupAssetsForManager(IBaseManager manager, string memory key) internal {
     Market storage market = markets[key];
-    // whitelist setting in cash asset and option assert
-    cash.setWhitelistManager(address(srm), true);
-    market.option.setWhitelistManager(address(srm), true);
-    market.base.setWhitelistManager(address(srm), true);
-    market.perp.setWhitelistManager(address(srm), true);
+
+    market.option.setWhitelistManager(address(manager), true);
+    market.base.setWhitelistManager(address(manager), true);
+    market.perp.setWhitelistManager(address(manager), true);
 
     // set caps
-    market.option.setTotalPositionCap(srm, 10000e18);
-    market.perp.setTotalPositionCap(srm, 10000e18);
-    market.base.setTotalPositionCap(srm, 10000e18);
+    market.option.setTotalPositionCap(manager, 10000e18);
+    market.perp.setTotalPositionCap(manager, 10000e18);
+    market.base.setTotalPositionCap(manager, 10000e18);
 
     market.feed.setSpot(2000e18, 1e18);
   }
@@ -220,12 +243,14 @@ contract IntegrationTestBase is Test {
     srm.setPerpMarginRequirements(market.id, 0.05e18, 0.065e18);
   }
 
-  function _setupAuctionAndSM() internal {
+  function _setupCoreContracts() internal {
     // set parameter for auction
     auction.setSolventAuctionParams(_getDefaultAuctionParam());
 
     // allow liquidation to request payout from sm
     securityModule.setWhitelistModule(address(auction), true);
+
+    cash.setWhitelistManager(address(srm), true);
   }
 
   /**
@@ -381,8 +406,42 @@ contract IntegrationTestBase is Test {
     return forwardPrice;
   }
 
-  /**
-   * for coverage to ignore
-   */
-  function test() public {}
+  function _setupPMRM(PMRM pmrm) internal {
+    IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
+      scenarioSpotUp: 1.05e18,
+      scenarioSpotDown: 0.95e18,
+      basisContAddFactor: 0.25e18,
+      basisContMultFactor: 0.01e18
+    });
+
+    IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
+      pegLossThreshold: 0.98e18,
+      pegLossFactor: 2e18,
+      confThreshold: 0.6e18,
+      confMargin: 0.5e18,
+      basePercent: 0.02e18,
+      perpPercent: 0.02e18,
+      optionPercent: 0.01e18
+    });
+
+    IPMRMLib.MarginParameters memory marginParams = IPMRMLib.MarginParameters({
+      imFactor: 1.3e18,
+      baseStaticDiscount: 0.95e18,
+      rateMultScale: 4e18,
+      rateAddScale: 0.05e18
+    });
+
+    IPMRMLib.VolShockParameters memory volShockParams = IPMRMLib.VolShockParameters({
+      volRangeUp: 0.45e18,
+      volRangeDown: 0.3e18,
+      shortTermPower: 0.3e18,
+      longTermPower: 0.13e18,
+      dteFloor: 1 days
+    });
+
+    pmrm.setBasisContingencyParams(basisContParams);
+    pmrm.setOtherContingencyParams(otherContParams);
+    pmrm.setMarginParams(marginParams);
+    pmrm.setVolShockParams(volShockParams);
+  }
 }
