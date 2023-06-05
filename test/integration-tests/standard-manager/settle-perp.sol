@@ -21,7 +21,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     _depositCash(alice, aliceAcc, DEFAULT_DEPOSIT);
     _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
 
-    _setPerpPrices(1500e18);
+    _setPerpPrices("weth", 1500e18, 1e18);
 
     // open trades: Alice is Short, Bob is Long
     _tradePerpContract(markets["weth"].perp, aliceAcc, bobAcc, oneContract);
@@ -30,7 +30,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
   function testSettleLongPosition() public {
     int cashBefore = _getCashBalance(bobAcc);
 
-    _setPerpPrices(1600e18);
+    _setPerpPrices("weth", 1600e18, 1e18);
 
     // bobAcc close his position and has $100 in PNL
     _tradePerpContract(markets["weth"].perp, bobAcc, aliceAcc, oneContract);
@@ -45,7 +45,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     int cashBefore = _getCashBalance(aliceAcc);
 
     // alice is short, bob is long
-    _setPerpPrices(1600e18);
+    _setPerpPrices("weth", 1600e18, 1e18);
 
     // alice close his position and has $100 in PNL
     _tradePerpContract(markets["weth"].perp, bobAcc, aliceAcc, oneContract);
@@ -62,7 +62,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     int cashBefore = _getCashBalance(aliceAcc);
 
     // alice is short, bob is long
-    _setPerpPrices(1600e18);
+    _setPerpPrices("weth", 1600e18, 1e18);
 
     srm.settlePerpsWithIndex(markets["weth"].perp, aliceAcc);
 
@@ -75,7 +75,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     int bobCashBefore = _getCashBalance(bobAcc);
 
     // alice is short, bob is long
-    _setPerpPrices(1600e18);
+    _setPerpPrices("weth", 1600e18, 1e18);
 
     srm.settlePerpsWithIndex(markets["weth"].perp, aliceAcc);
     srm.settlePerpsWithIndex(markets["weth"].perp, bobAcc);
@@ -91,14 +91,9 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
   }
 
   function testCanSettleIntoNegativeCash() public {
-    _setPerpPrices(200_000e18);
+    _setPerpPrices("weth", 200_000e18, 1e18);
     srm.settlePerpsWithIndex(markets["weth"].perp, aliceAcc);
     assertLt(_getCashBalance(aliceAcc), 0);
-  }
-
-  function _setPerpPrices(uint price) internal {
-    (uint spot,) = markets["weth"].feed.getSpot();
-    markets["weth"].perpFeed.setSpotDiff(int(price) - int(spot), 1e18);
   }
 
   function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {

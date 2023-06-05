@@ -22,7 +22,7 @@ import "src/feeds/OptionPricing.sol";
 
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
-import "../../shared/mocks/MockSpotDiffFeed.sol";
+import "src/feeds/LyraSpotDiffFeed.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
 
@@ -52,7 +52,9 @@ contract IntegrationTestBase is Test {
     WrappedERC20Asset base;
     LyraSpotFeed spotFeed;
     MockFeeds feed;
-    MockSpotDiffFeed perpFeed;
+    LyraSpotDiffFeed perpFeed;
+    LyraSpotDiffFeed iapFeed;
+    LyraSpotDiffFeed ibpFeed;
     OptionPricing pricing;
     PMRM pmrm;
   }
@@ -164,6 +166,9 @@ contract IntegrationTestBase is Test {
     // setup feeds
     // todo: move to internal function
     markets[token].spotFeed.addSigner(keeper, true);
+    markets[token].perpFeed.addSigner(keeper, true);
+    markets[token].iapFeed.addSigner(keeper, true);
+    markets[token].ibpFeed.addSigner(keeper, true);
 
     _setSpotPrice(markets[token].spotFeed, 2000e18, 1e18);
   }
@@ -184,7 +189,14 @@ contract IntegrationTestBase is Test {
 
     WrappedERC20Asset base = new WrappedERC20Asset(subAccounts, erc20);
 
-    MockSpotDiffFeed perpFeed = new MockSpotDiffFeed(spotFeed);
+    LyraSpotDiffFeed perpFeed = new LyraSpotDiffFeed(spotFeed);
+    LyraSpotDiffFeed iapFeed = new LyraSpotDiffFeed(spotFeed);
+    LyraSpotDiffFeed ibpFeed = new LyraSpotDiffFeed(spotFeed);
+
+    spotFeed.setHeartbeat(1 minutes);
+    perpFeed.setHeartbeat(20 minutes);
+    iapFeed.setHeartbeat(20 minutes);
+    ibpFeed.setHeartbeat(20 minutes);
 
     OptionPricing pricing = new OptionPricing();
 
@@ -208,8 +220,9 @@ contract IntegrationTestBase is Test {
       feeds
     );
 
-    perp.setSpotFeed(feed);
+    perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);
+    perp.setImpactFeeds(iapFeed, ibpFeed);
 
     markets[token] = Market({
       id: marketId,
@@ -220,6 +233,8 @@ contract IntegrationTestBase is Test {
       spotFeed: spotFeed,
       feed: feed,
       perpFeed: perpFeed,
+      iapFeed: iapFeed,
+      ibpFeed: ibpFeed,
       pricing: pricing,
       pmrm: pmrm
     });
@@ -444,6 +459,34 @@ contract IntegrationTestBase is Test {
     bytes memory data = abi.encode(spotData);
     // submit to feed
     spotFeed.acceptData(data);
+  }
+
+  function _setPerpPrices(string memory key, uint price, uint64 conf) internal {
+    vm.warp(block.timestamp + 5);
+    LyraSpotDiffFeed perpFeed = markets[key].perpFeed;
+
+    (uint spot,) = markets[key].spotFeed.getSpot();
+
+    int96 diff = int96(int(price) - int(spot));
+
+    ILyraSpotDiffFeed.SpotDiffData memory diffData = ILyraSpotDiffFeed.SpotDiffData({
+      spotDiff: diff,
+      confidence: conf,
+      timestamp: uint64(block.timestamp),
+      deadline: block.timestamp + 5,
+      signer: keeper,
+      signature: new bytes(0)
+    });
+
+    // sign data
+    bytes32 structHash = perpFeed.hashSpotDiffData(diffData);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(perpFeed.domainSeparator(), structHash));
+    diffData.signature = bytes.concat(r, s, bytes1(v));
+    bytes memory data = abi.encode(diffData);
+
+    perpFeed.acceptData(data);
+
+    (uint perpdd,) = perpFeed.getResult();
   }
 
   function _setPMRMParams(PMRM pmrm) internal {
