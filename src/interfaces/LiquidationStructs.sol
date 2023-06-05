@@ -9,7 +9,7 @@ enum AuctionState {
 
 /**
  * auction detail
- * @todo: pack storage to save gas?
+ * todo: pack storage to save gas
  */
 struct AuctionDetail {
   /// @dev status of the auction

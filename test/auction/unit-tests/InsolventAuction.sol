@@ -82,7 +82,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // bid 100% of the portfolio
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
 
     vm.expectRevert(IDutchAuction.DA_NotOngoingAuction.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);

@@ -121,13 +121,15 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    if (adjustment.subId != 0) revert PA_InvalidSubId();
+
     _checkManager(address(manager));
 
     // Track total OI per manager, for OI caps
     _takeTotalOISnapshotPreTrade(manager, tradeId);
     _updateTotalOI(manager, preBalance, adjustment.amount);
 
-    // Also track global subId OI (only subId == 0) TODO: do we actually limit the subId anywhere
+    // Also track global subId OI (only subId == 0)
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 

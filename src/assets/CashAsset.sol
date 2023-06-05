@@ -276,6 +276,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    if (adjustment.subId != 0) revert CA_InvalidSubId();
+
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
@@ -447,7 +449,6 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     uint elapsedTime = block.timestamp - lastTimestamp;
     lastTimestamp = (block.timestamp).toUint64();
 
-    // TODO: what if there was a borrow and then it was zeroed out, is interest trapped?
     if (totalBorrow == 0) return;
 
     // Calculate interest since last timestamp using compounded interest rate

@@ -39,6 +39,15 @@ contract UNIT_WrappedBaseAssetHook is Test {
     asset.deposit(accId, amount);
   }
 
+  function testRevertsForInvalidSubId() public {
+    uint accId2 = subAccounts.createAccount(address(this), manager);
+
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: accId, toAcc: accId2, asset: asset, subId: 1, amount: 1e18, assetData: ""});
+    vm.expectRevert(IWrappedERC20Asset.WERC_InvalidSubId.selector);
+    subAccounts.submitTransfer(transfer, "");
+  }
+
   function testDeposit() public {
     _mintAndDeposit(100e8);
 

@@ -105,6 +105,9 @@ interface ICashAsset is IAsset {
   /// @dev caller is not account
   error CA_NotAccount();
 
+  /// @dev SubId passed into adjustment is not 0
+  error CA_InvalidSubId();
+
   /// @dev caller is not the liquidation module
   error CA_NotLiquidationModule();
 

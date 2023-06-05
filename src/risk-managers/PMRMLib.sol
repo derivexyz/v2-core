@@ -78,7 +78,6 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
-    // TODO: more bounds (for this and the above)
     if (
       _volShockParams.volRangeUp > 2e18 //
         || _volShockParams.volRangeDown > 2e18 || _volShockParams.shortTermPower > 2e18
@@ -94,13 +93,22 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // MTM calculations //
   //////////////////////
 
+  /**
+   * @return margin The margin result, either IM or MM depending on "isInitial"
+   * @return markToMarket The mark-to-market value of the portfolio
+   * @return worstScenario The index of the worst scenario, if == scenarios.length, it is the forward contingency
+   */
+  ///
   function _getMarginAndMarkToMarket(
     IPMRM.Portfolio memory portfolio,
     bool isInitial,
     IPMRM.Scenario[] memory scenarios,
-    bool useFwdContingency
-  ) internal view returns (int margin, int markToMarket) {
-    int minSPAN = useFwdContingency ? portfolio.basisContingency : type(int).max;
+    bool useBasisContingency
+  ) internal view returns (int margin, int markToMarket, uint worstScenario) {
+    if (!useBasisContingency && scenarios.length == 0) revert PMRML_InvalidGetMarginState();
+
+    int minSPAN = useBasisContingency ? portfolio.basisContingency : type(int).max;
+    worstScenario = scenarios.length;
 
     for (uint i = 0; i < scenarios.length; ++i) {
       IPMRM.Scenario memory scenario = scenarios[i];
@@ -109,6 +117,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       int scenarioMTM = getScenarioMtM(portfolio, scenario);
       if (scenarioMTM < minSPAN) {
         minSPAN = scenarioMTM;
+        worstScenario = i;
       }
     }
 
@@ -126,7 +135,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       minSPAN -= portfolio.confidenceContingency.toInt256();
     }
 
-    return (minSPAN + portfolio.totalMtM + portfolio.cash, portfolio.totalMtM + portfolio.cash);
+    return (minSPAN + portfolio.totalMtM + portfolio.cash, portfolio.totalMtM + portfolio.cash, worstScenario);
   }
 
   function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
@@ -202,7 +211,6 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function _applyMTMDiscount(int shockedExpiryMTM, uint staticDiscount) internal pure returns (int) {
     if (shockedExpiryMTM > 0) {
-      // TODO: just store staticDiscount as int
       return shockedExpiryMTM.multiplyDecimal(staticDiscount.toInt256());
     } else {
       return shockedExpiryMTM;
@@ -266,10 +274,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
   }
 
-  // TODO: maybe rename to MTMDiscount
   function _addStaticDiscount(IPMRM.ExpiryHoldings memory expiry) internal view {
-    // tODO: use annualise function
-    uint tAnnualised = expiry.secToExpiry * DecimalMath.UNIT / 365 days;
+    uint tAnnualised = Black76.annualise(expiry.secToExpiry.toUint64());
     uint shockRFR = expiry.rate.multiplyDecimal(marginParams.rateMultScale) + marginParams.rateAddScale;
     expiry.staticDiscount = marginParams.baseStaticDiscount.multiplyDecimal(
       FixedPointMathLib.exp(-tAnnualised.multiplyDecimal(shockRFR).toInt256())
@@ -302,7 +308,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     );
     int basisContingencyFactor = int(
       basisContParams.basisContAddFactor //
-        + basisContParams.basisContMultFactor.multiplyDecimal(Black76.annualise(uint64(expiry.secToExpiry)))
+        + basisContParams.basisContMultFactor.multiplyDecimal(Black76.annualise(expiry.secToExpiry.toUint64()))
     );
     portfolio.basisContingency += basisContingency.multiplyDecimal(basisContingencyFactor);
   }

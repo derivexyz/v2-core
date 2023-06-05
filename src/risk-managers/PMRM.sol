@@ -237,7 +237,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       // If the caller is a trusted risk assessor, use a single predefined scenario for checking margin
       IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
       scenarios[0] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-      (int atmMM,) = _getMarginAndMarkToMarket(portfolio, false, scenarios, false);
+      (int atmMM,,) = _getMarginAndMarkToMarket(portfolio, false, scenarios, false);
 
       // revert if below maintenance margin
       if (atmMM < 0) {
@@ -245,15 +245,23 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       }
     } else {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
-      (int postIM,) = _getMarginAndMarkToMarket(portfolio, true, marginScenarios, true);
+      (int postIM,, uint worstScenario) = _getMarginAndMarkToMarket(portfolio, true, marginScenarios, true);
       if (postIM < 0) {
+        int postMM;
+        {
+          IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
+          if (worstScenario != scenarios.length) {
+            scenarios = new IPMRM.Scenario[](1);
+            scenarios[0] = marginScenarios[worstScenario];
+          }
+          (postMM,,) = _getMarginAndMarkToMarket(portfolio, false, scenarios, true);
+        }
         // Note: cash interest is also undone here, but this is not a significant issue
         IPMRM.Portfolio memory prePortfolio =
           _arrangePortfolio(accountId, _undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
-        (int preIM,) = _getMarginAndMarkToMarket(prePortfolio, true, marginScenarios, true);
-        // TODO: use MM
-        if (postIM < preIM) {
+        (int preMM,,) = _getMarginAndMarkToMarket(prePortfolio, false, marginScenarios, true);
+        if (postMM < preMM) {
           revert PMRM_InsufficientMargin();
         }
       }
@@ -500,7 +508,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
    */
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
-    (int margin,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
+    (int margin,,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
     return margin;
   }
 
@@ -516,6 +524,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
     scenarios[0] = marginScenarios[scenarioId];
 
-    return _getMarginAndMarkToMarket(portfolio, isInitial, scenarios, true);
+    (margin, mtm,) = _getMarginAndMarkToMarket(portfolio, isInitial, scenarios, true);
+    return (margin, mtm);
   }
 }
