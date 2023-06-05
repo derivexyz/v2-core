@@ -17,4 +17,5 @@ interface IWrappedERC20Asset is IAsset, IPositionTracking {
   //////////////
   error WERC_OnlyAccountOwner();
   error WERC_CannotBeNegative();
+  error WERC_InvalidSubId();
 }

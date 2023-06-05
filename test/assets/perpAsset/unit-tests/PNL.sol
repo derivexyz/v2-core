@@ -75,6 +75,14 @@ contract UNIT_PerpAssetPNL is Test {
     assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 0);
   }
 
+  function testRevertsForInvalidSubId() public {
+    // TODO: wrong spot for test
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: perp, subId: 1, amount: 1e18, assetData: ""});
+    vm.expectRevert(IPerpAsset.PA_InvalidSubId.selector);
+    subAccounts.submitTransfer(transfer, "");
+  }
+
   /* -------------------------- */
   /* Test Long position on Bob  */
   /* -------------------------- */

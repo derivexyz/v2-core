@@ -5,7 +5,6 @@ import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 
-// todo: rename to LyraManager?
 interface ILiquidatableManager is IBaseManager {
   /**
    * @notice can be called by anyone to settle a perp asset in an account

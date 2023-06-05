@@ -57,8 +57,6 @@ contract Option is IOption, PositionTracking, GlobalSubIdOITracking, ManagerWhit
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
     _checkManager(address(manager));
 
-    // todo: make sure valid subId
-
     // take snapshot of OI if this subId has not been traded in this tradeId
     if (!openInterestBeforeTrade[adjustment.subId][tradeId].initialized) {
       openInterestBeforeTrade[adjustment.subId][tradeId].initialized = true;

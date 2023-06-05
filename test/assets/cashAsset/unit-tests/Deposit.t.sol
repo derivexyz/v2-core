@@ -43,6 +43,21 @@ contract UNIT_CashAssetDeposit is Test {
     accountId = subAccounts.createAccount(address(this), manager);
   }
 
+  function testRevertsForInvalidSubId() public {
+    // TODO: wrong spot for test
+    uint account2 = subAccounts.createAccount(address(this), manager);
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
+      fromAcc: accountId,
+      toAcc: account2,
+      asset: cashAsset,
+      subId: 1,
+      amount: 1e18,
+      assetData: ""
+    });
+    vm.expectRevert(ICashAsset.CA_InvalidSubId.selector);
+    subAccounts.submitTransfer(transfer, "");
+  }
+
   function testCannotDepositIntoWeirdAccount() public {
     uint badAccount = subAccounts.createAccount(address(this), badManager);
 

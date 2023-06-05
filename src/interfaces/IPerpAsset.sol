@@ -35,7 +35,6 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
    */
   function settleRealizedPNLAndFunding(uint accountId) external returns (int pnl, int funding);
 
-  /// TODO: docs
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash);
 
   function realizePNLWithMark(uint account) external;
@@ -70,6 +69,9 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   /// @dev Caller is not the Account contract
   error PA_NotAccount();
+
+  /// @dev SubId is not 0
+  error PA_InvalidSubId();
 
   /// @dev Caller is not the liquidation module
   error PA_NotLiquidationModule();

@@ -55,4 +55,6 @@ contract IPMRMLib {
   error PMRML_InvalidMarginParameters();
   /// @dev emitted when provided vol shock parameters are invalid
   error PMRML_InvalidVolShockParameters();
+  /// @dev emitted when invalid parameters passed into _getMarginAndMarkToMarket
+  error PMRML_InvalidGetMarginState();
 }
