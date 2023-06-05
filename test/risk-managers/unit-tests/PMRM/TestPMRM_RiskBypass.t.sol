@@ -90,14 +90,37 @@ contract UNIT_TestPMRM_RiskBypass is PMRMSimTest {
     for (uint i = 0; i < balances.length; i++) {
       (,, bool isCall) = OptionEncoding.fromSubId(uint96(balances[i].subId));
       if (balances[i].balance < 0 && isCall) {
-        ISubAccounts.AssetBalance[] memory closeShortCall = new ISubAccounts.AssetBalance[](1);
+        ISubAccounts.AssetBalance[] memory closeShortCall = new ISubAccounts.AssetBalance[](2);
         closeShortCall[0] =
           ISubAccounts.AssetBalance({asset: balances[i].asset, balance: balances[i].balance, subId: balances[i].subId});
+        closeShortCall[1] = ISubAccounts.AssetBalance({asset: cash, balance: -0.001e18, subId: 0});
         _doBalanceTransfer(bobAcc, aliceAcc, closeShortCall);
         break;
       }
     }
     int imPost = pmrm.getMargin(bobAcc, true);
     assertLt(imPre, imPost);
+  }
+
+  function testPMRM_riskReducingTradeBasisContingency() public {
+    _depositCash(bobAcc, 150_000 ether);
+
+    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BasisContingency");
+    setBalances(aliceAcc, balances);
+
+    pmrm.setTrustedRiskAssessor(address(this), false);
+
+    for (uint i = 0; i < balances.length; i++) {
+      (,, bool isCall) = OptionEncoding.fromSubId(uint96(balances[i].subId));
+      if (balances[i].balance < 0 && isCall) {
+        ISubAccounts.AssetBalance[] memory closeShortCall = new ISubAccounts.AssetBalance[](2);
+        // bob donates 0.001 call to alice
+        closeShortCall[0] =
+          ISubAccounts.AssetBalance({asset: balances[i].asset, balance: 0.001e18, subId: balances[i].subId});
+        closeShortCall[1] = ISubAccounts.AssetBalance({asset: cash, balance: -0.001e18, subId: 0});
+        _doBalanceTransfer(bobAcc, aliceAcc, closeShortCall);
+        break;
+      }
+    }
   }
 }
