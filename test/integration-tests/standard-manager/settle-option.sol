@@ -43,9 +43,9 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     callId = OptionEncoding.toSubId(expiry, strike, true);
     putId = OptionEncoding.toSubId(expiry, strike, false);
 
-    ethFeed.setSpot(2000e18, 1e18);
-    ethFeed.setForwardPrice(expiry, 2000e18, 1e18);
-    ethFeed.setVol(uint64(expiry), uint128(strike), 1e18, 1e18);
+    markets["weth"].feed.setSpot(2000e18, 1e18);
+    markets["weth"].feed.setForwardPrice(expiry, 2000e18, 1e18);
+    markets["weth"].feed.setVol(uint64(expiry), uint128(strike), 1e18, 1e18);
   }
 
   // only settle alice's account at expiry
@@ -54,14 +54,14 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(ethFeed, 2500e18, expiry);
+    _setSettlementPrice(markets["weth"].feed, 2500e18, expiry);
 
     int aliceCashBefore = getCashBalance(aliceAcc);
-    uint oiBefore = ethOption.openInterest(callId);
+    uint oiBefore = markets["weth"].option.openInterest(callId);
 
-    srm.settleOptions(ethOption, aliceAcc);
+    srm.settleOptions(markets["weth"].option, aliceAcc);
     int aliceCashAfter = getCashBalance(aliceAcc);
-    uint oiAfter = ethOption.openInterest(callId);
+    uint oiAfter = markets["weth"].option.openInterest(callId);
 
     // payout is 500 USDC per contract
     int expectedPayout = 500 * amountOfContracts;
@@ -82,13 +82,13 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(ethFeed, 2500e18, expiry);
+    _setSettlementPrice(markets["weth"].feed, 2500e18, expiry);
 
     int bobCashBefore = getCashBalance(bobAcc);
 
-    srm.settleOptions(ethOption, bobAcc);
+    srm.settleOptions(markets["weth"].option, bobAcc);
     int bobCashAfter = getCashBalance(bobAcc);
-    uint oiAfter = ethOption.openInterest(callId);
+    uint oiAfter = markets["weth"].option.openInterest(callId);
 
     // payout is 500 USDC per contract
     int expectedPayout = 500 * amountOfContracts;
@@ -108,11 +108,11 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(ethFeed, 1500e18, expiry);
+    _setSettlementPrice(markets["weth"].feed, 1500e18, expiry);
 
     int aliceCashBefore = getCashBalance(aliceAcc);
 
-    srm.settleOptions(ethOption, aliceAcc);
+    srm.settleOptions(markets["weth"].option, aliceAcc);
     int aliceCashAfter = getCashBalance(aliceAcc);
 
     // payout is 500 USDC per contract
@@ -132,13 +132,13 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(ethFeed, 1500e18, expiry);
+    _setSettlementPrice(markets["weth"].feed, 1500e18, expiry);
 
     int bobCashBefore = getCashBalance(bobAcc);
 
-    srm.settleOptions(ethOption, bobAcc);
+    srm.settleOptions(markets["weth"].option, bobAcc);
     int bobCashAfter = getCashBalance(bobAcc);
-    uint oiAfter = ethOption.openInterest(putId);
+    uint oiAfter = markets["weth"].option.openInterest(putId);
 
     // payout is 500 USDC per contract
     int expectedPayout = 500 * amountOfContracts;
@@ -160,22 +160,22 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     // trade another call
     uint longExpiry = expiry + 14 days;
     uint96 longerDateCallId = OptionEncoding.toSubId(longExpiry, strike, true);
-    ethFeed.setForwardPrice(longExpiry, 2000e18, 1e18);
-    ethFeed.setVol(uint64(longExpiry), uint128(strike), 1e18, 1e18);
-    _submitTrade(aliceAcc, ethOption, longerDateCallId, amountOfContracts, bobAcc, cash, 0, 0);
+    markets["weth"].feed.setForwardPrice(longExpiry, 2000e18, 1e18);
+    markets["weth"].feed.setVol(uint64(longExpiry), uint128(strike), 1e18, 1e18);
+    _submitTrade(aliceAcc, markets["weth"].option, longerDateCallId, amountOfContracts, bobAcc, cash, 0, 0);
 
     vm.warp(expiry);
-    _setSettlementPrice(ethFeed, 1500e18, expiry);
+    _setSettlementPrice(markets["weth"].feed, 1500e18, expiry);
 
     // only settle shorted date option
-    srm.settleOptions(ethOption, bobAcc);
+    srm.settleOptions(markets["weth"].option, bobAcc);
 
     ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(bobAcc);
     assertEq(assets.length, 2);
 
     // time at second expiry, but no settlement price available
     vm.warp(longExpiry);
-    srm.settleOptions(ethOption, bobAcc);
+    srm.settleOptions(markets["weth"].option, bobAcc);
     assets = subAccounts.getAccountBalances(bobAcc);
     assertEq(assets.length, 2);
   }
@@ -191,10 +191,10 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(ethFeed, 2500e18, expiry);
+  //   _setSettlementPrice(markets["weth"].feed, 2500e18, expiry);
 
   //   // Settle Bob ITM first -> increase print
-  //   srm.settleOptions(ethOption, bobAcc);
+  //   srm.settleOptions(markets["weth"].option, bobAcc);
 
   //   // payout is 500 USDC per contract
   //   int expectedPayout = 500 * amountOfContracts;
@@ -204,16 +204,16 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
   //   _assertCashSolvent();
 
   //   // Negative due to burn for Alice OTM trade
-  //   srm.settleOptions(ethOption, aliceAcc);
+  //   srm.settleOptions(markets["weth"].option, aliceAcc);
   //   assertLt(cash.netSettledCash(), 0);
   //   _assertCashSolvent();
 
   //   // Should be 0 after all trades are settled (print for charlie ITM)
-  //   srm.settleOptions(ethOption, charlieAcc);
+  //   srm.settleOptions(markets["weth"].option, charlieAcc);
   //   assertEq(cash.netSettledCash(), 0);
   //   _assertCashSolvent();
 
-  //   assertEq(ethOption.openInterest(callId), 0);
+  //   assertEq(markets["weth"].option.openInterest(callId), 0);
   // }
 
   // // Check that negative settled cash (burned) is accounted for in interest rates
@@ -225,7 +225,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(ethFeed, ETH_PRICE + int(settlePrint), expiry);
+  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE + int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =
@@ -235,7 +235,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // Check that cash was burned to settle
   //   uint supplyBefore = cash.totalSupply();
-  //   srm.settleOptions(ethOption, aliceAcc);
+  //   srm.settleOptions(markets["weth"].option, aliceAcc);
 
   //   // Payout is 500 USDC per contract
   //   uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
@@ -275,7 +275,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(ethFeed, ETH_PRICE - int(settlePrint), expiry);
+  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE - int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =
@@ -285,7 +285,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // Check that cash was burned to settle
   //   uint supplyBefore = cash.totalSupply();
-  //   srm.settleOptions(ethOption, aliceAcc);
+  //   srm.settleOptions(markets["weth"].option, aliceAcc);
 
   //   // Payout is 500 USDC per contract
   //   uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
@@ -326,7 +326,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(ethFeed, ETH_PRICE + int(settlePrint), expiry);
+  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE + int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =
@@ -336,7 +336,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // Check that cash was printed to settle
   //   uint supplyBefore = cash.totalSupply();
-  //   srm.settleOptions(ethOption, bobAcc);
+  //   srm.settleOptions(markets["weth"].option, bobAcc);
 
   //   // Payout is 500 USDC per contract
   //   uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
@@ -376,7 +376,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(ethFeed, ETH_PRICE - int(settlePrint), expiry);
+  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE - int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =
@@ -386,7 +386,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // Check that cash was printed to settle
   //   uint supplyBefore = cash.totalSupply();
-  //   srm.settleOptions(ethOption, bobAcc);
+  //   srm.settleOptions(markets["weth"].option, bobAcc);
 
   //   // Payout is 500 USDC per contract
   //   uint expectedPayout = settlePrint * uint(amountOfContracts) / 1e18;
@@ -423,13 +423,13 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     // int premium = 2250e18;
     int premium = 0;
     // alice send call to bob, bob send premium to alice
-    _submitTrade(aliceAcc, ethOption, callId, amountOfContracts, bobAcc, cash, 0, premium);
+    _submitTrade(aliceAcc, markets["weth"].option, callId, amountOfContracts, bobAcc, cash, 0, premium);
   }
 
   function _tradePut() public {
     int premium = 1750e18;
     // alice send put to bob, bob send premium to alice
-    _submitTrade(aliceAcc, ethOption, putId, amountOfContracts, bobAcc, cash, 0, premium);
+    _submitTrade(aliceAcc, markets["weth"].option, putId, amountOfContracts, bobAcc, cash, 0, premium);
   }
 
   ///@dev create ITM call for user to borrow against
@@ -438,7 +438,16 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // trade ITM call for user to borrow against
     uint callStrike = 100e18;
-    _submitTrade(fromAcc, ethOption, uint96(ethOption.getSubId(expiry, callStrike, true)), 1e18, toAcc, cash, 0, 0);
+    _submitTrade(
+      fromAcc,
+      markets["weth"].option,
+      uint96(markets["weth"].option.getSubId(expiry, callStrike, true)),
+      1e18,
+      toAcc,
+      cash,
+      0,
+      0
+    );
     _withdrawCash(user, toAcc, borrowAmount);
   }
 

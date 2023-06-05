@@ -30,7 +30,7 @@ import "../../shared/mocks/MockSpotDiffFeed.sol";
  * @dev real SecurityModule contract
  */
 contract IntegrationTestBase is Test {
-  address alice = address(0xace);
+  address alice = address(0xa11ce);
   address bob = address(0xb0b);
   uint aliceAcc;
   uint bobAcc;
@@ -39,53 +39,60 @@ contract IntegrationTestBase is Test {
   uint public constant DEFAULT_DEPOSIT = 5000e18;
   int public constant ETH_PRICE = 2000e18;
 
+  struct Market {
+    uint8 id;
+    MockERC20 erc20;
+    Option option;
+    PerpAsset perp;
+    WrappedERC20Asset base;
+    MockFeeds feed;
+    MockSpotDiffFeed perpFeed;
+    OptionPricing pricing;
+  }
+
   SubAccounts subAccounts;
   MockERC20 usdc;
   MockERC20 weth;
 
   // Lyra Assets
   CashAsset cash;
-  Option ethOption;
   Option btcOption;
-  PerpAsset ethPerp;
   PerpAsset btcPerp;
-  WrappedERC20Asset ethBase;
   WrappedERC20Asset btcBase;
-
-  OptionPricing ethPricing;
 
   StandardManager srm;
 
   SecurityModule securityModule;
   InterestRateModel rateModel;
   DutchAuction auction;
-  MockFeeds ethFeed;
   MockFeeds btcFeed;
   MockFeeds stableFeed;
 
-  MockSpotDiffFeed ethPerpFeed;
   MockSpotDiffFeed btcPerpFeed;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
 
-  uint8 ethMarketId = 1;
+  uint8 nextId = 1;
+
   uint8 btcMarketId = 2;
+
+  mapping(string => Market) markets;
 
   function _setupIntegrationTestComplete() internal {
     // deploy Accounts, cash, security module, auction
     _deployAllV2Contracts();
-
-    (weth, ethOption, ethPerp, ethBase, ethFeed, ethPerpFeed, ethPricing) = _deployMarket("weth");
-
-    // setup config on assets
-    _setupAssets();
-
-    // setup managers
-    _setupStandardManager();
-
     _setupAuctionAndSM();
 
+    _deployMarket("weth");
+
+    // setup config on assets
+    _setupMarketAssets("weth");
+
+    // setup managers
+    _setupStandardManager("weth");
+
+    // create accounts, controlled by standard manager
     _setupAliceAndBob();
   }
 
@@ -93,14 +100,8 @@ contract IntegrationTestBase is Test {
     vm.label(alice, "alice");
     vm.label(bob, "bob");
 
-    aliceAcc = subAccounts.createAccount(alice, srm);
-    bobAcc = subAccounts.createAccount(bob, srm);
-
-    // allow this contract to submit trades
-    vm.prank(alice);
-    subAccounts.setApprovalForAll(address(this), true);
-    vm.prank(bob);
-    subAccounts.setApprovalForAll(address(this), true);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), srm);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), srm);
   }
 
   function _deployAllV2Contracts() internal {
@@ -120,7 +121,7 @@ contract IntegrationTestBase is Test {
     address auctionAddr = _predictAddress(address(this), 7);
     cash = new CashAsset(subAccounts, usdc, rateModel, smAcc, auctionAddr);
 
-    // nonce: 5 => Deploy Manager
+    // nonce: 5 => Deploy Standard Manager. Shared by all assets
     srm = new StandardManager(subAccounts, cash, IDutchAuction(auctionAddr));
 
     // nonce: 6 => Deploy SM
@@ -138,63 +139,67 @@ contract IntegrationTestBase is Test {
     // todo: allow list
   }
 
-  function _deployMarket(string memory token)
-    internal
-    returns (
-      MockERC20 erc20,
-      Option option,
-      PerpAsset perp,
-      WrappedERC20Asset base,
-      MockFeeds feed,
-      MockSpotDiffFeed perpFeed,
-      OptionPricing pricing
-    )
-  {
-    erc20 = new MockERC20(token, token);
+  function _deployMarket(string memory token) internal returns (uint8 marketId) {
+    marketId = nextId++;
 
-    feed = new MockFeeds();
+    MockERC20 erc20 = new MockERC20(token, token);
 
-    option = new Option(subAccounts, address(feed));
+    MockFeeds feed = new MockFeeds();
 
-    perp = new PerpAsset(subAccounts, 0.0075e18);
+    Option option = new Option(subAccounts, address(feed));
 
-    base = new WrappedERC20Asset(subAccounts, erc20);
+    PerpAsset perp = new PerpAsset(subAccounts, 0.0075e18);
 
-    perpFeed = new MockSpotDiffFeed(feed);
+    WrappedERC20Asset base = new WrappedERC20Asset(subAccounts, erc20);
 
-    pricing = new OptionPricing();
+    MockSpotDiffFeed perpFeed = new MockSpotDiffFeed(feed);
+
+    OptionPricing pricing = new OptionPricing();
+
+    perp.setSpotFeed(feed);
+    perp.setPerpFeed(perpFeed);
+
+    markets[token] = Market({
+      id: marketId,
+      erc20: erc20,
+      option: option,
+      perp: perp,
+      base: base,
+      feed: feed,
+      perpFeed: perpFeed,
+      pricing: pricing
+    });
   }
 
-  function _setupAssets() internal {
+  function _setupMarketAssets(string memory key) internal {
+    Market storage market = markets[key];
     // whitelist setting in cash asset and option assert
     cash.setWhitelistManager(address(srm), true);
-    ethOption.setWhitelistManager(address(srm), true);
-    ethBase.setWhitelistManager(address(srm), true);
-    ethPerp.setWhitelistManager(address(srm), true);
+    market.option.setWhitelistManager(address(srm), true);
+    market.base.setWhitelistManager(address(srm), true);
+    market.perp.setWhitelistManager(address(srm), true);
 
     // set caps
-    ethOption.setTotalPositionCap(srm, 10000e18);
-    ethPerp.setTotalPositionCap(srm, 10000e18);
-    ethBase.setTotalPositionCap(srm, 10000e18);
+    market.option.setTotalPositionCap(srm, 10000e18);
+    market.perp.setTotalPositionCap(srm, 10000e18);
+    market.base.setTotalPositionCap(srm, 10000e18);
 
-    ethPerp.setSpotFeed(ethFeed);
-    ethPerp.setPerpFeed(ethPerpFeed);
-
-    ethFeed.setSpot(2000e18, 1e18);
+    market.feed.setSpot(2000e18, 1e18);
   }
 
-  function _setupStandardManager() internal {
+  function _setupStandardManager(string memory key) internal {
+    Market storage market = markets[key];
     srm.setStableFeed(stableFeed);
 
-    srm.setPricingModule(ethMarketId, ethPricing);
+    srm.setPricingModule(market.id, market.pricing);
 
     // set assets per market
-    srm.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
-    srm.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);
-    srm.whitelistAsset(ethBase, ethMarketId, IStandardManager.AssetType.Base);
+    srm.whitelistAsset(market.perp, market.id, IStandardManager.AssetType.Perpetual);
+    srm.whitelistAsset(market.option, market.id, IStandardManager.AssetType.Option);
+    srm.whitelistAsset(market.base, market.id, IStandardManager.AssetType.Base);
 
     // set oracles
-    srm.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed);
+    srm.setOraclesForMarket(market.id, market.feed, market.feed, market.feed, market.feed);
 
     // set params
     IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({
@@ -207,14 +212,12 @@ contract IntegrationTestBase is Test {
       unpairedMMScale: 1.1e18,
       mmOffsetScale: 1.05e18
     });
-    srm.setOptionMarginParams(ethMarketId, params);
+    srm.setOptionMarginParams(market.id, params);
 
-    srm.setOracleContingencyParams(
-      ethMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)
-    );
+    srm.setOracleContingencyParams(market.id, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18));
     srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
-    srm.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
+    srm.setPerpMarginRequirements(market.id, 0.05e18, 0.065e18);
   }
 
   function _setupAuctionAndSM() internal {
