@@ -52,7 +52,7 @@ contract IntegrationTestBase is Test {
   WrappedERC20Asset ethBase;
   WrappedERC20Asset btcBase;
 
-  OptionPricing pricing;
+  OptionPricing ethPricing;
 
   StandardManager srm;
 
@@ -73,8 +73,10 @@ contract IntegrationTestBase is Test {
   uint8 btcMarketId = 2;
 
   function _setupIntegrationTestComplete() internal {
-    // deployment
+    // deploy Accounts, cash, security module, auction
     _deployAllV2Contracts();
+
+    (weth, ethOption, ethPerp, ethBase, ethFeed, ethPerpFeed, ethPricing) = _deployMarket("weth");
 
     // setup config on assets
     _setupAssets();
@@ -109,45 +111,58 @@ contract IntegrationTestBase is Test {
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
-    // nonce: 3
-    weth = new MockERC20("WETH", "WETH");
-
-    // nonce: 4 => Deploy Feed that will be used as future price and settlement price
-    ethFeed = new MockFeeds();
-
-    // nonce: 5 => Deploy RateModel
+    // nonce: 3 => Deploy RateModel
     // deploy rate model
     (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModelParam();
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    // nonce: 6 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 11);
+    // nonce: 4 => Deploy CashAsset
+    address auctionAddr = _predictAddress(address(this), 7);
     cash = new CashAsset(subAccounts, usdc, rateModel, smAcc, auctionAddr);
 
-    // nonce: 7 => Deploy OptionAsset
-    ethOption = new Option(subAccounts, address(ethFeed));
-
-    // nonce: 8 => Deploy PerpAsset
-    ethPerp = new PerpAsset(subAccounts, 0.0075e18);
-
-    // nonce: 9 => Deploy base asset
-    ethBase = new WrappedERC20Asset(subAccounts, weth);
-
-    // nonce: 8 => Deploy Manager
+    // nonce: 5 => Deploy Manager
     srm = new StandardManager(subAccounts, cash, IDutchAuction(auctionAddr));
 
-    // nonce: 10 => Deploy SM
+    // nonce: 6 => Deploy SM
     securityModule = new SecurityModule(subAccounts, cash, srm);
 
-    // nonce: 11 => Deploy Auction
+    // nonce: 7 => Deploy Auction
     auction = new DutchAuction(subAccounts, securityModule, cash);
 
-    pricing = new OptionPricing();
+    assertEq(address(auction), auctionAddr);
 
+    // nonce: 8 => USDC stable feed
     stableFeed = new MockFeeds();
+    stableFeed.setSpot(1e18, 1e18);
 
-    ethPerpFeed = new MockSpotDiffFeed(ethFeed);
-    // btcPerpFeed = new MockSpotDiffFeed(feed);
+    // todo: allow list
+  }
+
+  function _deployMarket(string memory token)
+    internal
+    returns (
+      MockERC20 erc20,
+      Option option,
+      PerpAsset perp,
+      WrappedERC20Asset base,
+      MockFeeds feed,
+      MockSpotDiffFeed perpFeed,
+      OptionPricing pricing
+    )
+  {
+    erc20 = new MockERC20(token, token);
+
+    feed = new MockFeeds();
+
+    option = new Option(subAccounts, address(feed));
+
+    perp = new PerpAsset(subAccounts, 0.0075e18);
+
+    base = new WrappedERC20Asset(subAccounts, erc20);
+
+    perpFeed = new MockSpotDiffFeed(feed);
+
+    pricing = new OptionPricing();
   }
 
   function _setupAssets() internal {
@@ -171,7 +186,7 @@ contract IntegrationTestBase is Test {
   function _setupStandardManager() internal {
     srm.setStableFeed(stableFeed);
 
-    srm.setPricingModule(ethMarketId, pricing);
+    srm.setPricingModule(ethMarketId, ethPricing);
 
     // set assets per market
     srm.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
