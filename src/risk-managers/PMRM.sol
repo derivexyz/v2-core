@@ -248,18 +248,18 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
       (int postIM,, uint worstScenario) = _getMarginAndMarkToMarket(portfolio, true, marginScenarios, true);
       if (postIM < 0) {
         int postMM;
-        {
-          IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
-          if (worstScenario != scenarios.length) {
-            scenarios = new IPMRM.Scenario[](1);
-            scenarios[0] = marginScenarios[worstScenario];
-          }
-          (postMM,,) = _getMarginAndMarkToMarket(portfolio, false, scenarios, true);
+        IPMRM.Scenario[] memory postScenarios = new IPMRM.Scenario[](0);
+        if (worstScenario != marginScenarios.length) {
+          postScenarios = new IPMRM.Scenario[](1);
+          postScenarios[0] = marginScenarios[worstScenario];
         }
+        (postMM,,) = _getMarginAndMarkToMarket(portfolio, false, postScenarios, true);
+
         // Note: cash interest is also undone here, but this is not a significant issue
         IPMRM.Portfolio memory prePortfolio =
           _arrangePortfolio(accountId, _undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
+        // we have to use all scenarios for the pre-check as we don't know if the worst scenario is different
         (int preMM,,) = _getMarginAndMarkToMarket(prePortfolio, false, marginScenarios, true);
         if (postMM < preMM) {
           revert PMRM_InsufficientMargin();
