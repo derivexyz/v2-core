@@ -24,12 +24,17 @@ import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockSpotDiffFeed.sol";
 
+import "src/feeds/LyraSpotFeed.sol";
+
 /**
  * @dev real Accounts contract
  * @dev real CashAsset contract
  * @dev real SecurityModule contract
  */
 contract IntegrationTestBase is Test {
+  uint keeperPk = 0xBEEFDEAD;
+  address keeper = vm.addr(keeperPk);
+
   address alice = address(0xa11ce);
   address bob = address(0xb0b);
   uint aliceAcc;
@@ -45,6 +50,7 @@ contract IntegrationTestBase is Test {
     Option option;
     PerpAsset perp;
     WrappedERC20Asset base;
+    LyraSpotFeed spotFeed;
     MockFeeds feed;
     MockSpotDiffFeed perpFeed;
     OptionPricing pricing;
@@ -148,12 +154,18 @@ contract IntegrationTestBase is Test {
     // set up PMRM for this market
     _setPMRMParams(markets[token].pmrm);
     // whitelist PMRM to control all assets
-    _setupAssetsForManager(token, markets[token].pmrm);
+    _setupAssetCapsForManager(token, markets[token].pmrm, 1000e18);
 
     // setup asset configs for standard manager
     _registerMarketToSRM("weth");
     // whitelist standard manager to control these assets
-    _setupAssetsForManager(token, srm);
+    _setupAssetCapsForManager(token, srm, 1000e18);
+
+    // setup feeds
+    // todo: move to internal function
+    markets[token].spotFeed.addSigner(keeper, true);
+
+    _setSpotPrice(markets[token].spotFeed, 2000e18, 1e18);
   }
 
   function _deployMarketContracts(string memory token) internal returns (uint8 marketId) {
@@ -161,7 +173,10 @@ contract IntegrationTestBase is Test {
 
     MockERC20 erc20 = new MockERC20(token, token);
 
+    // todo use real feed for all feeds
     MockFeeds feed = new MockFeeds();
+
+    LyraSpotFeed spotFeed = new LyraSpotFeed();
 
     Option option = new Option(subAccounts, address(feed));
 
@@ -169,12 +184,12 @@ contract IntegrationTestBase is Test {
 
     WrappedERC20Asset base = new WrappedERC20Asset(subAccounts, erc20);
 
-    MockSpotDiffFeed perpFeed = new MockSpotDiffFeed(feed);
+    MockSpotDiffFeed perpFeed = new MockSpotDiffFeed(spotFeed);
 
     OptionPricing pricing = new OptionPricing();
 
     IPMRM.Feeds memory feeds = IPMRM.Feeds({
-      spotFeed: feed,
+      spotFeed: spotFeed,
       stableFeed: stableFeed,
       forwardFeed: feed,
       interestRateFeed: feed,
@@ -202,6 +217,7 @@ contract IntegrationTestBase is Test {
       option: option,
       perp: perp,
       base: base,
+      spotFeed: spotFeed,
       feed: feed,
       perpFeed: perpFeed,
       pricing: pricing,
@@ -209,7 +225,7 @@ contract IntegrationTestBase is Test {
     });
   }
 
-  function _setupAssetsForManager(string memory key, IBaseManager manager) internal {
+  function _setupAssetCapsForManager(string memory key, IBaseManager manager, uint cap) internal {
     Market storage market = markets[key];
 
     market.option.setWhitelistManager(address(manager), true);
@@ -217,11 +233,9 @@ contract IntegrationTestBase is Test {
     market.perp.setWhitelistManager(address(manager), true);
 
     // set caps
-    market.option.setTotalPositionCap(manager, 10000e18);
-    market.perp.setTotalPositionCap(manager, 10000e18);
-    market.base.setTotalPositionCap(manager, 10000e18);
-
-    market.feed.setSpot(2000e18, 1e18);
+    market.option.setTotalPositionCap(manager, cap);
+    market.perp.setTotalPositionCap(manager, cap);
+    market.base.setTotalPositionCap(manager, cap);
   }
 
   function _registerMarketToSRM(string memory key) internal {
@@ -235,7 +249,13 @@ contract IntegrationTestBase is Test {
     srm.whitelistAsset(market.base, market.id, IStandardManager.AssetType.Base);
 
     // set oracles
-    srm.setOraclesForMarket(market.id, market.feed, market.feed, market.feed, market.feed);
+    srm.setOraclesForMarket(
+      market.id,
+      market.spotFeed, // spot
+      market.feed, // forward
+      market.feed, // settlement feed
+      market.feed // vol feed
+    );
 
     // set params
     IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({
@@ -403,9 +423,27 @@ contract IntegrationTestBase is Test {
     );
   }
 
-  function _getForwardPrice(IForwardFeed feed, uint expiry) internal view returns (uint forwardPrice) {
-    (forwardPrice,) = feed.getForwardPrice(uint64(expiry));
-    return forwardPrice;
+  ////////////////////////////////////
+  //     Feed setting functions     //
+  ////////////////////////////////////
+
+  function _setSpotPrice(LyraSpotFeed spotFeed, uint96 price, uint64 conf) internal {
+    ILyraSpotFeed.SpotData memory spotData = ILyraSpotFeed.SpotData({
+      price: price,
+      confidence: conf,
+      timestamp: uint64(block.timestamp),
+      deadline: block.timestamp + 5,
+      signer: keeper,
+      signature: new bytes(0)
+    });
+
+    // sign data
+    bytes32 structHash = spotFeed.hashSpotData(spotData);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(spotFeed.domainSeparator(), structHash));
+    spotData.signature = bytes.concat(r, s, bytes1(v));
+    bytes memory data = abi.encode(spotData);
+    // submit to feed
+    spotFeed.acceptData(data);
   }
 
   function _setPMRMParams(PMRM pmrm) internal {
