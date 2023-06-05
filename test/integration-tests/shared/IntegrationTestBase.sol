@@ -57,26 +57,19 @@ contract IntegrationTestBase is Test {
 
   // Lyra Assets
   CashAsset cash;
-  Option btcOption;
-  PerpAsset btcPerp;
-  WrappedERC20Asset btcBase;
-
-  StandardManager srm;
 
   SecurityModule securityModule;
   InterestRateModel rateModel;
   DutchAuction auction;
-  MockFeeds btcFeed;
-  MockFeeds stableFeed;
 
-  MockSpotDiffFeed btcPerpFeed;
+  // Single standard manager shared across all markets
+  StandardManager srm;
+
+  MockFeeds stableFeed;
 
   // sm account id will be 1 after setup
   uint smAcc = 1;
-
   uint8 nextId = 1;
-
-  uint8 btcMarketId = 2;
 
   mapping(string => Market) markets;
 
@@ -86,12 +79,7 @@ contract IntegrationTestBase is Test {
     _setupCoreContracts();
 
     _deployMarket("weth");
-
-    // setup config on assets
-    _setupAssetsForManager(srm, "weth");
-
-    // setup managers
-    _setupStandardManager("weth");
+    _deployMarket("wbtc");
 
     // create accounts, controlled by standard manager
     _setupAliceAndBob();
@@ -140,7 +128,35 @@ contract IntegrationTestBase is Test {
     // todo: allow list
   }
 
+  function _setupCoreContracts() internal {
+    // set parameter for auction
+    auction.setSolventAuctionParams(_getDefaultAuctionParam());
+
+    // allow liquidation to request payout from sm
+    securityModule.setWhitelistModule(address(auction), true);
+
+    cash.setWhitelistManager(address(srm), true);
+
+    // global setting for SRM
+    srm.setStableFeed(stableFeed);
+    srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
+  }
+
   function _deployMarket(string memory token) internal returns (uint8 marketId) {
+    marketId = _deployMarketContracts(token);
+
+    // set up PMRM for this market
+    _setPMRMParams(markets[token].pmrm);
+    // whitelist PMRM to control all assets
+    _setupAssetsForManager(token, markets[token].pmrm);
+
+    // setup asset configs for standard manager
+    _registerMarketToSRM("weth");
+    // whitelist standard manager to control these assets
+    _setupAssetsForManager(token, srm);
+  }
+
+  function _deployMarketContracts(string memory token) internal returns (uint8 marketId) {
     marketId = nextId++;
 
     MockERC20 erc20 = new MockERC20(token, token);
@@ -191,11 +207,9 @@ contract IntegrationTestBase is Test {
       pricing: pricing,
       pmrm: pmrm
     });
-
-    _setupPMRM(pmrm);
   }
 
-  function _setupAssetsForManager(IBaseManager manager, string memory key) internal {
+  function _setupAssetsForManager(string memory key, IBaseManager manager) internal {
     Market storage market = markets[key];
 
     market.option.setWhitelistManager(address(manager), true);
@@ -210,9 +224,8 @@ contract IntegrationTestBase is Test {
     market.feed.setSpot(2000e18, 1e18);
   }
 
-  function _setupStandardManager(string memory key) internal {
+  function _registerMarketToSRM(string memory key) internal {
     Market storage market = markets[key];
-    srm.setStableFeed(stableFeed);
 
     srm.setPricingModule(market.id, market.pricing);
 
@@ -238,19 +251,8 @@ contract IntegrationTestBase is Test {
     srm.setOptionMarginParams(market.id, params);
 
     srm.setOracleContingencyParams(market.id, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18));
-    srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
     srm.setPerpMarginRequirements(market.id, 0.05e18, 0.065e18);
-  }
-
-  function _setupCoreContracts() internal {
-    // set parameter for auction
-    auction.setSolventAuctionParams(_getDefaultAuctionParam());
-
-    // allow liquidation to request payout from sm
-    securityModule.setWhitelistModule(address(auction), true);
-
-    cash.setWhitelistManager(address(srm), true);
   }
 
   /**
@@ -406,7 +408,7 @@ contract IntegrationTestBase is Test {
     return forwardPrice;
   }
 
-  function _setupPMRM(PMRM pmrm) internal {
+  function _setPMRMParams(PMRM pmrm) internal {
     IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
       scenarioSpotUp: 1.05e18,
       scenarioSpotDown: 0.95e18,
