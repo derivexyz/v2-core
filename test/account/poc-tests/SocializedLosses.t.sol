@@ -71,23 +71,23 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     uint settlementPrice = 3000e18;
     setPrices(1e18, 3000e18);
     setSettlementPrice(expiry);
-    IAccounts.HeldAsset[] memory assets = new IAccounts.HeldAsset[](1);
-    assets[0] = IAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
+    ISubAccounts.HeldAsset[] memory assets = new ISubAccounts.HeldAsset[](1);
+    assets[0] = ISubAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
     rm.settleAssets(bobNewAcc, assets);
 
     uint expectedInsolventAmount = settlementPrice - strike - bobUSDCAmount;
 
     // usdc balance stays the same
-    assertEq(account.getBalance(bobNewAcc, usdcAdapter, 0), int(bobUSDCAmount));
+    assertEq(subAccounts.getBalance(bobNewAcc, usdcAdapter, 0), int(bobUSDCAmount));
 
     // daiLending balance should reflect the negative pnl
-    assertEq(account.getBalance(bobNewAcc, daiLending, 0), -int(settlementPrice - strike));
+    assertEq(subAccounts.getBalance(bobNewAcc, daiLending, 0), -int(settlementPrice - strike));
 
     // socialise loss on everyone else's lending balance!
     daiLending.socializeLoss(bobNewAcc, expectedInsolventAmount);
 
     // trigger charlie's retirement account to update balance
-    IAccounts.AssetTransfer memory triggerTx = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory triggerTx = ISubAccounts.AssetTransfer({
       fromAcc: retirementAcc,
       toAcc: aliceAcc,
       asset: IAsset(daiLending),
@@ -95,10 +95,10 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
       amount: 0,
       assetData: bytes32(0)
     });
-    account.submitTransfer(triggerTx, "");
+    subAccounts.submitTransfer(triggerTx, "");
 
     // charlie now has less money on his account
-    int charlieNewBalance = account.getBalance(retirementAcc, daiLending, 0);
+    int charlieNewBalance = subAccounts.getBalance(retirementAcc, daiLending, 0);
 
     // charlie is the only one with asset deposited, so all loss is on him :(
     assertEq(uint(charlieNewBalance), depositAmount - expectedInsolventAmount);
@@ -130,7 +130,7 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     vm.stopPrank();
 
     // make sure balance of david is actually 1.1
-    assertEq(account.getBalance(davidAcc, optionAdapter, 0), 1111111111111111111);
+    assertEq(subAccounts.getBalance(davidAcc, optionAdapter, 0), 1111111111111111111);
 
     // do sign change -> charlie goes from -1 -> 2
     vm.startPrank(charlie);
@@ -138,21 +138,20 @@ contract POC_SocializedLosses is Test, AccountPOCHelper {
     vm.stopPrank();
 
     // make sure new balance of bob is decremented by more than 2
-    assertEq(account.getBalance(aliceAcc, optionAdapter, 0), 7777777777777777778);
+    assertEq(subAccounts.getBalance(aliceAcc, optionAdapter, 0), 7777777777777777778);
   }
 
   function openCallOption(uint fromAcc, uint toAcc, int amount, uint subId) public {
-    IAccounts.AssetTransfer memory optionTransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory optionTransfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(optionAdapter),
       subId: subId,
-      // TODO: this breaks when amount == totalShortOI
       amount: amount,
       assetData: bytes32(0)
     });
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](1);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](1);
     transferBatch[0] = optionTransfer;
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
   }
 }

@@ -2,23 +2,25 @@
 pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
+import "./IGlobalSubIdOITracking.sol";
 
 /**
  * @title IPerpAsset
  * @notice Interface for a perpetual asset contract that extends the IAsset interface.
  */
-interface IPerpAsset is IAsset {
+interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   struct PositionDetail {
-    // Price that the position was opened at
-    uint entryPrice;
+    // Spot price the last time user interact with perp contract
+    uint128 lastMarkPrice;
     // All funding, not yet settled as cash in Accounts
-    int funding;
+    int128 funding;
     // Realized pnl, not yet settled as cash in Accounts
-    int pnl;
+    int128 pnl;
     // Last aggregated funding rate applied to this position
-    int lastAggregatedFundingRate;
+    int128 lastAggregatedFundingRate;
     // Timestamp of the last time funding was applied
-    uint lastFundingPaid;
+    uint64 lastFundingPaid;
   }
 
   /**
@@ -31,7 +33,17 @@ interface IPerpAsset is IAsset {
    * @notice Manager-only function to clear pnl and funding during settlement
    * @dev The manager should then update the cash balance of an account base on the returned netCash variable
    */
-  function settleRealizedPNLAndFunding(uint accountId) external returns (int netCash);
+  function settleRealizedPNLAndFunding(uint accountId) external returns (int pnl, int funding);
+
+  function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash);
+
+  function realizePNLWithMark(uint account) external;
+
+  function getIndexPrice() external view returns (uint, uint);
+
+  function getPerpPrice() external view returns (uint, uint);
+
+  function getImpactPrices() external view returns (uint bid, uint ask);
 
   //////////////////
   //   Events     //
@@ -45,7 +57,11 @@ interface IPerpAsset is IAsset {
 
   event SpotFeedUpdated(address spotFeed);
 
-  event ImpactPricesSet(int impactAskPrice, int impactBidPrice);
+  event PerpFeedUpdated(address perpFeed);
+
+  event ImpactFeedsUpdated(address askImpactFeed, address bidImpactFeed);
+
+  event FundingRateUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
 
   ////////////////
   //   Errors   //
@@ -53,6 +69,9 @@ interface IPerpAsset is IAsset {
 
   /// @dev Caller is not the Account contract
   error PA_NotAccount();
+
+  /// @dev SubId is not 0
+  error PA_InvalidSubId();
 
   /// @dev Caller is not the liquidation module
   error PA_NotLiquidationModule();
@@ -77,4 +96,7 @@ interface IPerpAsset is IAsset {
 
   /// @dev Caller is not the impact price oracle address
   error PA_OnlyImpactPriceOracle();
+
+  /// @dev Emitted when changing manager make total position exceed cap
+  error PA_ManagerChangeExceedCap();
 }

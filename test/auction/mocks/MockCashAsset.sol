@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
 import "src/interfaces/ICashAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import "../../shared/mocks/MockAsset.sol";
 
 /**
@@ -15,6 +15,8 @@ import "../../shared/mocks/MockAsset.sol";
 contract MockCash is ICashAsset, MockAsset {
   using DecimalMath for uint;
 
+  IERC20Metadata public stableAsset;
+
   bool public isSocialized;
 
   int public mockedBalanceWithInterest;
@@ -23,12 +25,14 @@ contract MockCash is ICashAsset, MockAsset {
 
   int public netSettledCash;
 
-  constructor(IERC20 token_, IAccounts accounts_) MockAsset(token_, accounts_, true) {}
+  constructor(IERC20 token_, ISubAccounts subAccounts_) MockAsset(token_, subAccounts_, true) {
+    stableAsset = IERC20Metadata(address(token_));
+  }
 
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
     isSocialized = true;
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountToReceive,
         asset: IAsset(address(this)),
         subId: 0,
@@ -40,9 +44,21 @@ contract MockCash is ICashAsset, MockAsset {
     );
   }
 
-  function deposit(uint recipientAccount, uint amount) external override(MockAsset, ICashAsset) {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+  function deposit(uint recipientAccount, uint stableAmount) external override(MockAsset, ICashAsset) {
+    _deposit(recipientAccount, stableAmount);
+  }
+
+  function depositToNewAccount(address recipient, uint stableAmount, IManager manager)
+    external
+    returns (uint newAccountId)
+  {
+    newAccountId = subAccounts.createAccount(recipient, manager);
+    _deposit(newAccountId, stableAmount);
+  }
+
+  function _deposit(uint recipientAccount, uint amount) internal {
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -56,8 +72,8 @@ contract MockCash is ICashAsset, MockAsset {
   }
 
   function withdraw(uint accountId, uint amount, address recipient) external override(MockAsset, ICashAsset) {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -89,6 +105,8 @@ contract MockCash is ICashAsset, MockAsset {
   function updateSettledCash(int amountCash) external {
     netSettledCash += amountCash;
   }
+
+  function forceWithdraw(uint accountId) external {}
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function testSkip() public {}

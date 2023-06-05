@@ -17,7 +17,7 @@ forge script AccountGasScript
   - [x] execute 10 independent transfers: 341,903 gas
   - [x] execute 20 independent transfers: 767,710 gas
   - [x] execute 100 independent transfers: 7940,277 gas
-- [x] Exchange balances between 2 accounts.
+- [x] Exchange balances between 2subAccounts.
   - [x] single trade: 143,902 gas
   - [x] trade 10 assets: 1118,492 gas
   - [x] trade 20 assets: 1316,022 gas

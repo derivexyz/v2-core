@@ -3,14 +3,28 @@ pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import "src/interfaces/IInterestRateModel.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface ICashAsset is IAsset {
+  function stableAsset() external view returns (IERC20Metadata);
+
   /**
    * @dev Deposit USDC and increase account balance
    * @param recipientAccount account id to receive the cash asset
    * @param amount amount of USDC to deposit
    */
   function deposit(uint recipientAccount, uint amount) external;
+
+  /**
+   * @dev Deposit USDC and create a new account
+   * @param recipient user for who the new account is created
+   * @param stableAmount amount of stable coins to deposit
+   * @param manager manager of the new account
+   */
+  function depositToNewAccount(address recipient, uint stableAmount, IManager manager)
+    external
+    returns (uint newAccountId);
 
   /**
    * @notice Withdraw USDC from a Lyra account
@@ -49,6 +63,11 @@ interface ICashAsset is IAsset {
    */
   function updateSettledCash(int amountCash) external;
 
+  /**
+   * @notice Allows the account's risk manager to forcefully send all cash to the account owner
+   */
+  function forceWithdraw(uint accountId) external;
+
   ////////////////
   //   Events   //
   ////////////////
@@ -86,6 +105,9 @@ interface ICashAsset is IAsset {
   /// @dev caller is not account
   error CA_NotAccount();
 
+  /// @dev SubId passed into adjustment is not 0
+  error CA_InvalidSubId();
+
   /// @dev caller is not the liquidation module
   error CA_NotLiquidationModule();
 
@@ -100,4 +122,10 @@ interface ICashAsset is IAsset {
 
   /// @dev Security module fee cut greater than 100%
   error CA_SmFeeInvalid(uint fee);
+
+  /// @dev The caller of force withdraw was not the account's risk manager
+  error CA_ForceWithdrawNotAuthorized();
+
+  /// @dev Calling force withdraw when user has a negative balance
+  error CA_ForceWithdrawNegativeBalance();
 }

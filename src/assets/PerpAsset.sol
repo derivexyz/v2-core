@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
-
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
@@ -11,15 +9,18 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
-import "lyra-utils/math/IntLib.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IChainlinkSpotFeed} from "src/interfaces/IChainlinkSpotFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
 
-import "./ManagerWhitelist.sol";
+import "src/assets/utils/ManagerWhitelist.sol";
+
+import "src/assets/utils/PositionTracking.sol";
+import "src/assets/utils/GlobalSubIdOITracking.sol";
+import "../interfaces/ISpotDiffFeed.sol";
 
 /**
  * @title PerpAsset
@@ -28,7 +29,7 @@ import "./ManagerWhitelist.sol";
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
  */
-contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
+contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using SignedMath for int;
   using SafeCast for uint;
@@ -36,68 +37,73 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-  IChainlinkSpotFeed public spotFeed;
+  /// @dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
+  ISpotFeed public spotFeed;
 
-  ///@dev Mapping from account to position
-  mapping(uint => PositionDetail) public positions;
+  /// @dev perp feed, used for settling pnl before each trades
+  ISpotDiffFeed public perpFeed;
+  ISpotDiffFeed public impactAskPriceFeed;
+  ISpotDiffFeed public impactBidPriceFeed;
 
-  ///@dev Mapping from address to whitelisted to push impacted prices
-  address public fundingRateOracle;
+  /// @dev Mapping from account to position
+  mapping(uint accountId => PositionDetail) public positions;
 
   /// @dev Max hourly funding rate
-  int immutable maxRatePerHour;
+  int public immutable maxRatePerHour;
+
   /// @dev Min hourly funding rate
-  int immutable minRatePerHour;
+  int public immutable minRatePerHour;
 
-  /// @dev Latest hourly funding rate, set by the oracle
-  // int public fundingRate;
-
-  /// @dev Impact ask price
-  int public impactAskPrice;
-  /// @dev Impact bid price
-  int public impactBidPrice;
   /// @dev static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
-  ///@dev Latest aggregated funding rate
-  int public aggregatedFundingRate;
-  ///@dev Last time aggregated funding rate was updated
-  uint public lastFundingPaidAt;
+  /// @dev Latest aggregated funding rate
+  int128 public aggregatedFundingRate;
 
-  constructor(IAccounts _accounts, int maxAbsRatePerHour) ManagerWhitelist(_accounts) {
-    lastFundingPaidAt = block.timestamp;
+  /// @dev Last time aggregated funding rate was updated
+  uint64 public lastFundingPaidAt;
+
+  constructor(ISubAccounts _subAccounts, int maxAbsRatePerHour) ManagerWhitelist(_subAccounts) {
+    lastFundingPaidAt = uint64(block.timestamp);
 
     maxRatePerHour = maxAbsRatePerHour;
     minRatePerHour = -maxAbsRatePerHour;
   }
 
-  //////////////////////////
-  // Owner Only Functions //
-  //////////////////////////
+  //////////////////////////////
+  //   Owner Only Functions   //
+  //////////////////////////////
 
   /**
    * @notice Set new spot feed address
    * @param _spotFeed address of the new spot feed
    */
-  function setSpotFeed(IChainlinkSpotFeed _spotFeed) external onlyOwner {
+  function setSpotFeed(ISpotFeed _spotFeed) external onlyOwner {
     spotFeed = _spotFeed;
 
     emit SpotFeedUpdated(address(_spotFeed));
   }
 
   /**
-   * @notice Set an oracle address that can update funding rate
-   * @param _oracle address of the new funding rate oracle
+   * @notice Set new perp feed address
+   * @param _perpFeed address of the new perp feed
    */
-  function setFundingRateOracle(address _oracle) external onlyOwner {
-    fundingRateOracle = _oracle;
+  function setPerpFeed(ISpotDiffFeed _perpFeed) external onlyOwner {
+    perpFeed = _perpFeed;
 
-    emit FundingRateOracleUpdated(_oracle);
+    emit PerpFeedUpdated(address(_perpFeed));
   }
 
-  //////////////////////////
-  //    Account Hooks     //
-  //////////////////////////
+  function setImpactFeeds(ISpotDiffFeed _impactAskPriceFeed, ISpotDiffFeed _impactBidPriceFeed) external onlyOwner {
+    impactAskPriceFeed = _impactAskPriceFeed;
+    impactBidPriceFeed = _impactBidPriceFeed;
+
+    emit ImpactFeedsUpdated(address(_impactAskPriceFeed), address(_impactBidPriceFeed));
+  }
+
+  ///////////////////////
+  //   Account Hooks   //
+  ///////////////////////
 
   /**
    * @notice This function is called by the Account contract whenever a PerpAsset balance is modified.
@@ -109,19 +115,29 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
-    uint, /*tradeId*/
+    ISubAccounts.AssetAdjustment memory adjustment,
+    uint tradeId,
     int preBalance,
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    if (adjustment.subId != 0) revert PA_InvalidSubId();
+
     _checkManager(address(manager));
+
+    // Track total OI per manager, for OI caps
+    _takeTotalOISnapshotPreTrade(manager, tradeId);
+    _updateTotalOI(manager, preBalance, adjustment.amount);
+
+    // Also track global subId OI (only subId == 0)
+    _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
+    _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
     // calculate funding from the last period, reflect changes in position.funding
     _updateFundingRate();
 
-    // update average entry price
-    _updateEntryPriceAndPnl(adjustment.acc, preBalance, adjustment.amount);
+    // update last index price and settle unrealized pnl into position.pnl
+    _realizePNLWithMark(adjustment.acc, preBalance);
 
     // have a new position
     finalBalance = preBalance + adjustment.amount;
@@ -130,81 +146,33 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
-   * @dev update the entry price if an account is increased
-   *      and update the PnL if the position is closed
-   */
-  function _updateEntryPriceAndPnl(uint accountId, int preBalance, int delta) internal {
-    PositionDetail storage position = positions[accountId];
-
-    int indexPrice = spotFeed.getSpot().toInt256();
-
-    int entryPrice = position.entryPrice.toInt256();
-
-    int pnl;
-
-    if (preBalance == 0) {
-      // if position was empty, update entry price
-      entryPrice = indexPrice;
-    } else if (preBalance * delta > 0) {
-      // pre-balance and delta has the same sign: increase position
-      // if position increases: modify entry price
-      entryPrice = (entryPrice * preBalance + indexPrice * delta) / (preBalance + delta);
-    } else if (preBalance.abs() >= delta.abs()) {
-      pnl = (entryPrice - indexPrice).multiplyDecimal(delta);
-    } else {
-      // position flipped from + to -, or - to +
-      pnl = (indexPrice - entryPrice).multiplyDecimal(preBalance);
-      entryPrice = indexPrice;
-    }
-
-    position.entryPrice = uint(entryPrice);
-    position.pnl += pnl;
-  }
-
-  /**
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
    */
-  function handleManagerChange(uint, IManager newManager) external view {
+  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
+
+    // update total position
+    uint pos = subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
+    _migrateManagerOI(pos, subAccounts.manager(accountId), newManager);
   }
 
-  //////////////////////////
-  // Privileged Functions //
-  //////////////////////////
+  //////////////////////////////
+  //   Privileged Functions   //
+  //////////////////////////////
 
   /**
-   * @notice Manager-only function to clear pnl and funding during settlement.
-   * @dev The manager should then update the cash balance of an account base on the returned netCash variable
+   * @notice Manager-only function to clear pnl and funding before risk checks
+   * @dev The manager should then update the cash balance of an account base on the returned values
+   *      Only meaningful to call this function after a perp asset transfer, otherwise it will be 0.
    * @param accountId Account Id to settle
    */
-  function settleRealizedPNLAndFunding(uint accountId) external onlyManagerForAccount(accountId) returns (int netCash) {
-    _updateFundingRate();
-    _applyFundingOnAccount(accountId);
-
-    PositionDetail storage position = positions[accountId];
-    netCash = position.funding + position.pnl;
-
-    position.funding = 0;
-    position.pnl = 0;
-
-    return netCash;
-  }
-
-  /**
-   * @notice allow oracle to set impact prices
-   */
-  function setImpactPrices(int _impactAskPrice, int _impactBidPrice) external onlyImpactPriceOracle {
-    if (_impactAskPrice < 0 || _impactBidPrice < 0) {
-      revert PA_ImpactPriceMustBePositive();
-    }
-    if (_impactAskPrice < _impactBidPrice) {
-      revert PA_InvalidImpactPrices();
-    }
-    impactAskPrice = _impactAskPrice;
-    impactBidPrice = _impactBidPrice;
-
-    emit ImpactPricesSet(_impactAskPrice, _impactBidPrice);
+  function settleRealizedPNLAndFunding(uint accountId)
+    external
+    onlyManagerForAccount(accountId)
+    returns (int pnl, int funding)
+  {
+    return _clearRealizedPNL(accountId);
   }
 
   /**
@@ -232,15 +200,24 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
+   * @notice a public function to settle position with index, update lastIndex price and move
+   * @param accountId Account Id to settle
+   */
+  function realizePNLWithMark(uint accountId) external {
+    _realizePNLWithMark(accountId, _getPositionSize(accountId));
+  }
+
+  /**
    * @dev This function reflect how much cash should be mark "available" for an account
    * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
    */
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
     int size = _getPositionSize(accountId);
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
+    int perpPrice = _getPerpPrice();
 
     int unrealizedFunding = _getUnrealizedFunding(accountId, size, indexPrice);
-    int unrealizedPnl = _getUnrealizedPnl(accountId, size, indexPrice);
+    int unrealizedPnl = _getUnrealizedPnl(accountId, size, perpPrice);
     return unrealizedFunding + unrealizedPnl + positions[accountId].funding + positions[accountId].pnl;
   }
 
@@ -248,8 +225,57 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * @dev Return the hourly funding rate for an account
    */
   function getFundingRate() external view returns (int fundingRate) {
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
     fundingRate = _getFundingRate(indexPrice);
+  }
+
+  /**
+   * @dev Return the current index price for the perp asset
+   */
+  function getIndexPrice() external view returns (uint, uint) {
+    return spotFeed.getSpot();
+  }
+
+  /**
+   * @dev Return the current mark price for the perp asset
+   */
+  function getPerpPrice() external view returns (uint, uint) {
+    return perpFeed.getResult();
+  }
+
+  function getImpactPrices() external view returns (uint bid, uint ask) {
+    (bid,) = impactBidPriceFeed.getResult();
+    (ask,) = impactAskPriceFeed.getResult();
+    return (bid, ask);
+  }
+
+  /**
+   * @notice real perp position pnl based on current market price
+   * @dev This function will update position.PNL, but not initiate any real payment in cash
+   */
+  function _realizePNLWithMark(uint accountId, int preBalance) internal {
+    PositionDetail storage position = positions[accountId];
+
+    int perpPrice = _getPerpPrice();
+    int pnl = _getUnrealizedPnl(accountId, preBalance, perpPrice);
+
+    position.lastMarkPrice = uint(perpPrice).toUint128();
+    position.pnl += pnl.toInt128();
+  }
+
+  /**
+   * @notice return pnl and funding kept in position storage and clear storage
+   */
+  function _clearRealizedPNL(uint accountId) internal returns (int pnl, int funding) {
+    _updateFundingRate();
+    _applyFundingOnAccount(accountId);
+
+    PositionDetail storage position = positions[accountId];
+    pnl = position.pnl;
+    funding = position.funding;
+
+    position.funding = 0;
+    position.pnl = 0;
   }
 
   /**
@@ -264,11 +290,11 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    */
   function _applyFundingOnAccount(uint accountId) internal {
     int size = _getPositionSize(accountId);
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
 
     int funding = _getUnrealizedFunding(accountId, size, indexPrice);
     // apply funding
-    positions[accountId].funding += funding;
+    positions[accountId].funding += funding.toInt128();
     positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
   }
 
@@ -278,15 +304,17 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   function _updateFundingRate() internal {
     if (block.timestamp == lastFundingPaidAt) return;
 
-    int indexPrice = spotFeed.getSpot().toInt256();
+    int indexPrice = _getIndexPrice();
 
     int fundingRate = _getFundingRate(indexPrice);
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    aggregatedFundingRate += fundingRate * timeElapsed / 1 hours;
+    aggregatedFundingRate += (fundingRate * timeElapsed / 1 hours).toInt128();
 
-    lastFundingPaidAt = block.timestamp;
+    lastFundingPaidAt = (block.timestamp).toUint64();
+
+    emit FundingRateUpdated(aggregatedFundingRate, fundingRate, lastFundingPaidAt);
   }
 
   /**
@@ -309,8 +337,15 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
    * Premium = (Max(0, Impact Bid Price - Index Price) - Max(0, Index Price - Impact Ask Price)) / Index Price
    */
   function _getPremium(int indexPrice) internal view returns (int premium) {
-    premium = (SignedMath.max(impactBidPrice - indexPrice, 0) - SignedMath.max(indexPrice - impactAskPrice, 0))
-      .divideDecimal(indexPrice);
+    (uint impactAskPrice,) = impactAskPriceFeed.getResult();
+    (uint impactBidPrice,) = impactBidPriceFeed.getResult();
+
+    if (impactAskPrice < impactBidPrice) revert PA_InvalidImpactPrices();
+
+    int bidDiff = SignedMath.max(impactBidPrice.toInt256() - indexPrice, 0);
+    int askDiff = SignedMath.max(indexPrice - impactAskPrice.toInt256(), 0);
+
+    premium = (bidDiff - askDiff).divideDecimal(indexPrice);
   }
 
   /**
@@ -327,30 +362,35 @@ contract PerpAsset is IPerpAsset, Ownable2Step, ManagerWhitelist {
   /**
    * @dev Get unrealized PNL if the position is closed at the current spot price
    */
-  function _getUnrealizedPnl(uint accountId, int size, int indexPrice) internal view returns (int) {
-    int entryPrice = positions[accountId].entryPrice.toInt256();
+  function _getUnrealizedPnl(uint accountId, int size, int perpPrice) internal view returns (int) {
+    int lastMarkPrice = uint(positions[accountId].lastMarkPrice).toInt256();
 
-    return (indexPrice - entryPrice).multiplyDecimal(size);
+    return (perpPrice - lastMarkPrice).multiplyDecimal(size);
   }
 
   /**
    * @dev Get number of contracts open, with 18 decimals
    */
   function _getPositionSize(uint accountId) internal view returns (int) {
-    return accounts.getBalance(accountId, IPerpAsset(address(this)), 0);
+    return subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0);
+  }
+
+  function _getIndexPrice() internal view returns (int) {
+    (uint spotPrice,) = spotFeed.getSpot();
+    return spotPrice.toInt256();
+  }
+
+  function _getPerpPrice() internal view returns (int) {
+    (uint perpPrice,) = perpFeed.getResult();
+    return perpPrice.toInt256();
   }
 
   //////////////////////////
   //     Modifiers        //
   //////////////////////////
 
-  modifier onlyImpactPriceOracle() {
-    if (msg.sender != fundingRateOracle) revert PA_OnlyImpactPriceOracle();
-    _;
-  }
-
   modifier onlyManagerForAccount(uint accountId) {
-    if (msg.sender != address(accounts.manager(accountId))) revert PA_WrongManager();
+    if (msg.sender != address(subAccounts.manager(accountId))) revert PA_WrongManager();
     _;
   }
 }

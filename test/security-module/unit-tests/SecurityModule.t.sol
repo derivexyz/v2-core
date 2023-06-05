@@ -5,11 +5,11 @@ import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 import "../mocks/MockCash.sol";
-import "../mocks/MockPCRMManager.sol";
+import "../../shared/mocks/MockManager.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
-import "../../../src/Accounts.sol";
+import "../../../src/SubAccounts.sol";
 
 /**
  * @dev we use the real Accounts contract in these tests to simplify verification process
@@ -22,26 +22,26 @@ contract UNIT_SecurityModule is Test {
 
   MockCashAssetWithExchangeRate mockCash;
   MockERC20 usdc;
-  MockPCRMManager manager;
-  Accounts accounts;
+  MockManager manager;
+  SubAccounts subAccounts;
   SecurityModule securityModule;
 
   uint smAccId;
   uint accountId;
 
   function setUp() public {
-    accounts = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    manager = new MockPCRMManager(address(accounts));
+    manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
     // // probably use mock
-    mockCash = new MockCashAssetWithExchangeRate(accounts, usdc);
+    mockCash = new MockCashAssetWithExchangeRate(subAccounts, usdc);
     mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
-    securityModule = new SecurityModule(accounts, ICashAsset(address(mockCash)), usdc, IPCRM(address(manager)));
+    securityModule = new SecurityModule(subAccounts, ICashAsset(address(mockCash)), IManager(manager));
 
     smAccId = securityModule.accountId();
 
@@ -49,97 +49,36 @@ contract UNIT_SecurityModule is Test {
     usdc.mint(address(this), 20_000_000e6);
     usdc.approve(address(securityModule), type(uint).max);
 
-    accountId = accounts.createAccount(address(this), manager);
-  }
-
-  function testRequestPayoutWhenCashBelowOffset() public {
-    // deposit below the PCRM static offset
-    manager.setStaticOffset(50e18); // $50 in cashAsset decimals
-    securityModule.deposit(40e6); // $40 in USDC decimals
-
-    // allow liquidation to call .requestPayout()
-    securityModule.setWhitelistModule(liquidation, true);
-
-    // even $1 payout should revert
-    vm.startPrank(liquidation);
-    vm.expectRevert(abi.encodeWithSelector(ISecurityModule.SM_BalanceBelowPCRMStaticCashOffset.selector, 40e18, 50e18));
-    securityModule.requestPayout(accountId, 1e18);
-    vm.stopPrank();
+    accountId = subAccounts.createAccount(address(this), manager);
   }
 
   function testDepositIntoSM() public {
     uint depositAmount = 1000e6;
 
-    securityModule.deposit(depositAmount);
-
-    // first deposit get equivelant share of USDC <> seuciry module share
-    uint shares = securityModule.balanceOf(address(this));
-    assertEq(shares, depositAmount);
-  }
-
-  function testShareCalculationAfterFirstDeposit() public {
-    uint depositAmount = 1000e6;
-
-    securityModule.deposit(depositAmount);
-
-    mockCash.setAccBalanceWithInterest(smAccId, 1000e18);
-
-    // deposit from Alice
-    address alice = address(0xac);
-    uint aliceAmount = depositAmount * 2;
-    usdc.mint(alice, aliceAmount);
-    vm.startPrank(alice);
-    usdc.approve(address(securityModule), type(uint).max);
-    securityModule.deposit(aliceAmount);
-
-    vm.stopPrank();
-    uint shares = securityModule.balanceOf(alice);
-    assertEq(shares, aliceAmount);
+    securityModule.donate(depositAmount);
+    assertEq(uint(subAccounts.getBalance(smAccId, mockCash, 0)), 1000e18);
+    assertEq(usdc.balanceOf(address(mockCash)), depositAmount);
   }
 
   function testWithdrawWithNoShare() public {
     // cover the line where total supply is 0
-    // _shareToStable should not revert. only revert when actually burning
     uint shares = 1000e6;
-    vm.expectRevert("ERC20: burn amount exceeds balance");
+    vm.expectRevert("ERC20: transfer amount exceeds balance");
     securityModule.withdraw(shares, address(this));
   }
 
   function testWithdrawFromSM() public {
     uint depositAmount = 1000e6;
-    securityModule.deposit(depositAmount);
-
-    uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
-    uint expectedStable = depositAmount / 2;
+    securityModule.donate(depositAmount);
 
     uint usdcBefore = usdc.balanceOf(address(this));
 
-    // mock the balanceWithInterset call to return the exact balance deposited
-    mockCash.setAccBalanceWithInterest(smAccId, 1000e18);
+    securityModule.withdraw(depositAmount / 2, address(this));
 
-    securityModule.withdraw(sharesToWithdraw, address(this));
-    uint sharesLeft = securityModule.balanceOf(address(this));
-    assertEq(sharesLeft, sharesToWithdraw); // 50% shares remaining
+    assertEq(usdc.balanceOf(address(mockCash)), depositAmount / 2);
 
     uint usdcAfter = usdc.balanceOf(address(this));
-    assertEq(usdcAfter - usdcBefore, expectedStable);
-  }
-
-  function testWithdrawMoreAfterInterestIsApplied() public {
-    uint depositAmount = 1000e6;
-    securityModule.deposit(depositAmount);
-
-    uint sharesToWithdraw = securityModule.balanceOf(address(this)) / 2;
-    uint proportionalStable = depositAmount / 2;
-
-    uint usdcBefore = usdc.balanceOf(address(this));
-    // someone transferred to the account or interest is accrued: 0.5%
-    mockCash.setAccBalanceWithInterest(smAccId, 1005e18);
-
-    securityModule.withdraw(sharesToWithdraw, address(this));
-
-    uint usdcAfter = usdc.balanceOf(address(this));
-    assertGt(usdcAfter - usdcBefore, proportionalStable);
+    assertEq(usdcAfter - usdcBefore, depositAmount / 2);
   }
 
   function testCannotAddWhitelistedModuleFromNonOwner() public {
@@ -164,30 +103,30 @@ contract UNIT_SecurityModule is Test {
   function testCanRequestPayoutFromWhitelistedModule() public {
     // someone deposit 1 million first
     uint depositAmount = 1000_000e6;
-    securityModule.deposit(depositAmount);
+    securityModule.donate(depositAmount);
 
     // create acc to get paid
-    uint receiverAcc = accounts.createAccount(address(this), manager);
+    uint receiverAcc = subAccounts.createAccount(address(this), manager);
     securityModule.setWhitelistModule(liquidation, true);
 
     vm.startPrank(liquidation);
     securityModule.requestPayout(receiverAcc, 1000e18);
     vm.stopPrank();
 
-    int cashLeftInSecurity = accounts.getBalance(smAccId, IAsset(address(mockCash)), 0);
+    int cashLeftInSecurity = subAccounts.getBalance(smAccId, IAsset(address(mockCash)), 0);
     assertEq(cashLeftInSecurity, 999_000e18);
 
-    int cashForReceiver = accounts.getBalance(receiverAcc, IAsset(address(mockCash)), 0);
+    int cashForReceiver = subAccounts.getBalance(receiverAcc, IAsset(address(mockCash)), 0);
     assertEq(cashForReceiver, 1000e18);
   }
 
   function testPayoutAmountIsCapped() public {
     // someone deposit 1000 first
     uint depositAmount = 1_000e6;
-    securityModule.deposit(depositAmount);
+    securityModule.donate(depositAmount);
 
     // create acc to get paid
-    uint receiverAcc = accounts.createAccount(address(this), manager);
+    uint receiverAcc = subAccounts.createAccount(address(this), manager);
     securityModule.setWhitelistModule(liquidation, true);
 
     vm.startPrank(liquidation);

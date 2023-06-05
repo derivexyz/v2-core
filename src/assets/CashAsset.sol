@@ -10,20 +10,19 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
 
-import "./ManagerWhitelist.sol";
+import "src/assets/utils/ManagerWhitelist.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
- * @dev   Users can deposit USDC and credit this cash asset into their accounts.
+ * @dev   Users can deposit a stable token and credit this cash asset into their subAccounts.
  *        Users can borrow cash by having a negative balance in their account (if allowed by manager).
  * @author Lyra
  */
-
 contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
@@ -36,57 +35,57 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   using DecimalMath for uint128;
   using DecimalMath for uint;
 
-  ///@dev The token address for stable coin
+  /// @dev The token address for stable coin
   IERC20Metadata public immutable stableAsset;
 
-  ///@dev InterestRateModel contract address
+  /// @dev InterestRateModel contract address
   IInterestRateModel public rateModel;
 
-  ///@dev The address of liquidation module, which can trigger call of insolvency
+  /// @dev The address of liquidation module, which can trigger call of insolvency
   address public immutable liquidationModule;
 
-  ///@dev The security module accountId used for collecting a portion of fees
+  /// @dev The security module accountId used for collecting a portion of fees
   uint public immutable smId;
 
   /////////////////////////
   //   State Variables   //
   /////////////////////////
 
-  ///@dev Total amount of positive balances
+  /// @dev Total amount of positive balances
   uint128 public totalSupply;
 
-  ///@dev Total amount of negative balances
+  /// @dev Total amount of negative balances
   uint128 public totalBorrow;
 
-  ///@dev Net amount of cash printed/burned due to settlement
+  /// @dev Net amount of cash printed/burned due to settlement
   int128 public netSettledCash;
 
-  ///@dev Total accrued fees for the security module
+  /// @dev Total accrued fees for the security module
   uint128 public accruedSmFees;
 
-  ///@dev Represents the growth of $1 of debt since deploy
-  uint public borrowIndex = DecimalMath.UNIT;
+  /// @dev Represents the growth of $1 of debt since deploy
+  uint96 public borrowIndex = 1e18;
 
-  ///@dev Represents the growth of $1 of positive balance since deploy
-  uint public supplyIndex = DecimalMath.UNIT;
+  /// @dev Represents the growth of $1 of positive balance since deploy
+  uint96 public supplyIndex = 1e18;
 
-  ///@dev Last timestamp that the interest was accrued
-  uint public lastTimestamp;
+  /// @dev Last timestamp that the interest was accrued
+  uint64 public lastTimestamp;
 
-  ///@dev The security module fee represented as a mantissa (0-1e18)
+  /// @dev The security module fee represented as a mantissa (0-1e18)
   uint public smFeePercentage;
 
-  ///@dev The stored security module fee to return to after an insolvency event
+  /// @dev The stored security module fee to return to after an insolvency event
   uint public previousSmFeePercentage;
 
-  ///@dev True if the cash system is insolvent (USDC balance < total cash asset)
+  /// @dev True if the cash system is insolvent (stable balance < total cash asset)
   ///     In which case we turn on the withdraw fee to prevent bank-run
   bool public temporaryWithdrawFeeEnabled;
 
-  ///@dev Store stable coin decimal as immutable
+  /// @dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
 
-  ///@dev AccountId to previously stored borrow/supply index depending on a positive or debt position.
+  /// @dev AccountId to previously stored borrow/supply index depending on a positive or debt position.
   mapping(uint => uint) public accountIdIndex;
 
   /////////////////////
@@ -94,17 +93,17 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   /////////////////////
 
   constructor(
-    IAccounts _accounts,
+    ISubAccounts _subAccounts,
     IERC20Metadata _stableAsset,
     IInterestRateModel _rateModel,
     uint _smId,
     address _liquidationModule
-  ) ManagerWhitelist(_accounts) {
+  ) ManagerWhitelist(_subAccounts) {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
     smId = _smId;
 
-    lastTimestamp = block.timestamp;
+    lastTimestamp = uint64(block.timestamp);
     rateModel = _rateModel;
     liquidationModule = _liquidationModule;
   }
@@ -141,16 +140,39 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   ////////////////////////////
 
   /**
-   * @dev Deposit USDC and increase account balance
+   * @dev Deposit stable token and increase account balance
    * @param recipientAccount account id to receive the cash asset
    * @param stableAmount amount of stable coins to deposit
    */
   function deposit(uint recipientAccount, uint stableAmount) external {
+    _deposit(recipientAccount, stableAmount);
+  }
+
+  /**
+   * @dev Deposit stable token and create a new account
+   * @param recipient user for who the new account is created
+   * @param stableAmount amount of stable coins to deposit
+   * @param manager manager of the new account
+   */
+  function depositToNewAccount(address recipient, uint stableAmount, IManager manager)
+    external
+    returns (uint newAccountId)
+  {
+    newAccountId = subAccounts.createAccount(recipient, manager);
+    _deposit(newAccountId, stableAmount);
+  }
+
+  /**
+   * @dev Deposit stable token and increase account balance
+   * @param recipientAccount account id to receive the cash asset
+   * @param stableAmount amount of stable coins to deposit
+   */
+  function _deposit(uint recipientAccount, uint stableAmount) internal {
     stableAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
     uint amountInAccount = stableAmount.to18Decimals(stableDecimals);
 
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -161,47 +183,22 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
       ""
     );
 
-    // invoke handleAdjustment hook so the manager is checked, and interest is applied.
-
     emit Deposit(recipientAccount, msg.sender, amountInAccount, stableAmount);
   }
 
   /**
-   * @notice Withdraw USDC from a Lyra account
+   * @notice Withdraw stable token from a Lyra account
    * @param accountId account id to withdraw
    * @param stableAmount amount of stable asset in its native decimals
-   * @param recipient USDC recipient
+   * @param recipient stable token recipient
    */
   function withdraw(uint accountId, uint stableAmount, address recipient) external {
-    if (msg.sender != accounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
+    if (msg.sender != subAccounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
 
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
     uint cashAmount = stableAmount.to18DecimalsRoundUp(stableDecimals);
-
-    // if the cash asset is insolvent,
-    // each cash balance can only take out <100% amount of stable asset
-    if (temporaryWithdrawFeeEnabled) {
-      // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
-      cashAmount = cashAmount.divideDecimal(_getExchangeRate());
-    }
-
-    // transfer the asset out after potentially needing to calculate exchange rate
-    stableAsset.safeTransfer(recipient, stableAmount);
-
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
-        acc: accountId,
-        asset: ICashAsset(address(this)),
-        subId: 0,
-        amount: -int(cashAmount),
-        assetData: bytes32(0)
-      }),
-      true, // do trigger callback on handleAdjustment so we apply interest
-      ""
-    );
-
-    emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
+    _withdrawCashAmount(accountId, cashAmount, recipient);
   }
 
   /**
@@ -228,16 +225,18 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    */
   function calculateBalanceWithInterest(uint accountId) external returns (int balance) {
     _accrueInterest();
-    return _calculateBalanceWithInterest(accounts.getBalance(accountId, ICashAsset(address(this)), 0), accountId);
+    return _calculateBalanceWithInterest(subAccounts.getBalance(accountId, ICashAsset(address(this)), 0), accountId);
   }
 
-  /// @notice Allows anyone to transfer accrued SM fees to the SM
+  /**
+   * @notice Allows anyone to transfer accrued SM fees to the SM
+   */
   function transferSmFees() external {
     int amountToSend = accruedSmFees.toInt256();
     accruedSmFees = 0;
 
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: smId,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -271,12 +270,14 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @return needAllowance Return true if this adjustment should assume allowance in Account
    */
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBalance,
     IManager manager,
     address /*caller*/
   ) external onlyAccounts returns (int finalBalance, bool needAllowance) {
+    if (adjustment.subId != 0) revert CA_InvalidSubId();
+
     _checkManager(address(manager));
     if (preBalance == 0 && adjustment.amount == 0) {
       return (0, false);
@@ -332,8 +333,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     }
 
     // mint this amount in target account
-    accounts.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountToReceive,
         asset: ICashAsset(address(this)),
         subId: 0,
@@ -356,6 +357,22 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   }
 
   /**
+   * @dev Manager can trigger forge withdraw that burn cash and give out stable asset
+   */
+  function forceWithdraw(uint accountId) external {
+    if (msg.sender != address(subAccounts.manager(accountId))) {
+      revert CA_ForceWithdrawNotAuthorized();
+    }
+    address owner = subAccounts.ownerOf(accountId);
+    int balance = subAccounts.getBalance(accountId, ICashAsset(address(this)), 0);
+    if (balance < 0) {
+      revert CA_ForceWithdrawNegativeBalance();
+    }
+
+    _withdrawCashAmount(accountId, balance.toUint256(), owner);
+  }
+
+  /**
    * @notice Allows whitelisted manager to adjust netSettledCash
    * @dev Required to track printed cash for asymmetric settlements
    * @param amountCash Amount of cash printed or burned
@@ -372,6 +389,37 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   ////////////////////////////
 
   /**
+   * @notice Withdraws cash from a given account and sends the converted stable amount to the recipient
+   */
+  function _withdrawCashAmount(uint accountId, uint cashAmount, address recipient) internal {
+    // if the cash asset is insolvent,
+    // each cash balance can only take out <100% amount of stable asset
+    if (temporaryWithdrawFeeEnabled) {
+      // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
+      cashAmount = cashAmount.divideDecimal(_getExchangeRate());
+    }
+
+    uint stableAmount = cashAmount.from18Decimals(stableDecimals);
+
+    // transfer the asset out after potentially needing to calculate exchange rate
+    stableAsset.safeTransfer(recipient, stableAmount);
+
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
+        acc: accountId,
+        asset: ICashAsset(address(this)),
+        subId: 0,
+        amount: -int(cashAmount),
+        assetData: bytes32(0)
+      }),
+      true, // do trigger callback on handleAdjustment so we apply interest
+      ""
+    );
+
+    emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
+  }
+
+  /**
    * @notice Accrues interest onto the balance provided
    * @param preBalance the balance which the interest is going to be applied to
    * @param accountId the accountId which the balance belongs to
@@ -382,9 +430,9 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
     uint indexChange;
     if (preBalance < 0) {
-      indexChange = borrowIndex.divideDecimal(accountIndex);
+      indexChange = uint(borrowIndex).divideDecimal(accountIndex);
     } else if (preBalance > 0) {
-      indexChange = supplyIndex.divideDecimal(accountIndex);
+      indexChange = uint(supplyIndex).divideDecimal(accountIndex);
     }
     interestBalance = indexChange.toInt256().multiplyDecimal(preBalance);
   }
@@ -399,7 +447,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
     // Update timestamp even if there are no borrows
     uint elapsedTime = block.timestamp - lastTimestamp;
-    lastTimestamp = block.timestamp;
+    lastTimestamp = (block.timestamp).toUint64();
+
     if (totalBorrow == 0) return;
 
     // Calculate interest since last timestamp using compounded interest rate
@@ -410,6 +459,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     if (netSettledCash < 0) {
       realSupply += (-netSettledCash).toUint256(); // util = totalBorrow/(totalSupply + netBurned)
     }
+    // Note: we ignore including netSettledCash in totalBorrow intentionally since all it would do is increase/spike
+    // the interest rate temporarily (which causes unintentional side-effects with a large enough settlement amount)
 
     uint borrowRate = rateModel.getBorrowRate(realSupply, totalBorrow);
     uint borrowInterestFactor = rateModel.getBorrowInterestFactor(elapsedTime, borrowRate);
@@ -428,8 +479,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     totalSupply += (interestAccrued - smFeeCut);
 
     // Update borrow/supply index by calculating the % change of total * current borrow/supply index
-    borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex);
-    supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex);
+    borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex).toUint96();
+    supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex).toUint96();
 
     emit InterestAccrued(interestAccrued, borrowIndex, totalSupply, totalBorrow);
   }
@@ -453,19 +504,19 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @param finalBalance The balance after the asset adjustment was made
    */
   function _updateSupplyAndBorrow(int preBalance, int finalBalance) internal {
-    uint newtotalSupply =
+    uint newTotalSupply =
       (totalSupply.toInt256() + SignedMath.max(0, finalBalance) - SignedMath.max(0, preBalance)).toUint256();
-    uint nwetotalBorrow =
+    uint newTotalBorrow =
       (totalBorrow.toInt256() + SignedMath.min(0, preBalance) - SignedMath.min(0, finalBalance)).toUint256();
-    totalSupply = newtotalSupply.toUint128();
-    totalBorrow = nwetotalBorrow.toUint128();
+    totalSupply = newTotalSupply.toUint128();
+    totalBorrow = newTotalBorrow.toUint128();
   }
 
   ///////////////////
   //   Modifiers   //
   ///////////////////
 
-  ///@dev revert if caller is not liquidation module
+  /// @dev revert if caller is not liquidation module
   modifier onlyLiquidation() {
     if (msg.sender != liquidationModule) revert CA_NotLiquidationModule();
     _;

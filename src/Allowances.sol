@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "lyra-utils/math/IntLib.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IAllowances} from "src/interfaces/IAllowances.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 /**
- * @title Allowacne
+ * @title Allowance
  * @author Lyra
- * @notice Allow more granular alloance setting, supposed to be used by Account
+ * @notice Allow more granular allowance setting, supposed to be used by Account
  */
 contract Allowances is IAllowances {
-  using IntLib for int;
-
   ///////////////
   // Variables //
   ///////////////
@@ -88,7 +86,7 @@ contract Allowances is IAllowances {
    * @param adjustment amount of balance adjustment for an (asset, subId)
    * @param caller address of msg.sender initiating change
    */
-  function _spendAllowance(IAccounts.AssetAdjustment memory adjustment, address owner, address caller) internal {
+  function _spendAllowance(ISubAccounts.AssetAdjustment memory adjustment, address owner, address caller) internal {
     /* Early return if amount == 0 */
     if (adjustment.amount == 0) {
       return;
@@ -133,7 +131,7 @@ contract Allowances is IAllowances {
     uint subIdAllowance = allowancesForSubId[spender];
     uint assetAllowance = allowancesForAsset[spender];
 
-    uint absAmount = amount.abs();
+    uint absAmount = SignedMath.abs(amount);
     /* subId allowances are decremented before asset allowances */
     if (absAmount <= subIdAllowance) {
       allowancesForSubId[spender] = subIdAllowance - absAmount;

@@ -1,99 +1,83 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "openzeppelin/utils/math/SafeCast.sol";
-import "lyra-utils/decimals/DecimalMath.sol";
-import "lyra-utils/encoding/OptionEncoding.sol";
-import "lyra-utils/math/IntLib.sol";
 import "openzeppelin/access/Ownable2Step.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
+import "openzeppelin/utils/math/Math.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
+import "lyra-utils/decimals/SignedDecimalMath.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
 
+import {IGlobalSubIdOITracking} from "src/interfaces/IGlobalSubIdOITracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
+import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
+
 import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
-import {IFutureFeed} from "src/interfaces/IFutureFeed.sol";
+import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
+import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAllowList} from "src/interfaces/IAllowList.sol";
 
-import "src/libraries/StrikeGrouping.sol";
-
+/**
+ * @title BaseManager
+ * @notice Base contract for all managers. Handles OI fee, settling, liquidations and allowList. Also provides other
+ *        utility functions.
+ */
 abstract contract BaseManager is IBaseManager, Ownable2Step {
-  using IntLib for int;
   using DecimalMath for uint;
+  using SignedDecimalMath for int;
 
   ///////////////
   // Variables //
   ///////////////
 
   /// @dev Account contract address
-  IAccounts public immutable accounts;
-
-  /// @dev Option asset address
-  IOption public immutable option;
-
-  /// @dev Perp asset address
-  IPerpAsset public immutable perp;
+  ISubAccounts public immutable subAccounts;
 
   /// @dev Cash asset address
   ICashAsset public immutable cashAsset;
 
-  /// @dev Future feed oracle to get future price for an expiry
-  IFutureFeed public immutable futureFeed;
+  /// @dev Dutch auction contract address, can trigger execute bid
+  IDutchAuction public immutable liquidation;
 
-  /// @dev Settlement feed oracle to get price fixed for settlement
-  ISettlementFeed public immutable settlementFeed;
+  /// @dev AllowList contract address
+  IAllowList public allowList;
+
+  /// @dev within this buffer time, allow people to hold expired options in case the settlement price is not ready
+  uint public optionSettlementBuffer = 5 minutes;
 
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
-  ///@dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
-  uint public OIFeeRateBPS = 0.001e18; // 10 BPS
-
-  /// @dev Whitelisted managers. Account can only .changeManager() to whitelisted managers.
-  mapping(address => bool) public whitelistedManager;
+  /// @dev minimum OI fee charged, given fee is > 0.
+  uint public minOIFee = 0;
 
   /// @dev mapping of tradeId => accountId => fee charged
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
-  constructor(
-    IAccounts _accounts,
-    IFutureFeed _futureFeed,
-    ISettlementFeed _settlementFeed,
-    ICashAsset _cashAsset,
-    IOption _option,
-    IPerpAsset _perp
-  ) Ownable2Step() {
-    accounts = _accounts;
-    option = _option;
-    perp = _perp;
+  /// @dev keep track of the last tradeId that this manager updated before, to prevent double update
+  uint public lastOracleUpdateTradeId;
+
+  /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
+  mapping(address sender => bool) public feeBypassedCaller;
+
+  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
+  mapping(address asset => uint) public OIFeeRateBPS;
+
+  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
+    subAccounts = _subAccounts;
     cashAsset = _cashAsset;
-    futureFeed = _futureFeed;
-    settlementFeed = _settlementFeed;
-  }
-
-  //////////////////////////
-  //  External Functions  //
-  //////////////////////////
-
-  /**
-   * @notice Settle expired option positions in an account.
-   * @dev This function can be called by anyone
-   */
-  function settleOptions(uint accountId) external {
-    _settleAccountOptions(accountId);
-  }
-
-  /**
-   * @notice Settle accounts in batch
-   * @dev This function can be called by anyone
-   */
-  function batchSettleAccounts(uint[] calldata accountIds) external {
-    for (uint i; i < accountIds.length; ++i) {
-      _settleAccountOptions(accountIds[i]);
-    }
+    liquidation = _liquidation;
   }
 
   //////////////////////////
@@ -101,14 +85,24 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
 
   /**
+   * @notice Governance determined allowList
+   * @param _allowList The allowList contract, can be empty which will bypass allowList checks
+   */
+  function setAllowList(IAllowList _allowList) external onlyOwner {
+    allowList = _allowList;
+    emit AllowListSet(_allowList);
+  }
+
+  /**
    * @dev Governance determined account to receive OI fee
    * @param _newAcc account id
    */
   function setFeeRecipient(uint _newAcc) external onlyOwner {
     // this line will revert if the owner tries to set an invalid account
-    accounts.ownerOf(_newAcc);
+    subAccounts.ownerOf(_newAcc);
 
     feeRecipientAcc = _newAcc;
+    emit FeeRecipientSet(_newAcc);
   }
 
   /**
@@ -116,19 +110,150 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev Charged fee = contract traded * OIFee * spot
    * @param newFeeRate OI fee rate in BPS
    */
-  function setOIFeeRateBPS(uint newFeeRate) external onlyOwner {
-    OIFeeRateBPS = newFeeRate;
+  function setOIFeeRateBPS(address asset, uint newFeeRate) external onlyOwner {
+    if (newFeeRate > 0.2e18) {
+      revert BM_OIFeeRateTooHigh();
+    }
 
-    emit OIFeeRateSet(OIFeeRateBPS);
+    OIFeeRateBPS[asset] = newFeeRate;
+
+    emit OIFeeRateSet(asset, newFeeRate);
+  }
+
+  function setMinOIFee(uint newMinOIFee) external onlyOwner {
+    if (newMinOIFee > 100e18) {
+      revert BM_MinOIFeeTooHigh();
+    }
+    minOIFee = newMinOIFee;
+
+    emit MinOIFeeSet(minOIFee);
   }
 
   /**
-   * @notice Whitelist or un-whitelist a manager used in .changeManager()
-   * @param _manager manager address
-   * @param _whitelisted true to whitelist
+   * @notice Governance determined tx msg.sender to Accounts that can bypass OI fee on perp or options
+   * @param caller msg.sender to Accounts, caller reported by handleAdjustment
+   * @param bypassed true to bypass OI fee, false to charge OI fee
    */
-  function setWhitelistManager(address _manager, bool _whitelisted) external onlyOwner {
-    whitelistedManager[_manager] = _whitelisted;
+  function setFeeBypassedCaller(address caller, bool bypassed) external onlyOwner {
+    feeBypassedCaller[caller] = bypassed;
+
+    emit FeeBypassedCallerSet(caller, bypassed);
+  }
+
+  /**
+   * @notice Governance determined option settlement buffer
+   */
+  function setSettlementBuffer(uint newBuffer) external onlyOwner {
+    if (newBuffer > 2 hours) revert BM_InvalidSettlementBuffer();
+
+    optionSettlementBuffer = newBuffer;
+    emit OptionSettlementBufferUpdated(newBuffer);
+  }
+
+  ///////////////////
+  // Liquidations ///
+  ///////////////////
+
+  /**
+   * @notice Transfers portion of account to the liquidator.
+   *         Transfers cash to the liquidated account.
+   * @dev Auction contract can decide to either:
+   *      - revert / process bid
+   *      - continue / complete auction
+   * @param accountId ID of account which is being liquidated.
+   * @param liquidatorId Liquidator account ID.
+   * @param portion Portion of account that is requested to be liquidated.
+   * @param bidAmount Cash amount liquidator is offering for portion of account.
+   * @param reservedCash Cash amount to ignore in liquidated account's balance.
+   */
+  function executeBid(uint accountId, uint liquidatorId, uint portion, uint bidAmount, uint reservedCash)
+    external
+    onlyLiquidations
+  {
+    if (portion > 1e18) revert BM_InvalidBidPortion();
+
+    // check that liquidator only has cash and nothing else
+    ISubAccounts.AssetBalance[] memory liquidatorAssets = subAccounts.getAccountBalances(liquidatorId);
+    if (
+      liquidatorAssets.length != 0
+        && (liquidatorAssets.length != 1 || address(liquidatorAssets[0].asset) != address(cashAsset))
+    ) {
+      revert BM_LiquidatorCanOnlyHaveCash();
+    }
+
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
+
+    // transfer liquidated account's asset to liquidator
+    for (uint i; i < assetBalances.length; i++) {
+      int ignoreAmount = 0;
+      if (assetBalances[i].asset == cashAsset) {
+        ignoreAmount = int(reservedCash);
+      }
+
+      _symmetricManagerAdjustment(
+        accountId,
+        liquidatorId,
+        assetBalances[i].asset,
+        uint96(assetBalances[i].subId),
+        (assetBalances[i].balance - ignoreAmount).multiplyDecimal(int(portion))
+      );
+    }
+
+    if (bidAmount != 0) {
+      // transfer cash (bid amount) to liquidated account
+      _symmetricManagerAdjustment(liquidatorId, accountId, cashAsset, 0, int(bidAmount));
+    }
+  }
+
+  /**
+   * @dev the liquidation module can request manager to pay the liquidation fee from liquidated account at start of auction
+   */
+  function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external onlyLiquidations {
+    _symmetricManagerAdjustment(accountId, recipient, cashAsset, 0, int(cashAmount));
+  }
+
+  /**
+   * @dev settle pending interest on an account
+   * @param accountId account id
+   */
+  function settleInterest(uint accountId) external {
+    subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, 0, bytes32(0)));
+  }
+
+  /**
+   * @dev force a cash only account to leave the system if it's not on the allowlist
+   * @param accountId Id of account to force withdraw
+   */
+  function forceWithdrawAccount(uint accountId) external {
+    if (_canTrade(accountId)) {
+      revert BM_OnlyBlockedAccounts();
+    }
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
+    if (balances.length != 1 || address(balances[0].asset) != address(cashAsset)) {
+      revert BM_InvalidForceWithdrawAccountState();
+    }
+
+    cashAsset.forceWithdraw(accountId);
+  }
+
+  //////////////////////////
+  //   Keeper Functions   //
+  //////////////////////////
+
+  /**
+   * @dev keeper can call this function to force liquidate an account that has been removed from the allowlist
+   * @param accountId Id of account to force liquidate
+   * @param scenarioId Id of scenario used within liquidation module. Ignored for standard manager.
+   */
+  function forceLiquidateAccount(uint accountId, uint scenarioId) external {
+    if (_canTrade(accountId)) {
+      revert BM_OnlyBlockedAccounts();
+    }
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
+    if (balances.length == 1 && address(balances[0].asset) == address(cashAsset) && balances[0].balance > 0) {
+      revert BM_InvalidForceLiquidateAccountState();
+    }
+    liquidation.startForcedAuction(accountId, scenarioId);
   }
 
   //////////////////////////
@@ -136,82 +261,118 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
 
   /**
-   * @notice Adds option to portfolio holdings.
-   * @dev This option arrangement is only additive, as portfolios are reconstructed for every trade
-   * @param portfolio current portfolio of account
-   * @param asset option asset to be added
-   * @return addedStrikeIndex index of existing or added strike struct
+   * @dev send custom data to oracles. Oracles should implement the verification logic on their own
    */
-  function _addOption(Portfolio memory portfolio, IAccounts.AssetBalance memory asset)
+  function _processManagerData(uint tradeId, bytes calldata managerData) internal {
+    if (managerData.length == 0 || lastOracleUpdateTradeId == tradeId) return;
+
+    lastOracleUpdateTradeId = tradeId;
+
+    // parse array of data and update each oracle or take action
+    ManagerData[] memory managerDatas = abi.decode(managerData, (ManagerData[]));
+    for (uint i; i < managerDatas.length; i++) {
+      // invoke some actions if needed
+      IDataReceiver(managerDatas[i].receiver).acceptData(managerDatas[i].data);
+    }
+  }
+
+  ////////////////
+  //   OI Fee   //
+  ////////////////
+
+  /**
+   * @dev calculate the option OI fee for a specific option + subId combination
+   * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
+   * @param asset Option contract
+   * @param forwardFeed Forward feed contract
+   * @param delta Change in this trade
+   * @param subId SubId of the option
+   */
+  function _getOptionOIFee(IGlobalSubIdOITracking asset, IForwardFeed forwardFeed, int delta, uint subId, uint tradeId)
     internal
-    pure
-    returns (uint addedStrikeIndex)
+    view
+    returns (uint fee)
   {
-    // decode subId
-    (uint expiry, uint strikePrice, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(asset.subId));
+    bool oiIncreased = _getOIIncreased(asset, subId, tradeId);
+    if (!oiIncreased) return 0;
 
-    // assume expiry = 0 means this is the first strike.
-    if (portfolio.expiry == 0) {
-      portfolio.expiry = expiry;
-    }
-
-    if (portfolio.expiry != expiry) {
-      revert BM_OnlySingleExpiryPerAccount();
-    }
-
-    // add strike in-memory to portfolio
-    (addedStrikeIndex, portfolio.numStrikesHeld) =
-      StrikeGrouping.findOrAddStrike(portfolio.strikes, strikePrice, portfolio.numStrikesHeld);
-
-    // add call or put balance
-    if (isCall) {
-      portfolio.strikes[addedStrikeIndex].calls += asset.balance;
-    } else {
-      portfolio.strikes[addedStrikeIndex].puts += asset.balance;
-    }
-
-    // return the index of the strike which was just modified
-    return addedStrikeIndex;
+    (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
+    fee = SignedMath.abs(delta).multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS[address(asset)]);
   }
 
   /**
-   * @dev charge a fixed OI fee and send it in cash to feeRecipientAcc
-   * @param accountId Account potentially to charge
-   * @param tradeId ID of the trade informed by Accounts
-   * @param assetDeltas Array of asset changes made to this account
+   * @notice calculate the perpetual OI fee.
+   * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
    */
-  function _chargeOIFee(uint accountId, uint tradeId, IAccounts.AssetDelta[] calldata assetDeltas) internal {
-    uint fee;
-    // iterate through all asset changes, if it's option asset, change if OI increased
-    for (uint i; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset != option) continue;
+  function _getPerpOIFee(IPerpAsset perpAsset, int delta, uint tradeId) internal view returns (uint fee) {
+    bool oiIncreased = _getOIIncreased(perpAsset, 0, tradeId);
+    if (!oiIncreased) return 0;
 
-      (, uint oiBefore) = option.openInterestBeforeTrade(assetDeltas[i].subId, tradeId);
-      uint oi = option.openInterest(assetDeltas[i].subId);
+    (uint perpPrice,) = perpAsset.getPerpPrice();
+    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS[address(perpAsset)]);
+  }
 
-      // if OI decreases, don't charge a fee
-      if (oi <= oiBefore) continue;
+  /**
+   * @dev check if OI increased for a given asset and subId in a trade
+   */
+  function _getOIIncreased(IGlobalSubIdOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
+    (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
+    uint oi = asset.openInterest(subId);
+    return oi > oiBefore;
+  }
 
-      (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(assetDeltas[i].subId));
-      uint futurePrice = futureFeed.getFuturePrice(expiry);
-      fee += assetDeltas[i].delta.abs().multiplyDecimal(futurePrice).multiplyDecimal(OIFeeRateBPS);
-    }
+  /**
+   * @dev pay fee, carry up to minFee
+   */
+  function _payFee(uint accountId, uint fee) internal {
+    // Only consider min fee if expected fee is > 0
+    if (fee == 0 || feeRecipientAcc == 0) return;
 
-    if (fee > 0) {
-      // keep track of OI Fee
-      feeCharged[tradeId][accountId] = fee;
+    // transfer cash to fee recipient account
+    _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(Math.max(fee, minOIFee)));
+  }
 
-      // transfer cash to fee recipient account
-      _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(fee));
+  ////////////
+  // OI Cap //
+  ////////////
+
+  /**
+   * @notice check that all assets in an account is below the cap
+   * @dev this function assume all assets are compliant to IPositionTracking interface
+   */
+  function _checkAllAssetCaps(uint accountId, uint tradeId) internal view {
+    address[] memory assets = subAccounts.getUniqueAssets(accountId);
+    for (uint i; i < assets.length; i++) {
+      if (assets[i] == address(cashAsset)) continue;
+
+      _checkAssetCap(IPositionTracking(assets[i]), tradeId);
     }
   }
+
+  /**
+   * @dev check that an asset is not over the total position cap for this manager
+   */
+  function _checkAssetCap(IPositionTracking asset, uint tradeId) internal view {
+    uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
+    (, uint preTradePos) = asset.totalPositionBeforeTrade(IManager(address(this)), tradeId);
+    uint postTradePos = asset.totalPosition(IManager(address(this)));
+
+    // If the trade increased OI and we are past the cap, revert.
+    if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
+  }
+
+  ////////////////
+  // Settlement //
+  ////////////////
 
   /**
    * @dev settle an account by removing all expired option positions and adjust cash balance
+   * @dev this function will not revert even if settlement price is not updated
    * @param accountId Account Id to settle
    */
-  function _settleAccountOptions(uint accountId) internal {
-    IAccounts.AssetBalance[] memory balances = accounts.getAccountBalances(accountId);
+  function _settleAccountOptions(IOption option, uint accountId) internal {
+    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
       // skip non option asset
@@ -223,30 +384,68 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       cashDelta += value;
 
       // update user option balance
-      accounts.managerAdjustment(
-        IAccounts.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
+      subAccounts.managerAdjustment(
+        ISubAccounts.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
       );
     }
 
     // update user cash amount
-    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
+    subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, cashDelta, bytes32(0)));
     // report total print / burn to cash asset
     cashAsset.updateSettledCash(cashDelta);
   }
 
   /**
    * @notice to settle an account, clear PNL and funding in the perp contract and pay out cash
+   * @dev this should only be called after a perp transfer happens on this account
    */
-  function _settleAccountPerps(uint accountId) internal {
+  function _settlePerpRealizedPNL(IPerpAsset perp, uint accountId) internal {
     // settle perp: update latest funding rate and settle
-    int netCash = perp.settleRealizedPNLAndFunding(accountId);
+    (int pnl, int funding) = perp.settleRealizedPNLAndFunding(accountId);
+
+    int netCash = pnl + funding;
+
+    if (netCash == 0) return;
 
     cashAsset.updateSettledCash(netCash);
 
     // update user cash amount
-    accounts.managerAdjustment(IAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
+    subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
 
     emit PerpSettled(accountId, netCash);
+  }
+
+  /**
+   * @notice settle account's perp position with index price, and settle through cash
+   * @dev calling function should make sure perp address is trusted
+   */
+  function _settlePerpUnrealizedPNL(IPerpAsset perp, uint accountId) internal {
+    perp.realizePNLWithMark(accountId);
+
+    _settlePerpRealizedPNL(perp, accountId);
+  }
+
+  /**
+   * @dev merge bunch of accounts into one.
+   * @dev reverts if the msg.sender is not the owner of all accounts
+   */
+  function _mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) internal {
+    address owner = subAccounts.ownerOf(mergeIntoId);
+    if (owner != msg.sender) revert BM_OnlySubAccountOwner();
+
+    for (uint i = 0; i < mergeFromIds.length; ++i) {
+      // check owner of all accounts is the same - note this ignores
+      if (owner != subAccounts.ownerOf(mergeFromIds[i])) {
+        revert BM_MergeOwnerMismatch();
+      }
+      // Move all assets of the other
+      ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(mergeFromIds[i]);
+      for (uint j = 0; j < assets.length; ++j) {
+        _symmetricManagerAdjustment(
+          mergeFromIds[i], mergeIntoId, assets[j].asset, SafeCast.toUint96(assets[j].subId), assets[j].balance
+        );
+      }
+    }
   }
 
   /**
@@ -259,29 +458,111 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    */
   function _symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) internal {
     // deduct amount in from account
-    accounts.managerAdjustment(
-      IAccounts.AssetAdjustment({acc: from, asset: asset, subId: subId, amount: -amount, assetData: bytes32(0)})
+    subAccounts.managerAdjustment(
+      ISubAccounts.AssetAdjustment({acc: from, asset: asset, subId: subId, amount: -amount, assetData: bytes32(0)})
     );
 
     // increase "to" account
-    accounts.managerAdjustment(
-      IAccounts.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
+    subAccounts.managerAdjustment(
+      ISubAccounts.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
     );
   }
 
-  ////////////////
-  //   Events   //
-  ////////////////
+  /**
+   * @dev get the original balances state before a trade is executed
+   */
+  function _undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
+    internal
+    view
+    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
+  {
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
-  /// @dev Emitted when OI fee rate is set
-  event OIFeeRateSet(uint oiFeeRate);
+    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
+    uint removedBalances = 0;
+    uint newBalances = 0;
+    ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
 
-  event PerpSettled(uint indexed accountId, int netCash);
+    for (uint i = 0; i < assetDeltas.length; ++i) {
+      ISubAccounts.AssetDelta memory delta = assetDeltas[i];
+      if (delta.delta == 0) {
+        continue;
+      }
+      bool found = false;
+      for (uint j = 0; j < assetBalances.length; ++j) {
+        ISubAccounts.AssetBalance memory balance = assetBalances[j];
+        if (balance.asset == delta.asset && balance.subId == delta.subId) {
+          found = true;
+          assetBalances[j].balance = balance.balance - delta.delta;
+          if (assetBalances[j].balance == 0) {
+            removedBalances++;
+          }
+          break;
+        }
+      }
+      if (!found) {
+        preBalances[newBalances++] =
+          ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
+      }
+    }
 
-  ////////////
-  // Errors //
-  ////////////
+    newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
 
-  error BM_OnlySingleExpiryPerAccount();
-  error BM_ManagerNotWhitelisted(uint accountId, address newManager);
+    uint newBalancesIndex = 0;
+    for (uint i = 0; i < assetBalances.length; ++i) {
+      ISubAccounts.AssetBalance memory balance = assetBalances[i];
+      if (balance.balance != 0) {
+        newAssetBalances[newBalancesIndex++] = balance;
+      }
+    }
+    for (uint i = 0; i < newBalances; ++i) {
+      newAssetBalances[newBalancesIndex++] = preBalances[i];
+    }
+
+    return newAssetBalances;
+  }
+
+  /**
+   * @dev revert if the accountID is not on the allow list
+   */
+  function _verifyCanTrade(uint accountId) internal view {
+    if (!_canTrade(accountId)) {
+      revert BM_CannotTrade();
+    }
+  }
+
+  /**
+   * @dev return true if the owner of an account ID is on the allow list
+   */
+  function _canTrade(uint accountId) internal view returns (bool) {
+    if (allowList == IAllowList(address(0))) {
+      return true;
+    }
+    address user = subAccounts.ownerOf(accountId);
+    return allowList.canTrade(user);
+  }
+
+  ///////////////////
+  // Account Hooks //
+  ///////////////////
+
+  /**
+   * @notice Ensures new manager is valid.
+   * @param newManager IManager to change account to.
+   */
+  function handleManagerChange(uint, IManager newManager) external view virtual override {}
+
+  ////////////////////
+  //    Modifier    //
+  ////////////////////
+
+  modifier onlyLiquidations() {
+    if (msg.sender != address(liquidation)) revert BM_OnlyLiquidationModule();
+    _;
+  }
+
+  modifier onlyAccounts() {
+    if (msg.sender != address(subAccounts)) revert BM_OnlyAccounts();
+    _;
+  }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../../../src/Accounts.sol";
+import "../../../src/SubAccounts.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
@@ -23,7 +23,7 @@ contract AccountTestBase is Test {
   MockAsset usdcAsset;
   MockAsset coolAsset;
 
-  Accounts account;
+  SubAccounts subAccounts;
 
   uint tokenSubId = 1000;
 
@@ -31,19 +31,19 @@ contract AccountTestBase is Test {
     alice = address(0xaa);
     bob = address(0xbb);
 
-    account = new Accounts("Lyra Margin Accounts", "LyraMarginNFTs");
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     /* mock tokens that can be deposited into accounts */
     usdc = new MockERC20("USDC", "USDC");
-    usdcAsset = new MockAsset(IERC20(usdc), IAccounts(address(account)), false);
+    usdcAsset = new MockAsset(IERC20(usdc), ISubAccounts(address(subAccounts)), false);
 
     coolToken = new MockERC20("Cool", "COOL");
-    coolAsset = new MockAsset(IERC20(coolToken), IAccounts(address(account)), false);
+    coolAsset = new MockAsset(IERC20(coolToken), ISubAccounts(address(subAccounts)), false);
 
-    dumbManager = new MockManager(address(account));
+    dumbManager = new MockManager(address(subAccounts));
 
-    aliceAcc = account.createAccount(alice, dumbManager);
-    bobAcc = account.createAccount(bob, dumbManager);
+    aliceAcc = subAccounts.createAccount(alice, dumbManager);
+    bobAcc = subAccounts.createAccount(bob, dumbManager);
 
     // give Alice usdc, and give Bob coolToken
     mintAndDeposit(alice, aliceAcc, usdc, usdcAsset, 0, 10000000e18);
@@ -76,7 +76,7 @@ contract AccountTestBase is Test {
     uint tokenASubId,
     uint tokenBSubId
   ) internal {
-    IAccounts.AssetTransfer memory tokenATransfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory tokenATransfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: IAsset(assetA),
@@ -85,7 +85,7 @@ contract AccountTestBase is Test {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer memory tokenBTranser = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory tokenBTranser = ISubAccounts.AssetTransfer({
       fromAcc: toAcc,
       toAcc: fromAcc,
       asset: IAsset(assetB),
@@ -94,15 +94,15 @@ contract AccountTestBase is Test {
       assetData: bytes32(0)
     });
 
-    IAccounts.AssetTransfer[] memory transferBatch = new IAccounts.AssetTransfer[](2);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
     transferBatch[0] = tokenATransfer;
     transferBatch[1] = tokenBTranser;
 
-    account.submitTransfers(transferBatch, "");
+    subAccounts.submitTransfers(transferBatch, "");
   }
 
   function transferToken(uint fromAcc, uint toAcc, IAsset asset, uint subId, int tokenAmounts) internal {
-    IAccounts.AssetTransfer memory transfer = IAccounts.AssetTransfer({
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
       fromAcc: fromAcc,
       toAcc: toAcc,
       asset: asset,
@@ -111,7 +111,7 @@ contract AccountTestBase is Test {
       assetData: bytes32(0)
     });
 
-    account.submitTransfer(transfer, "");
+    subAccounts.submitTransfer(transfer, "");
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.

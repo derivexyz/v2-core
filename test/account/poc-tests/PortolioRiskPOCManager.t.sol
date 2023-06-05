@@ -51,8 +51,8 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     setPrices(1e18, 2500e18);
     rm.flagLiquidation(aliceAcc);
 
-    int aliceUSDCBefore = account.getBalance(aliceAcc, usdcAdapter, 0);
-    int bobUSDCBefore = account.getBalance(bobAcc, usdcAdapter, 0);
+    int aliceUSDCBefore = subAccounts.getBalance(aliceAcc, usdcAdapter, 0);
+    int bobUSDCBefore = subAccounts.getBalance(bobAcc, usdcAdapter, 0);
 
     vm.startPrank(bob);
     int extraCollat = 500e18;
@@ -60,10 +60,10 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     vm.stopPrank();
 
     // account is now bob's
-    assertEq(account.ownerOf(aliceAcc), bob);
+    assertEq(subAccounts.ownerOf(aliceAcc), bob);
 
-    assertEq(account.getBalance(aliceAcc, usdcAdapter, 0), aliceUSDCBefore + extraCollat);
-    assertEq(account.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore - extraCollat);
+    assertEq(subAccounts.getBalance(aliceAcc, usdcAdapter, 0), aliceUSDCBefore + extraCollat);
+    assertEq(subAccounts.getBalance(bobAcc, usdcAdapter, 0), bobUSDCBefore - extraCollat);
   }
 
   function testManagerCanBatchSettleAccounts() public {
@@ -74,20 +74,20 @@ contract POC_PortfolioRiskManager is Test, AccountPOCHelper {
     setSettlementPrice(expiry);
 
     // settlment
-    IAccounts.HeldAsset[] memory assets = new IAccounts.HeldAsset[](1);
-    assets[0] = IAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
+    ISubAccounts.HeldAsset[] memory assets = new ISubAccounts.HeldAsset[](1);
+    assets[0] = ISubAccounts.HeldAsset({asset: IAsset(address(optionAdapter)), subId: uint96(subId)});
     rm.settleAssets(aliceAcc, assets);
     rm.settleAssets(bobAcc, assets);
 
     // check settlement values are reflected in daiLending balance
-    assertEq(account.getBalance(aliceAcc, daiLending, 0), -cashValue);
-    assertEq(account.getBalance(bobAcc, daiLending, 0), cashValue);
+    assertEq(subAccounts.getBalance(aliceAcc, daiLending, 0), -cashValue);
+    assertEq(subAccounts.getBalance(bobAcc, daiLending, 0), cashValue);
   }
 
   function testManagerCanBlockMigrationToBadManagers() public {
     address manager = address(0xbeef);
     vm.expectRevert("wrong manager");
     vm.prank(alice);
-    account.changeManager(aliceAcc, IManager(manager), "");
+    subAccounts.changeManager(aliceAcc, IManager(manager), "");
   }
 }

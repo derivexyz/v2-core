@@ -9,7 +9,7 @@ import "openzeppelin/access/Ownable2Step.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import "./InterestRateModel.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 import "forge-std/console2.sol";
@@ -22,7 +22,7 @@ contract Lending is IAsset, Ownable2Step {
 
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
-  IAccounts account;
+  ISubAccounts subAccounts;
   InterestRateModel interestRateModel;
 
   uint public feeFactor; // fee taken by asset from interest
@@ -37,9 +37,9 @@ contract Lending is IAsset, Ownable2Step {
 
   mapping(uint => uint) public accountIndex; // could be borrow or supply index
 
-  constructor(IERC20 token_, IAccounts account_, InterestRateModel _interestRateModel) Ownable2Step() {
+  constructor(IERC20 token_, ISubAccounts account_, InterestRateModel _interestRateModel) Ownable2Step() {
     token = token_;
-    account = account_;
+    subAccounts = account_;
 
     accrualTimestamp = block.timestamp;
     _setInterestRateModelFresh(_interestRateModel);
@@ -51,11 +51,13 @@ contract Lending is IAsset, Ownable2Step {
   // Accounts Hooks //
   ////////////////////
 
-  function handleAdjustment(IAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager riskModel, address)
-    external
-    override
-    returns (int finalBal, bool needAdjustment)
-  {
+  function handleAdjustment(
+    ISubAccounts.AssetAdjustment memory adjustment,
+    uint,
+    int preBal,
+    IManager riskModel,
+    address
+  ) external override returns (int finalBal, bool needAdjustment) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
 
     /* Makes a continuous compounding interest calculation.
@@ -79,7 +81,6 @@ contract Lending is IAsset, Ownable2Step {
     }
 
     /* (b) updates totalBorrows and totalSupply according to adjustment */
-    // TODO: need to clean up
     if (freshBal <= 0 && finalBal <= 0) {
       totalBorrow = (totalBorrow.toInt256() + (freshBal - finalBal)).toUint256();
     } else if (freshBal >= 0 && finalBal >= 0) {
@@ -106,13 +107,13 @@ contract Lending is IAsset, Ownable2Step {
    */
   function getBalance(uint accountId) external returns (int balance) {
     accrueInterest();
-    return _getBalanceFresh(accountId, account.getBalance(accountId, IAsset(address(this)), 0));
+    return _getBalanceFresh(accountId, subAccounts.getBalance(accountId, IAsset(address(this)), 0));
   }
 
   function updateBalance(uint accountId) external returns (int balance) {
     /* This will eventually call asset.handleAdjustment() and accrue interest */
-    balance = account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    balance = subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -125,8 +126,8 @@ contract Lending is IAsset, Ownable2Step {
   }
 
   function deposit(uint recipientAccount, uint amount) external {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -140,8 +141,8 @@ contract Lending is IAsset, Ownable2Step {
   }
 
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -232,16 +233,14 @@ contract Lending is IAsset, Ownable2Step {
   ///////////
 
   function socializeLoss(uint accountId, uint borrowAmountToSocialize) public {
-    // TODO: this will need some onlyManager modifier
-
     uint supplyPrior = totalSupply;
     uint newSupplyIndex = (supplyPrior - borrowAmountToSocialize) * supplyIndex / supplyPrior;
 
     supplyIndex = newSupplyIndex;
 
     // update the account's balance
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -314,7 +313,6 @@ contract Lending is IAsset, Ownable2Step {
 
     accruedFees = accruedFeesPrior - reduceAmount;
 
-    // TODO: implement token specific transfer for various types of stables
     // doTransferOut(admin, reduceAmount);
     token.transfer(recipientAccount, reduceAmount);
 

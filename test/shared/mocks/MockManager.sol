@@ -2,13 +2,13 @@
 pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 
 contract MockManager is IManager {
-  IAccounts account;
+  ISubAccounts subAccounts;
 
   bool revertHandleManager;
   bool revertHandleAdjustment;
@@ -27,10 +27,10 @@ contract MockManager is IManager {
   mapping(uint => mapping(address => mapping(uint96 => int))) public accAssetAdjustmentDelta;
 
   constructor(address account_) {
-    account = IAccounts(account_);
+    subAccounts = ISubAccounts(account_);
   }
 
-  function handleAdjustment(uint acc, uint tradeId, address, IAccounts.AssetDelta[] memory deltas, bytes memory)
+  function handleAdjustment(uint acc, uint tradeId, address, ISubAccounts.AssetDelta[] memory deltas, bytes memory)
     public
     virtual
   {

@@ -5,20 +5,19 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
-import "src/Accounts.sol";
+import "src/SubAccounts.sol";
 
 import "../feeds/PriceFeeds.sol";
 
-// TODO: interest rates, not really needed for account system PoC
 contract QuoteWrapper is IAsset, Ownable2Step {
   mapping(IManager => bool) riskModelAllowList;
   IERC20 token;
-  Accounts account;
+  SubAccounts subAccounts;
   PriceFeeds priceFeeds;
 
-  constructor(IERC20 token_, Accounts account_, PriceFeeds feeds_, uint feedId) Ownable2Step() {
+  constructor(IERC20 token_, SubAccounts account_, PriceFeeds feeds_, uint feedId) Ownable2Step() {
     token = token_;
-    account = account_;
+    subAccounts = account_;
     priceFeeds = feeds_;
     priceFeeds.assignFeedToAsset(IAsset(address(this)), feedId);
   }
@@ -30,8 +29,8 @@ contract QuoteWrapper is IAsset, Ownable2Step {
   }
 
   function deposit(uint recipientAccount, uint amount) external {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: recipientAccount,
         asset: IAsset(address(this)),
         subId: 0,
@@ -46,8 +45,8 @@ contract QuoteWrapper is IAsset, Ownable2Step {
 
   // Note: balances can go negative for quote but not base
   function withdraw(uint accountId, uint amount, address recipientAccount) external {
-    account.assetAdjustment(
-      IAccounts.AssetAdjustment({
+    subAccounts.assetAdjustment(
+      ISubAccounts.AssetAdjustment({
         acc: accountId,
         asset: IAsset(address(this)),
         subId: 0,
@@ -60,12 +59,13 @@ contract QuoteWrapper is IAsset, Ownable2Step {
     token.transfer(recipientAccount, amount);
   }
 
-  function handleAdjustment(IAccounts.AssetAdjustment memory adjustment, uint, int preBal, IManager riskModel, address)
-    external
-    view
-    override
-    returns (int finalBalance, bool needAllowance)
-  {
+  function handleAdjustment(
+    ISubAccounts.AssetAdjustment memory adjustment,
+    uint,
+    int preBal,
+    IManager riskModel,
+    address
+  ) external view override returns (int finalBalance, bool needAllowance) {
     require(adjustment.subId == 0 && riskModelAllowList[riskModel]);
     return (preBal + adjustment.amount, adjustment.amount < 0);
   }

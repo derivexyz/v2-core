@@ -6,15 +6,18 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
 import "src/interfaces/IOption.sol";
-import {IAccounts} from "src/interfaces/IAccounts.sol";
+import "./MockPositionTracking.sol";
+import "./MockGlobalSubIdOITracking.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
+import "../../../src/interfaces/IGlobalSubIdOITracking.sol";
 
-contract MockOption is IOption {
+contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOption {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;
 
-  IAccounts immutable account;
+  ISubAccounts immutable subAccounts;
 
   bool revertHandleManagerChange;
 
@@ -31,20 +34,15 @@ contract MockOption is IOption {
   // expiry => price
   mapping(uint => uint) mockedExpiryPrice;
 
-  mapping(uint => uint) public openInterest;
-
   // mocked state to test reverting calls from bad manager
   mapping(address => bool) revertFromManager;
 
-  ///@dev SubId => tradeId => open interest snapshot
-  mapping(uint => mapping(uint => OISnapshot)) public openInterestBeforeTrade;
-
-  constructor(IAccounts account_) {
-    account = account_;
+  constructor(ISubAccounts account_) {
+    subAccounts = account_;
   }
 
   function handleAdjustment(
-    IAccounts.AssetAdjustment memory adjustment,
+    ISubAccounts.AssetAdjustment memory adjustment,
     uint, /*tradeId*/
     int preBal,
     IManager _manager,
@@ -70,14 +68,6 @@ contract MockOption is IOption {
 
   function setRecordManagerChangeCalls(bool _record) external {
     recordMangerChangeCalls = _record;
-  }
-
-  function setMockedOI(uint _subId, uint _oi) external {
-    openInterest[_subId] = _oi;
-  }
-
-  function setMockedOISnapshotBeforeTrade(uint _subId, uint _tradeId, uint _oi) external {
-    openInterestBeforeTrade[_subId][_tradeId] = OISnapshot(true, uint240(_oi));
   }
 
   function setSettlementPrice(uint /*expiry*/ ) external {
