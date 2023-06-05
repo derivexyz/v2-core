@@ -13,7 +13,6 @@ contract OptionPricing is IOptionPricing {
   }
 
   function getOptionValue(Expiry memory expiryDetails, Option memory option) public pure returns (int) {
-    // console2.log all arguments
     (uint call, uint put) = Black76.prices(
       Black76.Black76Inputs({
         timeToExpirySec: expiryDetails.secToExpiry,

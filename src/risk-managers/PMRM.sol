@@ -27,8 +27,6 @@ import "src/risk-managers/BaseManager.sol";
 import "src/risk-managers/PMRMLib.sol";
 import "../interfaces/ISpotDiffFeed.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title PMRM
  * @author Lyra
