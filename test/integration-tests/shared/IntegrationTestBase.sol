@@ -86,8 +86,8 @@ contract IntegrationTestBase is Test {
     _deployV2Core();
     _setupCoreContracts();
 
-    _deployMarket("weth");
-    _deployMarket("wbtc");
+    _deployMarket("weth", 2000e18);
+    _deployMarket("wbtc", 25000e18);
 
     // create accounts, controlled by standard manager
     _setupAliceAndBob();
@@ -150,27 +150,23 @@ contract IntegrationTestBase is Test {
     srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
   }
 
-  function _deployMarket(string memory token) internal returns (uint8 marketId) {
-    marketId = _deployMarketContracts(token);
+  function _deployMarket(string memory key, uint96 initSpotPrice) internal returns (uint8 marketId) {
+    marketId = _deployMarketContracts(key);
 
     // set up PMRM for this market
-    _setPMRMParams(markets[token].pmrm);
+    _setPMRMParams(markets[key].pmrm);
     // whitelist PMRM to control all assets
-    _setupAssetCapsForManager(token, markets[token].pmrm, 1000e18);
+    _setupAssetCapsForManager(key, markets[key].pmrm, 1000e18);
 
     // setup asset configs for standard manager
-    _registerMarketToSRM("weth");
+    _registerMarketToSRM(key);
     // whitelist standard manager to control these assets
-    _setupAssetCapsForManager(token, srm, 1000e18);
+    _setupAssetCapsForManager(key, srm, 1000e18);
 
     // setup feeds
-    // todo: move to internal function
-    markets[token].spotFeed.addSigner(keeper, true);
-    markets[token].perpFeed.addSigner(keeper, true);
-    markets[token].iapFeed.addSigner(keeper, true);
-    markets[token].ibpFeed.addSigner(keeper, true);
+    _setSignerForFeeds(key, keeper);
 
-    _setSpotPrice(markets[token].spotFeed, 2000e18, 1e18);
+    _setSpotPrice(key, initSpotPrice, 1e18);
   }
 
   function _deployMarketContracts(string memory token) internal returns (uint8 marketId) {
@@ -251,6 +247,13 @@ contract IntegrationTestBase is Test {
     market.option.setTotalPositionCap(manager, cap);
     market.perp.setTotalPositionCap(manager, cap);
     market.base.setTotalPositionCap(manager, cap);
+  }
+
+  function _setSignerForFeeds(string memory key, address signer) internal {
+    markets[key].spotFeed.addSigner(signer, true);
+    markets[key].perpFeed.addSigner(signer, true);
+    markets[key].iapFeed.addSigner(signer, true);
+    markets[key].ibpFeed.addSigner(signer, true);
   }
 
   function _registerMarketToSRM(string memory key) internal {
@@ -442,7 +445,13 @@ contract IntegrationTestBase is Test {
   //     Feed setting functions     //
   ////////////////////////////////////
 
-  function _setSpotPrice(LyraSpotFeed spotFeed, uint96 price, uint64 conf) internal {
+  function _getSpot(string memory key) internal view returns (uint, uint) {
+    LyraSpotFeed spotFeed = markets[key].spotFeed;
+    return spotFeed.getSpot();
+  }
+
+  function _setSpotPrice(string memory key, uint96 price, uint64 conf) internal {
+    LyraSpotFeed spotFeed = markets[key].spotFeed;
     ILyraSpotFeed.SpotData memory spotData = ILyraSpotFeed.SpotData({
       price: price,
       confidence: conf,
@@ -461,7 +470,12 @@ contract IntegrationTestBase is Test {
     spotFeed.acceptData(data);
   }
 
-  function _setPerpPrices(string memory key, uint price, uint64 conf) internal {
+  function _getPerpPrice(string memory key) internal view returns (uint, uint) {
+    LyraSpotDiffFeed perpFeed = markets[key].perpFeed;
+    return perpFeed.getResult();
+  }
+
+  function _setPerpPrice(string memory key, uint price, uint64 conf) internal {
     vm.warp(block.timestamp + 5);
     LyraSpotDiffFeed perpFeed = markets[key].perpFeed;
 
@@ -485,8 +499,6 @@ contract IntegrationTestBase is Test {
     bytes memory data = abi.encode(diffData);
 
     perpFeed.acceptData(data);
-
-    (uint perpdd,) = perpFeed.getResult();
   }
 
   function _setPMRMParams(PMRM pmrm) internal {
