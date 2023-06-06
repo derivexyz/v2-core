@@ -22,8 +22,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
   uint96 callId;
   uint96 putId;
 
-  // expiry = 7 days
-  uint expiry;
+  uint64 expiry;
 
   function setUp() public {
     _setupIntegrationTestComplete();
@@ -38,14 +37,18 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
     _depositCash(charlie, charlieAcc, 2e18); // initial OI Fee
 
-    expiry = block.timestamp + 4 weeks;
+    expiry = uint64(block.timestamp) + 4 weeks;
 
     callId = OptionEncoding.toSubId(expiry, strike, true);
     putId = OptionEncoding.toSubId(expiry, strike, false);
 
-    markets["weth"].feed.setSpot(2000e18, 1e18);
+    //
+    _setSpotPrice("weth", 2000e18, 1e18);
+    // set vol
+    _setDefaultSVIForExpiry("weth", expiry);
+
+    // todo use real forward price
     markets["weth"].feed.setForwardPrice(expiry, 2000e18, 1e18);
-    markets["weth"].feed.setVol(uint64(expiry), uint128(strike), 1e18, 1e18);
   }
 
   // only settle alice's account at expiry
@@ -158,10 +161,11 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     _tradeCall();
     // trade another call
-    uint longExpiry = expiry + 14 days;
+    uint64 longExpiry = expiry + 14 days;
+    _setDefaultSVIForExpiry("weth", longExpiry);
+
     uint96 longerDateCallId = OptionEncoding.toSubId(longExpiry, strike, true);
     markets["weth"].feed.setForwardPrice(longExpiry, 2000e18, 1e18);
-    markets["weth"].feed.setVol(uint64(longExpiry), uint128(strike), 1e18, 1e18);
     _submitTrade(aliceAcc, markets["weth"].option, longerDateCallId, amountOfContracts, bobAcc, cash, 0, 0);
 
     vm.warp(expiry);

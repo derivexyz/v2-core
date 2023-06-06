@@ -25,6 +25,7 @@ import "../../shared/mocks/MockERC20.sol";
 import "src/feeds/LyraSpotDiffFeed.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
+import "src/feeds/LyraVolFeed.sol";
 
 /**
  * @dev real Accounts contract
@@ -47,15 +48,20 @@ contract IntegrationTestBase is Test {
   struct Market {
     uint8 id;
     MockERC20 erc20;
+    // lyra asset
     Option option;
     PerpAsset perp;
     WrappedERC20Asset base;
+    // feeds
     LyraSpotFeed spotFeed;
-    MockFeeds feed;
     LyraSpotDiffFeed perpFeed;
     LyraSpotDiffFeed iapFeed;
     LyraSpotDiffFeed ibpFeed;
+    LyraVolFeed volFeed;
+    MockFeeds feed;
+    // pricing
     OptionPricing pricing;
+    // manager for specific market
     PMRM pmrm;
   }
 
@@ -170,42 +176,56 @@ contract IntegrationTestBase is Test {
   }
 
   function _deployMarketContracts(string memory token) internal returns (uint8 marketId) {
-    marketId = nextId++;
+    Market storage market = markets[token];
+    market.id = nextId++;
 
     MockERC20 erc20 = new MockERC20(token, token);
 
     // todo use real feed for all feeds
-    MockFeeds feed = new MockFeeds();
+    market.feed = new MockFeeds();
 
-    LyraSpotFeed spotFeed = new LyraSpotFeed();
+    market.spotFeed = new LyraSpotFeed();
 
-    Option option = new Option(subAccounts, address(feed));
+    Option option = new Option(subAccounts, address(market.feed));
 
     PerpAsset perp = new PerpAsset(subAccounts, 0.0075e18);
 
     WrappedERC20Asset base = new WrappedERC20Asset(subAccounts, erc20);
 
-    LyraSpotDiffFeed perpFeed = new LyraSpotDiffFeed(spotFeed);
-    LyraSpotDiffFeed iapFeed = new LyraSpotDiffFeed(spotFeed);
-    LyraSpotDiffFeed ibpFeed = new LyraSpotDiffFeed(spotFeed);
+    // set assets
+    market.erc20 = erc20;
+    market.option = option;
+    market.perp = perp;
+    market.base = base;
 
-    spotFeed.setHeartbeat(1 minutes);
-    perpFeed.setHeartbeat(20 minutes);
-    iapFeed.setHeartbeat(20 minutes);
-    ibpFeed.setHeartbeat(20 minutes);
+    // feeds for perp
+    market.perpFeed = new LyraSpotDiffFeed(market.spotFeed);
+    market.iapFeed = new LyraSpotDiffFeed(market.spotFeed);
+    market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
+
+    // todo: interest rate feed
+
+    // vol feed
+    market.volFeed = new LyraVolFeed();
+
+    market.spotFeed.setHeartbeat(1 minutes);
+    market.perpFeed.setHeartbeat(20 minutes);
+    market.iapFeed.setHeartbeat(20 minutes);
+    market.ibpFeed.setHeartbeat(20 minutes);
+    market.volFeed.setHeartbeat(20 minutes);
 
     OptionPricing pricing = new OptionPricing();
 
     IPMRM.Feeds memory feeds = IPMRM.Feeds({
-      spotFeed: spotFeed,
+      spotFeed: market.spotFeed,
       stableFeed: stableFeed,
-      forwardFeed: feed,
-      interestRateFeed: feed,
-      volFeed: feed,
-      settlementFeed: feed
+      forwardFeed: market.feed,
+      interestRateFeed: market.feed,
+      volFeed: market.volFeed,
+      settlementFeed: market.feed
     });
 
-    PMRM pmrm = new PMRM(
+    market.pmrm = new PMRM(
       subAccounts, 
       cash, 
       option, 
@@ -216,24 +236,11 @@ contract IntegrationTestBase is Test {
       feeds
     );
 
-    perp.setSpotFeed(spotFeed);
-    perp.setPerpFeed(perpFeed);
-    perp.setImpactFeeds(iapFeed, ibpFeed);
+    perp.setSpotFeed(market.spotFeed);
+    perp.setPerpFeed(market.perpFeed);
+    perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
 
-    markets[token] = Market({
-      id: marketId,
-      erc20: erc20,
-      option: option,
-      perp: perp,
-      base: base,
-      spotFeed: spotFeed,
-      feed: feed,
-      perpFeed: perpFeed,
-      iapFeed: iapFeed,
-      ibpFeed: ibpFeed,
-      pricing: pricing,
-      pmrm: pmrm
-    });
+    market.pricing = pricing;
   }
 
   function _setupAssetCapsForManager(string memory key, IBaseManager manager, uint cap) internal {
@@ -254,6 +261,7 @@ contract IntegrationTestBase is Test {
     markets[key].perpFeed.addSigner(signer, true);
     markets[key].iapFeed.addSigner(signer, true);
     markets[key].ibpFeed.addSigner(signer, true);
+    markets[key].volFeed.addSigner(signer, true);
   }
 
   function _registerMarketToSRM(string memory key) internal {
@@ -272,7 +280,7 @@ contract IntegrationTestBase is Test {
       market.spotFeed, // spot
       market.feed, // forward
       market.feed, // settlement feed
-      market.feed // vol feed
+      market.volFeed // vol feed
     );
 
     // set params
@@ -411,36 +419,6 @@ contract IntegrationTestBase is Test {
     });
   }
 
-  /**
-   * @dev predict the address of the next contract being deployed
-   */
-  function _predictAddress(address _origin, uint _nonce) public pure returns (address) {
-    if (_nonce == 0x00) {
-      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80))))));
-    }
-    if (_nonce <= 0x7f) {
-      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, uint8(_nonce))))));
-    }
-    if (_nonce <= 0xff) {
-      return address(
-        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd7), bytes1(0x94), _origin, bytes1(0x81), uint8(_nonce)))))
-      );
-    }
-    if (_nonce <= 0xffff) {
-      return address(
-        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd8), bytes1(0x94), _origin, bytes1(0x82), uint16(_nonce)))))
-      );
-    }
-    if (_nonce <= 0xffffff) {
-      return address(
-        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd9), bytes1(0x94), _origin, bytes1(0x83), uint24(_nonce)))))
-      );
-    }
-    return address(
-      uint160(uint(keccak256(abi.encodePacked(bytes1(0xda), bytes1(0x94), _origin, bytes1(0x84), uint32(_nonce)))))
-    );
-  }
-
   ////////////////////////////////////
   //     Feed setting functions     //
   ////////////////////////////////////
@@ -501,6 +479,21 @@ contract IntegrationTestBase is Test {
     perpFeed.acceptData(data);
   }
 
+  function _setDefaultSVIForExpiry(string memory key, uint64 expiry) internal {
+    vm.warp(block.timestamp + 5);
+    LyraVolFeed volFeed = markets[key].volFeed;
+
+    ILyraVolFeed.VolData memory volData = _getDefaultVolData(expiry);
+
+    // sign data
+    bytes32 structHash = volFeed.hashVolData(volData);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(volFeed.domainSeparator(), structHash));
+    volData.signature = bytes.concat(r, s, bytes1(v));
+    bytes memory data = abi.encode(volData);
+
+    volFeed.acceptData(data);
+  }
+
   function _setPMRMParams(PMRM pmrm) internal {
     IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
       scenarioSpotUp: 1.05e18,
@@ -538,5 +531,57 @@ contract IntegrationTestBase is Test {
     pmrm.setOtherContingencyParams(otherContParams);
     pmrm.setMarginParams(marginParams);
     pmrm.setVolShockParams(volShockParams);
+  }
+
+  function _getDefaultVolData(uint64 expiry) internal view returns (ILyraVolFeed.VolData memory) {
+    // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
+    return ILyraVolFeed.VolData({
+      expiry: expiry,
+      SVI_a: 1e18,
+      SVI_b: 1.5e18,
+      SVI_rho: -0.1e18,
+      SVI_m: -0.05e18,
+      SVI_sigma: 0.05e18,
+      SVI_fwd: 1200e18,
+      SVI_refTao: uint64(Black76.annualise(uint64(expiry - block.timestamp))),
+      confidence: 1e18,
+      timestamp: uint64(block.timestamp),
+      deadline: block.timestamp + 5,
+      signer: keeper,
+      signature: new bytes(0)
+    });
+  }
+
+  ////////////////
+  //    Misc    //
+  ////////////////
+  /**
+   * @dev predict the address of the next contract being deployed
+   */
+  function _predictAddress(address _origin, uint _nonce) public pure returns (address) {
+    if (_nonce == 0x00) {
+      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80))))));
+    }
+    if (_nonce <= 0x7f) {
+      return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, uint8(_nonce))))));
+    }
+    if (_nonce <= 0xff) {
+      return address(
+        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd7), bytes1(0x94), _origin, bytes1(0x81), uint8(_nonce)))))
+      );
+    }
+    if (_nonce <= 0xffff) {
+      return address(
+        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd8), bytes1(0x94), _origin, bytes1(0x82), uint16(_nonce)))))
+      );
+    }
+    if (_nonce <= 0xffffff) {
+      return address(
+        uint160(uint(keccak256(abi.encodePacked(bytes1(0xd9), bytes1(0x94), _origin, bytes1(0x83), uint24(_nonce)))))
+      );
+    }
+    return address(
+      uint160(uint(keccak256(abi.encodePacked(bytes1(0xda), bytes1(0x94), _origin, bytes1(0x84), uint32(_nonce)))))
+    );
   }
 }
