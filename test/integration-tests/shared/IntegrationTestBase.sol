@@ -180,7 +180,8 @@ contract IntegrationTestBase is Test {
 
   function _deployMarketContracts(string memory token) internal returns (uint8 marketId) {
     Market storage market = markets[token];
-    market.id = nextId++;
+    marketId = nextId++;
+    market.id = marketId;
 
     MockERC20 erc20 = new MockERC20(token, token);
 

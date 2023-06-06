@@ -12,9 +12,6 @@ import "../shared/IntegrationTestBase.sol";
 contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
   using DecimalMath for uint;
 
-  address charlie = address(0xcc);
-  uint charlieAcc;
-
   // value used for test
   int constant amountOfContracts = 1e18;
   uint constant strike = 2000e18;
@@ -26,28 +23,18 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   function setUp() public {
     _setupIntegrationTestComplete();
-    charlieAcc = subAccounts.createAccount(charlie, srm);
-
-    // allow this contract to submit trades
-    vm.prank(charlie);
-    subAccounts.setApprovalForAll(address(this), true);
 
     // init setup for both accounts
     _depositCash(alice, aliceAcc, DEFAULT_DEPOSIT);
     _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
-    _depositCash(charlie, charlieAcc, 2e18); // initial OI Fee
 
     expiry = uint64(block.timestamp) + 4 weeks;
-
     callId = OptionEncoding.toSubId(expiry, strike, true);
     putId = OptionEncoding.toSubId(expiry, strike, false);
 
-    //
+    // set all spot
     _setSpotPrice("weth", 2000e18, 1e18);
-    // set vol
     _setDefaultSVIForExpiry("weth", expiry);
-
-    // todo use real forward price
     _setForwardPrice("weth", expiry, 2000e18, 1e18);
   }
 
