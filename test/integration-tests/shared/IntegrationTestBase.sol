@@ -23,6 +23,7 @@ import "src/feeds/OptionPricing.sol";
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "src/feeds/LyraSpotDiffFeed.sol";
+import "src/feeds/LyraRateFeed.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
 import "src/feeds/LyraVolFeed.sol";
@@ -58,6 +59,7 @@ contract IntegrationTestBase is Test {
     LyraSpotDiffFeed iapFeed;
     LyraSpotDiffFeed ibpFeed;
     LyraVolFeed volFeed;
+    LyraRateFeed rateFeed;
     MockFeeds feed;
     // pricing
     OptionPricing pricing;
@@ -203,9 +205,8 @@ contract IntegrationTestBase is Test {
     market.iapFeed = new LyraSpotDiffFeed(market.spotFeed);
     market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
 
-    // todo: interest rate feed
-
-    // vol feed
+    // interest and vol feed
+    market.rateFeed = new LyraRateFeed();
     market.volFeed = new LyraVolFeed();
 
     market.spotFeed.setHeartbeat(1 minutes);
@@ -213,14 +214,15 @@ contract IntegrationTestBase is Test {
     market.iapFeed.setHeartbeat(20 minutes);
     market.ibpFeed.setHeartbeat(20 minutes);
     market.volFeed.setHeartbeat(20 minutes);
+    market.rateFeed.setHeartbeat(24 hours);
 
-    OptionPricing pricing = new OptionPricing();
+    market.pricing = new OptionPricing();
 
     IPMRM.Feeds memory feeds = IPMRM.Feeds({
       spotFeed: market.spotFeed,
       stableFeed: stableFeed,
       forwardFeed: market.feed,
-      interestRateFeed: market.feed,
+      interestRateFeed: market.rateFeed,
       volFeed: market.volFeed,
       settlementFeed: market.feed
     });
@@ -230,7 +232,7 @@ contract IntegrationTestBase is Test {
       cash, 
       option, 
       perp, 
-      pricing,
+      market.pricing,
       base, 
       auction,
       feeds
@@ -239,8 +241,6 @@ contract IntegrationTestBase is Test {
     perp.setSpotFeed(market.spotFeed);
     perp.setPerpFeed(market.perpFeed);
     perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
-
-    market.pricing = pricing;
   }
 
   function _setupAssetCapsForManager(string memory key, IBaseManager manager, uint cap) internal {
@@ -492,6 +492,32 @@ contract IntegrationTestBase is Test {
     bytes memory data = abi.encode(volData);
 
     volFeed.acceptData(data);
+  }
+
+  function _getInterestRate(string memory key, uint64 expiry) internal returns (int, uint) {
+    LyraRateFeed rateFeed = markets[key].rateFeed;
+    return rateFeed.getInterestRate(expiry);
+  }
+
+  function _setInterestRate(string memory key, uint64 expiry, int96 rate, uint64 conf) internal {
+    LyraRateFeed rateFeed = markets[key].rateFeed;
+    ILyraRateFeed.RateData memory rateData = ILyraRateFeed.RateData({
+      expiry: expiry,
+      rate: rate,
+      confidence: conf,
+      timestamp: uint64(block.timestamp),
+      deadline: block.timestamp + 5,
+      signer: keeper,
+      signature: new bytes(0)
+    });
+
+    // sign data
+    bytes32 structHash = rateFeed.hashRateData(rateData);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(rateFeed.domainSeparator(), structHash));
+    rateData.signature = bytes.concat(r, s, bytes1(v));
+    bytes memory data = abi.encode(rateData);
+
+    rateFeed.acceptData(data);
   }
 
   function _setPMRMParams(PMRM pmrm) internal {
