@@ -54,8 +54,6 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
 
     // alice has lost $100
     assertEq(cashBefore - 100e18, cashAfter);
-
-    markets["weth"].feed.setSpot(2000e18, 1e18);
   }
 
   function testCanSettleUnrealizedLossForAnyAccount() public {

@@ -48,7 +48,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     _setDefaultSVIForExpiry("weth", expiry);
 
     // todo use real forward price
-    markets["weth"].feed.setForwardPrice(expiry, 2000e18, 1e18);
+    _setForwardPrice("weth", expiry, 2000e18, 1e18);
   }
 
   // only settle alice's account at expiry
@@ -57,7 +57,8 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(markets["weth"].feed, 2500e18, expiry);
+    _setSpotPrice("weth", 2500e18, 1e18);
+    _setSettlementPrice("weth", expiry, 2500e18);
 
     int aliceCashBefore = getCashBalance(aliceAcc);
     uint oiBefore = markets["weth"].option.openInterest(callId);
@@ -85,7 +86,8 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(markets["weth"].feed, 2500e18, expiry);
+    _setSpotPrice("weth", 2500e18, 1e18);
+    _setSettlementPrice("weth", expiry, 2500e18);
 
     int bobCashBefore = getCashBalance(bobAcc);
 
@@ -111,7 +113,8 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(markets["weth"].feed, 1500e18, expiry);
+    _setSpotPrice("weth", 1500e18, 1e18);
+    _setSettlementPrice("weth", expiry, 1500e18);
 
     int aliceCashBefore = getCashBalance(aliceAcc);
 
@@ -135,7 +138,8 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // stimulate expiry price
     vm.warp(expiry);
-    _setSettlementPrice(markets["weth"].feed, 1500e18, expiry);
+    _setSpotPrice("weth", 1500e18, 1e18);
+    _setSettlementPrice("weth", expiry, 1500e18);
 
     int bobCashBefore = getCashBalance(bobAcc);
 
@@ -165,11 +169,12 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     _setDefaultSVIForExpiry("weth", longExpiry);
 
     uint96 longerDateCallId = OptionEncoding.toSubId(longExpiry, strike, true);
-    markets["weth"].feed.setForwardPrice(longExpiry, 2000e18, 1e18);
+    _setForwardPrice("weth", longExpiry, 2000e18, 1e18);
     _submitTrade(aliceAcc, markets["weth"].option, longerDateCallId, amountOfContracts, bobAcc, cash, 0, 0);
 
     vm.warp(expiry);
-    _setSettlementPrice(markets["weth"].feed, 1500e18, expiry);
+    _setSpotPrice("weth", 1500e18, 1e18);
+    _setSettlementPrice("weth", expiry, 1500e18);
 
     // only settle shorted date option
     srm.settleOptions(markets["weth"].option, bobAcc);
@@ -179,6 +184,8 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // time at second expiry, but no settlement price available
     vm.warp(longExpiry);
+    _setSpotPrice("weth", 1500e18, 1e18); // avoid stale
+
     srm.settleOptions(markets["weth"].option, bobAcc);
     assets = subAccounts.getAccountBalances(bobAcc);
     assertEq(assets.length, 2);
@@ -195,7 +202,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(markets["weth"].feed, 2500e18, expiry);
+  //   _setSettlementPrice("weth", 2500e18, expiry);
 
   //   // Settle Bob ITM first -> increase print
   //   srm.settleOptions(markets["weth"].option, bobAcc);
@@ -229,7 +236,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE + int(settlePrint), expiry);
+  //   _setSettlementPrice("weth", ETH_PRICE + int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =
@@ -279,7 +286,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE - int(settlePrint), expiry);
+  //   _setSettlementPrice("weth", ETH_PRICE - int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =
@@ -330,7 +337,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE + int(settlePrint), expiry);
+  //   _setSettlementPrice("weth", ETH_PRICE + int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =
@@ -380,7 +387,7 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
   //   // stimulate expiry price
   //   vm.warp(expiry);
-  //   _setSettlementPrice(markets["weth"].feed, ETH_PRICE - int(settlePrint), expiry);
+  //   _setSettlementPrice("weth", ETH_PRICE - int(settlePrint), expiry);
 
   //   // Record interest accrued before settle
   //   uint interestAccrued =

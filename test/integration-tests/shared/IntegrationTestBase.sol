@@ -27,6 +27,7 @@ import "src/feeds/LyraRateFeed.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
 import "src/feeds/LyraVolFeed.sol";
+import "src/feeds/LyraForwardFeed.sol";
 
 /**
  * @dev real Accounts contract
@@ -60,7 +61,7 @@ contract IntegrationTestBase is Test {
     LyraSpotDiffFeed ibpFeed;
     LyraVolFeed volFeed;
     LyraRateFeed rateFeed;
-    MockFeeds feed;
+    LyraForwardFeed forwardFeed;
     // pricing
     OptionPricing pricing;
     // manager for specific market
@@ -184,11 +185,12 @@ contract IntegrationTestBase is Test {
     MockERC20 erc20 = new MockERC20(token, token);
 
     // todo use real feed for all feeds
-    market.feed = new MockFeeds();
+    // market.feed = new MockFeeds();
 
     market.spotFeed = new LyraSpotFeed();
+    market.forwardFeed = new LyraForwardFeed(market.spotFeed);
 
-    Option option = new Option(subAccounts, address(market.feed));
+    Option option = new Option(subAccounts, address(market.forwardFeed));
 
     PerpAsset perp = new PerpAsset(subAccounts, 0.0075e18);
 
@@ -215,16 +217,18 @@ contract IntegrationTestBase is Test {
     market.ibpFeed.setHeartbeat(20 minutes);
     market.volFeed.setHeartbeat(20 minutes);
     market.rateFeed.setHeartbeat(24 hours);
+    market.forwardFeed.setHeartbeat(20 minutes);
+    market.forwardFeed.setSettlementHeartbeat(60 minutes); // todo: update this?
 
     market.pricing = new OptionPricing();
 
     IPMRM.Feeds memory feeds = IPMRM.Feeds({
       spotFeed: market.spotFeed,
       stableFeed: stableFeed,
-      forwardFeed: market.feed,
+      forwardFeed: market.forwardFeed,
       interestRateFeed: market.rateFeed,
       volFeed: market.volFeed,
-      settlementFeed: market.feed
+      settlementFeed: market.forwardFeed
     });
 
     market.pmrm = new PMRM(
@@ -262,6 +266,8 @@ contract IntegrationTestBase is Test {
     markets[key].iapFeed.addSigner(signer, true);
     markets[key].ibpFeed.addSigner(signer, true);
     markets[key].volFeed.addSigner(signer, true);
+    markets[key].rateFeed.addSigner(signer, true);
+    markets[key].forwardFeed.addSigner(signer, true);
   }
 
   function _registerMarketToSRM(string memory key) internal {
@@ -278,8 +284,8 @@ contract IntegrationTestBase is Test {
     srm.setOraclesForMarket(
       market.id,
       market.spotFeed, // spot
-      market.feed, // forward
-      market.feed, // settlement feed
+      market.forwardFeed, // forward
+      market.forwardFeed, // settlement feed
       market.volFeed // vol feed
     );
 
@@ -357,15 +363,6 @@ contract IntegrationTestBase is Test {
     });
 
     subAccounts.submitTransfers(transferBatch, "");
-  }
-
-  /**
-   * @dev set current price of aggregator, and report as settlement price at {expiry}
-   * @param price price in 18 decimals
-   */
-  function _setSettlementPrice(MockFeeds feed, int price, uint expiry) internal {
-    // todo: update to use signature
-    feed.setSettlementPrice(expiry, uint(price));
   }
 
   function _assertCashSolvent() internal {
@@ -448,6 +445,68 @@ contract IntegrationTestBase is Test {
     spotFeed.acceptData(data);
   }
 
+  /**
+   * @dev set current price of aggregator, and report as settlement price at {expiry}
+   * @param price price in 18 decimals
+   */
+  function _setSettlementPrice(string memory key, uint64 expiry, uint price) internal {
+    LyraForwardFeed feed = markets[key].forwardFeed;
+
+    (uint spot,) = markets[key].spotFeed.getSpot();
+
+    int96 diff = int96(int(price) - int(spot));
+
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = ILyraForwardFeed.ForwardAndSettlementData({
+      expiry: expiry,
+      fwdSpotDifference: diff,
+      settlementStartAggregate: price * uint(expiry - feed.SETTLEMENT_TWAP_DURATION()),
+      currentSpotAggregate: price * uint(expiry),
+      confidence: 1e18,
+      timestamp: uint64(expiry), // timestamp need to be expiry to be used as settlement data
+      deadline: block.timestamp + 5,
+      signer: keeper,
+      signature: new bytes(0)
+    });
+
+    bytes32 structHash = feed.hashForwardData(fwdData);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    fwdData.signature = bytes.concat(r, s, bytes1(v));
+    bytes memory data = abi.encode(fwdData);
+    // submit to feed
+    feed.acceptData(data);
+  }
+
+  /**
+   * @dev set current price of aggregator, and report as settlement price at {expiry}
+   * @param price price in 18 decimals
+   */
+  function _setForwardPrice(string memory key, uint64 expiry, uint price, uint64 conf) internal {
+    LyraForwardFeed feed = markets[key].forwardFeed;
+
+    (uint spot,) = markets[key].spotFeed.getSpot();
+
+    int96 diff = int96(int(price) - int(spot));
+
+    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = ILyraForwardFeed.ForwardAndSettlementData({
+      expiry: expiry,
+      fwdSpotDifference: diff,
+      settlementStartAggregate: 0,
+      currentSpotAggregate: 0,
+      confidence: conf,
+      timestamp: uint64(block.timestamp),
+      deadline: block.timestamp + 5,
+      signer: keeper,
+      signature: new bytes(0)
+    });
+
+    bytes32 structHash = feed.hashForwardData(fwdData);
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    fwdData.signature = bytes.concat(r, s, bytes1(v));
+    bytes memory data = abi.encode(fwdData);
+    // submit to feed
+    feed.acceptData(data);
+  }
+
   function _getPerpPrice(string memory key) internal view returns (uint, uint) {
     LyraSpotDiffFeed perpFeed = markets[key].perpFeed;
     return perpFeed.getResult();
@@ -494,7 +553,7 @@ contract IntegrationTestBase is Test {
     volFeed.acceptData(data);
   }
 
-  function _getInterestRate(string memory key, uint64 expiry) internal returns (int, uint) {
+  function _getInterestRate(string memory key, uint64 expiry) internal view returns (int, uint) {
     LyraRateFeed rateFeed = markets[key].rateFeed;
     return rateFeed.getInterestRate(expiry);
   }
