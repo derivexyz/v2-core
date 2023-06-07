@@ -110,6 +110,14 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(ask, 1540e18);
   }
 
+  function testCannotGetFundingRateIfImpactPriceIsWrong() public {
+    askImpactFeed.setSpotDiff(0e18, 1e18);
+    bidImpactFeed.setSpotDiff(20e18, 1e18);
+
+    vm.expectRevert(IPerpAsset.PA_InvalidImpactPrices.selector);
+    perp.getFundingRate();
+  }
+
   function testPositiveFundingRate() public {
     bidImpactFeed.setSpotDiff(6e18, 1e18);
     askImpactFeed.setSpotDiff(6e18, 1e18);
