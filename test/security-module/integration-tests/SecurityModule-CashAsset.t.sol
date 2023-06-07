@@ -46,11 +46,8 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     uint optimalUtil = 0.6 * 1e18;
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    // need to predict this
-    uint smAccountId;
-
     // security
-    cashAsset = new CashAsset(subAccounts, usdc, rateModel, smAccountId, liquidation);
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -63,6 +60,9 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     usdc.approve(address(securityModule), type(uint).max);
 
     accountId = subAccounts.createAccount(address(this), manager);
+
+    cashAsset.setSmFeeRecipient(smAccId);
+    cashAsset.setLiquidationModule(liquidation);
   }
 
   function testDepositIntoSM() public {

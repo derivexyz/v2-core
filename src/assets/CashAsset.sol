@@ -41,11 +41,14 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   /// @dev InterestRateModel contract address
   IInterestRateModel public rateModel;
 
+  /// @dev Store stable coin decimal as immutable
+  uint8 private immutable stableDecimals;
+
   /// @dev The address of liquidation module, which can trigger call of insolvency
-  address public immutable liquidationModule;
+  address public liquidationModule;
 
   /// @dev The security module accountId used for collecting a portion of fees
-  uint public immutable smId;
+  uint public smId;
 
   /////////////////////////
   //   State Variables   //
@@ -82,9 +85,6 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   ///     In which case we turn on the withdraw fee to prevent bank-run
   bool public temporaryWithdrawFeeEnabled;
 
-  /// @dev Store stable coin decimal as immutable
-  uint8 private immutable stableDecimals;
-
   /// @dev AccountId to previously stored borrow/supply index depending on a positive or debt position.
   mapping(uint => uint) public accountIdIndex;
 
@@ -92,20 +92,14 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   //   Constructor   //
   /////////////////////
 
-  constructor(
-    ISubAccounts _subAccounts,
-    IERC20Metadata _stableAsset,
-    IInterestRateModel _rateModel,
-    uint _smId,
-    address _liquidationModule
-  ) ManagerWhitelist(_subAccounts) {
+  constructor(ISubAccounts _subAccounts, IERC20Metadata _stableAsset, IInterestRateModel _rateModel)
+    ManagerWhitelist(_subAccounts)
+  {
     stableAsset = _stableAsset;
     stableDecimals = _stableAsset.decimals();
-    smId = _smId;
 
     lastTimestamp = uint64(block.timestamp);
     rateModel = _rateModel;
-    liquidationModule = _liquidationModule;
   }
 
   //////////////////////////////
@@ -133,6 +127,21 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     smFeePercentage = _smFee;
 
     emit SmFeeSet(_smFee);
+  }
+
+  /**
+   * @dev notice set the fee recipient
+   */
+  function setSmFeeRecipient(uint _smId) external onlyOwner {
+    smId = _smId;
+
+    emit SmFeeRecipientSet(_smId);
+  }
+
+  function setLiquidationModule(address _liquidationModule) external onlyOwner {
+    liquidationModule = _liquidationModule;
+
+    emit LiquidationModuleSet(_liquidationModule);
   }
 
   ////////////////////////////

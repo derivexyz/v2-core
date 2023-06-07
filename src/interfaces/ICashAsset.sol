@@ -78,6 +78,12 @@ interface ICashAsset is IAsset {
   /// @dev Emitted when the security module fee is set
   event SmFeeSet(uint fee);
 
+  /// @dev Emitted when the recipient is set
+  event SmFeeRecipientSet(uint recipientAcc);
+
+  /// @dev Emitted when a new liquidation module is set
+  event LiquidationModuleSet(address liquidationModule);
+
   /// @dev Emitted when a new interest rate model is set
   event InterestRateModelSet(IInterestRateModel rateModel);
 

@@ -37,9 +37,10 @@ contract UNIT_CashAssetAccrueInterest is Test {
     smAccount = subAccounts.createAccount(address(this), manager);
 
     rateModel = new MockInterestRateModel(0.5 * 1e18);
-    cashAsset = new CashAsset(subAccounts, usdc, rateModel, smAccount, address(0));
+    cashAsset = new CashAsset(subAccounts, usdc, rateModel);
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
+    cashAsset.setSmFeeRecipient(smAccount);
 
     // 100000 USDC with 18 decimals
     depositedAmount = 100000e18;

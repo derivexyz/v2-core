@@ -173,4 +173,6 @@ interface IStandardManager {
   event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int64 ocFactor);
 
   event StableFeedUpdated(address stableFeed);
+
+  event BorrowingEnabled(bool borrowingEnabled);
 }

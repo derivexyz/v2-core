@@ -84,8 +84,6 @@ contract IntegrationTestBase is Test {
 
   MockFeeds stableFeed;
 
-  // sm account id will be 1 after setup
-  uint smAcc = 1;
   uint8 nextId = 1;
 
   mapping(string => Market) markets;
@@ -111,36 +109,35 @@ contract IntegrationTestBase is Test {
   }
 
   function _deployV2Core() internal {
-    // nonce: 1 => Deploy Accounts
+    // Deploy Accounts
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    // nonce: 2 => Deploy USDC
+    // Deploy USDC
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
-    // nonce: 3 => Deploy RateModel
-    // deploy rate model
+    // Deploy RateModel
     (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModelParam();
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    // nonce: 4 => Deploy CashAsset
-    address auctionAddr = _predictAddress(address(this), 7);
-    cash = new CashAsset(subAccounts, usdc, rateModel, smAcc, auctionAddr);
+    // Deploy CashAsset
+    cash = new CashAsset(subAccounts, usdc, rateModel);
 
-    // nonce: 5 => Deploy Standard Manager. Shared by all assets
-    srm = new StandardManager(subAccounts, cash, IDutchAuction(auctionAddr));
-
-    // nonce: 6 => Deploy SM
-    securityModule = new SecurityModule(subAccounts, cash, srm);
-
-    // nonce: 7 => Deploy Auction
+    // Deploy Auction
     auction = new DutchAuction(subAccounts, securityModule, cash);
 
-    assertEq(address(auction), auctionAddr);
+    // Deploy Standard Manager. Shared by all assets
+    srm = new StandardManager(subAccounts, cash, auction);
 
-    // nonce: 8 => USDC stable feed
+    // Deploy SM
+    securityModule = new SecurityModule(subAccounts, cash, srm);
+
+    // Deploy USDC stable feed
     stableFeed = new MockFeeds();
     stableFeed.setSpot(1e18, 1e18);
+
+    cash.setLiquidationModule(address(auction));
+    cash.setSmFeeRecipient(securityModule.accountId());
 
     // todo: allow list
   }
@@ -318,6 +315,18 @@ contract IntegrationTestBase is Test {
     vm.startPrank(user);
     usdc.approve(address(cash), type(uint).max);
     cash.deposit(acc, amountUSDC);
+    vm.stopPrank();
+  }
+
+  /**
+   * @dev helper to mint USDC and deposit cash for account (from user)
+   */
+  function _depositBase(string memory key, address user, uint acc, uint amount) internal {
+    markets[key].erc20.mint(user, amount);
+
+    vm.startPrank(user);
+    markets[key].erc20.approve(address(markets[key].base), type(uint).max);
+    markets[key].base.deposit(acc, amount);
     vm.stopPrank();
   }
 
