@@ -319,6 +319,18 @@ contract IntegrationTestBase is Test {
   }
 
   /**
+   * @dev helper to mint USDC and deposit cash for account (from user)
+   */
+  function _depositBase(string memory key, address user, uint acc, uint amount) internal {
+    markets[key].erc20.mint(user, amount);
+
+    vm.startPrank(user);
+    markets[key].erc20.approve(address(markets[key].base), type(uint).max);
+    markets[key].base.deposit(acc, amount);
+    vm.stopPrank();
+  }
+
+  /**
    * @dev helper to withdraw (or borrow) cash for account (from user)
    */
   function _withdrawCash(address user, uint acc, uint amountCash) internal {
