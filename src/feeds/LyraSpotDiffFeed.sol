@@ -13,6 +13,8 @@ import "src/interfaces/ILyraSpotDiffFeed.sol";
 import "src/interfaces/IInterestRateFeed.sol";
 import "src/interfaces/ISpotDiffFeed.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title LyraSpotDiffFeed
  * @author Lyra
@@ -83,6 +85,8 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
 
     // update spotDiff
     spotDiffDetails = SpotDiffDetail(diffData.spotDiff, diffData.confidence, diffData.timestamp);
+
+    console2.log("here!", diffData.spotDiff);
 
     emit SpotDiffUpdated(diffData.signer, diffData.spotDiff, diffData.confidence, diffData.timestamp);
   }
