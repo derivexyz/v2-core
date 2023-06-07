@@ -78,6 +78,12 @@ interface ICashAsset is IAsset {
   /// @dev Emitted when the security module fee is set
   event SmFeeSet(uint fee);
 
+  /// @dev Emitted when the recipient is set
+  event SmFeeRecipientSet(uint recipientAcc);
+
+  /// @dev Emitted when a new liquidation module is set
+  event LiquidationModuleSet(address liquidationModule);
+
   /// @dev Emitted when a new interest rate model is set
   event InterestRateModelSet(IInterestRateModel rateModel);
 
@@ -107,6 +113,9 @@ interface ICashAsset is IAsset {
 
   /// @dev SubId passed into adjustment is not 0
   error CA_InvalidSubId();
+
+  /// @dev cannot set fee recipient account to 0 (blocking trades)
+  error CA_InvalidFeeRecipient();
 
   /// @dev caller is not the liquidation module
   error CA_NotLiquidationModule();

@@ -125,7 +125,7 @@ contract IntegrationTestBase is Test {
 
     // nonce: 4 => Deploy CashAsset
     address auctionAddr = _predictAddress(address(this), 7);
-    cash = new CashAsset(subAccounts, usdc, rateModel, smAcc, auctionAddr);
+    cash = new CashAsset(subAccounts, usdc, rateModel);
 
     // nonce: 5 => Deploy Standard Manager. Shared by all assets
     srm = new StandardManager(subAccounts, cash, IDutchAuction(auctionAddr));
@@ -141,6 +141,9 @@ contract IntegrationTestBase is Test {
     // nonce: 8 => USDC stable feed
     stableFeed = new MockFeeds();
     stableFeed.setSpot(1e18, 1e18);
+
+    cash.setLiquidationModule(address(auction));
+    cash.setSmFeeRecipient(smAcc);
 
     // todo: allow list
   }
