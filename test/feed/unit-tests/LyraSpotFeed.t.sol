@@ -117,6 +117,17 @@ contract UNIT_LyraSpotFeed is Test {
     feed.acceptData(data);
   }
 
+  function testCannotReadStaleData() public {
+    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
+    bytes memory data = _getSignedSpotData(pk, spotData);
+    feed.acceptData(data);
+
+    vm.warp(block.timestamp + feed.heartbeat() + 1);
+
+    vm.expectRevert(IBaseLyraFeed.BLF_DataTooOld.selector);
+    feed.getSpot();
+  }
+
   function _getDefaultSpotData() internal view returns (ILyraSpotFeed.SpotData memory spotData) {
     return ILyraSpotFeed.SpotData({
       price: 1000e18,
