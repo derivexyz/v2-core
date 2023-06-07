@@ -33,11 +33,6 @@ contract UNIT_CashAssetDeposit is Test {
     cashAsset.setWhitelistManager(address(manager), true);
   }
 
-  function testCannotSetInvalidRecipient() public {
-    vm.expectRevert(bytes("ERC721: invalid token ID"));
-    cashAsset.setSmFeeRecipient(0);
-  }
-
   function testCanUpdateFeeRecipient() public {
     uint newId = subAccounts.createAccount(address(this), manager);
     cashAsset.setSmFeeRecipient(newId);

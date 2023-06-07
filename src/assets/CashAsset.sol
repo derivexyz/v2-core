@@ -133,9 +133,6 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @dev notice set the fee recipient
    */
   function setSmFeeRecipient(uint _smId) external onlyOwner {
-    // this line wil revert if _smId is invalid
-    subAccounts.ownerOf(_smId);
-
     smId = _smId;
 
     emit SmFeeRecipientSet(_smId);
