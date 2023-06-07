@@ -105,13 +105,10 @@ contract LiquidationSimTests is LiquidationSimBase {
     assertApproxEqAbs(bm, data.Actions[actionId].Results.PostBM, 1e6, "post bm");
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
-    if (auctionDetails.insolvent) {
-
-    } else {
+    if (auctionDetails.insolvent) {} else {
       uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
       assertApproxEqAbs(fMax, data.Actions[actionId].Results.PostFMax, 1e6, "post fmax");
     }
-
   }
 
   function getWorstScenario(uint account) internal view returns (uint worstScenario) {
