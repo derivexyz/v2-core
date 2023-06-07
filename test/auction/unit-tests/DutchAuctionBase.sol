@@ -34,7 +34,7 @@ contract DutchAuctionBase is Test {
     _deployMockSystem();
     _setupAccounts();
 
-    dutchAuction = dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
+    dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
 
     dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
     dutchAuction.setInsolventAuctionParams(_getDefaultInsolventParams());
