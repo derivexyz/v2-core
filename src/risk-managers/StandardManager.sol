@@ -55,6 +55,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /// @dev Oracle that returns USDC / USD price
   ISpotFeed public stableFeed;
 
+  /// @dev if turned on, people can borrow cash from standard manager, aka have negative balance.
+  bool public borrowingEnabled;
+
   /// @dev True if an IAsset address is whitelisted.
   mapping(IAsset asset => AssetDetail) public assetDetails;
 
@@ -105,6 +108,15 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
 
     emit AssetWhitelisted(address(_asset), _marketId, _type);
+  }
+
+  /**
+   * @notice enable borrowing (negative cash balance) for standard manager
+   */
+  function setBorrowingEnabled(bool enabled) external onlyOwner {
+    borrowingEnabled = enabled;
+
+    emit BorrowingEnabled(enabled);
   }
 
   /**
@@ -308,7 +320,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     StandardManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
 
-    if (portfolio.cash < 0) revert SRM_NoNegativeCash();
+    // account can only have negative cash if borrowing is enabled
+    if (!borrowingEnabled && portfolio.cash < 0) revert SRM_NoNegativeCash();
 
     // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
     (int postIM,) = _getMarginAndMarkToMarket(accountId, portfolio, true);
