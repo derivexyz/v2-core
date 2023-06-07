@@ -114,9 +114,6 @@ interface ICashAsset is IAsset {
   /// @dev SubId passed into adjustment is not 0
   error CA_InvalidSubId();
 
-  /// @dev cannot set fee recipient account to 0 (blocking trades)
-  error CA_InvalidFeeRecipient();
-
   /// @dev caller is not the liquidation module
   error CA_NotLiquidationModule();
 
