@@ -29,6 +29,8 @@ import "src/feeds/LyraSpotFeed.sol";
 import "src/feeds/LyraVolFeed.sol";
 import "src/feeds/LyraForwardFeed.sol";
 
+import "lyra-utils/encoding/OptionEncoding.sol";
+
 /**
  * @dev real Accounts contract
  * @dev real CashAsset contract
@@ -43,7 +45,8 @@ contract IntegrationTestBase is Test {
   uint aliceAcc;
   uint bobAcc;
 
-  address public constant liquidation = address(0xdead);
+  uint smAcc;
+
   uint public constant DEFAULT_DEPOSIT = 5000e18;
   int public constant ETH_PRICE = 2000e18;
 
@@ -138,6 +141,7 @@ contract IntegrationTestBase is Test {
 
     cash.setLiquidationModule(address(auction));
     cash.setSmFeeRecipient(securityModule.accountId());
+    smAcc = securityModule.accountId();
 
     // todo: allow list
   }
@@ -168,6 +172,8 @@ contract IntegrationTestBase is Test {
     _registerMarketToSRM(key);
     // whitelist standard manager to control these assets
     _setupAssetCapsForManager(key, srm, 1000e18);
+
+    cash.setWhitelistManager(address(markets[key].pmrm), true);
 
     // setup feeds
     _setSignerForFeeds(key, keeper);
@@ -426,6 +432,10 @@ contract IntegrationTestBase is Test {
     });
   }
 
+  function getSubId(uint expiry, uint strike, bool isCall) public pure returns (uint96) {
+    return OptionEncoding.toSubId(expiry, strike, isCall);
+  }
+
   ////////////////////////////////////
   //     Feed setting functions     //
   ////////////////////////////////////
@@ -484,6 +494,11 @@ contract IntegrationTestBase is Test {
     bytes memory data = abi.encode(fwdData);
     // submit to feed
     feed.acceptData(data);
+  }
+
+  function _getForwardPrice(string memory key, uint expiry) internal view returns (uint, uint) {
+    LyraForwardFeed forwardFeed = markets[key].forwardFeed;
+    return forwardFeed.getForwardPrice(uint64(expiry));
   }
 
   /**
