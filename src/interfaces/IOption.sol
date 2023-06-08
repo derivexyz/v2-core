@@ -5,7 +5,7 @@ import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
-import "./IGlobalSubIdOITracking.sol";
+import {IGlobalSubIdOITracking} from "./IGlobalSubIdOITracking.sol";
 
 interface IOption is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   ///////////////////

@@ -246,7 +246,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   function getImpactPrices() external view returns (uint bid, uint ask) {
     (bid,) = impactBidPriceFeed.getResult();
     (ask,) = impactAskPriceFeed.getResult();
-    return (bid, ask);
   }
 
   /**

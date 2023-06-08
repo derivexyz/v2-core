@@ -93,7 +93,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   ////////////////////
 
   function setMaxExpiries(uint _maxExpiries) external onlyOwner {
-    if (maxExpiries < 6 || maxExpiries > 30) {
+    if (_maxExpiries < 6 || _maxExpiries > 30) {
       revert PMRM_InvalidMaxExpiries();
     }
     maxExpiries = _maxExpiries;
@@ -101,7 +101,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   }
 
   function setMaxAccountSize(uint _maxAccountSize) external onlyOwner {
-    if (maxAccountSize < 8 || maxAccountSize > 500) {
+    if (_maxAccountSize < 8 || _maxAccountSize > 500) {
       revert PMRM_InvalidMaxAccountSize();
     }
     maxAccountSize = _maxAccountSize;

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 // interfaces
-import "src/interfaces/ILiquidatableManager.sol";
-import "src/interfaces/ISecurityModule.sol";
-import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/IDutchAuction.sol";
+import {ILiquidatableManager} from "src/interfaces/ILiquidatableManager.sol";
+import {ISecurityModule} from "src/interfaces/ISecurityModule.sol";
+import {ICashAsset} from "src/interfaces/ICashAsset.sol";
+import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
 import "src/SubAccounts.sol";
 
 // inherited

@@ -286,4 +286,26 @@ contract TestPMRM_Admin is PMRMTestBase {
     pmrm.setVolShockParams(volShockParams);
     volShockParams.dteFloor = 864;
   }
+
+  function testCannotSetInvalidMaxExpiries() public {
+    vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
+    pmrm.setMaxExpiries(1);
+
+    vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
+    pmrm.setMaxExpiries(31);
+  }
+
+  function testCanSetMaxExpiries() public {
+    pmrm.setMaxExpiries(10);
+
+    assertEq(pmrm.maxExpiries(), 10);
+  }
+
+  function testCannotSetInvalidMaxSize() public {
+    vm.expectRevert(IPMRM.PMRM_InvalidMaxAccountSize.selector);
+    pmrm.setMaxAccountSize(1);
+
+    vm.expectRevert(IPMRM.PMRM_InvalidMaxAccountSize.selector);
+    pmrm.setMaxAccountSize(1000);
+  }
 }

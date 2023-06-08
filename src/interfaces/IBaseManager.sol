@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "./IManager.sol";
-import "./IAllowList.sol";
+import {IManager} from "./IManager.sol";
+import {IAllowList} from "./IAllowList.sol";
 
 interface IBaseManager is IManager {
   /////////////
