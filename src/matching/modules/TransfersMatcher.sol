@@ -19,30 +19,29 @@ contract TransferHandler is IMatcher {
     int amount;
   }
 
+  /// @dev orders must be in order: [to, from]
   function matchOrders(VerifiedOrder[] memory orders, bytes memory) public {
-    for (uint i = 0; i < orders.length; ++i) {
-      TransferData memory data = abi.decode(orders[i].data, (TransferData));
+    TransferData memory data = abi.decode(orders[i].data, (TransferData));
 
-      // TODO: verify owner of both subaccounts is the same => also both have to be approved so we cant do this loop
-      // something like: orders[0].owner == matching.ownerOf(data.toAccountId)
+    // TODO: verify owner of both subaccounts is the same => also both have to be approved so we cant do this loop
+    // something like: orders[0].owner == matching.ownerOf(data.toAccountId)
 
-      ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](data.transfers.length);
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](data.transfers.length);
 
-      for (uint i = 0; i < data.transfers.length; ++i) {
-        // We should probably check that we aren't creating more OI by doing this transfer?
-        // Users might for some reason create long and short options in different accounts for free by using this method...
+    for (uint i = 0; i < data.transfers.length; ++i) {
+      // We should probably check that we aren't creating more OI by doing this transfer?
+      // Users might for some reason create long and short options in different accounts for free by using this method...
 
-        transferBatch[i] = ISubAccounts.AssetTransfer({
-          asset: IAsset(data.transfers[i].asset),
-          fromAcc: orders[0].accountId,
-          toAcc: data.toAccountId,
-          subId: data.transfers[i].subId,
-          amount: data.transfers[i].amount,
-          assetData: bytes32(0)
-        });
-      }
-
-      // accounts.submitTransfers(transferBatch, "");
+      transferBatch[i] = ISubAccounts.AssetTransfer({
+        asset: IAsset(data.transfers[i].asset),
+        fromAcc: orders[0].accountId,
+        toAcc: data.toAccountId,
+        subId: data.transfers[i].subId,
+        amount: data.transfers[i].amount,
+        assetData: bytes32(0)
+      });
     }
+
+    // accounts.submitTransfers(transferBatch, "");
   }
 }

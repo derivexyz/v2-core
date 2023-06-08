@@ -10,7 +10,7 @@ contract OptionTradeMatcher is IMatcher {
     uint optionSubId;
     uint worstPrice;
     int desiredOptions;
-    uint recipientAddress;
+    uint recipientId; // if 0 -> spin up new account
   }
 
   struct OptionLimitOrder {
@@ -56,6 +56,8 @@ contract OptionTradeMatcher is IMatcher {
 
   /// @dev we trust the nonce is unique for the given "VerifiedOrder" for the owner
   mapping(address owner => mapping(uint nonce => uint filled)) public filled;
+  /// @dev in the case of recipient being 0, create new recipient and store the id here
+  mapping(address owner => mapping(uint nonce => uint recipientId)) public recipientId;
 
   constructor(IAsset _quoteAsset, uint _feeRecipient) {
     quoteAsset = _quoteAsset;
@@ -127,7 +129,7 @@ contract OptionTradeMatcher is IMatcher {
   }
 
   function _fillLimitOrder(OptionLimitOrder memory order, FillDetails memory fill, bool isBidder) internal {
-    uint finalPrice = fill.price + fill.fee * 1e18 / fill.amountFilled;
+    uint finalPrice = fill.price + fill.fee * fill.amountFilled / Math.abs(order.data.desiredOptions);
     if (isBidder) {
       if (finalPrice > order.data.worstPrice) revert("price too high");
     } else {
