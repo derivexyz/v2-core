@@ -41,6 +41,19 @@ contract UNIT_LyraForwardFeed is Test {
     feed.addSigner(pkOwner, true);
   }
 
+  function testSetSettlementHeartBeat() public {
+    feed.setSettlementHeartbeat(30 minutes);
+    assertEq(feed.settlementHeartbeat(), 30 minutes);
+  }
+
+  function testSetNewSpotFeed() public {
+    MockFeeds newSpotFeed = new MockFeeds();
+    newSpotFeed.setSpot(1500e18, 1e18);
+
+    feed.setSpotFeed(newSpotFeed);
+    assertEq(address(feed.spotFeed()), address(newSpotFeed));
+  }
+
   function testRevertsWhenFetchingInvalidExpiry() public {
     vm.expectRevert(ILyraForwardFeed.LFF_MissingExpiryData.selector);
     feed.getForwardPrice(defaultExpiry);

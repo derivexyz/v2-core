@@ -92,16 +92,22 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
   //   Admin-Only   //
   ////////////////////
 
+  /**
+   * @dev set max tradeable expiries in a single account
+   */
   function setMaxExpiries(uint _maxExpiries) external onlyOwner {
-    if (maxExpiries < 6 || maxExpiries > 30) {
+    if (_maxExpiries < 6 || _maxExpiries > 30) {
       revert PMRM_InvalidMaxExpiries();
     }
     maxExpiries = _maxExpiries;
     emit MaxExpiriesUpdated(_maxExpiries);
   }
 
+  /**
+   * @dev set max amount of assets in a single account
+   */
   function setMaxAccountSize(uint _maxAccountSize) external onlyOwner {
-    if (maxAccountSize < 8 || maxAccountSize > 500) {
+    if (_maxAccountSize < 8 || _maxAccountSize > 500) {
       revert PMRM_InvalidMaxAccountSize();
     }
     maxAccountSize = _maxAccountSize;

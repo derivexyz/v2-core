@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
 import "lyra-utils/math/Black76.sol";
-import "src/interfaces/IOptionPricing.sol";
+import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
 
 contract OptionPricing is IOptionPricing {
   function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external pure returns (int) {

@@ -51,6 +51,24 @@ contract UNIT_LyraVolFeed is Test {
     feed.getVol(uint128(uint(1500e18)), defaultExpiry);
   }
 
+  function testCannotPassInTimestampHigherThanExpiry() public {
+    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
+
+    vm.warp(defaultExpiry + 1);
+
+    volData.timestamp = uint64(defaultExpiry + 1);
+    volData.deadline = uint64(defaultExpiry + 1);
+    bytes memory data = _getSignedVolData(pk, volData);
+
+    vm.expectRevert(ILyraVolFeed.LVF_InvalidVolDataTimestamp.selector);
+    feed.acceptData(data);
+  }
+
+  function testCannotGetVolWithNoData() public {
+    vm.expectRevert(ILyraVolFeed.LVF_MissingExpiryData.selector);
+    feed.getExpiryMinConfidence(defaultExpiry);
+  }
+
   function testCanPassInDataAndUpdateVolFeed() public {
     ILyraVolFeed.VolData memory volData = _getDefaultVolData();
     bytes memory data = _getSignedVolData(pk, volData);

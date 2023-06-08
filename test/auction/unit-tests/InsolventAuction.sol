@@ -129,14 +129,6 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
   }
 
-  function _increaseInsolventStep(uint steps, uint acc) internal {
-    // increase step to 1
-    for (uint i = 0; i < steps; i++) {
-      vm.warp(block.timestamp + 6);
-      dutchAuction.continueInsolventAuction(acc);
-    }
-  }
-
   function _startDefaultInsolventAuction(uint acc) internal {
     // -300 maintenance margin
     manager.setMockMargin(acc, false, scenario, -300e18);

@@ -55,6 +55,19 @@ contract UNIT_WrappedBaseAssetHook is Test {
     assertEq(subAccounts.getBalance(accId, asset, 0), 100e18); // 18 decimals
   }
 
+  function testCanDepositZero() public {
+    _mintAndDeposit(0);
+  }
+
+  function testCannotHaveNegativeBalance() public {
+    uint accId2 = subAccounts.createAccount(address(this), manager);
+
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: accId, toAcc: accId2, asset: asset, subId: 0, amount: 1e18, assetData: ""});
+    vm.expectRevert(IWrappedERC20Asset.WERC_CannotBeNegative.selector);
+    subAccounts.submitTransfer(transfer, "");
+  }
+
   function testCannotWithdrawFromNonOwner() public {
     _mintAndDeposit(100e8);
 

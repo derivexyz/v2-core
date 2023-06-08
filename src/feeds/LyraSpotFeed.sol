@@ -5,8 +5,8 @@ pragma solidity ^0.8.18;
 import "src/feeds/BaseLyraFeed.sol";
 
 // interfaces
-import "src/interfaces/ISpotFeed.sol";
-import "src/interfaces/ILyraSpotFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
+import {ILyraSpotFeed} from "src/interfaces/ILyraSpotFeed.sol";
 
 /**
  * @title LyraSpotFeed

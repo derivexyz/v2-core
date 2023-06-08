@@ -272,6 +272,11 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(auction.scenarioId, newId);
   }
 
+  function testCannotUpdateScenarioIdWithNonOngoingAuction() public {
+    vm.expectRevert(IDutchAuction.DA_AuctionNotStarted.selector);
+    dutchAuction.updateScenarioId(aliceAcc, 2);
+  }
+
   function testCanUpdateScenarioIDWithHigherIM() public {
     _startDefaultSolventAuction(aliceAcc);
 

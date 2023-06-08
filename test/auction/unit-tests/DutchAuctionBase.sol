@@ -34,7 +34,7 @@ contract DutchAuctionBase is Test {
     _deployMockSystem();
     _setupAccounts();
 
-    dutchAuction = dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
+    dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
 
     dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
     dutchAuction.setInsolventAuctionParams(_getDefaultInsolventParams());
@@ -107,5 +107,13 @@ contract DutchAuctionBase is Test {
 
   function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
     return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5, bufferMarginScalar: 1.2e18});
+  }
+
+  function _increaseInsolventStep(uint steps, uint acc) internal {
+    // increase step to 1
+    for (uint i = 0; i < steps; i++) {
+      vm.warp(block.timestamp + 6);
+      dutchAuction.continueInsolventAuction(acc);
+    }
   }
 }

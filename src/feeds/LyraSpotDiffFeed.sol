@@ -9,11 +9,10 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "src/feeds/BaseLyraFeed.sol";
 
 // interfaces
-import "src/interfaces/ILyraSpotDiffFeed.sol";
-import "src/interfaces/IInterestRateFeed.sol";
-import "src/interfaces/ISpotDiffFeed.sol";
-
-import "forge-std/console2.sol";
+import {ILyraSpotDiffFeed} from "src/interfaces/ILyraSpotDiffFeed.sol";
+import {IInterestRateFeed} from "src/interfaces/IInterestRateFeed.sol";
+import {ISpotDiffFeed} from "src/interfaces/ISpotDiffFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 /**
  * @title LyraSpotDiffFeed

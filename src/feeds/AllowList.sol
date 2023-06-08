@@ -5,7 +5,7 @@ pragma solidity ^0.8.18;
 import "src/feeds/BaseLyraFeed.sol";
 
 // interfaces
-import "src/interfaces/IAllowList.sol";
+import {IAllowList} from "src/interfaces/IAllowList.sol";
 
 /**
  * @title AllowList
