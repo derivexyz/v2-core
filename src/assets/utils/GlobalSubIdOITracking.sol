@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
-import "src/interfaces/IGlobalSubIdOITracking.sol";
+import {IGlobalSubIdOITracking} from "src/interfaces/IGlobalSubIdOITracking.sol";
 
 /**
  * @title GlobalSubIdOITracking

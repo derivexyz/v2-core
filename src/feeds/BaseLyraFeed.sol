@@ -8,9 +8,9 @@ import "openzeppelin/access/Ownable2Step.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
 
 // interfaces
-import "src/interfaces/IDataReceiver.sol";
-import "src/interfaces/IVolFeed.sol";
-import "src/interfaces/IBaseLyraFeed.sol";
+import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
+import {IVolFeed} from "src/interfaces/IVolFeed.sol";
+import {IBaseLyraFeed} from "src/interfaces/IBaseLyraFeed.sol";
 
 /**
  * @title BaseLyraFeed
