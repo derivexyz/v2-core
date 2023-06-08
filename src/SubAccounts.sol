@@ -389,7 +389,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
 
     for (uint i; i < assetTransfers.length; ++i) {
       if (assetTransfers[i].fromAcc == 0 && assetTransfers[i].toAcc == 0) continue;
-      // if from or to account is not seens before, add to seenAccounts in memory
+      // if from or to account is not seen before, add to seenAccounts in memory
       (uint fromIndex, uint toIndex) = (0, 0);
       (nextSeenId, fromIndex) =
         UnorderedMemoryArray.addUniqueToArray(seenAccounts, assetTransfers[i].fromAcc, nextSeenId);

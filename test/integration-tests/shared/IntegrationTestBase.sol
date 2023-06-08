@@ -112,28 +112,30 @@ contract IntegrationTestBase is Test {
   }
 
   function _deployV2Core() internal {
-    // Deploy Accounts
+    // Nonce 1: Deploy Accounts
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    // Deploy USDC
+    // Nonce 2: Deploy USDC
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
-    // Deploy RateModel
+    // Nonce 3: Deploy RateModel
     (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = _getDefaultRateModelParam();
     rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
-    // Deploy CashAsset
+    // Nonce 4: Deploy CashAsset
     cash = new CashAsset(subAccounts, usdc, rateModel);
 
-    // Deploy Auction
+    // Nonce 5: Deploy SM
+    address srmAddr = _predictAddress(address(this), 7);
+    securityModule = new SecurityModule(subAccounts, cash, IManager(srmAddr));
+
+    // Nonce 6: Deploy Auction
     auction = new DutchAuction(subAccounts, securityModule, cash);
 
-    // Deploy Standard Manager. Shared by all assets
+    // Nonce 7: Deploy Standard Manager. Shared by all assets
     srm = new StandardManager(subAccounts, cash, auction);
-
-    // Deploy SM
-    securityModule = new SecurityModule(subAccounts, cash, srm);
+    assertEq(address(srm), address(srmAddr));
 
     // Deploy USDC stable feed
     stableFeed = new MockFeeds();
