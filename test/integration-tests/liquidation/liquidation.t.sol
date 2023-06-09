@@ -81,17 +81,15 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     assertLt(getAccMaintenanceMargin(charlieAcc) / 1e18, 0);
 
     // can start this auction
-    // todo: THIS SHOULD NOT REVERT!
-    vm.expectRevert(ISubAccounts.AC_OnlyManager.selector);
     auction.startAuction(charlieAcc, 1);
 
-    // _setSpotPrice("weth", 2040e18, 1e18);
+    _setSpotPrice("weth", 2040e18, 1e18);
 
-    // assertGt(getAccMaintenanceMargin(charlieAcc), 0);
+    assertGt(getAccMaintenanceMargin(charlieAcc), 0);
 
-    // auction.terminateAuction(charlieAcc);
-    // DutchAuction.Auction memory auctionInfo = auction.getAuction(aliceAcc);
-    // assertEq(auctionInfo.ongoing, false);
+    auction.terminateAuction(charlieAcc);
+    DutchAuction.Auction memory auctionInfo = auction.getAuction(aliceAcc);
+    assertEq(auctionInfo.ongoing, false);
   }
 
   //  function testFuzzAuctionCannotRestartAfterTermination(uint newSpot_) public {
