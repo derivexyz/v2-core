@@ -49,7 +49,7 @@ contract LiquidationSimTests is LiquidationSimBase {
     startAuction();
 
     for (uint i = 0; i < data.Actions.length; ++i) {
-      console2.log("\n=== STEP:", i);
+      // console2.log("\n=== STEP:", i);
       updateToActionState(data, i);
       checkPreLiquidation(data, i);
       doLiquidation(data, i);

@@ -96,7 +96,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   /**
    * @return margin The margin result, either IM or MM depending on "isInitial"
    * @return markToMarket The mark-to-market value of the portfolio
-   * @return worstScenario The index of the worst scenario, if == scenarios.length, it is the forward contingency
+   * @return worstScenario The index of the worst scenario, if == scenarios.length, it is the basis contingency
    */
   ///
   function _getMarginAndMarkToMarket(
@@ -237,7 +237,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   /////////////////
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
-  function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addForwardCont) internal view {
+  function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addBasisCont) internal view {
     portfolio.baseValue =
       _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, DecimalMath.UNIT);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
@@ -256,12 +256,12 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
       expiry.minConfidence = Math.min(portfolio.minConfidence, expiry.minConfidence);
 
-      // Current MtM and forward contingency MtMs
+      // Current MtM and basis contingency MtMs
       expiry.mtm = _getExpiryShockedMTM(expiry, DecimalMath.UNIT, IPMRM.VolShockDirection.None);
       portfolio.totalMtM += expiry.mtm;
 
-      if (addForwardCont) {
-        _addForwardContingency(portfolio, expiry);
+      if (addBasisCont) {
+        _addBasisContingency(portfolio, expiry);
       }
 
       _addVolShocks(expiry);
@@ -297,7 +297,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   // Contingencies //
   ///////////////////
 
-  function _addForwardContingency(IPMRM.Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry) internal view {
+  function _addBasisContingency(IPMRM.Portfolio memory portfolio, IPMRM.ExpiryHoldings memory expiry) internal view {
     expiry.basisScenarioUpMtM =
       _getExpiryShockedMTM(expiry, basisContParams.scenarioSpotUp, IPMRM.VolShockDirection.None);
     expiry.basisScenarioDownMtM =
