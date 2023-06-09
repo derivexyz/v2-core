@@ -75,4 +75,36 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     assertEq(bals[0].balance, 4_000 ether);
     assertEq(address(bals[0].asset), address(cash));
   }
+
+  function testPMRM_invalidSpotShock() public {
+    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
+    scenarios[0] = IPMRM.Scenario({spotShock: 3e18 + 1, volShock: IPMRM.VolShockDirection.None});
+
+    vm.expectRevert(IPMRM.PMRM_InvalidSpotShock.selector);
+    pmrm.setScenarios(scenarios);
+
+    // but this works fine
+    scenarios[0].spotShock = 3e18;
+    pmrm.setScenarios(scenarios);
+  }
+
+  function testPMRM_notFoundError() public {
+    IPMRM.ExpiryHoldings[] memory expiryData = new IPMRM.ExpiryHoldings[](0);
+    vm.expectRevert(IPMRM.PMRM_FindInArrayError.selector);
+    pmrm.findInArrayPub(expiryData, 0, 0);
+  }
+
+  function testPMRM_invalidGetMarginState() public {
+    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
+
+    IPMRM.Portfolio memory portfolio;
+    vm.expectRevert(IPMRMLib.PMRML_InvalidGetMarginState.selector);
+    pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios, false);
+
+    (int margin, int mtm, uint worstScenario) = pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios, true);
+    assertEq(margin, 0);
+    assertEq(mtm, 0);
+    // since there are no scenarios, worstScenario is the basisContingency
+    assertEq(worstScenario, 0);
+  }
 }

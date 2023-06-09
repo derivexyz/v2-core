@@ -42,4 +42,18 @@ contract PMRMPublic is PMRM {
       );
     }
   }
+
+  function findInArrayPub(ExpiryHoldings[] memory expiryData, uint expiryToFind, uint arrayLen) external pure returns (uint) {
+    uint index = findInArray(expiryData, expiryToFind, arrayLen);
+    return index;
+  }
+
+  function getMarginAndMarkToMarketPub(
+    IPMRM.Portfolio memory portfolio,
+    bool isInitial,
+    IPMRM.Scenario[] memory scenarios,
+    bool useBasisContingency
+  ) external view returns (int, int, uint) {
+    return _getMarginAndMarkToMarket(portfolio, isInitial, scenarios, useBasisContingency);
+  }
 }
