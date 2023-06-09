@@ -63,6 +63,8 @@ contract LiquidationSimBase is PMRMTestBase {
     int PostMM;
     int PostBM;
     uint PostFMax;
+    int SMPayout;
+    int LowerBound;
   }
   //    uint PostFMax;
 
@@ -152,6 +154,8 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.PostMM = json.readInt(string.concat(baseActionIndex, ".Results.PostMM"));
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));
     action.Results.PostFMax = json.readUint(string.concat(baseActionIndex, ".Results.PostFMax"));
+    action.Results.LowerBound = json.readInt(string.concat(baseActionIndex, ".Results.Lowerbound"));
+    action.Results.SMPayout = json.readInt(string.concat(baseActionIndex, ".Results.SMPayout"));
 
     return action;
   }
