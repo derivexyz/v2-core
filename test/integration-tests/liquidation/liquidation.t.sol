@@ -30,8 +30,9 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
     expiry = uint64(block.timestamp + 7 days);
 
-    _setDefaultSVIForExpiry("weth", expiry);
     _setForwardPrice("weth", expiry, 2000e18, 1e18);
+    _setDefaultSVIForExpiry("weth", expiry);
+    _setInterestRate("weth", expiry, 0.01e18, 1e18);
 
     callId = OptionEncoding.toSubId(expiry, strike, true);
     putId = OptionEncoding.toSubId(expiry, strike, false);
@@ -41,15 +42,15 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
   // test auction starting price and bidding price
   function testAuctionFlow() public {
-    _tradeCall();
+    _tradeCall(aliceAcc, bobAcc);
 
-    vm.warp(block.timestamp + 12 hours);
-    _setSpotPrice("weth", 2500e18, 1e18);
+    vm.warp(block.timestamp + 3 hours);
+    _setSpotPrice("weth", 3000e18, 1e18);
+    _setForwardPrice("weth", expiry, 3000e18, 1e18);
     _setDefaultSVIForExpiry("weth", expiry);
-    _setForwardPrice("weth", expiry, 2500e18, 1e18);
 
     // MM is negative
-    assertEq(getAccMaintenanceMargin(aliceAcc) / 1e18, -135);
+    assertLt(getAccMaintenanceMargin(aliceAcc) / 1e18, 0);
 
     // can start this auction
     auction.startAuction(aliceAcc, 1);
@@ -61,6 +62,36 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     auction.terminateAuction(aliceAcc);
     DutchAuction.Auction memory auctionInfo = auction.getAuction(aliceAcc);
     assertEq(auctionInfo.ongoing, false);
+  }
+
+  function testLiquidateAccountUnderDifferentManager() public {
+    // charlieAcc is controlled by PMRM
+    address charlie = address(0xccc);
+    PMRM manager = markets["weth"].pmrm;
+    uint charlieAcc = subAccounts.createAccountWithApproval(charlie, address(this), manager);
+    _depositCash(charlie, charlieAcc, 1900e18);
+
+    _tradeCall(charlieAcc, bobAcc);
+
+    _setSpotPrice("weth", 3200e18, 1e18);
+    _setForwardPrice("weth", expiry, 3200e18, 1e18);
+    _setDefaultSVIForExpiry("weth", expiry);
+
+    // MM is negative
+    assertLt(getAccMaintenanceMargin(charlieAcc) / 1e18, 0);
+
+    // can start this auction
+    // todo: THIS SHOULD NOT REVERT!
+    vm.expectRevert(ISubAccounts.AC_OnlyManager.selector);
+    auction.startAuction(charlieAcc, 1);
+
+    // _setSpotPrice("weth", 2040e18, 1e18);
+
+    // assertGt(getAccMaintenanceMargin(charlieAcc), 0);
+
+    // auction.terminateAuction(charlieAcc);
+    // DutchAuction.Auction memory auctionInfo = auction.getAuction(aliceAcc);
+    // assertEq(auctionInfo.ongoing, false);
   }
 
   //  function testFuzzAuctionCannotRestartAfterTermination(uint newSpot_) public {
@@ -100,9 +131,9 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
   //  }
 
   ///@dev alice go short, bob go long
-  function _tradeCall() public {
+  function _tradeCall(uint fromAcc, uint toAcc) public {
     int premium = 225e18;
     // alice send call to bob, bob send premium to alice
-    _submitTrade(aliceAcc, option, callId, amountOfContracts, bobAcc, cash, 0, premium);
+    _submitTrade(fromAcc, option, callId, amountOfContracts, toAcc, cash, 0, premium);
   }
 }

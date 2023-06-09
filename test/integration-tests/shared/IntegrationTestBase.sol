@@ -152,6 +152,8 @@ contract IntegrationTestBase is Test {
     // set parameter for auction
     auction.setSolventAuctionParams(_getDefaultAuctionParam());
 
+    auction.setInsolventAuctionParams(_getDefaultInsolventAuctionParam());
+
     // allow liquidation to request payout from sm
     securityModule.setWhitelistModule(address(auction), true);
 
@@ -434,6 +436,10 @@ contract IntegrationTestBase is Test {
     });
   }
 
+  function _getDefaultInsolventAuctionParam() internal pure returns (IDutchAuction.InsolventAuctionParams memory param) {
+    param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5 seconds, bufferMarginScalar: 1.2e18});
+  }
+
   function getSubId(uint expiry, uint strike, bool isCall) public pure returns (uint96) {
     return OptionEncoding.toSubId(expiry, strike, isCall);
   }
@@ -567,9 +573,13 @@ contract IntegrationTestBase is Test {
 
   function _setDefaultSVIForExpiry(string memory key, uint64 expiry) internal {
     vm.warp(block.timestamp + 5);
+
+    LyraForwardFeed forwardFeed = markets[key].forwardFeed;
+    (uint fwdPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
+
     LyraVolFeed volFeed = markets[key].volFeed;
 
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData(expiry);
+    ILyraVolFeed.VolData memory volData = _getDefaultVolData(expiry, fwdPrice);
 
     // sign data
     bytes32 structHash = volFeed.hashVolData(volData);
@@ -643,9 +653,42 @@ contract IntegrationTestBase is Test {
     pmrm.setOtherContingencyParams(otherContParams);
     pmrm.setMarginParams(marginParams);
     pmrm.setVolShockParams(volShockParams);
+
+    _addScenarios(pmrm);
   }
 
-  function _getDefaultVolData(uint64 expiry) internal view returns (ILyraVolFeed.VolData memory) {
+  function _addScenarios(PMRM pmrm) internal {
+    // Scenario Number	Spot Shock (of max)	Vol Shock (of max)
+
+    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](21);
+
+    // add these 27 scenarios to the array
+    scenarios[0] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[3] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[6] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[9] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[12] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[15] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[17] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[18] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
+
+    pmrm.setScenarios(scenarios);
+  }
+
+  function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (ILyraVolFeed.VolData memory) {
     // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
     return ILyraVolFeed.VolData({
       expiry: expiry,
@@ -654,7 +697,7 @@ contract IntegrationTestBase is Test {
       SVI_rho: -0.1e18,
       SVI_m: -0.05e18,
       SVI_sigma: 0.05e18,
-      SVI_fwd: 1200e18,
+      SVI_fwd: fwdPrice,
       SVI_refTao: uint64(Black76.annualise(uint64(expiry - block.timestamp))),
       confidence: 1e18,
       timestamp: uint64(block.timestamp),

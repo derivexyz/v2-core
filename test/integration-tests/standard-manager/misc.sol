@@ -25,10 +25,10 @@ contract INTEGRATION_SRM_Example is IntegrationTestBase {
     uint strike = 2000e18;
     uint96 callId = OptionEncoding.toSubId(expiry, strike, true);
 
-    // set vol for this expiry
-    _setDefaultSVIForExpiry("weth", expiry);
     // set forward price for expiry
     _setForwardPrice("weth", expiry, 2000e18, 1e18);
+    // set vol for this expiry, need to be called after setting forward price
+    _setDefaultSVIForExpiry("weth", expiry);
 
     _tradeDefaultCall(callId, 1e18);
 

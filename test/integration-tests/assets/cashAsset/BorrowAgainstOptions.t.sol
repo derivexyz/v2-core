@@ -25,13 +25,13 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     charlieAcc = subAccounts.createAccountWithApproval(charlie, address(this), markets["weth"].pmrm);
 
     // Alice and Bob deposit cash into the system
-    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT);
-    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT);
+    _depositCash(address(alice), aliceAcc, DEFAULT_DEPOSIT * 2);
+    _depositCash(address(bob), bobAcc, DEFAULT_DEPOSIT * 2);
 
     expiry = uint64(block.timestamp + 4 weeks);
-    _setDefaultSVIForExpiry("weth", expiry);
     // set forward price for expiry
     _setForwardPrice("weth", expiry, 2000e18, 1e18);
+    _setDefaultSVIForExpiry("weth", expiry);
   }
 
   function testBorrowAgainstITMCall() public {
@@ -46,7 +46,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     assertEq(cash.supplyIndex(), 1e18);
 
     // Borrow against the option
-    uint borrowAmount = 500e18;
+    uint borrowAmount = 300e18;
     _withdrawCash(charlie, charlieAcc, borrowAmount);
     (uint forwardPrice,) = _getForwardPrice("weth", expiry);
     uint oiFee = markets["weth"].pmrm.OIFeeRateBPS(address(option)).multiplyDecimal(forwardPrice);

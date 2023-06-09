@@ -34,8 +34,8 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
 
     // set all spot
     _setSpotPrice("weth", 2000e18, 1e18);
-    _setDefaultSVIForExpiry("weth", expiry);
     _setForwardPrice("weth", expiry, 2000e18, 1e18);
+    _setDefaultSVIForExpiry("weth", expiry);
   }
 
   // only settle alice's account at expiry
@@ -153,10 +153,10 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     _tradeCall();
     // trade another call
     uint64 longExpiry = expiry + 14 days;
+    _setForwardPrice("weth", longExpiry, 2000e18, 1e18);
     _setDefaultSVIForExpiry("weth", longExpiry);
 
     uint96 longerDateCallId = OptionEncoding.toSubId(longExpiry, strike, true);
-    _setForwardPrice("weth", longExpiry, 2000e18, 1e18);
     _submitTrade(aliceAcc, markets["weth"].option, longerDateCallId, amountOfContracts, bobAcc, cash, 0, 0);
 
     vm.warp(expiry);

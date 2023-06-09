@@ -160,8 +160,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev Auction contract can decide to either:
    *      - revert / process bid
    *      - continue / complete auction
-   * @param accountId ID of account which is being liquidated.
-   * @param liquidatorId Liquidator account ID.
+   * @param accountId ID of account which is being liquidated. assumed to be controlled by this manager
+   * @param liquidatorId Liquidator account ID. assumed to be controlled by this manager
    * @param portion Portion of account that is requested to be liquidated.
    * @param bidAmount Cash amount liquidator is offering for portion of account.
    * @param reservedCash Cash amount to ignore in liquidated account's balance.
@@ -207,6 +207,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /**
    * @dev the liquidation module can request manager to pay the liquidation fee from liquidated account at start of auction
+   * @param accountId Account paying the fee (liquidated)
+   * @param recipient Account receiving the fee, may NOT be controlled by this manager
    */
   function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external onlyLiquidations {
     _symmetricManagerAdjustment(accountId, recipient, cashAsset, 0, int(cashAmount));
