@@ -43,7 +43,11 @@ contract PMRMPublic is PMRM {
     }
   }
 
-  function findInArrayPub(ExpiryHoldings[] memory expiryData, uint expiryToFind, uint arrayLen) external pure returns (uint) {
+  function findInArrayPub(ExpiryHoldings[] memory expiryData, uint expiryToFind, uint arrayLen)
+    external
+    pure
+    returns (uint)
+  {
     uint index = findInArray(expiryData, expiryToFind, arrayLen);
     return index;
   }
