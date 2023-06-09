@@ -157,7 +157,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
         // fee is a percentage of percentage of mtm, so paying fee will never make mtm < 0
         fee = _getLiquidationFee(markToMarket, bufferMargin);
         if (fee > 0) {
-          // todo: fix this: revert if sm is using a diff manager
           ILiquidatableManager(manager).payLiquidationFee(accountId, securityModule.accountId(), fee);
         }
       }
