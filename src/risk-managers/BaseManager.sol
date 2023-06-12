@@ -36,6 +36,7 @@ import {IAllowList} from "src/interfaces/IAllowList.sol";
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using DecimalMath for uint;
   using SignedDecimalMath for int;
+  using SafeCast for uint;
 
   ///////////////
   // Variables //
@@ -49,6 +50,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /// @dev Dutch auction contract address, can trigger execute bid
   IDutchAuction public immutable liquidation;
+
+  /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
+  uint public immutable accId;
 
   /// @dev AllowList contract address
   IAllowList public allowList;
@@ -78,6 +82,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;
+
+    accId = subAccounts.createAccount(address(this), IManager(address(this)));
   }
 
   //////////////////////////
@@ -160,8 +166,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev Auction contract can decide to either:
    *      - revert / process bid
    *      - continue / complete auction
-   * @param accountId ID of account which is being liquidated.
-   * @param liquidatorId Liquidator account ID.
+   * @param accountId ID of account which is being liquidated. assumed to be controlled by this manager
+   * @param liquidatorId Liquidator account ID. assumed to be controlled by this manager
    * @param portion Portion of account that is requested to be liquidated.
    * @param bidAmount Cash amount liquidator is offering for portion of account.
    * @param reservedCash Cash amount to ignore in liquidated account's balance.
@@ -207,9 +213,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /**
    * @dev the liquidation module can request manager to pay the liquidation fee from liquidated account at start of auction
+   * @param accountId Account paying the fee (liquidated)
+   * @param recipient Account receiving the fee, may NOT be controlled by this manager
    */
   function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external onlyLiquidations {
-    _symmetricManagerAdjustment(accountId, recipient, cashAsset, 0, int(cashAmount));
+    _transferCash(accountId, recipient, cashAmount.toInt256());
   }
 
   /**
@@ -466,6 +474,42 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     subAccounts.managerAdjustment(
       ISubAccounts.AssetAdjustment({acc: to, asset: asset, subId: subId, amount: amount, assetData: bytes32(0)})
     );
+  }
+
+  /**
+   * @dev transfer asset from one account to another without invoking manager hook
+   * @param from Account id of the from account. Must be controlled by this manager
+   * @param to Account id of the to account. May not be controlled by this manager
+   */
+  function _transferCash(uint from, uint to, int amount) internal {
+    // deduct amount in from account
+    subAccounts.managerAdjustment(
+      ISubAccounts.AssetAdjustment({acc: from, asset: cashAsset, subId: 0, amount: -amount, assetData: bytes32(0)})
+    );
+
+    // check if recipient under the same manager
+    if (address(subAccounts.manager(to)) == address(this)) {
+      // increase to account balanace directly
+      subAccounts.managerAdjustment(
+        ISubAccounts.AssetAdjustment({acc: to, asset: cashAsset, subId: 0, amount: amount, assetData: bytes32(0)})
+      );
+    } else {
+      // mint cash to this account
+      subAccounts.managerAdjustment(
+        ISubAccounts.AssetAdjustment({acc: accId, asset: cashAsset, subId: 0, amount: amount, assetData: bytes32(0)})
+      );
+      subAccounts.submitTransfer(
+        ISubAccounts.AssetTransfer({
+          fromAcc: accId,
+          toAcc: to,
+          asset: cashAsset,
+          subId: 0,
+          amount: amount,
+          assetData: ""
+        }),
+        ""
+      );
+    }
   }
 
   /**

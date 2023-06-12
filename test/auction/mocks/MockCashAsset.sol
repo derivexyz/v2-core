@@ -7,6 +7,7 @@ import "lyra-utils/decimals/DecimalMath.sol";
 
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import {IERC20BasedAsset} from "src/interfaces/IERC20BasedAsset.sol";
 import "../../shared/mocks/MockAsset.sol";
 
 /**
@@ -16,7 +17,7 @@ import "../../shared/mocks/MockAsset.sol";
 contract MockCash is ICashAsset, MockAsset {
   using DecimalMath for uint;
 
-  IERC20Metadata public stableAsset;
+  IERC20Metadata public wrappedAsset;
 
   bool public isSocialized;
 
@@ -27,7 +28,7 @@ contract MockCash is ICashAsset, MockAsset {
   int public netSettledCash;
 
   constructor(IERC20 token_, ISubAccounts subAccounts_) MockAsset(token_, subAccounts_, true) {
-    stableAsset = IERC20Metadata(address(token_));
+    wrappedAsset = IERC20Metadata(address(token_));
   }
 
   function socializeLoss(uint lossAmountInCash, uint accountToReceive) external {
@@ -45,7 +46,7 @@ contract MockCash is ICashAsset, MockAsset {
     );
   }
 
-  function deposit(uint recipientAccount, uint stableAmount) external override(MockAsset, ICashAsset) {
+  function deposit(uint recipientAccount, uint stableAmount) external override(MockAsset, IERC20BasedAsset) {
     _deposit(recipientAccount, stableAmount);
   }
 
@@ -72,7 +73,7 @@ contract MockCash is ICashAsset, MockAsset {
     token.transferFrom(msg.sender, address(this), amount);
   }
 
-  function withdraw(uint accountId, uint amount, address recipient) external override(MockAsset, ICashAsset) {
+  function withdraw(uint accountId, uint amount, address recipient) external override(MockAsset, IERC20BasedAsset) {
     subAccounts.assetAdjustment(
       ISubAccounts.AssetAdjustment({
         acc: accountId,
