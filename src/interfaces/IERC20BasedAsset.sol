@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import {IAsset} from "./IAsset.sol";
-import "./IPositionTracking.sol";
 
 interface IERC20BasedAsset is IAsset {
   function wrappedAsset() external view returns (IERC20Metadata);
