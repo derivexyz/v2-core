@@ -5,7 +5,7 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
-import "src/interfaces/IOption.sol";
+import {IOption} from "src/interfaces/IOption.sol";
 import "./MockPositionTracking.sol";
 import "./MockGlobalSubIdOITracking.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";

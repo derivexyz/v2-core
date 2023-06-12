@@ -6,7 +6,7 @@ import "forge-std/console2.sol";
 
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockManager.sol";
-import "src/interfaces/IPositionTracking.sol";
+import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
 import "src/assets/WrappedERC20Asset.sol";
 import "src/SubAccounts.sol";
 

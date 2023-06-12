@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/interfaces/ISpotDiffFeed.sol";
+import {ISpotDiffFeed} from "src/interfaces/ISpotDiffFeed.sol";
+import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
 
 contract MockSpotDiffFeed is ISpotDiffFeed {
   ISpotFeed public spotFeed;

@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IManager} from "./IManager.sol";
 import {IAsset} from "./IAsset.sol";
-import "./IPositionTracking.sol";
+import {IPositionTracking} from "./IPositionTracking.sol"; 
 
 interface IWrappedERC20Asset is IAsset, IPositionTracking {
   function deposit(uint recipientAccount, uint assetAmount) external;

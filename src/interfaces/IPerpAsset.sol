@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
-import "./IGlobalSubIdOITracking.sol";
+import {IGlobalSubIdOITracking} from "src/interfaces/IGlobalSubIdOITracking.sol";
 
 /**
  * @title IPerpAsset

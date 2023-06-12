@@ -10,7 +10,7 @@ import "../../../shared/mocks/MockFeeds.sol";
 import "src/SubAccounts.sol";
 import "src/assets/PerpAsset.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import "src/interfaces/IPerpAsset.sol";
+import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract UNIT_PerpAssetPNL is Test {
