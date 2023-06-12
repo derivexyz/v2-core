@@ -48,8 +48,8 @@ contract InterestRateModel is IInterestRateModel {
    */
   constructor(uint _minRate, uint _rateMultiplier, uint _highRateMultiplier, uint _optimalUtil) {
     if (_minRate > 1e18) revert IRM_ParameterMustBeLessThanOne(_minRate);
-    if (_rateMultiplier > 1e18) revert IRM_ParameterMustBeLessThanOne(_rateMultiplier);
-    if (_highRateMultiplier > 1e18) revert IRM_ParameterMustBeLessThanOne(_highRateMultiplier);
+    if (_rateMultiplier > 2e18) revert IRM_ParameterMustBeLessThanOne(_rateMultiplier);
+    if (_highRateMultiplier > 2e18) revert IRM_ParameterMustBeLessThanOne(_highRateMultiplier);
     if (_optimalUtil > 1e18) revert IRM_ParameterMustBeLessThanOne(_optimalUtil);
     minRate = _minRate;
     rateMultiplier = _rateMultiplier;
