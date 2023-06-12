@@ -289,12 +289,12 @@ contract PMRMTestBase is JsonMechIO {
       startingMtMPercentage: 0.98e18,
       fastAuctionCutoffPercentage: 0.8e18,
       fastAuctionLength: 100,
-      slowAuctionLength: 7200,
+      slowAuctionLength: 14400,
       liquidatorFeeRate: 0.02e18
     });
   }
 
   function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
-    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5, bufferMarginScalar: 1.2e18});
+    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 0, bufferMarginScalar: 1.1e18});
   }
 }

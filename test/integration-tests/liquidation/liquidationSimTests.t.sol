@@ -24,14 +24,22 @@ contract LiquidationSimTests is LiquidationSimBase {
   function testLiquidationSim4() public {
     runLiquidationSim("Test4");
   }
-  // TODO:
-  //  function testLiquidationSim5() public {
-  //    runLiquidationSim("Test5");
-  //  }
-  //
-  //  function testLiquidationSim6() public {
-  //    runLiquidationSim("Test6");
-  //  }
+
+  function testLiquidationSim5() public {
+    runLiquidationSim("Test5");
+  }
+
+  function testLiquidationSim6() public {
+    runLiquidationSim("Test6");
+  }
+
+  function testInsolventSim1() public {
+    runLiquidationSim("InsolventTest1");
+  }
+
+  function testInsolventSim2() public {
+    runLiquidationSim("InsolventTest2");
+  }
 
   function runLiquidationSim(string memory testName) internal {
     LiquidationSim memory data = LiquidationSimBase.getTestData(testName);
@@ -61,21 +69,26 @@ contract LiquidationSimTests is LiquidationSimBase {
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
       auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated);
 
-    if (data.Actions[actionId].Results.ExpectedBidPrice < 0) {
-      // insolvent
-      assertApproxEqAbs(int(cashToBidder), -data.Actions[actionId].Results.ExpectedBidPrice, 1e6, "bid price insolvent");
+    IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
+    if (auctionDetails.insolvent) {
+      assertApproxEqAbs(int(cashToBidder), -data.Actions[actionId].Results.SMPayout, 1e6, "bid price insolvent");
     } else {
       assertApproxEqAbs(int(cashFromBidder), data.Actions[actionId].Results.ExpectedBidPrice, 1e6, "bid price solvent");
+      assertApproxEqAbs(finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 1e6, "final percentage");
     }
-
-    // TODO: % of remaining assets received?
-    assertApproxEqAbs(finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 1e6, "final percentage");
   }
 
   function checkPreLiquidation(LiquidationSim memory data, uint actionId) internal {
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
-    uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
+    IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
+    uint fMax;
+    if (auctionDetails.insolvent) {
+      int lowerBound = int(auctionDetails.stepSize) * -100;
+      assertApproxEqAbs(lowerBound, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
+    } else {
+      fMax = auction.getMaxProportion(aliceAcc, worstScenario);
+    }
 
     assertApproxEqAbs(mtm, data.Actions[actionId].Results.PreMtM, 1e6, "pre mtm");
     assertApproxEqAbs(mm, data.Actions[actionId].Results.PreMM, 1e6, "pre mm");
@@ -86,12 +99,16 @@ contract LiquidationSimTests is LiquidationSimBase {
   function checkPostLiquidation(LiquidationSim memory data, uint actionId) internal {
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
-    uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
 
     assertApproxEqAbs(mtm, data.Actions[actionId].Results.PostMtM, 1e6, "post mtm");
     assertApproxEqAbs(mm, data.Actions[actionId].Results.PostMM, 1e6, "post mm");
     assertApproxEqAbs(bm, data.Actions[actionId].Results.PostBM, 1e6, "post bm");
-    assertApproxEqAbs(fMax, data.Actions[actionId].Results.PostFMax, 1e6, "post fmax");
+
+    IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
+    if (auctionDetails.insolvent) {} else {
+      uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
+      assertApproxEqAbs(fMax, data.Actions[actionId].Results.PostFMax, 1e6, "post fmax");
+    }
   }
 
   function getWorstScenario(uint account) internal view returns (uint worstScenario) {
@@ -107,7 +124,16 @@ contract LiquidationSimTests is LiquidationSimBase {
   }
 
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {
-    vm.warp(data.Actions[actionId].Time);
+    IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
+    if (auctionDetails.insolvent) {
+      uint currentBlockTime = block.timestamp;
+      for (uint i = 0; i < data.Actions[actionId].Time - currentBlockTime; ++i) {
+        vm.warp(block.timestamp + 1);
+        auction.continueInsolventAuction(aliceAcc);
+      }
+    } else {
+      vm.warp(data.Actions[actionId].Time);
+    }
     updateFeeds(data.Actions[actionId].Feeds);
   }
 }

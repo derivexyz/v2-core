@@ -6,8 +6,8 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {IManager} from "src/interfaces/IManager.sol";
-import "src/interfaces/ICashAsset.sol";
-import "src/interfaces/IOption.sol";
+import {ICashAsset} from "src/interfaces/ICashAsset.sol";
+import {IOption} from "src/interfaces/IOption.sol";
 
 import "src/SubAccounts.sol";
 import "src/risk-managers/BaseManager.sol";

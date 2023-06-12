@@ -6,7 +6,7 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
 
-import "./InterestRateModel.sol";
+import {InterestRateModel} from "./InterestRateModel.sol";
 import "forge-std/console2.sol";
 
 /**

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "./IPositionTracking.sol";
-import "./IERC20BasedAsset.sol";
+import {IERC20BasedAsset} from "./IERC20BasedAsset.sol";
+import {IPositionTracking} from "./IPositionTracking.sol";
 
 interface IWrappedERC20Asset is IERC20BasedAsset, IPositionTracking {
   //////////////
