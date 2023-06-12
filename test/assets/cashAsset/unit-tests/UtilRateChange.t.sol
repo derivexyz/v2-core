@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "../../../../src/assets/InterestRateModel.sol";
 
 import "../../../../src/assets/CashAsset.sol";
+
+import "../../../../src/SecurityModule.sol";
 import "../../../../src/SubAccounts.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
@@ -57,13 +59,14 @@ contract UNIT_InterestRateScenario is Test {
   MockERC20 usdc;
   SubAccounts subAccounts;
   MockManager manager;
+  SecurityModule sm;
 
   function setUp() public {
     jsonParser = new JsonMechIO();
 
-    uint minRate = 0.04 * 1e18;
-    uint rateMultiplier = 0.4 * 1e18;
-    uint highRateMultiplier = 2 * 1e18;
+    uint minRate = 0.06 * 1e18;
+    uint rateMultiplier = 0.5 * 1e18;
+    uint highRateMultiplier = 0.8 * 1e18;
     uint optimalUtil = 0.6 * 1e18;
 
     subAccounts = new SubAccounts("Lyra MarginAccounts", "Lyra!");
@@ -77,11 +80,15 @@ contract UNIT_InterestRateScenario is Test {
     cash = new CashAsset(subAccounts, usdc, rateModel);
 
     cash.setWhitelistManager(address(manager), true);
+    cash.setLiquidationModule(address(this)); // allow trigger socialized losses
     cash.setSmFee(0.2e18);
 
     _setUpActors();
 
     cash.setSmFeeRecipient(smAcc);
+
+    // setup security module
+    sm.setWhitelistModule(address(this), true);
   }
 
   function _setUpActors() public {
@@ -90,7 +97,10 @@ contract UNIT_InterestRateScenario is Test {
     charlieAcc = subAccounts.createAccount(address(this), manager);
     davidAcc = subAccounts.createAccount(address(this), manager);
     ericAcc = subAccounts.createAccount(address(this), manager);
-    smAcc = subAccounts.createAccount(address(this), manager);
+
+    // create sm acc at the same time
+    sm = new SecurityModule(subAccounts, cash, manager);
+    smAcc = sm.accountId();
     owned = subAccounts.createAccount(address(this), manager);
   }
 
@@ -140,17 +150,22 @@ contract UNIT_InterestRateScenario is Test {
   }
 
   function _verifyState(Inputs memory input, uint i) internal {
-    assertApproxEqAbs(cash.totalSupply(), input.supplies[i], 1e5);
-    assertApproxEqAbs(cash.totalBorrow(), input.borrows[i], 1e5);
+    assertApproxEqAbs(cash.totalSupply(), input.supplies[i], 1e18, "total supply check");
+    assertApproxEqAbs(cash.totalBorrow(), input.borrows[i], 1e18, "total borrow check");
 
-    assertApproxEqAbs(cash.netSettledCash(), input.netPrints[i], 1e5);
-    assertApproxEqAbs(usdc.balanceOf(address(cash)), input.balances[i], 1e5);
+    assertApproxEqAbs(cash.netSettledCash(), input.netPrints[i], 1e18, "net settled check");
+    assertApproxEqAbs(usdc.balanceOf(address(cash)), input.balances[i], 1e18, "usdc balance check");
 
     // test util rate
-    assertApproxEqAbs(rateModel.getUtilRate(cash.totalSupply(), cash.totalBorrow()), input.utilizations[i], 0.000001e18);
+    assertApproxEqAbs(
+      rateModel.getUtilRate(cash.totalSupply(), cash.totalBorrow()),
+      input.utilizations[i],
+      0.000001e18,
+      "util rate check"
+    );
 
     // test sm balance
-    assertApproxEqAbs(subAccounts.getBalance(smAcc, cash, 0), input.smBalances[i], 1e5);
+    assertApproxEqAbs(subAccounts.getBalance(smAcc, cash, 0), input.smBalances[i], 1e18, "sm balance check");
 
     console2.log("action verified", i);
   }
@@ -158,13 +173,15 @@ contract UNIT_InterestRateScenario is Test {
   function _processAction(Inputs memory input, uint i) internal {
     Event memory action = input.actions[i];
 
-    vm.warp(action.timePassed / 1e18);
+    uint timePassed = (action.timePassed / 1e18 * 86400);
+
+    vm.warp(block.timestamp + timePassed);
 
     if (equal(action.name, "TRADE")) {
       subAccounts.submitTransfer(
         ISubAccounts.AssetTransfer({
-          fromAcc: accountToId(action.accA),
-          toAcc: accountToId(action.accB),
+          fromAcc: accountToId(action.accB),
+          toAcc: accountToId(action.accA),
           asset: cash,
           subId: 0,
           amount: action.amount,
@@ -172,7 +189,33 @@ contract UNIT_InterestRateScenario is Test {
         }),
         ""
       );
+    } else if (equal(action.name, "SETTLEMENT")) {
+      vm.startPrank(address(manager));
+      subAccounts.managerAdjustment(
+        ISubAccounts.AssetAdjustment({
+          acc: accountToId(action.accA),
+          asset: cash,
+          subId: 0,
+          amount: action.amount,
+          assetData: bytes32(0)
+        })
+      );
+      cash.updateSettledCash(action.amount);
+      vm.stopPrank();
+    } else if (equal(action.name, "BORROW")) {
+      cash.withdraw(accountToId(action.accA), uint(-action.amount), address(this));
+    } else if (equal(action.name, "INSOLVENCY")) {
+      uint amountToPay = uint(action.amount);
+      // copy from liquidation: request payout, and socialized if out of money
+      uint amountPaid = sm.requestPayout(accountToId(action.accA), amountToPay);
+      if (amountToPay > amountPaid) {
+        uint loss = amountToPay - amountPaid;
+        cash.socializeLoss(loss, accountToId(action.accA));
+      }
     }
+
+    // settle sm fee
+    cash.transferSmFees();
   }
 
   function accountToId(string memory name) public returns (uint) {
