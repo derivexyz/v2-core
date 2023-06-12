@@ -86,16 +86,6 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
     cashAsset.deposit(accountId, stableAmount);
   }
 
-  function acceptTransfersFrom(address fromAddress) external {
-    IAllowances.AssetAllowance[] memory allowances = new IAllowances.AssetAllowance[](1);
-    allowances[0] = IAllowances.AssetAllowance({
-      asset: cashAsset,
-      positive: type(uint).max,
-      negative: 0
-    });
-    subAccounts.setAssetAllowances(accountId, fromAddress, allowances);
-  }
-
   /////////////////////////////
   //  Whitelisted Functions  //
   /////////////////////////////

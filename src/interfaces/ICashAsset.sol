@@ -8,7 +8,6 @@ import {IERC20Metadata} from "openzeppelin/token/ERC20/extensions/IERC20Metadata
 import "./IERC20BasedAsset.sol";
 
 interface ICashAsset is IERC20BasedAsset {
-
   /**
    * @dev Deposit and create a new account
    * @param recipient user for who the new account is created
