@@ -7,7 +7,7 @@ import "./MockAsset.sol";
 import "./MockPositionTracking.sol";
 import "./MockGlobalSubIdOITracking.sol";
 
-import "src/interfaces/IPerpAsset.sol";
+import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
 
 contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking, IPerpAsset {
   mapping(uint => int) mockedFunding;
