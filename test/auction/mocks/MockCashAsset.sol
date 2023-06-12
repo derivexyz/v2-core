@@ -7,6 +7,7 @@ import "lyra-utils/decimals/DecimalMath.sol";
 
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import {IERC20BasedAsset} from "src/interfaces/IERC20BasedAsset.sol";
 import "../../shared/mocks/MockAsset.sol";
 
 /**
