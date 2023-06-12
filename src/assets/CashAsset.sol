@@ -36,7 +36,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   using DecimalMath for uint;
 
   /// @dev The token address for stable coin
-  IERC20Metadata public immutable stableAsset;
+  IERC20Metadata public immutable wrappedAsset;
 
   /// @dev InterestRateModel contract address
   IInterestRateModel public rateModel;
@@ -92,11 +92,11 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   //   Constructor   //
   /////////////////////
 
-  constructor(ISubAccounts _subAccounts, IERC20Metadata _stableAsset, IInterestRateModel _rateModel)
+  constructor(ISubAccounts _subAccounts, IERC20Metadata _wrappedAsset, IInterestRateModel _rateModel)
     ManagerWhitelist(_subAccounts)
   {
-    stableAsset = _stableAsset;
-    stableDecimals = _stableAsset.decimals();
+    wrappedAsset = _wrappedAsset;
+    stableDecimals = _wrappedAsset.decimals();
 
     lastTimestamp = uint64(block.timestamp);
     rateModel = _rateModel;
@@ -177,7 +177,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @param stableAmount amount of stable coins to deposit
    */
   function _deposit(uint recipientAccount, uint stableAmount) internal {
-    stableAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
+    wrappedAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
     uint amountInAccount = stableAmount.to18Decimals(stableDecimals);
 
     subAccounts.assetAdjustment(
@@ -411,7 +411,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     uint stableAmount = cashAmount.from18Decimals(stableDecimals);
 
     // transfer the asset out after potentially needing to calculate exchange rate
-    stableAsset.safeTransfer(recipient, stableAmount);
+    wrappedAsset.safeTransfer(recipient, stableAmount);
 
     subAccounts.assetAdjustment(
       ISubAccounts.AssetAdjustment({
@@ -503,7 +503,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     uint totalCash =
       ((totalSupply).toInt256() + (accruedSmFees).toInt256() - (totalBorrow).toInt256() - netSettledCash).toUint256();
 
-    uint stableBalance = stableAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
+    uint stableBalance = wrappedAsset.balanceOf(address(this)).to18Decimals(stableDecimals);
     exchangeRate = stableBalance.divideDecimal(totalCash);
   }
 

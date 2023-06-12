@@ -5,19 +5,12 @@ import {IAsset} from "src/interfaces/IAsset.sol";
 import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IERC20Metadata} from "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "./IERC20BasedAsset.sol";
 
-interface ICashAsset is IAsset {
-  function stableAsset() external view returns (IERC20Metadata);
-
-  /**
-   * @dev Deposit USDC and increase account balance
-   * @param recipientAccount account id to receive the cash asset
-   * @param amount amount of USDC to deposit
-   */
-  function deposit(uint recipientAccount, uint amount) external;
+interface ICashAsset is IERC20BasedAsset {
 
   /**
-   * @dev Deposit USDC and create a new account
+   * @dev Deposit and create a new account
    * @param recipient user for who the new account is created
    * @param stableAmount amount of stable coins to deposit
    * @param manager manager of the new account
@@ -25,14 +18,6 @@ interface ICashAsset is IAsset {
   function depositToNewAccount(address recipient, uint stableAmount, IManager manager)
     external
     returns (uint newAccountId);
-
-  /**
-   * @notice Withdraw USDC from a Lyra account
-   * @param accountId account id to withdraw
-   * @param amount amount of stable asset in its native decimals
-   * @param recipient USDC recipient
-   */
-  function withdraw(uint accountId, uint amount, address recipient) external;
 
   /**
    * @notice Liquidation module can report loss when there is insolvency.
@@ -88,10 +73,10 @@ interface ICashAsset is IAsset {
   event InterestRateModelSet(IInterestRateModel rateModel);
 
   /// @dev emitted when a user deposits to an account
-  event Deposit(uint accountId, address from, uint amountCashMinted, uint stableAssetDeposited);
+  event Deposit(uint accountId, address from, uint amountCashMinted, uint wrappedAssetDeposited);
 
   /// @dev emitted when a user withdraws from an account
-  event Withdraw(uint accountId, address recipient, uint amountCashBurn, uint stableAssetWidrawn);
+  event Withdraw(uint accountId, address recipient, uint amountCashBurn, uint wrappedAssetWidrawn);
 
   /// @dev Emitted when asymmetric print/burn occurs for settlement
   event SettledCashUpdated(int amountChanged, int currentSettledCash);

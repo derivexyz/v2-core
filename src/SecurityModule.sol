@@ -9,6 +9,7 @@ import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
 import {IAsset} from "src/interfaces/IAsset.sol";
+import {IAllowances} from "src/interfaces/IAllowances.sol";
 import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {ICashAsset} from "src/interfaces/ICashAsset.sol";
@@ -46,7 +47,7 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
   constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IManager accountManager) {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
-    stableAsset = cashAsset.stableAsset();
+    stableAsset = cashAsset.wrappedAsset();
     stableDecimals = stableAsset.decimals();
 
     accountId = ISubAccounts(_subAccounts).createAccount(address(this), accountManager);
@@ -85,6 +86,16 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
     cashAsset.deposit(accountId, stableAmount);
   }
 
+  function acceptTransfersFrom(address fromAddress) external {
+    IAllowances.AssetAllowance[] memory allowances = new IAllowances.AssetAllowance[](1);
+    allowances[0] = IAllowances.AssetAllowance({
+      asset: cashAsset,
+      positive: type(uint).max,
+      negative: 0
+    });
+    subAccounts.setAssetAllowances(accountId, fromAddress, allowances);
+  }
+
   /////////////////////////////
   //  Whitelisted Functions  //
   /////////////////////////////
@@ -101,11 +112,11 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
     returns (uint cashAmountPaid)
   {
     // check if the security module has enough fund. Cap the payout at min(balance, cashAmount)
-    uint useableCash = subAccounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
+    uint usableCash = subAccounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256();
 
     // payout up to useable cash
-    if (useableCash < cashAmountNeeded) {
-      cashAmountPaid = useableCash;
+    if (usableCash < cashAmountNeeded) {
+      cashAmountPaid = usableCash;
     } else {
       cashAmountPaid = cashAmountNeeded;
     }
@@ -130,7 +141,6 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
 
   modifier onlyWhitelistedModule() {
     if (!isWhitelisted[msg.sender]) revert SM_NotWhitelisted();
-
     _;
   }
 }
