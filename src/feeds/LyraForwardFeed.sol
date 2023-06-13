@@ -181,7 +181,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     return (fixedPortion, variablePortion);
   }
 
-  function _verifySettlementDataValid(ForwardAndSettlementData memory forwardData) internal pure {
+  function _verifySettlementDataValid(ForwardAndSettlementData memory forwardData) internal view {
     if (
       forwardData.settlementStartAggregate == 0 //
         || forwardData.currentSpotAggregate == 0
