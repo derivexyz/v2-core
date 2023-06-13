@@ -30,10 +30,10 @@ Only running unit tests
 forge test --match-contract="UNIT_" -vvv
 ```
 
-Running POC tests
+Running integration tests
 
 ```shell
-forge test --match-contract="POC_" -vvv
+forge test --match-contract="INTEGRATION_" -vvv
 ```
 
 ## Documentation
@@ -47,8 +47,8 @@ Go to [docs](./docs) to understand the high level of the design, transaction flo
 ```shell
 pip3 install slither-analyzer
 pip3 install solc-select
-solc-select install 0.8.13
-solc-select use 0.8.13
+solc-select install 0.8.18
+solc-select use 0.8.18
 ```
 
 ### Run analysis
