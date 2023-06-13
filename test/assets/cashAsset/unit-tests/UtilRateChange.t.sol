@@ -220,6 +220,8 @@ contract UNIT_InterestRateScenario is Test {
       return davidAcc;
     } else if (equal(name, "Eric")) {
       return ericAcc;
+    } else {
+      revert("no such account");
     }
   }
 
