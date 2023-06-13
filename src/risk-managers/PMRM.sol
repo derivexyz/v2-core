@@ -21,11 +21,10 @@ import {IVolFeed} from "src/interfaces/IVolFeed.sol";
 import {IInterestRateFeed} from "src/interfaces/IInterestRateFeed.sol";
 import {IPMRM} from "src/interfaces/IPMRM.sol";
 import {IWrappedERC20Asset} from "src/interfaces/IWrappedERC20Asset.sol";
+import {ISpotDiffFeed} from "src/interfaces/ISpotDiffFeed.sol";
 
 import "src/risk-managers/BaseManager.sol";
-
 import "src/risk-managers/PMRMLib.sol";
-import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
 
 /**
  * @title PMRM
