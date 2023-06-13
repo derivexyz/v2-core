@@ -5,7 +5,7 @@ import {IAsset} from "src/interfaces/IAsset.sol";
 import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 import {IERC20Metadata} from "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import "./IERC20BasedAsset.sol";
+import {IERC20BasedAsset} from "./IERC20BasedAsset.sol";
 
 interface ICashAsset is IERC20BasedAsset {
   /**
