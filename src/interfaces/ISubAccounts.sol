@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "openzeppelin/token/ERC721/IERC721.sol";
+import {IERC721} from "openzeppelin/token/ERC721/IERC721.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
