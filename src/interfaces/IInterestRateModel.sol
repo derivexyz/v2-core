@@ -39,6 +39,6 @@ interface IInterestRateModel {
   ////////////
 
   /// @dev Revert when the parameter set is greater than 1e18
-  error IRM_ParameterMustBeLessThanOne(uint param);
+  error IRM_InvalidParamBound();
   error IRM_NoElapsedTime(uint elapsedTime);
 }
