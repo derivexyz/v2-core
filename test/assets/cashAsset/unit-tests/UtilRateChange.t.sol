@@ -29,7 +29,6 @@ contract UNIT_InterestRateScenario is Test {
 
   struct Inputs {
     Event[] actions;
-    uint[] times;
     uint[] supplies;
     uint[] borrows;
     uint[] balances;
@@ -112,7 +111,6 @@ contract UNIT_InterestRateScenario is Test {
 
     Inputs memory input = Inputs({
       actions: readEventArray(json, ".EventsVec"),
-      times: json.readUintArray(".Times"),
       supplies: json.readUintArray(".totalSupplys"),
       borrows: json.readUintArray(".totalBorrows"),
       balances: json.readUintArray(".balanceOfs"),
@@ -124,7 +122,7 @@ contract UNIT_InterestRateScenario is Test {
 
     // verify initial states
     _verifyState(input, 0);
-    
+
     for (uint i = 1; i < input.supplies.length - 1; i++) {
       _processAction(input, i);
       _verifyState(input, i);
@@ -158,13 +156,8 @@ contract UNIT_InterestRateScenario is Test {
     // assertApproxEqAbs(cash.netSettledCash(), input.netPrints[i], 1e18, "net settled check");
     assertApproxEqAbs(usdc.balanceOf(address(cash)), input.balances[i], 1e18, "usdc balance check");
 
-    // // test util rate
-    assertApproxEqAbs(
-      getUtilRate(),
-      input.utilizations[i],
-      0.000001e18,
-      "util rate check"
-    );
+    // test util rate
+    assertApproxEqAbs(getUtilRate(), input.utilizations[i], 0.000001e18, "util rate check");
 
     // test sm balance
     // assertApproxEqAbs(subAccounts.getBalance(smAcc, cash, 0), input.smBalances[i], 1e18, "sm balance check");
@@ -173,13 +166,7 @@ contract UNIT_InterestRateScenario is Test {
   function _processAction(Inputs memory input, uint i) internal {
     Event memory action = input.actions[i];
 
-    // uint timePassed = (action.timePassed / 1e18 * 86400);
-
-    // if (block.timestamp < input.action.timePassed[i]) {
-    //   console2.log("go days", input.times[i] / 1e18);
-      vm.warp(block.timestamp + action.timePassed / 1e18 * 86400);
-    // }
-    
+    vm.warp(block.timestamp + action.timePassed / 1e18 * 86400);
 
     if (equal(action.name, "TRADE")) {
       subAccounts.submitTransfer(
@@ -238,7 +225,7 @@ contract UNIT_InterestRateScenario is Test {
 
   function getUtilRate() public view returns (uint) {
     uint supply = cash.totalSupply();
-    uint borrow =  cash.totalBorrow();
+    uint borrow = cash.totalBorrow();
     int netSettled = cash.netSettledCash();
     if (netSettled < 0) supply += uint(-netSettled);
     return rateModel.getUtilRate(supply, borrow);
