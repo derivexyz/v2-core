@@ -50,13 +50,15 @@ To allow handling settlement and liquidation, the manager has the privileges to 
 
 ### Assets
 
-The job of an **Asset** contract is to determine the result of a transfer, and maybe manage deposit and withdraw.
+The job of an **Asset** contract is to determine the result of a transfer, maybe manage deposit and withdraw, and keep track of information needed for manager to handle **settlement**.
 
 Some example:
 
 * a `WrappedERC20` **asset** can take a user's token and update the user's balance in `SubAccounts`. Someone can also reduce their balance in `SubAccounts` and withdraw the real token. In the case of an "only-positive" asset, the asset can deny transfers that would make any balance negative.
 
 * an `OptionToken` **asset** does not allow deposits or withdrawals but balances can be both positive and negative. The asset blocks transfers (1) after expiry (2) of invalid subIds. The asset can also help the manager determine the value of a token at settlement or during account state validation.
+
+For more detailed explanation about each asset, please go to [Assets](./assets.md).
 
 #### Asset Privileges
 
