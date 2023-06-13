@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 import "src/risk-managers/PMRM.sol";
 import "src/assets/CashAsset.sol";
 import "src/SubAccounts.sol";
-import "src/interfaces/IManager.sol";
-import "src/interfaces/IAsset.sol";
-import "src/interfaces/ISubAccounts.sol";
+import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "src/interfaces/IAsset.sol";
+import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
 
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
