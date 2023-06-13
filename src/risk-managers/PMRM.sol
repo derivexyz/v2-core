@@ -25,7 +25,7 @@ import {IWrappedERC20Asset} from "src/interfaces/IWrappedERC20Asset.sol";
 import "src/risk-managers/BaseManager.sol";
 
 import "src/risk-managers/PMRMLib.sol";
-import "../interfaces/ISpotDiffFeed.sol";
+import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
 
 /**
  * @title PMRM
