@@ -47,10 +47,9 @@ contract InterestRateModel is IInterestRateModel {
    * @param _optimalUtil The utilization point at which the highRateMultiplier is applied
    */
   constructor(uint _minRate, uint _rateMultiplier, uint _highRateMultiplier, uint _optimalUtil) {
-    if (_minRate > 1e18) revert IRM_ParameterMustBeLessThanOne(_minRate);
-    if (_rateMultiplier > 1e18) revert IRM_ParameterMustBeLessThanOne(_rateMultiplier);
-    if (_highRateMultiplier > 1e18) revert IRM_ParameterMustBeLessThanOne(_highRateMultiplier);
-    if (_optimalUtil > 1e18) revert IRM_ParameterMustBeLessThanOne(_optimalUtil);
+    if (_minRate > 2e18 || _rateMultiplier > 5e18 || _highRateMultiplier > 5e18 || _optimalUtil > 1e18) {
+      revert IRM_InvalidParamBound();
+    }
     minRate = _minRate;
     rateMultiplier = _rateMultiplier;
     highRateMultiplier = _highRateMultiplier;
