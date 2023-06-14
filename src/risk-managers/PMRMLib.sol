@@ -9,10 +9,10 @@ import "lyra-utils/math/Black76.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-import {IOptionPricing} from "src/interfaces/IOptionPricing.sol";
-import {IPMRM} from "src/interfaces/IPMRM.sol";
-import {IPMRMLib} from "src/interfaces/IPMRMLib.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
+import {IPMRM} from "../interfaces/IPMRM.sol";
+import {IPMRMLib} from "../interfaces/IPMRMLib.sol";
+import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 
 /**
  * @title PMRMLib
