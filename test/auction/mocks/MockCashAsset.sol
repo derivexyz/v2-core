@@ -5,10 +5,12 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-import {ICashAsset} from "src/interfaces/ICashAsset.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IERC20BasedAsset} from "src/interfaces/IERC20BasedAsset.sol";
-import "../../shared/mocks/MockAsset.sol";
+import {ICashAsset} from "../../../src/interfaces/ICashAsset.sol";
+import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";
+import {IERC20BasedAsset} from "../../../src/interfaces/IERC20BasedAsset.sol";
+import {IManager} from "../../../src/interfaces/IManager.sol";
+import {IAsset} from "../../../src/interfaces/IAsset.sol";
+import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 
 /**
  * @title MockCash

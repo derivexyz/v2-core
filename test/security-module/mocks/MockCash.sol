@@ -7,10 +7,11 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import "src/interfaces/ICashAsset.sol";
-import "../../shared/mocks/MockAsset.sol";
+import {IAsset} from "../../../src/interfaces/IAsset.sol";
+import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";
+import {IManager} from "../../../src/interfaces/IManager.sol";
+import {ICashAsset} from "../../../src/interfaces/ICashAsset.sol";
+import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 
 /**
  * @title Cash asset with built-in lending feature.
