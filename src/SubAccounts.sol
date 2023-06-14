@@ -10,7 +10,6 @@ import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import {IAsset} from "./interfaces/IAsset.sol";
 import {IManager} from "./interfaces/IManager.sol";
-import {IAllowances} from "./interfaces/IAllowances.sol";
 import {Allowances} from "./Allowances.sol";
 import {AssetDeltaLib} from "./libraries/AssetDeltaLib.sol";
 import {PermitAllowanceLib} from "./libraries/PermitAllowanceLib.sol";
@@ -168,7 +167,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(uint accountId, address delegate, IAllowances.AssetAllowance[] memory allowances)
+  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances)
     external
     onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
   {
