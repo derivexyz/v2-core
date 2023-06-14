@@ -8,6 +8,7 @@ import "../../../shared/mocks/MockFeeds.sol";
 
 import "../../../../src/assets/PerpAsset.sol";
 import "../../../../src/interfaces/ISubAccounts.sol";
+import "../../../../src/interfaces/IManagerWhitelist.sol";
 import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract UNIT_PerpAssetHook is Test {

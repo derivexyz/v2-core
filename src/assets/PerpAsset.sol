@@ -17,10 +17,10 @@ import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
 
 import {IManager} from "../interfaces/IManager.sol";
 
-import "src/assets/utils/ManagerWhitelist.sol";
+import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
-import "src/assets/utils/PositionTracking.sol";
-import "src/assets/utils/GlobalSubIdOITracking.sol";
+import {PositionTracking} from "./utils/PositionTracking.sol";
+import {GlobalSubIdOITracking} from "./utils/GlobalSubIdOITracking.sol";
 
 /**
  * @title PerpAsset

@@ -6,7 +6,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/assets/utils/ManagerWhitelist.sol";
+import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
 import {IOption} from "../interfaces/IOption.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
