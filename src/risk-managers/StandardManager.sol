@@ -4,11 +4,12 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/Math.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
-import "openzeppelin/access/Ownable2Step.sol";
+import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import {IManager} from "../interfaces/IManager.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
@@ -29,8 +30,6 @@ import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 
 import {BaseManager} from "./BaseManager.sol";
-
-import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 /**
  * @title StandardManager
