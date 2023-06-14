@@ -1,6 +1,6 @@
 pragma solidity ^0.8.13;
 
-import "../../../src/interfaces/IGlobalSubIdOITracking.sol";
+import {IGlobalSubIdOITracking} from "../../../src/interfaces/IGlobalSubIdOITracking.sol";
 
 contract MockGlobalSubIdOITracking is IGlobalSubIdOITracking {
   mapping(uint subId => uint) public openInterest;

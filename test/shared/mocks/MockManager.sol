@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "../../../src/interfaces/IAsset.sol";
+import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";
+import {IManager} from "../../../src/interfaces/IManager.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 
