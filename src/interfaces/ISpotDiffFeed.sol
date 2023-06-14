@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
+import {ISpotFeed} from "./ISpotFeed.sol";
 
 /**
  * @title ISpotDiffFeed

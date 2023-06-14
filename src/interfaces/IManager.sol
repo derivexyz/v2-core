@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import {ISubAccounts} from "./ISubAccounts.sol";
 
 interface IManager {
   /**

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IManager} from "src/interfaces/IManager.sol";
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IOption} from "src/interfaces/IOption.sol";
+import {IManager} from "./IManager.sol";
+import {IPerpAsset} from "./IPerpAsset.sol";
+import {IOption} from "./IOption.sol";
 
 interface IStandardManager {
   enum AssetType {

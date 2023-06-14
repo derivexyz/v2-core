@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IManager} from "src/interfaces/IManager.sol";
+import {IManager} from "./IManager.sol";
 
 interface IPositionTracking {
   /////////////////
