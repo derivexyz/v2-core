@@ -3,7 +3,7 @@
 ## Agenda
 
 * [Base Layer Overview](#the-base-layer)
-  * [SubAccounts](#accounts)  
+  * [SubAccounts](#subaccounts)  
   * [Managers](#managers)
   * [Assets](#assets)
   * [Shared Risk and Hooks](#shared-risk)
@@ -37,10 +37,11 @@ P.S. Go to [SubAccounts](./accounts) for some more detailed documentation about 
   
 ### Managers
 
-A manager should be used to govern a set of accounts, and has certain privileges. The 3x main jobs of a manager: 
+A manager should be used to govern a set of accounts, and has certain privileges. The 3 main jobs of a manager are: 
 
 * **Account state validation**: After a transaction is executed on an account, the manager will take a look at the final state of an account and decide if this account is valid. For example, a transaction that leaves an account holding only -1000 USDC should be denied. But if the account has another 10 ETH in it, it's probably okay.
-* **Debt Management**: It is also the manager's obligation to determine "dangerous accounts" that might leave the system in debt and take care of liquidations.
+* **Debt Management**: It is also the manager's obligation to determine "dangerous accounts" that might leave the system in debt and take care of liquidations. In the current design, all managers are sharing the same `DutchAuction` module for liquidation. The auction contract can start an auction if an account's net maintenance margin is below 0, and allow bidders to buy the portfolio.
+
 * **Settlement**:  If an account has assets with expiry, the manager should also handle the settlement after expiry. For example, if an account long 1 2000-ETH-CALL-DEC01-2022 and it expired in the money, the manager has the right to increase the account's usdc balance, and burn the option balance at expiry.
 
 #### Manager Privileges 
@@ -49,13 +50,15 @@ To allow handling settlement and liquidation, the manager has the privileges to 
 
 ### Assets
 
-The job of an **Asset** contract is to determine the result of a transfer, and maybe manage deposit and withdraw.
+The job of an **Asset** contract is to determine the result of a transfer, maybe manage deposit and withdraw, and keep track of information needed for manager to handle **settlement**.
 
 Some example:
 
-* a `WETHWrapper` **asset** can take a user's weth and update the user's balance in `SubAccounts`. Someone can also reduce their balance in `SubAccounts` and withdraw the real token. In the case of an "only-positive" asset, the asset can deny transfers that would make any balance negative.
+* a `WrappedERC20` **asset** can take a user's token and update the user's balance in `SubAccounts`. Someone can also reduce their balance in `SubAccounts` and withdraw the real token. In the case of an "only-positive" asset, the asset can deny transfers that would make any balance negative.
 
 * an `OptionToken` **asset** does not allow deposits or withdrawals but balances can be both positive and negative. The asset blocks transfers (1) after expiry (2) of invalid subIds. The asset can also help the manager determine the value of a token at settlement or during account state validation.
+
+For more detailed explanation about each asset, please go to [Assets](./assets.md).
 
 #### Asset Privileges
 
@@ -63,7 +66,7 @@ The asset has the privileges to update its own "asset balance" of any account. T
 
 ![adjustment-flow](./imgs/overall/adjustment-flow.png)
 
-We can see from the diagram that `Assets` and `Managers` can both access the account directly with `assetAdjustment` and `managerAdjustment`. Every other external party (including an AMM or orderbook) will need to get approvals from the account owner to act on their behalf.
+We can see from the diagram that `Assets` and `Managers` can both access the account directly with `assetAdjustment` and `managerAdjustment`. Every other external party (including orderbook) will need to get approvals from the account owner to act on their behalf.
 
 ### Shared Risk
 
@@ -86,19 +89,11 @@ It's worth mentioning that because the **account contract** is totally permissio
 
 The ultimate goal of Lyra v2 is to build a permission-less margin system for both traders and AMMs, with a modular framework for upgrading existing contracts and supplementing the Lyra ecosystem with new features. At the base layer, this will be composed of 2 manager and 3 assets at the launch of V2. You can find the more detailed documentation about each modules from the links below: 
 
-* (Manager) [MLRM: Max Loss Risk Manager](./) 
-* (Manager) [PCRM: Partially Collateralized Risk Manager](./) 
-* (Asset) [Lending (Borrowable USD)](./)
-* (Asset) [Option Token](./)
-* (Asset) [Future Token](./)
+* (Manager) [SRM: Standard Risk Manager](./managers/SRM.md) 
+* (Manager) [PMRM: Portfolio Margining Risk Manager](./managers/PMRM.md) 
+* (Asset) [Cash Asset](./)
+* (Asset) [Option Asset](./)
+* (Asset) [Perp Asset](./)
+* (Asset) [BaseAsset Asset](./)
 
 ![scope](./imgs/overall/v2-scope.png)
-
-There will also be 2 other AMMs being built:
-
-* [Future AMM](./)
-* [Option AMM](./)
-
-## AMMs
-
-(to be added)

@@ -5,48 +5,32 @@
 You can find each big **modules** that compose Lyra-V2 in separate folders: list of modules:
 
 - `account`
+- `assets`
+- `auction`
+- `feeds`
+- `risk-managers`
+- `security-modules`
 
 The `shared` folder contains common contracts that are used across testing for different modules. Currently includes:
 
-- `mocks` folder: shared mocks that should be used in unit test: `MockERC20`, `MockManager` and `MockAsset`
+- `mocks` folder: shared mocks that should be used in unit test: `MockERC20`, `MockManager`, `MockAsset`.. etc
 - `utils`: shared helper functions like encode, decode, building structs... etc
 
-## Types of Tests
+## Testing Guideline
 
-In each module folder, we have at least 3 folders: `unit-tests`, `poc-tests` and `gas-tests` which contain the actual test files:
+### Unit Tests
 
-- `unit-tests`: where we mock everything and aim to ensure **every line of logic** works as expected. All test contracts should be prefixed with `UNIT_`
-- `poc-tests`: where we explore things a bit to see if a certain design makes sense, the goal is to rapidly test ideas and architecture. All test contracts should be prefixed with `POC_`
-- `gas-tests`: contain test cases primary aimed to test gas usage, this help us while doing benchmark. This can further be broken down to two types of tests:
-  - **forge tests**: Tests that will be run and compared in `.gas-snapshot`. All test contracts should be prefixed with `GAS_`. These tests are expected to "underestimate" the gas cost when it comes to storage-related operations. Better be used to estimate gas costs around calculations.
-  - **forge script estimation**: Follow the template in [account/gas-test/GasScript](./account/gas-tests/GasScript.t.sol) to use script feature to estimate real world gas costs. These will be less flexible compared to forge tests, but gives more accurate results.
-
-There should also be a `mocks` folder which contain own mocks written for this module, mainly for POC tests.
-
-## Guidelines:
+we mock everything and aim to ensure **every line of logic** works as expected. Each module has their own unit test in `unit-tests` folder in each module. All unit test contracts should be prefixed with `UNIT_`.
 
 - Use **unit tests** to 
   - describe how each function should work and give the reviewer confidence in the correctness of your code.
   - hit target coverage percentage before requesting review or merging code into bigger branch
 
-- Use **POC tests** to:
-  - show how integration would potentially work
-  - give ideas around gas cost
-  - show how certain design should be improved
+There should also be a `mocks` folder which contain own mocks written for this module
 
-- documentation
-  - unit tests: aim to achieve full coverage, no additional documentation needed
-  - poc tests: must have a `README.md` in the `poc-tests` folder that outline all the tests as checklist.
-  - gas test: must have a `README.md` in the `gas-tests` folder which outline all the benchmark scenarios and fill in the gas cost at the end.
+  
+### Integration Tests
 
-- A reviewer should ask the code owner to write more **unit tests** when
-  - it's unclear how a certain piece of code works
-  - you don't feel comfortable starting building on top of this module.
+Any tests involving more than 1 real contracts should be put into `integration-tests` folder. All integration tests should be prefixed with `INTEGRATION_`.
 
-- A reviewer should ask the code owner to write certain **POC tests** when
-  - you don't think the current interface is gonna work with another module
-  - you think there are some potential vulnerability while considering other pieces, like reentrancy ... etc
-
-### P.S. Integration tests
-
-We will start writing formal integration tests when more moving pieces are implemented. Those tests will be in a separate folder for all integration tests.
+If you want to write integration test with a complete test environment setup, you should inherit `IntegrationTestBase`, which already have a standard manager (`srm`), 2 markets  (weth and wbtc), a portfolio margin manager set for **each** market, and all the feeds setup. A simple example can be found with [Misc standard manager test](integration-tests/standard-manager/misc.sol).
