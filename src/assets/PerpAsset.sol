@@ -10,12 +10,12 @@ import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
-import {ISpotDiffFeed} from "src/interfaces/ISpotDiffFeed.sol";
+import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
+import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
+import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
+import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
 
-import {IManager} from "src/interfaces/IManager.sol";
+import {IManager} from "../interfaces/IManager.sol";
 
 import "src/assets/utils/ManagerWhitelist.sol";
 

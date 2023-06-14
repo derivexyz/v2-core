@@ -5,8 +5,8 @@ pragma solidity ^0.8.18;
 import "src/feeds/BaseLyraFeed.sol";
 
 // interfaces
-import {ILyraRateFeed} from "src/interfaces/ILyraRateFeed.sol";
-import {IInterestRateFeed} from "src/interfaces/IInterestRateFeed.sol";
+import {ILyraRateFeed} from "../interfaces/ILyraRateFeed.sol";
+import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
 
 /**
  * @title LyraRateFeed

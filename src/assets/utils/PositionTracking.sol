@@ -5,8 +5,8 @@ import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 
-import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
-import {IManager} from "src/interfaces/IManager.sol";
+import {IPositionTracking} from "../../interfaces/IPositionTracking.sol";
+import {IManager} from "../../interfaces/IManager.sol";
 
 /**
  * @title PositionTracking

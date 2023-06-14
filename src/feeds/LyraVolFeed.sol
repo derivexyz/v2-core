@@ -5,8 +5,8 @@ pragma solidity ^0.8.18;
 import "src/feeds/BaseLyraFeed.sol";
 
 // interfaces
-import {IVolFeed} from "src/interfaces/IVolFeed.sol";
-import {ILyraVolFeed} from "src/interfaces/ILyraVolFeed.sol";
+import {IVolFeed} from "../interfaces/IVolFeed.sol";
+import {ILyraVolFeed} from "../interfaces/ILyraVolFeed.sol";
 
 // libraries
 import "lyra-utils/math/FixedPointMathLib.sol";

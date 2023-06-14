@@ -9,10 +9,10 @@ import "openzeppelin/utils/math/Math.sol";
 import "src/feeds/BaseLyraFeed.sol";
 
 // Interfaces
-import {ILyraForwardFeed} from "src/interfaces/ILyraForwardFeed.sol";
-import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
-import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
-import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
+import {ILyraForwardFeed} from "../interfaces/ILyraForwardFeed.sol";
+import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
+import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
+import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 
 /**
  * @title LyraForwardFeed
