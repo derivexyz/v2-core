@@ -13,8 +13,8 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 
-import {PositionTracking} from "src/assets/utils/PositionTracking.sol";
-import {GlobalSubIdOITracking} from "src/assets/utils/GlobalSubIdOITracking.sol";
+import {PositionTracking} from "./utils/PositionTracking.sol";
+import {GlobalSubIdOITracking} from "./utils/GlobalSubIdOITracking.sol";
 
 /**
  * @title Option

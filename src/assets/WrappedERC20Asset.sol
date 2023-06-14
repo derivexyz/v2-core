@@ -10,8 +10,8 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IAsset} from "../interfaces/IAsset.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
-import {ManagerWhitelist} from "src/assets/utils/ManagerWhitelist.sol";
-import {PositionTracking} from "src/assets/utils/PositionTracking.sol";
+import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
+import {PositionTracking} from "./utils/PositionTracking.sol";
 
 /**
  * @title Wrapped ERC20 Asset

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 // inherited
-import "src/feeds/BaseLyraFeed.sol";
+import "./BaseLyraFeed.sol";
 
 // interfaces
 import {ILyraRateFeed} from "../interfaces/ILyraRateFeed.sol";

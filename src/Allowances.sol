@@ -3,9 +3,9 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SignedMath.sol";
 
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAllowances} from "src/interfaces/IAllowances.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import {IAsset} from "./interfaces/IAsset.sol";
+import {IAllowances} from "./interfaces/IAllowances.sol";
+import {ISubAccounts} from "./interfaces/ISubAccounts.sol";
 
 /**
  * @title Allowance

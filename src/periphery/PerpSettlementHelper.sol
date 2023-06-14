@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
+import {IDataReceiver} from "../interfaces/IDataReceiver.sol";
 
-import {ILiquidatableManager} from "src/interfaces/ILiquidatableManager.sol";
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
+import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
+import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 
 /**
  * @title PerpSettlementHelper
