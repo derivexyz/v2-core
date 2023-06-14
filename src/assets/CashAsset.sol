@@ -17,8 +17,6 @@ import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
 
 import "src/assets/utils/ManagerWhitelist.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit a stable token and credit this cash asset into their subAccounts.
