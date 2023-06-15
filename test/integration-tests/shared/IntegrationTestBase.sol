@@ -457,9 +457,9 @@ contract IntegrationTestBase is Test {
 
   function _setSpotPrice(string memory key, uint96 price, uint64 conf) internal {
     LyraSpotFeed spotFeed = markets[key].spotFeed;
-    ILyraSpotFeed.SpotData memory spotData = ILyraSpotFeed.SpotData({
-      price: price,
-      confidence: conf,
+    bytes memory data = abi.encode(price, conf);
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: data,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
@@ -467,12 +467,10 @@ contract IntegrationTestBase is Test {
     });
 
     // sign data
-    bytes32 structHash = spotFeed.hashSpotData(spotData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(spotFeed.domainSeparator(), structHash));
-    spotData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(spotData);
+    bytes memory managerData = _signFeedData(spotFeed, keeperPk, feedData);
+
     // submit to feed
-    spotFeed.acceptData(data);
+    spotFeed.acceptData(managerData);
   }
 
   /**
@@ -616,6 +614,24 @@ contract IntegrationTestBase is Test {
     bytes memory data = abi.encode(rateData);
 
     rateFeed.acceptData(data);
+  }
+
+  function _signFeedData(IBaseLyraFeed feed, uint privateKey, IBaseLyraFeed.FeedData memory feedData)
+    internal
+    view
+    returns (bytes memory)
+  {
+    bytes32 structHash = hashFeedData(feed, feedData);
+    bytes32 domainSeparator = feed.domainSeparator();
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
+    feedData.signature = bytes.concat(r, s, bytes1(v));
+
+    return abi.encode(feedData);
+  }
+
+  function hashFeedData(IBaseLyraFeed feed, IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
+    bytes32 typeHash = feed.FEED_DATA_TYPEHASH();
+    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
   }
 
   function _setPMRMParams(PMRM pmrm) internal {
