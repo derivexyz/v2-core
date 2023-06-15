@@ -10,12 +10,13 @@ import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
 import "../../../src/assets/InterestRateModel.sol";
 import "../../../src/SubAccounts.sol";
-
+import "../../../src/interfaces/IDutchAuction.sol";
 /**
  * @dev real Accounts contract
  * @dev real CashAsset contract
  * @dev real SecurityModule contract
  */
+
 contract INTEGRATION_SecurityModule_CashAsset is Test {
   // OFAC is the bad guy
   address public constant badGuy = address(0x0fac);
@@ -62,7 +63,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     accountId = subAccounts.createAccount(address(this), manager);
 
     cashAsset.setSmFeeRecipient(smAccId);
-    cashAsset.setLiquidationModule(liquidation);
+    cashAsset.setLiquidationModule(IDutchAuction(liquidation));
   }
 
   function testDepositIntoSM() public {

@@ -143,7 +143,7 @@ contract IntegrationTestBase is Test {
     stableFeed = new MockFeeds();
     stableFeed.setSpot(1e18, 1e18);
 
-    cash.setLiquidationModule(address(auction));
+    cash.setLiquidationModule(auction);
     cash.setSmFeeRecipient(securityModule.accountId());
     smAcc = securityModule.accountId();
 

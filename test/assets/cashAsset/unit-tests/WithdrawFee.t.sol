@@ -9,9 +9,11 @@ import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
 
+import "../../../../src/interfaces/IDutchAuction.sol";
 /**
  * @dev tests for scenarios where insolvent is triggered by the liquidation module
  */
+
 contract UNIT_CashAssetWithdrawFee is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
@@ -32,7 +34,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
 
     rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(subAccounts, usdc, rateModel);
-    cashAsset.setLiquidationModule(liquidationModule);
+    cashAsset.setLiquidationModule(IDutchAuction(liquidationModule));
 
     cashAsset.setWhitelistManager(address(manager), true);
 
