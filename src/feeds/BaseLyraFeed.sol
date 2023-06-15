@@ -90,7 +90,6 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
     }
   }
 
-
   function hashFeedData(FeedData memory feedData) public pure returns (bytes32) {
     return
       keccak256(abi.encode(FEED_DATA_TYPEHASH, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));

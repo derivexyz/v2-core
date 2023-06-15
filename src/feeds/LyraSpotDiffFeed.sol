@@ -64,9 +64,8 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
    * @notice Parse input data and update spotDiff
    */
   function acceptData(bytes calldata data) external override {
-    // parse data as SpotDiffData
     FeedData memory feedData = abi.decode(data, (FeedData));
-    // verify signature
+
     _verifyFeedData(feedData);
 
     // ignore if timestamp is lower or equal to current

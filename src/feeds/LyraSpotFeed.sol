@@ -45,9 +45,7 @@ contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
    * @notice Parse input data and update spot price
    */
   function acceptData(bytes calldata data) external override {
-    // parse data as SpotData
     FeedData memory feedData = abi.decode(data, (FeedData));
-    // verify signature
 
     _verifyFeedData(feedData);
 
