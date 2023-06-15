@@ -52,7 +52,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   uint public numHugeInsolventAuctions;
 
   /// @dev if an insolvent account has margin lower than this number, it will block from withdrawing cash
-  int public netMarginBlockingThreshold;
+  int public withdrawBlockThreshold;
 
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint accountId => Auction) public auctions;
@@ -122,9 +122,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /**
    * @notice Sets the threshold, below which an auction will block cash withdraw to prevent bank-run
    */
-  function setWithdrawBlockThreshold(int _netMarginBlockingThreshold) external onlyOwner {
-    if (_netMarginBlockingThreshold > 0) revert DA_InvalidWithdrawBlockThreshold();
-    netMarginBlockingThreshold = _netMarginBlockingThreshold;
+  function setWithdrawBlockThreshold(int _withdrawBlockThreshold) external onlyOwner {
+    if (_withdrawBlockThreshold > 0) revert DA_InvalidWithdrawBlockThreshold();
+    withdrawBlockThreshold = _withdrawBlockThreshold;
   }
 
   /////////////////////
@@ -445,7 +445,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // negative amount in cash, -100e18 means the SM will pay out $100 CASH at most
     int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScalar);
 
-    bool shouldPauseWithdraw = mm < netMarginBlockingThreshold;
+    bool shouldPauseWithdraw = mm < withdrawBlockThreshold;
 
     // increase total amount of insolvent auctions blocking withdraw
     if (shouldPauseWithdraw) numHugeInsolventAuctions += 1;

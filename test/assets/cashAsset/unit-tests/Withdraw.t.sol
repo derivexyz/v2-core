@@ -74,6 +74,12 @@ contract UNIT_CashAssetWithdraw is Test {
     cashAsset.withdraw(accountId, 100 ether, address(this));
   }
 
+  function testCannotWithdrawIfLockedFromAuctionModule() public {
+    auction.setMockBlockWithdraw(true);
+    vm.expectRevert(ICashAsset.CA_WithdrawBlockedByOngoingAuction.selector);
+    cashAsset.withdraw(accountId, 100 ether, address(this));
+  }
+
   function testCannotWithdrawFromAccountNotControlledByTrustedManager() public {
     uint badAccount = subAccounts.createAccount(address(this), badManager);
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
@@ -112,6 +118,13 @@ contract UNIT_CashAssetWithdraw is Test {
 
   function testCannotForceWithdrawFromNonManager() public {
     vm.expectRevert(ICashAsset.CA_ForceWithdrawNotAuthorized.selector);
+    cashAsset.forceWithdraw(accountId);
+  }
+
+  function testCannotForceWithdrawIfLockedFromAuctionModule() public {
+    auction.setMockBlockWithdraw(true);
+    vm.expectRevert(ICashAsset.CA_WithdrawBlockedByOngoingAuction.selector);
+    vm.prank(address(manager));
     cashAsset.forceWithdraw(accountId);
   }
 

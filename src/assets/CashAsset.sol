@@ -374,6 +374,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     if (msg.sender != address(subAccounts.manager(accountId))) {
       revert CA_ForceWithdrawNotAuthorized();
     }
+    if (liquidationModule.getIsWithdrawBlocked()) revert CA_WithdrawBlockedByOngoingAuction();
     address owner = subAccounts.ownerOf(accountId);
     int balance = subAccounts.getBalance(accountId, ICashAsset(address(this)), 0);
     if (balance < 0) {
