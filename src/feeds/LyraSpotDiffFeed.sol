@@ -20,10 +20,6 @@ import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
  * @notice Feed that returns the total of a spot feed and the updated feed value
  */
 contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
-  bytes32 public constant SPOT_DIFF_DATA_TYPEHASH = keccak256(
-    "SpotDiffData(int96 spotDiff,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
-  );
-
   ISpotFeed public spotFeed;
 
   SpotDiffDetail public spotDiffDetails;
@@ -69,26 +65,20 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
    */
   function acceptData(bytes calldata data) external override {
     // parse data as SpotDiffData
-    SpotDiffData memory diffData = abi.decode(data, (SpotDiffData));
+    FeedData memory feedData = abi.decode(data, (FeedData));
     // verify signature
-    bytes32 structHash = hashSpotDiffData(diffData);
-
-    _verifySignatureDetails(diffData.signer, structHash, diffData.signature, diffData.deadline, diffData.timestamp);
+    _verifyFeedData(feedData);
 
     // ignore if timestamp is lower or equal to current
-    if (diffData.timestamp <= spotDiffDetails.timestamp) return;
+    if (feedData.timestamp <= spotDiffDetails.timestamp) return;
 
-    if (diffData.confidence > 1e18) {
-      revert LSDF_InvalidConfidence();
-    }
+    (int96 spotDiff, uint64 confidence) = abi.decode(feedData.data, (int96, uint64));
+
+    if (confidence > 1e18) revert LSDF_InvalidConfidence();
 
     // update spotDiff
-    spotDiffDetails = SpotDiffDetail(diffData.spotDiff, diffData.confidence, diffData.timestamp);
+    spotDiffDetails = SpotDiffDetail(spotDiff, confidence, feedData.timestamp);
 
-    emit SpotDiffUpdated(diffData.signer, diffData.spotDiff, diffData.confidence, diffData.timestamp);
-  }
-
-  function hashSpotDiffData(SpotDiffData memory diffData) public pure returns (bytes32) {
-    return keccak256(abi.encode(SPOT_DIFF_DATA_TYPEHASH, diffData.spotDiff, diffData.confidence, diffData.timestamp));
+    emit SpotDiffUpdated(feedData.signer, spotDiff, confidence, feedData.timestamp);
   }
 }

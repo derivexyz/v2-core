@@ -553,20 +553,15 @@ contract IntegrationTestBase is Test {
 
     int96 diff = int96(int(price) - int(spot));
 
-    ILyraSpotDiffFeed.SpotDiffData memory diffData = ILyraSpotDiffFeed.SpotDiffData({
-      spotDiff: diff,
-      confidence: conf,
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: abi.encode(diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
       signature: new bytes(0)
     });
 
-    // sign data
-    bytes32 structHash = perpFeed.hashSpotDiffData(diffData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(perpFeed.domainSeparator(), structHash));
-    diffData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(diffData);
+    bytes memory data = _signFeedData(perpFeed, keeperPk, feedData);
 
     perpFeed.acceptData(data);
   }
