@@ -597,10 +597,9 @@ contract IntegrationTestBase is Test {
 
   function _setInterestRate(string memory key, uint64 expiry, int96 rate, uint64 conf) internal {
     LyraRateFeed rateFeed = markets[key].rateFeed;
-    ILyraRateFeed.RateData memory rateData = ILyraRateFeed.RateData({
-      expiry: expiry,
-      rate: rate,
-      confidence: conf,
+    bytes memory rateData = abi.encode(expiry, rate, conf);
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: rateData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
@@ -608,10 +607,7 @@ contract IntegrationTestBase is Test {
     });
 
     // sign data
-    bytes32 structHash = rateFeed.hashRateData(rateData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(rateFeed.domainSeparator(), structHash));
-    rateData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(rateData);
+    bytes memory data = _signFeedData(rateFeed, keeperPk, feedData);
 
     rateFeed.acceptData(data);
   }
