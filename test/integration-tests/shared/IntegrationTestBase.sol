@@ -579,13 +579,10 @@ contract IntegrationTestBase is Test {
 
     LyraVolFeed volFeed = markets[key].volFeed;
 
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData(expiry, fwdPrice);
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultVolData(expiry, fwdPrice);
 
     // sign data
-    bytes32 structHash = volFeed.hashVolData(volData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(volFeed.domainSeparator(), structHash));
-    volData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(volData);
+    bytes memory data = _signFeedData(volFeed, keeperPk, feedData);
 
     volFeed.acceptData(data);
   }
@@ -702,18 +699,20 @@ contract IntegrationTestBase is Test {
     pmrm.setScenarios(scenarios);
   }
 
-  function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (ILyraVolFeed.VolData memory) {
+  function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (IBaseLyraFeed.FeedData memory) {
+    int SVI_a = 1e18;
+    uint SVI_b = 1.5e18;
+    int SVI_rho = -0.1e18;
+    int SVI_m = -0.05e18;
+    uint SVI_sigma = 0.05e18;
+    uint SVI_fwd = fwdPrice;
+    uint64 SVI_refTao = uint64(Black76.annualise(uint64(expiry - block.timestamp)));
+    uint64 confidence = 1e18;
+
     // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
-    return ILyraVolFeed.VolData({
-      expiry: expiry,
-      SVI_a: 1e18,
-      SVI_b: 1.5e18,
-      SVI_rho: -0.1e18,
-      SVI_m: -0.05e18,
-      SVI_sigma: 0.05e18,
-      SVI_fwd: fwdPrice,
-      SVI_refTao: uint64(Black76.annualise(uint64(expiry - block.timestamp))),
-      confidence: 1e18,
+    bytes memory volData = abi.encode(expiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTao, confidence);
+    return IBaseLyraFeed.FeedData({
+      data: volData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
