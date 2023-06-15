@@ -484,24 +484,18 @@ contract IntegrationTestBase is Test {
 
     int96 diff = int96(int(price) - int(spot));
 
-    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = ILyraForwardFeed.ForwardAndSettlementData({
-      expiry: expiry,
-      fwdSpotDifference: diff,
-      settlementStartAggregate: price * uint(expiry - feed.SETTLEMENT_TWAP_DURATION()),
-      currentSpotAggregate: price * uint(expiry),
-      confidence: 1e18,
+    uint startAggregate = price * uint(expiry - feed.SETTLEMENT_TWAP_DURATION());
+    uint currAggregate = price * uint(expiry);
+
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: abi.encode(expiry, startAggregate, currAggregate, diff, 1e18),
       timestamp: uint64(expiry), // timestamp need to be expiry to be used as settlement data
       deadline: block.timestamp + 5,
       signer: keeper,
       signature: new bytes(0)
     });
 
-    bytes32 structHash = feed.hashForwardData(fwdData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
-    fwdData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(fwdData);
-    // submit to feed
-    feed.acceptData(data);
+    feed.acceptData(_signFeedData(feed, keeperPk, feedData));
   }
 
   function _getForwardPrice(string memory key, uint expiry) internal view returns (uint, uint) {
@@ -520,24 +514,15 @@ contract IntegrationTestBase is Test {
 
     int96 diff = int96(int(price) - int(spot));
 
-    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = ILyraForwardFeed.ForwardAndSettlementData({
-      expiry: expiry,
-      fwdSpotDifference: diff,
-      settlementStartAggregate: 0,
-      currentSpotAggregate: 0,
-      confidence: conf,
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: abi.encode(expiry, 0, 0, diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
       signature: new bytes(0)
     });
 
-    bytes32 structHash = feed.hashForwardData(fwdData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
-    fwdData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(fwdData);
-    // submit to feed
-    feed.acceptData(data);
+    feed.acceptData(_signFeedData(feed, keeperPk, feedData));
   }
 
   function _getPerpPrice(string memory key) internal view returns (uint, uint) {

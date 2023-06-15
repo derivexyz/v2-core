@@ -4,21 +4,6 @@ pragma solidity ^0.8.18;
 import {ISpotFeed} from "./ISpotFeed.sol";
 
 interface ILyraForwardFeed {
-  struct ForwardAndSettlementData {
-    uint64 expiry;
-    // Difference between forward price and spot price
-    int96 fwdSpotDifference;
-    uint settlementStartAggregate;
-    uint currentSpotAggregate;
-    uint64 confidence;
-    uint64 timestamp;
-    // the latest timestamp you can use this data
-    uint deadline;
-    // signature v, r, s
-    address signer;
-    bytes signature;
-  }
-
   /// @dev structure to store in contract storage
   struct ForwardDetails {
     int96 fwdSpotDifference;
