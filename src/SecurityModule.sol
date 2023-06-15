@@ -8,12 +8,12 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IAllowances} from "src/interfaces/IAllowances.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IManager} from "src/interfaces/IManager.sol";
-import {ICashAsset} from "src/interfaces/ICashAsset.sol";
-import {ISecurityModule} from "src/interfaces/ISecurityModule.sol";
+import {IAsset} from "./interfaces/IAsset.sol";
+import {IAllowances} from "./interfaces/IAllowances.sol";
+import {ISubAccounts} from "./interfaces/ISubAccounts.sol";
+import {IManager} from "./interfaces/IManager.sol";
+import {ICashAsset} from "./interfaces/ICashAsset.sol";
+import {ISecurityModule} from "./interfaces/ISecurityModule.sol";
 
 /**
  * @title SecurityModule

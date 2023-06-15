@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
-import {IGlobalSubIdOITracking} from "src/interfaces/IGlobalSubIdOITracking.sol";
+import {IAsset} from "./IAsset.sol";
+import {IPositionTracking} from "./IPositionTracking.sol";
+import {IGlobalSubIdOITracking} from "./IGlobalSubIdOITracking.sol";
 
 /**
  * @title IPerpAsset

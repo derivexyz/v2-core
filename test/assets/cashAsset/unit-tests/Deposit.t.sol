@@ -9,6 +9,7 @@ import "../mocks/MockInterestRateModel.sol";
 
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
+import {IManagerWhitelist} from "../../../../src/interfaces/IManagerWhitelist.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process

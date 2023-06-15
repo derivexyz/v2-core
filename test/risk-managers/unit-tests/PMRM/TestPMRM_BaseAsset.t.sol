@@ -5,6 +5,8 @@ import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 import "src/periphery/PerpSettlementHelper.sol";
 import "src/periphery/OptionSettlementHelper.sol";
 
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
+
 import "forge-std/console2.sol";
 
 contract TestPMRM_BaseAsset is PMRMTestBase {

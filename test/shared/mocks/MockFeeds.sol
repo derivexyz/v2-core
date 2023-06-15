@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
-import {IVolFeed} from "src/interfaces/IVolFeed.sol";
-import {IInterestRateFeed} from "src/interfaces/IInterestRateFeed.sol";
-import {IForwardFeed} from "src/interfaces/IForwardFeed.sol";
-import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
+import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
+import {IVolFeed} from "../../../src/interfaces/IVolFeed.sol";
+import {IInterestRateFeed} from "../../../src/interfaces/IInterestRateFeed.sol";
+import {IForwardFeed} from "../../../src/interfaces/IForwardFeed.sol";
+import {ISettlementFeed} from "../../../src/interfaces/ISettlementFeed.sol";
 
-import {IDataReceiver} from "src/interfaces/IDataReceiver.sol";
-import {IAllowList} from "src/interfaces/IAllowList.sol";
+import {IDataReceiver} from "../../../src/interfaces/IDataReceiver.sol";
+import {IAllowList} from "../../../src/interfaces/IAllowList.sol";
 
 contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver, IAllowList {
   uint public spot;

@@ -31,7 +31,7 @@ import "src/feeds/LyraForwardFeed.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "forge-std/console2.sol";
+import {IPMRMLib} from "../../../src/interfaces/IPMRMLib.sol";
 
 /**
  * @dev real Accounts contract

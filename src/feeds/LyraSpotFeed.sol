@@ -2,11 +2,11 @@
 pragma solidity ^0.8.18;
 
 // inherited
-import "src/feeds/BaseLyraFeed.sol";
+import "./BaseLyraFeed.sol";
 
 // interfaces
-import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
-import {ILyraSpotFeed} from "src/interfaces/ILyraSpotFeed.sol";
+import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
+import {ILyraSpotFeed} from "../interfaces/ILyraSpotFeed.sol";
 
 /**
  * @title LyraSpotFeed

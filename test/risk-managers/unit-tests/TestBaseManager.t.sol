@@ -14,7 +14,7 @@ import "src/risk-managers/BaseManager.sol";
 
 import "src/feeds/AllowList.sol";
 
-import "../../shared/mocks/MockAsset.sol";
+import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockOption.sol";

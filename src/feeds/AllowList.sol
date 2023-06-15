@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 // inherited
-import "src/feeds/BaseLyraFeed.sol";
+import "./BaseLyraFeed.sol";
 
 // interfaces
-import {IAllowList} from "src/interfaces/IAllowList.sol";
+import {IAllowList} from "../interfaces/IAllowList.sol";
 
 /**
  * @title AllowList

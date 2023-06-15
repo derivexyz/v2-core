@@ -5,6 +5,9 @@ import "src/periphery/OptionSettlementHelper.sol";
 
 import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
+
 import "forge-std/console2.sol";
 
 contract TestPMRM_Settlement is PMRMTestBase {

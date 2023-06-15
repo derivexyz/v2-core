@@ -3,16 +3,16 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import {ISubAccounts} from "./interfaces/ISubAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "./interfaces/IAsset.sol";
+import {IManager} from "./interfaces/IManager.sol";
 import {Allowances} from "./Allowances.sol";
-import "./libraries/AssetDeltaLib.sol";
-import "./libraries/PermitAllowanceLib.sol";
+import {AssetDeltaLib} from "./libraries/AssetDeltaLib.sol";
+import {PermitAllowanceLib} from "./libraries/PermitAllowanceLib.sol";
 
 /**
  * @title SubAccounts
@@ -167,7 +167,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    * @param delegate address to assign allowance to
    * @param allowances positive and negative amounts for each asset
    */
-  function setAssetAllowances(uint accountId, address delegate, IAllowances.AssetAllowance[] memory allowances)
+  function setAssetAllowances(uint accountId, address delegate, AssetAllowance[] memory allowances)
     external
     onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
   {

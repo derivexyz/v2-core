@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "openzeppelin/token/ERC721/IERC721.sol";
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IManager} from "src/interfaces/IManager.sol";
+import {IERC721} from "openzeppelin/token/ERC721/IERC721.sol";
+import {IAsset} from "./IAsset.sol";
+import {IManager} from "./IManager.sol";
 
-import {IAllowances} from "src/interfaces/IAllowances.sol";
+import {IAllowances} from "./IAllowances.sol";
 
 // For full documentation refer to src/SubAccounts.sol";
 interface ISubAccounts is IERC721 {

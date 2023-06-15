@@ -3,11 +3,12 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/token/ERC20/IERC20.sol";
 
-import "./MockAsset.sol";
-import "./MockPositionTracking.sol";
-import "./MockGlobalSubIdOITracking.sol";
+import {MockAsset} from "./MockAsset.sol";
+import {MockPositionTracking} from "./MockPositionTracking.sol";
+import {MockGlobalSubIdOITracking} from "./MockGlobalSubIdOITracking.sol";
 
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
+import {IPerpAsset} from "../../../src/interfaces/IPerpAsset.sol";
+import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";
 
 contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking, IPerpAsset {
   mapping(uint => int) mockedFunding;

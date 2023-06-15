@@ -2,11 +2,11 @@
 pragma solidity ^0.8.18;
 
 // interfaces
-import {ILiquidatableManager} from "src/interfaces/ILiquidatableManager.sol";
-import {ISecurityModule} from "src/interfaces/ISecurityModule.sol";
-import {ICashAsset} from "src/interfaces/ICashAsset.sol";
-import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
-import "src/SubAccounts.sol";
+import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
+import {ISecurityModule} from "../interfaces/ISecurityModule.sol";
+import {ICashAsset} from "../interfaces/ICashAsset.sol";
+import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
+import {SubAccounts} from "../SubAccounts.sol";
 
 // inherited
 import "openzeppelin/utils/math/SafeMath.sol";

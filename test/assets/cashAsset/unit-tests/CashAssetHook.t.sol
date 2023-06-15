@@ -8,7 +8,9 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
 
 import "../../../../src/assets/CashAsset.sol";
-import "../../../../src/interfaces/ISubAccounts.sol";
+import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
+import {ICashAsset} from "../../../../src/interfaces/ICashAsset.sol";
+import {IManagerWhitelist} from "../../../../src/interfaces/IManagerWhitelist.sol";
 import "../mocks/MockInterestRateModel.sol";
 
 contract UNIT_CashAssetHook is Test {

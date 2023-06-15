@@ -1,7 +1,7 @@
 pragma solidity ^0.8.13;
 
-import "../../../src/interfaces/IPositionTracking.sol";
-// import "../../../src/interfaces/IGlobalSubIdOITracking.sol";
+import {IPositionTracking} from "../../../src/interfaces/IPositionTracking.sol";
+import {IManager} from "../../../src/interfaces/IManager.sol";
 
 contract MockPositionTracking is IPositionTracking {
   mapping(IManager => uint) public mockedTotalPosition;

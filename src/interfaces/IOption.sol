@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IManager} from "src/interfaces/IManager.sol";
+import {IAsset} from "./IAsset.sol";
+import {IManager} from "./IManager.sol";
 
-import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
+import {IPositionTracking} from "./IPositionTracking.sol";
 import {IGlobalSubIdOITracking} from "./IGlobalSubIdOITracking.sol";
 
 interface IOption is IAsset, IPositionTracking, IGlobalSubIdOITracking {

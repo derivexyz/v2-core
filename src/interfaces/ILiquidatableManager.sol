@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IOption} from "src/interfaces/IOption.sol";
+import {IBaseManager} from "./IBaseManager.sol";
+import {IPerpAsset} from "./IPerpAsset.sol";
+import {IOption} from "./IOption.sol";
 
 interface ILiquidatableManager is IBaseManager {
   /**

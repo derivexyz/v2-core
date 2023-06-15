@@ -6,15 +6,15 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/assets/utils/ManagerWhitelist.sol";
+import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
-import {IOption} from "src/interfaces/IOption.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IManager} from "src/interfaces/IManager.sol";
-import {ISettlementFeed} from "src/interfaces/ISettlementFeed.sol";
+import {IOption} from "../interfaces/IOption.sol";
+import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
+import {IManager} from "../interfaces/IManager.sol";
+import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 
-import {PositionTracking} from "src/assets/utils/PositionTracking.sol";
-import {GlobalSubIdOITracking} from "src/assets/utils/GlobalSubIdOITracking.sol";
+import {PositionTracking} from "./utils/PositionTracking.sol";
+import {GlobalSubIdOITracking} from "./utils/GlobalSubIdOITracking.sol";
 
 /**
  * @title Option

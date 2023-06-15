@@ -10,12 +10,12 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IManager} from "src/interfaces/IManager.sol";
-import {ICashAsset} from "src/interfaces/ICashAsset.sol";
-import {IInterestRateModel} from "src/interfaces/IInterestRateModel.sol";
+import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
+import {IManager} from "../interfaces/IManager.sol";
+import {ICashAsset} from "../interfaces/ICashAsset.sol";
+import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
 
-import "src/assets/utils/ManagerWhitelist.sol";
+import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
 /**
  * @title Cash asset with built-in lending feature.

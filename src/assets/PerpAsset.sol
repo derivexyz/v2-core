@@ -10,17 +10,17 @@ import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {ISpotFeed} from "src/interfaces/ISpotFeed.sol";
-import {ISpotDiffFeed} from "src/interfaces/ISpotDiffFeed.sol";
+import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
+import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
+import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
+import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
 
-import {IManager} from "src/interfaces/IManager.sol";
+import {IManager} from "../interfaces/IManager.sol";
 
-import "src/assets/utils/ManagerWhitelist.sol";
+import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
-import "src/assets/utils/PositionTracking.sol";
-import "src/assets/utils/GlobalSubIdOITracking.sol";
+import {PositionTracking} from "./utils/PositionTracking.sol";
+import {GlobalSubIdOITracking} from "./utils/GlobalSubIdOITracking.sol";
 
 /**
  * @title PerpAsset
