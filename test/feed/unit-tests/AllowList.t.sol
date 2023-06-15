@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
+import "./LyraFeedTestUtils.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
 import "src/feeds/AllowList.sol";
@@ -9,10 +9,8 @@ import "src/feeds/AllowList.sol";
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
  */
-contract UNIT_AllowList is Test {
+contract UNIT_AllowList is LyraFeedTestUtils {
   AllowList feed;
-
-  bytes32 domainSeparator;
 
   // signer
   uint private pk;
@@ -21,7 +19,6 @@ contract UNIT_AllowList is Test {
 
   function setUp() public {
     feed = new AllowList();
-    domainSeparator = feed.domainSeparator();
 
     // set signer
     pk = 0xBEEF;
@@ -29,10 +26,6 @@ contract UNIT_AllowList is Test {
 
     vm.warp(block.timestamp + 365 days);
     feed.addSigner(pkOwner, true);
-  }
-
-  function testDomainSeparator() public {
-    assertEq(feed.domainSeparator(), domainSeparator);
   }
 
   function testCanAddSigner() public {
@@ -48,8 +41,8 @@ contract UNIT_AllowList is Test {
     feed.setAllowListEnabled(true);
     assertEq(feed.canTrade(defaultUser), false);
 
-    IAllowList.AllowListData memory allowListData = _getDefaultAllowListData();
-    bytes memory data = _getSignedAllowListData(pk, allowListData);
+    IBaseLyraFeed.FeedData memory allowListData = _getDefaultAllowListData();
+    bytes memory data = _signFeedData(feed, pk, allowListData);
 
     feed.acceptData(data);
 
@@ -59,49 +52,29 @@ contract UNIT_AllowList is Test {
   function testCanTradeStates() public {
     feed.setAllowListEnabled(true);
 
-    IAllowList.AllowListData memory allowListData = _getDefaultAllowListData();
+    IBaseLyraFeed.FeedData memory allowListData = _getDefaultAllowListData();
     allowListData.timestamp = uint64(block.timestamp - 10);
 
-    feed.acceptData(_getSignedAllowListData(pk, allowListData));
+    feed.acceptData(_signFeedData(feed, pk, allowListData));
 
-    allowListData.allowed = false;
-    feed.acceptData(_getSignedAllowListData(pk, allowListData));
+    allowListData.data = abi.encode(defaultUser, false);
+    feed.acceptData(_signFeedData(feed, pk, allowListData));
 
     assertEq(feed.canTrade(defaultUser), true);
 
     allowListData.timestamp = uint64(block.timestamp);
-    feed.acceptData(_getSignedAllowListData(pk, allowListData));
+    feed.acceptData(_signFeedData(feed, pk, allowListData));
 
     assertEq(feed.canTrade(defaultUser), false);
   }
 
-  function _getDefaultAllowListData() internal view returns (IAllowList.AllowListData memory allowListData) {
-    return IAllowList.AllowListData({
-      user: defaultUser,
-      allowed: true,
+  function _getDefaultAllowListData() internal view returns (IBaseLyraFeed.FeedData memory allowListData) {
+    return IBaseLyraFeed.FeedData({
+      data: abi.encode(defaultUser, true),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: pkOwner,
       signature: new bytes(0)
     });
-  }
-
-  function _getSignedAllowListData(uint privateKey, IAllowList.AllowListData memory allowListData)
-    internal
-    view
-    returns (bytes memory data)
-  {
-    allowListData.signature = _signAllowListData(privateKey, allowListData);
-    return abi.encode(allowListData);
-  }
-
-  function _signAllowListData(uint privateKey, IAllowList.AllowListData memory allowListData)
-    internal
-    view
-    returns (bytes memory)
-  {
-    bytes32 structHash = feed.hashAllowListData(allowListData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-    return bytes.concat(r, s, bytes1(v));
   }
 }

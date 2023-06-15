@@ -13,10 +13,6 @@ import {IAllowList} from "../interfaces/IAllowList.sol";
  * @notice Tracks users that are allowed to trade
  */
 contract AllowList is BaseLyraFeed, IAllowList {
-  bytes32 public constant ALLOW_LIST_DATA_TYPEHASH = keccak256(
-    "AllowListData(address user,bool allowed,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
-  );
-
   // @dev If disabled, all users can trade
   bool public allowListEnabled;
   // user => allowed
@@ -57,37 +53,19 @@ contract AllowList is BaseLyraFeed, IAllowList {
    * @notice Parse input data and update the allowlist
    */
   function acceptData(bytes calldata data) external override {
-    AllowListData memory allowListData = abi.decode(data, (AllowListData));
+    FeedData memory feedData = abi.decode(data, (FeedData));
 
-    bytes32 structHash = hashAllowListData(allowListData);
+    _verifyFeedData(feedData);
 
-    _verifySignatureDetails(
-      allowListData.signer, structHash, allowListData.signature, allowListData.deadline, allowListData.timestamp
-    );
+    (address user, bool allowed) = abi.decode(feedData.data, (address, bool));
 
-    if (allowListDetails[allowListData.user].timestamp >= allowListData.timestamp) {
+    if (allowListDetails[user].timestamp >= feedData.timestamp) {
       return;
     }
 
-    AllowListDetails memory details =
-      AllowListDetails({timestamp: allowListData.timestamp, allowed: allowListData.allowed});
-    allowListDetails[allowListData.user] = details;
+    AllowListDetails memory details = AllowListDetails({timestamp: feedData.timestamp, allowed: allowed});
+    allowListDetails[user] = details;
 
-    emit AllowListUpdated(allowListData.signer, allowListData.user, details);
-  }
-
-  /**
-   * @dev return the hash of the allowListData object
-   */
-  function hashAllowListData(AllowListData memory allowListData) public pure returns (bytes32) {
-    return keccak256(
-      abi.encode(
-        ALLOW_LIST_DATA_TYPEHASH,
-        allowListData.signer,
-        allowListData.user,
-        allowListData.allowed,
-        allowListData.timestamp
-      )
-    );
+    emit AllowListUpdated(feedData.signer, user, details);
   }
 }
