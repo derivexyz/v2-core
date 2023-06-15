@@ -204,6 +204,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    */
   function withdraw(uint accountId, uint stableAmount, address recipient) external {
     if (msg.sender != subAccounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
+    if (liquidationModule.getIsWithdrawBlocked()) revert CA_WithdrawBlockedByOngoingAuction();
 
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.

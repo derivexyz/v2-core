@@ -6,6 +6,7 @@ import "forge-std/console2.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
+import "../../../risk-managers/mocks/MockDutchAuction.sol";
 import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
@@ -22,6 +23,7 @@ contract UNIT_CashAssetWithdraw is Test {
   MockManager badManager;
   SubAccounts subAccounts;
   IInterestRateModel rateModel;
+  MockDutchAuction auction;
   address badActor = address(0x0fac);
 
   uint accountId;
@@ -35,10 +37,13 @@ contract UNIT_CashAssetWithdraw is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
+    auction = new MockDutchAuction();
+
     rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(subAccounts, usdc, rateModel);
 
     cashAsset.setWhitelistManager(address(manager), true);
+    cashAsset.setLiquidationModule(auction);
 
     // 10000 USDC with 18 decimals
     depositedAmount = 10000 ether;
@@ -141,6 +146,7 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
   MockManager manager;
   SubAccounts subAccounts;
   IInterestRateModel rateModel;
+  MockDutchAuction auction;
 
   uint accountId;
 
@@ -151,6 +157,8 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
+    auction = new MockDutchAuction();
+
     // usdc as 20 decimals
     usdc.setDecimals(20);
 
@@ -158,6 +166,7 @@ contract UNIT_CashAssetWithdrawLargeDecimals is Test {
     cashAsset = new CashAsset(subAccounts, usdc, rateModel);
 
     cashAsset.setWhitelistManager(address(manager), true);
+    cashAsset.setLiquidationModule(auction);
 
     // 10000 USDC with 20 decimals
     uint depositAmount = 10000 * 1e20;

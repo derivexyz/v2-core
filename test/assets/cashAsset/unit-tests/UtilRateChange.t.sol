@@ -242,7 +242,7 @@ contract UNIT_InterestRateScenario is Test {
     return abi.decode(vm.parseJson(json, key), (Event[]));
   }
 
-  function getShouldBlockWithdraw() public pure returns (bool) {
+  function getIsWithdrawBlocked() public pure returns (bool) {
     return false;
   }
 }

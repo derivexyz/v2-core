@@ -55,7 +55,10 @@ interface IDutchAuction {
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
+
   function startForcedAuction(uint accountId, uint scenarioId) external;
+
+  function getIsWithdrawBlocked() external view returns (bool);
 
   ////////////
   // EVENTS //

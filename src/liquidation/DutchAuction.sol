@@ -404,7 +404,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return _getMarginAndMarkToMarket(accountId, scenarioId);
   }
 
-  function getShouldBlockWithdraw() external view returns (bool) {
+  function getIsWithdrawBlocked() external view returns (bool) {
     return numHugeInsolventAuctions > 0;
   }
 
