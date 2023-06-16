@@ -67,6 +67,9 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
     }
   }
 
+  /**
+   * @dev parse data into FeedDa and verify signature, deadline and signed timestamp
+   */
   function _parseAndVerifyFeedData(bytes memory data) internal view returns (FeedData memory feedData) {
     feedData = abi.decode(data, (FeedData));
     bytes32 hashedData = hashFeedData(feedData);
@@ -85,7 +88,7 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
       revert BLF_DataExpired();
     }
 
-    // cannot set price in the future
+    // signed timestamp cannot be in the future
     if (feedData.timestamp > block.timestamp) {
       revert BLF_InvalidTimestamp();
     }
