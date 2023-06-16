@@ -25,10 +25,6 @@ import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
  *  spot feed needs to be updated more frequently.
  */
 contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettlementFeed {
-  bytes32 public constant FORWARD_DATA_TYPEHASH = keccak256(
-    "ForwardData(uint64 expiry,uint256 settlementStartAggregate,uint256 currentSpotAggregate,int96 fwdSpotDifference,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
-  );
-
   uint64 public constant SETTLEMENT_TWAP_DURATION = 30 minutes;
 
   ISpotFeed public spotFeed;
@@ -181,12 +177,9 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     return (fixedPortion, variablePortion);
   }
 
-  function _verifySettlementDataValid(ForwardAndSettlementData memory forwardData) internal pure {
-    if (
-      forwardData.settlementStartAggregate == 0 //
-        || forwardData.currentSpotAggregate == 0
-        || forwardData.settlementStartAggregate >= forwardData.currentSpotAggregate
-    ) {
+  function _verifySettlementDataValid(uint settlementStartAggregate, uint currentSpotAggregate) internal pure {
+    if (settlementStartAggregate == 0 || currentSpotAggregate == 0 || settlementStartAggregate >= currentSpotAggregate)
+    {
       revert LFF_InvalidSettlementData();
     }
   }
@@ -196,62 +189,42 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   /////////////////////////
 
   function acceptData(bytes calldata data) external override {
-    // parse data as ForwardData
-    ForwardAndSettlementData memory forwardData = abi.decode(data, (ForwardAndSettlementData));
-    // verify signature
-    bytes32 structHash = hashForwardData(forwardData);
-    _verifySignatureDetails(
-      forwardData.signer, structHash, forwardData.signature, forwardData.deadline, forwardData.timestamp
-    );
+    FeedData memory feedData = _parseAndVerifyFeedData(data);
+
+    (
+      uint64 expiry,
+      uint settlementStartAggregate,
+      uint currentSpotAggregate,
+      int96 fwdSpotDifference,
+      uint64 confidence
+    ) = abi.decode(feedData.data, (uint64, uint, uint, int96, uint64));
 
     // ignore if timestamp is lower or equal to current
-    if (forwardData.timestamp <= forwardDetails[forwardData.expiry].timestamp) return;
+    if (feedData.timestamp <= forwardDetails[expiry].timestamp) return;
 
-    if (forwardData.confidence > 1e18) {
+    if (confidence > 1e18) {
       revert LFF_InvalidConfidence();
     }
 
-    if (forwardData.timestamp > forwardData.expiry) {
+    if (feedData.timestamp > expiry) {
       revert LFF_InvalidFwdDataTimestamp();
     }
 
     SettlementDetails memory settlementData;
-    if (forwardData.timestamp >= forwardData.expiry - SETTLEMENT_TWAP_DURATION) {
+    if (feedData.timestamp >= expiry - SETTLEMENT_TWAP_DURATION) {
       // Settlement data, must include spot aggregate values
-      _verifySettlementDataValid(forwardData);
+      _verifySettlementDataValid(settlementStartAggregate, currentSpotAggregate);
 
-      settlementData = SettlementDetails({
-        settlementStartAggregate: forwardData.settlementStartAggregate,
-        currentSpotAggregate: forwardData.currentSpotAggregate
-      });
+      settlementData = SettlementDetails(settlementStartAggregate, currentSpotAggregate);
 
-      settlementDetails[forwardData.expiry] = settlementData;
+      settlementDetails[expiry] = settlementData;
     }
 
     // always update forward
-    ForwardDetails memory forwardDetail = ForwardDetails({
-      fwdSpotDifference: forwardData.fwdSpotDifference,
-      confidence: forwardData.confidence,
-      timestamp: forwardData.timestamp
-    });
-    forwardDetails[forwardData.expiry] = forwardDetail;
+    ForwardDetails memory forwardDetail =
+      ForwardDetails({fwdSpotDifference: fwdSpotDifference, confidence: confidence, timestamp: feedData.timestamp});
+    forwardDetails[expiry] = forwardDetail;
 
-    emit ForwardDataUpdated(forwardData.expiry, forwardData.signer, forwardDetail, settlementData);
-  }
-
-  /**
-   * @dev return the hash of the spotData object
-   */
-  function hashForwardData(ForwardAndSettlementData memory forwardData) public pure returns (bytes32) {
-    return keccak256(
-      abi.encode(
-        FORWARD_DATA_TYPEHASH,
-        forwardData.fwdSpotDifference,
-        forwardData.settlementStartAggregate,
-        forwardData.currentSpotAggregate,
-        forwardData.confidence,
-        forwardData.timestamp
-      )
-    );
+    emit ForwardDataUpdated(expiry, feedData.signer, forwardDetail, settlementData);
   }
 }

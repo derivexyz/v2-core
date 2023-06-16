@@ -20,13 +20,6 @@ import "lyra-utils/math/SVI.sol";
  */
 contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
   ////////////////////////
-  //     Constants      //
-  ////////////////////////
-  bytes32 public constant VOL_DATA_TYPEHASH = keccak256(
-    "VolData(int256 SVI_a,uint256 SVI_b,int256 SVI_rho,int256 SVI_m,uint256 SVI_sigma,uint256 SVI_fwd,uint64 SVI_refTao,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
-  );
-
-  ////////////////////////
   //      Variable      //
   ////////////////////////
 
@@ -89,54 +82,39 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
    * @notice Parse input data and update spot price
    */
   function acceptData(bytes calldata data) external override {
-    // parse data as SpotData
-    VolData memory volData = abi.decode(data, (VolData));
-    // verify signature
-    bytes32 structHash = hashVolData(volData);
+    FeedData memory feedData = _parseAndVerifyFeedData(data);
 
-    _verifySignatureDetails(volData.signer, structHash, volData.signature, volData.deadline, volData.timestamp);
+    (
+      uint64 expiry,
+      int SVI_a,
+      uint SVI_b,
+      int SVI_rho,
+      int SVI_m,
+      uint SVI_sigma,
+      uint SVI_fwd,
+      uint64 SVI_refTao,
+      uint64 confidence
+    ) = abi.decode(feedData.data, (uint64, int, uint, int, int, uint, uint, uint64, uint64));
 
     // ignore if timestamp is lower than current
-    if (volData.timestamp <= volDetails[volData.expiry].timestamp) return;
+    if (feedData.timestamp <= volDetails[expiry].timestamp) return;
 
-    if (volData.timestamp > volData.expiry) {
-      revert LVF_InvalidVolDataTimestamp();
-    }
+    if (feedData.timestamp > expiry) revert LVF_InvalidVolDataTimestamp();
 
     // update spot price
     VolDetails memory newVolDetails = VolDetails({
-      SVI_a: volData.SVI_a,
-      SVI_b: volData.SVI_b,
-      SVI_rho: volData.SVI_rho,
-      SVI_m: volData.SVI_m,
-      SVI_sigma: volData.SVI_sigma,
-      SVI_fwd: volData.SVI_fwd,
-      SVI_refTao: volData.SVI_refTao,
-      confidence: volData.confidence,
-      timestamp: volData.timestamp
+      SVI_a: SVI_a,
+      SVI_b: SVI_b,
+      SVI_rho: SVI_rho,
+      SVI_m: SVI_m,
+      SVI_sigma: SVI_sigma,
+      SVI_fwd: SVI_fwd,
+      SVI_refTao: SVI_refTao,
+      confidence: confidence,
+      timestamp: feedData.timestamp
     });
-    volDetails[volData.expiry] = newVolDetails;
+    volDetails[expiry] = newVolDetails;
 
-    emit VolDataUpdated(volData.signer, volData.expiry, newVolDetails);
-  }
-
-  /**
-   * @dev return the hash of the spotData object
-   */
-  function hashVolData(VolData memory volData) public pure returns (bytes32) {
-    return keccak256(
-      abi.encode(
-        VOL_DATA_TYPEHASH,
-        volData.SVI_a,
-        volData.SVI_b,
-        volData.SVI_rho,
-        volData.SVI_m,
-        volData.SVI_sigma,
-        volData.SVI_fwd,
-        volData.SVI_refTao,
-        volData.confidence,
-        volData.timestamp
-      )
-    );
+    emit VolDataUpdated(feedData.signer, expiry, newVolDetails);
   }
 }

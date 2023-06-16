@@ -18,6 +18,9 @@ import {IBaseLyraFeed} from "../interfaces/IBaseLyraFeed.sol";
  * @dev Base contract for feeds that use multiple signers and signed messages to update their own data types.
  */
 abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyraFeed {
+  bytes32 public constant FEED_DATA_TYPEHASH =
+    keccak256("FeedData(bytes data,uint256 deadline,uint64 timestamp,address signer,bytes signature)");
+
   ////////////////////////
   //     Variables      //
   ////////////////////////
@@ -64,31 +67,35 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
     }
   }
 
-  function _verifySignatureDetails(
-    address signer,
-    bytes32 dataHash,
-    bytes memory signature,
-    uint deadline,
-    uint64 dataTimestamp
-  ) internal view {
+  /**
+   * @dev parse data into FeedDa and verify signature, deadline and signed timestamp
+   */
+  function _parseAndVerifyFeedData(bytes memory data) internal view returns (FeedData memory feedData) {
+    feedData = abi.decode(data, (FeedData));
+    bytes32 hashedData = hashFeedData(feedData);
     // check the signature is from the signer is valid
-    if (!SignatureChecker.isValidSignatureNow(signer, _hashTypedDataV4(dataHash), signature)) {
+    if (!SignatureChecker.isValidSignatureNow(feedData.signer, _hashTypedDataV4(hashedData), feedData.signature)) {
       revert BLF_InvalidSignature();
     }
 
     // check that it is a valid signer
-    if (!isSigner[signer]) {
+    if (!isSigner[feedData.signer]) {
       revert BLF_InvalidSigner();
     }
 
     // check the deadline
-    if (deadline < block.timestamp) {
+    if (feedData.deadline < block.timestamp) {
       revert BLF_DataExpired();
     }
 
-    // cannot set price in the future
-    if (dataTimestamp > block.timestamp) {
+    // signed timestamp cannot be in the future
+    if (feedData.timestamp > block.timestamp) {
       revert BLF_InvalidTimestamp();
     }
+  }
+
+  function hashFeedData(FeedData memory feedData) public pure returns (bytes32) {
+    return
+      keccak256(abi.encode(FEED_DATA_TYPEHASH, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
   }
 }

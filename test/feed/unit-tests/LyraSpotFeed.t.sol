@@ -4,8 +4,9 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "src/feeds/LyraSpotFeed.sol";
+import "./LyraFeedTestUtils.sol";
 
-contract UNIT_LyraSpotFeed is Test {
+contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
   LyraSpotFeed feed;
 
   bytes32 domainSeparator;
@@ -37,8 +38,8 @@ contract UNIT_LyraSpotFeed is Test {
   }
 
   function testCanPassInDataAndUpdateSpotFeed() public {
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
-    bytes memory data = _getSignedSpotData(pk, spotData);
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+    bytes memory data = _signFeedData(feed, pk, spotData);
 
     feed.acceptData(data);
 
@@ -49,9 +50,12 @@ contract UNIT_LyraSpotFeed is Test {
   }
 
   function testCantPassInInvalidConfidence() public {
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
-    spotData.confidence = 1.01e18;
-    bytes memory data = _getSignedSpotData(pk, spotData);
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+
+    // change confidence
+    spotData.data = abi.encode(1100e18, 1.01e18);
+
+    bytes memory data = _signFeedData(feed, pk, spotData);
 
     vm.expectRevert(ILyraSpotFeed.LSF_InvalidConfidence.selector);
     feed.acceptData(data);
@@ -61,16 +65,16 @@ contract UNIT_LyraSpotFeed is Test {
     // we don't whitelist the pk owner this time
     feed.addSigner(pkOwner, false);
 
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
-    bytes memory data = _getSignedSpotData(pk, spotData);
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+    bytes memory data = _signFeedData(feed, pk, spotData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSigner.selector);
     feed.acceptData(data);
   }
 
   function testCannotUpdateSpotFeedAfterDeadline() public {
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
-    bytes memory data = _getSignedSpotData(pk, spotData);
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+    bytes memory data = _signFeedData(feed, pk, spotData);
 
     vm.warp(block.timestamp + 10);
 
@@ -79,25 +83,25 @@ contract UNIT_LyraSpotFeed is Test {
   }
 
   function testCannotSetSpotInTheFuture() public {
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
     spotData.timestamp = uint64(block.timestamp + 1000);
 
-    bytes memory data = _getSignedSpotData(pk, spotData);
+    bytes memory data = _signFeedData(feed, pk, spotData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidTimestamp.selector);
     feed.acceptData(data);
   }
 
   function testIgnoreUpdateIfOlderDataIsPushed() public {
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
-    bytes memory data1 = _getSignedSpotData(pk, spotData);
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+    bytes memory data1 = _signFeedData(feed, pk, spotData);
 
     feed.acceptData(data1);
 
-    spotData.price = 1100e18;
+    spotData.data = abi.encode(1100e18, 1.01e18);
 
     // this data has the same timestamp, so it will be ignored
-    bytes memory data2 = _getSignedSpotData(pk, spotData);
+    bytes memory data2 = _signFeedData(feed, pk, spotData);
     feed.acceptData(data2);
 
     (uint spot, uint confidence) = feed.getSpot();
@@ -110,16 +114,16 @@ contract UNIT_LyraSpotFeed is Test {
     uint pk2 = 0xBEEF2222;
 
     // replace pkOwner with random signer address
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
-    bytes memory data = _getSignedSpotData(pk2, spotData);
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+    bytes memory data = _signFeedData(feed, pk2, spotData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
     feed.acceptData(data);
   }
 
   function testCannotReadStaleData() public {
-    ILyraSpotFeed.SpotData memory spotData = _getDefaultSpotData();
-    bytes memory data = _getSignedSpotData(pk, spotData);
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+    bytes memory data = _signFeedData(feed, pk, spotData);
     feed.acceptData(data);
 
     vm.warp(block.timestamp + feed.heartbeat() + 1);
@@ -128,10 +132,13 @@ contract UNIT_LyraSpotFeed is Test {
     feed.getSpot();
   }
 
-  function _getDefaultSpotData() internal view returns (ILyraSpotFeed.SpotData memory spotData) {
-    return ILyraSpotFeed.SpotData({
-      price: 1000e18,
-      confidence: 1e18,
+  function _getDefaultSpotData() internal view returns (IBaseLyraFeed.FeedData memory) {
+    uint96 price = 1000e18;
+    uint64 confidence = 1e18;
+    bytes memory spotData = abi.encode(price, confidence);
+
+    return IBaseLyraFeed.FeedData({
+      data: spotData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: pkOwner,
@@ -139,18 +146,18 @@ contract UNIT_LyraSpotFeed is Test {
     });
   }
 
-  function _getSignedSpotData(uint privateKey, ILyraSpotFeed.SpotData memory spotData)
-    internal
-    view
-    returns (bytes memory data)
-  {
-    spotData.signature = _signSpotData(privateKey, spotData);
-    return abi.encode(spotData);
-  }
+  // function _getSignedSpotData(uint privateKey, ILyraSpotFeed.SpotData memory spotData)
+  //   internal
+  //   view
+  //   returns (bytes memory data)
+  // {
+  //   spotData.signature = _signSpotData(privateKey, spotData);
+  //   return abi.encode(spotData);
+  // }
 
-  function _signSpotData(uint privateKey, ILyraSpotFeed.SpotData memory spotData) internal view returns (bytes memory) {
-    bytes32 structHash = feed.hashSpotData(spotData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-    return bytes.concat(r, s, bytes1(v));
-  }
+  // function _signSpotData(uint privateKey, ILyraSpotFeed.SpotData memory spotData) internal view returns (bytes memory) {
+  //   bytes32 structHash = feed.hashSpotData(spotData);
+  //   (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
+  //   return bytes.concat(r, s, bytes1(v));
+  // }
 }

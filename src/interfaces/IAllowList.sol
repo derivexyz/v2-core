@@ -7,16 +7,6 @@ interface IAllowList {
     bool allowed;
   }
 
-  struct AllowListData {
-    address user;
-    bool allowed;
-    // timestamp is required to prevent replay attack
-    uint64 timestamp;
-    uint deadline;
-    address signer;
-    bytes signature;
-  }
-
   ////////////////////////
   //     Functions      //
   ////////////////////////

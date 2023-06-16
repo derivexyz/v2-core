@@ -45,30 +45,18 @@ contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
    * @notice Parse input data and update spot price
    */
   function acceptData(bytes calldata data) external override {
-    // parse data as SpotData
-    SpotData memory spotData = abi.decode(data, (SpotData));
-    // verify signature
-    bytes32 structHash = hashSpotData(spotData);
+    FeedData memory feedData = _parseAndVerifyFeedData(data);
 
-    _verifySignatureDetails(spotData.signer, structHash, spotData.signature, spotData.deadline, spotData.timestamp);
+    if (feedData.timestamp <= spotDetail.timestamp) return;
 
     // ignore if timestamp is lower or equal to current
-    if (spotData.timestamp <= spotDetail.timestamp) return;
+    (uint96 price, uint64 confidence) = abi.decode(feedData.data, (uint96, uint64));
 
-    if (spotData.confidence > 1e18) {
-      revert LSF_InvalidConfidence();
-    }
+    if (confidence > 1e18) revert LSF_InvalidConfidence();
 
     // update spot price
-    spotDetail = SpotDetail(spotData.price, spotData.confidence, spotData.timestamp);
+    spotDetail = SpotDetail(price, confidence, uint64(feedData.timestamp));
 
-    emit SpotPriceUpdated(spotData.signer, spotData.price, spotData.confidence, spotData.timestamp);
-  }
-
-  /**
-   * @dev return the hash of the spotData object
-   */
-  function hashSpotData(SpotData memory spotData) public pure returns (bytes32) {
-    return keccak256(abi.encode(SPOT_DATA_TYPEHASH, spotData.price, spotData.confidence, spotData.timestamp));
+    emit SpotPriceUpdated(feedData.signer, price, confidence, uint64(feedData.timestamp));
   }
 }
