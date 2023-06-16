@@ -67,7 +67,7 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
     }
   }
 
-  function _parseAndVerifyFeedData(bytes memory data) internal view returns (FeedData memory feedData)  {
+  function _parseAndVerifyFeedData(bytes memory data) internal view returns (FeedData memory feedData) {
     feedData = abi.decode(data, (FeedData));
     bytes32 hashedData = hashFeedData(feedData);
     // check the signature is from the signer is valid
