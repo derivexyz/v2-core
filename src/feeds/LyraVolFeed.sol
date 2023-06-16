@@ -82,9 +82,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
    * @notice Parse input data and update spot price
    */
   function acceptData(bytes calldata data) external override {
-    FeedData memory feedData = abi.decode(data, (FeedData));
-
-    _verifyFeedData(feedData);
+    FeedData memory feedData = _parseAndVerifyFeedData(data);
 
     (
       uint64 expiry,

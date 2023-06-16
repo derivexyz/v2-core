@@ -53,9 +53,7 @@ contract AllowList is BaseLyraFeed, IAllowList {
    * @notice Parse input data and update the allowlist
    */
   function acceptData(bytes calldata data) external override {
-    FeedData memory feedData = abi.decode(data, (FeedData));
-
-    _verifyFeedData(feedData);
+    FeedData memory feedData = _parseAndVerifyFeedData(data);
 
     (address user, bool allowed) = abi.decode(feedData.data, (address, bool));
 

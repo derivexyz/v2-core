@@ -189,10 +189,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   /////////////////////////
 
   function acceptData(bytes calldata data) external override {
-    // parse data as ForwardData
-    FeedData memory feedData = abi.decode(data, (FeedData));
-    // verify signature
-    _verifyFeedData(feedData);
+    FeedData memory feedData = _parseAndVerifyFeedData(data);
 
     (
       uint64 expiry,

@@ -42,10 +42,7 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
    * @notice Parse input data and update rate
    */
   function acceptData(bytes calldata data) external override {
-    // parse data as IBaseLyraFeed.FeedData
-    IBaseLyraFeed.FeedData memory feedData = abi.decode(data, (IBaseLyraFeed.FeedData));
-    // verify signature
-    _verifyFeedData(feedData);
+    FeedData memory feedData = _parseAndVerifyFeedData(data);
 
     (uint64 expiry, int96 rate, uint64 confidence) = abi.decode(feedData.data, (uint64, int96, uint64));
 
