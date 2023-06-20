@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/feeds/LyraRateFeed.sol";
+import "../../../src/feeds/LyraRateFeed.sol";
 
 import "./LyraFeedTestUtils.sol";
 

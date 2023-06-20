@@ -6,7 +6,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/Math.sol";
 
 // Inherited
-import "src/feeds/BaseLyraFeed.sol";
+import "./BaseLyraFeed.sol";
 
 // Interfaces
 import {ILyraForwardFeed} from "../interfaces/ILyraForwardFeed.sol";

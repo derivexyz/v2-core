@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "src/feeds/BaseLyraFeed.sol";
+import "../../../src/feeds/BaseLyraFeed.sol";
 
 import "forge-std/Test.sol";
 

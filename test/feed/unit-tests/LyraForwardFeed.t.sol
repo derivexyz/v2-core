@@ -3,8 +3,8 @@ pragma solidity ^0.8.18;
 
 import "./LyraFeedTestUtils.sol";
 
-import "src/feeds/LyraVolFeed.sol";
-import "src/feeds/LyraForwardFeed.sol";
+import "../../../src/feeds/LyraVolFeed.sol";
+import "../../../src/feeds/LyraForwardFeed.sol";
 import "../../shared/mocks/MockFeeds.sol";
 
 /**

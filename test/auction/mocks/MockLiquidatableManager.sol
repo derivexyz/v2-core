@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "test/shared/mocks/MockManager.sol";
+import "../..//shared/mocks/MockManager.sol";
 
-import {ILiquidatableManager} from "src/interfaces/ILiquidatableManager.sol";
-import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IOption} from "src/interfaces/IOption.sol";
+import {ILiquidatableManager} from "../../../src/interfaces/ILiquidatableManager.sol";
+import {IDutchAuction} from "../../../src/interfaces/IDutchAuction.sol";
+import {IPerpAsset} from "../../../src/interfaces/IPerpAsset.sol";
+import {IOption} from "../../../src/interfaces/IOption.sol";
 
 contract MockLiquidatableManager is MockManager, ILiquidatableManager {
   mapping(uint tradeId => mapping(uint account => uint fee)) mockFeeCharged;

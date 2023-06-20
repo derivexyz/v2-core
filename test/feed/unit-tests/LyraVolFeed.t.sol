@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "./LyraFeedTestUtils.sol";
 
 import "lyra-utils/math/Black76.sol";
-import "src/feeds/LyraVolFeed.sol";
+import "../../../src/feeds/LyraVolFeed.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
