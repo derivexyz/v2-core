@@ -7,11 +7,11 @@ import "forge-std/console2.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockFeeds.sol";
 
-import "src/SubAccounts.sol";
-import "src/assets/PerpAsset.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import {IPerpAsset} from "src/interfaces/IPerpAsset.sol";
-import {IPositionTracking} from "src/interfaces/IPositionTracking.sol";
+import "../../../../src/SubAccounts.sol";
+import "../../../../src/assets/PerpAsset.sol";
+import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
+import {IPerpAsset} from "../../../../src/interfaces/IPerpAsset.sol";
+import {IPositionTracking} from "../../../../src/interfaces/IPositionTracking.sol";
 import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
 contract UNIT_PerpOIAndCap is Test {

@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-import "src/Allowances.sol";
-import "src/SubAccounts.sol";
+import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";
+import "../../../src/Allowances.sol";
+import "../../../src/SubAccounts.sol";
 import {AccountTestBase} from "./AccountTestBase.sol";
 
 contract UNIT_Allowances is Test, AccountTestBase {

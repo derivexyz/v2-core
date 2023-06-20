@@ -2,25 +2,25 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/StandardManager.sol";
-import "src/periphery/OptionSettlementHelper.sol";
+import "../../../../src/risk-managers/StandardManager.sol";
+import "../../../../src/periphery/OptionSettlementHelper.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "src/SubAccounts.sol";
-import {IManager} from "src/interfaces/IManager.sol";
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
+import "../../../../src/SubAccounts.sol";
+import {IManager} from "../../../../src/interfaces/IManager.sol";
+import {IAsset} from "../../../../src/interfaces/IAsset.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
+import {IDutchAuction} from "../../../../src/interfaces/IDutchAuction.sol";
 
-import "test/shared/mocks/MockManager.sol";
-import "test/shared/mocks/MockERC20.sol";
-import "test/shared/mocks/MockPerp.sol";
-import "test/shared/mocks/MockOption.sol";
-import "test/shared/mocks/MockFeeds.sol";
-import "test/shared/mocks/MockOptionPricing.sol";
+import "../../../shared/mocks/MockManager.sol";
+import "../../../shared/mocks/MockERC20.sol";
+import "../../../shared/mocks/MockPerp.sol";
+import "../../../shared/mocks/MockOption.sol";
+import "../../../shared/mocks/MockFeeds.sol";
+import "../../../shared/mocks/MockOptionPricing.sol";
 
-import "test/auction/mocks/MockCashAsset.sol";
+import "../../../auction/mocks/MockCashAsset.sol";
 
 /**
  * Focusing on the margin rules for options

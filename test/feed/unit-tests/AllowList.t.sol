@@ -3,8 +3,8 @@ pragma solidity ^0.8.18;
 
 import "./LyraFeedTestUtils.sol";
 
-import "src/feeds/LyraSpotFeed.sol";
-import "src/feeds/AllowList.sol";
+import "../../../src/feeds/LyraSpotFeed.sol";
+import "../../../src/feeds/AllowList.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process

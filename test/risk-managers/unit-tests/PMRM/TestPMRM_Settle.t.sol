@@ -1,9 +1,9 @@
 pragma solidity ^0.8.18;
 
-import "src/periphery/PerpSettlementHelper.sol";
-import "src/periphery/OptionSettlementHelper.sol";
+import "../../../../src/periphery/PerpSettlementHelper.sol";
+import "../../../../src/periphery/OptionSettlementHelper.sol";
 
-import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
+import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";

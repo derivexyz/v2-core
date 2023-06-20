@@ -4,13 +4,13 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 
-import "src/SubAccounts.sol";
-import "test/shared/mocks/MockERC20.sol";
-import "test/shared/mocks/MockAsset.sol";
-import "test/shared/mocks/MockSM.sol";
+import "../../../src/SubAccounts.sol";
+import "../../shared/mocks/MockERC20.sol";
+import "../../shared/mocks/MockAsset.sol";
+import "../../shared/mocks/MockSM.sol";
 import "../mocks/MockCashAsset.sol";
 import "../mocks/MockLiquidatableManager.sol";
-import "src/liquidation/DutchAuction.sol";
+import "../../../src/liquidation/DutchAuction.sol";
 
 import "test/shared/mocks/MockFeeds.sol";
 
