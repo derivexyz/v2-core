@@ -49,7 +49,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   int public bufferMarginPercentage;
 
   /// @dev The number of big insolvent auctions that are blocking withdraws
-  uint public numHugeInsolventAuctions;
+  uint public largeInsolventAuctionCount;
 
   /// @dev if an insolvent account has margin lower than this number, it will block from withdrawing cash
   int public withdrawBlockThreshold;
@@ -408,7 +408,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev return true if the withdraw should be blocked
    */
   function getIsWithdrawBlocked() external view returns (bool) {
-    return numHugeInsolventAuctions > 0;
+    return largeInsolventAuctionCount > 0;
   }
 
   ///////////////////////
@@ -451,7 +451,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     bool shouldPauseWithdraw = mm < withdrawBlockThreshold;
 
     // increase total amount of insolvent auctions blocking withdraw
-    if (shouldPauseWithdraw) numHugeInsolventAuctions += 1;
+    if (shouldPauseWithdraw) largeInsolventAuctionCount += 1;
 
     // decrease value every step
     uint numSteps = insolventAuctionParams.totalSteps;
@@ -573,7 +573,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     auction.ongoing = false;
 
     if (auction.isBlockingWithdraw) {
-      numHugeInsolventAuctions -= 1;
+      largeInsolventAuctionCount -= 1;
     }
 
     emit AuctionEnded(accountId, block.timestamp);
