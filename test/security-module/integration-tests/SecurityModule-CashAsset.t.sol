@@ -5,24 +5,25 @@ import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockManager.sol";
+import "../../risk-managers/mocks/MockDutchAuction.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
 import "../../../src/assets/InterestRateModel.sol";
 import "../../../src/SubAccounts.sol";
-
+import "../../../src/interfaces/IDutchAuction.sol";
 /**
  * @dev real Accounts contract
  * @dev real CashAsset contract
  * @dev real SecurityModule contract
  */
+
 contract INTEGRATION_SecurityModule_CashAsset is Test {
   // OFAC is the bad guy
   address public constant badGuy = address(0x0fac);
 
-  address public constant liquidation = address(0xdead);
-
   CashAsset cashAsset = CashAsset(address(0xca7777));
+  MockDutchAuction auction;
   MockERC20 usdc;
   MockManager manager;
   SubAccounts subAccounts;
@@ -36,6 +37,8 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(subAccounts));
+
+    auction = new MockDutchAuction();
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
@@ -62,7 +65,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     accountId = subAccounts.createAccount(address(this), manager);
 
     cashAsset.setSmFeeRecipient(smAccId);
-    cashAsset.setLiquidationModule(liquidation);
+    cashAsset.setLiquidationModule(auction);
   }
 
   function testDepositIntoSM() public {
@@ -84,8 +87,8 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
   }
 
   // test the numbers increased when we have fee cut on SM
-  function testWithdawFromSMCanCollectFeeFromInterest() public {}
+  function testWithdrawFromSMCanCollectFeeFromInterest() public {}
 
   // test the numbers when we have withdraw fee enabled on cash asset
-  function testWithdawFromSMWhenFeeSwitchIsOn() public {}
+  function testWithdrawFromSMWhenFeeSwitchIsOn() public {}
 }

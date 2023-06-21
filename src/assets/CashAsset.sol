@@ -14,6 +14,7 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
+import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 
 import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
@@ -45,7 +46,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   uint8 private immutable stableDecimals;
 
   /// @dev The address of liquidation module, which can trigger call of insolvency
-  address public liquidationModule;
+  IDutchAuction public liquidationModule;
 
   /// @dev The security module accountId used for collecting a portion of fees
   uint public smId;
@@ -138,10 +139,10 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     emit SmFeeRecipientSet(_smId);
   }
 
-  function setLiquidationModule(address _liquidationModule) external onlyOwner {
+  function setLiquidationModule(IDutchAuction _liquidationModule) external onlyOwner {
     liquidationModule = _liquidationModule;
 
-    emit LiquidationModuleSet(_liquidationModule);
+    emit LiquidationModuleSet(address(_liquidationModule));
   }
 
   ////////////////////////////
@@ -203,6 +204,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    */
   function withdraw(uint accountId, uint stableAmount, address recipient) external {
     if (msg.sender != subAccounts.ownerOf(accountId)) revert CA_OnlyAccountOwner();
+    if (liquidationModule.getIsWithdrawBlocked()) revert CA_WithdrawBlockedByOngoingAuction();
 
     // if amount pass in is in higher decimals than 18, round up the trailing amount
     // to make sure users cannot withdraw dust amount, while keeping cashAmount == 0.
@@ -372,6 +374,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     if (msg.sender != address(subAccounts.manager(accountId))) {
       revert CA_ForceWithdrawNotAuthorized();
     }
+    if (liquidationModule.getIsWithdrawBlocked()) revert CA_WithdrawBlockedByOngoingAuction();
     address owner = subAccounts.ownerOf(accountId);
     int balance = subAccounts.getBalance(accountId, ICashAsset(address(this)), 0);
     if (balance < 0) {
@@ -527,7 +530,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
   /// @dev revert if caller is not liquidation module
   modifier onlyLiquidation() {
-    if (msg.sender != liquidationModule) revert CA_NotLiquidationModule();
+    if (msg.sender != address(liquidationModule)) revert CA_NotLiquidationModule();
     _;
   }
 }

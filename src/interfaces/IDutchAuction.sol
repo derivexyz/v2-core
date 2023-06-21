@@ -28,6 +28,8 @@ interface IDutchAuction {
     uint stepInsolvent;
     /// The timestamp of the last increase of steps for insolvent auction
     uint lastStepUpdate;
+    /// If this auction is blocking cash withdraw
+    bool isBlockingWithdraw;
   }
 
   struct SolventAuctionParams {
@@ -53,7 +55,10 @@ interface IDutchAuction {
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
+
   function startForcedAuction(uint accountId, uint scenarioId) external;
+
+  function getIsWithdrawBlocked() external view returns (bool);
 
   ////////////
   // EVENTS //
@@ -81,6 +86,9 @@ interface IDutchAuction {
 
   /// @dev emitted owner is trying to set a bad parameter for auction
   error DA_InvalidParameter();
+
+  /// @dev emitted owner is trying to set bad threshold that could block cash withdraw
+  error DA_InvalidWithdrawBlockThreshold();
 
   /// @dev Cannot stop an ongoing auction
   error DA_NotOngoingAuction();

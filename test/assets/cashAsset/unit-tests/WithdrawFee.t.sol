@@ -5,20 +5,23 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
+import "../../../risk-managers/mocks/MockDutchAuction.sol";
 import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
 
+import "../../../../src/interfaces/IDutchAuction.sol";
 /**
  * @dev tests for scenarios where insolvent is triggered by the liquidation module
  */
+
 contract UNIT_CashAssetWithdrawFee is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
   SubAccounts subAccounts;
+  MockDutchAuction auction;
   IInterestRateModel rateModel;
-  address liquidationModule = address(0xf00d);
 
   uint accountId;
   uint depositedAmount;
@@ -29,10 +32,11 @@ contract UNIT_CashAssetWithdrawFee is Test {
     manager = new MockManager(address(subAccounts));
 
     usdc = new MockERC20("USDC", "USDC");
+    auction = new MockDutchAuction();
 
     rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(subAccounts, usdc, rateModel);
-    cashAsset.setLiquidationModule(liquidationModule);
+    cashAsset.setLiquidationModule(auction);
 
     cashAsset.setWhitelistManager(address(manager), true);
 
@@ -53,7 +57,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
   }
 
   function testCanTriggerInsolvency() public {
-    vm.startPrank(liquidationModule);
+    vm.startPrank(address(auction));
     cashAsset.socializeLoss(depositedAmount, accountId);
     vm.stopPrank();
 
@@ -64,7 +68,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
   }
 
   function testFeeIsAppliedToWithdrawAfterEnables() public {
-    vm.startPrank(liquidationModule);
+    vm.startPrank(address(auction));
     // loss is 25% of the pool
     // meaning 1 cash is worth only 0.8% USDC after solcializing the loss
     cashAsset.socializeLoss(depositedAmount / 4, accountId);
@@ -86,7 +90,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     uint smFeeCut = 0.5 * 1e18;
     cashAsset.setSmFee(smFeeCut);
     // trigger insolvency
-    vm.prank(liquidationModule);
+    vm.prank(address(auction));
     cashAsset.socializeLoss(depositedAmount, accountId);
 
     // SM fee set to 100%
@@ -120,7 +124,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     assertEq(cashAsset.accruedSmFees(), requiredAmount / 2);
 
     // trigger insolvency
-    vm.prank(liquidationModule);
+    vm.prank(address(auction));
     cashAsset.socializeLoss(requiredAmount / 2, accountId);
 
     // All SM fees are enough to cover insolvency
@@ -148,7 +152,8 @@ contract UNIT_CashAssetWithdrawFee is Test {
     assertGt(cashAsset.accruedSmFees(), 0);
 
     // trigger insolvency
-    vm.prank(liquidationModule);
+    vm.prank(address(auction));
+
     cashAsset.socializeLoss(requiredAmount / 2, accountId);
 
     // All SM fees not enough to cover insolvency and insolvency still occurs

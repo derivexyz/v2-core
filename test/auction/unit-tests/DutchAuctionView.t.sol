@@ -65,6 +65,16 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     dutchAuction.setBufferMarginPercentage(0.31e18);
   }
 
+  function testSetWithdrawBlockThreshold() public {
+    dutchAuction.setWithdrawBlockThreshold(-100e18);
+    assertEq(dutchAuction.withdrawBlockThreshold(), -100e18);
+  }
+
+  function testCannotSetPositiveWithdrawBlockThreshold() public {
+    vm.expectRevert(IDutchAuction.DA_InvalidWithdrawBlockThreshold.selector);
+    dutchAuction.setWithdrawBlockThreshold(100e18);
+  }
+
   function testSetInsolventAuctionParameters() public {
     dutchAuction.setInsolventAuctionParams(
       IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 2, bufferMarginScalar: 1.2e18})

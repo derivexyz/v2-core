@@ -107,6 +107,9 @@ interface ICashAsset is IERC20BasedAsset {
   /// @dev caller is not owner of the account
   error CA_OnlyAccountOwner();
 
+  /// @dev withdraw is temporarily block due to on-going insolvent auction
+  error CA_WithdrawBlockedByOngoingAuction();
+
   /// @dev accrued interest is stale
   error CA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);
 

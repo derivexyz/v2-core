@@ -118,6 +118,20 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
 
+  function testInsolventAuctionBelowThresholdBlockWithdraw() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+  }
+
+  function testInsolventAuctionsAboveThresholdDoesNotBlockWithdraw() public {
+    dutchAuction.setWithdrawBlockThreshold(-500e18);
+
+    _startDefaultInsolventAuction(aliceAcc);
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+  }
+
   function testTerminatesInsolventAuction() public {
     _startDefaultInsolventAuction(aliceAcc);
 
@@ -127,6 +141,32 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+  }
+
+  function testTerminatingAuctionFreeWithdrawLock() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+    // lock withdraw
+
+    // set maintenance margin > 0
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+  }
+
+  function testTerminatingAuctionDoesNotFreeLockIfOthersOutstanding() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+    _startDefaultInsolventAuction(bobAcc);
+
+    // alice is back above margin, auction terminated
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+    dutchAuction.terminateAuction(aliceAcc);
+
+    // still blocked because of bob
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
   }
 
   function _startDefaultInsolventAuction(uint acc) internal {
