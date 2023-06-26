@@ -714,6 +714,7 @@ contract IntegrationTestBase is Test {
   ////////////////
   //    Misc    //
   ////////////////
+
   /**
    * @dev predict the address of the next contract being deployed
    */
