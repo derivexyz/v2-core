@@ -4,8 +4,8 @@ pragma solidity ^0.8.18;
 import "src/risk-managers/StandardManager.sol";
 
 contract StandardManagerPublic is StandardManager {
-  constructor(ISubAccounts subAccounts_, ICashAsset cashAsset_, IDutchAuction _dutchAuction)
-    StandardManager(subAccounts_, cashAsset_, _dutchAuction)
+  constructor(ISubAccounts subAccounts_, ICashAsset cashAsset_, IDutchAuction _dutchAuction, IPortfolioViewer _viewer)
+    StandardManager(subAccounts_, cashAsset_, _dutchAuction, _viewer)
   {}
 
   function getMarginByBalances(ISubAccounts.AssetBalance[] memory balances, uint accountId)
@@ -13,7 +13,7 @@ contract StandardManagerPublic is StandardManager {
     view
     returns (int im, int mm, int mtm)
   {
-    StandardManagerPortfolio memory portfolio = _arrangePortfolio(balances);
+    StandardManagerPortfolio memory portfolio = viewer.arrangeSRMPortfolio(balances);
     (im, mtm) = _getMarginAndMarkToMarket(accountId, portfolio, true);
     (mm,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
   }

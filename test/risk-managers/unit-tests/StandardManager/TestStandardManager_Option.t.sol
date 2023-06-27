@@ -116,16 +116,17 @@ contract UNIT_TestStandardManager_Option is Test {
   function testWhitelistAsset() public {
     manager.whitelistAsset(perp, 2, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 2, IStandardManager.AssetType.Option);
-    (bool isPerpWhitelisted, IStandardManager.AssetType perpType, uint8 marketId) = manager.assetDetails(perp);
-    (bool isOptionWhitelisted, IStandardManager.AssetType optionType, uint8 optionMarketId) =
-      manager.assetDetails(option);
-    assertEq(isPerpWhitelisted, true);
-    assertEq(uint(perpType), uint(IStandardManager.AssetType.Perpetual));
-    assertEq(marketId, 2);
 
-    assertEq(isOptionWhitelisted, true);
-    assertEq(uint(optionType), uint(IStandardManager.AssetType.Option));
-    assertEq(optionMarketId, 2);
+    IStandardManager.AssetDetail memory perpDetail = manager.assetDetails(perp);
+    IStandardManager.AssetDetail memory optionDetail = manager.assetDetails(option);
+
+    assertEq(perpDetail.isWhitelisted, true);
+    assertEq(uint(perpDetail.assetType), uint(IStandardManager.AssetType.Perpetual));
+    assertEq(perpDetail.marketId, 2);
+
+    assertEq(optionDetail.isWhitelisted, true);
+    assertEq(uint(optionDetail.assetType), uint(IStandardManager.AssetType.Option));
+    assertEq(optionDetail.marketId, 2);
   }
 
   function testSetOptionParameters() public {

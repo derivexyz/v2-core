@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IManager} from "./IManager.sol";
+import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
 import {IOption} from "./IOption.sol";
 
@@ -103,6 +103,8 @@ interface IStandardManager {
     uint64 baseThreshold;
     int64 OCFactor;
   }
+
+  function assetDetails(IAsset asset) external view returns (AssetDetail memory);
 
   ///////////////
   //   Errors  //
