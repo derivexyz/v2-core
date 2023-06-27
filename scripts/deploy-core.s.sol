@@ -16,7 +16,7 @@ import "../test/shared/mocks/MockFeeds.sol";
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "forge-std/console2.sol";
-import "./types.sol";
+import {Deployment, ConfigJson} from "./types.sol";
 import {Utils} from "./utils.sol";
 
 // get all default params
@@ -32,28 +32,25 @@ contract DeployCore is Utils {
     console2.log("Start deploying core contracts! deployer: ", msg.sender);
 
     // load configs
-    (IERC20Metadata usdc, bool useMockedFeed) = _getConfig();
+    ConfigJson memory config = _getConfig();
 
     // deploy core contracts
-    deployCoreContracts(usdc, useMockedFeed);
+    _deployCoreContracts(config);
 
     vm.stopBroadcast();
   }
 
   /// @dev get config from current chainId
-  function _getConfig() internal view returns (IERC20Metadata usdc, bool useMockedFeed) {
+  function _getConfig() internal view returns (ConfigJson memory config) {
     string memory file = readInput("config");
 
-    bytes memory usdcAddrRaw = vm.parseJson(file);
-    ConfigJson memory config = abi.decode(usdcAddrRaw, (ConfigJson));
-
-    usdc = IERC20Metadata(config.usdc);
-    useMockedFeed = config.useMockedFeed;
+    bytes memory content = vm.parseJson(file);
+    config = abi.decode(content, (ConfigJson));
   }
 
 
   /// @dev deploy and initiate contracts
-  function deployCoreContracts(IERC20Metadata usdc, bool useMockedStableFeed) internal returns (Deployment memory deployment)  {
+  function _deployCoreContracts(ConfigJson memory config) internal returns (Deployment memory deployment)  {
 
     uint nonce = vm.getNonce(msg.sender);
 
@@ -65,7 +62,7 @@ contract DeployCore is Utils {
     deployment.rateModel = new InterestRateModel(minRate, rateMultiplier, highRateMultiplier, optimalUtil);
 
     // nonce + 2
-    deployment.cash = new CashAsset(deployment.subAccounts, usdc, deployment.rateModel);
+    deployment.cash = new CashAsset(deployment.subAccounts, IERC20Metadata(config.usdc), deployment.rateModel);
 
     // nonce + 3: Deploy SM
     address srmAddr = computeCreateAddress(msg.sender, nonce + 5);
@@ -79,7 +76,7 @@ contract DeployCore is Utils {
     assert(address(deployment.srm) == address(srmAddr));
 
     // Deploy USDC stable feed
-    if (useMockedStableFeed) {
+    if (config.useMockedFeed) {
       MockFeeds stableFeed = new MockFeeds();
       stableFeed.setSpot(1e18, 1e18);
       deployment.stableFeed = stableFeed;
