@@ -39,19 +39,21 @@ contract DeployMarket is Utils {
     console2.log("Deployer: ", msg.sender);
 
     // load configs
-    ConfigJson memory config = _getConfig();
-    // load core deployments
+    ConfigJson memory config = _loadConfig();
+
+    // load deployed core contracts
+    Deployment memory deployment = _loadDeployment();
 
     // deploy core contracts
-    deployCoreContracts(config, useMockedFeed);
+    _deployMarketContracts(config, deployment);
 
     vm.stopBroadcast();
   }
 
 
-  /// @dev deploy and initiate contracts
-  function _deployMarketContracts(ConfigJson memory config) internal returns (Deployment memory deployment)  {
-
+  /// @dev deploy all contract needed for a single market
+  function _deployMarketContracts(ConfigJson memory config, Deployment memory deployment) internal  {
+    
   }
 
   /**
@@ -59,7 +61,7 @@ contract DeployMarket is Utils {
    */
   function __writeToDeploymentsJson(Deployment memory deployment) internal {
 
-    string memory objKey = "market-deployments";
+    // string memory objKey = "market-deployments";
 
     // vm.serializeAddress(objKey, "subAccounts", address(deployment.subAccounts));
     // vm.serializeAddress(objKey, "cash", address(deployment.cash));

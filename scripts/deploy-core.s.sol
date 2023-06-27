@@ -32,7 +32,7 @@ contract DeployCore is Utils {
     console2.log("Start deploying core contracts! deployer: ", msg.sender);
 
     // load configs
-    ConfigJson memory config = _getConfig();
+    ConfigJson memory config = _loadConfig();
 
     // deploy core contracts
     _deployCoreContracts(config);
