@@ -40,14 +40,6 @@ contract DeployCore is Utils {
     vm.stopBroadcast();
   }
 
-  /// @dev get config from current chainId
-  function _getConfig() internal view returns (ConfigJson memory config) {
-    string memory file = readInput("config");
-
-    bytes memory content = vm.parseJson(file);
-    config = abi.decode(content, (ConfigJson));
-  }
-
 
   /// @dev deploy and initiate contracts
   function _deployCoreContracts(ConfigJson memory config) internal returns (Deployment memory deployment)  {
@@ -90,13 +82,13 @@ contract DeployCore is Utils {
     deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
 
     // write to output
-    _writeToDeploymentsJson(deployment);
+    __writeToDeploymentsJson(deployment);
   }
 
   /**
    * @dev write to deployments/{network}/core.json
    */
-  function _writeToDeploymentsJson(Deployment memory deployment) internal {
+  function __writeToDeploymentsJson(Deployment memory deployment) internal {
 
     string memory objKey = "core-deployments";
 
@@ -109,7 +101,7 @@ contract DeployCore is Utils {
     string memory finalObj = vm.serializeAddress(objKey, "stableFeed", address(deployment.stableFeed));
 
     // build path
-    writeToDeployments("core", finalObj);
+    _writeToDeployments("core", finalObj);
   }
 
 }

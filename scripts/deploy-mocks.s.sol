@@ -34,7 +34,7 @@ contract DeployMocks is Utils {
     string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", true);
 
     // build path
-    writeToInput("config", finalObj);
+    _writeToInput("config", finalObj);
 
     vm.stopBroadcast();
   }

@@ -48,14 +48,6 @@ contract DeployMarket is Utils {
     vm.stopBroadcast();
   }
 
-  /// @dev get config from current chainId
-  function _getConfig() internal view returns (ConfigJson memory config) {
-    string memory file = readInput("config");
-
-    bytes memory usdcAddrRaw = vm.parseJson(file);
-    config = abi.decode(usdcAddrRaw, (ConfigJson));
-  }
-
 
   /// @dev deploy and initiate contracts
   function _deployMarketContracts(ConfigJson memory config) internal returns (Deployment memory deployment)  {
@@ -65,7 +57,7 @@ contract DeployMarket is Utils {
   /**
    * @dev write to deployments/{network}/core.json
    */
-  function _writeToDeploymentsJson(Deployment memory deployment) internal {
+  function __writeToDeploymentsJson(Deployment memory deployment) internal {
 
     string memory objKey = "market-deployments";
 
@@ -78,7 +70,7 @@ contract DeployMarket is Utils {
     // string memory finalObj = vm.serializeAddress(objKey, "stableFeed", address(deployment.stableFeed));
 
     // build path
-    // writeToDeployments("core", finalObj);
+    // _writeToDeployments("core", finalObj);
   }
 
 }
