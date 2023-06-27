@@ -18,8 +18,8 @@ struct ConfigJson {
 
 struct Deployment {
   SubAccounts subAccounts;
-  CashAsset cash;
   InterestRateModel rateModel;
+  CashAsset cash;
   SecurityModule securityModule;
   DutchAuction auction;
   // standard risk manager: one for the whole system
