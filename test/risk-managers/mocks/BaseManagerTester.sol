@@ -2,6 +2,8 @@
 pragma solidity ^0.8.18;
 
 import "../../../src/risk-managers/BaseManager.sol";
+import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
+import {ISettlementFeed} from "../../../src/interfaces/ISettlementFeed.sol";
 
 contract BaseManagerTester is BaseManager {
   IOption public immutable option;
