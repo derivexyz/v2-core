@@ -77,12 +77,32 @@ contract DeployCore is Utils {
       stableFeed.setHeartbeat(365 days);
       deployment.stableFeed = stableFeed;
     }
-    
-    deployment.cash.setLiquidationModule(deployment.auction);
-    deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
+
+    _setupCoreFunctions(deployment);
 
     // write to output
     __writeToDeploymentsJson(deployment);
+  }
+
+  function _setupCoreFunctions(Deployment memory deployment) internal {
+    // setup cash
+    deployment.cash.setLiquidationModule(deployment.auction);
+    deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
+
+    // set parameter for auction
+    deployment.auction.setSolventAuctionParams(getDefaultAuctionParam());
+    deployment.auction.setInsolventAuctionParams(getDefaultInsolventAuctionParam());
+
+    // allow liquidation to request payout from sm
+    deployment.securityModule.setWhitelistModule(address(deployment.auction), true);
+
+    deployment.cash.setWhitelistManager(address(deployment.srm), true);
+
+    // global setting for SRM
+    deployment.srm.setStableFeed(deployment.stableFeed);
+    deployment.srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
+
+    console2.log("Core contracts deployed and setup!");
   }
 
   /**
