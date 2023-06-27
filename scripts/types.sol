@@ -8,8 +8,12 @@ import {SecurityModule} from "../src/SecurityModule.sol";
 import {DutchAuction} from "../src/liquidation/DutchAuction.sol";
 import {StandardManager} from "../src/risk-managers/StandardManager.sol";
 
+import {ISpotFeed} from "../src/interfaces/ISpotFeed.sol";
+
+
 struct ConfigJson { 
   address usdc;
+  bool useMockedFeed;
 }
 
 struct Deployment {
@@ -20,4 +24,6 @@ struct Deployment {
   DutchAuction auction;
   // standard risk manager: one for the whole system
   StandardManager srm;
+
+  ISpotFeed stableFeed;
 }

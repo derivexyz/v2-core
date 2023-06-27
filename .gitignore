@@ -23,3 +23,7 @@ cache_hardhat
 artifacts_hardhat
 
 deployments
+
+# Keep local deployment config folder, but not track any content
+scripts/input/31337/*
+!scripts/input/31337/.gitkeep 
