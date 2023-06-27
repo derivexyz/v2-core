@@ -91,6 +91,28 @@ contract DeployCore is Utils {
     
     deployment.cash.setLiquidationModule(deployment.auction);
     deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
+
+    // write to output
+    _writeToDeploymentsJson(deployment);
+  }
+
+  /**
+   * @dev write to deployments/{network}/core.json
+   */
+  function _writeToDeploymentsJson(Deployment memory deployment) internal {
+
+    string memory objKey = "core-deployments";
+
+    vm.serializeAddress(objKey, "subAccounts", address(deployment.subAccounts));
+    vm.serializeAddress(objKey, "cash", address(deployment.cash));
+    vm.serializeAddress(objKey, "rateModel", address(deployment.rateModel));
+    vm.serializeAddress(objKey, "securityModule", address(deployment.securityModule));
+    vm.serializeAddress(objKey, "auction", address(deployment.auction));
+    vm.serializeAddress(objKey, "srm", address(deployment.srm));
+    string memory finalObj = vm.serializeAddress(objKey, "stableFeed", address(deployment.stableFeed));
+
+    // build path
+    writeToDeployments("core", finalObj);
   }
 
 }
