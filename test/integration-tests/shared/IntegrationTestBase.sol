@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
-//
 
 import "forge-std/Test.sol";
 
@@ -16,6 +15,7 @@ import "src/liquidation/DutchAuction.sol";
 import "src/SubAccounts.sol";
 
 import "src/risk-managers/StandardManager.sol";
+import "src/risk-managers/PortfolioViewer.sol";
 import "src/risk-managers/PMRM.sol";
 
 import "src/feeds/OptionPricing.sol";
@@ -73,25 +73,26 @@ contract IntegrationTestBase is Test {
     PMRM pmrm;
   }
 
-  SubAccounts subAccounts;
-  MockERC20 usdc;
-  MockERC20 weth;
+  SubAccounts public subAccounts;
+  MockERC20 public usdc;
+  MockERC20 public weth;
 
   // Lyra Assets
-  CashAsset cash;
+  CashAsset public cash;
 
-  SecurityModule securityModule;
-  InterestRateModel rateModel;
-  DutchAuction auction;
+  SecurityModule public securityModule;
+  InterestRateModel public rateModel;
+  DutchAuction public auction;
 
   // Single standard manager shared across all markets
-  StandardManager srm;
+  StandardManager public srm;
+  PortfolioViewer public portfolioViewer;
 
-  MockFeeds stableFeed;
+  MockFeeds internal stableFeed;
 
-  uint8 nextId = 1;
+  uint8 internal nextId = 1;
 
-  mapping(string => Market) markets;
+  mapping(string => Market) internal markets;
 
   function _setupIntegrationTestComplete() internal {
     // deploy Accounts, cash, security module, auction
@@ -129,14 +130,17 @@ contract IntegrationTestBase is Test {
     cash = new CashAsset(subAccounts, usdc, rateModel);
 
     // Nonce 5: Deploy SM
-    address srmAddr = _predictAddress(address(this), 7);
+    address srmAddr = _predictAddress(address(this), 8);
     securityModule = new SecurityModule(subAccounts, cash, IManager(srmAddr));
 
     // Nonce 6: Deploy Auction
     auction = new DutchAuction(subAccounts, securityModule, cash);
 
-    // Nonce 7: Deploy Standard Manager. Shared by all assets
-    srm = new StandardManager(subAccounts, cash, auction);
+    // Nonce 7: Deploy Portfolio Viewer
+    portfolioViewer = new PortfolioViewer(subAccounts, cash);
+
+    // Nonce 8: Deploy Standard Manager. Shared by all assets
+    srm = new StandardManager(subAccounts, cash, auction, portfolioViewer);
     assertEq(address(srm), address(srmAddr));
 
     // Deploy USDC stable feed
@@ -193,9 +197,6 @@ contract IntegrationTestBase is Test {
     market.id = marketId;
 
     MockERC20 erc20 = new MockERC20(token, token);
-
-    // todo use real feed for all feeds
-    // market.feed = new MockFeeds();
 
     market.spotFeed = new LyraSpotFeed();
     market.forwardFeed = new LyraForwardFeed(market.spotFeed);

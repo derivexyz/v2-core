@@ -43,19 +43,19 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ///////////////
 
   /// @dev Account contract address
-  ISubAccounts public immutable subAccounts;
+  ISubAccounts internal immutable subAccounts;
 
   /// @dev Cash asset address
-  ICashAsset public immutable cashAsset;
+  ICashAsset internal immutable cashAsset;
 
   /// @dev Dutch auction contract address, can trigger execute bid
-  IDutchAuction public immutable liquidation;
+  IDutchAuction internal immutable liquidation;
 
   /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
   uint public immutable accId;
 
   /// @dev AllowList contract address
-  IAllowList public allowList;
+  IAllowList internal allowList;
 
   /// @dev within this buffer time, allow people to hold expired options in case the settlement price is not ready
   uint public optionSettlementBuffer = 5 minutes;
@@ -70,10 +70,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
   /// @dev keep track of the last tradeId that this manager updated before, to prevent double update
-  uint public lastOracleUpdateTradeId;
+  uint internal lastOracleUpdateTradeId;
 
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
-  mapping(address sender => bool) public feeBypassedCaller;
+  mapping(address sender => bool) internal feeBypassedCaller;
 
   /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   mapping(address asset => uint) public OIFeeRateBPS;
@@ -520,50 +520,50 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     view
     returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
   {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
+    // ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
-    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
-    uint removedBalances = 0;
-    uint newBalances = 0;
-    ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
+    // // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
+    // uint removedBalances = 0;
+    // uint newBalances = 0;
+    // ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
 
-    for (uint i = 0; i < assetDeltas.length; ++i) {
-      ISubAccounts.AssetDelta memory delta = assetDeltas[i];
-      if (delta.delta == 0) {
-        continue;
-      }
-      bool found = false;
-      for (uint j = 0; j < assetBalances.length; ++j) {
-        ISubAccounts.AssetBalance memory balance = assetBalances[j];
-        if (balance.asset == delta.asset && balance.subId == delta.subId) {
-          found = true;
-          assetBalances[j].balance = balance.balance - delta.delta;
-          if (assetBalances[j].balance == 0) {
-            removedBalances++;
-          }
-          break;
-        }
-      }
-      if (!found) {
-        preBalances[newBalances++] =
-          ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
-      }
-    }
+    // for (uint i = 0; i < assetDeltas.length; ++i) {
+    //   ISubAccounts.AssetDelta memory delta = assetDeltas[i];
+    //   if (delta.delta == 0) {
+    //     continue;
+    //   }
+    //   bool found = false;
+    //   for (uint j = 0; j < assetBalances.length; ++j) {
+    //     ISubAccounts.AssetBalance memory balance = assetBalances[j];
+    //     if (balance.asset == delta.asset && balance.subId == delta.subId) {
+    //       found = true;
+    //       assetBalances[j].balance = balance.balance - delta.delta;
+    //       if (assetBalances[j].balance == 0) {
+    //         removedBalances++;
+    //       }
+    //       break;
+    //     }
+    //   }
+    //   if (!found) {
+    //     preBalances[newBalances++] =
+    //       ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
+    //   }
+    // }
 
-    newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
+    // newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
 
-    uint newBalancesIndex = 0;
-    for (uint i = 0; i < assetBalances.length; ++i) {
-      ISubAccounts.AssetBalance memory balance = assetBalances[i];
-      if (balance.balance != 0) {
-        newAssetBalances[newBalancesIndex++] = balance;
-      }
-    }
-    for (uint i = 0; i < newBalances; ++i) {
-      newAssetBalances[newBalancesIndex++] = preBalances[i];
-    }
+    // uint newBalancesIndex = 0;
+    // for (uint i = 0; i < assetBalances.length; ++i) {
+    //   ISubAccounts.AssetBalance memory balance = assetBalances[i];
+    //   if (balance.balance != 0) {
+    //     newAssetBalances[newBalancesIndex++] = balance;
+    //   }
+    // }
+    // for (uint i = 0; i < newBalances; ++i) {
+    //   newAssetBalances[newBalancesIndex++] = preBalances[i];
+    // }
 
-    return newAssetBalances;
+    // return newAssetBalances;
   }
 
   /**
