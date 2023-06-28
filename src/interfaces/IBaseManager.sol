@@ -34,8 +34,6 @@ interface IBaseManager is IManager {
   //   Events   //
   ////////////////
 
-  /// @dev Emitted when OI fee rate is set
-  event OIFeeRateSet(address asset, uint oiFeeRate);
   event MinOIFeeSet(uint minOIFee);
   event PerpSettled(uint indexed accountId, int netCash);
   event FeeBypassedCallerSet(address caller, bool bypassed);
@@ -46,8 +44,6 @@ interface IBaseManager is IManager {
   ////////////
   // Errors //
   ////////////
-
-  error BM_OIFeeRateTooHigh();
 
   error BM_MinOIFeeTooHigh();
 

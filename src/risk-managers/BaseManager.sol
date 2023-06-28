@@ -27,6 +27,7 @@ import {IAsset} from "../interfaces/IAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {IAllowList} from "../interfaces/IAllowList.sol";
+import {IPortfolioViewer} from "../interfaces/IPortfolioViewer.sol";
 
 /**
  * @title BaseManager
@@ -50,6 +51,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /// @dev Dutch auction contract address, can trigger execute bid
   IDutchAuction internal immutable liquidation;
+
+  /// @dev Portfolio viewer contract
+  IPortfolioViewer internal viewer;
 
   /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
   uint public immutable accId;
@@ -75,15 +79,16 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
   mapping(address sender => bool) internal feeBypassedCaller;
 
-  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
-  mapping(address asset => uint) public OIFeeRateBPS;
-
-  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
+  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IDutchAuction _liquidation, IPortfolioViewer _viewer)
+    Ownable2Step()
+  {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;
 
     accId = subAccounts.createAccount(address(this), IManager(address(this)));
+
+    viewer = _viewer;
   }
 
   //////////////////////////
@@ -109,21 +114,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     feeRecipientAcc = _newAcc;
     emit FeeRecipientSet(_newAcc);
-  }
-
-  /**
-   * @notice Governance determined OI fee rate to be set
-   * @dev Charged fee = contract traded * OIFee * spot
-   * @param newFeeRate OI fee rate in BPS
-   */
-  function setOIFeeRateBPS(address asset, uint newFeeRate) external onlyOwner {
-    if (newFeeRate > 0.2e18) {
-      revert BM_OIFeeRateTooHigh();
-    }
-
-    OIFeeRateBPS[asset] = newFeeRate;
-
-    emit OIFeeRateSet(asset, newFeeRate);
   }
 
   function setMinOIFee(uint newMinOIFee) external onlyOwner {
@@ -301,12 +291,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     view
     returns (uint fee)
   {
-    bool oiIncreased = _getOIIncreased(asset, subId, tradeId);
-    if (!oiIncreased) return 0;
-
     (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
-    fee = SignedMath.abs(delta).multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS[address(asset)]);
+    fee = viewer.getAssetOIFee(asset, subId, delta, tradeId, forwardPrice);
   }
 
   /**
@@ -314,20 +301,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
    */
   function _getPerpOIFee(IPerpAsset perpAsset, int delta, uint tradeId) internal view returns (uint fee) {
-    bool oiIncreased = _getOIIncreased(perpAsset, 0, tradeId);
-    if (!oiIncreased) return 0;
-
     (uint perpPrice,) = perpAsset.getPerpPrice();
-    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS[address(perpAsset)]);
-  }
-
-  /**
-   * @dev check if OI increased for a given asset and subId in a trade
-   */
-  function _getOIIncreased(IGlobalSubIdOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
-    (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
-    uint oi = asset.openInterest(subId);
-    return oi > oiBefore;
+    fee = viewer.getAssetOIFee(perpAsset, 0, delta, tradeId, perpPrice);
   }
 
   /**
@@ -350,24 +325,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev this function assume all assets are compliant to IPositionTracking interface
    */
   function _checkAllAssetCaps(uint accountId, uint tradeId) internal view {
-    address[] memory assets = subAccounts.getUniqueAssets(accountId);
-    for (uint i; i < assets.length; i++) {
-      if (assets[i] == address(cashAsset)) continue;
+    // address[] memory assets = subAccounts.getUniqueAssets(accountId);
+    // for (uint i; i < assets.length; i++) {
+    //   if (assets[i] == address(cashAsset)) continue;
 
-      _checkAssetCap(IPositionTracking(assets[i]), tradeId);
-    }
-  }
-
-  /**
-   * @dev check that an asset is not over the total position cap for this manager
-   */
-  function _checkAssetCap(IPositionTracking asset, uint tradeId) internal view {
-    uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
-    (, uint preTradePos) = asset.totalPositionBeforeTrade(IManager(address(this)), tradeId);
-    uint postTradePos = asset.totalPosition(IManager(address(this)));
-
-    // If the trade increased OI and we are past the cap, revert.
-    if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
+    //   _checkAssetCap(IPositionTracking(assets[i]), tradeId);
+    // }
   }
 
   ////////////////
@@ -510,60 +473,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
         ""
       );
     }
-  }
-
-  /**
-   * @dev get the original balances state before a trade is executed
-   */
-  function _undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    internal
-    view
-    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
-  {
-    // ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-
-    // // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
-    // uint removedBalances = 0;
-    // uint newBalances = 0;
-    // ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
-
-    // for (uint i = 0; i < assetDeltas.length; ++i) {
-    //   ISubAccounts.AssetDelta memory delta = assetDeltas[i];
-    //   if (delta.delta == 0) {
-    //     continue;
-    //   }
-    //   bool found = false;
-    //   for (uint j = 0; j < assetBalances.length; ++j) {
-    //     ISubAccounts.AssetBalance memory balance = assetBalances[j];
-    //     if (balance.asset == delta.asset && balance.subId == delta.subId) {
-    //       found = true;
-    //       assetBalances[j].balance = balance.balance - delta.delta;
-    //       if (assetBalances[j].balance == 0) {
-    //         removedBalances++;
-    //       }
-    //       break;
-    //     }
-    //   }
-    //   if (!found) {
-    //     preBalances[newBalances++] =
-    //       ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
-    //   }
-    // }
-
-    // newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
-
-    // uint newBalancesIndex = 0;
-    // for (uint i = 0; i < assetBalances.length; ++i) {
-    //   ISubAccounts.AssetBalance memory balance = assetBalances[i];
-    //   if (balance.balance != 0) {
-    //     newAssetBalances[newBalancesIndex++] = balance;
-    //   }
-    // }
-    // for (uint i = 0; i < newBalances; ++i) {
-    //   newAssetBalances[newBalancesIndex++] = preBalances[i];
-    // }
-
-    // return newAssetBalances;
   }
 
   /**

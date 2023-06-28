@@ -20,8 +20,9 @@ contract BaseManagerTester is BaseManager {
     ICashAsset cash_,
     IOption option_,
     IPerpAsset perp_,
-    IDutchAuction auction_
-  ) BaseManager(subAccounts_, cash_, auction_) {
+    IDutchAuction auction_,
+    IPortfolioViewer viewer_
+  ) BaseManager(subAccounts_, cash_, auction_, viewer_) {
     option = option_;
     perp = perp_;
     forwardFeed = forwardFeed_;
@@ -49,10 +50,6 @@ contract BaseManagerTester is BaseManager {
     fee = _getPerpOIFee(asset, delta, tradeId);
   }
 
-  function checkAssetCap(IPositionTracking asset, uint tradeId) external view {
-    return _checkAssetCap(asset, tradeId);
-  }
-
   function settleOptions(uint accountId) external {
     _settleAccountOptions(option, accountId);
   }
@@ -68,14 +65,6 @@ contract BaseManagerTester is BaseManager {
   function getMargin(uint, bool) external view returns (int) {}
 
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int) {}
-
-  function undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    external
-    view
-    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
-  {
-    return _undoAssetDeltas(accountId, assetDeltas);
-  }
 
   function setBalances(uint accountId, ISubAccounts.AssetBalance[] memory assets) external {
     for (uint i = 0; i < assets.length; ++i) {

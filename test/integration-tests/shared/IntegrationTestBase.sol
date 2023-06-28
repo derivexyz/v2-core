@@ -143,6 +143,8 @@ contract IntegrationTestBase is Test {
     srm = new StandardManager(subAccounts, cash, auction, portfolioViewer);
     assertEq(address(srm), address(srmAddr));
 
+    portfolioViewer.setStandardManager(srm);
+
     // Deploy USDC stable feed
     stableFeed = new MockFeeds();
     stableFeed.setSpot(1e18, 1e18);
@@ -250,7 +252,8 @@ contract IntegrationTestBase is Test {
       market.pricing,
       base, 
       auction,
-      feeds
+      feeds,
+      portfolioViewer
     );
 
     perp.setSpotFeed(market.spotFeed);
