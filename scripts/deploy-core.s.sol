@@ -8,6 +8,7 @@ import "../src/liquidation/DutchAuction.sol";
 import "../src/SubAccounts.sol";
 import "../src/SecurityModule.sol";
 import "../src/risk-managers/StandardManager.sol";
+import "../src/risk-managers/SRMPortfolioViewer.sol";
 
 import "../src/feeds/LyraSpotFeed.sol";
 
@@ -57,14 +58,17 @@ contract DeployCore is Utils {
     deployment.cash = new CashAsset(deployment.subAccounts, IERC20Metadata(config.usdc), deployment.rateModel);
 
     // nonce + 3: Deploy SM
-    address srmAddr = computeCreateAddress(msg.sender, nonce + 5);
+    address srmAddr = computeCreateAddress(msg.sender, nonce + 6);
     deployment.securityModule = new SecurityModule(deployment.subAccounts, deployment.cash, IManager(srmAddr));
 
     // nonce + 4: Deploy Auction
     deployment.auction = new DutchAuction(deployment.subAccounts, deployment.securityModule, deployment.cash);
 
-    // nonce + 5: Deploy Standard Manager. Shared by all assets
-    deployment.srm = new StandardManager(deployment.subAccounts, deployment.cash, deployment.auction);
+    // nonce + 5: Deploy Viewer
+    deployment.srmViewer = new SRMPortfolioViewer(deployment.subAccounts, deployment.cash);
+
+    // nonce + 6: Deploy Standard Manager. Shared by all assets
+    deployment.srm = new StandardManager(deployment.subAccounts, deployment.cash, deployment.auction, deployment.srmViewer);
     assert(address(deployment.srm) == address(srmAddr));
 
     // Deploy USDC stable feed
@@ -85,6 +89,8 @@ contract DeployCore is Utils {
   }
 
   function _setupCoreFunctions(Deployment memory deployment) internal {
+    deployment.srmViewer.setStandardManager(deployment.srm);
+
     // setup cash
     deployment.cash.setLiquidationModule(deployment.auction);
     deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
@@ -118,6 +124,7 @@ contract DeployCore is Utils {
     vm.serializeAddress(objKey, "securityModule", address(deployment.securityModule));
     vm.serializeAddress(objKey, "auction", address(deployment.auction));
     vm.serializeAddress(objKey, "srm", address(deployment.srm));
+    vm.serializeAddress(objKey, "srmViwer", address(deployment.srmViewer));
     string memory finalObj = vm.serializeAddress(objKey, "stableFeed", address(deployment.stableFeed));
 
     // build path
