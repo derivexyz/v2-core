@@ -17,7 +17,7 @@ import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IOption} from "../interfaces/IOption.sol";
 import {IStandardManager} from "../interfaces/IStandardManager.sol";
-import {IPortfolioViewer} from "../interfaces/IPortfolioViewer.sol";
+import {ISRMPortfolioViewer} from "../interfaces/ISRMPortfolioViewer.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IVolFeed} from "../interfaces/IVolFeed.sol";
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
@@ -92,9 +92,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   //    Constructor     //
   ////////////////////////
 
-  constructor(ISubAccounts subAccounts_, ICashAsset cashAsset_, IDutchAuction _dutchAuction, IPortfolioViewer _viewer)
-    BaseManager(subAccounts_, cashAsset_, _dutchAuction, _viewer)
-  {}
+  constructor(
+    ISubAccounts subAccounts_,
+    ICashAsset cashAsset_,
+    IDutchAuction _dutchAuction,
+    ISRMPortfolioViewer _viewer
+  ) BaseManager(subAccounts_, cashAsset_, _dutchAuction, _viewer) {}
 
   ////////////////////////
   //    Admin-Only     //
@@ -317,7 +320,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev perform a risk check on the account.
    */
   function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
-    StandardManagerPortfolio memory portfolio = viewer.getSRMPortfolio(accountId);
+    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
 
     // account can only have negative cash if borrowing is enabled
     if (!borrowingEnabled && portfolio.cash < 0) revert SRM_NoNegativeCash();
@@ -327,7 +330,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     // cash deposited has to cover the margin requirement
     if (postIM < 0) {
-      StandardManagerPortfolio memory prePortfolio = viewer.getSRMPortfolioPreTrade(accountId, assetDeltas);
+      StandardManagerPortfolio memory prePortfolio =
+        ISRMPortfolioViewer(address(viewer)).getSRMPortfolioPreTrade(accountId, assetDeltas);
 
       (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
       (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
@@ -621,7 +625,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function getMargin(uint accountId, bool isInitial) public view returns (int) {
     // get portfolio from array of balances
-    StandardManagerPortfolio memory portfolio = viewer.getSRMPortfolio(accountId);
+    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     (int margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
     return margin;
   }
@@ -630,7 +634,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev the function used by the auction contract
    */
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint) external view returns (int, int) {
-    StandardManagerPortfolio memory portfolio = viewer.getSRMPortfolio(accountId);
+    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     return _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
   }
 

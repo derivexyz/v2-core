@@ -11,7 +11,7 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-import "src/risk-managers/PortfolioViewer.sol";
+import "src/risk-managers/SRMPortfolioViewer.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
@@ -44,7 +44,7 @@ contract TestStandardManagerBase is Test {
   MockOptionPricing btcPricing;
   MockOptionPricing ethPricing;
 
-  PortfolioViewer portfolioViewer;
+  SRMPortfolioViewer portfolioViewer;
 
   uint ethSpot = 1500e18;
   uint btcSpot = 20000e18;
@@ -101,7 +101,7 @@ contract TestStandardManagerBase is Test {
     ethPricing = new MockOptionPricing();
     btcPricing = new MockOptionPricing();
 
-    portfolioViewer = new PortfolioViewer(subAccounts, cash);
+    portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
 
     manager = new StandardManagerPublic(
       subAccounts,

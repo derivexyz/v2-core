@@ -15,7 +15,7 @@ import "src/liquidation/DutchAuction.sol";
 import "src/SubAccounts.sol";
 
 import "src/risk-managers/StandardManager.sol";
-import "src/risk-managers/PortfolioViewer.sol";
+import "src/risk-managers/SRMPortfolioViewer.sol";
 import "src/risk-managers/PMRM.sol";
 
 import "src/feeds/OptionPricing.sol";
@@ -86,7 +86,7 @@ contract IntegrationTestBase is Test {
 
   // Single standard manager shared across all markets
   StandardManager public srm;
-  PortfolioViewer public portfolioViewer;
+  SRMPortfolioViewer public portfolioViewer;
 
   MockFeeds internal stableFeed;
 
@@ -137,7 +137,7 @@ contract IntegrationTestBase is Test {
     auction = new DutchAuction(subAccounts, securityModule, cash);
 
     // Nonce 7: Deploy Portfolio Viewer
-    portfolioViewer = new PortfolioViewer(subAccounts, cash);
+    portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
 
     // Nonce 8: Deploy Standard Manager. Shared by all assets
     srm = new StandardManager(subAccounts, cash, auction, portfolioViewer);

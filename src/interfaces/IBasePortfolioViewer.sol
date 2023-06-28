@@ -8,10 +8,10 @@ import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
 import {IManager} from "../interfaces/IManager.sol";
 
 /**
- * @title IPortfolioViewer
+ * @title IBasePortfolioViewer
  * @author Lyra
  */
-interface IPortfolioViewer {
+interface IBasePortfolioViewer {
   error BM_AssetCapExceeded();
 
   error BM_OIFeeRateTooHigh();
@@ -22,18 +22,6 @@ interface IPortfolioViewer {
     returns (uint fee);
 
   function checkAllAssetCaps(IManager manager, uint accountId, uint tradeId) external view;
-
-  function getSRMPortfolio(uint accountId) external view returns (IStandardManager.StandardManagerPortfolio memory);
-
-  function getSRMPortfolioPreTrade(uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas)
-    external
-    view
-    returns (IStandardManager.StandardManagerPortfolio memory);
-
-  function arrangeSRMPortfolio(ISubAccounts.AssetBalance[] memory assets)
-    external
-    view
-    returns (IStandardManager.StandardManagerPortfolio memory);
 
   function undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
     external
