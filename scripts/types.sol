@@ -7,6 +7,7 @@ import {InterestRateModel} from "../src/assets/InterestRateModel.sol";
 import {SecurityModule} from "../src/SecurityModule.sol";
 import {DutchAuction} from "../src/liquidation/DutchAuction.sol";
 import {StandardManager} from "../src/risk-managers/StandardManager.sol";
+import {SRMPortfolioViewer} from "../src/risk-managers/SRMPortfolioViewer.sol";
 
 import {ISpotFeed} from "../src/interfaces/ISpotFeed.sol";
 
@@ -24,6 +25,7 @@ struct Deployment {
   DutchAuction auction;
   // standard risk manager: one for the whole system
   StandardManager srm;
+  SRMPortfolioViewer srmViewer;
 
   ISpotFeed stableFeed;
 }
