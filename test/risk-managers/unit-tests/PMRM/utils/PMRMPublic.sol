@@ -12,8 +12,9 @@ contract PMRMPublic is PMRM {
     IOptionPricing optionPricing_,
     IWrappedERC20Asset baseAsset_,
     IDutchAuction liquidation_,
-    Feeds memory feeds_
-  ) PMRM(subAccounts_, cashAsset_, option_, perp_, optionPricing_, baseAsset_, liquidation_, feeds_) {}
+    Feeds memory feeds_,
+    IPortfolioViewer viewer_
+  ) PMRM(subAccounts_, cashAsset_, option_, perp_, optionPricing_, baseAsset_, liquidation_, feeds_, viewer_) {}
 
   function arrangePortfolioByBalances(ISubAccounts.AssetBalance[] memory assets)
     external

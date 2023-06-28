@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
+import "lyra-utils/decimals/DecimalMath.sol";
 
 import "openzeppelin/access/Ownable2Step.sol";
 
@@ -16,6 +17,10 @@ import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IOption} from "../interfaces/IOption.sol";
 import {IStandardManager} from "../interfaces/IStandardManager.sol";
 import {IPMRM} from "../interfaces/IPMRM.sol";
+import {IPositionTracking} from "../interfaces/IPositionTracking.sol";
+import {IManager} from "../interfaces/IPositionTracking.sol";
+
+import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
 
 /**
  * @title PortfolioViewer
@@ -24,6 +29,7 @@ import {IPMRM} from "../interfaces/IPMRM.sol";
  */
 
 contract PortfolioViewer is Ownable, IPortfolioViewer {
+  using DecimalMath for uint;
   using SafeCast for uint;
   using SafeCast for int;
   using UnorderedMemoryArray for uint[];
@@ -33,6 +39,9 @@ contract PortfolioViewer is Ownable, IPortfolioViewer {
 
   ISubAccounts public immutable subAccounts;
   ICashAsset public immutable cashAsset;
+
+  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
+  mapping(address asset => uint) public OIFeeRateBPS;
 
   constructor(ISubAccounts _subAccounts, ICashAsset _cash) {
     subAccounts = _subAccounts;
@@ -44,11 +53,91 @@ contract PortfolioViewer is Ownable, IPortfolioViewer {
   }
 
   /**
+   * @notice Governance determined OI fee rate to be set
+   * @dev Charged fee = contract traded * OIFee * spot
+   * @param newFeeRate OI fee rate in BPS
+   */
+  function setOIFeeRateBPS(address asset, uint newFeeRate) external onlyOwner {
+    if (newFeeRate > 0.2e18) {
+      revert BM_OIFeeRateTooHigh();
+    }
+
+    OIFeeRateBPS[asset] = newFeeRate;
+
+    emit OIFeeRateSet(asset, newFeeRate);
+  }
+
+  //
+
+  /**
+   * @notice calculate the perpetual OI fee.
+   * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
+   */
+  function getAssetOIFee(IGlobalSubIdOITracking asset, uint subId, int delta, uint tradeId, uint price)
+    external
+    view
+    returns (uint fee)
+  {
+    bool oiIncreased = _getOIIncreased(asset, subId, tradeId);
+    if (!oiIncreased) return 0;
+
+    fee = SignedMath.abs(delta).multiplyDecimal(price).multiplyDecimal(OIFeeRateBPS[address(asset)]);
+  }
+
+  /**
+   * @dev check if OI increased for a given asset and subId in a trade
+   */
+  function _getOIIncreased(IGlobalSubIdOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
+    (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
+    uint oi = asset.openInterest(subId);
+    return oi > oiBefore;
+  }
+
+  /**
+   * @notice check that all assets in an account is below the cap
+   * @dev this function assume all assets are compliant to IPositionTracking interface
+   */
+  function checkAllAssetCaps(IManager manager, uint accountId, uint tradeId) external view {
+    address[] memory assets = subAccounts.getUniqueAssets(accountId);
+    for (uint i; i < assets.length; i++) {
+      if (assets[i] == address(cashAsset)) continue;
+
+      _checkAssetCap(manager, IPositionTracking(assets[i]), tradeId);
+    }
+  }
+
+  /**
+   * @dev check that an asset is not over the total position cap for this manager
+   */
+  function _checkAssetCap(IManager manager, IPositionTracking asset, uint tradeId) internal view {
+    uint totalPosCap = asset.totalPositionCap(manager);
+    (, uint preTradePos) = asset.totalPositionBeforeTrade(manager, tradeId);
+    uint postTradePos = asset.totalPosition(manager);
+
+    // If the trade increased OI and we are past the cap, revert.
+    if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
+  }
+
+  function getSRMPortfolio(uint accountId) external view returns (IStandardManager.StandardManagerPortfolio memory) {
+    ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(accountId);
+    return arrangeSRMPortfolio(assets);
+  }
+
+  function getSRMPortfolioPreTrade(uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas)
+    external
+    view
+    returns (IStandardManager.StandardManagerPortfolio memory)
+  {
+    ISubAccounts.AssetBalance[] memory assets = undoAssetDeltas(accountId, assetDeltas);
+    return arrangeSRMPortfolio(assets);
+  }
+
+  /**
    * @notice Arrange balances into standard manager portfolio struct
    * @param assets Array of balances for given asset and subId.
    */
   function arrangeSRMPortfolio(ISubAccounts.AssetBalance[] memory assets)
-    external
+    public
     view
     returns (IStandardManager.StandardManagerPortfolio memory)
   {
@@ -147,7 +236,7 @@ contract PortfolioViewer is Ownable, IPortfolioViewer {
    * @dev get the original balances state before a trade is executed
    */
   function undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    external
+    public
     view
     returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
   {

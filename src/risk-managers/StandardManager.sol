@@ -29,6 +29,7 @@ import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 
 import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 
+import {IManager} from "../interfaces/IManager.sol";
 import {BaseManager} from "./BaseManager.sol";
 
 /**
@@ -54,9 +55,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /// @dev Oracle that returns USDC / USD price
   ISpotFeed internal stableFeed;
 
-  /// @dev Portfolio viewer contract
-  IPortfolioViewer internal viewer;
-
   /// @dev if turned on, people can borrow cash from standard manager, aka have negative balance.
   bool public borrowingEnabled;
 
@@ -64,10 +62,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   mapping(IAsset asset => AssetDetail) internal _assetDetails;
 
   /// @dev Perp Margin Requirements: maintenance and initial margin requirements
-  mapping(uint marketId => PerpMarginRequirements) internal perpMarginRequirements;
+  mapping(uint marketId => PerpMarginRequirements) public perpMarginRequirements;
 
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
-  mapping(uint marketId => OptionMarginParams) internal optionMarginParams;
+  mapping(uint marketId => OptionMarginParams) public optionMarginParams;
 
   /// @dev Base margin discount: each base asset be treated as "spot * discount_factor" amount of cash
   mapping(uint marketId => int) internal baseMarginDiscountFactor;
@@ -95,10 +93,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ////////////////////////
 
   constructor(ISubAccounts subAccounts_, ICashAsset cashAsset_, IDutchAuction _dutchAuction, IPortfolioViewer _viewer)
-    BaseManager(subAccounts_, cashAsset_, _dutchAuction)
-  {
-    viewer = _viewer;
-  }
+    BaseManager(subAccounts_, cashAsset_, _dutchAuction, _viewer)
+  {}
 
   ////////////////////////
   //    Admin-Only     //
@@ -270,7 +266,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // send data to oracles if needed
     _processManagerData(tradeId, managerData);
 
-    _checkAllAssetCaps(accountId, tradeId);
+    viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
 
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
     bool isRiskReducing = true;
@@ -321,8 +317,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev perform a risk check on the account.
    */
   function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    StandardManagerPortfolio memory portfolio = viewer.arrangeSRMPortfolio(assetBalances);
+    StandardManagerPortfolio memory portfolio = viewer.getSRMPortfolio(accountId);
 
     // account can only have negative cash if borrowing is enabled
     if (!borrowingEnabled && portfolio.cash < 0) revert SRM_NoNegativeCash();
@@ -332,8 +327,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     // cash deposited has to cover the margin requirement
     if (postIM < 0) {
-      StandardManagerPortfolio memory prePortfolio =
-        viewer.arrangeSRMPortfolio(_undoAssetDeltas(accountId, assetDeltas));
+      StandardManagerPortfolio memory prePortfolio = viewer.getSRMPortfolioPreTrade(accountId, assetDeltas);
 
       (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
       (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
@@ -341,7 +335,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       // allow the trade to pass if the net margin increased (risk reduced)
       if (postMM > preMM) return;
 
-      revert SRM_PortfolioBelowMargin(accountId, -(postIM));
+      revert SRM_PortfolioBelowMargin();
     }
   }
 
@@ -443,7 +437,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint requirement = isInitial
       ? perpMarginRequirements[marketHolding.marketId].imPerpReq
       : perpMarginRequirements[marketHolding.marketId].mmPerpReq;
-    netMargin = -notional.multiplyDecimal(requirement).toInt256();
+    netMargin = -int(notional.multiplyDecimal(requirement));
 
     if (!isInitial) return netMargin;
 
@@ -627,8 +621,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function getMargin(uint accountId, bool isInitial) public view returns (int) {
     // get portfolio from array of balances
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    StandardManagerPortfolio memory portfolio = viewer.arrangeSRMPortfolio(assetBalances);
+    StandardManagerPortfolio memory portfolio = viewer.getSRMPortfolio(accountId);
     (int margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
     return margin;
   }
@@ -637,8 +630,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev the function used by the auction contract
    */
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint) external view returns (int, int) {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    StandardManagerPortfolio memory portfolio = viewer.arrangeSRMPortfolio(assetBalances);
+    StandardManagerPortfolio memory portfolio = viewer.getSRMPortfolio(accountId);
     return _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
   }
 

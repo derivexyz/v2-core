@@ -24,8 +24,8 @@ import {IPMRM} from "../interfaces/IPMRM.sol";
 import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
-import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
+import {IPortfolioViewer} from "../interfaces/IPortfolioViewer.sol";
 
 import {BaseManager} from "./BaseManager.sol";
 import {PMRMLib} from "./PMRMLib.sol";
@@ -77,8 +77,9 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     IOptionPricing optionPricing_,
     IWrappedERC20Asset baseAsset_,
     IDutchAuction liquidation_,
-    Feeds memory feeds_
-  ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, liquidation_) {
+    Feeds memory feeds_,
+    IPortfolioViewer viewer_
+  ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, liquidation_, viewer_) {
     spotFeed = feeds_.spotFeed;
     stableFeed = feeds_.stableFeed;
     forwardFeed = feeds_.forwardFeed;
@@ -204,7 +205,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
 
     // check caps are not exceeded
-    _checkAllAssetCaps(accountId, tradeId);
+    viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -264,7 +265,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
 
         // Note: cash interest is also undone here, but this is not a significant issue
         IPMRM.Portfolio memory prePortfolio =
-          _arrangePortfolio(accountId, _undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
+          _arrangePortfolio(accountId, viewer.undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
 
         // we have to use all scenarios for the pre-check as we don't know if the worst scenario is different
         (int preMM,,) = _getMarginAndMarkToMarket(prePortfolio, false, marginScenarios, true);

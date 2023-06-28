@@ -120,7 +120,7 @@ interface IStandardManager {
   error SRM_UnsupportedAsset();
 
   /// @dev Account is under water, need more cash
-  error SRM_PortfolioBelowMargin(uint accountId, int margin);
+  error SRM_PortfolioBelowMargin();
 
   /// @dev Invalid Parameters for perp margin requirements
   error SRM_InvalidPerpMarginParams();

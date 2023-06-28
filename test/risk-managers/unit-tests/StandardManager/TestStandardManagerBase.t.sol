@@ -110,6 +110,8 @@ contract TestStandardManagerBase is Test {
       portfolioViewer
     );
 
+    portfolioViewer.setStandardManager(manager);
+
     manager.setPricingModule(ethMarketId, ethPricing);
     manager.setPricingModule(btcMarketId, btcPricing);
 

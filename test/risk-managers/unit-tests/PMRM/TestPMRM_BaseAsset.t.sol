@@ -62,7 +62,8 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
         interestRateFeed: IInterestRateFeed(feed),
         volFeed: IVolFeed(feed),
         settlementFeed: ISettlementFeed(feed)
-      })
+      }),
+      viewer
     );
     baseAsset.setWhitelistManager(address(newManager), true);
     // create new account for that manager
