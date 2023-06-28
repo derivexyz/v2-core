@@ -3,9 +3,6 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
-import "lyra-utils/decimals/DecimalMath.sol";
-
-import "openzeppelin/access/Ownable2Step.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
@@ -29,22 +26,29 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
   using SafeCast for int;
   using UnorderedMemoryArray for uint[];
 
+  ///@dev standard manager contract where we read the assetDetails from
   IStandardManager public standardManager;
 
   constructor(ISubAccounts _subAccounts, ICashAsset _cash) BasePortfolioViewer(_subAccounts, _cash) {}
 
   /**
-   * @dev update the standard manager contract where we read the assetDetails from (only when arranging portfolio for Standard Manager)
+   * @dev update the standard manager contract
    */
   function setStandardManager(IStandardManager srm) external onlyOwner {
     standardManager = srm;
   }
 
+  /**
+   * @dev get the portfolio struct for standard risk manager
+   */
   function getSRMPortfolio(uint accountId) external view returns (IStandardManager.StandardManagerPortfolio memory) {
     ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(accountId);
     return arrangeSRMPortfolio(assets);
   }
 
+  /**
+   * @dev get the pre-trade portfolio of an standard account
+   */
   function getSRMPortfolioPreTrade(uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas)
     external
     view

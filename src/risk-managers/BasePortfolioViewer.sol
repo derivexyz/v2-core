@@ -7,9 +7,6 @@ import "lyra-utils/decimals/DecimalMath.sol";
 
 import "openzeppelin/access/Ownable2Step.sol";
 
-import "lyra-utils/encoding/OptionEncoding.sol";
-import "lyra-utils/arrays/UnorderedMemoryArray.sol";
-
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
@@ -25,7 +22,7 @@ import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
  * @notice Read only contract that helps with converting portfolio and balances
  */
 
-contract BasePortfolioViewer is Ownable, IBasePortfolioViewer {
+contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
   using DecimalMath for uint;
   using SafeCast for uint;
   using SafeCast for int;
@@ -40,6 +37,10 @@ contract BasePortfolioViewer is Ownable, IBasePortfolioViewer {
     subAccounts = _subAccounts;
     cashAsset = _cash;
   }
+
+  //////////////////////////
+  //        Setter        //
+  //////////////////////////
 
   /**
    * @notice Governance determined OI fee rate to be set
@@ -56,10 +57,12 @@ contract BasePortfolioViewer is Ownable, IBasePortfolioViewer {
     emit OIFeeRateSet(asset, newFeeRate);
   }
 
-  //
+  /////////////////////////
+  //        View         //
+  /////////////////////////
 
   /**
-   * @notice calculate the perpetual OI fee.
+   * @notice calculate the OI fee for an asset
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
    */
   function getAssetOIFee(IGlobalSubIdOITracking asset, uint subId, int delta, uint tradeId, uint price)
