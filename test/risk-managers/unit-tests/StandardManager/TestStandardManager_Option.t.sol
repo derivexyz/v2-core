@@ -120,6 +120,14 @@ contract UNIT_TestStandardManager_Option is Test {
   //   Setter   //
   ////////////////
 
+  function testViewerSetter() public {
+    viewer.setStandardManager(manager);
+
+    vm.expectRevert();
+    vm.prank(alice);
+    viewer.setStandardManager(manager);
+  }
+
   function testWhitelistAsset() public {
     manager.whitelistAsset(perp, 2, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 2, IStandardManager.AssetType.Option);
