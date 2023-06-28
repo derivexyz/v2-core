@@ -25,7 +25,7 @@ import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
-import {IPortfolioViewer} from "../interfaces/IPortfolioViewer.sol";
+import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 import {BaseManager} from "./BaseManager.sol";
 import {PMRMLib} from "./PMRMLib.sol";
@@ -78,7 +78,7 @@ contract PMRM is PMRMLib, IPMRM, ILiquidatableManager, BaseManager {
     IWrappedERC20Asset baseAsset_,
     IDutchAuction liquidation_,
     Feeds memory feeds_,
-    IPortfolioViewer viewer_
+    IBasePortfolioViewer viewer_
   ) PMRMLib(optionPricing_) BaseManager(subAccounts_, cashAsset_, liquidation_, viewer_) {
     spotFeed = feeds_.spotFeed;
     stableFeed = feeds_.stableFeed;

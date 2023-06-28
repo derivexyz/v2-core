@@ -27,7 +27,7 @@ import {IAsset} from "../interfaces/IAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {IAllowList} from "../interfaces/IAllowList.sol";
-import {IPortfolioViewer} from "../interfaces/IPortfolioViewer.sol";
+import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 /**
  * @title BaseManager
@@ -53,7 +53,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   IDutchAuction internal immutable liquidation;
 
   /// @dev Portfolio viewer contract
-  IPortfolioViewer internal viewer;
+  IBasePortfolioViewer internal viewer;
 
   /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
   uint public immutable accId;
@@ -79,9 +79,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
   mapping(address sender => bool) internal feeBypassedCaller;
 
-  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IDutchAuction _liquidation, IPortfolioViewer _viewer)
-    Ownable2Step()
-  {
+  constructor(
+    ISubAccounts _subAccounts,
+    ICashAsset _cashAsset,
+    IDutchAuction _liquidation,
+    IBasePortfolioViewer _viewer
+  ) Ownable2Step() {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;

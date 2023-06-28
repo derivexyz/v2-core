@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "src/risk-managers/StandardManager.sol";
-import "src/risk-managers/PortfolioViewer.sol";
+import "src/risk-managers/SRMPortfolioViewer.sol";
 import "src/periphery/OptionSettlementHelper.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
@@ -29,7 +29,7 @@ import "test/auction/mocks/MockCashAsset.sol";
 contract UNIT_TestStandardManager_Option is Test {
   SubAccounts subAccounts;
   StandardManager manager;
-  PortfolioViewer viewer;
+  SRMPortfolioViewer viewer;
   MockCash cash;
   MockERC20 usdc;
   MockPerp perp;
@@ -67,7 +67,7 @@ contract UNIT_TestStandardManager_Option is Test {
 
     pricing = new MockOptionPricing();
 
-    viewer = new PortfolioViewer(subAccounts, cash);
+    viewer = new SRMPortfolioViewer(subAccounts, cash);
 
     manager = new StandardManager(
       subAccounts,

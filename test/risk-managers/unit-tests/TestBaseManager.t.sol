@@ -10,7 +10,7 @@ import {ICashAsset} from "src/interfaces/ICashAsset.sol";
 import {IOption} from "src/interfaces/IOption.sol";
 
 import "src/SubAccounts.sol";
-import "src/risk-managers/PortfolioViewer.sol";
+import "src/risk-managers/SRMPortfolioViewer.sol";
 
 import "src/feeds/AllowList.sol";
 
@@ -44,7 +44,7 @@ contract UNIT_TestBaseManager is Test {
   uint expiry;
 
   MockDutchAuction mockAuction;
-  PortfolioViewer viewer;
+  SRMPortfolioViewer viewer;
 
   function setUp() public {
     subAccounts = new SubAccounts("Lyra Accounts", "LyraAccount");
@@ -56,7 +56,7 @@ contract UNIT_TestBaseManager is Test {
     cash = new MockCash(usdc, subAccounts);
     mockAuction = new MockDutchAuction();
 
-    viewer = new PortfolioViewer(subAccounts, cash);
+    viewer = new SRMPortfolioViewer(subAccounts, cash);
 
     tester =
       new BaseManagerTester(subAccounts, feed, feed, feed, cash, option, perp, IDutchAuction(mockAuction), viewer);
@@ -108,7 +108,7 @@ contract UNIT_TestBaseManager is Test {
 
   function testSettingOIFeeTooHigh() public {
     viewer.setOIFeeRateBPS(address(option), 0.2e18);
-    vm.expectRevert(IPortfolioViewer.BM_OIFeeRateTooHigh.selector);
+    vm.expectRevert(IBasePortfolioViewer.BM_OIFeeRateTooHigh.selector);
     viewer.setOIFeeRateBPS(address(option), 0.2e18 + 1);
 
     tester.setMinOIFee(100e18);

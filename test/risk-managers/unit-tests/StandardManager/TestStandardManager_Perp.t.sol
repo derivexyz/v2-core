@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "src/risk-managers/StandardManager.sol";
-import "src/risk-managers/PortfolioViewer.sol";
+import "src/risk-managers/SRMPortfolioViewer.sol";
 import "src/periphery/PerpSettlementHelper.sol";
 
 import "src/SubAccounts.sol";
@@ -32,7 +32,7 @@ contract UNIT_TestStandardManager is Test {
   PerpSettlementHelper perpHelper;
 
   MockFeeds feed;
-  PortfolioViewer viewer;
+  SRMPortfolioViewer viewer;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -52,7 +52,7 @@ contract UNIT_TestStandardManager is Test {
 
     feed = new MockFeeds();
     stableFeed = new MockFeeds();
-    viewer = new PortfolioViewer(subAccounts, cash);
+    viewer = new SRMPortfolioViewer(subAccounts, cash);
 
     manager = new StandardManager(
       subAccounts,

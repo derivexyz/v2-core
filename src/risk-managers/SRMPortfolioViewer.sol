@@ -11,111 +11,33 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
-import {IPortfolioViewer} from "../interfaces/IPortfolioViewer.sol";
+import {ISRMPortfolioViewer} from "../interfaces/ISRMPortfolioViewer.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IOption} from "../interfaces/IOption.sol";
 import {IStandardManager} from "../interfaces/IStandardManager.sol";
-import {IPMRM} from "../interfaces/IPMRM.sol";
-import {IPositionTracking} from "../interfaces/IPositionTracking.sol";
-import {IManager} from "../interfaces/IPositionTracking.sol";
-
-import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
+import {BasePortfolioViewer} from "./BasePortfolioViewer.sol";
 
 /**
- * @title PortfolioViewer
+ * @title SRMPortfolioViewer
  * @author Lyra
  * @notice Read only contract that helps with converting portfolio and balances
  */
 
-contract PortfolioViewer is Ownable, IPortfolioViewer {
-  using DecimalMath for uint;
+contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
   using SafeCast for uint;
   using SafeCast for int;
   using UnorderedMemoryArray for uint[];
 
   IStandardManager public standardManager;
-  IPMRM public pmrm;
 
-  ISubAccounts public immutable subAccounts;
-  ICashAsset public immutable cashAsset;
+  constructor(ISubAccounts _subAccounts, ICashAsset _cash) BasePortfolioViewer(_subAccounts, _cash) {}
 
-  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
-  mapping(address asset => uint) public OIFeeRateBPS;
-
-  constructor(ISubAccounts _subAccounts, ICashAsset _cash) {
-    subAccounts = _subAccounts;
-    cashAsset = _cash;
-  }
-
+  /**
+   * @dev update the standard manager contract where we read the assetDetails from (only when arranging portfolio for Standard Manager)
+   */
   function setStandardManager(IStandardManager srm) external onlyOwner {
     standardManager = srm;
-  }
-
-  /**
-   * @notice Governance determined OI fee rate to be set
-   * @dev Charged fee = contract traded * OIFee * spot
-   * @param newFeeRate OI fee rate in BPS
-   */
-  function setOIFeeRateBPS(address asset, uint newFeeRate) external onlyOwner {
-    if (newFeeRate > 0.2e18) {
-      revert BM_OIFeeRateTooHigh();
-    }
-
-    OIFeeRateBPS[asset] = newFeeRate;
-
-    emit OIFeeRateSet(asset, newFeeRate);
-  }
-
-  //
-
-  /**
-   * @notice calculate the perpetual OI fee.
-   * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
-   */
-  function getAssetOIFee(IGlobalSubIdOITracking asset, uint subId, int delta, uint tradeId, uint price)
-    external
-    view
-    returns (uint fee)
-  {
-    bool oiIncreased = _getOIIncreased(asset, subId, tradeId);
-    if (!oiIncreased) return 0;
-
-    fee = SignedMath.abs(delta).multiplyDecimal(price).multiplyDecimal(OIFeeRateBPS[address(asset)]);
-  }
-
-  /**
-   * @dev check if OI increased for a given asset and subId in a trade
-   */
-  function _getOIIncreased(IGlobalSubIdOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
-    (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
-    uint oi = asset.openInterest(subId);
-    return oi > oiBefore;
-  }
-
-  /**
-   * @notice check that all assets in an account is below the cap
-   * @dev this function assume all assets are compliant to IPositionTracking interface
-   */
-  function checkAllAssetCaps(IManager manager, uint accountId, uint tradeId) external view {
-    address[] memory assets = subAccounts.getUniqueAssets(accountId);
-    for (uint i; i < assets.length; i++) {
-      if (assets[i] == address(cashAsset)) continue;
-
-      _checkAssetCap(manager, IPositionTracking(assets[i]), tradeId);
-    }
-  }
-
-  /**
-   * @dev check that an asset is not over the total position cap for this manager
-   */
-  function _checkAssetCap(IManager manager, IPositionTracking asset, uint tradeId) internal view {
-    uint totalPosCap = asset.totalPositionCap(manager);
-    (, uint preTradePos) = asset.totalPositionBeforeTrade(manager, tradeId);
-    uint postTradePos = asset.totalPosition(manager);
-
-    // If the trade increased OI and we are past the cap, revert.
-    if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
   }
 
   function getSRMPortfolio(uint accountId) external view returns (IStandardManager.StandardManagerPortfolio memory) {
@@ -230,60 +152,6 @@ contract PortfolioViewer is Ownable, IPortfolioViewer {
       }
     }
     return portfolio;
-  }
-
-  /**
-   * @dev get the original balances state before a trade is executed
-   */
-  function undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    public
-    view
-    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
-  {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-
-    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
-    uint removedBalances = 0;
-    uint newBalances = 0;
-    ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
-
-    for (uint i = 0; i < assetDeltas.length; ++i) {
-      ISubAccounts.AssetDelta memory delta = assetDeltas[i];
-      if (delta.delta == 0) {
-        continue;
-      }
-      bool found = false;
-      for (uint j = 0; j < assetBalances.length; ++j) {
-        ISubAccounts.AssetBalance memory balance = assetBalances[j];
-        if (balance.asset == delta.asset && balance.subId == delta.subId) {
-          found = true;
-          assetBalances[j].balance = balance.balance - delta.delta;
-          if (assetBalances[j].balance == 0) {
-            removedBalances++;
-          }
-          break;
-        }
-      }
-      if (!found) {
-        preBalances[newBalances++] =
-          ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
-      }
-    }
-
-    newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
-
-    uint newBalancesIndex = 0;
-    for (uint i = 0; i < assetBalances.length; ++i) {
-      ISubAccounts.AssetBalance memory balance = assetBalances[i];
-      if (balance.balance != 0) {
-        newAssetBalances[newBalancesIndex++] = balance;
-      }
-    }
-    for (uint i = 0; i < newBalances; ++i) {
-      newAssetBalances[newBalancesIndex++] = preBalances[i];
-    }
-
-    return newAssetBalances;
   }
 
   /**

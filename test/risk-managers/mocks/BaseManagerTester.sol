@@ -21,7 +21,7 @@ contract BaseManagerTester is BaseManager {
     IOption option_,
     IPerpAsset perp_,
     IDutchAuction auction_,
-    IPortfolioViewer viewer_
+    IBasePortfolioViewer viewer_
   ) BaseManager(subAccounts_, cash_, auction_, viewer_) {
     option = option_;
     perp = perp_;

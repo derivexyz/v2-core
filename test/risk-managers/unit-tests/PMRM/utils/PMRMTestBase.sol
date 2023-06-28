@@ -20,7 +20,7 @@ import {CashAsset} from "../../../../../src/assets/CashAsset.sol";
 import {WrappedERC20Asset} from "../../../../../src/assets/WrappedERC20Asset.sol";
 import {OptionPricing} from "../../../../../src/feeds/OptionPricing.sol";
 import {PMRM} from "../../../../../src/risk-managers/PMRM.sol";
-import {PortfolioViewer} from "../../../../../src/risk-managers/PortfolioViewer.sol";
+import {SRMPortfolioViewer} from "../../../../../src/risk-managers/SRMPortfolioViewer.sol";
 import {DutchAuction} from "../../../../../src/liquidation/DutchAuction.sol";
 
 import {MockManager} from "../../../../shared/mocks/MockManager.sol";
@@ -65,7 +65,7 @@ contract PMRMTestBase is JsonMechIO {
   uint aliceAcc;
   uint bobAcc;
 
-  PortfolioViewer viewer;
+  SRMPortfolioViewer viewer;
 
   function setUp() public virtual {
     vm.warp(1640995200); // 1st jan 2022
@@ -90,7 +90,7 @@ contract PMRMTestBase is JsonMechIO {
     sm = new MockSM(subAccounts, cash);
     auction = new DutchAuction(subAccounts, sm, cash);
 
-    viewer = new PortfolioViewer(subAccounts, cash);
+    viewer = new SRMPortfolioViewer(subAccounts, cash);
 
     pmrm = new PMRMPublic(
       subAccounts,
