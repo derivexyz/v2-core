@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-contract IPMRMLib {
+import {IPMRM} from "./IPMRM.sol";
+
+interface IPMRMLib {
   struct VolShockParameters {
     /// @dev The max vol shock, that can be scaled down
     uint volRangeUp;
@@ -42,6 +44,23 @@ contract IPMRMLib {
     /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio, multipled by spot.
     uint optionPercent;
   }
+
+  function getMarginAndMarkToMarket(
+    IPMRM.Portfolio memory portfolio,
+    bool isInitial,
+    IPMRM.Scenario[] memory scenarios,
+    bool useBasisContingency
+  ) external view returns (int margin, int markToMarket, uint worstScenario);
+
+  function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
+    external
+    view
+    returns (int scenarioMtM);
+
+  function addPrecomputes(IPMRM.Portfolio memory portfolio, bool addBasisCont)
+    external
+    view
+    returns (IPMRM.Portfolio memory);
 
   ////////////
   // Errors //

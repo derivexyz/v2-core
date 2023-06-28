@@ -32,6 +32,7 @@ import "src/feeds/LyraForwardFeed.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {IPMRMLib} from "../../../src/interfaces/IPMRMLib.sol";
+import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 
 /**
  * @dev real Accounts contract
@@ -71,6 +72,7 @@ contract IntegrationTestBase is Test {
     OptionPricing pricing;
     // manager for specific market
     PMRM pmrm;
+    PMRMLib pmrmLib;
   }
 
   SubAccounts public subAccounts;
@@ -176,7 +178,7 @@ contract IntegrationTestBase is Test {
     marketId = _deployMarketContracts(key);
 
     // set up PMRM for this market
-    _setPMRMParams(markets[key].pmrm);
+    _setPMRMParams(markets[key].pmrm, markets[key].pmrmLib);
     // whitelist PMRM to control all assets
     _setupAssetCapsForManager(key, markets[key].pmrm, 1000e18);
 
@@ -244,16 +246,18 @@ contract IntegrationTestBase is Test {
       settlementFeed: market.forwardFeed
     });
 
+    market.pmrmLib = new PMRMLib(market.pricing);
+
     market.pmrm = new PMRM(
       subAccounts, 
       cash, 
       option, 
       perp, 
-      market.pricing,
       base, 
       auction,
       feeds,
-      portfolioViewer
+      portfolioViewer,
+      market.pmrmLib
     );
 
     perp.setSpotFeed(market.spotFeed);
@@ -622,7 +626,7 @@ contract IntegrationTestBase is Test {
     rateFeed.acceptData(data);
   }
 
-  function _setPMRMParams(PMRM pmrm) internal {
+  function _setPMRMParams(PMRM pmrm, PMRMLib pmrmLib) internal {
     IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
       scenarioSpotUp: 1.05e18,
       scenarioSpotDown: 0.95e18,
@@ -655,10 +659,10 @@ contract IntegrationTestBase is Test {
       dteFloor: 1 days
     });
 
-    pmrm.setBasisContingencyParams(basisContParams);
-    pmrm.setOtherContingencyParams(otherContParams);
-    pmrm.setMarginParams(marginParams);
-    pmrm.setVolShockParams(volShockParams);
+    pmrmLib.setBasisContingencyParams(basisContParams);
+    pmrmLib.setOtherContingencyParams(otherContParams);
+    pmrmLib.setMarginParams(marginParams);
+    pmrmLib.setVolShockParams(volShockParams);
 
     _addScenarios(pmrm);
   }

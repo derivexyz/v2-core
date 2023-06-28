@@ -20,7 +20,8 @@ import {CashAsset} from "../../../../../src/assets/CashAsset.sol";
 import {WrappedERC20Asset} from "../../../../../src/assets/WrappedERC20Asset.sol";
 import {OptionPricing} from "../../../../../src/feeds/OptionPricing.sol";
 import {PMRM} from "../../../../../src/risk-managers/PMRM.sol";
-import {SRMPortfolioViewer} from "../../../../../src/risk-managers/SRMPortfolioViewer.sol";
+import {PMRMLib} from "../../../../../src/risk-managers/PMRMLib.sol";
+import {BasePortfolioViewer} from "../../../../../src/risk-managers/BasePortfolioViewer.sol";
 import {DutchAuction} from "../../../../../src/liquidation/DutchAuction.sol";
 
 import {MockManager} from "../../../../shared/mocks/MockManager.sol";
@@ -65,7 +66,8 @@ contract PMRMTestBase is JsonMechIO {
   uint aliceAcc;
   uint bobAcc;
 
-  SRMPortfolioViewer viewer;
+  BasePortfolioViewer viewer;
+  PMRMLib lib;
 
   function setUp() public virtual {
     vm.warp(1640995200); // 1st jan 2022
@@ -90,14 +92,14 @@ contract PMRMTestBase is JsonMechIO {
     sm = new MockSM(subAccounts, cash);
     auction = new DutchAuction(subAccounts, sm, cash);
 
-    viewer = new SRMPortfolioViewer(subAccounts, cash);
+    viewer = new BasePortfolioViewer(subAccounts, cash);
+    lib = new PMRMLib(optionPricing);
 
     pmrm = new PMRMPublic(
       subAccounts,
       cash,
       option,
       mockPerp,
-      IOptionPricing(optionPricing),
       baseAsset,
       auction,
       IPMRM.Feeds({
@@ -108,7 +110,8 @@ contract PMRMTestBase is JsonMechIO {
         volFeed: IVolFeed(feed),
         settlementFeed: ISettlementFeed(feed)
       }),
-      viewer
+      viewer,
+      lib
     );
     setDefaultParameters();
     addScenarios();
@@ -161,10 +164,10 @@ contract PMRMTestBase is JsonMechIO {
       dteFloor: 1 days
     });
 
-    pmrm.setBasisContingencyParams(basisContParams);
-    pmrm.setOtherContingencyParams(otherContParams);
-    pmrm.setMarginParams(marginParams);
-    pmrm.setVolShockParams(volShockParams);
+    lib.setBasisContingencyParams(basisContParams);
+    lib.setOtherContingencyParams(otherContParams);
+    lib.setMarginParams(marginParams);
+    lib.setVolShockParams(volShockParams);
   }
 
   function _logPortfolio(IPMRM.Portfolio memory portfolio) internal view {
