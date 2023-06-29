@@ -25,7 +25,7 @@ contract UNIT_TestPMRM_AllowList is PMRMSimTest {
     signer = vm.addr(signerPK);
 
     allowList = new AllowList();
-    pmrm.setAllowList(allowList);
+    viewer.setAllowList(allowList);
     allowList.addSigner(signer, true);
     allowList.setAllowListEnabled(true);
   }

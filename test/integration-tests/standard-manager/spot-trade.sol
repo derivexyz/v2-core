@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/console2.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
-import "../shared/IntegrationTestBase.sol";
+import "../shared/IntegrationTestBase.t.sol";
 
 contract INTEGRATION_SRM_BaseAsset is IntegrationTestBase {
   using DecimalMath for uint;

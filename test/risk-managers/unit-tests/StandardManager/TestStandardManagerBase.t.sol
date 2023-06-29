@@ -118,12 +118,12 @@ contract TestStandardManagerBase is Test {
     manager.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wethAsset, ethMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed);
+    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed);
 
     manager.whitelistAsset(btcPerp, btcMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wbtcAsset, btcMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed);
+    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);

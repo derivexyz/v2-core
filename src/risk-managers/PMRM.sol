@@ -202,7 +202,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     ISubAccounts.AssetDelta[] calldata assetDeltas,
     bytes calldata managerData
   ) public onlyAccounts {
-    _verifyCanTrade(accountId);
+    viewer.verifyCanTrade(accountId);
 
     _processManagerData(tradeId, managerData);
 

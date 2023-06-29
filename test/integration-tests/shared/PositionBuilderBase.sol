@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../shared/IntegrationTestBase.sol";
+import "../shared/IntegrationTestBase.t.sol";
 
 /**
  * @dev a helper for building positions (e.g. leveraged boxes, zscs, etc.)
