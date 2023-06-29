@@ -58,8 +58,7 @@ contract UNIT_TestBaseManager is Test {
 
     viewer = new SRMPortfolioViewer(subAccounts, cash);
 
-    tester =
-      new BaseManagerTester(subAccounts, feed, feed, feed, cash, option, perp, IDutchAuction(mockAuction), viewer);
+    tester = new BaseManagerTester(subAccounts, feed, feed, cash, option, perp, IDutchAuction(mockAuction), viewer);
 
     // viewer.setStandardManager(IStandardManager(tester));
 

@@ -2,18 +2,17 @@
 pragma solidity ^0.8.18;
 
 import "../../../src/risk-managers/BaseManager.sol";
+import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
 
 contract BaseManagerTester is BaseManager {
   IOption public immutable option;
   IPerpAsset public immutable perp;
   IForwardFeed public immutable forwardFeed;
   ISpotFeed public immutable spotFeed;
-  ISettlementFeed public immutable settlementFeed;
 
   constructor(
     ISubAccounts subAccounts_,
     IForwardFeed forwardFeed_,
-    ISettlementFeed settlementFeed_,
     ISpotFeed spotFeed_,
     ICashAsset cash_,
     IOption option_,
@@ -24,7 +23,6 @@ contract BaseManagerTester is BaseManager {
     option = option_;
     perp = perp_;
     forwardFeed = forwardFeed_;
-    settlementFeed = settlementFeed_;
     spotFeed = spotFeed_;
   }
 
