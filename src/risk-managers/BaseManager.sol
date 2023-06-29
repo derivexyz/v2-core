@@ -39,13 +39,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ///////////////
 
   /// @dev Account contract address
-  ISubAccounts internal immutable subAccounts;
+  ISubAccounts public immutable subAccounts;
 
   /// @dev Cash asset address
-  ICashAsset internal immutable cashAsset;
+  ICashAsset public immutable cashAsset;
 
   /// @dev Dutch auction contract address, can trigger execute bid
-  IDutchAuction internal immutable liquidation;
+  IDutchAuction public immutable liquidation;
 
   /// @dev Portfolio viewer contract
   IBasePortfolioViewer public viewer;
@@ -80,10 +80,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;
+    viewer = _viewer;
 
     accId = subAccounts.createAccount(address(this), IManager(address(this)));
-
-    viewer = _viewer;
   }
 
   //////////////////////////

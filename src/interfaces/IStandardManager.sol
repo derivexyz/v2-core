@@ -4,9 +4,6 @@ pragma solidity ^0.8.13;
 import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
 import {IOption} from "./IOption.sol";
-import {IForwardFeed} from "./IForwardFeed.sol";
-import {IVolFeed} from "./IVolFeed.sol";
-import {ISpotFeed} from "./ISpotFeed.sol";
 
 interface IStandardManager {
   enum AssetType {
@@ -14,12 +11,6 @@ interface IStandardManager {
     Option,
     Perpetual,
     Base
-  }
-
-  struct Feeds {
-    ISpotFeed spotFeed;
-    IForwardFeed forwardFeed;
-    IVolFeed volFeed;
   }
 
   struct AssetDetail {

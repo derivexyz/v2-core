@@ -307,7 +307,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
       portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
     }
 
-    // update in memory
     portfolio = lib.addPrecomputes(portfolio, addForwardCont);
 
     return portfolio;
