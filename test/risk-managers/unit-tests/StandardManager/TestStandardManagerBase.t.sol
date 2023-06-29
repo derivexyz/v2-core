@@ -11,7 +11,7 @@ import {IManager} from "src/interfaces/IManager.sol";
 import {IAsset} from "src/interfaces/IAsset.sol";
 
 import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-
+import "src/risk-managers/SRMPortfolioViewer.sol";
 import "test/shared/mocks/MockManager.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockPerp.sol";
@@ -43,6 +43,8 @@ contract TestStandardManagerBase is Test {
 
   MockOptionPricing btcPricing;
   MockOptionPricing ethPricing;
+
+  SRMPortfolioViewer portfolioViewer;
 
   uint ethSpot = 1500e18;
   uint btcSpot = 20000e18;
@@ -99,11 +101,16 @@ contract TestStandardManagerBase is Test {
     ethPricing = new MockOptionPricing();
     btcPricing = new MockOptionPricing();
 
+    portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
+
     manager = new StandardManagerPublic(
       subAccounts,
       ICashAsset(address(cash)),
-      IDutchAuction(address(0))
+      IDutchAuction(address(0)),
+      portfolioViewer
     );
+
+    portfolioViewer.setStandardManager(manager);
 
     manager.setPricingModule(ethMarketId, ethPricing);
     manager.setPricingModule(btcMarketId, btcPricing);
@@ -111,12 +118,12 @@ contract TestStandardManagerBase is Test {
     manager.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wethAsset, ethMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed, ethFeed);
+    manager.setOraclesForMarket(ethMarketId, ethFeed, ethFeed, ethFeed);
 
     manager.whitelistAsset(btcPerp, btcMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(btcOption, btcMarketId, IStandardManager.AssetType.Option);
     manager.whitelistAsset(wbtcAsset, btcMarketId, IStandardManager.AssetType.Base);
-    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed, btcFeed);
+    manager.setOraclesForMarket(btcMarketId, btcFeed, btcFeed, btcFeed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);

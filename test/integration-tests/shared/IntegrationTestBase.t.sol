@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
-//
 
 import "forge-std/Test.sol";
 
@@ -16,6 +15,7 @@ import "src/liquidation/DutchAuction.sol";
 import "src/SubAccounts.sol";
 
 import "src/risk-managers/StandardManager.sol";
+import "src/risk-managers/SRMPortfolioViewer.sol";
 import "src/risk-managers/PMRM.sol";
 
 import "src/feeds/OptionPricing.sol";
@@ -32,6 +32,7 @@ import "src/feeds/LyraForwardFeed.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {IPMRMLib} from "../../../src/interfaces/IPMRMLib.sol";
+import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 
 /**
  * @dev real Accounts contract
@@ -71,27 +72,29 @@ contract IntegrationTestBase is Test {
     OptionPricing pricing;
     // manager for specific market
     PMRM pmrm;
+    PMRMLib pmrmLib;
   }
 
-  SubAccounts subAccounts;
-  MockERC20 usdc;
-  MockERC20 weth;
+  SubAccounts public subAccounts;
+  MockERC20 public usdc;
+  MockERC20 public weth;
 
   // Lyra Assets
-  CashAsset cash;
+  CashAsset public cash;
 
-  SecurityModule securityModule;
-  InterestRateModel rateModel;
-  DutchAuction auction;
+  SecurityModule public securityModule;
+  InterestRateModel public rateModel;
+  DutchAuction public auction;
 
   // Single standard manager shared across all markets
-  StandardManager srm;
+  StandardManager public srm;
+  SRMPortfolioViewer public portfolioViewer;
 
-  MockFeeds stableFeed;
+  MockFeeds internal stableFeed;
 
-  uint8 nextId = 1;
+  uint8 internal nextId = 1;
 
-  mapping(string => Market) markets;
+  mapping(string => Market) internal markets;
 
   function _setupIntegrationTestComplete() internal {
     // deploy Accounts, cash, security module, auction
@@ -129,15 +132,20 @@ contract IntegrationTestBase is Test {
     cash = new CashAsset(subAccounts, usdc, rateModel);
 
     // Nonce 5: Deploy SM
-    address srmAddr = _predictAddress(address(this), 7);
+    address srmAddr = _predictAddress(address(this), 8);
     securityModule = new SecurityModule(subAccounts, cash, IManager(srmAddr));
 
     // Nonce 6: Deploy Auction
     auction = new DutchAuction(subAccounts, securityModule, cash);
 
-    // Nonce 7: Deploy Standard Manager. Shared by all assets
-    srm = new StandardManager(subAccounts, cash, auction);
+    // Nonce 7: Deploy Portfolio Viewer
+    portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
+
+    // Nonce 8: Deploy Standard Manager. Shared by all assets
+    srm = new StandardManager(subAccounts, cash, auction, portfolioViewer);
     assertEq(address(srm), address(srmAddr));
+
+    portfolioViewer.setStandardManager(srm);
 
     // Deploy USDC stable feed
     stableFeed = new MockFeeds();
@@ -170,7 +178,7 @@ contract IntegrationTestBase is Test {
     marketId = _deployMarketContracts(key);
 
     // set up PMRM for this market
-    _setPMRMParams(markets[key].pmrm);
+    _setPMRMParams(markets[key].pmrm, markets[key].pmrmLib);
     // whitelist PMRM to control all assets
     _setupAssetCapsForManager(key, markets[key].pmrm, 1000e18);
 
@@ -193,9 +201,6 @@ contract IntegrationTestBase is Test {
     market.id = marketId;
 
     MockERC20 erc20 = new MockERC20(token, token);
-
-    // todo use real feed for all feeds
-    // market.feed = new MockFeeds();
 
     market.spotFeed = new LyraSpotFeed();
     market.forwardFeed = new LyraForwardFeed(market.spotFeed);
@@ -241,15 +246,18 @@ contract IntegrationTestBase is Test {
       settlementFeed: market.forwardFeed
     });
 
+    market.pmrmLib = new PMRMLib(market.pricing);
+
     market.pmrm = new PMRM(
       subAccounts, 
       cash, 
       option, 
       perp, 
-      market.pricing,
       base, 
       auction,
-      feeds
+      feeds,
+      portfolioViewer,
+      market.pmrmLib
     );
 
     perp.setSpotFeed(market.spotFeed);
@@ -291,13 +299,7 @@ contract IntegrationTestBase is Test {
     srm.whitelistAsset(market.base, market.id, IStandardManager.AssetType.Base);
 
     // set oracles
-    srm.setOraclesForMarket(
-      market.id,
-      market.spotFeed, // spot
-      market.forwardFeed, // forward
-      market.forwardFeed, // settlement feed
-      market.volFeed // vol feed
-    );
+    srm.setOraclesForMarket(market.id, market.spotFeed, market.forwardFeed, market.volFeed);
 
     // set params
     IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({
@@ -618,7 +620,7 @@ contract IntegrationTestBase is Test {
     rateFeed.acceptData(data);
   }
 
-  function _setPMRMParams(PMRM pmrm) internal {
+  function _setPMRMParams(PMRM pmrm, PMRMLib pmrmLib) internal {
     IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
       scenarioSpotUp: 1.05e18,
       scenarioSpotDown: 0.95e18,
@@ -651,10 +653,10 @@ contract IntegrationTestBase is Test {
       dteFloor: 1 days
     });
 
-    pmrm.setBasisContingencyParams(basisContParams);
-    pmrm.setOtherContingencyParams(otherContParams);
-    pmrm.setMarginParams(marginParams);
-    pmrm.setVolShockParams(volShockParams);
+    pmrmLib.setBasisContingencyParams(basisContParams);
+    pmrmLib.setOtherContingencyParams(otherContParams);
+    pmrmLib.setMarginParams(marginParams);
+    pmrmLib.setVolShockParams(volShockParams);
 
     _addScenarios(pmrm);
   }

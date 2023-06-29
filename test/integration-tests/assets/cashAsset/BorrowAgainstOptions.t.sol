@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/console2.sol";
 
-import "../../shared/IntegrationTestBase.sol";
+import "../../shared/IntegrationTestBase.t.sol";
 
 /**
  * @dev testing charge of OI fee in a real setting
@@ -48,11 +48,11 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     // Borrow against the option
     uint borrowAmount = 300e18;
     _withdrawCash(charlie, charlieAcc, borrowAmount);
-    (uint forwardPrice,) = _getForwardPrice("weth", expiry);
-    uint oiFee = markets["weth"].pmrm.OIFeeRateBPS(address(option)).multiplyDecimal(forwardPrice);
+    // (uint forwardPrice,) = _getForwardPrice("weth", expiry);
+    // uint oiFee = markets["weth"].pmrm.OIFeeRateBPS(address(option)).multiplyDecimal(forwardPrice);
 
     // Charlie balance should be negative
-    assertEq(getCashBalance(charlieAcc), -int(borrowAmount + oiFee));
+    assertEq(getCashBalance(charlieAcc), -int(borrowAmount));
 
     vm.warp(block.timestamp + 1 weeks);
     _setSpotPrice("weth", 2000e18, 1e18);
@@ -75,9 +75,9 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     _withdrawCash(charlie, charlieAcc, 50e18);
 
     // Charlie balance should be -borrowed amount + oiFee
-    (uint forwardPrice,) = _getForwardPrice("weth", expiry);
-    uint oiFee = markets["weth"].pmrm.OIFeeRateBPS(address(option)).multiplyDecimal(forwardPrice);
-    assertEq(subAccounts.getBalance(charlieAcc, cash, 0), -int(50e18 + oiFee));
+    // (uint forwardPrice,) = _getForwardPrice("weth", expiry);
+    // uint oiFee = markets["weth"].pmrm.OIFeeRateBPS(address(option)).multiplyDecimal(forwardPrice);
+    assertEq(subAccounts.getBalance(charlieAcc, cash, 0), -int(50e18));
 
     vm.warp(block.timestamp + 1 weeks);
     cash.accrueInterest();

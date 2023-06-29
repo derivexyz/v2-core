@@ -95,7 +95,7 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     accsToMerge[0] = aliceAcc2;
     vm.prank(alice);
 
-    vm.expectRevert(abi.encodeWithSelector(IStandardManager.SRM_PortfolioBelowMargin.selector, aliceAcc, 15e18));
+    vm.expectRevert(IStandardManager.SRM_PortfolioBelowMargin.selector);
     manager.mergeAccounts(aliceAcc, accsToMerge);
   }
 

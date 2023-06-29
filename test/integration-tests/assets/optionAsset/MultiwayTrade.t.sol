@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "../../shared/IntegrationTestBase.sol";
+import "../../shared/IntegrationTestBase.t.sol";
 import {IManager} from "src/interfaces/IManager.sol";
 
 /**
@@ -89,7 +89,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeITMCall() public {
-    uint oiFee = (srm.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
+    uint oiFee = (portfolioViewer.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
 
     // ATM Call
     uint callStrike = 2000e18;
@@ -139,7 +139,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeITMPut() public {
-    uint oiFee = (srm.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
+    uint oiFee = (portfolioViewer.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
 
     uint putStrike = 2000e18;
     uint putId = getSubId(expiry, putStrike, false);
@@ -189,7 +189,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeOTMCall() public {
-    uint oiFee = (srm.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
+    uint oiFee = (portfolioViewer.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
     int premium = 1000e18;
 
     // ATM Call
@@ -263,7 +263,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testThreeWayTradeOTMPut() public {
-    uint oiFee = (srm.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
+    uint oiFee = (portfolioViewer.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
     int premium = 1000e18;
 
     // ATM Put
@@ -337,7 +337,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
   }
 
   function testFourWayTradeITMCall() public {
-    uint oiFee = (srm.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
+    uint oiFee = (portfolioViewer.OIFeeRateBPS(address(option))).multiplyDecimal(_getSpot());
 
     // ATM Call
     uint callStrike = 2000e18;

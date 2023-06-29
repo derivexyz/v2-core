@@ -12,7 +12,6 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 import {IPMRM} from "../interfaces/IPMRM.sol";
 import {IPMRMLib} from "../interfaces/IPMRMLib.sol";
-import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 
 /**
  * @title PMRMLib
@@ -99,12 +98,12 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
    * @return worstScenario The index of the worst scenario, if == scenarios.length, it is the basis contingency
    */
   ///
-  function _getMarginAndMarkToMarket(
+  function getMarginAndMarkToMarket(
     IPMRM.Portfolio memory portfolio,
     bool isInitial,
     IPMRM.Scenario[] memory scenarios,
     bool useBasisContingency
-  ) internal view returns (int margin, int markToMarket, uint worstScenario) {
+  ) external view returns (int margin, int markToMarket, uint worstScenario) {
     if (!useBasisContingency && scenarios.length == 0) revert PMRML_InvalidGetMarginState();
 
     int minSPAN = useBasisContingency ? portfolio.basisContingency : type(int).max;
@@ -139,7 +138,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
-    internal
+    public
     view
     returns (int scenarioMtM)
   {
@@ -237,7 +236,11 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   /////////////////
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
-  function _addPrecomputes(IPMRM.Portfolio memory portfolio, bool addBasisCont) internal view {
+  function addPrecomputes(IPMRM.Portfolio memory portfolio, bool addBasisCont)
+    external
+    view
+    returns (IPMRM.Portfolio memory)
+  {
     portfolio.baseValue =
       _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, DecimalMath.UNIT);
     portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
@@ -272,6 +275,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       portfolio.confidenceContingency +=
         _getConfidenceContingency(expiry.minConfidence, expiry.netOptions, portfolio.spotPrice);
     }
+
+    return portfolio;
   }
 
   function _addStaticDiscount(IPMRM.ExpiryHoldings memory expiry) internal view {

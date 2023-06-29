@@ -2,28 +2,27 @@
 pragma solidity ^0.8.18;
 
 import "../../../src/risk-managers/BaseManager.sol";
+import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
 
 contract BaseManagerTester is BaseManager {
   IOption public immutable option;
   IPerpAsset public immutable perp;
   IForwardFeed public immutable forwardFeed;
   ISpotFeed public immutable spotFeed;
-  ISettlementFeed public immutable settlementFeed;
 
   constructor(
     ISubAccounts subAccounts_,
     IForwardFeed forwardFeed_,
-    ISettlementFeed settlementFeed_,
     ISpotFeed spotFeed_,
     ICashAsset cash_,
     IOption option_,
     IPerpAsset perp_,
-    IDutchAuction auction_
-  ) BaseManager(subAccounts_, cash_, auction_) {
+    IDutchAuction auction_,
+    IBasePortfolioViewer viewer_
+  ) BaseManager(subAccounts_, cash_, auction_, viewer_) {
     option = option_;
     perp = perp_;
     forwardFeed = forwardFeed_;
-    settlementFeed = settlementFeed_;
     spotFeed = spotFeed_;
   }
 
@@ -47,10 +46,6 @@ contract BaseManagerTester is BaseManager {
     fee = _getPerpOIFee(asset, delta, tradeId);
   }
 
-  function checkAssetCap(IPositionTracking asset, uint tradeId) external view {
-    return _checkAssetCap(asset, tradeId);
-  }
-
   function settleOptions(uint accountId) external {
     _settleAccountOptions(option, accountId);
   }
@@ -66,14 +61,6 @@ contract BaseManagerTester is BaseManager {
   function getMargin(uint, bool) external view returns (int) {}
 
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int) {}
-
-  function undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    external
-    view
-    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
-  {
-    return _undoAssetDeltas(accountId, assetDeltas);
-  }
 
   function setBalances(uint accountId, ISubAccounts.AssetBalance[] memory assets) external {
     for (uint i = 0; i < assets.length; ++i) {
