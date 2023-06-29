@@ -100,7 +100,7 @@ interface IStandardManager {
     uint64 perpThreshold;
     uint64 optionThreshold;
     uint64 baseThreshold;
-    int64 OCFactor;
+    int OCFactor;
   }
 
   function assetDetails(IAsset asset) external view returns (AssetDetail memory);
@@ -169,7 +169,7 @@ interface IStandardManager {
 
   event DepegParametersSet(int threshold, int depegFactor);
 
-  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int64 ocFactor);
+  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int ocFactor);
 
   event StableFeedUpdated(address stableFeed);
 

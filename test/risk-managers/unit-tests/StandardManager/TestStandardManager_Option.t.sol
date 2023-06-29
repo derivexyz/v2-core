@@ -171,9 +171,10 @@ contract UNIT_TestStandardManager_Option is Test {
   function testSetOracles() public {
     MockFeeds newFeed = new MockFeeds();
     manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed);
-    assertEq(address(manager.spotFeeds(1)), address(newFeed));
-    assertEq(address(manager.forwardFeeds(1)), address(newFeed));
-    assertEq(address(manager.volFeeds(1)), address(newFeed));
+    (ISpotFeed spotF, IForwardFeed forwardF, IVolFeed volFeed,) = manager.getMarketFeeds(ethMarketId);
+    assertEq(address(spotF), address(newFeed));
+    assertEq(address(forwardF), address(newFeed));
+    assertEq(address(volFeed), address(newFeed));
   }
 
   function testSetStableFeed() public {

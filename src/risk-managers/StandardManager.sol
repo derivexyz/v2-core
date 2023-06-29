@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/Math.sol";
-import "openzeppelin/access/Ownable2Step.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
@@ -22,7 +21,6 @@ import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IVolFeed} from "../interfaces/IVolFeed.sol";
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
 
-import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
@@ -74,13 +72,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   mapping(uint marketId => OracleContingencyParams) public oracleContingencyParams;
 
   /// @dev Mapping from marketId to spot price oracle
-  mapping(uint marketId => ISpotFeed) public spotFeeds;
+  mapping(uint marketId => ISpotFeed) internal spotFeeds;
 
   /// @dev Mapping from marketId to forward price oracle
-  mapping(uint marketId => IForwardFeed) public forwardFeeds;
+  mapping(uint marketId => IForwardFeed) internal forwardFeeds;
 
   /// @dev Mapping from marketId to vol oracle
-  mapping(uint marketId => IVolFeed) public volFeeds;
+  mapping(uint marketId => IVolFeed) internal volFeeds;
 
   /// @dev Mapping from marketId to forward price oracle
   mapping(uint marketId => IOptionPricing) internal pricingModules;
@@ -610,6 +608,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function assetDetails(IAsset asset) external view returns (AssetDetail memory) {
     return _assetDetails[asset];
+  }
+
+  /**
+   * @dev return the addresses of feeds and pricing modules for a specific market
+   */
+  function getMarketFeeds(uint8 marketId) external view returns (ISpotFeed, IForwardFeed, IVolFeed, IOptionPricing) {
+    return (spotFeeds[marketId], forwardFeeds[marketId], volFeeds[marketId], pricingModules[marketId]);
   }
 
   /**
