@@ -50,10 +50,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ///////////////
 
   /// @dev Depeg IM parameters: use to increase margin requirement if USDC depeg
-  DepegParams internal depegParams;
+  DepegParams public depegParams;
 
   /// @dev Oracle that returns USDC / USD price
-  ISpotFeed internal stableFeed;
+  ISpotFeed public stableFeed;
 
   /// @dev if turned on, people can borrow cash from standard manager, aka have negative balance.
   bool public borrowingEnabled;
@@ -68,22 +68,19 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   mapping(uint marketId => OptionMarginParams) public optionMarginParams;
 
   /// @dev Base margin discount: each base asset be treated as "spot * discount_factor" amount of cash
-  mapping(uint marketId => int) internal baseMarginDiscountFactor;
+  mapping(uint marketId => int) public baseMarginDiscountFactor;
 
   /// @dev Oracle Contingency parameters. used to increase margin requirement if oracle has low confidence
-  mapping(uint marketId => OracleContingencyParams) internal oracleContingencyParams;
+  mapping(uint marketId => OracleContingencyParams) public oracleContingencyParams;
 
   /// @dev Mapping from marketId to spot price oracle
-  mapping(uint marketId => ISpotFeed) internal spotFeeds;
-
-  /// @dev Mapping from marketId to settlement price oracle
-  mapping(uint marketId => ISettlementFeed) internal settlementFeeds;
+  mapping(uint marketId => ISpotFeed) public spotFeeds;
 
   /// @dev Mapping from marketId to forward price oracle
-  mapping(uint marketId => IForwardFeed) internal forwardFeeds;
+  mapping(uint marketId => IForwardFeed) public forwardFeeds;
 
   /// @dev Mapping from marketId to vol oracle
-  mapping(uint marketId => IVolFeed) internal volFeeds;
+  mapping(uint marketId => IVolFeed) public volFeeds;
 
   /// @dev Mapping from marketId to forward price oracle
   mapping(uint marketId => IOptionPricing) internal pricingModules;
@@ -125,20 +122,16 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the oracles for a market id
    */
-  function setOraclesForMarket(
-    uint8 marketId,
-    ISpotFeed spotFeed,
-    IForwardFeed forwardFeed,
-    ISettlementFeed settlementFeed,
-    IVolFeed volFeed
-  ) external onlyOwner {
+  function setOraclesForMarket(uint8 marketId, ISpotFeed spotFeed, IForwardFeed forwardFeed, IVolFeed volFeed)
+    external
+    onlyOwner
+  {
     // registered asset
     spotFeeds[marketId] = spotFeed;
     forwardFeeds[marketId] = forwardFeed;
-    settlementFeeds[marketId] = settlementFeed;
     volFeeds[marketId] = volFeed;
 
-    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(settlementFeed), address(volFeed));
+    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(volFeed));
   }
 
   /**
@@ -205,7 +198,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the option margin parameters for an market
    */
-  function setOracleContingencyParams(uint8 marketId, OracleContingencyParams calldata params) external onlyOwner {
+  function setOracleContingencyParams(uint8 marketId, OracleContingencyParams memory params) external onlyOwner {
     if (
       params.perpThreshold > 1e18 || params.optionThreshold > 1e18 || params.baseThreshold > 1e18
         || params.OCFactor > 1e18
@@ -264,7 +257,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     bytes calldata managerData
   ) public override onlyAccounts {
     // check if account is valid
-    _verifyCanTrade(accountId);
+    viewer.verifyCanTrade(accountId);
 
     // send data to oracles if needed
     _processManagerData(tradeId, managerData);
@@ -791,7 +784,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function _getIndexPrice(uint marketId) internal view returns (int, uint) {
     (uint spot, uint confidence) = spotFeeds[marketId].getSpot();
-    return (spot.toInt256(), confidence);
+    return (int(spot), confidence);
   }
 
   /**
@@ -800,7 +793,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function _getForwardPrice(uint marketId, uint expiry) internal view returns (int, uint) {
     (uint fwdPrice, uint confidence) = forwardFeeds[marketId].getForwardPrice(uint64(expiry));
     if (fwdPrice == 0) revert SRM_NoForwardPrice();
-    return (fwdPrice.toInt256(), confidence);
+    return (int(fwdPrice), confidence);
   }
 
   /**

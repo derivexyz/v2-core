@@ -299,13 +299,7 @@ contract IntegrationTestBase is Test {
     srm.whitelistAsset(market.base, market.id, IStandardManager.AssetType.Base);
 
     // set oracles
-    srm.setOraclesForMarket(
-      market.id,
-      market.spotFeed, // spot
-      market.forwardFeed, // forward
-      market.forwardFeed, // settlement feed
-      market.volFeed // vol feed
-    );
+    srm.setOraclesForMarket(market.id, market.spotFeed, market.forwardFeed, market.volFeed);
 
     // set params
     IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({

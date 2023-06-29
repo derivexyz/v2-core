@@ -4,6 +4,9 @@ pragma solidity ^0.8.13;
 import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
 import {IOption} from "./IOption.sol";
+import {IForwardFeed} from "./IForwardFeed.sol";
+import {IVolFeed} from "./IVolFeed.sol";
+import {ISpotFeed} from "./ISpotFeed.sol";
 
 interface IStandardManager {
   enum AssetType {
@@ -11,6 +14,12 @@ interface IStandardManager {
     Option,
     Perpetual,
     Base
+  }
+
+  struct Feeds {
+    ISpotFeed spotFeed;
+    IForwardFeed forwardFeed;
+    IVolFeed volFeed;
   }
 
   struct AssetDetail {
@@ -148,9 +157,7 @@ interface IStandardManager {
 
   event AssetWhitelisted(address asset, uint8 marketId, AssetType assetType);
 
-  event OraclesSet(
-    uint8 marketId, address spotOracle, address forwardOracle, address settlementOracle, address volFeed
-  );
+  event OraclesSet(uint8 marketId, address spotOracle, address forwardOracle, address volFeed);
 
   event PricingModuleSet(uint8 marketId, address pricingModule);
 

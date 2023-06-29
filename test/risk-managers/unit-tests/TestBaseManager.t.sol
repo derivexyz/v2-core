@@ -378,9 +378,9 @@ contract UNIT_TestBaseManager is Test {
 
   function testCanSetAllowlist() public {
     AllowList allowlist = new AllowList();
-    tester.setAllowList(allowlist);
+    viewer.setAllowList(allowlist);
 
-    // assertEq(address(tester.allowList()), address(allowlist));
+    assertEq(address(viewer.allowList()), address(allowlist));
   }
 
   function testCannotForceWithdrawIFOnAllowlist() public {
@@ -390,7 +390,7 @@ contract UNIT_TestBaseManager is Test {
 
   function testCanForceWithdrawCashAccounts() public {
     AllowList allowlist = new AllowList();
-    tester.setAllowList(allowlist);
+    viewer.setAllowList(allowlist);
     allowlist.setAllowListEnabled(true);
 
     // alice with -$1000 cash, bob with +1000 cash
@@ -401,7 +401,7 @@ contract UNIT_TestBaseManager is Test {
 
   function testCanForceWithdrawNonCashAccount() public {
     AllowList allowlist = new AllowList();
-    tester.setAllowList(allowlist);
+    viewer.setAllowList(allowlist);
     allowlist.setAllowListEnabled(true);
 
     // alice has no asset
@@ -472,7 +472,7 @@ contract UNIT_TestBaseManager is Test {
   }
 
   function testCantForceLiquidateOnlyCashAccount() public {
-    tester.setAllowList(feed);
+    viewer.setAllowList(feed);
 
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
     balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
@@ -484,7 +484,7 @@ contract UNIT_TestBaseManager is Test {
   }
 
   function testCanForceLiquidateAccountSuccessfully() public {
-    tester.setAllowList(feed);
+    viewer.setAllowList(feed);
 
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
     balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});

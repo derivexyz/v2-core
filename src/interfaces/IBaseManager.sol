@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import {IManager} from "./IManager.sol";
-import {IAllowList} from "./IAllowList.sol";
 
 interface IBaseManager is IManager {
   /////////////
@@ -37,7 +36,6 @@ interface IBaseManager is IManager {
   event MinOIFeeSet(uint minOIFee);
   event PerpSettled(uint indexed accountId, int netCash);
   event FeeBypassedCallerSet(address caller, bool bypassed);
-  event AllowListSet(IAllowList _allowList);
   event FeeRecipientSet(uint _newAcc);
   event OptionSettlementBufferUpdated(uint optionSettlementBuffer);
 

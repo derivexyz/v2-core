@@ -66,7 +66,7 @@ contract UNIT_TestStandardManager is Test {
     manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
 
-    manager.setOraclesForMarket(1, feed, feed, feed, feed);
+    manager.setOraclesForMarket(1, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);

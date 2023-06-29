@@ -15,6 +15,7 @@ import {IPositionTracking} from "../interfaces/IPositionTracking.sol";
 import {IManager} from "../interfaces/IPositionTracking.sol";
 
 import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
+import {IAllowList} from "../interfaces/IAllowList.sol";
 
 /**
  * @title BasePortfolioViewer
@@ -32,6 +33,9 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
 
   /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   mapping(address asset => uint) public OIFeeRateBPS;
+
+  /// @dev AllowList contract address
+  IAllowList public allowList;
 
   constructor(ISubAccounts _subAccounts, ICashAsset _cash) {
     subAccounts = _subAccounts;
@@ -57,9 +61,36 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
     emit OIFeeRateSet(asset, newFeeRate);
   }
 
+  /**
+   * @notice Governance determined allowList
+   * @param _allowList The allowList contract, can be empty which will bypass allowList checks
+   */
+  function setAllowList(IAllowList _allowList) external onlyOwner {
+    allowList = _allowList;
+    emit AllowListSet(_allowList);
+  }
+
   /////////////////////////
   //        View         //
   /////////////////////////
+
+  /**
+   * @dev revert if the accountID is not on the allow list
+   */
+  function verifyCanTrade(uint accountId) external view {
+    if (!canTrade(accountId)) revert BM_CannotTrade();
+  }
+
+  /**
+   * @dev return true if the owner of an account ID is on the allow list
+   */
+  function canTrade(uint accountId) public view returns (bool) {
+    if (allowList == IAllowList(address(0))) {
+      return true;
+    }
+    address user = subAccounts.ownerOf(accountId);
+    return allowList.canTrade(user);
+  }
 
   /**
    * @notice calculate the OI fee for an asset

@@ -83,7 +83,7 @@ contract UNIT_TestStandardManager_Option is Test {
     manager.whitelistAsset(perp, ethMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, ethMarketId, IStandardManager.AssetType.Option);
 
-    manager.setOraclesForMarket(ethMarketId, feed, feed, feed, feed);
+    manager.setOraclesForMarket(ethMarketId, feed, feed, feed);
 
     aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
     bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
@@ -170,11 +170,10 @@ contract UNIT_TestStandardManager_Option is Test {
 
   function testSetOracles() public {
     MockFeeds newFeed = new MockFeeds();
-    manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed, newFeed);
-    // assertEq(address(manager.spotFeeds(1)), address(newFeed));
-    // assertEq(address(manager.settlementFeeds(1)), address(newFeed));
-    // assertEq(address(manager.forwardFeeds(1)), address(newFeed));
-    // assertEq(address(manager.volFeeds(1)), address(newFeed));
+    manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed);
+    assertEq(address(manager.spotFeeds(1)), address(newFeed));
+    assertEq(address(manager.forwardFeeds(1)), address(newFeed));
+    assertEq(address(manager.volFeeds(1)), address(newFeed));
   }
 
   function testSetStableFeed() public {

@@ -17,16 +17,12 @@ import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IBaseManager} from "../interfaces/IBaseManager.sol";
 
 import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
-import {IPositionTracking} from "../interfaces/IPositionTracking.sol";
 import {IDataReceiver} from "../interfaces/IDataReceiver.sol";
 
-import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
-import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {IAsset} from "../interfaces/IAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {IManager} from "../interfaces/IManager.sol";
-import {IAllowList} from "../interfaces/IAllowList.sol";
 import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 /**
@@ -53,13 +49,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   IDutchAuction internal immutable liquidation;
 
   /// @dev Portfolio viewer contract
-  IBasePortfolioViewer internal viewer;
+  IBasePortfolioViewer public viewer;
 
   /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
   uint public immutable accId;
-
-  /// @dev AllowList contract address
-  IAllowList internal allowList;
 
   /// @dev within this buffer time, allow people to hold expired options in case the settlement price is not ready
   uint public optionSettlementBuffer = 5 minutes;
@@ -77,7 +70,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   uint internal lastOracleUpdateTradeId;
 
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
-  mapping(address sender => bool) internal feeBypassedCaller;
+  mapping(address sender => bool) public feeBypassedCaller;
 
   constructor(
     ISubAccounts _subAccounts,
@@ -97,15 +90,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
   // Owner-only Functions //
   //////////////////////////
-
-  /**
-   * @notice Governance determined allowList
-   * @param _allowList The allowList contract, can be empty which will bypass allowList checks
-   */
-  function setAllowList(IAllowList _allowList) external onlyOwner {
-    allowList = _allowList;
-    emit AllowListSet(_allowList);
-  }
 
   /**
    * @dev Governance determined account to receive OI fee
@@ -226,7 +210,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param accountId Id of account to force withdraw
    */
   function forceWithdrawAccount(uint accountId) external {
-    if (_canTrade(accountId)) {
+    if (viewer.canTrade(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
@@ -247,7 +231,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param scenarioId Id of scenario used within liquidation module. Ignored for standard manager.
    */
   function forceLiquidateAccount(uint accountId, uint scenarioId) external {
-    if (_canTrade(accountId)) {
+    if (viewer.canTrade(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
@@ -317,23 +301,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     // transfer cash to fee recipient account
     _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(Math.max(fee, minOIFee)));
-  }
-
-  ////////////
-  // OI Cap //
-  ////////////
-
-  /**
-   * @notice check that all assets in an account is below the cap
-   * @dev this function assume all assets are compliant to IPositionTracking interface
-   */
-  function _checkAllAssetCaps(uint accountId, uint tradeId) internal view {
-    // address[] memory assets = subAccounts.getUniqueAssets(accountId);
-    // for (uint i; i < assets.length; i++) {
-    //   if (assets[i] == address(cashAsset)) continue;
-
-    //   _checkAssetCap(IPositionTracking(assets[i]), tradeId);
-    // }
   }
 
   ////////////////
@@ -455,7 +422,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     // check if recipient under the same manager
     if (address(subAccounts.manager(to)) == address(this)) {
-      // increase to account balanace directly
+      // increase to account balance directly
       subAccounts.managerAdjustment(
         ISubAccounts.AssetAdjustment({acc: to, asset: cashAsset, subId: 0, amount: amount, assetData: bytes32(0)})
       );
@@ -476,26 +443,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
         ""
       );
     }
-  }
-
-  /**
-   * @dev revert if the accountID is not on the allow list
-   */
-  function _verifyCanTrade(uint accountId) internal view {
-    if (!_canTrade(accountId)) {
-      revert BM_CannotTrade();
-    }
-  }
-
-  /**
-   * @dev return true if the owner of an account ID is on the allow list
-   */
-  function _canTrade(uint accountId) internal view returns (bool) {
-    if (allowList == IAllowList(address(0))) {
-      return true;
-    }
-    address user = subAccounts.ownerOf(accountId);
-    return allowList.canTrade(user);
   }
 
   ///////////////////
