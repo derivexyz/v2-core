@@ -36,3 +36,15 @@ function getDefaultInsolventAuctionParam() pure returns (IDutchAuction.Insolvent
 function getDefaultDepegParam() pure returns (IStandardManager.DepegParams memory param) {
   param = IStandardManager.DepegParams({threshold: 0.98e18, depegFactor: 1.2e18});
 }
+
+int constant MAX_Abs_Rate_Per_Hour = 0.1e18;
+
+uint64 constant SPOT_HEARTBEAT = 10 minutes;
+uint64 constant FORWARD_HEARTBEAT = 10 minutes;
+uint64 constant SETTLEMENT_HEARTBEAT = 1 hours;
+
+uint64 constant PERP_HEARTBEAT = 10 minutes;
+uint64 constant IMPACT_PRICE_HEARTBEAT = 20 minutes;
+
+uint64 constant VOL_HEARTBEAT = 20 minutes;
+uint64 constant RATE_HEARTBEAT = 7 days;

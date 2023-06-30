@@ -11,8 +11,10 @@ contract Utils is Script {
   function _loadConfig() internal view returns (ConfigJson memory config) {
     string memory file = _readInput("config");
 
-    bytes memory usdcAddrRaw = vm.parseJson(file);
-    config = abi.decode(usdcAddrRaw, (ConfigJson));
+    config.usdc = abi.decode(vm.parseJson(file, ".usdc"), (address));
+    config.weth = abi.decode(vm.parseJson(file, ".weth"), (address));
+    config.wbtc = abi.decode(vm.parseJson(file, ".wbtc"), (address));
+    config.useMockedFeed = abi.decode(vm.parseJson(file, ".useMockedFeed"), (bool));
   }
 
   /// @dev get config from current chainId
@@ -64,5 +66,15 @@ contract Utils is Script {
     vm.writeJson(content, string.concat(deploymentDir, chainDir, file));
 
     console2.log("Written to deployment ", string.concat(deploymentDir, chainDir, file));
+  }
+
+  function _getMarketERC20(string memory name, ConfigJson memory config) internal pure returns (address) {
+    if (keccak256(bytes(name)) == keccak256(bytes("weth"))) {
+      return config.weth;
+    } else if (keccak256(bytes(name)) == keccak256(bytes("wbtc"))) {
+      return config.wbtc;
+    } else {
+      revert("invalid market name");
+    }
   }
 }

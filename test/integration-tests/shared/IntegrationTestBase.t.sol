@@ -73,6 +73,7 @@ contract IntegrationTestBase is Test {
     // manager for specific market
     PMRM pmrm;
     PMRMLib pmrmLib;
+    BasePortfolioViewer pmrmViewer;
   }
 
   SubAccounts public subAccounts;
@@ -233,7 +234,7 @@ contract IntegrationTestBase is Test {
     market.volFeed.setHeartbeat(20 minutes);
     market.rateFeed.setHeartbeat(24 hours);
     market.forwardFeed.setHeartbeat(20 minutes);
-    market.forwardFeed.setSettlementHeartbeat(60 minutes); // todo: update this?
+    market.forwardFeed.setSettlementHeartbeat(60 minutes);
 
     market.pricing = new OptionPricing();
 
@@ -246,6 +247,7 @@ contract IntegrationTestBase is Test {
       settlementFeed: market.forwardFeed
     });
 
+    market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);
     market.pmrmLib = new PMRMLib(market.pricing);
 
     market.pmrm = new PMRM(
@@ -256,7 +258,7 @@ contract IntegrationTestBase is Test {
       base, 
       auction,
       feeds,
-      portfolioViewer,
+      market.pmrmViewer,
       market.pmrmLib
     );
 
