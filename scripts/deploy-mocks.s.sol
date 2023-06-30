@@ -28,9 +28,16 @@ contract DeployMocks is Utils {
     MockERC20 usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
 
+    MockERC20 wbtc = new MockERC20("WBTC", "WBTC");
+    usdc.setDecimals(8);
+
+    MockERC20 weth = new MockERC20("WETH", "WETH");
+
     // write to configs file: eg: input/31337/config.json
     string memory objKey = "network-config";
     vm.serializeAddress(objKey, "usdc", address(usdc));
+    vm.serializeAddress(objKey, "wbtc", address(wbtc));
+    vm.serializeAddress(objKey, "weth", address(weth));
     string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", true);
 
     // build path

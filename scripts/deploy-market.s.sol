@@ -53,7 +53,7 @@ contract DeployMarket is Utils {
 
   /// @dev deploy all contract needed for a single market
   function _deployMarketContracts(ConfigJson memory config, Deployment memory deployment) internal  {
-    
+    // get the market ERC20 from config (it should be added to the config)
   }
 
   /**
