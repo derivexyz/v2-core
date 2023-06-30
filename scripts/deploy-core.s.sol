@@ -28,24 +28,27 @@ contract DeployCore is Utils {
 
   /// @dev main function
   function run() external {
-    vm.startBroadcast();
 
-    console2.log("Start deploying core contracts! deployer: ", msg.sender);
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(deployerPrivateKey);
+
+    address deployer = vm.addr(deployerPrivateKey);
+    console2.log("Start deploying core contracts! deployer: ", deployer);
 
     // load configs
     ConfigJson memory config = _loadConfig();
 
     // deploy core contracts
-    _deployCoreContracts(config);
+    _deployCoreContracts(deployer, config);
 
     vm.stopBroadcast();
   }
 
 
   /// @dev deploy and initiate contracts
-  function _deployCoreContracts(ConfigJson memory config) internal returns (Deployment memory deployment)  {
+  function _deployCoreContracts(address deployer, ConfigJson memory config) internal returns (Deployment memory deployment)  {
 
-    uint nonce = vm.getNonce(msg.sender);
+    uint nonce = vm.getNonce(deployer);
 
     // nonce: nonce
     deployment.subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
@@ -58,7 +61,8 @@ contract DeployCore is Utils {
     deployment.cash = new CashAsset(deployment.subAccounts, IERC20Metadata(config.usdc), deployment.rateModel);
 
     // nonce + 3: Deploy SM
-    address srmAddr = computeCreateAddress(msg.sender, nonce + 6);
+    address srmAddr = computeCreateAddress(deployer, nonce + 6);
+    console2.log("predicted addr", srmAddr);
     deployment.securityModule = new SecurityModule(deployment.subAccounts, deployment.cash, IManager(srmAddr));
 
     // nonce + 4: Deploy Auction
@@ -69,6 +73,7 @@ contract DeployCore is Utils {
 
     // nonce + 6: Deploy Standard Manager. Shared by all assets
     deployment.srm = new StandardManager(deployment.subAccounts, deployment.cash, deployment.auction, deployment.srmViewer);
+
     assert(address(deployment.srm) == address(srmAddr));
 
     // Deploy USDC stable feed

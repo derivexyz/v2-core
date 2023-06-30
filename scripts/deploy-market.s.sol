@@ -31,13 +31,15 @@ contract DeployMarket is Utils {
 
   /// @dev main function
   function run() external {
-    vm.startBroadcast();
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(deployerPrivateKey);
 
     // revert if not found
     string memory marketName = vm.envString("MARKET_NAME");
 
     console2.log("Start deploying new market: ", marketName);
-    console2.log("Deployer: ", msg.sender);
+    address deployer = vm.addr(deployerPrivateKey);
+    console2.log("Deployer: ", deployer);
 
     // load configs
     ConfigJson memory config = _loadConfig();
@@ -50,7 +52,7 @@ contract DeployMarket is Utils {
 
     _setPermissionAndCaps(deployment, market);
 
-    _setupPMRMParams(deployment, market);
+    _setupPMRMParams(market);
 
     _registerMarketToSRM(deployment, market);
 
@@ -125,7 +127,7 @@ contract DeployMarket is Utils {
     );
   }
 
-  function _setupPMRMParams(Deployment memory deployment, Market memory market) internal {
+  function _setupPMRMParams(Market memory market) internal {
     // set PMRM parameters
     (
       IPMRMLib.BasisContingencyParameters memory basisContParams,

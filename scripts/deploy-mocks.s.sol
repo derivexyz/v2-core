@@ -20,9 +20,11 @@ contract DeployMocks is Utils {
     // simple check to make sure no error of overwriting our configs
     if (block.chainid == 1 || block.chainid == 5) revert("Use real USDC on mainnet or goerli");
 
-    vm.startBroadcast();
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(deployerPrivateKey);
+    address deployer = vm.addr(deployerPrivateKey);
 
-    console2.log("Start deploying mock contracts! deployer: ", msg.sender);
+    console2.log("Start deploying mock contracts! deployer: ", deployer);
 
     // Deploy Mock USDC
     MockERC20 usdc = new MockERC20("USDC", "USDC");
