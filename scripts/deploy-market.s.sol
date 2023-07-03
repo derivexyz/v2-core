@@ -16,6 +16,11 @@ import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
 import {IPMRM} from "../src/interfaces/IPMRM.sol";
 import {IManager} from "../src/interfaces/IManager.sol";
+
+import {MockFeeds} from "../test/shared/mocks/MockFeeds.sol";
+
+import {MockSpotDiffFeed} from "../test/shared/mocks/MockSpotDiffFeed.sol";
+
 import "forge-std/console2.sol";
 import {Deployment, ConfigJson, Market} from "./types.sol";
 import {Utils} from "./utils.sol";
@@ -70,9 +75,42 @@ contract DeployMarket is Utils {
     console2.log("target erc20:", marketERC20);
 
     //todo: use mocked feeds?
+    if (config.useMockedFeed) {
+      MockFeeds mockFeed = new MockFeeds();
+      
+      market.spotFeed = LyraSpotFeed(address(mockFeed));
+      market.forwardFeed = LyraForwardFeed(address(mockFeed));
+      
+      market.perpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
+      market.iapFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
+      market.ibpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
+      
+      market.volFeed = LyraVolFeed(address(mockFeed));
+      market.rateFeed = LyraRateFeed(address(mockFeed));
+    } else {
+      market.spotFeed = new LyraSpotFeed();
+      market.forwardFeed = new LyraForwardFeed(market.spotFeed);
+      // feeds for perp
+      market.perpFeed = new LyraSpotDiffFeed(market.spotFeed);
+      market.iapFeed = new LyraSpotDiffFeed(market.spotFeed);
+      market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
 
-    market.spotFeed = new LyraSpotFeed();
-    market.forwardFeed = new LyraForwardFeed(market.spotFeed);
+      // interest and vol feed
+      market.rateFeed = new LyraRateFeed();
+      market.volFeed = new LyraVolFeed();
+
+      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);
+      market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
+
+      market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+      market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+
+      market.volFeed.setHeartbeat(VOL_HEARTBEAT);
+      market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
+      market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
+      market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
+
+    }
 
     market.option = new Option(deployment.subAccounts, address(market.forwardFeed));
 
@@ -80,25 +118,6 @@ contract DeployMarket is Utils {
 
     market.base = new WrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
 
-    // feeds for perp
-    market.perpFeed = new LyraSpotDiffFeed(market.spotFeed);
-    market.iapFeed = new LyraSpotDiffFeed(market.spotFeed);
-    market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
-
-    // interest and vol feed
-    market.rateFeed = new LyraRateFeed();
-    market.volFeed = new LyraVolFeed();
-
-    market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);
-    market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
-
-    market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
-    market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
-
-    market.volFeed.setHeartbeat(VOL_HEARTBEAT);
-    market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
-    market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
-    market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
 
     market.pricing = new OptionPricing();
 
