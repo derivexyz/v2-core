@@ -138,18 +138,27 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
 
     /* get unique assets to only call to asset once */
     (address[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(heldAssets[accountId]);
-
     for (uint i; i < uniqueLength; ++i) {
       IAsset(uniqueAssets[i]).handleManagerChange(accountId, newManager);
     }
 
+    // construct asset delta array from existing balances
+    uint assetsLength = heldAssets[accountId].length;
+    AssetDelta[] memory deltas = new AssetDelta[](assetsLength);
+    for (uint i; i < assetsLength; i++) {
+      HeldAsset memory heldAsset = heldAssets[accountId][i];
+      deltas[i] = AssetDelta({
+        asset: heldAsset.asset,
+        subId: heldAsset.subId,
+        delta: balanceAndOrder[accountId][heldAsset.asset][heldAsset.subId].balance
+      });
+    }
     // update the manager after all checks (external calls) are done. expected reentry pattern
     manager[accountId] = newManager;
 
     uint tradeId = ++lastTradeId;
 
     // trigger the manager hook on the new manager. Same as post-transfer checks
-    AssetDelta[] memory deltas = new AssetDelta[](0);
     _managerHook(accountId, tradeId, msg.sender, deltas, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
