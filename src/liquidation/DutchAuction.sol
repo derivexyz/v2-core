@@ -515,6 +515,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     cashFromBidder = bidPrice.toUint256().multiplyDecimal(percentLiquidated);
 
+    int bidderCashBalance = subAccounts.getBalance(bidderId, cash, 0);
+    if (bidderCashBalance.toUint256() < cashFromBidder) revert DA_InsufficientCash();
+
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
       accountId, bidderId, convertedPercentage, cashFromBidder, currentAuction.reservedCash

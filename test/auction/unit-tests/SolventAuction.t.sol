@@ -115,8 +115,18 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(auction.insolvent, false);
   }
 
+  function testCannotBidWithNoCash() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    // bid from charlie with no cash
+    vm.prank(charlie);
+    vm.expectRevert(IDutchAuction.DA_InsufficientCash.selector);
+    dutchAuction.bid(aliceAcc, charlieAcc, 1e18);
+  }
+
   function testBidRaceCondition() public {
     _startDefaultSolventAuction(aliceAcc);
+    _mintAndDepositCash(charlieAcc, 20_000e18);
 
     // fast forward to half way through the fast auction
     vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
