@@ -7,6 +7,7 @@ import "forge-std/console2.sol";
 import "test/shared/mocks/MockERC20.sol";
 import "test/shared/mocks/MockManager.sol";
 import {IPositionTracking} from "../../../../src/interfaces/IPositionTracking.sol";
+import {IAllowances} from "../../../../src/interfaces/IAllowances.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
 import "../../../../src/SubAccounts.sol";
 
@@ -107,5 +108,19 @@ contract UNIT_WrappedBaseAssetHook is Test {
     asset.setTotalPositionCap(manager2, 100e18);
 
     subAccounts.changeManager(accId, manager2, "");
+  }
+
+  function testCannotTransferPositiveBalanceWithoutApproval() public {
+    _mintAndDeposit(100e8);
+
+    uint aliceAcc = subAccounts.createAccount(address(0xaa), manager);
+    // cannot transfer to alice
+    ISubAccounts.AssetTransfer memory assetTransfer =
+      ISubAccounts.AssetTransfer({fromAcc: accId, toAcc: aliceAcc, asset: asset, subId: 0, amount: 1e18, assetData: ""});
+
+    vm.expectRevert(
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector, address(this), aliceAcc, 1e18, 0, 0)
+    );
+    subAccounts.submitTransfer(assetTransfer, "");
   }
 }

@@ -50,7 +50,7 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOption 
   ) public view virtual returns (int finalBalance, bool needAllowance) {
     if (revertFromManager[address(_manager)]) revert();
     finalBalance = preBal + adjustment.amount;
-    needAllowance = adjustment.amount < 0;
+    needAllowance = true;
   }
 
   function handleManagerChange(uint, IManager) public virtual {
