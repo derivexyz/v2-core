@@ -4,7 +4,7 @@ out = 'out'
 
 optimizer = true
 optimizer_runs = 10
-fs_permissions = [{access = "read", path = "./"}]
+fs_permissions = [{ access = "read-write", path = "./"}]
 
 solc_version="0.8.18"
 
@@ -17,3 +17,6 @@ func_attrs_with_params_multiline = false
 quote_style = 'double'
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
+
+[rpc_endpoints]
+conduit_testnet = "${TESTNET_RPC_URL}"

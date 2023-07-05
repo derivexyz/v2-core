@@ -34,6 +34,8 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import {IPMRMLib} from "../../../src/interfaces/IPMRMLib.sol";
 import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 
+import "../../../scripts/config.sol";
+
 /**
  * @dev real Accounts contract
  * @dev real CashAsset contract
@@ -73,6 +75,7 @@ contract IntegrationTestBase is Test {
     // manager for specific market
     PMRM pmrm;
     PMRMLib pmrmLib;
+    BasePortfolioViewer pmrmViewer;
   }
 
   SubAccounts public subAccounts;
@@ -233,7 +236,7 @@ contract IntegrationTestBase is Test {
     market.volFeed.setHeartbeat(20 minutes);
     market.rateFeed.setHeartbeat(24 hours);
     market.forwardFeed.setHeartbeat(20 minutes);
-    market.forwardFeed.setSettlementHeartbeat(60 minutes); // todo: update this?
+    market.forwardFeed.setSettlementHeartbeat(60 minutes);
 
     market.pricing = new OptionPricing();
 
@@ -246,6 +249,7 @@ contract IntegrationTestBase is Test {
       settlementFeed: market.forwardFeed
     });
 
+    market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);
     market.pmrmLib = new PMRMLib(market.pricing);
 
     market.pmrm = new PMRM(
@@ -256,7 +260,7 @@ contract IntegrationTestBase is Test {
       base, 
       auction,
       feeds,
-      portfolioViewer,
+      market.pmrmViewer,
       market.pmrmLib
     );
 
@@ -621,75 +625,21 @@ contract IntegrationTestBase is Test {
   }
 
   function _setPMRMParams(PMRM pmrm, PMRMLib pmrmLib) internal {
-    IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
-      scenarioSpotUp: 1.05e18,
-      scenarioSpotDown: 0.95e18,
-      basisContAddFactor: 0.25e18,
-      basisContMultFactor: 0.01e18
-    });
-
-    IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
-      pegLossThreshold: 0.98e18,
-      pegLossFactor: 2e18,
-      confThreshold: 0.6e18,
-      confMargin: 0.5e18,
-      basePercent: 0.02e18,
-      perpPercent: 0.02e18,
-      optionPercent: 0.01e18
-    });
-
-    IPMRMLib.MarginParameters memory marginParams = IPMRMLib.MarginParameters({
-      imFactor: 1.3e18,
-      baseStaticDiscount: 0.95e18,
-      rateMultScale: 4e18,
-      rateAddScale: 0.05e18
-    });
-
-    IPMRMLib.VolShockParameters memory volShockParams = IPMRMLib.VolShockParameters({
-      volRangeUp: 0.45e18,
-      volRangeDown: 0.3e18,
-      shortTermPower: 0.3e18,
-      longTermPower: 0.13e18,
-      dteFloor: 1 days
-    });
+    // load params from config.sol
+    (
+      IPMRMLib.BasisContingencyParameters memory basisContParams,
+      IPMRMLib.OtherContingencyParameters memory otherContParams,
+      IPMRMLib.MarginParameters memory marginParams,
+      IPMRMLib.VolShockParameters memory volShockParams
+    ) = getPMRMParams();
 
     pmrmLib.setBasisContingencyParams(basisContParams);
     pmrmLib.setOtherContingencyParams(otherContParams);
     pmrmLib.setMarginParams(marginParams);
     pmrmLib.setVolShockParams(volShockParams);
 
-    _addScenarios(pmrm);
-  }
-
-  function _addScenarios(PMRM pmrm) internal {
-    // Scenario Number	Spot Shock (of max)	Vol Shock (of max)
-
-    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](21);
-
-    // add these 27 scenarios to the array
-    scenarios[0] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[3] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[6] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[9] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[12] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[15] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[17] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[18] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
-
-    pmrm.setScenarios(scenarios);
+    // _addScenarios(pmrm);
+    pmrm.setScenarios(getDefaultScenarios());
   }
 
   function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (ILyraVolFeed.VolData memory) {
@@ -714,6 +664,7 @@ contract IntegrationTestBase is Test {
   ////////////////
   //    Misc    //
   ////////////////
+
   /**
    * @dev predict the address of the next contract being deployed
    */
