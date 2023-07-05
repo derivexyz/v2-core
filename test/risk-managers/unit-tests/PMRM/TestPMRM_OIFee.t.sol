@@ -1,6 +1,6 @@
 pragma solidity ^0.8.18;
 
-import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
+import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 

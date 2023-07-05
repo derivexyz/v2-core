@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
+import "./LyraFeedTestUtils.sol";
 
 import "lyra-utils/math/Black76.sol";
-import "src/feeds/LyraVolFeed.sol";
+import "../../../src/feeds/LyraVolFeed.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
  */
-contract UNIT_LyraVolFeed is Test {
+contract UNIT_LyraVolFeed is LyraFeedTestUtils {
   LyraVolFeed feed;
 
   bytes32 domainSeparator;
@@ -52,13 +52,13 @@ contract UNIT_LyraVolFeed is Test {
   }
 
   function testCannotPassInTimestampHigherThanExpiry() public {
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
 
     vm.warp(defaultExpiry + 1);
 
     volData.timestamp = uint64(defaultExpiry + 1);
     volData.deadline = uint64(defaultExpiry + 1);
-    bytes memory data = _getSignedVolData(pk, volData);
+    bytes memory data = _signFeedData(feed, pk, volData);
 
     vm.expectRevert(ILyraVolFeed.LVF_InvalidVolDataTimestamp.selector);
     feed.acceptData(data);
@@ -70,8 +70,8 @@ contract UNIT_LyraVolFeed is Test {
   }
 
   function testCanPassInDataAndUpdateVolFeed() public {
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
-    bytes memory data = _getSignedVolData(pk, volData);
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
+    bytes memory data = _signFeedData(feed, pk, volData);
 
     feed.acceptData(data);
 
@@ -84,16 +84,16 @@ contract UNIT_LyraVolFeed is Test {
     // we didn't whitelist the pk owner this time
     feed.addSigner(pkOwner, false);
 
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
-    bytes memory data = _getSignedVolData(pk, volData);
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
+    bytes memory data = _signFeedData(feed, pk, volData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSigner.selector);
     feed.acceptData(data);
   }
 
   function testCannotUpdateVolFeedAfterDeadline() public {
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
-    bytes memory data = _getSignedVolData(pk, volData);
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
+    bytes memory data = _signFeedData(feed, pk, volData);
 
     vm.warp(block.timestamp + 10);
 
@@ -102,25 +102,25 @@ contract UNIT_LyraVolFeed is Test {
   }
 
   function testCannotSetVolInTheFuture() public {
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
     volData.timestamp = uint64(block.timestamp + 1000);
-    bytes memory data = _getSignedVolData(pk, volData);
+    bytes memory data = _signFeedData(feed, pk, volData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidTimestamp.selector);
     feed.acceptData(data);
   }
 
   function testIgnoreUpdateIfOlderDataIsPushed() public {
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
 
-    bytes memory data = _getSignedVolData(pk, volData);
+    bytes memory data = _signFeedData(feed, pk, volData);
     feed.acceptData(data);
     uint confidence = feed.getExpiryMinConfidence(defaultExpiry);
     assertEq(confidence, 1e18);
 
-    volData.confidence = 0.9e18;
+    volData.data = abi.encode(defaultExpiry, 0, 0, 0, 0, 0, 0, 0, 1.2e18);
     volData.timestamp = uint64(block.timestamp - 100);
-    data = _getSignedVolData(pk, volData);
+    data = _signFeedData(feed, pk, volData);
     feed.acceptData(data);
 
     confidence = feed.getExpiryMinConfidence(defaultExpiry);
@@ -132,44 +132,32 @@ contract UNIT_LyraVolFeed is Test {
     // use a different private key to sign the data but still specify pkOwner as signer
     uint pk2 = 0xBEEF2222;
 
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData();
-    bytes memory data = _getSignedVolData(pk2, volData);
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
+    bytes memory data = _signFeedData(feed, pk2, volData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
     feed.acceptData(data);
   }
 
-  function _getDefaultVolData() internal view returns (ILyraVolFeed.VolData memory) {
+  function _getDefaultVolData() internal view returns (IBaseLyraFeed.FeedData memory) {
+    int SVI_a = 1e18;
+    uint SVI_b = 1.5e18;
+    int SVI_rho = -0.1e18;
+    int SVI_m = -0.05e18;
+    uint SVI_sigma = 0.05e18;
+    uint SVI_fwd = 1200e18;
+    uint64 SVI_refTao = uint64(Black76.annualise(uint64(defaultExpiry - block.timestamp)));
+    uint64 confidence = 1e18;
+
     // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
-    return ILyraVolFeed.VolData({
-      expiry: defaultExpiry,
-      SVI_a: 1e18,
-      SVI_b: 1.5e18,
-      SVI_rho: -0.1e18,
-      SVI_m: -0.05e18,
-      SVI_sigma: 0.05e18,
-      SVI_fwd: 1200e18,
-      SVI_refTao: uint64(Black76.annualise(uint64(defaultExpiry - block.timestamp))),
-      confidence: 1e18,
+    bytes memory volData =
+      abi.encode(defaultExpiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTao, confidence);
+    return IBaseLyraFeed.FeedData({
+      data: volData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: pkOwner,
       signature: new bytes(0)
     });
-  }
-
-  function _getSignedVolData(uint privateKey, ILyraVolFeed.VolData memory volData)
-    internal
-    view
-    returns (bytes memory data)
-  {
-    volData.signature = _signVolData(privateKey, volData);
-    return abi.encode(volData);
-  }
-
-  function _signVolData(uint privateKey, ILyraVolFeed.VolData memory volData) internal view returns (bytes memory) {
-    bytes32 structHash = feed.hashVolData(volData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-    return bytes.concat(r, s, bytes1(v));
   }
 }

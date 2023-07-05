@@ -2,9 +2,9 @@ pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
 
-import "src/feeds/OptionPricing.sol";
+import "../../../../src/feeds/OptionPricing.sol";
 
-import "test/shared/utils/JsonMechIO.sol";
+import "../../../shared/utils/JsonMechIO.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
 /**

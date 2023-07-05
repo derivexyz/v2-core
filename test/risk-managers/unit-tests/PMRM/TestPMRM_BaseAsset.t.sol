@@ -1,6 +1,9 @@
 pragma solidity ^0.8.18;
 
-import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
+import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
+
+import "../../../../src/periphery/PerpSettlementHelper.sol";
+import "../../../../src/periphery/OptionSettlementHelper.sol";
 
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 

@@ -3,24 +3,18 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import "./StandardManagerPublic.sol";
+import "../../../../src/risk-managers/SRMPortfolioViewer.sol";
 
-import "lyra-utils/encoding/OptionEncoding.sol";
+import "../../../../src/SubAccounts.sol";
+import {IAsset} from "../../../../src/interfaces/IAsset.sol";
 
-import "src/SubAccounts.sol";
-import {IManager} from "src/interfaces/IManager.sol";
-import {IAsset} from "src/interfaces/IAsset.sol";
-
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-import "src/risk-managers/SRMPortfolioViewer.sol";
-import "test/shared/mocks/MockManager.sol";
-import "test/shared/mocks/MockERC20.sol";
-import "test/shared/mocks/MockPerp.sol";
-import "test/shared/mocks/MockOption.sol";
-import "test/shared/mocks/MockFeeds.sol";
-import "test/shared/mocks/MockOptionPricing.sol";
-import "test/shared/mocks/MockTrackableAsset.sol";
-import "test/auction/mocks/MockCashAsset.sol";
-import "../../../shared/mocks/MockSpotDiffFeed.sol";
+import "../../../shared/mocks/MockERC20.sol";
+import "../../../shared/mocks/MockPerp.sol";
+import "../../../shared/mocks/MockOption.sol";
+import "../../../shared/mocks/MockFeeds.sol";
+import "../../../shared/mocks/MockOptionPricing.sol";
+import "../../../shared/mocks/MockTrackableAsset.sol";
+import "../../../auction/mocks/MockCashAsset.sol";
 
 /**
  * @dev shard contract setting up environment for testing StandardManager

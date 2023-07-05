@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
+import "../../../src/feeds/LyraRateFeed.sol";
 
-import "src/feeds/LyraRateFeed.sol";
+import "./LyraFeedTestUtils.sol";
 
-contract UNIT_LyraRateFeed is Test {
+contract UNIT_LyraRateFeed is LyraFeedTestUtils {
   LyraRateFeed feed;
-
-  bytes32 domainSeparator;
 
   // signer
   uint private pk;
@@ -19,7 +17,6 @@ contract UNIT_LyraRateFeed is Test {
 
   function setUp() public {
     feed = new LyraRateFeed();
-    domainSeparator = feed.domainSeparator();
 
     // set signer
     pk = 0xBEEF;
@@ -32,10 +29,6 @@ contract UNIT_LyraRateFeed is Test {
     feed.addSigner(pkOwner, true);
   }
 
-  function testDomainSeparator() public {
-    assertEq(feed.domainSeparator(), domainSeparator);
-  }
-
   function testCanAddSigner() public {
     address alice = address(0xaaaa);
     feed.addSigner(alice, true);
@@ -43,8 +36,8 @@ contract UNIT_LyraRateFeed is Test {
   }
 
   function testCanPassInDataAndUpdateRateFeed() public {
-    ILyraRateFeed.RateData memory rateData = _getDefaultRateData();
-    feed.acceptData(_getSignedRateData(pk, rateData));
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    feed.acceptData(_signFeedData(feed, pk, feedData));
 
     (int rate, uint confidence) = feed.getInterestRate(defaultExpiry);
 
@@ -53,9 +46,9 @@ contract UNIT_LyraRateFeed is Test {
   }
 
   function testCantPassInInvalidConfidence() public {
-    ILyraRateFeed.RateData memory rateData = _getDefaultRateData();
-    rateData.confidence = 1.01e18;
-    bytes memory data = _getSignedRateData(pk, rateData);
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    feedData.data = abi.encode(defaultExpiry, -0.1e18, 1.01e18);
+    bytes memory data = _signFeedData(feed, pk, feedData);
 
     vm.expectRevert(ILyraRateFeed.LRF_InvalidConfidence.selector);
     feed.acceptData(data);
@@ -65,16 +58,16 @@ contract UNIT_LyraRateFeed is Test {
     // we don't whitelist the pk owner this time
     feed.addSigner(pkOwner, false);
 
-    ILyraRateFeed.RateData memory rateData = _getDefaultRateData();
-    bytes memory data = _getSignedRateData(pk, rateData);
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    bytes memory data = _signFeedData(feed, pk, feedData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSigner.selector);
     feed.acceptData(data);
   }
 
   function testCannotUpdateRateFeedAfterDeadline() public {
-    ILyraRateFeed.RateData memory rateData = _getDefaultRateData();
-    bytes memory data = _getSignedRateData(pk, rateData);
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    bytes memory data = _signFeedData(feed, pk, feedData);
 
     vm.warp(block.timestamp + 10);
 
@@ -83,22 +76,22 @@ contract UNIT_LyraRateFeed is Test {
   }
 
   function testCannotSetRateInTheFuture() public {
-    ILyraRateFeed.RateData memory rateData = _getDefaultRateData();
-    rateData.timestamp = uint64(block.timestamp + 1000);
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    feedData.timestamp = uint64(block.timestamp + 1000);
 
-    bytes memory data = _getSignedRateData(pk, rateData);
+    bytes memory data = _signFeedData(feed, pk, feedData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidTimestamp.selector);
     feed.acceptData(data);
   }
 
   function testIgnoreUpdateIfOlderDataIsPushed() public {
-    ILyraRateFeed.RateData memory rateData = _getDefaultRateData();
-    feed.acceptData(_getSignedRateData(pk, rateData));
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    feed.acceptData(_signFeedData(feed, pk, feedData));
 
     // this data has the same timestamp, so it will be ignored
-    rateData.rate = 0.1e18;
-    feed.acceptData(_getSignedRateData(pk, rateData));
+    feedData.data = abi.encode(defaultExpiry, 0.1e18, 1.01e18);
+    feed.acceptData(_signFeedData(feed, pk, feedData));
 
     (int rate, uint confidence) = feed.getInterestRate(defaultExpiry);
     assertEq(rate, -0.1e18);
@@ -110,37 +103,23 @@ contract UNIT_LyraRateFeed is Test {
     uint pk2 = 0xBEEF2222;
 
     // replace pkOwner with random signer address
-    ILyraRateFeed.RateData memory rateData = _getDefaultRateData();
-    bytes memory data = _getSignedRateData(pk2, rateData);
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    bytes memory data = _signFeedData(feed, pk2, feedData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
     feed.acceptData(data);
   }
 
-  function _getDefaultRateData() internal view returns (ILyraRateFeed.RateData memory rateData) {
-    return ILyraRateFeed.RateData({
-      expiry: defaultExpiry,
-      rate: -0.1e18,
-      confidence: 1e18,
+  function _getDefaultRateData() internal view returns (IBaseLyraFeed.FeedData memory feedData) {
+    // expiry, rate, confidence
+    bytes memory rateData = abi.encode(defaultExpiry, -0.1e18, 1e18);
+
+    return IBaseLyraFeed.FeedData({
+      data: rateData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: pkOwner,
       signature: new bytes(0)
     });
-  }
-
-  function _getSignedRateData(uint privateKey, ILyraRateFeed.RateData memory rateData)
-    internal
-    view
-    returns (bytes memory data)
-  {
-    rateData.signature = _signRateData(privateKey, rateData);
-    return abi.encode(rateData);
-  }
-
-  function _signRateData(uint privateKey, ILyraRateFeed.RateData memory rateData) internal view returns (bytes memory) {
-    bytes32 structHash = feed.hashRateData(rateData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-    return bytes.concat(r, s, bytes1(v));
   }
 }

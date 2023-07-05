@@ -3,31 +3,31 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 
-import "src/SecurityModule.sol";
-import "src/assets/CashAsset.sol";
-import "src/assets/Option.sol";
-import "src/assets/PerpAsset.sol";
-import "src/assets/InterestRateModel.sol";
+import "../../../src/SecurityModule.sol";
+import "../../../src/assets/CashAsset.sol";
+import "../../../src/assets/Option.sol";
+import "../../../src/assets/PerpAsset.sol";
+import "../../../src/assets/InterestRateModel.sol";
 
-import "src/assets/WrappedERC20Asset.sol";
+import "../../../src/assets/WrappedERC20Asset.sol";
 
-import "src/liquidation/DutchAuction.sol";
-import "src/SubAccounts.sol";
+import "../../../src/liquidation/DutchAuction.sol";
+import "../../../src/SubAccounts.sol";
 
-import "src/risk-managers/StandardManager.sol";
-import "src/risk-managers/SRMPortfolioViewer.sol";
-import "src/risk-managers/PMRM.sol";
+import "../../../src/risk-managers/StandardManager.sol";
+import "../../../src/risk-managers/PMRM.sol";
+import "../../../src/risk-managers/SRMPortfolioViewer.sol";
 
-import "src/feeds/OptionPricing.sol";
+import "../../../src/feeds/OptionPricing.sol";
 
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
-import "src/feeds/LyraSpotDiffFeed.sol";
-import "src/feeds/LyraRateFeed.sol";
+import "../../../src/feeds/LyraSpotDiffFeed.sol";
+import "../../../src/feeds/LyraRateFeed.sol";
 
-import "src/feeds/LyraSpotFeed.sol";
-import "src/feeds/LyraVolFeed.sol";
-import "src/feeds/LyraForwardFeed.sol";
+import "../../../src/feeds/LyraSpotFeed.sol";
+import "../../../src/feeds/LyraVolFeed.sol";
+import "../../../src/feeds/LyraForwardFeed.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
@@ -463,9 +463,9 @@ contract IntegrationTestBase is Test {
 
   function _setSpotPrice(string memory key, uint96 price, uint64 conf) internal {
     LyraSpotFeed spotFeed = markets[key].spotFeed;
-    ILyraSpotFeed.SpotData memory spotData = ILyraSpotFeed.SpotData({
-      price: price,
-      confidence: conf,
+    bytes memory data = abi.encode(price, conf);
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: data,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
@@ -473,12 +473,10 @@ contract IntegrationTestBase is Test {
     });
 
     // sign data
-    bytes32 structHash = spotFeed.hashSpotData(spotData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(spotFeed.domainSeparator(), structHash));
-    spotData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(spotData);
+    bytes memory managerData = _signFeedData(spotFeed, keeperPk, feedData);
+
     // submit to feed
-    spotFeed.acceptData(data);
+    spotFeed.acceptData(managerData);
   }
 
   /**
@@ -492,24 +490,18 @@ contract IntegrationTestBase is Test {
 
     int96 diff = int96(int(price) - int(spot));
 
-    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = ILyraForwardFeed.ForwardAndSettlementData({
-      expiry: expiry,
-      fwdSpotDifference: diff,
-      settlementStartAggregate: price * uint(expiry - feed.SETTLEMENT_TWAP_DURATION()),
-      currentSpotAggregate: price * uint(expiry),
-      confidence: 1e18,
+    uint startAggregate = price * uint(expiry - feed.SETTLEMENT_TWAP_DURATION());
+    uint currAggregate = price * uint(expiry);
+
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: abi.encode(expiry, startAggregate, currAggregate, diff, 1e18),
       timestamp: uint64(expiry), // timestamp need to be expiry to be used as settlement data
       deadline: block.timestamp + 5,
       signer: keeper,
       signature: new bytes(0)
     });
 
-    bytes32 structHash = feed.hashForwardData(fwdData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
-    fwdData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(fwdData);
-    // submit to feed
-    feed.acceptData(data);
+    feed.acceptData(_signFeedData(feed, keeperPk, feedData));
   }
 
   function _getForwardPrice(string memory key, uint expiry) internal view returns (uint, uint) {
@@ -528,24 +520,15 @@ contract IntegrationTestBase is Test {
 
     int96 diff = int96(int(price) - int(spot));
 
-    ILyraForwardFeed.ForwardAndSettlementData memory fwdData = ILyraForwardFeed.ForwardAndSettlementData({
-      expiry: expiry,
-      fwdSpotDifference: diff,
-      settlementStartAggregate: 0,
-      currentSpotAggregate: 0,
-      confidence: conf,
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: abi.encode(expiry, 0, 0, diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
       signature: new bytes(0)
     });
 
-    bytes32 structHash = feed.hashForwardData(fwdData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
-    fwdData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(fwdData);
-    // submit to feed
-    feed.acceptData(data);
+    feed.acceptData(_signFeedData(feed, keeperPk, feedData));
   }
 
   function _getPerpPrice(string memory key) internal view returns (uint, uint) {
@@ -561,20 +544,15 @@ contract IntegrationTestBase is Test {
 
     int96 diff = int96(int(price) - int(spot));
 
-    ILyraSpotDiffFeed.SpotDiffData memory diffData = ILyraSpotDiffFeed.SpotDiffData({
-      spotDiff: diff,
-      confidence: conf,
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: abi.encode(diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
       signature: new bytes(0)
     });
 
-    // sign data
-    bytes32 structHash = perpFeed.hashSpotDiffData(diffData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(perpFeed.domainSeparator(), structHash));
-    diffData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(diffData);
+    bytes memory data = _signFeedData(perpFeed, keeperPk, feedData);
 
     perpFeed.acceptData(data);
   }
@@ -587,13 +565,10 @@ contract IntegrationTestBase is Test {
 
     LyraVolFeed volFeed = markets[key].volFeed;
 
-    ILyraVolFeed.VolData memory volData = _getDefaultVolData(expiry, fwdPrice);
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultVolData(expiry, fwdPrice);
 
     // sign data
-    bytes32 structHash = volFeed.hashVolData(volData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(volFeed.domainSeparator(), structHash));
-    volData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(volData);
+    bytes memory data = _signFeedData(volFeed, keeperPk, feedData);
 
     volFeed.acceptData(data);
   }
@@ -605,10 +580,9 @@ contract IntegrationTestBase is Test {
 
   function _setInterestRate(string memory key, uint64 expiry, int96 rate, uint64 conf) internal {
     LyraRateFeed rateFeed = markets[key].rateFeed;
-    ILyraRateFeed.RateData memory rateData = ILyraRateFeed.RateData({
-      expiry: expiry,
-      rate: rate,
-      confidence: conf,
+    bytes memory rateData = abi.encode(expiry, rate, conf);
+    IBaseLyraFeed.FeedData memory feedData = IBaseLyraFeed.FeedData({
+      data: rateData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,
@@ -616,16 +590,30 @@ contract IntegrationTestBase is Test {
     });
 
     // sign data
-    bytes32 structHash = rateFeed.hashRateData(rateData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(keeperPk, ECDSA.toTypedDataHash(rateFeed.domainSeparator(), structHash));
-    rateData.signature = bytes.concat(r, s, bytes1(v));
-    bytes memory data = abi.encode(rateData);
+    bytes memory data = _signFeedData(rateFeed, keeperPk, feedData);
 
     rateFeed.acceptData(data);
   }
 
+  function _signFeedData(IBaseLyraFeed feed, uint privateKey, IBaseLyraFeed.FeedData memory feedData)
+    internal
+    view
+    returns (bytes memory)
+  {
+    bytes32 structHash = hashFeedData(feed, feedData);
+    bytes32 domainSeparator = feed.domainSeparator();
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
+    feedData.signature = bytes.concat(r, s, bytes1(v));
+
+    return abi.encode(feedData);
+  }
+
+  function hashFeedData(IBaseLyraFeed feed, IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
+    bytes32 typeHash = feed.FEED_DATA_TYPEHASH();
+    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
+  }
+
   function _setPMRMParams(PMRM pmrm, PMRMLib pmrmLib) internal {
-    // load params from config.sol
     (
       IPMRMLib.BasisContingencyParameters memory basisContParams,
       IPMRMLib.OtherContingencyParameters memory otherContParams,
@@ -642,18 +630,20 @@ contract IntegrationTestBase is Test {
     pmrm.setScenarios(getDefaultScenarios());
   }
 
-  function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (ILyraVolFeed.VolData memory) {
+  function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (IBaseLyraFeed.FeedData memory) {
+    int SVI_a = 1e18;
+    uint SVI_b = 1.5e18;
+    int SVI_rho = -0.1e18;
+    int SVI_m = -0.05e18;
+    uint SVI_sigma = 0.05e18;
+    uint SVI_fwd = fwdPrice;
+    uint64 SVI_refTao = uint64(Black76.annualise(uint64(expiry - block.timestamp)));
+    uint64 confidence = 1e18;
+
     // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
-    return ILyraVolFeed.VolData({
-      expiry: expiry,
-      SVI_a: 1e18,
-      SVI_b: 1.5e18,
-      SVI_rho: -0.1e18,
-      SVI_m: -0.05e18,
-      SVI_sigma: 0.05e18,
-      SVI_fwd: fwdPrice,
-      SVI_refTao: uint64(Black76.annualise(uint64(expiry - block.timestamp))),
-      confidence: 1e18,
+    bytes memory volData = abi.encode(expiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTao, confidence);
+    return IBaseLyraFeed.FeedData({
+      data: volData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signer: keeper,

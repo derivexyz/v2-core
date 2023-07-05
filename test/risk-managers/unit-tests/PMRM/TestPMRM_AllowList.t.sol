@@ -1,18 +1,17 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
+import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 
-import "src/risk-managers/PMRM.sol";
-import "src/SubAccounts.sol";
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
+import "../../../../src/risk-managers/PMRM.sol";
+import "../../../../src/SubAccounts.sol";
 
-import "test/shared/mocks/MockFeeds.sol";
+import "../../../shared/mocks/MockFeeds.sol";
 
-import "test/shared/mocks/MockFeeds.sol";
+import "../../../shared/mocks/MockFeeds.sol";
 
-import "test/risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
-import "src/feeds/AllowList.sol";
+import "../../../risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
+import "../../../../src/feeds/AllowList.sol";
 
 contract UNIT_TestPMRM_AllowList is PMRMSimTest {
   AllowList allowList;
@@ -74,17 +73,27 @@ contract UNIT_TestPMRM_AllowList is PMRMSimTest {
   }
 
   function setAllowListed(address user, bool allowed, uint timestamp) internal {
-    IAllowList.AllowListData memory allowListData = IAllowList.AllowListData({
-      user: user,
-      allowed: allowed,
+    IBaseLyraFeed.FeedData memory allowListData = IBaseLyraFeed.FeedData({
+      data: abi.encode(user, allowed),
       timestamp: uint64(timestamp),
       deadline: block.timestamp + 5,
       signer: signer,
       signature: new bytes(0)
     });
-    bytes32 structHash = allowList.hashAllowListData(allowListData);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPK, ECDSA.toTypedDataHash(allowList.domainSeparator(), structHash));
-    allowListData.signature = bytes.concat(r, s, bytes1(v));
-    allowList.acceptData(abi.encode(allowListData));
+    allowList.acceptData(_signFeedData(signerPK, allowListData));
+  }
+
+  function _signFeedData(uint privateKey, IBaseLyraFeed.FeedData memory feedData) internal view returns (bytes memory) {
+    bytes32 structHash = hashFeedData(feedData);
+    bytes32 domainSeparator = allowList.domainSeparator();
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
+    feedData.signature = bytes.concat(r, s, bytes1(v));
+
+    return abi.encode(feedData);
+  }
+
+  function hashFeedData(IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
+    bytes32 typeHash = allowList.FEED_DATA_TYPEHASH();
+    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
   }
 }

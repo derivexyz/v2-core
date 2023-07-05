@@ -2,18 +2,6 @@
 pragma solidity ^0.8.18;
 
 interface ILyraSpotFeed {
-  struct SpotData {
-    // price data
-    uint96 price;
-    uint64 confidence;
-    uint64 timestamp;
-    // the latest timestamp you can use this data
-    uint deadline;
-    // signature v, r, s
-    address signer;
-    bytes signature;
-  }
-
   /// @dev structure to store in contract storage
   struct SpotDetail {
     uint96 price;

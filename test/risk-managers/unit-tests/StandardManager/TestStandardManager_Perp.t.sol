@@ -2,24 +2,20 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/risk-managers/StandardManager.sol";
-import "src/risk-managers/SRMPortfolioViewer.sol";
-import "src/periphery/PerpSettlementHelper.sol";
+import "../../../../src/risk-managers/StandardManager.sol";
+import "../../../../src/risk-managers/SRMPortfolioViewer.sol";
+import "../../../../src/periphery/PerpSettlementHelper.sol";
 
-import "src/SubAccounts.sol";
-import {IManager} from "src/interfaces/IManager.sol";
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {IDutchAuction} from "src/interfaces/IDutchAuction.sol";
+import "../../../../src/SubAccounts.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
+import {IDutchAuction} from "../../../../src/interfaces/IDutchAuction.sol";
+import "../../../shared/mocks/MockERC20.sol";
+import "../../../shared/mocks/MockPerp.sol";
+import "../../../shared/mocks/MockOption.sol";
+import "../../../shared/mocks/MockFeeds.sol";
+import "../../../shared/mocks/MockOptionPricing.sol";
 
-import "test/shared/mocks/MockManager.sol";
-import "test/shared/mocks/MockERC20.sol";
-import "test/shared/mocks/MockPerp.sol";
-import "test/shared/mocks/MockOption.sol";
-import "test/shared/mocks/MockFeeds.sol";
-import "test/shared/mocks/MockOptionPricing.sol";
-
-import "test/auction/mocks/MockCashAsset.sol";
+import "../../../auction/mocks/MockCashAsset.sol";
 
 contract UNIT_TestStandardManager is Test {
   SubAccounts subAccounts;

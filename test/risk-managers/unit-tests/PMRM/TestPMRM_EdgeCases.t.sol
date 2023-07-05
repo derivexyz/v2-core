@@ -1,19 +1,13 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
+import "../../../../src/risk-managers/PMRM.sol";
+import "../../../../src/SubAccounts.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
+import {IAsset} from "../../../../src/interfaces/IAsset.sol";
+import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
+import "../../../shared/mocks/MockOption.sol";
 
-import "src/risk-managers/PMRM.sol";
-import "src/SubAccounts.sol";
-import {IBaseManager} from "src/interfaces/IBaseManager.sol";
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-
-import "test/shared/mocks/MockOption.sol";
-import "test/shared/mocks/MockFeeds.sol";
-
-import "test/shared/mocks/MockFeeds.sol";
-
-import "test/risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
+import "../../../risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
 
 contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
   function testPMRM_perpTransfer() public {

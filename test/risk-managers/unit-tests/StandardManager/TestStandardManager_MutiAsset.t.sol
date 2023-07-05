@@ -1,6 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 
 /**
  * Focusing on the margin rules for options

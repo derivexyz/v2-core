@@ -1,16 +1,11 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-
-import "src/risk-managers/PMRM.sol";
-
-import {IAsset} from "src/interfaces/IAsset.sol";
-import {ISubAccounts} from "src/interfaces/ISubAccounts.sol";
-
-import "test/shared/mocks/MockFeeds.sol";
-
-import "test/shared/mocks/MockFeeds.sol";
-import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
+import "../../../../src/risk-managers/PMRM.sol";
+import {IAsset} from "../../../../src/interfaces/IAsset.sol";
+import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
+import "../../../shared/mocks/MockFeeds.sol";
+import "../../../shared/mocks/MockFeeds.sol";
+import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 // TODO: catch edge cases in arrange
 contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {

@@ -1,6 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 
 contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   function testCanTransferCash() public {
