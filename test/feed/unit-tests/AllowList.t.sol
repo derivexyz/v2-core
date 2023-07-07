@@ -73,8 +73,8 @@ contract UNIT_AllowList is LyraFeedTestUtils {
       data: abi.encode(defaultUser, true),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: pkOwner,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
   }
 }

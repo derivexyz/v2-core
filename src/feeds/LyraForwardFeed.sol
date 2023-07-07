@@ -225,6 +225,6 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
       ForwardDetails({fwdSpotDifference: fwdSpotDifference, confidence: confidence, timestamp: feedData.timestamp});
     forwardDetails[expiry] = forwardDetail;
 
-    emit ForwardDataUpdated(expiry, feedData.signer, forwardDetail, settlementData);
+    emit ForwardDataUpdated(expiry, forwardDetail, settlementData);
   }
 }

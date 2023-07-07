@@ -57,6 +57,6 @@ contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
     // update spot price
     spotDetail = SpotDetail(price, confidence, uint64(feedData.timestamp));
 
-    emit SpotPriceUpdated(feedData.signer, price, confidence, uint64(feedData.timestamp));
+    emit SpotPriceUpdated(price, confidence, uint64(feedData.timestamp));
   }
 }

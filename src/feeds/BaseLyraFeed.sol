@@ -25,7 +25,12 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
   //     Variables      //
   ////////////////////////
 
+  ///@dev mapping of address to whether they are whitelisted signers
   mapping(address => bool) public isSigner;
+
+  ///@dev number of signers required to submit data
+  uint8 public requiredSigners = 1;
+
   uint64 public heartbeat;
 
   ////////////////////////
@@ -41,6 +46,13 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
   function addSigner(address signer, bool isWhitelisted) external onlyOwner {
     isSigner[signer] = isWhitelisted;
     emit SignerUpdated(signer, isWhitelisted);
+  }
+
+  function setRequiredSigners(uint8 newRequiredSigners) external onlyOwner {
+    if (newRequiredSigners == 0) revert BLF_InvalidRequiredSigners();
+    requiredSigners = newRequiredSigners;
+
+    emit RequiredSignersUpdated(newRequiredSigners);
   }
 
   function setHeartbeat(uint64 newHeartbeat) external onlyOwner {
@@ -74,13 +86,30 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
     feedData = abi.decode(data, (FeedData));
     bytes32 hashedData = hashFeedData(feedData);
     // check the signature is from the signer is valid
-    if (!SignatureChecker.isValidSignatureNow(feedData.signer, _hashTypedDataV4(hashedData), feedData.signature)) {
-      revert BLF_InvalidSignature();
-    }
+    uint numOfSigners = feedData.signers.length;
+    if (numOfSigners < requiredSigners) revert BLF_NotEnoughSigners();
 
-    // check that it is a valid signer
-    if (!isSigner[feedData.signer]) {
-      revert BLF_InvalidSigner();
+    // verify all signatures
+
+    // 256 bit that flip all the bits of address that have signed
+    uint addressMask;
+    for (uint i = 0; i < numOfSigners; i++) {
+      // check that the signer has not signed before
+      if (addressMask & uint160(feedData.signers[i]) == uint160(feedData.signers[i])) {
+        revert BLF_DuplicatedSigner();
+      }
+      addressMask |= uint160(feedData.signers[i]);
+
+      if (
+        !SignatureChecker.isValidSignatureNow(feedData.signers[i], _hashTypedDataV4(hashedData), feedData.signatures[i])
+      ) {
+        revert BLF_InvalidSignature();
+      }
+
+      // check that it is a valid signer
+      if (!isSigner[feedData.signers[i]]) {
+        revert BLF_InvalidSigner();
+      }
     }
 
     // check the deadline
@@ -95,7 +124,6 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
   }
 
   function hashFeedData(FeedData memory feedData) public pure returns (bytes32) {
-    return
-      keccak256(abi.encode(FEED_DATA_TYPEHASH, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
+    return keccak256(abi.encode(FEED_DATA_TYPEHASH, feedData.data, feedData.deadline, feedData.timestamp));
   }
 }

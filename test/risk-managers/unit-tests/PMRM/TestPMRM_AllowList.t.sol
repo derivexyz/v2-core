@@ -77,8 +77,8 @@ contract UNIT_TestPMRM_AllowList is PMRMSimTest {
       data: abi.encode(user, allowed),
       timestamp: uint64(timestamp),
       deadline: block.timestamp + 5,
-      signer: signer,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
     allowList.acceptData(_signFeedData(signerPK, allowListData));
   }
@@ -87,13 +87,13 @@ contract UNIT_TestPMRM_AllowList is PMRMSimTest {
     bytes32 structHash = hashFeedData(feedData);
     bytes32 domainSeparator = allowList.domainSeparator();
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-    feedData.signature = bytes.concat(r, s, bytes1(v));
-
+    feedData.signatures[0] = bytes.concat(r, s, bytes1(v));
+    feedData.signers[0] = vm.addr(privateKey);
     return abi.encode(feedData);
   }
 
   function hashFeedData(IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
     bytes32 typeHash = allowList.FEED_DATA_TYPEHASH();
-    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
+    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp));
   }
 }

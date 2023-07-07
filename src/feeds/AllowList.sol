@@ -64,6 +64,6 @@ contract AllowList is BaseLyraFeed, IAllowList {
     AllowListDetails memory details = AllowListDetails({timestamp: feedData.timestamp, allowed: allowed});
     allowListDetails[user] = details;
 
-    emit AllowListUpdated(feedData.signer, user, details);
+    emit AllowListUpdated(user, details);
   }
 }

@@ -24,5 +24,5 @@ interface ILyraVolFeed {
   ////////////////////////
   //       Events       //
   ////////////////////////
-  event VolDataUpdated(address indexed signer, uint64 indexed expiry, VolDetails volDetails);
+  event VolDataUpdated(uint64 indexed expiry, VolDetails volDetails);
 }

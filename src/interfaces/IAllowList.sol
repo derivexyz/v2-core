@@ -16,5 +16,5 @@ interface IAllowList {
   //       Events       //
   ////////////////////////
   event AllowListEnabled(bool enabled);
-  event AllowListUpdated(address indexed signer, address indexed user, AllowListDetails details);
+  event AllowListUpdated(address indexed user, AllowListDetails details);
 }

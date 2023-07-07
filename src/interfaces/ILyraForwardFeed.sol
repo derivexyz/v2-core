@@ -21,9 +21,7 @@ interface ILyraForwardFeed {
   ////////////////////////
   event SpotFeedUpdated(ISpotFeed spotFeed);
   event SettlementHeartbeatUpdated(uint64 settlementHeartbeat);
-  event ForwardDataUpdated(
-    uint64 indexed expiry, address indexed signer, ForwardDetails fwdDetails, SettlementDetails settlementDetails
-  );
+  event ForwardDataUpdated(uint64 indexed expiry, ForwardDetails fwdDetails, SettlementDetails settlementDetails);
 
   ////////////////////////
   //       Errors       //

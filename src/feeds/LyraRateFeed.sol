@@ -56,6 +56,6 @@ contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
     // update rate
     rateDetails[expiry] = RateDetail(rate, confidence, feedData.timestamp);
 
-    emit RateUpdated(feedData.signer, expiry, rate, confidence, feedData.timestamp);
+    emit RateUpdated(expiry, rate, confidence, feedData.timestamp);
   }
 }

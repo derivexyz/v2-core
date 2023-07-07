@@ -14,9 +14,9 @@ interface IBaseLyraFeed {
     // timestamp that this data is signed
     uint64 timestamp;
     // signer of this data
-    address signer;
+    address[] signers;
     // signature v, r, s
-    bytes signature;
+    bytes[] signatures;
   }
 
   ////////////////////////
@@ -38,10 +38,20 @@ interface IBaseLyraFeed {
   /// @dev Data has crossed heartbeat threshold
   error BLF_DataTooOld();
 
+  /// @dev Invalid required signers
+  error BLF_InvalidRequiredSigners();
+
+  /// @dev Not enough signers
+  error BLF_NotEnoughSigners();
+
+  /// @dev Duplicated signer used in array of signers
+  error BLF_DuplicatedSigner();
+
   ////////////////////////
   //       Events       //
   ////////////////////////
 
   event SignerUpdated(address indexed signer, bool isWhitelisted);
   event HeartbeatUpdated(address indexed signer, uint heartbeat);
+  event RequiredSignersUpdated(uint requiredSigners);
 }

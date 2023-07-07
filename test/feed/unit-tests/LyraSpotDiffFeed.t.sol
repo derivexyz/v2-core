@@ -124,6 +124,7 @@ contract UNIT_LyraSpotDiffFeed is LyraFeedTestUtils {
     uint pk2 = 0xBEEF2222;
 
     IBaseLyraFeed.FeedData memory feedData = _getDefaultSpotDiffData();
+    feedData.signers[0] = pkOwner;
     bytes memory data = _signFeedData(feed, pk2, feedData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
@@ -139,13 +140,15 @@ contract UNIT_LyraSpotDiffFeed is LyraFeedTestUtils {
     feed.acceptData(data);
   }
 
-  function _getDefaultSpotDiffData() internal view returns (IBaseLyraFeed.FeedData memory) {
-    return IBaseLyraFeed.FeedData({
+  function _getDefaultSpotDiffData() internal view returns (IBaseLyraFeed.FeedData memory data) {
+    data = IBaseLyraFeed.FeedData({
       data: abi.encode(10e18, 1e18),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: pkOwner,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
+
+    return data;
   }
 }
