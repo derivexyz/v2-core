@@ -78,6 +78,14 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
     assertEq(confidence, 1e18);
   }
 
+  function testCannotUpdateWithNoSigners() public {
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotDataMultipleSigners(0);
+    bytes memory data = abi.encode(spotData);
+
+    vm.expectRevert(IBaseLyraFeed.BLF_NotEnoughSigners.selector);
+    feed.acceptData(data);
+  }
+
   function testCannotUpdateIfNotEnoughSigners() public {
     feed.setRequiredSigners(2);
 
@@ -112,6 +120,16 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
 
     bytes memory data = abi.encode(spotData);
     vm.expectRevert(IBaseLyraFeed.BLF_DuplicatedSigner.selector);
+    feed.acceptData(data);
+  }
+
+  function testCannotSubmitMismatchedData() public {
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotDataMultipleSigners(3);
+    spotData.signatures = new bytes[](0);
+    spotData.signers[0] = pkOwner;
+    bytes memory data = abi.encode(spotData);
+
+    vm.expectRevert(IBaseLyraFeed.BLF_SignatureSignersLengthMismatch.selector);
     feed.acceptData(data);
   }
 

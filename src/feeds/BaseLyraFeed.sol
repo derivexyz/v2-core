@@ -88,6 +88,7 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
     // check the signature is from the signer is valid
     uint numOfSigners = feedData.signers.length;
     if (numOfSigners < requiredSigners) revert BLF_NotEnoughSigners();
+    if (numOfSigners != feedData.signatures.length) revert BLF_SignatureSignersLengthMismatch();
 
     // verify all signatures
 

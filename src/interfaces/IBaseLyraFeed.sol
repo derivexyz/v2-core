@@ -47,6 +47,9 @@ interface IBaseLyraFeed {
   /// @dev Duplicated signer used in array of signers
   error BLF_DuplicatedSigner();
 
+  /// @dev Submitted signatures and signers length mismatch
+  error BLF_SignatureSignersLengthMismatch();
+
   ////////////////////////
   //       Events       //
   ////////////////////////
