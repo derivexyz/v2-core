@@ -124,7 +124,8 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
 
     if (finalBalance < 0) revert WERC_CannotBeNegative();
 
-    return (finalBalance, adjustment.amount < 0);
+    // always need allowance: cannot force to send positive asset to other accounts
+    return (finalBalance, true);
   }
 
   /**

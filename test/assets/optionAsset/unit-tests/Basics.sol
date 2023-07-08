@@ -8,6 +8,7 @@ import {IManager} from "../../../../src/interfaces/IManager.sol";
 import {IAsset} from "../../../../src/interfaces/IAsset.sol";
 
 import {IManagerWhitelist} from "../../../../src/interfaces/IManagerWhitelist.sol";
+import {IAllowances} from "../../../../src/interfaces/IAllowances.sol";
 
 import "test/shared/mocks/MockManager.sol";
 
@@ -74,6 +75,25 @@ contract UNIT_TestOptionBasics is Test {
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
     subAccounts.submitTransfer(assetTransfer, "");
     vm.stopPrank();
+  }
+
+  function testCannotTransferPositiveBalanceWithoutApproval() public {
+    option.setWhitelistManager(address(manager), true);
+    // bob cannot transfer to alice
+    vm.prank(bob);
+    ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: IAsset(option),
+      subId: 1,
+      amount: 1e18,
+      assetData: ""
+    });
+
+    vm.expectRevert(
+      abi.encodeWithSelector(IAllowances.NotEnoughSubIdOrAssetAllowances.selector, bob, aliceAcc, 1e18, 0, 0)
+    );
+    subAccounts.submitTransfer(assetTransfer, "");
   }
 
   function testValidSubIdCheck() public {

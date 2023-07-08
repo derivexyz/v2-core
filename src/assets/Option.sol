@@ -78,7 +78,8 @@ contract Option is IOption, PositionTracking, GlobalSubIdOITracking, ManagerWhit
     accountTotalPosition[adjustment.acc] =
       accountTotalPosition[adjustment.acc] + SignedMath.abs(postBalance) - SignedMath.abs(preBalance);
 
-    return (postBalance, adjustment.amount < 0);
+    // always need allowance: cannot force to send positive asset to other accounts
+    return (postBalance, true);
   }
 
   /**
