@@ -15,7 +15,7 @@ interface ILyraSpotDiffFeed {
   //       Events       //
   ////////////////////////
   event SpotFeedUpdated(ISpotFeed spotFeed);
-  event SpotDiffUpdated(address indexed signer, int96 spotDiff, uint96 confidence, uint64 timestamp);
+  event SpotDiffUpdated(int96 spotDiff, uint96 confidence, uint64 timestamp);
 
   ////////////////////////
   //       Errors       //

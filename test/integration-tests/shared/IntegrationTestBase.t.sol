@@ -468,8 +468,8 @@ contract IntegrationTestBase is Test {
       data: data,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     // sign data
@@ -497,8 +497,8 @@ contract IntegrationTestBase is Test {
       data: abi.encode(expiry, startAggregate, currAggregate, diff, 1e18),
       timestamp: uint64(expiry), // timestamp need to be expiry to be used as settlement data
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     feed.acceptData(_signFeedData(feed, keeperPk, feedData));
@@ -524,8 +524,8 @@ contract IntegrationTestBase is Test {
       data: abi.encode(expiry, 0, 0, diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     feed.acceptData(_signFeedData(feed, keeperPk, feedData));
@@ -548,8 +548,8 @@ contract IntegrationTestBase is Test {
       data: abi.encode(diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     bytes memory data = _signFeedData(perpFeed, keeperPk, feedData);
@@ -585,8 +585,8 @@ contract IntegrationTestBase is Test {
       data: rateData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     // sign data
@@ -603,14 +603,15 @@ contract IntegrationTestBase is Test {
     bytes32 structHash = hashFeedData(feed, feedData);
     bytes32 domainSeparator = feed.domainSeparator();
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-    feedData.signature = bytes.concat(r, s, bytes1(v));
+    feedData.signatures[0] = bytes.concat(r, s, bytes1(v));
+    feedData.signers[0] = vm.addr(privateKey);
 
     return abi.encode(feedData);
   }
 
   function hashFeedData(IBaseLyraFeed feed, IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
     bytes32 typeHash = feed.FEED_DATA_TYPEHASH();
-    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
+    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp));
   }
 
   function _setPMRMParams(PMRM pmrm, PMRMLib pmrmLib) internal {
@@ -646,8 +647,8 @@ contract IntegrationTestBase is Test {
       data: volData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
   }
 

@@ -36,16 +36,6 @@ contract UNIT_LyraVolFeed is LyraFeedTestUtils {
     feed.addSigner(pkOwner, true);
   }
 
-  function testDomainSeparator() public {
-    assertEq(feed.domainSeparator(), domainSeparator);
-  }
-
-  function testCanAddSigner() public {
-    address alice = address(0xaaaa);
-    feed.addSigner(alice, true);
-    assertEq(feed.isSigner(alice), true);
-  }
-
   function testRevertsWhenFetchingInvalidExpiry() public {
     vm.expectRevert(ILyraVolFeed.LVF_MissingExpiryData.selector);
     feed.getVol(uint128(uint(1500e18)), defaultExpiry);
@@ -133,6 +123,7 @@ contract UNIT_LyraVolFeed is LyraFeedTestUtils {
     uint pk2 = 0xBEEF2222;
 
     IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
+    volData.signers[0] = pkOwner;
     bytes memory data = _signFeedData(feed, pk2, volData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
@@ -156,8 +147,8 @@ contract UNIT_LyraVolFeed is LyraFeedTestUtils {
       data: volData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: pkOwner,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
   }
 }

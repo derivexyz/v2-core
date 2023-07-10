@@ -12,7 +12,7 @@ interface ILyraRateFeed {
   ////////////////////////
   //       Events       //
   ////////////////////////
-  event RateUpdated(address indexed signer, uint64 indexed expiry, int96 rate, uint96 confidence, uint64 timestamp);
+  event RateUpdated(uint64 indexed expiry, int96 rate, uint96 confidence, uint64 timestamp);
 
   ////////////////////////
   //       Errors       //
