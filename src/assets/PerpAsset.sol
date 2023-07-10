@@ -260,6 +260,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     position.lastMarkPrice = uint(perpPrice).toUint128();
     position.pnl += pnl.toInt128();
+
+    emit PositionSettled(accountId, pnl, position.pnl, uint(perpPrice));
   }
 
   /**
@@ -275,6 +277,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     position.funding = 0;
     position.pnl = 0;
+
+    emit PositionCleared(accountId);
   }
 
   /**
@@ -295,6 +299,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     // apply funding
     positions[accountId].funding += funding.toInt128();
     positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
+
+    emit FundingAppliedOnAccount(accountId, funding, aggregatedFundingRate);
   }
 
   /**

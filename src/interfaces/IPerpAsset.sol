@@ -63,6 +63,12 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   event FundingRateUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
 
+  event FundingAppliedOnAccount(uint accountId, int funding, int128 aggregatedFundingRate);
+
+  event PositionSettled(uint account, int pnlChange, int totalPnl, uint perpPrice);
+
+  event PositionCleared(uint account);
+
   ////////////////
   //   Errors   //
   ////////////////
