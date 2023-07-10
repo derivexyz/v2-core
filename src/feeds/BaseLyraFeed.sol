@@ -91,15 +91,13 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
     if (numOfSigners != feedData.signatures.length) revert BLF_SignatureSignersLengthMismatch();
 
     // verify all signatures
-
-    // 256 bit that flip all the bits of address that have signed
-    uint addressMask;
     for (uint i = 0; i < numOfSigners; i++) {
       // check that the signer has not signed before
-      if (addressMask & uint160(feedData.signers[i]) == uint160(feedData.signers[i])) {
-        revert BLF_DuplicatedSigner();
+      for (uint j = 0; j < i; j++) {
+        if (feedData.signers[i] == feedData.signers[j]) {
+          revert BLF_DuplicatedSigner();
+        }
       }
-      addressMask |= uint160(feedData.signers[i]);
 
       if (
         !SignatureChecker.isValidSignatureNow(feedData.signers[i], _hashTypedDataV4(hashedData), feedData.signatures[i])
