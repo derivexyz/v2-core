@@ -34,9 +34,15 @@ interface IBaseManager is IManager {
   ////////////////
 
   event MinOIFeeSet(uint minOIFee);
-  event PerpSettled(uint indexed accountId, int netCash);
+
+  event PerpSettled(uint accountId, address perp, int pnl, int funding);
+
+  event OptionSettled(uint accountId, address option, uint subId, int amount, int value);
+
   event FeeBypassedCallerSet(address caller, bool bypassed);
+
   event FeeRecipientSet(uint _newAcc);
+
   event OptionSettlementBufferUpdated(uint optionSettlementBuffer);
 
   ////////////

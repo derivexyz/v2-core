@@ -326,6 +326,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       subAccounts.managerAdjustment(
         ISubAccounts.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
       );
+
+      emit OptionSettled(accountId, address(option), balances[i].subId, balances[i].balance, value);
     }
 
     // update user cash amount
@@ -351,7 +353,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     // update user cash amount
     subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
 
-    emit PerpSettled(accountId, netCash);
+    emit PerpSettled(accountId, address(perp), pnl, funding);
   }
 
   /**

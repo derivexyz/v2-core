@@ -251,7 +251,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint accountId,
     uint tradeId,
     address caller,
-    ISubAccounts.AssetDelta[] calldata assetDeltas,
+    ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
   ) public override onlyAccounts {
     // check if account is valid
@@ -656,7 +656,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   //       Internal       //
   //////////////////////////
 
-  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] calldata assetDeltas)
+  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
   {
     if (feeBypassedCaller[caller]) return;
