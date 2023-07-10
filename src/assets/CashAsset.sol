@@ -298,8 +298,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     _accrueInterest();
 
     // Apply interest to preBalance
-    preBalance = _calculateBalanceWithInterest(preBalance, adjustment.acc);
-    finalBalance = preBalance + adjustment.amount;
+    int preBalanceWithInterest = _calculateBalanceWithInterest(preBalance, adjustment.acc);
+    finalBalance = preBalanceWithInterest + adjustment.amount;
 
     // Update borrow and supply indexes depending on if the accountId balance is net positive or negative
     if (finalBalance < 0) {
@@ -311,7 +311,9 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     // Need allowance if trying to deduct balance
     needAllowance = adjustment.amount < 0;
 
-    _updateSupplyAndBorrow(preBalance, finalBalance);
+    _updateSupplyAndBorrow(preBalanceWithInterest, finalBalance);
+
+    emit InterestAccruedOnAccount(adjustment.acc, preBalance, preBalanceWithInterest - preBalance);
   }
 
   /**
