@@ -89,7 +89,7 @@ interface ICashAsset is IERC20BasedAsset {
   event WithdrawFeeDisabled(uint exchangeRate);
 
   /// @dev emitted when an interest accrued on an existing account's pre balance
-  event InterestAccruedOnAccount(uint accountId, int preBalance, int interestAccrued);
+  event InterestAccruedOnAccount(uint accountId, int preBalance, int interestAccrued, uint accountIndex);
 
   ////////////////
   //   Errors   //

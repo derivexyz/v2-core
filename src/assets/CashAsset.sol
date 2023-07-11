@@ -313,7 +313,9 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
     _updateSupplyAndBorrow(preBalanceWithInterest, finalBalance);
 
-    emit InterestAccruedOnAccount(adjustment.acc, preBalance, preBalanceWithInterest - preBalance);
+    emit InterestAccruedOnAccount(
+      adjustment.acc, preBalance, preBalanceWithInterest - preBalance, accountIdIndex[adjustment.acc]
+    );
   }
 
   /**
