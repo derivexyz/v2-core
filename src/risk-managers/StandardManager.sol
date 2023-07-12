@@ -263,13 +263,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
 
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
-    bool isRiskReducing = true;
+    bool riskAdding = false;
 
     // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
-      // allow cash
       if (address(assetDeltas[i].asset) == address(cashAsset)) {
-        if (assetDeltas[i].delta < 0) isRiskReducing = false;
+        if (assetDeltas[i].delta < 0) riskAdding = true;
         continue;
       }
 
@@ -282,18 +281,18 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         // settle perp PNL into cash if the user traded perp in this tx.
         _settlePerpRealizedPNL(perp, accountId);
 
-        if (isRiskReducing) {
+        if (!riskAdding) {
           // check if the delta and position has same sign
           // if so, we cannot bypass the risk check
           int perpPosition = subAccounts.getBalance(accountId, perp, 0);
           if (perpPosition != 0 && assetDeltas[i].delta * perpPosition > 0) {
-            isRiskReducing = false;
+            riskAdding = true;
           }
         }
       } else if (detail.assetType == AssetType.Option) {
-        // if the user is only reducing option position, we don't need to check margin
+        // if the user is shorting more options, we need to check margin
         if (assetDeltas[i].delta < 0) {
-          isRiskReducing = false;
+          riskAdding = true;
         }
       }
     }
@@ -301,8 +300,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // iterate through delta again and charge all fees
     _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
 
-    // if all trades are only reducing risk, return early
-    if (isRiskReducing) return;
+    // only bypass risk check if we are only reducing perp position, increasing cash, or increasing option position
+    if (!riskAdding) return;
 
     _performRiskCheck(accountId, assetDeltas);
   }
