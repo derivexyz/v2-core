@@ -16,6 +16,7 @@ import {PositionTracking} from "./utils/PositionTracking.sol";
 /**
  * @title Wrapped ERC20 Asset
  * @dev   Users can deposit the given ERC20, and can only have positive balances.
+ * @dev   Fee-on-transfer tokens are not supported
  * @author Lyra
  */
 contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20Asset {
