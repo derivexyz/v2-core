@@ -507,7 +507,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
 
     uint convertedPercentage = percentOfAccount.divideDecimal(currentAuction.percentageLeft);
-    if (convertedPercentage > maxOfCurrent) {
+    if (convertedPercentage >= maxOfCurrent) {
       convertedPercentage = maxOfCurrent;
       percentLiquidated = convertedPercentage.multiplyDecimal(currentAuction.percentageLeft);
       canTerminate = true;
