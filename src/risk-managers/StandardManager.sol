@@ -102,7 +102,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Whitelist an asset to be used in Manager
    * @dev the standard manager only support option asset & perp asset
    */
-  function whitelistAsset(IAsset _asset, uint8 _marketId, AssetType _type) external onlyOwner {
+  function whitelistAsset(IAsset _asset, uint _marketId, AssetType _type) external onlyOwner {
     _assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
 
     emit AssetWhitelisted(address(_asset), _marketId, _type);
@@ -120,7 +120,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the oracles for a market id
    */
-  function setOraclesForMarket(uint8 marketId, ISpotFeed spotFeed, IForwardFeed forwardFeed, IVolFeed volFeed)
+  function setOraclesForMarket(uint marketId, ISpotFeed spotFeed, IForwardFeed forwardFeed, IVolFeed volFeed)
     external
     onlyOwner
   {
@@ -137,7 +137,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param _mmPerpReq new maintenance margin requirement
    * @param _imPerpReq new initial margin requirement
    */
-  function setPerpMarginRequirements(uint8 marketId, uint _mmPerpReq, uint _imPerpReq) external onlyOwner {
+  function setPerpMarginRequirements(uint marketId, uint _mmPerpReq, uint _imPerpReq) external onlyOwner {
     if (_mmPerpReq > _imPerpReq || _mmPerpReq == 0 || _mmPerpReq >= 1e18 || _imPerpReq >= 1e18) {
       revert SRM_InvalidPerpMarginParams();
     }
@@ -151,7 +151,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev Set discount factor for base asset
    * @dev if this factor is 0 (unset), base asset won't contribute to margin
    */
-  function setBaseMarginDiscountFactor(uint8 marketId, uint discountFactor) external onlyOwner {
+  function setBaseMarginDiscountFactor(uint marketId, uint discountFactor) external onlyOwner {
     if (discountFactor >= 1e18) {
       revert SRM_InvalidBaseDiscountFactor();
     }
@@ -164,7 +164,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the option margin parameters for an market
    */
-  function setOptionMarginParams(uint8 marketId, OptionMarginParams calldata params) external onlyOwner {
+  function setOptionMarginParams(uint marketId, OptionMarginParams calldata params) external onlyOwner {
     if (
       params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 // 0 < x < 1.2
         || params.minSpotReq < 0 || params.minSpotReq > 1.2e18 // 0 < x < 1,2
@@ -196,7 +196,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the option margin parameters for an market
    */
-  function setOracleContingencyParams(uint8 marketId, OracleContingencyParams memory params) external onlyOwner {
+  function setOracleContingencyParams(uint marketId, OracleContingencyParams memory params) external onlyOwner {
     if (
       params.perpThreshold > 1e18 || params.optionThreshold > 1e18 || params.baseThreshold > 1e18
         || params.OCFactor > 1e18
@@ -233,7 +233,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Set the pricing module
    * @param _pricing new pricing module
    */
-  function setPricingModule(uint8 marketId, IOptionPricing _pricing) external onlyOwner {
+  function setPricingModule(uint marketId, IOptionPricing _pricing) external onlyOwner {
     pricingModules[marketId] = IOptionPricing(_pricing);
 
     emit PricingModuleSet(marketId, address(_pricing));
@@ -500,7 +500,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev calculate the margin contributed by base asset, and the mark to market value
    */
-  function _getBaseMarginAndMtM(uint8 marketId, int position, int indexPrice, uint indexConf, bool isInitial)
+  function _getBaseMarginAndMtM(uint marketId, int position, int indexPrice, uint indexConf, bool isInitial)
     internal
     view
     returns (int baseMargin, int baseMarkToMarket)
@@ -536,7 +536,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param expiryHolding strikes for single expiry
    */
   function _calcNetBasicMarginSingleExpiry(
-    uint8 marketId,
+    uint marketId,
     IOption option,
     ExpiryHolding memory expiryHolding,
     int indexPrice,
@@ -601,7 +601,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev return the addresses of feeds and pricing modules for a specific market
    */
-  function getMarketFeeds(uint8 marketId) external view returns (ISpotFeed, IForwardFeed, IVolFeed, IOptionPricing) {
+  function getMarketFeeds(uint marketId) external view returns (ISpotFeed, IForwardFeed, IVolFeed, IOptionPricing) {
     return (spotFeeds[marketId], forwardFeeds[marketId], volFeeds[marketId], pricingModules[marketId]);
   }
 
@@ -629,7 +629,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @return margin negative number, indicate margin requirement for a position
    * @return markToMarket the estimated worth of this position
    */
-  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
+  function getIsolatedMargin(uint marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
     external
     view
     returns (int margin, int markToMarket)
@@ -670,7 +670,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev calculate isolated margin requirement for a given number of calls and puts
    */
   function _getIsolatedMargin(
-    uint8 marketId,
+    uint marketId,
     uint expiry,
     Option memory optionPos,
     int indexPrice,
@@ -698,7 +698,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev expected to return a negative number
    */
   function _getIsolatedMarginForPut(
-    uint8 marketId,
+    uint marketId,
     int markToMarket,
     uint strike,
     int amount,
@@ -730,7 +730,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param amount expected a negative number, representing amount of shorts
    */
   function _getIsolatedMarginForCall(
-    uint8 marketId,
+    uint marketId,
     int markToMarket,
     uint strike,
     int amount,
@@ -793,7 +793,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev get the mark to market value of an option by querying the pricing module
    */
   function _getMarkToMarket(
-    uint8 marketId,
+    uint marketId,
     int amount,
     int forwardPrice,
     uint strike,

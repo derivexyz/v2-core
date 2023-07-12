@@ -88,7 +88,8 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
       ""
     );
 
-    emit Withdraw(accountId, msg.sender, adjustmentAmount, assetAmount);
+    emit Withdraw(accountId, recipient, adjustmentAmount, assetAmount);
+
   }
 
   //////////////////////////

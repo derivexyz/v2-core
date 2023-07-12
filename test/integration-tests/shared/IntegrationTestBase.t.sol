@@ -56,7 +56,7 @@ contract IntegrationTestBase is Test {
   int public constant ETH_PRICE = 2000e18;
 
   struct Market {
-    uint8 id;
+    uint id;
     MockERC20 erc20;
     // lyra asset
     Option option;
@@ -177,7 +177,7 @@ contract IntegrationTestBase is Test {
     srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
   }
 
-  function _deployMarket(string memory key, uint96 initSpotPrice) internal returns (uint8 marketId) {
+  function _deployMarket(string memory key, uint96 initSpotPrice) internal returns (uint marketId) {
     marketId = _deployMarketContracts(key);
 
     // set up PMRM for this market
@@ -198,7 +198,7 @@ contract IntegrationTestBase is Test {
     _setSpotPrice(key, initSpotPrice, 1e18);
   }
 
-  function _deployMarketContracts(string memory token) internal returns (uint8 marketId) {
+  function _deployMarketContracts(string memory token) internal returns (uint marketId) {
     Market storage market = markets[token];
     marketId = nextId++;
     market.id = marketId;

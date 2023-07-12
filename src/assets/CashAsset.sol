@@ -432,7 +432,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
       ""
     );
 
-    emit Withdraw(accountId, msg.sender, cashAmount, stableAmount);
+    emit Withdraw(accountId, recipient, cashAmount, stableAmount);
   }
 
   /**
