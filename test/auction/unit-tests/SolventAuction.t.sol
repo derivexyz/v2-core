@@ -66,7 +66,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, maxProportion);
-    
+
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, false);
   }
