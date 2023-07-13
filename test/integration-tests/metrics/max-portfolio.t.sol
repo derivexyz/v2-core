@@ -7,9 +7,9 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import "../shared/IntegrationTestBase.t.sol";
 
 /**
- * @dev testing settlement logic for Standard Manager
+ * @dev testing gas cost for both managers
  */
-contract GAS_SRM_MAX_PORTFOLIO is IntegrationTestBase {
+contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
   using DecimalMath for uint;
 
   // value used for test
@@ -18,12 +18,22 @@ contract GAS_SRM_MAX_PORTFOLIO is IntegrationTestBase {
   uint64 expiry1;
   uint64 expiry2;
 
+  uint bobPMRMAccEth;
+  uint bobPMRMAccWbtc;
+
   function setUp() public {
     _setupIntegrationTestComplete();
+
+
+    // setup pmrm accounts for bob
+    bobPMRMAccEth = subAccounts.createAccountWithApproval(bob, address(this), markets["weth"].pmrm);
+    bobPMRMAccWbtc = subAccounts.createAccountWithApproval(bob, address(this), markets["wbtc"].pmrm);
 
     // init setup for both accounts
     _depositCash(alice, aliceAcc, 1_000_000e18);
     _depositCash(bob, bobAcc, 1_000_000e18);
+    _depositCash(bob, bobPMRMAccEth, 1_000_000e18);
+    _depositCash(bob, bobPMRMAccWbtc, 1_000_000e18);
 
     expiry1 = uint64(block.timestamp) + 2 weeks;
     expiry2 = uint64(block.timestamp) + 4 weeks;
@@ -37,6 +47,9 @@ contract GAS_SRM_MAX_PORTFOLIO is IntegrationTestBase {
 
     // don't need OI fee
     srm.setFeeBypassedCaller(address(this), true);
+    markets["weth"].pmrm.setTrustedRiskAssessor(address(this), true);
+    markets["wbtc"].pmrm.setTrustedRiskAssessor(address(this), true);
+
   }
 
   function testGasSingleMarketSmall() public {
@@ -81,6 +94,42 @@ contract GAS_SRM_MAX_PORTFOLIO is IntegrationTestBase {
     _logMarginGas(bobAcc);
   }
 
+  /**
+   * PMRM Gas costs  
+   */
+
+  function testPMRMSingleExpiry() public {
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 64, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 9000e18, 63, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+
+    console2.log("Gas Usage: (1 market, 1 expiry, 127 options)");
+    _logMarginGas(bobPMRMAccEth);
+  }
+
+  function testPMRM2Expiries() public {
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 64, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry2, 2000e18, 63, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+
+    console2.log("Gas Usage: (1 market, 2 expiries, 127 options)");
+    _logMarginGas(bobPMRMAccEth);
+  }
+
+  function testPMRMFourExpiries() public {
+    uint64 expiry3 = uint64(block.timestamp) + 6 weeks;
+    uint64 expiry4 = uint64(block.timestamp) + 8 weeks;
+
+    _setupAllFeedsForMarket("weth", expiry3, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry4, 2020e18);
+
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry2, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry3, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry4, 2000e18, 31, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+
+    console2.log("Gas Usage: (1 market, 4 expiry, 127 options)");
+    _logMarginGas(bobPMRMAccEth);
+  }
+
   function _tradeOptionsPerMarketExpiry(
     Market storage market,
     uint expiry,
@@ -118,7 +167,7 @@ contract GAS_SRM_MAX_PORTFOLIO is IntegrationTestBase {
     subAccounts.submitTransfers(transferBatch, "");
   }
 
-  function _logMarginGas(uint account) internal {
+  function _logMarginGas(uint account) internal view {
     uint gas = gasleft();
     srm.getMargin(account, true);
     uint gasUsed = gas - gasleft();
