@@ -24,7 +24,6 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
   function setUp() public {
     _setupIntegrationTestComplete();
 
-
     // setup pmrm accounts for bob
     bobPMRMAccEth = subAccounts.createAccountWithApproval(bob, address(this), markets["weth"].pmrm);
     bobPMRMAccWbtc = subAccounts.createAccountWithApproval(bob, address(this), markets["wbtc"].pmrm);
@@ -49,7 +48,6 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     srm.setFeeBypassedCaller(address(this), true);
     markets["weth"].pmrm.setTrustedRiskAssessor(address(this), true);
     markets["wbtc"].pmrm.setTrustedRiskAssessor(address(this), true);
-
   }
 
   function testGasSingleMarketSmall() public {
@@ -95,7 +93,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
   }
 
   /**
-   * PMRM Gas costs  
+   * PMRM Gas costs
    */
 
   function testPMRMSingleExpiry() public {
