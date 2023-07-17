@@ -50,14 +50,20 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     markets["wbtc"].pmrm.setTrustedRiskAssessor(address(this), true);
   }
 
-  function testGasSingleMarketSmall() public {
+  /**
+   * ---------------------------
+   *      Standard Manager
+   * ----------------------------
+   */
+
+  function testGas_SRM_SingleMarketSmall() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 32, aliceAcc, bobAcc, 1e18, 10e18);
 
     console2.log("Gas Usage: (1 market, 1 expiry, 32 options)");
     _logMarginGas(bobAcc);
   }
 
-  function testGasSingleMarketBig() public {
+  function testGas_SRM_SingleMarketBig() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 64, aliceAcc, bobAcc, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, (2000 + 6400) * 1e18, 64, aliceAcc, bobAcc, 1e18, 10e18);
 
@@ -65,7 +71,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     _logMarginGas(bobAcc);
   }
 
-  function testGasSingleMarketMultiExpiry() public {
+  function testGas_SRM_SingleMarketMultiExpiry() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 64, aliceAcc, bobAcc, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry2, 2000e18, 64, aliceAcc, bobAcc, 1e18, 10e18);
 
@@ -73,7 +79,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     _logMarginGas(bobAcc);
   }
 
-  function testGasTwoMarkets() public {
+  function testGas_SRM_TwoMarkets() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 64, aliceAcc, bobAcc, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["wbtc"], expiry1, 15000e18, 64, aliceAcc, bobAcc, 1e18, 100e18);
 
@@ -81,7 +87,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     _logMarginGas(bobAcc);
   }
 
-  function testGasTwoMarkets4Expiries() public {
+  function testGas_SRM_TwoMarkets4Expiries() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 32, aliceAcc, bobAcc, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry2, 2000e18, 32, aliceAcc, bobAcc, 1e18, 10e18);
 
@@ -92,11 +98,21 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     _logMarginGas(bobAcc);
   }
 
+  function testGas_SRM_TwoMarkets_Perps() public {
+    _tradePerp(markets["weth"], 1e18, 10e18, aliceAcc, bobAcc);
+    _tradePerp(markets["wbtc"], 1e18, 10e18, bobAcc, aliceAcc);
+
+    console2.log("Gas Usage: (2 market, 2 perps)");
+    _logMarginGas(bobAcc);
+  }
+
   /**
-   * PMRM Gas costs
+   * ---------------------------
+   *            PMRM
+   * ----------------------------
    */
 
-  function testPMRMSingleExpiry() public {
+  function testGas_PMRM_SingleExpiry() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 64, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 9000e18, 63, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
 
@@ -104,7 +120,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     _logMarginGas(bobPMRMAccEth);
   }
 
-  function testPMRM2Expiries() public {
+  function testGas_PMRM_2Expiries() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 64, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry2, 2000e18, 63, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
 
@@ -112,7 +128,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     _logMarginGas(bobPMRMAccEth);
   }
 
-  function testPMRMFourExpiries() public {
+  function testGas_PMRM_FourExpiries() public {
     uint64 expiry3 = uint64(block.timestamp) + 6 weeks;
     uint64 expiry4 = uint64(block.timestamp) + 8 weeks;
 
@@ -127,6 +143,19 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     console2.log("Gas Usage: (1 market, 4 expiry, 127 options)");
     _logMarginGas(bobPMRMAccEth);
   }
+
+  function testGas_PMRM_Only_Perps() public {
+    _tradePerp(markets["weth"], 1e18, 10e18, aliceAcc, bobPMRMAccEth);
+
+    console2.log("Gas Usage: (1 markets, 1 perps)");
+    _logMarginGas(bobPMRMAccEth);
+  }
+
+  /**
+   * ---------------------------
+   *       Helper Functions
+   * ----------------------------
+   */
 
   function _tradeOptionsPerMarketExpiry(
     Market storage market,
@@ -159,6 +188,28 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
       asset: cash,
       subId: 0,
       amount: unitPremium * int(numOfOptions),
+      assetData: bytes32(0)
+    });
+
+    subAccounts.submitTransfers(transferBatch, "");
+  }
+
+  function _tradePerp(Market storage market, int amount, int cashDiff, uint buyer, uint seller) internal {
+    ISubAccounts.AssetTransfer[] memory transferBatch = new ISubAccounts.AssetTransfer[](2);
+    transferBatch[0] = ISubAccounts.AssetTransfer({
+      fromAcc: buyer,
+      toAcc: seller,
+      asset: cash,
+      subId: 0,
+      amount: cashDiff,
+      assetData: bytes32(0)
+    });
+    transferBatch[1] = ISubAccounts.AssetTransfer({
+      fromAcc: seller,
+      toAcc: buyer,
+      asset: market.perp,
+      subId: 0,
+      amount: amount,
       assetData: bytes32(0)
     });
 
