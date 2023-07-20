@@ -55,6 +55,22 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(maxProportion / 1e15, 318); // can liquidate 31.8% of portfolio at most
   }
 
+  function testSolventAuctionTerminatedIfMaxProportionIsBid() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+
+    vm.warp(block.timestamp + params.fastAuctionLength);
+
+    uint maxProportion = dutchAuction.getMaxProportion(aliceAcc, scenario);
+
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, maxProportion);
+
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, false);
+  }
+
   function testCannotAuctionOnSolventAccount() public {
     vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
     dutchAuction.startAuction(aliceAcc, scenario);
@@ -188,6 +204,8 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
   }
 
   function testCannotBidOnAccountThatBufferMarginIsAboveThreshold() public {
