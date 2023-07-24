@@ -587,18 +587,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     _settlePerpUnrealizedPNL(perp, accountId);
   }
 
-  /**
-   * @dev merge multiple standard accounts into one. A risk check is performed at the end to make sure it's valid
-   * @param mergeIntoId the account id to merge into
-   * @param mergeFromIds the account ids to merge from
-   */
-  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    _mergeAccounts(mergeIntoId, mergeFromIds);
-
-    // make sure ending account is solvent (above initial margin)
-    _performRiskCheck(mergeIntoId, new ISubAccounts.AssetDelta[](0));
-  }
-
   ////////////////////////
   //   View Functions   //
   ////////////////////////

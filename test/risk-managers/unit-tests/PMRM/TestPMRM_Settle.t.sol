@@ -19,6 +19,12 @@ contract TestPMRM_Settlement is PMRMTestBase {
     optionHelper = new OptionSettlementHelper();
   }
 
+  function setUp() public override {
+    super.setUp();
+    pmrm.setWhitelistedCallee(address(perpHelper), true);
+    pmrm.setWhitelistedCallee(address(optionHelper), true);
+  }
+
   function testCanSettlePerps() public {
     int cashBefore = _getCashBalance(aliceAcc);
     mockPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);

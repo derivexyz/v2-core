@@ -35,6 +35,8 @@ interface IBaseManager is IManager {
 
   event MinOIFeeSet(uint minOIFee);
 
+  event CalleeWhitelisted(address callee);
+
   event PerpSettled(uint indexed accountId, address perp, int pnl, int funding);
 
   event OptionSettled(uint indexed accountId, address option, uint subId, int amount, int value);
@@ -77,4 +79,6 @@ interface IBaseManager is IManager {
   error BM_OnlySubAccountOwner();
 
   error BM_MergeOwnerMismatch();
+
+  error BM_UnauthorizedCall();
 }

@@ -112,6 +112,8 @@ contract UNIT_TestStandardManager_Option is Test {
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.3e18));
 
     optionHelper = new OptionSettlementHelper();
+
+    manager.setWhitelistedCallee(address(optionHelper), true);
   }
 
   ////////////////

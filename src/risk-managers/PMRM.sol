@@ -65,7 +65,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
   uint public maxAccountSize = 128;
 
-  IPMRM.Scenario[] public marginScenarios;
+  IPMRM.Scenario[] internal marginScenarios;
   mapping(address => bool) public trustedRiskAssessor;
 
   ////////////////////////
@@ -199,7 +199,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     uint accountId,
     uint tradeId,
     address caller,
-    ISubAccounts.AssetDelta[] calldata assetDeltas,
+    ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
   ) public onlyAccounts {
     viewer.verifyCanTrade(accountId);
@@ -239,7 +239,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   // Arrange Portfolio //
   ///////////////////////
 
-  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas) internal view {
+  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
@@ -449,7 +449,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   /**
    * @dev iterate through all asset delta, charge OI fee for perp and option assets
    */
-  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] calldata assetDeltas)
+  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
   {
     if (feeBypassedCaller[caller]) return;

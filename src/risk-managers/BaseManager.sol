@@ -71,6 +71,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
   mapping(address sender => bool) public feeBypassedCaller;
 
+  mapping(address callee => bool) internal whitelistedCallee;
+
   constructor(
     ISubAccounts _subAccounts,
     ICashAsset _cashAsset,
@@ -129,6 +131,15 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     optionSettlementBuffer = newBuffer;
     emit OptionSettlementBufferUpdated(newBuffer);
+  }
+
+  /**
+   * @notice Governance determined whitelist that can be called during processManagerData
+   */
+  function setWhitelistedCallee(address callee, bool whitelisted) external onlyOwner {
+    whitelistedCallee[callee] = whitelisted;
+
+    emit CalleeWhitelisted(callee);
   }
 
   ///////////////////
@@ -255,6 +266,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     ManagerData[] memory managerDatas = abi.decode(managerData, (ManagerData[]));
     for (uint i; i < managerDatas.length; i++) {
       // invoke some actions if needed
+      if (!whitelistedCallee[managerDatas[i].receiver]) revert BM_UnauthorizedCall();
       IDataReceiver(managerDatas[i].receiver).acceptData(managerDatas[i].data);
     }
   }
