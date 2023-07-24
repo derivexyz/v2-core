@@ -563,6 +563,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
       accountId, bidderId, percentageOfCurrent, 0, currentAuction.reservedCash
     );
+
+    // ensure bidder is solvent (maintenance margin > 0)
+    if (_getMargin(bidderId, false) < 0) revert DA_BidderInsolvent();
+
     canTerminate = currentAuction.percentageLeft == 0;
   }
 
@@ -672,6 +676,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     int bufferMargin = maintenanceMargin + mmBuffer.multiplyDecimal(bufferMarginPercentage);
 
     return (maintenanceMargin, bufferMargin, markToMarket);
+  }
+
+  function _getMargin(uint accountId, bool isInitial) internal view returns (int) {
+    address manager = address(subAccounts.manager(accountId));
+    return ILiquidatableManager(manager).getMargin(accountId, isInitial);
   }
 
   /**
