@@ -88,6 +88,9 @@ interface ICashAsset is IERC20BasedAsset {
   ///      this can only occur if the cash asset is solvent again
   event WithdrawFeeDisabled(uint exchangeRate);
 
+  /// @dev emitted when an interest accrued on an existing account's pre balance
+  event InterestAccruedOnAccount(uint indexed accountId, int preBalance, int interestAccrued, uint accountIndex);
+
   ////////////////
   //   Errors   //
   ////////////////
