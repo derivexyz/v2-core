@@ -3,9 +3,10 @@ pragma solidity ^0.8.13;
 
 import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
+import {IBaseManager} from "./IBaseManager.sol";
 import {IOption} from "./IOption.sol";
 
-interface IStandardManager {
+interface IStandardManager is IBaseManager {
   enum AssetType {
     NotSet,
     Option,

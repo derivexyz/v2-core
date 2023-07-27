@@ -2,6 +2,7 @@ pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
+import {ISRMPortfolioViewer} from "../../../../src/interfaces/ISRMPortfolioViewer.sol";
 import {IStandardManager} from "../../../../src/interfaces/IStandardManager.sol";
 import {MockManager} from "../../../shared/mocks/MockManager.sol";
 import {MockOption} from "../../../shared/mocks/MockOption.sol";
@@ -80,5 +81,24 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     // alice migrate to a our manager
     vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
     subAccounts.changeManager(badAcc, manager, "");
+  }
+
+  function testCannotTradeMoreThanMaxAccountSize() public {
+    manager.setMaxAccountSize(10);
+
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](11);
+    for (uint i; i < 11; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: ethOption,
+        subId: i,
+        amount: 100e18,
+        assetData: ""
+      });
+    }
+
+    vm.expectRevert(ISRMPortfolioViewer.SRM_TooManyAssets.selector);
+    subAccounts.submitTransfers(transfers, "");
   }
 }

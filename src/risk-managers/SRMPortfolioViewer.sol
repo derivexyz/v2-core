@@ -166,6 +166,8 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
     view
     returns (uint marketCount, int cashBalance, uint trackedMarketBitMap)
   {
+    if (userBalances.length > standardManager.maxAccountSize()) revert SRM_TooManyAssets();
+
     ISubAccounts.AssetBalance memory currentAsset;
 
     // count how many unique markets there are

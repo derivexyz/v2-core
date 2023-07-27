@@ -88,7 +88,6 @@ interface IPMRM {
   //   Events   //
   ////////////////
   event MaxExpiriesUpdated(uint maxExpiries);
-  event MaxAccountSizeUpdated(uint maxAccountSize);
   event InterestRateFeedUpdated(IInterestRateFeed interestRateFeed);
   event VolFeedUpdated(IVolFeed volFeed);
   event SpotFeedUpdated(ISpotFeed spotFeed);
@@ -103,7 +102,6 @@ interface IPMRM {
   ////////////
   error PMRM_InvalidSpotShock();
   error PMRM_InvalidMaxExpiries();
-  error PMRM_InvalidMaxAccountSize();
   error PMRM_UnsupportedAsset();
   error PMRM_InsufficientMargin();
   error PMRM_FindInArrayError();
