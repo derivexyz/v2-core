@@ -100,7 +100,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     assertEq(auctionInfo.ongoing, false);
   }
 
-  function testLiquidationCannotBeFrontRun() public {
+  function testLiquidationRaceCondition() public {
     uint scenario = 0;
     _tradeCall(aliceAcc, bobAcc);
 
