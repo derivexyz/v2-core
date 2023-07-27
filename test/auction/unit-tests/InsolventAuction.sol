@@ -40,7 +40,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     _startDefaultInsolventAuction(aliceAcc);
 
     // bidder bob is also under water
-    manager.setMockMargin(bobAcc, false, 0, -300e18);
+    manager.setMockMargin(bobAcc, false, scenario, -300e18);
 
     vm.prank(bob);
 
