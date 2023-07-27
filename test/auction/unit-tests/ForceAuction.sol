@@ -75,7 +75,7 @@ contract UNIT_TestForceAuction is DutchAuctionBase {
     vm.warp(block.timestamp + 5 minutes); // half way through fast auction, 90% discount
 
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
     assertEq(finalPercentage, 1e18);
     assertEq(cashFromBidder, 90e18);
     assertEq(cashToBidder, 0);
@@ -97,7 +97,7 @@ contract UNIT_TestForceAuction is DutchAuctionBase {
     uint maxPayout = uint(-(bufferMargin * params.bufferMarginScalar / 1e18));
 
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
 
     assertEq(finalPercentage, 1e18);
     assertEq(cashFromBidder, 0);

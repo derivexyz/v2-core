@@ -125,14 +125,56 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     // liquidator 1 bid 30%
     vm.startPrank(charlie);
     uint percentageToBid = maxPercentageToBid / 2;
-    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid);
+    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0);
     assertEq(finalPercentage1, percentageToBid);
 
     // liquidator 2 also bid 30%, but it is executed after liquidator 1
-    (uint finalPercentage2, uint cashFromLiquidator2,) = auction.bid(aliceAcc, liquidator2, percentageToBid);
+    (uint finalPercentage2, uint cashFromLiquidator2,) = auction.bid(aliceAcc, liquidator2, percentageToBid, 0);
     assertEq(finalPercentage2, percentageToBid);
     assertEq(cashFromLiquidator1, cashFromLiquidator2);
 
+    vm.stopPrank();
+  }
+
+  function testCannotMakeBidderPayMoreThanMaxCash() public {
+    // Front running issue:
+    // depositing (updating account with positive value) last second may result in making liquidator pay more than intended
+
+    uint scenario = 0;
+    _tradeCall(aliceAcc, bobAcc);
+
+    _refreshOracles(2600e18);
+
+    // start an auction on alice's account
+    auction.startAuction(aliceAcc, scenario);
+
+    uint liquidator1 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
+    uint liquidator2 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
+
+    _depositCash(charlie, liquidator1, 5000e18);
+    _depositCash(charlie, liquidator2, 5000e18);
+
+    vm.warp(block.timestamp + 10 minutes);
+    _refreshOracles(2600e18);
+
+    // max it can bid is around 60%
+    uint maxPercentageToBid = auction.getMaxProportion(aliceAcc, scenario);
+    assertEq(maxPercentageToBid / 1e16, 60);
+
+    // liquidator 1 bid 10%
+    vm.startPrank(charlie);
+    uint percentageToBid = 0.1e18;
+    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0);
+    assertEq(finalPercentage1, percentageToBid);
+    vm.stopPrank();
+
+    // before liquidator 2 bids, alice deposit more cash to her account, making liquidator 2's bid revert
+    _depositCash(alice, aliceAcc, 50e18);
+
+    // bid reverts
+    vm.startPrank(charlie);
+    vm.expectRevert(IDutchAuction.DA_MaxCashExceeded.selector);
+    auction.bid(aliceAcc, liquidator2, percentageToBid, cashFromLiquidator1);
     vm.stopPrank();
   }
 }

@@ -28,7 +28,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     _startDefaultInsolventAuction(aliceAcc);
 
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
 
     // pay 0 and receive 0 extra cash from SM
     assertEq(finalPercentage, 1e18);
@@ -56,7 +56,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     // bid 50% of the portfolio
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0);
 
     // 1% of 384 * 50% = 19.2
     uint expectedTotalPayoutFromSM = 1.92e18;
@@ -74,7 +74,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     // bid 100% of the portfolio
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
 
     // 5% of 384 = 19.2
     uint expectedPayout = 19.2e18;
@@ -94,7 +94,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // bid 100% of the portfolio
     vm.prank(bob);
-    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
 
     vm.expectRevert(IDutchAuction.DA_NotOngoingAuction.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);
