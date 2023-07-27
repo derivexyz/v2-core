@@ -563,6 +563,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
       accountId, bidderId, percentageOfCurrent, 0, currentAuction.reservedCash
     );
+
+    // ensure bidder is solvent (maintenance margin > 0)
+    (int bidderMM,,) = _getMarginAndMarkToMarket(bidderId, currentAuction.scenarioId);
+    if (bidderMM < 0) revert DA_BidderInsolvent();
+
     canTerminate = currentAuction.percentageLeft == 0;
   }
 

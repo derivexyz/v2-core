@@ -40,8 +40,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     feePaid += cashAmount;
   }
 
-  function getMargin(uint, bool) external pure override returns (int) {
-    return 0;
+  function getMargin(uint accountId, bool isInitial) external view override returns (int) {
+    return mockMargin[accountId][isInitial][0];
   }
 
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId) external view returns (int, int) {

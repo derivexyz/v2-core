@@ -7,6 +7,12 @@ import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
  * Focusing on the margin rules for options
  */
 contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
+  function setUp() public override {
+    super.setUp();
+    manager.setWhitelistedCallee(address(ethFeed), true);
+    manager.setWhitelistedCallee(address(btcFeed), true);
+  }
+
   function testCanTradeMultipleMarkets() public {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;

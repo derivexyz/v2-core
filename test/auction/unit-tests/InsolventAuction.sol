@@ -36,6 +36,18 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     assertEq(cashToBidder, 0);
   }
 
+  function testCannotBidOnInsolventAuctionIfAccountUnderwater() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    // bidder bob is also under water
+    manager.setMockMargin(bobAcc, false, scenario, -300e18);
+
+    vm.prank(bob);
+
+    vm.expectRevert(IDutchAuction.DA_BidderInsolvent.selector);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+  }
+
   function testBidForInsolventAuctionFromSM() public {
     _startDefaultInsolventAuction(aliceAcc);
 

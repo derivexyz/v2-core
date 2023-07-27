@@ -79,6 +79,8 @@ contract UNIT_TestStandardManager is Test {
 
     // settler
     perpHelper = new PerpSettlementHelper();
+
+    manager.setWhitelistedCallee(address(perpHelper), true);
   }
 
   /////////////
