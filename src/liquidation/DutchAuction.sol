@@ -565,7 +565,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     );
 
     // ensure bidder is solvent (maintenance margin > 0)
-    (int bidderMM, ,) = _getMarginAndMarkToMarket(bidderId, currentAuction.scenarioId) ;
+    (int bidderMM,,) = _getMarginAndMarkToMarket(bidderId, currentAuction.scenarioId);
     if (bidderMM < 0) revert DA_BidderInsolvent();
 
     canTerminate = currentAuction.percentageLeft == 0;
