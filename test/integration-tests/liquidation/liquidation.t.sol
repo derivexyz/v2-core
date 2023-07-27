@@ -21,6 +21,8 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
   IOption option;
 
+  address charlie = address(0xccc);
+
   function setUp() public {
     _setupIntegrationTestComplete();
 
@@ -39,14 +41,25 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     option = markets["weth"].option;
   }
 
+  ///@dev alice go short, bob go long
+  function _tradeCall(uint fromAcc, uint toAcc) internal {
+    int premium = 225e18;
+    // alice send call to bob, bob send premium to alice
+    _submitTrade(fromAcc, option, callId, amountOfContracts, toAcc, cash, 0, premium);
+  }
+
+  function _refreshOracles(uint96 price) internal {
+    _setSpotPrice("weth", price, 1e18);
+    _setForwardPrice("weth", expiry, price, 1e18);
+    _setDefaultSVIForExpiry("weth", expiry);
+  }
+
   // test auction starting price and bidding price
   function testAuctionFlow() public {
     _tradeCall(aliceAcc, bobAcc);
 
     vm.warp(block.timestamp + 3 hours);
-    _setSpotPrice("weth", 3000e18, 1e18);
-    _setForwardPrice("weth", expiry, 3000e18, 1e18);
-    _setDefaultSVIForExpiry("weth", expiry);
+    _refreshOracles(3000e18);
 
     // MM is negative
     assertLt(getAccMaintenanceMargin(aliceAcc) / 1e18, 0);
@@ -65,16 +78,12 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
   function testLiquidateAccountUnderDifferentManager() public {
     // charlieAcc is controlled by PMRM
-    address charlie = address(0xccc);
     PMRM manager = markets["weth"].pmrm;
     uint charlieAcc = subAccounts.createAccountWithApproval(charlie, address(this), manager);
     _depositCash(charlie, charlieAcc, 1900e18);
 
     _tradeCall(charlieAcc, bobAcc);
-
-    _setSpotPrice("weth", 3200e18, 1e18);
-    _setForwardPrice("weth", expiry, 3200e18, 1e18);
-    _setDefaultSVIForExpiry("weth", expiry);
+    _refreshOracles(3200e18);
 
     // MM is negative
     assertLt(getAccMaintenanceMargin(charlieAcc) / 1e18, 0);
@@ -91,46 +100,81 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     assertEq(auctionInfo.ongoing, false);
   }
 
-  //  function testFuzzAuctionCannotRestartAfterTermination(uint newSpot_) public {
-  //    int newSpot = int(newSpot_); // wrap into int here, specifying int as input will have too many invalid inputs
-  //    vm.assume(newSpot > 1000e18);
-  //    vm.assume(newSpot < 2100e18); // price where it got mark as liquidatable
+  function testLiquidationRaceCondition() public {
+    uint scenario = 0;
+    _tradeCall(aliceAcc, bobAcc);
 
-  //    // as long as an auction is terminate-able when price is back to {newSpot}
-  //    // it cannot be restart immediate after termination
+    _refreshOracles(2600e18);
 
-  //    // alice is short 10 calls
-  //    _tradeCall();
+    // start an auction on alice's account
+    auction.startAuction(aliceAcc, scenario);
 
-  //    // update price to make IM < 0
-  //    vm.warp(block.timestamp + 12 hours);
-  //    _setSpotPriceE18(2500e18);
-  //    _updateJumps();
+    uint liquidator1 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
+    uint liquidator2 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
 
-  //    // account is liquidatable at this point
-  //    auction.startAuction(aliceAcc);
+    _depositCash(charlie, liquidator1, 5000e18);
+    _depositCash(charlie, liquidator2, 5000e18);
 
-  //    // can terminate auction if IM (RV = 0) > 0
-  //    _setSpotPriceE18(newSpot);
+    vm.warp(block.timestamp + 10 minutes);
+    _refreshOracles(2600e18);
 
-  //    // if account IM(rv) > 0, it can be terminated
-  //    if (getAccInitMarginRVZero(aliceAcc) > 0) {
-  //      // if it's terminate-able, terminate and cannot restart
-  //      auction.terminateAuction(aliceAcc);
+    // max it can bid is around 60%
+    uint maxPercentageToBid = auction.getMaxProportion(aliceAcc, scenario);
+    assertEq(maxPercentageToBid / 1e16, 60);
 
-  //      vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
-  //      auction.startAuction(aliceAcc);
-  //    } else {
-  //      // cannot terminate
-  //      vm.expectRevert(abi.encodeWithSelector(IDutchAuction.DA_AuctionCannotTerminate.selector, aliceAcc));
-  //      auction.terminateAuction(aliceAcc);
-  //    }
-  //  }
+    // liquidator 1 bid 30%
+    vm.startPrank(charlie);
+    uint percentageToBid = maxPercentageToBid / 2;
+    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0);
+    assertEq(finalPercentage1, percentageToBid);
 
-  ///@dev alice go short, bob go long
-  function _tradeCall(uint fromAcc, uint toAcc) public {
-    int premium = 225e18;
-    // alice send call to bob, bob send premium to alice
-    _submitTrade(fromAcc, option, callId, amountOfContracts, toAcc, cash, 0, premium);
+    // liquidator 2 also bid 30%, but it is executed after liquidator 1
+    (uint finalPercentage2, uint cashFromLiquidator2,) = auction.bid(aliceAcc, liquidator2, percentageToBid, 0);
+    assertEq(finalPercentage2, percentageToBid);
+    assertEq(cashFromLiquidator1, cashFromLiquidator2);
+
+    vm.stopPrank();
+  }
+
+  function testCannotMakeBidderPayMoreThanMaxCash() public {
+    // Front running issue:
+    // depositing (updating account with positive value) last second may result in making liquidator pay more than intended
+
+    uint scenario = 0;
+    _tradeCall(aliceAcc, bobAcc);
+
+    _refreshOracles(2600e18);
+
+    // start an auction on alice's account
+    auction.startAuction(aliceAcc, scenario);
+
+    uint liquidator1 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
+    uint liquidator2 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
+
+    _depositCash(charlie, liquidator1, 5000e18);
+    _depositCash(charlie, liquidator2, 5000e18);
+
+    vm.warp(block.timestamp + 10 minutes);
+    _refreshOracles(2600e18);
+
+    // max it can bid is around 60%
+    uint maxPercentageToBid = auction.getMaxProportion(aliceAcc, scenario);
+    assertEq(maxPercentageToBid / 1e16, 60);
+
+    // liquidator 1 bid 10%
+    vm.startPrank(charlie);
+    uint percentageToBid = 0.1e18;
+    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0);
+    assertEq(finalPercentage1, percentageToBid);
+    vm.stopPrank();
+
+    // before liquidator 2 bids, alice deposit more cash to her account, making liquidator 2's bid revert
+    _depositCash(alice, aliceAcc, 50e18);
+
+    // bid reverts
+    vm.startPrank(charlie);
+    vm.expectRevert(IDutchAuction.DA_MaxCashExceeded.selector);
+    auction.bid(aliceAcc, liquidator2, percentageToBid, cashFromLiquidator1);
+    vm.stopPrank();
   }
 }

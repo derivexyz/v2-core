@@ -243,11 +243,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId Account ID of the liquidated account
    * @param bidderId Account ID of bidder, must be owned by msg.sender
    * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
+   * @param maxCash Maximum amount of cash to be paid from bidder to liquidated account. This param is ignored if set to 0, or in insolvent mode
    * @return finalPercentage percentage of portfolio being liquidated
    * @return cashFromBidder Amount of cash paid from bidder to liquidated account
    * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
    */
-  function bid(uint accountId, uint bidderId, uint percentOfAccount)
+  function bid(uint accountId, uint bidderId, uint percentOfAccount, uint maxCash)
     external
     returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder)
   {
@@ -270,6 +271,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     } else {
       (canTerminateAfterwards, finalPercentage, cashFromBidder) =
         _bidOnSolventAuction(accountId, bidderId, percentOfAccount, margin, markToMarket);
+
+      // if cash spent is higher than specified, revert the call
+      if (maxCash > 0 && cashFromBidder > maxCash) revert DA_MaxCashExceeded();
     }
 
     if (canTerminateAfterwards) {
