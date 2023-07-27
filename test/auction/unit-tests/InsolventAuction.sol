@@ -45,7 +45,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     vm.prank(bob);
 
     vm.expectRevert(IDutchAuction.DA_BidderInsolvent.selector);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
   }
 
   function testBidForInsolventAuctionFromSM() public {
