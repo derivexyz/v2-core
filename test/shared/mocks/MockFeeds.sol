@@ -10,7 +10,15 @@ import {ISettlementFeed} from "../../../src/interfaces/ISettlementFeed.sol";
 import {IDataReceiver} from "../../../src/interfaces/IDataReceiver.sol";
 import {ITraderCheck} from "../../../src/interfaces/ITraderCheck.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver, ITraderCheck {
+contract MockFeeds is
+  ISpotFeed,
+  IVolFeed,
+  IForwardFeed,
+  IInterestRateFeed,
+  ISettlementFeed,
+  IDataReceiver,
+  ITraderCheck
+{
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;

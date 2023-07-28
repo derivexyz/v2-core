@@ -15,7 +15,7 @@ import {ITraderCheck} from "../interfaces/ITraderCheck.sol";
 contract AllowList is BaseLyraFeed, ITraderCheck {
   // @dev If disabled, all users can trade
   bool public allowListEnabled;
-  
+
   mapping(address => AllowListDetails) public allowListDetails;
 
   ////////////////////////
