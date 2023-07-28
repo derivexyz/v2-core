@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-interface IAllowList {
+interface ITraderCheck {
   struct AllowListDetails {
     uint64 timestamp;
     bool allowed;

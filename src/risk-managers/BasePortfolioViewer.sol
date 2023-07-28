@@ -15,7 +15,7 @@ import {IPositionTracking} from "../interfaces/IPositionTracking.sol";
 import {IManager} from "../interfaces/IPositionTracking.sol";
 
 import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
-import {IAllowList} from "../interfaces/IAllowList.sol";
+import {ITraderCheck} from "../interfaces/ITraderCheck.sol";
 
 /**
  * @title BasePortfolioViewer
@@ -35,7 +35,7 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
   mapping(address asset => uint) public OIFeeRateBPS;
 
   /// @dev AllowList contract address
-  IAllowList public allowList;
+  ITraderCheck public allowList;
 
   constructor(ISubAccounts _subAccounts, ICashAsset _cash) {
     subAccounts = _subAccounts;
@@ -65,7 +65,7 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
    * @notice Governance determined allowList
    * @param _allowList The allowList contract, can be empty which will bypass allowList checks
    */
-  function setAllowList(IAllowList _allowList) external onlyOwner {
+  function setAllowList(ITraderCheck _allowList) external onlyOwner {
     allowList = _allowList;
     emit AllowListSet(_allowList);
   }
@@ -85,7 +85,7 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
    * @dev return true if the owner of an account ID is on the allow list
    */
   function canTrade(uint accountId) public view returns (bool) {
-    if (allowList == IAllowList(address(0))) {
+    if (allowList == ITraderCheck(address(0))) {
       return true;
     }
     address user = subAccounts.ownerOf(accountId);
