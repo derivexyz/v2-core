@@ -13,5 +13,5 @@ interface IERC20BasedAsset is IAsset {
   event Deposit(uint indexed accountId, address indexed depositor, uint amountAssetMinted, uint wrappedAssetDeposited);
 
   /// @dev emitted when a user withdraws from an account
-  event Withdraw(uint indexed accountId, address indexed recipient, uint amountCashBurn, uint wrappedAssetWithdrawn);
+  event Withdraw(uint indexed accountId, address indexed recipient, uint amountAssetBurn, uint wrappedAssetWithdrawn);
 }
