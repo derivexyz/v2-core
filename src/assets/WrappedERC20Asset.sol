@@ -58,7 +58,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
       ""
     );
 
-    emit Deposit(recipientAccount, msg.sender, assetAmount);
+    emit Deposit(recipientAccount, msg.sender, adjustmentAmount, assetAmount);
   }
 
   /**
@@ -88,7 +88,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
       ""
     );
 
-    emit Withdraw(accountId, msg.sender, assetAmount);
+    emit Withdraw(accountId, msg.sender, adjustmentAmount, assetAmount);
   }
 
   //////////////////////////
