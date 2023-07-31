@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IAllowList} from "./IAllowList.sol";
+import {ITraderCheck} from "./ITraderCheck.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 
 import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
@@ -39,5 +39,5 @@ interface IBasePortfolioViewer {
   /// @dev Emitted when OI fee rate is set
   event OIFeeRateSet(address asset, uint oiFeeRate);
 
-  event AllowListSet(IAllowList _allowList);
+  event AllowListSet(ITraderCheck _allowList);
 }
