@@ -71,12 +71,6 @@ interface ICashAsset is IERC20BasedAsset {
   /// @dev Emitted when a new interest rate model is set
   event InterestRateModelSet(IInterestRateModel rateModel);
 
-  /// @dev emitted when a user deposits to an account
-  event Deposit(uint accountId, address from, uint amountCashMinted, uint wrappedAssetDeposited);
-
-  /// @dev emitted when a user withdraws from an account
-  event Withdraw(uint accountId, address recipient, uint amountCashBurn, uint wrappedAssetWidrawn);
-
   /// @dev Emitted when asymmetric print/burn occurs for settlement
   event SettledCashUpdated(int amountChanged, int currentSettledCash);
 
