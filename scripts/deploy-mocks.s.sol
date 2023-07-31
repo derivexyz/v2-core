@@ -31,7 +31,7 @@ contract DeployMocks is Utils {
     usdc.setDecimals(6);
 
     MockERC20 wbtc = new MockERC20("WBTC", "WBTC");
-    usdc.setDecimals(8);
+    wbtc.setDecimals(8);
 
     MockERC20 weth = new MockERC20("WETH", "WETH");
 
