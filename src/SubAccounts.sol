@@ -327,7 +327,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
     bytes calldata managerData,
     PermitAllowance calldata allowancePermit,
     bytes calldata signature
-  ) external returns (uint tradeId) {
+  ) external nonReentrant returns (uint tradeId) {
     _permit(allowancePermit, signature);
     return _submitTransfer(assetTransfer, managerData);
   }
@@ -344,7 +344,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
     bytes calldata managerData,
     PermitAllowance[] calldata allowancePermits,
     bytes[] calldata signatures
-  ) external returns (uint tradeId) {
+  ) external nonReentrant returns (uint tradeId) {
     for (uint i; i < allowancePermits.length; ++i) {
       _permit(allowancePermits[i], signatures[i]);
     }
