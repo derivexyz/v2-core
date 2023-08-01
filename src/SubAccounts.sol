@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 import {ISubAccounts} from "./interfaces/ISubAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
@@ -22,7 +23,7 @@ import {PermitAllowanceLib} from "./libraries/PermitAllowanceLib.sol";
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
+contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccounts {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;
@@ -293,6 +294,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    */
   function submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData)
     external
+    nonReentrant
     returns (uint tradeId)
   {
     return _submitTransfer(assetTransfer, managerData);
@@ -307,6 +309,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    */
   function submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData)
     external
+    nonReentrant
     returns (uint tradeId)
   {
     return _submitTransfers(assetTransfers, managerData);
@@ -324,7 +327,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
     bytes calldata managerData,
     PermitAllowance calldata allowancePermit,
     bytes calldata signature
-  ) external returns (uint tradeId) {
+  ) external nonReentrant returns (uint tradeId) {
     _permit(allowancePermit, signature);
     return _submitTransfer(assetTransfer, managerData);
   }
@@ -341,7 +344,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
     bytes calldata managerData,
     PermitAllowance[] calldata allowancePermits,
     bytes[] calldata signatures
-  ) external returns (uint tradeId) {
+  ) external nonReentrant returns (uint tradeId) {
     for (uint i; i < allowancePermits.length; ++i) {
       _permit(allowancePermits[i], signatures[i]);
     }
