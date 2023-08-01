@@ -48,6 +48,8 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     srm.setFeeBypassedCaller(address(this), true);
     markets["weth"].pmrm.setTrustedRiskAssessor(address(this), true);
     markets["wbtc"].pmrm.setTrustedRiskAssessor(address(this), true);
+
+    srm.setMaxAccountSize(130);
   }
 
   /**
