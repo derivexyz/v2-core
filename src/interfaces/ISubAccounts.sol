@@ -46,9 +46,9 @@ interface ISubAccounts is IERC721 {
   }
 
   struct AssetTransfer {
-    // credited by amount
-    uint fromAcc;
     // debited by amount
+    uint fromAcc;
+    // credited by amount
     uint toAcc;
     // asset contract address
     IAsset asset;

@@ -16,6 +16,8 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   uint public feePaid;
 
+  uint public maxAccountSize = 200;
+
   constructor(address account_) MockManager(account_) {}
 
   function setMockMargin(uint accountId, bool isInitial, uint scenario, int margin) external {

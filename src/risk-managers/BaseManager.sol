@@ -53,6 +53,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
   uint public immutable accId;
 
+  /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
+  uint public maxAccountSize = 128;
+
   /// @dev within this buffer time, allow people to hold expired options in case the settlement price is not ready
   uint public optionSettlementBuffer = 5 minutes;
 
@@ -140,6 +143,17 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     whitelistedCallee[callee] = whitelisted;
 
     emit CalleeWhitelisted(callee);
+  }
+
+  /**
+   * @dev set max amount of assets in a single account
+   */
+  function setMaxAccountSize(uint _maxAccountSize) external onlyOwner {
+    if (_maxAccountSize < 8 || _maxAccountSize > 500) {
+      revert BM_InvalidMaxAccountSize();
+    }
+    maxAccountSize = _maxAccountSize;
+    emit MaxAccountSizeUpdated(_maxAccountSize);
   }
 
   ///////////////////

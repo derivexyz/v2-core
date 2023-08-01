@@ -3,9 +3,10 @@ pragma solidity ^0.8.13;
 
 import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
+import {IBaseManager} from "./IBaseManager.sol";
 import {IOption} from "./IOption.sol";
 
-interface IStandardManager {
+interface IStandardManager is IBaseManager {
   enum AssetType {
     NotSet,
     Option,
@@ -16,7 +17,7 @@ interface IStandardManager {
   struct AssetDetail {
     bool isWhitelisted;
     AssetType assetType;
-    uint8 marketId;
+    uint marketId;
   }
 
   /**
@@ -29,7 +30,7 @@ interface IStandardManager {
   }
 
   struct MarketHolding {
-    uint8 marketId;
+    uint marketId;
     // base position: doesn't contribute to margin, but increase total portfolio mark to market
     int basePosition;
     // perp position detail
@@ -145,16 +146,16 @@ interface IStandardManager {
   //    Events     //
   ///////////////////
 
-  event AssetWhitelisted(address asset, uint8 marketId, AssetType assetType);
+  event AssetWhitelisted(address asset, uint marketId, AssetType assetType);
 
-  event OraclesSet(uint8 marketId, address spotOracle, address forwardOracle, address volFeed);
+  event OraclesSet(uint marketId, address spotOracle, address forwardOracle, address volFeed);
 
-  event PricingModuleSet(uint8 marketId, address pricingModule);
+  event PricingModuleSet(uint marketId, address pricingModule);
 
-  event PerpMarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
+  event PerpMarginRequirementsSet(uint marketId, uint perpMMRequirement, uint perpIMRequirement);
 
   event OptionMarginParamsSet(
-    uint8 marketId,
+    uint marketId,
     int maxSpotReq,
     int minSpotReq,
     int mmCallSpotReq,
@@ -165,7 +166,7 @@ interface IStandardManager {
     int mmOffsetScale
   );
 
-  event BaseMarginDiscountFactorSet(uint8 marketId, uint baseMarginDiscountFactor);
+  event BaseMarginDiscountFactorSet(uint marketId, uint baseMarginDiscountFactor);
 
   event DepegParametersSet(int threshold, int depegFactor);
 

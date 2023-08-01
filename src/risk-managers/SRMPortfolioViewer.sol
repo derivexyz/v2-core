@@ -78,8 +78,8 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
     // and initiate a ExpiryHolding[] array in the corresponding marketHolding
     for (uint i; i < marketCount; i++) {
       // 1. find the first market id
-      uint8 marketId;
-      for (uint8 id = 1; id < 256; id++) {
+      uint marketId;
+      for (uint8 id = 1; id < 255; id++) {
         uint masked = (1 << id);
         if (marketBitMap & masked == 0) continue;
         // mark this market id as used => flip it back to 0 with xor
@@ -166,6 +166,8 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
     view
     returns (uint marketCount, int cashBalance, uint trackedMarketBitMap)
   {
+    if (userBalances.length > standardManager.maxAccountSize()) revert SRM_TooManyAssets();
+
     ISubAccounts.AssetBalance memory currentAsset;
 
     // count how many unique markets there are

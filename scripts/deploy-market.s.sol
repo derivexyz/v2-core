@@ -173,7 +173,7 @@ contract DeployMarket is Utils {
 
   function _registerMarketToSRM(Deployment memory deployment, Market memory market) internal {
     // find market ID
-    uint8 marketId = 1;
+    uint marketId = 1;
     for (; marketId < 10; marketId++) {
       (int maxSpotReq,,,,,,,) = deployment.srm.optionMarginParams(marketId);
       if (maxSpotReq == 0) break;

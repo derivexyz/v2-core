@@ -62,8 +62,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
 
   /// @dev Value to help optimise the arranging of portfolio. Should be minimised if possible.
   uint public maxExpiries = 11;
-  /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
-  uint public maxAccountSize = 128;
 
   IPMRM.Scenario[] internal marginScenarios;
   mapping(address => bool) public trustedRiskAssessor;
@@ -109,17 +107,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     }
     maxExpiries = _maxExpiries;
     emit MaxExpiriesUpdated(_maxExpiries);
-  }
-
-  /**
-   * @dev set max amount of assets in a single account
-   */
-  function setMaxAccountSize(uint _maxAccountSize) external onlyOwner {
-    if (_maxAccountSize < 8 || _maxAccountSize > 500) {
-      revert PMRM_InvalidMaxAccountSize();
-    }
-    maxAccountSize = _maxAccountSize;
-    emit MaxAccountSizeUpdated(_maxAccountSize);
   }
 
   function setInterestRateFeed(IInterestRateFeed _interestRateFeed) external onlyOwner {

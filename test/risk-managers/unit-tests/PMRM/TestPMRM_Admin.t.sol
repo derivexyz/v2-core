@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
-
+import "../../../../src/interfaces/IBaseManager.sol";
 import "forge-std/console2.sol";
 
 contract TestPMRM_Admin is PMRMTestBase {
@@ -302,10 +302,10 @@ contract TestPMRM_Admin is PMRMTestBase {
   }
 
   function testCannotSetInvalidMaxSize() public {
-    vm.expectRevert(IPMRM.PMRM_InvalidMaxAccountSize.selector);
+    vm.expectRevert(IBaseManager.BM_InvalidMaxAccountSize.selector);
     pmrm.setMaxAccountSize(1);
 
-    vm.expectRevert(IPMRM.PMRM_InvalidMaxAccountSize.selector);
+    vm.expectRevert(IBaseManager.BM_InvalidMaxAccountSize.selector);
     pmrm.setMaxAccountSize(1000);
   }
 }

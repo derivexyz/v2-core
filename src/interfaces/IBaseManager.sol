@@ -29,6 +29,8 @@ interface IBaseManager is IManager {
 
   function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external;
 
+  function maxAccountSize() external view returns (uint);
+
   ////////////////
   //   Events   //
   ////////////////
@@ -46,6 +48,8 @@ interface IBaseManager is IManager {
   event FeeRecipientSet(uint _newAcc);
 
   event OptionSettlementBufferUpdated(uint optionSettlementBuffer);
+
+  event MaxAccountSizeUpdated(uint maxAccountSize);
 
   ////////////
   // Errors //
@@ -81,4 +85,6 @@ interface IBaseManager is IManager {
   error BM_MergeOwnerMismatch();
 
   error BM_UnauthorizedCall();
+
+  error BM_InvalidMaxAccountSize();
 }

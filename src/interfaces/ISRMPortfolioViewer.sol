@@ -23,4 +23,6 @@ interface ISRMPortfolioViewer is IBasePortfolioViewer {
     external
     view
     returns (IStandardManager.StandardManagerPortfolio memory);
+
+  error SRM_TooManyAssets();
 }
