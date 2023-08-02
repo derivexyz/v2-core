@@ -75,7 +75,7 @@ The configs will now be written as something like this: (example `deployment/901
   "rateModel": "0x1d61223Caea948f97d657aB3189e23F48888b6b0",
   "securityModule": "0x59E8b474a8061BCaEF705c7B93a903dE161FD149",
   "srm": "0xfe3e0ACFA9f4165DD733FCF6912c9d90c3aC0008",
-  "srmViwer": "0xDb1791026c3824441FAe8A105b08E40dD02e1469",
+  "srmViewer": "0xDb1791026c3824441FAe8A105b08E40dD02e1469",
   "stableFeed": "0xb77efe3e7c049933853e2C845a1412bCd36a2899",
   "subAccounts": "0x1dC3c8f65529E32626bbbb901cb743d373a7193e"
 }
