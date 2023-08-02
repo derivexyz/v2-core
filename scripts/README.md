@@ -7,9 +7,6 @@ Add `.env` file and do the following:
 ```python
 # required
 PRIVATE_KEY=<your key>
-
-# optional, can be provided in CLI directly
-TESTNET_RPC_URL=https://l2-orderbook-demo-t5038wsgnz.t.conduit.xyz
 ```
 
 And run this to make sure it's loaded in shell
@@ -17,6 +14,19 @@ And run this to make sure it's loaded in shell
 source .env
 ```
 
+Also, it's easier to add the rpc network into `foundry.toml`, so we can use the alias later in the script
+```
+
+[rpc_endpoints]
+sepolia = https://sepolia.infura.io/v3/26251a7744c548a3adbc17880fc70764
+```
+
+Currently we have the default RPC ready for:
+
+```
+sepolia
+conduit_testnet
+```
 
 
 ## Deploying to a new network 
@@ -40,8 +50,9 @@ If you're deploying to a new testnet and need to deploy some mocked USDC, WBTC a
 # where the config will live
 mkdir scripts/input/999
 
-# deploy mocks and write (or override) config
-forge script scripts/deploy-mocks.s.sol  --rpc-url $TESTNET_RPC_URL --broadcast
+# deploy mocks and write (or override) config. 
+# Note: Replace sepolia with other network alias if needed
+forge script scripts/deploy-mocks.s.sol  --rpc-url sepolia --broadcast
 ```
 
 ## 2. Deploy Core contracts
@@ -52,7 +63,7 @@ Run the following script, (assuming network id = 999)
 # create folder to store deployed addresses
 mkdir deployments/999
 
-forge script scripts/deploy-core.s.sol  --rpc-url $TESTNET_RPC_URL --broadcast
+forge script scripts/deploy-core.s.sol  --rpc-url sepolia --broadcast
 ```
 
 
@@ -88,7 +99,7 @@ Running this script will create a new set of "Assets" for this market, create a 
 Not that you need to pass in the "market" you want to deploy with env variables. Similarly you can update default params in `scripts/config.sol` before running the script.
 
 ```shell
-MARKET_NAME=weth forge script scripts/deploy-market.s.sol  --rpc-url $TESTNET_RPC_URL --broadcast
+MARKET_NAME=weth forge script scripts/deploy-market.s.sol  --rpc-url sepolia --broadcast
 ```
 
 #### Output
@@ -99,7 +110,7 @@ MARKET_NAME=weth forge script scripts/deploy-market.s.sol  --rpc-url $TESTNET_RP
   target erc20: 0x3a34565D81156cF0B1b9bC5f14FD00333bcf6B93
   All asset whitelist both managers!
   market ID for newly created market: 1
-  Written to deployment  /Users/antonasso/programming/lyra/v2-core/deployments/999/weth.json
+  Written to deployment  /lyra/v2-core/deployments/999/weth.json
 ```
 
 And every address will be stored in `deployments/999/weth.json`
