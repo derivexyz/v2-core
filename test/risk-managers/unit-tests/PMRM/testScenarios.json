@@ -199,7 +199,7 @@
       "SpotPrice": 1500000000000000000000,
       "SpotConfidence": 1000000000000000000,
       "PerpPrice": 1500000000000000000000,
-      "PeroConfidence": 1000000000000000000,
+      "PerpConfidence": 1000000000000000000,
       "FeedExpiries": [
         1195200,
         504000,
@@ -361,7 +361,11 @@
         1000000000000000000
       ],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1
+      "StableConfidence": 1,
+      "ForwardsVariable": [],
+      "ForwardsFixed": [],
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0
     }
   },
   "SinglePerp": {
