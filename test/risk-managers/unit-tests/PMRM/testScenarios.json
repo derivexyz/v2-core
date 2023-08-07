@@ -199,7 +199,7 @@
       "SpotPrice": 1500000000000000000000,
       "SpotConfidence": 1000000000000000000,
       "PerpPrice": 1500000000000000000000,
-      "PeroConfidence": 1000000000000000000,
+      "PerpConfidence": 1000000000000000000,
       "FeedExpiries": [
         1195200,
         504000,
@@ -361,7 +361,11 @@
         1000000000000000000
       ],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1
+      "StableConfidence": 1000000000000000000,
+      "ForwardsVariable": [],
+      "ForwardsFixed": [],
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0
     }
   },
   "SinglePerp": {
@@ -378,14 +382,18 @@
       "SpotPrice": 1500000000000000000000,
       "SpotConfidence": 1000000000000000000,
       "PerpPrice": 1500000000000000000000,
-      "PeroConfidence": 1000000000000000000,
+      "PerpConfidence": 1000000000000000000,
       "FeedExpiries": [],
       "Forwards": [],
       "ForwardConfidences": [],
       "Rates": [],
       "RateConfidences": [],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1
+      "StableConfidence": 1000000000000000000,
+      "ForwardsVariable": [],
+      "ForwardsFixed": [],
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0
     }
   },
   "SingleBase": {
@@ -402,14 +410,18 @@
       "SpotPrice": 1500000000000000000000,
       "SpotConfidence": 1000000000000000000,
       "PerpPrice": 1500000000000000000000,
-      "PeroConfidence": 1000000000000000000,
+      "PerpConfidence": 1000000000000000000,
       "FeedExpiries": [],
       "Forwards": [],
       "ForwardConfidences": [],
       "Rates": [],
       "RateConfidences": [],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1
+      "StableConfidence": 1000000000000000000,
+      "ForwardsVariable": [],
+      "ForwardsFixed": [],
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0
     }
   },
   "BitOfEverything": {
@@ -612,7 +624,7 @@
       "SpotPrice": 1500000000000000000000,
       "SpotConfidence": 1000000000000000000,
       "PerpPrice": 1500000000000000000000,
-      "PeroConfidence": 1000000000000000000,
+      "PerpConfidence": 1000000000000000000,
       "FeedExpiries": [
         7761600,
         7761600,
@@ -774,7 +786,11 @@
         1000000000000000000
       ],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1000000000000000000
+      "StableConfidence": 1000000000000000000,
+      "ForwardsVariable": [],
+      "ForwardsFixed": [],
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0
     }
   },
   "OracleContingency": {
@@ -977,7 +993,7 @@
       "SpotPrice": 1500000000000000000000,
       "SpotConfidence": 100000000000000000,
       "PerpPrice": 1500000000000000000000,
-      "PeroConfidence": 1000000000000000000,
+      "PerpConfidence": 1000000000000000000,
       "FeedExpiries": [
         7761600,
         7761600,
@@ -1139,7 +1155,11 @@
         1000000000000000000
       ],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1000000000000000000
+      "StableConfidence": 1000000000000000000,
+      "ForwardsVariable": [],
+      "ForwardsFixed": [],
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0
     }
   },
   "StableRate": {
@@ -1342,7 +1362,7 @@
       "SpotPrice": 1500000000000000000000,
       "SpotConfidence": 100000000000000000,
       "PerpPrice": 1500000000000000000000,
-      "PeroConfidence": 1000000000000000000,
+      "PerpConfidence": 1000000000000000000,
       "FeedExpiries": [
         7761600,
         7761600,
@@ -1504,7 +1524,11 @@
         1000000000000000000
       ],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1000000000000000000
+      "StableConfidence": 1000000000000000000,
+      "ForwardsVariable": [],
+      "ForwardsFixed": [],
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0
     }
   },
   "BasisContingency": {
@@ -1656,8 +1680,9 @@
         1000000000000000000
       ],
       "StablePrice": 1000000000000000000,
-      "UnrealizedPerpPNL": 0,
-      "UnrealizedFunding": 0,
+      "StableConfidence": 1000000000000000000,
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0,
       "VolShockUp": [
         1.7370684514926746,
         1.7370684514926746,
