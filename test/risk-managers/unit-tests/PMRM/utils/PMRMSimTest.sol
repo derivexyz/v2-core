@@ -70,9 +70,6 @@ contract PMRMSimTest is PMRMTestBase {
     int forwardContingency;
     int oracleContingency;
     int lossFactor;
-    int worstCaseSpotShock;
-    int worstCaseVolShock;
-    int worstCaseMTM;
     int cash;
     int portfolioMTM;
     int initialMarginHand;
@@ -131,8 +128,8 @@ contract PMRMSimTest is PMRMTestBase {
       cashAmount: cashAmount,
       perpAmount: perpAmount,
       baseAmount: baseAmount,
-      perpUnrealisedPNL: json.readInt(string.concat(testId, ".Scenario.UnrealizedPerpPNL")),
-      perpUnrealisedFunding: json.readInt(string.concat(testId, ".Scenario.UnrealizedFunding"))
+      perpUnrealisedPNL: json.readInt(string.concat(testId, ".Scenario.UnrealisedPerpPNL")),
+      perpUnrealisedFunding: json.readInt(string.concat(testId, ".Scenario.UnrealisedFunding"))
     });
   }
 
@@ -165,9 +162,6 @@ contract PMRMSimTest is PMRMTestBase {
       forwardContingency: json.readInt(string.concat(testId, ".Result.ForwardContingency")),
       oracleContingency: json.readInt(string.concat(testId, ".Result.OracleContingency")),
       lossFactor: json.readInt(string.concat(testId, ".Result.LossFactor")),
-      worstCaseSpotShock: json.readInt(string.concat(testId, ".Result.MinSpan[0][0]")),
-      worstCaseVolShock: json.readInt(string.concat(testId, ".Result.MinSpan[0][1]")),
-      worstCaseMTM: json.readInt(string.concat(testId, ".Result.MinSpan[1]")),
       cash: json.readInt(string.concat(testId, ".Result.Cash")),
       portfolioMTM: json.readInt(string.concat(testId, ".Result.PortfolioMTM")),
       initialMarginHand: json.readInt(string.concat(testId, ".Result.InitialMarginHand")),
