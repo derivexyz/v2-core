@@ -361,7 +361,7 @@
         1000000000000000000
       ],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1,
+      "StableConfidence": 1000000000000000000,
       "ForwardsVariable": [],
       "ForwardsFixed": [],
       "UnrealisedPerpPNL": 0,
@@ -389,7 +389,7 @@
       "Rates": [],
       "RateConfidences": [],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1,
+      "StableConfidence": 1000000000000000000,
       "ForwardsVariable": [],
       "ForwardsFixed": [],
       "UnrealisedPerpPNL": 0,
@@ -417,7 +417,7 @@
       "Rates": [],
       "RateConfidences": [],
       "StablePrice": 900000000000000000,
-      "StableConfidence": 1,
+      "StableConfidence": 1000000000000000000,
       "ForwardsVariable": [],
       "ForwardsFixed": [],
       "UnrealisedPerpPNL": 0,
@@ -1680,6 +1680,7 @@
         1000000000000000000
       ],
       "StablePrice": 1000000000000000000,
+      "StableConfidence": 1000000000000000000,
       "UnrealisedPerpPNL": 0,
       "UnrealisedFunding": 0,
       "VolShockUp": [
