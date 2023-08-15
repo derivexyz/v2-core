@@ -80,6 +80,14 @@ interface IDutchAuction {
 
   event ScenarioIdUpdated(uint accountId, uint newScenarioId);
 
+  event BufferMarginPercentageSet(int bufferMarginPercentage);
+
+  event SolventAuctionParamsSet(SolventAuctionParams params);
+
+  event InsolventAuctionParamsSet(InsolventAuctionParams params);
+
+  event WithdrawBlockThresholdSet(int withdrawBlockThreshold);
+
   ////////////
   // ERRORS //
   ////////////

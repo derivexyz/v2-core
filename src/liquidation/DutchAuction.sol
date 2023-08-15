@@ -94,6 +94,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // todo: change to 4.0e18
     if (_bufferMarginPercentage > 0.3e18) revert DA_InvalidBufferMarginParameter();
     bufferMarginPercentage = _bufferMarginPercentage;
+
+    emit BufferMarginPercentageSet(_bufferMarginPercentage);
   }
 
   /**
@@ -109,7 +111,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     ) revert DA_InvalidParameter();
 
     solventAuctionParams = _params;
-  }
+
+    emit SolventAuctionParamsSet(_params);
+    }
 
   /**
    * @notice Sets the insolvent auction parameters
@@ -118,6 +122,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function setInsolventAuctionParams(InsolventAuctionParams memory _params) external onlyOwner {
     insolventAuctionParams = _params;
+
+    emit InsolventAuctionParamsSet(_params);
   }
 
   /**
@@ -126,6 +132,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function setWithdrawBlockThreshold(int _withdrawBlockThreshold) external onlyOwner {
     if (_withdrawBlockThreshold > 0) revert DA_InvalidWithdrawBlockThreshold();
     withdrawBlockThreshold = _withdrawBlockThreshold;
+
+    emit WithdrawBlockThresholdSet(_withdrawBlockThreshold);
   }
 
   /////////////////////
