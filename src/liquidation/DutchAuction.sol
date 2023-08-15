@@ -113,7 +113,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     solventAuctionParams = _params;
 
     emit SolventAuctionParamsSet(_params);
-    }
+  }
 
   /**
    * @notice Sets the insolvent auction parameters
