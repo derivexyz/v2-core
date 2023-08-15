@@ -91,6 +91,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev if set to 0, we liquidate to maintenance margin. If set to 0.3, approximately to initial margin
    */
   function setBufferMarginPercentage(int _bufferMarginPercentage) external onlyOwner {
+    // todo: change to 4.0e18
     if (_bufferMarginPercentage > 0.3e18) revert DA_InvalidBufferMarginParameter();
     bufferMarginPercentage = _bufferMarginPercentage;
   }

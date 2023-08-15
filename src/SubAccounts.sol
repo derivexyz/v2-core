@@ -468,6 +468,16 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
       _spendAllowance(toAccAdjustment, ownerOf(toAccAdjustment.acc), msg.sender);
     }
 
+    emit AssetTransferred(
+      assetTransfer.fromAcc,
+      assetTransfer.toAcc,
+      assetTransfer.asset,
+      assetTransfer.subId,
+      assetTransfer.amount,
+      assetTransfer.assetData,
+      tradeId
+    );
+
     return (fromDelta_, toDelta_);
   }
 

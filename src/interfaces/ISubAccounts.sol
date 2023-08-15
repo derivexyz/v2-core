@@ -235,6 +235,10 @@ interface ISubAccounts is IERC721 {
    */
   event UnorderedNonceInvalidated(address owner, uint wordPos, uint mask);
 
+  event AssetTransferred(
+    uint indexed fromAcc, uint indexed toAcc, IAsset asset, uint subId, int amount, bytes32 assetData, uint tradeId
+  );
+
   /**
    * @dev Emitted during any balance change event. This includes:
    *      1. single transfer
