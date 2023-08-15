@@ -62,7 +62,7 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
 
   function testCannotSetBufferMarginPercentageOutOfBounds() public {
     vm.expectRevert(IDutchAuction.DA_InvalidBufferMarginParameter.selector);
-    dutchAuction.setBufferMarginPercentage(0.31e18);
+    dutchAuction.setBufferMarginPercentage(4.1e18);
   }
 
   function testSetWithdrawBlockThreshold() public {
