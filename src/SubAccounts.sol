@@ -561,7 +561,8 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
       HeldAsset({asset: adjustment.asset, subId: uint96(adjustment.subId)}),
       delta,
       preBalance,
-      postBalance
+      postBalance,
+      tradeId
     );
   }
 

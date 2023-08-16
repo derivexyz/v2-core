@@ -253,7 +253,8 @@ interface ISubAccounts is IERC721 {
     HeldAsset indexed assetAndSubId,
     int amount,
     int preBalance,
-    int postBalance
+    int postBalance,
+    uint tradeId
   );
 
   ////////////
