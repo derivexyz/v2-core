@@ -544,7 +544,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
     } else {
       postBalance = preBalance + adjustment.amount;
       delta = adjustment.amount;
-      // needAllowance id default to: only need allowance if substracting from account
+      // needAllowance id default to: only need allowance if subtracting from account
       needAllowance = adjustment.amount < 0;
     }
 
