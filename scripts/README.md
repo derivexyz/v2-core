@@ -25,7 +25,8 @@ Currently we have the default RPC ready for:
 
 ```
 sepolia
-conduit_testnet
+conduit_prod
+conduit_staging
 ```
 
 
