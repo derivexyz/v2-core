@@ -88,11 +88,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
   /**
    * @notice Set buffer margin that will be used to determine the target margin level we liquidate to
-   * @dev if set to 0, we liquidate to maintenance margin. If set to 0.3, approximately to initial margin
+   * @dev if set to 0, we liquidate to maintenance margin. If set to 0.3, approximately to initial margin for PMRM (IM = MM*1.3)
    */
   function setBufferMarginPercentage(int _bufferMarginPercentage) external onlyOwner {
-    if (_bufferMarginPercentage > 0.3e18) revert DA_InvalidBufferMarginParameter();
+    if (_bufferMarginPercentage > 4e18) revert DA_InvalidBufferMarginParameter();
     bufferMarginPercentage = _bufferMarginPercentage;
+
+    emit BufferMarginPercentageSet(_bufferMarginPercentage);
   }
 
   /**
@@ -108,6 +110,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     ) revert DA_InvalidParameter();
 
     solventAuctionParams = _params;
+
+    emit SolventAuctionParamsSet(_params);
   }
 
   /**
@@ -117,6 +121,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function setInsolventAuctionParams(InsolventAuctionParams memory _params) external onlyOwner {
     insolventAuctionParams = _params;
+
+    emit InsolventAuctionParamsSet(_params);
   }
 
   /**
@@ -125,6 +131,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function setWithdrawBlockThreshold(int _withdrawBlockThreshold) external onlyOwner {
     if (_withdrawBlockThreshold > 0) revert DA_InvalidWithdrawBlockThreshold();
     withdrawBlockThreshold = _withdrawBlockThreshold;
+
+    emit WithdrawBlockThresholdSet(_withdrawBlockThreshold);
   }
 
   /////////////////////

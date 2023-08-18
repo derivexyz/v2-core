@@ -468,6 +468,16 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
       _spendAllowance(toAccAdjustment, ownerOf(toAccAdjustment.acc), msg.sender);
     }
 
+    emit AssetTransferred(
+      assetTransfer.fromAcc,
+      assetTransfer.toAcc,
+      assetTransfer.asset,
+      assetTransfer.subId,
+      assetTransfer.amount,
+      assetTransfer.assetData,
+      tradeId
+    );
+
     return (fromDelta_, toDelta_);
   }
 
@@ -534,7 +544,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
     } else {
       postBalance = preBalance + adjustment.amount;
       delta = adjustment.amount;
-      // needAllowance id default to: only need allowance if substracting from account
+      // needAllowance id default to: only need allowance if subtracting from account
       needAllowance = adjustment.amount < 0;
     }
 
@@ -551,7 +561,8 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
       HeldAsset({asset: adjustment.asset, subId: uint96(adjustment.subId)}),
       delta,
       preBalance,
-      postBalance
+      postBalance,
+      tradeId
     );
   }
 
