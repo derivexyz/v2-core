@@ -5,7 +5,7 @@ import "../../../src/risk-managers/BaseManager.sol";
 import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
 
 contract BaseManagerTester is BaseManager {
-  IOption public immutable option;
+  IOptionAsset public immutable option;
   IPerpAsset public immutable perp;
   IForwardFeed public immutable forwardFeed;
   ISpotFeed public immutable spotFeed;
@@ -15,7 +15,7 @@ contract BaseManagerTester is BaseManager {
     IForwardFeed forwardFeed_,
     ISpotFeed spotFeed_,
     ICashAsset cash_,
-    IOption option_,
+    IOptionAsset option_,
     IPerpAsset perp_,
     IDutchAuction auction_,
     IBasePortfolioViewer viewer_

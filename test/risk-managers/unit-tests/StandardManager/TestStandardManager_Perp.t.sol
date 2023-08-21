@@ -11,7 +11,7 @@ import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import {IDutchAuction} from "../../../../src/interfaces/IDutchAuction.sol";
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockPerp.sol";
-import "../../../shared/mocks/MockOption.sol";
+import "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../shared/mocks/MockOptionPricing.sol";
 

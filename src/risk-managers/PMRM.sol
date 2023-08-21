@@ -14,7 +14,7 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IPMRMLib} from "../interfaces/IPMRMLib.sol";
-import {IOption} from "../interfaces/IOption.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
@@ -46,7 +46,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   // Variables //
   ///////////////
 
-  IOption public immutable option;
+  IOptionAsset public immutable option;
   IPerpAsset public immutable perp;
   IWrappedERC20Asset public immutable baseAsset;
 
@@ -73,7 +73,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   constructor(
     ISubAccounts subAccounts_,
     ICashAsset cashAsset_,
-    IOption option_,
+    IOptionAsset option_,
     IPerpAsset perp_,
     IWrappedERC20Asset baseAsset_,
     IDutchAuction liquidation_,
@@ -469,7 +469,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   /**
    * @notice can be called by anyone to settle a perp asset in an account
    */
-  function settleOptions(IOption _option, uint accountId) external {
+  function settleOptions(IOptionAsset _option, uint accountId) external {
     if (_option != option) revert PMRM_UnsupportedAsset();
     _settleAccountOptions(_option, accountId);
   }

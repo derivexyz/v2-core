@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {SubAccounts} from "../src/SubAccounts.sol";
 import {CashAsset} from "../src/assets/CashAsset.sol";
-import {Option} from "../src/assets/Option.sol";
+import {Option} from "../src/assets/OptionAsset.sol";
 import {PerpAsset} from "../src/assets/PerpAsset.sol";
 import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
 import {InterestRateModel} from "../src/assets/InterestRateModel.sol";
@@ -49,7 +49,7 @@ struct Deployment {
 
 struct Market {
   // lyra asset
-  Option option;
+  OptionAsset option;
   PerpAsset perp;
   WrappedERC20Asset base;
   // feeds

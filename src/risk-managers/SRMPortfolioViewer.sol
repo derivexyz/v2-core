@@ -11,7 +11,7 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {ISRMPortfolioViewer} from "../interfaces/ISRMPortfolioViewer.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
-import {IOption} from "../interfaces/IOption.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 import {IStandardManager} from "../interfaces/IStandardManager.sol";
 import {BasePortfolioViewer} from "./BasePortfolioViewer.sol";
 
@@ -107,7 +107,7 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
           portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
           portfolio.marketHoldings[i].depegPenaltyPos += SignedMath.abs(currentAsset.balance).toInt256();
         } else if (detail.assetType == IStandardManager.AssetType.Option) {
-          portfolio.marketHoldings[i].option = IOption(address(currentAsset.asset));
+          portfolio.marketHoldings[i].option = IOptionAsset(address(currentAsset.asset));
           (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
           uint expiryIndex;
           (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);

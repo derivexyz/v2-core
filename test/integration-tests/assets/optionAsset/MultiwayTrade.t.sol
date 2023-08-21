@@ -17,7 +17,7 @@ contract INTEGRATION_MultiwayTradeTest is IntegrationTestBase {
 
   int amountOfContracts = 1e18;
 
-  IOption option;
+  IOptionAsset option;
 
   uint64 expiry;
 

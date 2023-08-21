@@ -12,7 +12,7 @@ import "../../../../../src/interfaces/ISubAccounts.sol";
 import "../../../../shared/mocks/MockManager.sol";
 import "../../../../shared/mocks/MockERC20.sol";
 import "../../../../shared/mocks/MockAsset.sol";
-import "../../../../shared/mocks/MockOption.sol";
+import "../../../../shared/mocks/MockOptionAsset.sol";
 import "../../../../shared/mocks/MockSM.sol";
 import "../../../../shared/mocks/MockFeeds.sol";
 import "../../../../auction/mocks/MockCashAsset.sol";

@@ -14,7 +14,7 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IAsset} from "../interfaces/IAsset.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
-import {IOption} from "../interfaces/IOption.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 import {IStandardManager} from "../interfaces/IStandardManager.sol";
 import {ISRMPortfolioViewer} from "../interfaces/ISRMPortfolioViewer.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
@@ -536,7 +536,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function _calcNetBasicMarginSingleExpiry(
     uint marketId,
-    IOption option,
+    IOptionAsset option,
     ExpiryHolding memory expiryHolding,
     int indexPrice,
     int forwardPrice,
@@ -573,7 +573,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Settle expired option positions in an account.
    * @dev This function can be called by anyone
    */
-  function settleOptions(IOption option, uint accountId) external {
+  function settleOptions(IOptionAsset option, uint accountId) external {
     if (!_assetDetails[option].isWhitelisted) revert SRM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
   }
@@ -656,7 +656,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
         fee += _getPerpOIFee(perp, assetDeltas[i].delta, tradeId);
       } else if (detail.assetType == AssetType.Option) {
-        IOption option = IOption(address(assetDeltas[i].asset));
+        IOptionAsset option = IOptionAsset(address(assetDeltas[i].asset));
         IForwardFeed forwardFeed = forwardFeeds[detail.marketId];
         fee += _getOptionOIFee(option, forwardFeed, assetDeltas[i].delta, assetDeltas[i].subId, tradeId);
       }
@@ -757,7 +757,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcMaxLoss(IOption option, ExpiryHolding memory expiryHolding, uint price)
+  function _calcMaxLoss(IOptionAsset option, ExpiryHolding memory expiryHolding, uint price)
     internal
     pure
     returns (int payoff)

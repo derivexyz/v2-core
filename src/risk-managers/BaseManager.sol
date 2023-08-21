@@ -9,7 +9,7 @@ import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
-import {IOption} from "../interfaces/IOption.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
@@ -336,7 +336,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev this function will not revert even if settlement price is not updated
    * @param accountId Account Id to settle
    */
-  function _settleAccountOptions(IOption option, uint accountId) internal {
+  function _settleAccountOptions(IOptionAsset option, uint accountId) internal {
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {

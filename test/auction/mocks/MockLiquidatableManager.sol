@@ -6,7 +6,7 @@ import "../..//shared/mocks/MockManager.sol";
 import {ILiquidatableManager} from "../../../src/interfaces/ILiquidatableManager.sol";
 import {IDutchAuction} from "../../../src/interfaces/IDutchAuction.sol";
 import {IPerpAsset} from "../../../src/interfaces/IPerpAsset.sol";
-import {IOption} from "../../../src/interfaces/IOption.sol";
+import {IOptionAsset} from "../../../src/interfaces/IOptionAsset.sol";
 
 contract MockLiquidatableManager is MockManager, ILiquidatableManager {
   mapping(uint tradeId => mapping(uint account => uint fee)) mockFeeCharged;
@@ -60,7 +60,7 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {}
 
-  function settleOptions(IOption _option, uint accountId) external {}
+  function settleOptions(IOptionAsset _option, uint accountId) external {}
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public override {}

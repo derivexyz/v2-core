@@ -5,7 +5,7 @@ import "../../../../src/SubAccounts.sol";
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import {IAsset} from "../../../../src/interfaces/IAsset.sol";
 import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
-import "../../../shared/mocks/MockOption.sol";
+import "../../../shared/mocks/MockOptionAsset.sol";
 
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
 

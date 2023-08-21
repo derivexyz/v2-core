@@ -27,7 +27,7 @@ import {DutchAuction} from "../../../../../src/liquidation/DutchAuction.sol";
 import {MockManager} from "../../../../shared/mocks/MockManager.sol";
 import {MockERC20} from "../../../../shared/mocks/MockERC20.sol";
 import {MockAsset} from "../../../../shared/mocks/MockAsset.sol";
-import {MockOption} from "../../../../shared/mocks/MockOption.sol";
+import {MockOption} from "../../../../shared/mocks/MockOptionAsset.sol";
 import {MockSM} from "../../../../shared/mocks/MockSM.sol";
 import {MockFeeds} from "../../../../shared/mocks/MockFeeds.sol";
 import {MockFeeds} from "../../../../shared/mocks/MockFeeds.sol";

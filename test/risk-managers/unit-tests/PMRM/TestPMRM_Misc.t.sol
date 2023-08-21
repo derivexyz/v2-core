@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
 import {IPMRM} from "../../../../src/interfaces/IPMRM.sol";
 import {MockManager} from "../../../shared/mocks/MockManager.sol";
-import {MockOption} from "../../../shared/mocks/MockOption.sol";
+import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
 
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
 

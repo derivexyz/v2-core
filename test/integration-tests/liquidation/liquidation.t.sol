@@ -19,7 +19,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
   uint96 putId;
   uint64 expiry;
 
-  IOption option;
+  IOptionAsset option;
 
   address charlie = address(0xccc);
 

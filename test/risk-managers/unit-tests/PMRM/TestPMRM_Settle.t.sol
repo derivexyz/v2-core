@@ -108,7 +108,7 @@ contract TestPMRM_Settlement is PMRMTestBase {
 
   function testCanSettleOptionWithBadAddress() public {
     vm.expectRevert(IPMRM.PMRM_UnsupportedAsset.selector);
-    pmrm.settleOptions(IOption(address(mockPerp)), aliceAcc);
+    pmrm.settleOptions(IOptionAsset(address(mockPerp)), aliceAcc);
   }
 
   function _tradeOptionAndMockSettlementValue(int netValue) internal {

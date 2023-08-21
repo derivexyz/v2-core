@@ -5,7 +5,7 @@ import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import {ISRMPortfolioViewer} from "../../../../src/interfaces/ISRMPortfolioViewer.sol";
 import {IStandardManager} from "../../../../src/interfaces/IStandardManager.sol";
 import {MockManager} from "../../../shared/mocks/MockManager.sol";
-import {MockOption} from "../../../shared/mocks/MockOption.sol";
+import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
 
 contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   function testCanTransferCash() public {

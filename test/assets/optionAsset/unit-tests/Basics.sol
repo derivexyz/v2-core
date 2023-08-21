@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "../../../../src/assets/Option.sol";
+import "../../../../src/assets/OptionAsset.sol";
 import "../../../../src/SubAccounts.sol";
 import {IManager} from "../../../../src/interfaces/IManager.sol";
 import {IAsset} from "../../../../src/interfaces/IAsset.sol";
@@ -18,7 +18,7 @@ contract UNIT_TestOptionBasics is Test {
   SubAccounts subAccounts;
   MockManager manager;
 
-  Option option;
+  OptionAsset option;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -28,7 +28,7 @@ contract UNIT_TestOptionBasics is Test {
   function setUp() public {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
-    option = new Option(subAccounts, address(0));
+    option = new OptionAsset(subAccounts, address(0));
     manager = new MockManager(address(subAccounts));
 
     vm.startPrank(alice);

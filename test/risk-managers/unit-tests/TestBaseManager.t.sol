@@ -7,7 +7,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {IManager} from "../../../src/interfaces/IManager.sol";
 import {ICashAsset} from "../../../src/interfaces/ICashAsset.sol";
-import {IOption} from "../../../src/interfaces/IOption.sol";
+import {IOptionAsset} from "../../../src/interfaces/IOptionAsset.sol";
 import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 
 import "../../../src/SubAccounts.sol";
@@ -18,7 +18,7 @@ import "../../../src/feeds/AllowList.sol";
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeeds.sol";
-import "../../shared/mocks/MockOption.sol";
+import "../../shared/mocks/MockOptionAsset.sol";
 import "../../auction/mocks/MockCashAsset.sol";
 import "../../shared/mocks/MockPerp.sol";
 import "../mocks/BaseManagerTester.sol";
