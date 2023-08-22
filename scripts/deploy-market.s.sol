@@ -57,6 +57,8 @@ contract DeployMarket is Utils {
 
     _setPermissionAndCaps(deployment, market);
 
+    _setupPerpAsset(market);
+
     _setupPMRMParams(market);
 
     _registerMarketToSRM(deployment, market);
@@ -161,6 +163,13 @@ contract DeployMarket is Utils {
 
     // set all scenarios!
     market.pmrm.setScenarios(getDefaultScenarios());
+  }
+
+  function _setupPerpAsset(Market memory market) internal {
+    // set perp asset params
+    market.perp.setSpotFeed(market.spotFeed);
+    market.perp.setPerpFeed(market.perpFeed);
+    market.perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
   }
 
   function _setPermissionAndCaps(Deployment memory deployment, Market memory market) internal {
