@@ -79,6 +79,9 @@ contract DeployMarket is Utils {
     //todo: use mocked feeds?
     if (config.useMockedFeed) {
       MockFeeds mockFeed = new MockFeeds();
+
+      // mock init values
+      mockFeed.setSpot(2000e18, 1e18);
       
       market.spotFeed = LyraSpotFeed(address(mockFeed));
       market.forwardFeed = LyraForwardFeed(address(mockFeed));
@@ -88,7 +91,7 @@ contract DeployMarket is Utils {
       market.ibpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
       
       market.volFeed = LyraVolFeed(address(mockFeed));
-      market.rateFeed = LyraRateFeed(address(mockFeed));
+      market.rateFeed = LyraRateFeed(address(mockFeed));      
     } else {
       market.spotFeed = new LyraSpotFeed();
       market.forwardFeed = new LyraForwardFeed(market.spotFeed);
@@ -101,7 +104,8 @@ contract DeployMarket is Utils {
       market.rateFeed = new LyraRateFeed();
       market.volFeed = new LyraVolFeed();
 
-      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);
+      // init feeds
+      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);      
       market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
 
       market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
@@ -111,7 +115,6 @@ contract DeployMarket is Utils {
       market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
       market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
       market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
-
     }
 
     market.option = new Option(deployment.subAccounts, address(market.forwardFeed));
