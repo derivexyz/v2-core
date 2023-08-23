@@ -79,9 +79,6 @@ contract DeployMarket is Utils {
     //todo: use mocked feeds?
     if (config.useMockedFeed) {
       MockFeeds mockFeed = new MockFeeds();
-
-      // mock init values
-      mockFeed.setSpot(2000e18, 1e18);
       
       market.spotFeed = LyraSpotFeed(address(mockFeed));
       market.forwardFeed = LyraForwardFeed(address(mockFeed));
