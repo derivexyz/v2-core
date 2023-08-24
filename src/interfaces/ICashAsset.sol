@@ -71,12 +71,6 @@ interface ICashAsset is IERC20BasedAsset {
   /// @dev Emitted when a new interest rate model is set
   event InterestRateModelSet(IInterestRateModel rateModel);
 
-  /// @dev emitted when a user deposits to an account
-  event Deposit(uint accountId, address from, uint amountCashMinted, uint wrappedAssetDeposited);
-
-  /// @dev emitted when a user withdraws from an account
-  event Withdraw(uint accountId, address recipient, uint amountCashBurn, uint wrappedAssetWidrawn);
-
   /// @dev Emitted when asymmetric print/burn occurs for settlement
   event SettledCashUpdated(int amountChanged, int currentSettledCash);
 
@@ -87,6 +81,9 @@ interface ICashAsset is IERC20BasedAsset {
   /// @dev emitted when withdraw fee is disabled
   ///      this can only occur if the cash asset is solvent again
   event WithdrawFeeDisabled(uint exchangeRate);
+
+  /// @dev emitted when an interest accrued on an existing account's pre balance
+  event InterestAccruedOnAccount(uint indexed accountId, int preBalance, int interestAccrued, uint accountIndex);
 
   ////////////////
   //   Errors   //
@@ -106,6 +103,9 @@ interface ICashAsset is IERC20BasedAsset {
 
   /// @dev caller is not owner of the account
   error CA_OnlyAccountOwner();
+
+  /// @dev withdraw is temporarily block due to on-going insolvent auction
+  error CA_WithdrawBlockedByOngoingAuction();
 
   /// @dev accrued interest is stale
   error CA_InterestAccrualStale(uint lastUpdatedAt, uint currentTimestamp);

@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
+import "../../../risk-managers/mocks/MockDutchAuction.sol";
+
 import "../../../shared/mocks/MockManager.sol";
 import "../mocks/MockInterestRateModel.sol";
 
@@ -21,6 +23,7 @@ contract UNIT_CashAssetAccrueInterest is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
+  MockDutchAuction auction;
   SubAccounts subAccounts;
   IInterestRateModel rateModel;
 
@@ -36,11 +39,14 @@ contract UNIT_CashAssetAccrueInterest is Test {
     usdc = new MockERC20("USDC", "USDC");
     smAccount = subAccounts.createAccount(address(this), manager);
 
+    auction = new MockDutchAuction();
+
     rateModel = new MockInterestRateModel(0.5 * 1e18);
     cashAsset = new CashAsset(subAccounts, usdc, rateModel);
     cashAsset.setWhitelistManager(address(manager), true);
     cashAsset.setInterestRateModel(rateModel);
     cashAsset.setSmFeeRecipient(smAccount);
+    cashAsset.setLiquidationModule(auction);
 
     // 100000 USDC with 18 decimals
     depositedAmount = 100000e18;

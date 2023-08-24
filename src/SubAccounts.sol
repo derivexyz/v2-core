@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 import {ISubAccounts} from "./interfaces/ISubAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
@@ -22,7 +23,7 @@ import {PermitAllowanceLib} from "./libraries/PermitAllowanceLib.sol";
  *         2. routing of manager, asset, allowance hooks / checks during any balance adjustment event
  *         3. account creation / manager assignment
  */
-contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
+contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccounts {
   using SafeCast for int;
   using SafeCast for uint;
   using AssetDeltaLib for AssetDeltaArrayCache;
@@ -138,18 +139,27 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
 
     /* get unique assets to only call to asset once */
     (address[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(heldAssets[accountId]);
-
     for (uint i; i < uniqueLength; ++i) {
       IAsset(uniqueAssets[i]).handleManagerChange(accountId, newManager);
     }
 
+    // construct asset delta array from existing balances
+    uint assetsLength = heldAssets[accountId].length;
+    AssetDelta[] memory deltas = new AssetDelta[](assetsLength);
+    for (uint i; i < assetsLength; i++) {
+      HeldAsset memory heldAsset = heldAssets[accountId][i];
+      deltas[i] = AssetDelta({
+        asset: heldAsset.asset,
+        subId: heldAsset.subId,
+        delta: balanceAndOrder[accountId][heldAsset.asset][heldAsset.subId].balance
+      });
+    }
     // update the manager after all checks (external calls) are done. expected reentry pattern
     manager[accountId] = newManager;
 
     uint tradeId = ++lastTradeId;
 
     // trigger the manager hook on the new manager. Same as post-transfer checks
-    AssetDelta[] memory deltas = new AssetDelta[](0);
     _managerHook(accountId, tradeId, msg.sender, deltas, newManagerData);
 
     emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
@@ -284,6 +294,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    */
   function submitTransfer(AssetTransfer calldata assetTransfer, bytes calldata managerData)
     external
+    nonReentrant
     returns (uint tradeId)
   {
     return _submitTransfer(assetTransfer, managerData);
@@ -298,6 +309,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
    */
   function submitTransfers(AssetTransfer[] calldata assetTransfers, bytes calldata managerData)
     external
+    nonReentrant
     returns (uint tradeId)
   {
     return _submitTransfers(assetTransfers, managerData);
@@ -315,7 +327,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
     bytes calldata managerData,
     PermitAllowance calldata allowancePermit,
     bytes calldata signature
-  ) external returns (uint tradeId) {
+  ) external nonReentrant returns (uint tradeId) {
     _permit(allowancePermit, signature);
     return _submitTransfer(assetTransfer, managerData);
   }
@@ -332,7 +344,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
     bytes calldata managerData,
     PermitAllowance[] calldata allowancePermits,
     bytes[] calldata signatures
-  ) external returns (uint tradeId) {
+  ) external nonReentrant returns (uint tradeId) {
     for (uint i; i < allowancePermits.length; ++i) {
       _permit(allowancePermits[i], signatures[i]);
     }
@@ -456,6 +468,16 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
       _spendAllowance(toAccAdjustment, ownerOf(toAccAdjustment.acc), msg.sender);
     }
 
+    emit AssetTransferred(
+      assetTransfer.fromAcc,
+      assetTransfer.toAcc,
+      assetTransfer.asset,
+      assetTransfer.subId,
+      assetTransfer.amount,
+      assetTransfer.assetData,
+      tradeId
+    );
+
     return (fromDelta_, toDelta_);
   }
 
@@ -500,7 +522,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
   }
 
   /**
-   * @dev the order field is never set back to 0 to safe on gas
+   * @dev the order field is never set back to 0 to save on gas
    *      ensure balance != 0 when using the BalandAnceOrder.order field
    * @param tradeId a shared id for both asset and manager hooks within a same call
    * @param triggerHook whether this call should trigger asset hook
@@ -522,7 +544,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
     } else {
       postBalance = preBalance + adjustment.amount;
       delta = adjustment.amount;
-      // needAllowance id default to: only need allowance if substracting from account
+      // needAllowance id default to: only need allowance if subtracting from account
       needAllowance = adjustment.amount < 0;
     }
 
@@ -539,7 +561,8 @@ contract SubAccounts is Allowances, ERC721, EIP712, ISubAccounts {
       HeldAsset({asset: adjustment.asset, subId: uint96(adjustment.subId)}),
       delta,
       preBalance,
-      postBalance
+      postBalance,
+      tradeId
     );
   }
 

@@ -76,6 +76,6 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
     // update spotDiff
     spotDiffDetails = SpotDiffDetail(spotDiff, confidence, feedData.timestamp);
 
-    emit SpotDiffUpdated(feedData.signer, spotDiff, confidence, feedData.timestamp);
+    emit SpotDiffUpdated(spotDiff, confidence, feedData.timestamp);
   }
 }

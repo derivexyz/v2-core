@@ -1,11 +1,18 @@
 pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 
 /**
  * Focusing on the margin rules for options
  */
 contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
+  function setUp() public override {
+    super.setUp();
+    manager.setWhitelistedCallee(address(ethFeed), true);
+    manager.setWhitelistedCallee(address(btcFeed), true);
+  }
+
   function testCanTradeMultipleMarkets() public {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
@@ -183,7 +190,8 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
 
     manager.whitelistAsset(dogeOption, 5, IStandardManager.AssetType.Option);
-    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed, dogeFeed);
+
+    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed);
 
     manager.setPricingModule(5, pricing);
 

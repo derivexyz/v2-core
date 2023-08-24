@@ -4,31 +4,30 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/Math.sol";
-import "openzeppelin/access/Ownable2Step.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
-import {IManager} from "../interfaces/IManager.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IAsset} from "../interfaces/IAsset.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
-import {IOption} from "../interfaces/IOption.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 import {IStandardManager} from "../interfaces/IStandardManager.sol";
+import {ISRMPortfolioViewer} from "../interfaces/ISRMPortfolioViewer.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IVolFeed} from "../interfaces/IVolFeed.sol";
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
 
-import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 
 import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 
+import {IManager} from "../interfaces/IManager.sol";
 import {BaseManager} from "./BaseManager.sol";
 
 /**
@@ -58,7 +57,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   bool public borrowingEnabled;
 
   /// @dev True if an IAsset address is whitelisted.
-  mapping(IAsset asset => AssetDetail) public assetDetails;
+  mapping(IAsset asset => AssetDetail) internal _assetDetails;
 
   /// @dev Perp Margin Requirements: maintenance and initial margin requirements
   mapping(uint marketId => PerpMarginRequirements) public perpMarginRequirements;
@@ -73,27 +72,27 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   mapping(uint marketId => OracleContingencyParams) public oracleContingencyParams;
 
   /// @dev Mapping from marketId to spot price oracle
-  mapping(uint marketId => ISpotFeed) public spotFeeds;
-
-  /// @dev Mapping from marketId to settlement price oracle
-  mapping(uint marketId => ISettlementFeed) public settlementFeeds;
+  mapping(uint marketId => ISpotFeed) internal spotFeeds;
 
   /// @dev Mapping from marketId to forward price oracle
-  mapping(uint marketId => IForwardFeed) public forwardFeeds;
+  mapping(uint marketId => IForwardFeed) internal forwardFeeds;
 
   /// @dev Mapping from marketId to vol oracle
-  mapping(uint marketId => IVolFeed) public volFeeds;
+  mapping(uint marketId => IVolFeed) internal volFeeds;
 
   /// @dev Mapping from marketId to forward price oracle
-  mapping(uint marketId => IOptionPricing) public pricingModules;
+  mapping(uint marketId => IOptionPricing) internal pricingModules;
 
   ////////////////////////
   //    Constructor     //
   ////////////////////////
 
-  constructor(ISubAccounts subAccounts_, ICashAsset cashAsset_, IDutchAuction _dutchAuction)
-    BaseManager(subAccounts_, cashAsset_, _dutchAuction)
-  {}
+  constructor(
+    ISubAccounts subAccounts_,
+    ICashAsset cashAsset_,
+    IDutchAuction _dutchAuction,
+    ISRMPortfolioViewer _viewer
+  ) BaseManager(subAccounts_, cashAsset_, _dutchAuction, _viewer) {}
 
   ////////////////////////
   //    Admin-Only     //
@@ -103,8 +102,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Whitelist an asset to be used in Manager
    * @dev the standard manager only support option asset & perp asset
    */
-  function whitelistAsset(IAsset _asset, uint8 _marketId, AssetType _type) external onlyOwner {
-    assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
+  function whitelistAsset(IAsset _asset, uint _marketId, AssetType _type) external onlyOwner {
+    _assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
 
     emit AssetWhitelisted(address(_asset), _marketId, _type);
   }
@@ -121,20 +120,16 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the oracles for a market id
    */
-  function setOraclesForMarket(
-    uint8 marketId,
-    ISpotFeed spotFeed,
-    IForwardFeed forwardFeed,
-    ISettlementFeed settlementFeed,
-    IVolFeed volFeed
-  ) external onlyOwner {
+  function setOraclesForMarket(uint marketId, ISpotFeed spotFeed, IForwardFeed forwardFeed, IVolFeed volFeed)
+    external
+    onlyOwner
+  {
     // registered asset
     spotFeeds[marketId] = spotFeed;
     forwardFeeds[marketId] = forwardFeed;
-    settlementFeeds[marketId] = settlementFeed;
     volFeeds[marketId] = volFeed;
 
-    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(settlementFeed), address(volFeed));
+    emit OraclesSet(marketId, address(spotFeed), address(forwardFeed), address(volFeed));
   }
 
   /**
@@ -142,7 +137,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param _mmPerpReq new maintenance margin requirement
    * @param _imPerpReq new initial margin requirement
    */
-  function setPerpMarginRequirements(uint8 marketId, uint _mmPerpReq, uint _imPerpReq) external onlyOwner {
+  function setPerpMarginRequirements(uint marketId, uint _mmPerpReq, uint _imPerpReq) external onlyOwner {
     if (_mmPerpReq > _imPerpReq || _mmPerpReq == 0 || _mmPerpReq >= 1e18 || _imPerpReq >= 1e18) {
       revert SRM_InvalidPerpMarginParams();
     }
@@ -156,7 +151,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev Set discount factor for base asset
    * @dev if this factor is 0 (unset), base asset won't contribute to margin
    */
-  function setBaseMarginDiscountFactor(uint8 marketId, uint discountFactor) external onlyOwner {
+  function setBaseMarginDiscountFactor(uint marketId, uint discountFactor) external onlyOwner {
     if (discountFactor >= 1e18) {
       revert SRM_InvalidBaseDiscountFactor();
     }
@@ -169,7 +164,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the option margin parameters for an market
    */
-  function setOptionMarginParams(uint8 marketId, OptionMarginParams calldata params) external onlyOwner {
+  function setOptionMarginParams(uint marketId, OptionMarginParams calldata params) external onlyOwner {
     if (
       params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 // 0 < x < 1.2
         || params.minSpotReq < 0 || params.minSpotReq > 1.2e18 // 0 < x < 1,2
@@ -201,7 +196,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Set the option margin parameters for an market
    */
-  function setOracleContingencyParams(uint8 marketId, OracleContingencyParams calldata params) external onlyOwner {
+  function setOracleContingencyParams(uint marketId, OracleContingencyParams memory params) external onlyOwner {
     if (
       params.perpThreshold > 1e18 || params.optionThreshold > 1e18 || params.baseThreshold > 1e18
         || params.OCFactor > 1e18
@@ -238,7 +233,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Set the pricing module
    * @param _pricing new pricing module
    */
-  function setPricingModule(uint8 marketId, IOptionPricing _pricing) external onlyOwner {
+  function setPricingModule(uint marketId, IOptionPricing _pricing) external onlyOwner {
     pricingModules[marketId] = IOptionPricing(_pricing);
 
     emit PricingModuleSet(marketId, address(_pricing));
@@ -256,29 +251,28 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint accountId,
     uint tradeId,
     address caller,
-    ISubAccounts.AssetDelta[] calldata assetDeltas,
+    ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
   ) public override onlyAccounts {
     // check if account is valid
-    _verifyCanTrade(accountId);
+    viewer.verifyCanTrade(accountId);
 
     // send data to oracles if needed
     _processManagerData(tradeId, managerData);
 
-    _checkAllAssetCaps(accountId, tradeId);
+    viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
 
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
-    bool isRiskReducing = true;
+    bool riskAdding = false;
 
     // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
-      // allow cash
       if (address(assetDeltas[i].asset) == address(cashAsset)) {
-        if (assetDeltas[i].delta < 0) isRiskReducing = false;
+        if (assetDeltas[i].delta < 0) riskAdding = true;
         continue;
       }
 
-      AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
+      AssetDetail memory detail = _assetDetails[assetDeltas[i].asset];
 
       if (!detail.isWhitelisted) revert SRM_UnsupportedAsset();
 
@@ -287,18 +281,18 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
         // settle perp PNL into cash if the user traded perp in this tx.
         _settlePerpRealizedPNL(perp, accountId);
 
-        if (isRiskReducing) {
+        if (!riskAdding) {
           // check if the delta and position has same sign
           // if so, we cannot bypass the risk check
           int perpPosition = subAccounts.getBalance(accountId, perp, 0);
           if (perpPosition != 0 && assetDeltas[i].delta * perpPosition > 0) {
-            isRiskReducing = false;
+            riskAdding = true;
           }
         }
       } else if (detail.assetType == AssetType.Option) {
-        // if the user is only reducing option position, we don't need to check margin
+        // if the user is shorting more options, we need to check margin
         if (assetDeltas[i].delta < 0) {
-          isRiskReducing = false;
+          riskAdding = true;
         }
       }
     }
@@ -306,8 +300,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // iterate through delta again and charge all fees
     _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
 
-    // if all trades are only reducing risk, return early
-    if (isRiskReducing) return;
+    // only bypass risk check if we are only reducing perp position, increasing cash, or increasing option position
+    if (!riskAdding) return;
 
     _performRiskCheck(accountId, assetDeltas);
   }
@@ -316,8 +310,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev perform a risk check on the account.
    */
   function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    StandardManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
+    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
 
     // account can only have negative cash if borrowing is enabled
     if (!borrowingEnabled && portfolio.cash < 0) revert SRM_NoNegativeCash();
@@ -327,7 +320,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     // cash deposited has to cover the margin requirement
     if (postIM < 0) {
-      StandardManagerPortfolio memory prePortfolio = _arrangePortfolio(_undoAssetDeltas(accountId, assetDeltas));
+      StandardManagerPortfolio memory prePortfolio =
+        ISRMPortfolioViewer(address(viewer)).getSRMPortfolioPreTrade(accountId, assetDeltas);
 
       (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
       (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
@@ -335,107 +329,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       // allow the trade to pass if the net margin increased (risk reduced)
       if (postMM > preMM) return;
 
-      revert SRM_PortfolioBelowMargin(accountId, -(postIM));
+      revert SRM_PortfolioBelowMargin();
     }
-  }
-
-  /**
-   * @notice Arrange balances into portfolio struct
-   * @param assets Array of balances for given asset and subId.
-   */
-  function _arrangePortfolio(ISubAccounts.AssetBalance[] memory assets)
-    internal
-    view
-    returns (StandardManagerPortfolio memory)
-  {
-    (uint marketCount, int cashBalance, uint marketBitMap) = _countMarketsAndParseCash(assets);
-
-    StandardManagerPortfolio memory portfolio =
-      StandardManagerPortfolio({cash: cashBalance, marketHoldings: new MarketHolding[](marketCount)});
-
-    // for each market, need to count how many expires there are
-    // and initiate a ExpiryHolding[] array in the corresponding marketHolding
-    for (uint i; i < marketCount; i++) {
-      // 1. find the first market id
-      uint8 marketId;
-      for (uint8 id = 1; id < 256; id++) {
-        uint masked = (1 << id);
-        if (marketBitMap & masked == 0) continue;
-        // mark this market id as used => flip it back to 0 with xor
-        marketBitMap ^= masked;
-        marketId = id;
-        break;
-      }
-      portfolio.marketHoldings[i].marketId = marketId;
-
-      // 2. filter through all balances and only find perp or option for this market
-      uint numExpires;
-      uint[] memory seenExpires = new uint[](assets.length);
-      uint[] memory expiryOptionCounts = new uint[](assets.length);
-
-      for (uint j; j < assets.length; j++) {
-        ISubAccounts.AssetBalance memory currentAsset = assets[j];
-        if (currentAsset.asset == cashAsset) continue;
-
-        AssetDetail memory detail = assetDetails[currentAsset.asset];
-        if (detail.marketId != marketId) continue;
-
-        if (detail.assetType == AssetType.Perpetual) {
-          // if it's perp asset, update the perp position directly
-          portfolio.marketHoldings[i].perp = IPerpAsset(address(currentAsset.asset));
-          portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
-          portfolio.marketHoldings[i].depegPenaltyPos += SignedMath.abs(currentAsset.balance).toInt256();
-        } else if (detail.assetType == AssetType.Option) {
-          portfolio.marketHoldings[i].option = IOption(address(currentAsset.asset));
-          (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
-          uint expiryIndex;
-          (numExpires, expiryIndex) = seenExpires.addUniqueToArray(expiry, numExpires);
-          // print all seen expiries
-          expiryOptionCounts[expiryIndex]++;
-        } else {
-          // base asset, update holding.basePosition directly. This balance should always be positive
-          portfolio.marketHoldings[i].basePosition = currentAsset.balance;
-        }
-      }
-
-      // 3. initiate expiry holdings in a marketHolding
-      portfolio.marketHoldings[i].expiryHoldings = new ExpiryHolding[](numExpires);
-      // 4. initiate the option array in each expiry holding
-      for (uint j; j < numExpires; j++) {
-        portfolio.marketHoldings[i].expiryHoldings[j].expiry = seenExpires[j];
-        portfolio.marketHoldings[i].expiryHoldings[j].options = new Option[](expiryOptionCounts[j]);
-        // portfolio.marketHoldings[i].expiryHoldings[j].minConfidence = 1e18;
-      }
-
-      // 5. put options into expiry holdings
-      for (uint j; j < assets.length; j++) {
-        ISubAccounts.AssetBalance memory currentAsset = assets[j];
-        if (currentAsset.asset == cashAsset) continue;
-
-        AssetDetail memory detail = assetDetails[currentAsset.asset];
-        if (detail.marketId != marketId) continue;
-
-        if (detail.assetType == AssetType.Option) {
-          (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
-          uint expiryIndex = seenExpires.findInArray(expiry, numExpires).toUint256();
-          uint nextIndex = portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions;
-          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].options[nextIndex] =
-            Option({strike: strike, isCall: isCall, balance: currentAsset.balance});
-
-          portfolio.marketHoldings[i].expiryHoldings[expiryIndex].numOptions++;
-          if (isCall) {
-            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
-          }
-          if (currentAsset.balance < 0) {
-            // short option will be added to depegPenaltyPos
-            portfolio.marketHoldings[i].depegPenaltyPos -= currentAsset.balance;
-            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].totalShortPositions -= currentAsset.balance;
-          }
-        }
-      }
-    }
-
-    return portfolio;
   }
 
   /**
@@ -536,7 +431,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint requirement = isInitial
       ? perpMarginRequirements[marketHolding.marketId].imPerpReq
       : perpMarginRequirements[marketHolding.marketId].mmPerpReq;
-    netMargin = -notional.multiplyDecimal(requirement).toInt256();
+    netMargin = -int(notional.multiplyDecimal(requirement));
 
     if (!isInitial) return netMargin;
 
@@ -604,7 +499,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev calculate the margin contributed by base asset, and the mark to market value
    */
-  function _getBaseMarginAndMtM(uint8 marketId, int position, int indexPrice, uint indexConf, bool isInitial)
+  function _getBaseMarginAndMtM(uint marketId, int position, int indexPrice, uint indexConf, bool isInitial)
     internal
     view
     returns (int baseMargin, int baseMarkToMarket)
@@ -640,8 +535,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param expiryHolding strikes for single expiry
    */
   function _calcNetBasicMarginSingleExpiry(
-    uint8 marketId,
-    IOption option,
+    uint marketId,
+    IOptionAsset option,
     ExpiryHolding memory expiryHolding,
     int indexPrice,
     int forwardPrice,
@@ -678,8 +573,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Settle expired option positions in an account.
    * @dev This function can be called by anyone
    */
-  function settleOptions(IOption option, uint accountId) external {
-    if (!assetDetails[option].isWhitelisted) revert SRM_UnsupportedAsset();
+  function settleOptions(IOptionAsset option, uint accountId) external {
+    if (!_assetDetails[option].isWhitelisted) revert SRM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
   }
 
@@ -687,20 +582,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev settle perp value with index price
    */
   function settlePerpsWithIndex(IPerpAsset perp, uint accountId) external {
-    if (!assetDetails[perp].isWhitelisted) revert SRM_UnsupportedAsset();
+    if (!_assetDetails[perp].isWhitelisted) revert SRM_UnsupportedAsset();
     _settlePerpUnrealizedPNL(perp, accountId);
-  }
-
-  /**
-   * @dev merge multiple standard accounts into one. A risk check is performed at the end to make sure it's valid
-   * @param mergeIntoId the account id to merge into
-   * @param mergeFromIds the account ids to merge from
-   */
-  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    _mergeAccounts(mergeIntoId, mergeFromIds);
-
-    // make sure ending account is solvent (above initial margin)
-    _performRiskCheck(mergeIntoId, new ISubAccounts.AssetDelta[](0));
   }
 
   ////////////////////////
@@ -708,13 +591,26 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ////////////////////////
 
   /**
+   * @dev return the detail info of an asset. Should be empty if this is not trusted by standard manager
+   */
+  function assetDetails(IAsset asset) external view returns (AssetDetail memory) {
+    return _assetDetails[asset];
+  }
+
+  /**
+   * @dev return the addresses of feeds and pricing modules for a specific market
+   */
+  function getMarketFeeds(uint marketId) external view returns (ISpotFeed, IForwardFeed, IVolFeed, IOptionPricing) {
+    return (spotFeeds[marketId], forwardFeeds[marketId], volFeeds[marketId], pricingModules[marketId]);
+  }
+
+  /**
    * @dev return the total net margin of an account
    * @return margin if it is negative, the account is insolvent
    */
   function getMargin(uint accountId, bool isInitial) public view returns (int) {
     // get portfolio from array of balances
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    StandardManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
+    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     (int margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
     return margin;
   }
@@ -723,8 +619,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev the function used by the auction contract
    */
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint) external view returns (int, int) {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    StandardManagerPortfolio memory portfolio = _arrangePortfolio(assetBalances);
+    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     return _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
   }
 
@@ -733,7 +628,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @return margin negative number, indicate margin requirement for a position
    * @return markToMarket the estimated worth of this position
    */
-  function getIsolatedMargin(uint8 marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
+  function getIsolatedMargin(uint marketId, uint strike, uint expiry, bool isCall, int balance, bool isInitial)
     external
     view
     returns (int margin, int markToMarket)
@@ -748,7 +643,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   //       Internal       //
   //////////////////////////
 
-  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] calldata assetDeltas)
+  function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
   {
     if (feeBypassedCaller[caller]) return;
@@ -756,12 +651,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint fee;
     // iterate through all asset changes, if it's option asset, change if OI increased
     for (uint i; i < assetDeltas.length; i++) {
-      AssetDetail memory detail = assetDetails[assetDeltas[i].asset];
+      AssetDetail memory detail = _assetDetails[assetDeltas[i].asset];
       if (detail.assetType == AssetType.Perpetual) {
         IPerpAsset perp = IPerpAsset(address(assetDeltas[i].asset));
         fee += _getPerpOIFee(perp, assetDeltas[i].delta, tradeId);
       } else if (detail.assetType == AssetType.Option) {
-        IOption option = IOption(address(assetDeltas[i].asset));
+        IOptionAsset option = IOptionAsset(address(assetDeltas[i].asset));
         IForwardFeed forwardFeed = forwardFeeds[detail.marketId];
         fee += _getOptionOIFee(option, forwardFeed, assetDeltas[i].delta, assetDeltas[i].subId, tradeId);
       }
@@ -771,42 +666,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev Count how many market the user has
-   */
-  function _countMarketsAndParseCash(ISubAccounts.AssetBalance[] memory userBalances)
-    internal
-    view
-    returns (uint marketCount, int cashBalance, uint trackedMarketBitMap)
-  {
-    ISubAccounts.AssetBalance memory currentAsset;
-
-    // count how many unique markets there are
-    for (uint i; i < userBalances.length; ++i) {
-      currentAsset = userBalances[i];
-      if (address(currentAsset.asset) == address(cashAsset)) {
-        cashBalance = currentAsset.balance;
-        continue;
-      }
-
-      // else, it must be perp or option for one of the registered assets
-
-      // if marketId 1 is tracked, trackedMarketBitMap    = 0000..00010
-      // if marketId 2 is tracked, trackedMarketBitMap    = 0000..00100
-      // if both markets are tracked, trackedMarketBitMap = 0000..00110
-      AssetDetail memory detail = assetDetails[userBalances[i].asset];
-      uint marketBit = 1 << detail.marketId;
-      if (trackedMarketBitMap & marketBit == 0) {
-        marketCount++;
-        trackedMarketBitMap |= marketBit;
-      }
-    }
-  }
-
-  /**
    * @dev calculate isolated margin requirement for a given number of calls and puts
    */
   function _getIsolatedMargin(
-    uint8 marketId,
+    uint marketId,
     uint expiry,
     Option memory optionPos,
     int indexPrice,
@@ -834,7 +697,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev expected to return a negative number
    */
   function _getIsolatedMarginForPut(
-    uint8 marketId,
+    uint marketId,
     int markToMarket,
     uint strike,
     int amount,
@@ -866,7 +729,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param amount expected a negative number, representing amount of shorts
    */
   function _getIsolatedMarginForCall(
-    uint8 marketId,
+    uint marketId,
     int markToMarket,
     uint strike,
     int amount,
@@ -894,7 +757,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param price Assumed scenario price.
    * @return payoff Net $ profit or loss of the portfolio given a settlement price.
    */
-  function _calcMaxLoss(IOption option, ExpiryHolding memory expiryHolding, uint price)
+  function _calcMaxLoss(IOptionAsset option, ExpiryHolding memory expiryHolding, uint price)
     internal
     pure
     returns (int payoff)
@@ -913,7 +776,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function _getIndexPrice(uint marketId) internal view returns (int, uint) {
     (uint spot, uint confidence) = spotFeeds[marketId].getSpot();
-    return (spot.toInt256(), confidence);
+    return (int(spot), confidence);
   }
 
   /**
@@ -922,14 +785,14 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function _getForwardPrice(uint marketId, uint expiry) internal view returns (int, uint) {
     (uint fwdPrice, uint confidence) = forwardFeeds[marketId].getForwardPrice(uint64(expiry));
     if (fwdPrice == 0) revert SRM_NoForwardPrice();
-    return (fwdPrice.toInt256(), confidence);
+    return (int(fwdPrice), confidence);
   }
 
   /**
    * @dev get the mark to market value of an option by querying the pricing module
    */
   function _getMarkToMarket(
-    uint8 marketId,
+    uint marketId,
     int amount,
     int forwardPrice,
     uint strike,

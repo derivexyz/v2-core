@@ -1,31 +1,13 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-
 import "../../../../src/risk-managers/PMRM.sol";
-import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
-import {IManager} from "../../../../src/interfaces/IManager.sol";
+import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import {IAsset} from "../../../../src/interfaces/IAsset.sol";
 import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
-
-import "../../../shared/mocks/MockManager.sol";
-import "../../../shared/mocks/MockERC20.sol";
-import "../../../shared/mocks/MockAsset.sol";
-import "../../../shared/mocks/MockOption.sol";
-import "../../../shared/mocks/MockSM.sol";
-import "../../../shared/mocks/MockFeeds.sol";
-
-import "../../../risk-managers/mocks/MockDutchAuction.sol";
-import "../../../shared/utils/JsonMechIO.sol";
-
-import "../../../shared/mocks/MockFeeds.sol";
-import "../../../../src/assets/WrappedERC20Asset.sol";
-import "../../../shared/mocks/MockPerp.sol";
+import "../../../shared/mocks/MockOptionAsset.sol";
 
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
-
-import "forge-std/console2.sol";
 
 contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
   function testPMRM_perpTransfer() public {

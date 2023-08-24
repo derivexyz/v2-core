@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
+import "../../../risk-managers/mocks/MockDutchAuction.sol";
 import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
@@ -33,10 +34,13 @@ contract UNIT_CashAssetTotalSupplyBorrow is Test {
 
     usdc = new MockERC20("USDC", "USDC");
 
+    MockDutchAuction auction = new MockDutchAuction();
+
     rateModel = new MockInterestRateModel(1e18);
     cashAsset = new CashAsset(subAccounts, usdc, rateModel);
 
     cashAsset.setWhitelistManager(address(manager), true);
+    cashAsset.setLiquidationModule(auction);
 
     // 10000 USDC with 18 decimals
     usdc.mint(address(this), depositedAmount);

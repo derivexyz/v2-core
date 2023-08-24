@@ -46,9 +46,9 @@ interface ISubAccounts is IERC721 {
   }
 
   struct AssetTransfer {
-    // credited by amount
-    uint fromAcc;
     // debited by amount
+    uint fromAcc;
+    // credited by amount
     uint toAcc;
     // asset contract address
     IAsset asset;
@@ -235,6 +235,10 @@ interface ISubAccounts is IERC721 {
    */
   event UnorderedNonceInvalidated(address owner, uint wordPos, uint mask);
 
+  event AssetTransferred(
+    uint indexed fromAcc, uint indexed toAcc, IAsset asset, uint subId, int amount, bytes32 assetData, uint tradeId
+  );
+
   /**
    * @dev Emitted during any balance change event. This includes:
    *      1. single transfer
@@ -249,7 +253,8 @@ interface ISubAccounts is IERC721 {
     HeldAsset indexed assetAndSubId,
     int amount,
     int preBalance,
-    int postBalance
+    int postBalance,
+    uint tradeId
   );
 
   ////////////

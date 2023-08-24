@@ -28,12 +28,24 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     _startDefaultInsolventAuction(aliceAcc);
 
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
 
     // pay 0 and receive 0 extra cash from SM
     assertEq(finalPercentage, 1e18);
     assertEq(cashFromBidder, 0);
     assertEq(cashToBidder, 0);
+  }
+
+  function testCannotBidOnInsolventAuctionIfAccountUnderwater() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    // bidder bob is also under water
+    manager.setMockMargin(bobAcc, false, scenario, -300e18);
+
+    vm.prank(bob);
+
+    vm.expectRevert(IDutchAuction.DA_BidderInsolvent.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
   }
 
   function testBidForInsolventAuctionFromSM() public {
@@ -44,7 +56,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     // bid 50% of the portfolio
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0);
 
     // 1% of 384 * 50% = 19.2
     uint expectedTotalPayoutFromSM = 1.92e18;
@@ -62,7 +74,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     vm.prank(bob);
     // bid 100% of the portfolio
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
 
     // 5% of 384 = 19.2
     uint expectedPayout = 19.2e18;
@@ -82,7 +94,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // bid 100% of the portfolio
     vm.prank(bob);
-    dutchAuction.bid(aliceAcc, bobAcc, 1e18);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
 
     vm.expectRevert(IDutchAuction.DA_NotOngoingAuction.selector);
     dutchAuction.continueInsolventAuction(aliceAcc);
@@ -118,6 +130,20 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
 
+  function testInsolventAuctionBelowThresholdBlockWithdraw() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+  }
+
+  function testInsolventAuctionsAboveThresholdDoesNotBlockWithdraw() public {
+    dutchAuction.setWithdrawBlockThreshold(-500e18);
+
+    _startDefaultInsolventAuction(aliceAcc);
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+  }
+
   function testTerminatesInsolventAuction() public {
     _startDefaultInsolventAuction(aliceAcc);
 
@@ -127,6 +153,32 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+  }
+
+  function testTerminatingAuctionFreeWithdrawLock() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+    // lock withdraw
+
+    // set maintenance margin > 0
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+  }
+
+  function testTerminatingAuctionDoesNotFreeLockIfOthersOutstanding() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+    _startDefaultInsolventAuction(bobAcc);
+
+    // alice is back above margin, auction terminated
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+    dutchAuction.terminateAuction(aliceAcc);
+
+    // still blocked because of bob
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
   }
 
   function _startDefaultInsolventAuction(uint acc) internal {

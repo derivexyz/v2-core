@@ -8,9 +8,17 @@ import {IForwardFeed} from "../../../src/interfaces/IForwardFeed.sol";
 import {ISettlementFeed} from "../../../src/interfaces/ISettlementFeed.sol";
 
 import {IDataReceiver} from "../../../src/interfaces/IDataReceiver.sol";
-import {IAllowList} from "../../../src/interfaces/IAllowList.sol";
+import {ITraderCheck} from "../../../src/interfaces/ITraderCheck.sol";
 
-contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver, IAllowList {
+contract MockFeeds is
+  ISpotFeed,
+  IVolFeed,
+  IForwardFeed,
+  IInterestRateFeed,
+  ISettlementFeed,
+  IDataReceiver,
+  ITraderCheck
+{
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;

@@ -1,0 +1,6 @@
+{
+  "usdc": "0xe80F2a02398BBf1ab2C9cc52caD1978159c215BD",
+  "useMockedFeed": true,
+  "wbtc": "0xF1493F3602Ab0fC576375a20D7E4B4714DB4422d",
+  "weth": "0x3a34565D81156cF0B1b9bC5f14FD00333bcf6B93"
+}

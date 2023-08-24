@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
-//
 
 import "forge-std/Test.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
-import "../../../src/assets/Option.sol";
+import "../../../src/assets/OptionAsset.sol";
 import "../../../src/assets/PerpAsset.sol";
 import "../../../src/assets/InterestRateModel.sol";
 
@@ -17,6 +16,7 @@ import "../../../src/SubAccounts.sol";
 
 import "../../../src/risk-managers/StandardManager.sol";
 import "../../../src/risk-managers/PMRM.sol";
+import "../../../src/risk-managers/SRMPortfolioViewer.sol";
 
 import "../../../src/feeds/OptionPricing.sol";
 
@@ -32,6 +32,9 @@ import "../../../src/feeds/LyraForwardFeed.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {IPMRMLib} from "../../../src/interfaces/IPMRMLib.sol";
+import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
+
+import "../../../scripts/config.sol";
 
 /**
  * @dev real Accounts contract
@@ -53,10 +56,10 @@ contract IntegrationTestBase is Test {
   int public constant ETH_PRICE = 2000e18;
 
   struct Market {
-    uint8 id;
+    uint id;
     MockERC20 erc20;
     // lyra asset
-    Option option;
+    OptionAsset option;
     PerpAsset perp;
     WrappedERC20Asset base;
     // feeds
@@ -71,27 +74,30 @@ contract IntegrationTestBase is Test {
     OptionPricing pricing;
     // manager for specific market
     PMRM pmrm;
+    PMRMLib pmrmLib;
+    BasePortfolioViewer pmrmViewer;
   }
 
-  SubAccounts subAccounts;
-  MockERC20 usdc;
-  MockERC20 weth;
+  SubAccounts public subAccounts;
+  MockERC20 public usdc;
+  MockERC20 public weth;
 
   // Lyra Assets
-  CashAsset cash;
+  CashAsset public cash;
 
-  SecurityModule securityModule;
-  InterestRateModel rateModel;
-  DutchAuction auction;
+  SecurityModule public securityModule;
+  InterestRateModel public rateModel;
+  DutchAuction public auction;
 
   // Single standard manager shared across all markets
-  StandardManager srm;
+  StandardManager public srm;
+  SRMPortfolioViewer public portfolioViewer;
 
-  MockFeeds stableFeed;
+  MockFeeds internal stableFeed;
 
-  uint8 nextId = 1;
+  uint8 internal nextId = 1;
 
-  mapping(string => Market) markets;
+  mapping(string => Market) internal markets;
 
   function _setupIntegrationTestComplete() internal {
     // deploy Accounts, cash, security module, auction
@@ -129,21 +135,26 @@ contract IntegrationTestBase is Test {
     cash = new CashAsset(subAccounts, usdc, rateModel);
 
     // Nonce 5: Deploy SM
-    address srmAddr = _predictAddress(address(this), 7);
+    address srmAddr = _predictAddress(address(this), 8);
     securityModule = new SecurityModule(subAccounts, cash, IManager(srmAddr));
 
     // Nonce 6: Deploy Auction
     auction = new DutchAuction(subAccounts, securityModule, cash);
 
-    // Nonce 7: Deploy Standard Manager. Shared by all assets
-    srm = new StandardManager(subAccounts, cash, auction);
+    // Nonce 7: Deploy Portfolio Viewer
+    portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
+
+    // Nonce 8: Deploy Standard Manager. Shared by all assets
+    srm = new StandardManager(subAccounts, cash, auction, portfolioViewer);
     assertEq(address(srm), address(srmAddr));
+
+    portfolioViewer.setStandardManager(srm);
 
     // Deploy USDC stable feed
     stableFeed = new MockFeeds();
     stableFeed.setSpot(1e18, 1e18);
 
-    cash.setLiquidationModule(address(auction));
+    cash.setLiquidationModule(auction);
     cash.setSmFeeRecipient(securityModule.accountId());
     smAcc = securityModule.accountId();
 
@@ -166,11 +177,11 @@ contract IntegrationTestBase is Test {
     srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
   }
 
-  function _deployMarket(string memory key, uint96 initSpotPrice) internal returns (uint8 marketId) {
+  function _deployMarket(string memory key, uint96 initSpotPrice) internal returns (uint marketId) {
     marketId = _deployMarketContracts(key);
 
     // set up PMRM for this market
-    _setPMRMParams(markets[key].pmrm);
+    _setPMRMParams(markets[key].pmrm, markets[key].pmrmLib);
     // whitelist PMRM to control all assets
     _setupAssetCapsForManager(key, markets[key].pmrm, 1000e18);
 
@@ -187,20 +198,17 @@ contract IntegrationTestBase is Test {
     _setSpotPrice(key, initSpotPrice, 1e18);
   }
 
-  function _deployMarketContracts(string memory token) internal returns (uint8 marketId) {
+  function _deployMarketContracts(string memory token) internal returns (uint marketId) {
     Market storage market = markets[token];
     marketId = nextId++;
     market.id = marketId;
 
     MockERC20 erc20 = new MockERC20(token, token);
 
-    // todo use real feed for all feeds
-    // market.feed = new MockFeeds();
-
     market.spotFeed = new LyraSpotFeed();
     market.forwardFeed = new LyraForwardFeed(market.spotFeed);
 
-    Option option = new Option(subAccounts, address(market.forwardFeed));
+    OptionAsset option = new OptionAsset(subAccounts, address(market.forwardFeed));
 
     PerpAsset perp = new PerpAsset(subAccounts, 0.0075e18);
 
@@ -228,7 +236,7 @@ contract IntegrationTestBase is Test {
     market.volFeed.setHeartbeat(20 minutes);
     market.rateFeed.setHeartbeat(24 hours);
     market.forwardFeed.setHeartbeat(20 minutes);
-    market.forwardFeed.setSettlementHeartbeat(60 minutes); // todo: update this?
+    market.forwardFeed.setSettlementHeartbeat(60 minutes);
 
     market.pricing = new OptionPricing();
 
@@ -241,15 +249,19 @@ contract IntegrationTestBase is Test {
       settlementFeed: market.forwardFeed
     });
 
+    market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);
+    market.pmrmLib = new PMRMLib(market.pricing);
+
     market.pmrm = new PMRM(
       subAccounts, 
       cash, 
       option, 
       perp, 
-      market.pricing,
       base, 
       auction,
-      feeds
+      feeds,
+      market.pmrmViewer,
+      market.pmrmLib
     );
 
     perp.setSpotFeed(market.spotFeed);
@@ -291,13 +303,7 @@ contract IntegrationTestBase is Test {
     srm.whitelistAsset(market.base, market.id, IStandardManager.AssetType.Base);
 
     // set oracles
-    srm.setOraclesForMarket(
-      market.id,
-      market.spotFeed, // spot
-      market.forwardFeed, // forward
-      market.forwardFeed, // settlement feed
-      market.volFeed // vol feed
-    );
+    srm.setOraclesForMarket(market.id, market.spotFeed, market.forwardFeed, market.volFeed);
 
     // set params
     IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({
@@ -402,7 +408,7 @@ contract IntegrationTestBase is Test {
   /**
    * @dev view function to help writing integration test
    */
-  function getOptionBalance(IOption option, uint acc, uint96 subId) public view returns (int) {
+  function getOptionBalance(IOptionAsset option, uint acc, uint96 subId) public view returns (int) {
     return subAccounts.getBalance(acc, option, subId);
   }
 
@@ -462,8 +468,8 @@ contract IntegrationTestBase is Test {
       data: data,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     // sign data
@@ -491,8 +497,8 @@ contract IntegrationTestBase is Test {
       data: abi.encode(expiry, startAggregate, currAggregate, diff, 1e18),
       timestamp: uint64(expiry), // timestamp need to be expiry to be used as settlement data
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     feed.acceptData(_signFeedData(feed, keeperPk, feedData));
@@ -518,8 +524,8 @@ contract IntegrationTestBase is Test {
       data: abi.encode(expiry, 0, 0, diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     feed.acceptData(_signFeedData(feed, keeperPk, feedData));
@@ -542,8 +548,8 @@ contract IntegrationTestBase is Test {
       data: abi.encode(diff, conf),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     bytes memory data = _signFeedData(perpFeed, keeperPk, feedData);
@@ -579,8 +585,8 @@ contract IntegrationTestBase is Test {
       data: rateData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
 
     // sign data
@@ -597,86 +603,32 @@ contract IntegrationTestBase is Test {
     bytes32 structHash = hashFeedData(feed, feedData);
     bytes32 domainSeparator = feed.domainSeparator();
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-    feedData.signature = bytes.concat(r, s, bytes1(v));
+    feedData.signatures[0] = bytes.concat(r, s, bytes1(v));
+    feedData.signers[0] = vm.addr(privateKey);
 
     return abi.encode(feedData);
   }
 
   function hashFeedData(IBaseLyraFeed feed, IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
     bytes32 typeHash = feed.FEED_DATA_TYPEHASH();
-    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp, feedData.signer));
+    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp));
   }
 
-  function _setPMRMParams(PMRM pmrm) internal {
-    IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
-      scenarioSpotUp: 1.05e18,
-      scenarioSpotDown: 0.95e18,
-      basisContAddFactor: 0.25e18,
-      basisContMultFactor: 0.01e18
-    });
+  function _setPMRMParams(PMRM pmrm, PMRMLib pmrmLib) internal {
+    (
+      IPMRMLib.BasisContingencyParameters memory basisContParams,
+      IPMRMLib.OtherContingencyParameters memory otherContParams,
+      IPMRMLib.MarginParameters memory marginParams,
+      IPMRMLib.VolShockParameters memory volShockParams
+    ) = getPMRMParams();
 
-    IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
-      pegLossThreshold: 0.98e18,
-      pegLossFactor: 2e18,
-      confThreshold: 0.6e18,
-      confMargin: 0.5e18,
-      basePercent: 0.02e18,
-      perpPercent: 0.02e18,
-      optionPercent: 0.01e18
-    });
+    pmrmLib.setBasisContingencyParams(basisContParams);
+    pmrmLib.setOtherContingencyParams(otherContParams);
+    pmrmLib.setMarginParams(marginParams);
+    pmrmLib.setVolShockParams(volShockParams);
 
-    IPMRMLib.MarginParameters memory marginParams = IPMRMLib.MarginParameters({
-      imFactor: 1.3e18,
-      baseStaticDiscount: 0.95e18,
-      rateMultScale: 4e18,
-      rateAddScale: 0.05e18
-    });
-
-    IPMRMLib.VolShockParameters memory volShockParams = IPMRMLib.VolShockParameters({
-      volRangeUp: 0.45e18,
-      volRangeDown: 0.3e18,
-      shortTermPower: 0.3e18,
-      longTermPower: 0.13e18,
-      dteFloor: 1 days
-    });
-
-    pmrm.setBasisContingencyParams(basisContParams);
-    pmrm.setOtherContingencyParams(otherContParams);
-    pmrm.setMarginParams(marginParams);
-    pmrm.setVolShockParams(volShockParams);
-
-    _addScenarios(pmrm);
-  }
-
-  function _addScenarios(PMRM pmrm) internal {
-    // Scenario Number	Spot Shock (of max)	Vol Shock (of max)
-
-    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](21);
-
-    // add these 27 scenarios to the array
-    scenarios[0] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[3] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[6] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[9] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[12] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[15] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[17] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[18] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
-
-    pmrm.setScenarios(scenarios);
+    // _addScenarios(pmrm);
+    pmrm.setScenarios(getDefaultScenarios());
   }
 
   function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (IBaseLyraFeed.FeedData memory) {
@@ -695,14 +647,15 @@ contract IntegrationTestBase is Test {
       data: volData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: keeper,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
   }
 
   ////////////////
   //    Misc    //
   ////////////////
+
   /**
    * @dev predict the address of the next contract being deployed
    */

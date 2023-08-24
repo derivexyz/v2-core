@@ -20,12 +20,14 @@ import {CashAsset} from "../../../../../src/assets/CashAsset.sol";
 import {WrappedERC20Asset} from "../../../../../src/assets/WrappedERC20Asset.sol";
 import {OptionPricing} from "../../../../../src/feeds/OptionPricing.sol";
 import {PMRM} from "../../../../../src/risk-managers/PMRM.sol";
+import {PMRMLib} from "../../../../../src/risk-managers/PMRMLib.sol";
+import {BasePortfolioViewer} from "../../../../../src/risk-managers/BasePortfolioViewer.sol";
 import {DutchAuction} from "../../../../../src/liquidation/DutchAuction.sol";
 
 import {MockManager} from "../../../../shared/mocks/MockManager.sol";
 import {MockERC20} from "../../../../shared/mocks/MockERC20.sol";
 import {MockAsset} from "../../../../shared/mocks/MockAsset.sol";
-import {MockOption} from "../../../../shared/mocks/MockOption.sol";
+import {MockOption} from "../../../../shared/mocks/MockOptionAsset.sol";
 import {MockSM} from "../../../../shared/mocks/MockSM.sol";
 import {MockFeeds} from "../../../../shared/mocks/MockFeeds.sol";
 import {MockFeeds} from "../../../../shared/mocks/MockFeeds.sol";
@@ -64,6 +66,9 @@ contract PMRMTestBase is JsonMechIO {
   uint aliceAcc;
   uint bobAcc;
 
+  BasePortfolioViewer viewer;
+  PMRMLib lib;
+
   function setUp() public virtual {
     vm.warp(1640995200); // 1st jan 2022
 
@@ -87,22 +92,26 @@ contract PMRMTestBase is JsonMechIO {
     sm = new MockSM(subAccounts, cash);
     auction = new DutchAuction(subAccounts, sm, cash);
 
+    viewer = new BasePortfolioViewer(subAccounts, cash);
+    lib = new PMRMLib(optionPricing);
+
     pmrm = new PMRMPublic(
       subAccounts,
       cash,
       option,
       mockPerp,
-      IOptionPricing(optionPricing),
       baseAsset,
       auction,
       IPMRM.Feeds({
-    spotFeed: ISpotFeed(feed),
-    stableFeed: ISpotFeed(stableFeed),
-    forwardFeed: IForwardFeed(feed),
-    interestRateFeed: IInterestRateFeed(feed),
-    volFeed: IVolFeed(feed),
-    settlementFeed: ISettlementFeed(feed)
-    })
+        spotFeed: ISpotFeed(feed),
+        stableFeed: ISpotFeed(stableFeed),
+        forwardFeed: IForwardFeed(feed),
+        interestRateFeed: IInterestRateFeed(feed),
+        volFeed: IVolFeed(feed),
+        settlementFeed: ISettlementFeed(feed)
+      }),
+      viewer,
+      lib
     );
     setDefaultParameters();
     addScenarios();
@@ -155,10 +164,10 @@ contract PMRMTestBase is JsonMechIO {
       dteFloor: 1 days
     });
 
-    pmrm.setBasisContingencyParams(basisContParams);
-    pmrm.setOtherContingencyParams(otherContParams);
-    pmrm.setMarginParams(marginParams);
-    pmrm.setVolShockParams(volShockParams);
+    lib.setBasisContingencyParams(basisContParams);
+    lib.setOtherContingencyParams(otherContParams);
+    lib.setMarginParams(marginParams);
+    lib.setVolShockParams(volShockParams);
   }
 
   function _logPortfolio(IPMRM.Portfolio memory portfolio) internal view {

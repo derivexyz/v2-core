@@ -115,6 +115,6 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
     });
     volDetails[expiry] = newVolDetails;
 
-    emit VolDataUpdated(feedData.signer, expiry, newVolDetails);
+    emit VolDataUpdated(expiry, newVolDetails);
   }
 }

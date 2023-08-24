@@ -5,17 +5,17 @@ pragma solidity ^0.8.18;
 import "./BaseLyraFeed.sol";
 
 // interfaces
-import {IAllowList} from "../interfaces/IAllowList.sol";
+import {ITraderCheck} from "../interfaces/ITraderCheck.sol";
 
 /**
  * @title AllowList
  * @author Lyra
- * @notice Tracks users that are allowed to trade
+ * @notice This is an example implementation of ITraderCheck that only allows whitelisted users to trade
  */
-contract AllowList is BaseLyraFeed, IAllowList {
+contract AllowList is BaseLyraFeed, ITraderCheck {
   // @dev If disabled, all users can trade
   bool public allowListEnabled;
-  // user => allowed
+
   mapping(address => AllowListDetails) public allowListDetails;
 
   ////////////////////////
@@ -64,6 +64,6 @@ contract AllowList is BaseLyraFeed, IAllowList {
     AllowListDetails memory details = AllowListDetails({timestamp: feedData.timestamp, allowed: allowed});
     allowListDetails[user] = details;
 
-    emit AllowListUpdated(feedData.signer, user, details);
+    emit AllowListUpdated(user, details);
   }
 }

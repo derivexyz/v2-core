@@ -7,13 +7,14 @@ contract PMRMPublic is PMRM {
   constructor(
     ISubAccounts subAccounts_,
     ICashAsset cashAsset_,
-    IOption option_,
+    IOptionAsset option_,
     IPerpAsset perp_,
-    IOptionPricing optionPricing_,
     IWrappedERC20Asset baseAsset_,
     IDutchAuction liquidation_,
-    Feeds memory feeds_
-  ) PMRM(subAccounts_, cashAsset_, option_, perp_, optionPricing_, baseAsset_, liquidation_, feeds_) {}
+    Feeds memory feeds_,
+    IBasePortfolioViewer viewer_,
+    IPMRMLib lib_
+  ) PMRM(subAccounts_, cashAsset_, option_, perp_, baseAsset_, liquidation_, feeds_, viewer_, lib_) {}
 
   function arrangePortfolioByBalances(ISubAccounts.AssetBalance[] memory assets)
     external
@@ -25,7 +26,7 @@ contract PMRMPublic is PMRM {
 
   function getMarginByBalances(ISubAccounts.AssetBalance[] memory assets, bool isInitial) external view returns (int) {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, assets, true);
-    (int im,,) = _getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
+    (int im,,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
     return im;
   }
 
@@ -58,6 +59,6 @@ contract PMRMPublic is PMRM {
     IPMRM.Scenario[] memory scenarios,
     bool useBasisContingency
   ) external view returns (int, int, uint) {
-    return _getMarginAndMarkToMarket(portfolio, isInitial, scenarios, useBasisContingency);
+    return lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios, useBasisContingency);
   }
 }

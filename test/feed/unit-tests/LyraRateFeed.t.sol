@@ -104,6 +104,7 @@ contract UNIT_LyraRateFeed is LyraFeedTestUtils {
 
     // replace pkOwner with random signer address
     IBaseLyraFeed.FeedData memory feedData = _getDefaultRateData();
+    feedData.signers[0] = pkOwner;
     bytes memory data = _signFeedData(feed, pk2, feedData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
@@ -118,8 +119,8 @@ contract UNIT_LyraRateFeed is LyraFeedTestUtils {
       data: rateData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: pkOwner,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
   }
 }

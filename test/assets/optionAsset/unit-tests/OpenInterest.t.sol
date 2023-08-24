@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
-import "../../../../src/assets/Option.sol";
+import "../../../../src/assets/OptionAsset.sol";
 import "../../../../src/SubAccounts.sol";
 
 import {IPositionTracking} from "../../../../src/interfaces/IPositionTracking.sol";
@@ -16,7 +16,7 @@ import {IPositionTracking} from "../../../../src/interfaces/IPositionTracking.so
  * single side adjustments
  */
 contract UNIT_OptionAssetOITest is Test {
-  Option option;
+  OptionAsset option;
   MockManager manager;
   MockManager manager2;
   SubAccounts subAccounts;
@@ -35,7 +35,7 @@ contract UNIT_OptionAssetOITest is Test {
 
     manager2 = new MockManager(address(subAccounts));
 
-    option = new Option(subAccounts, address(0));
+    option = new OptionAsset(subAccounts, address(0));
     option.setWhitelistManager(address(manager), true);
     option.setWhitelistManager(address(manager2), true);
 

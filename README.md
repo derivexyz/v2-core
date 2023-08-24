@@ -41,7 +41,7 @@ forge test --match-contract="INTEGRATION_" -vvv
 Go to [docs](./docs) to understand the high level of the design, transaction flow and how different **Lyra v2 components** works together.
 
 ## Static Analysis - Slither
- 
+
 ### Installation
 
 ```shell

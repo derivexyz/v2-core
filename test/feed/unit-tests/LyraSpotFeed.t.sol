@@ -27,16 +27,6 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
     feed.addSigner(pkOwner, true);
   }
 
-  function testDomainSeparator() public {
-    assertEq(feed.domainSeparator(), domainSeparator);
-  }
-
-  function testCanAddSigner() public {
-    address alice = address(0xaaaa);
-    feed.addSigner(alice, true);
-    assertEq(feed.isSigner(alice), true);
-  }
-
   function testCanPassInDataAndUpdateSpotFeed() public {
     IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
     bytes memory data = _signFeedData(feed, pk, spotData);
@@ -115,6 +105,7 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
 
     // replace pkOwner with random signer address
     IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotData();
+    spotData.signers[0] = pkOwner;
     bytes memory data = _signFeedData(feed, pk2, spotData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
@@ -141,8 +132,8 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
       data: spotData,
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: pkOwner,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
   }
 

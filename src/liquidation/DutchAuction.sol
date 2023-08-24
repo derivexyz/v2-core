@@ -48,8 +48,14 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /// @dev Help defines buffer margin: maintenance margin - bufferPercentage * (maintenance margin - mtm)
   int public bufferMarginPercentage;
 
+  /// @dev The number of big insolvent auctions that are blocking withdraws
+  uint public largeInsolventAuctionCount;
+
+  /// @dev if an insolvent account has margin lower than this number, it will block from withdrawing cash
+  int public withdrawBlockThreshold;
+
   /// @dev AccountId => Auction for when an auction is started
-  mapping(uint => Auction) public auctions;
+  mapping(uint accountId => Auction) public auctions;
 
   /// @dev The security module that will help pay out for insolvent auctions
   ISecurityModule public immutable securityModule;
@@ -82,11 +88,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
   /**
    * @notice Set buffer margin that will be used to determine the target margin level we liquidate to
-   * @dev if set to 0, we liquidate to maintenance margin. If set to 0.3, approximately to initial margin
+   * @dev if set to 0, we liquidate to maintenance margin. If set to 0.3, approximately to initial margin for PMRM (IM = MM*1.3)
    */
   function setBufferMarginPercentage(int _bufferMarginPercentage) external onlyOwner {
-    if (_bufferMarginPercentage > 0.3e18) revert DA_InvalidBufferMarginParameter();
+    if (_bufferMarginPercentage > 4e18) revert DA_InvalidBufferMarginParameter();
     bufferMarginPercentage = _bufferMarginPercentage;
+
+    emit BufferMarginPercentageSet(_bufferMarginPercentage);
   }
 
   /**
@@ -102,6 +110,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     ) revert DA_InvalidParameter();
 
     solventAuctionParams = _params;
+
+    emit SolventAuctionParamsSet(_params);
   }
 
   /**
@@ -111,6 +121,18 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function setInsolventAuctionParams(InsolventAuctionParams memory _params) external onlyOwner {
     insolventAuctionParams = _params;
+
+    emit InsolventAuctionParamsSet(_params);
+  }
+
+  /**
+   * @notice Sets the threshold, below which an auction will block cash withdraw to prevent bank-run
+   */
+  function setWithdrawBlockThreshold(int _withdrawBlockThreshold) external onlyOwner {
+    if (_withdrawBlockThreshold > 0) revert DA_InvalidWithdrawBlockThreshold();
+    withdrawBlockThreshold = _withdrawBlockThreshold;
+
+    emit WithdrawBlockThresholdSet(_withdrawBlockThreshold);
   }
 
   /////////////////////
@@ -164,9 +186,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       // solvent auction goes from mark to market * static discount -> 0
       _startSolventAuction(accountId, scenarioId, markToMarket, fee, isForce);
     } else {
-      // insolvent auction start from 0 -> buffer margin (negative number) * scalar
-      int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScalar);
-      _startInsolventAuction(accountId, scenarioId, lowerBound, isForce);
+      _startInsolventAuction(accountId, scenarioId, maintenanceMargin, bufferMargin, isForce);
     }
   }
 
@@ -207,7 +227,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
 
-    _startInsolventAuction(accountId, scenarioId, bufferMargin, auctions[accountId].isForce);
+    _startInsolventAuction(accountId, scenarioId, maintenanceMargin, bufferMargin, auctions[accountId].isForce);
   }
 
   /**
@@ -231,11 +251,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId Account ID of the liquidated account
    * @param bidderId Account ID of bidder, must be owned by msg.sender
    * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
+   * @param maxCash Maximum amount of cash to be paid from bidder to liquidated account. This param is ignored if set to 0, or in insolvent mode
    * @return finalPercentage percentage of portfolio being liquidated
    * @return cashFromBidder Amount of cash paid from bidder to liquidated account
    * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
    */
-  function bid(uint accountId, uint bidderId, uint percentOfAccount)
+  function bid(uint accountId, uint bidderId, uint percentOfAccount, uint maxCash)
     external
     returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder)
   {
@@ -258,6 +279,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     } else {
       (canTerminateAfterwards, finalPercentage, cashFromBidder) =
         _bidOnSolventAuction(accountId, bidderId, percentOfAccount, margin, markToMarket);
+
+      // if cash spent is higher than specified, revert the call
+      if (maxCash > 0 && cashFromBidder > maxCash) revert DA_MaxCashExceeded();
     }
 
     if (canTerminateAfterwards) {
@@ -392,6 +416,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return _getMarginAndMarkToMarket(accountId, scenarioId);
   }
 
+  /**
+   * @dev return true if the withdraw should be blocked
+   */
+  function getIsWithdrawBlocked() external view returns (bool) {
+    return largeInsolventAuctionCount > 0;
+  }
+
   ///////////////////////
   // Internal Mutators //
   ///////////////////////
@@ -413,7 +444,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       reservedCash: 0,
       stepSize: 0,
       stepInsolvent: 0,
-      lastStepUpdate: 0
+      lastStepUpdate: 0,
+      isBlockingWithdraw: false
     });
 
     emit SolventAuctionStarted(accountId, scenarioId, markToMarket, fee);
@@ -422,10 +454,17 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /**
    * @notice Explain to an end user what this does
    * @dev Explain to a developer any extra details
-   * @param lowerBound negative amount in cash, -100e18 means the SM will pay out $100 CASH at most
    * @param accountId the id of the account that is being liquidated
    */
-  function _startInsolventAuction(uint accountId, uint scenarioId, int lowerBound, bool isForce) internal {
+  function _startInsolventAuction(uint accountId, uint scenarioId, int mm, int bufferMargin, bool isForce) internal {
+    // negative amount in cash, -100e18 means the SM will pay out $100 CASH at most
+    int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScalar);
+
+    bool shouldPauseWithdraw = mm < withdrawBlockThreshold;
+
+    // increase total amount of insolvent auctions blocking withdraw
+    if (shouldPauseWithdraw) largeInsolventAuctionCount += 1;
+
     // decrease value every step
     uint numSteps = insolventAuctionParams.totalSteps;
     uint stepSize = SignedMath.abs(lowerBound) / numSteps;
@@ -441,7 +480,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       isForce: isForce,
       stepSize: stepSize,
       stepInsolvent: 0,
-      lastStepUpdate: block.timestamp
+      lastStepUpdate: block.timestamp,
+      isBlockingWithdraw: shouldPauseWithdraw
     });
     emit InsolventAuctionStarted(accountId, numSteps, stepSize);
   }
@@ -479,13 +519,16 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     }
 
     uint convertedPercentage = percentOfAccount.divideDecimal(currentAuction.percentageLeft);
-    if (convertedPercentage > maxOfCurrent) {
+    if (convertedPercentage >= maxOfCurrent) {
       convertedPercentage = maxOfCurrent;
       percentLiquidated = convertedPercentage.multiplyDecimal(currentAuction.percentageLeft);
       canTerminate = true;
     }
 
     cashFromBidder = bidPrice.toUint256().multiplyDecimal(percentLiquidated);
+
+    int bidderCashBalance = subAccounts.getBalance(bidderId, cash, 0);
+    if (bidderCashBalance.toUint256() < cashFromBidder) revert DA_InsufficientCash();
 
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
@@ -532,6 +575,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
       accountId, bidderId, percentageOfCurrent, 0, currentAuction.reservedCash
     );
+
+    // ensure bidder is solvent (maintenance margin > 0)
+    (int bidderMM,,) = _getMarginAndMarkToMarket(bidderId, currentAuction.scenarioId);
+    if (bidderMM < 0) revert DA_BidderInsolvent();
+
     canTerminate = currentAuction.percentageLeft == 0;
   }
 
@@ -543,6 +591,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   function _terminateAuction(uint accountId) internal {
     Auction storage auction = auctions[accountId];
     auction.ongoing = false;
+
+    if (auction.isBlockingWithdraw) {
+      largeInsolventAuctionCount -= 1;
+    }
+
     emit AuctionEnded(accountId, block.timestamp);
   }
 

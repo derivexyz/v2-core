@@ -12,7 +12,7 @@ interface ILyraSpotFeed {
   ////////////////////////
   //       Events       //
   ////////////////////////
-  event SpotPriceUpdated(address indexed signer, uint96 spot, uint96 confidence, uint64 timestamp);
+  event SpotPriceUpdated(uint96 spot, uint96 confidence, uint64 timestamp);
 
   ////////////////////////
   //       Errors       //

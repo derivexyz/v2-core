@@ -32,7 +32,10 @@ contract DutchAuctionBase is Test {
 
   function setUp() public {
     _deployMockSystem();
+
     _setupAccounts();
+    // bob is the main liquidator in our test: give him 20K cash
+    _mintAndDepositCash(bobAcc, 20_000e18);
 
     dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
 
@@ -64,20 +67,10 @@ contract DutchAuctionBase is Test {
     sm.createAccountForSM(manager);
   }
 
-  function _mintAndDeposit(
-    address user,
-    uint accountId,
-    MockERC20 token,
-    MockAsset assetWrapper,
-    uint subId,
-    uint amount
-  ) public {
-    token.mint(user, amount);
-
-    vm.startPrank(user);
-    token.approve(address(assetWrapper), type(uint).max);
-    assetWrapper.deposit(accountId, subId, amount);
-    vm.stopPrank();
+  function _mintAndDepositCash(uint accountId, uint amount) public {
+    usdc.mint(address(this), amount);
+    usdc.approve(address(usdcAsset), type(uint).max);
+    usdcAsset.deposit(accountId, amount);
   }
 
   function _setupAccounts() public {

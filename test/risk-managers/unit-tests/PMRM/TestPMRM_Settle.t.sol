@@ -19,6 +19,12 @@ contract TestPMRM_Settlement is PMRMTestBase {
     optionHelper = new OptionSettlementHelper();
   }
 
+  function setUp() public override {
+    super.setUp();
+    pmrm.setWhitelistedCallee(address(perpHelper), true);
+    pmrm.setWhitelistedCallee(address(optionHelper), true);
+  }
+
   function testCanSettlePerps() public {
     int cashBefore = _getCashBalance(aliceAcc);
     mockPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
@@ -84,9 +90,25 @@ contract TestPMRM_Settlement is PMRMTestBase {
     assertEq(cashBefore - cashAfter, 500e18);
   }
 
+  function testCannotCallUnWhitelistedContractInProcessManagerData() public {
+    pmrm.setWhitelistedCallee(address(optionHelper), false);
+
+    _depositCash(aliceAcc, 2000e18);
+
+    IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
+    allData[0] = IBaseManager.ManagerData({receiver: address(optionHelper), data: ""});
+    bytes memory managerData = abi.encode(allData);
+
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
+
+    vm.expectRevert(IBaseManager.BM_UnauthorizedCall.selector);
+    subAccounts.submitTransfer(transfer, managerData);
+  }
+
   function testCanSettleOptionWithBadAddress() public {
     vm.expectRevert(IPMRM.PMRM_UnsupportedAsset.selector);
-    pmrm.settleOptions(IOption(address(mockPerp)), aliceAcc);
+    pmrm.settleOptions(IOptionAsset(address(mockPerp)), aliceAcc);
   }
 
   function _tradeOptionAndMockSettlementValue(int netValue) internal {

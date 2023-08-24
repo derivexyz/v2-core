@@ -10,6 +10,8 @@ import "../mocks/MockInterestRateModel.sol";
 import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
 
+import "../../../../src/interfaces/IDutchAuction.sol";
+
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
  */
@@ -41,7 +43,7 @@ contract UNIT_CashAssetDeposit is Test {
 
   function testCanSetLiquidationModule() public {
     address newLiq = address(0x1111);
-    cashAsset.setLiquidationModule(newLiq);
-    assertEq(cashAsset.liquidationModule(), newLiq);
+    cashAsset.setLiquidationModule(IDutchAuction(newLiq));
+    assertEq(address(cashAsset.liquidationModule()), newLiq);
   }
 }

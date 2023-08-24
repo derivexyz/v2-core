@@ -214,6 +214,7 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
     uint pk2 = 0xBEEF2222;
 
     IBaseLyraFeed.FeedData memory feedData = _getDefaultForwardData();
+    feedData.signers[0] = pkOwner;
     bytes memory data = _signFeedData(feed, pk2, feedData);
 
     vm.expectRevert(IBaseLyraFeed.BLF_InvalidSignature.selector);
@@ -274,8 +275,8 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
         ),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
-      signer: pkOwner,
-      signature: new bytes(0)
+      signers: new address[](1),
+      signatures: new bytes[](1)
     });
   }
 }

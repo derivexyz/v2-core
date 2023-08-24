@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "../../../../src/assets/InterestRateModel.sol";
+import "../../../../src/interfaces/IDutchAuction.sol";
 
 import "../../../../src/assets/CashAsset.sol";
 
@@ -80,7 +81,7 @@ contract UNIT_InterestRateScenario is Test {
     cash = new CashAsset(subAccounts, usdc, rateModel);
 
     cash.setWhitelistManager(address(manager), true);
-    cash.setLiquidationModule(address(this)); // allow trigger socialized losses
+    cash.setLiquidationModule(IDutchAuction(address(this)));
     cash.setSmFee(0.2e18);
 
     _setUpActors();
@@ -239,5 +240,9 @@ contract UNIT_InterestRateScenario is Test {
 
   function readEventArray(string memory json, string memory key) internal pure returns (Event[] memory) {
     return abi.decode(vm.parseJson(json, key), (Event[]));
+  }
+
+  function getIsWithdrawBlocked() public pure returns (bool) {
+    return false;
   }
 }

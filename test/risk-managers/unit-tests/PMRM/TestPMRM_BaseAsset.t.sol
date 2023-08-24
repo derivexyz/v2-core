@@ -7,8 +7,6 @@ import "../../../../src/periphery/OptionSettlementHelper.sol";
 
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 
-import "forge-std/console2.sol";
-
 contract TestPMRM_BaseAsset is PMRMTestBase {
   function testCanDepositBase() public {
     baseAsset.setTotalPositionCap(pmrm, 0);
@@ -46,13 +44,14 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     // decrease the cap to 0
     baseAsset.setTotalPositionCap(pmrm, 0);
 
+    PMRMLib pmrmLib = new PMRMLib(IOptionPricing(optionPricing));
+
     // other PMRM
     PMRM newManager = new PMRMPublic(
       subAccounts,
       cash,
       option,
       mockPerp,
-      IOptionPricing(optionPricing),
       baseAsset,
       IDutchAuction(address(0)),
       IPMRM.Feeds({
@@ -62,7 +61,9 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
         interestRateFeed: IInterestRateFeed(feed),
         volFeed: IVolFeed(feed),
         settlementFeed: ISettlementFeed(feed)
-      })
+      }),
+      viewer,
+      pmrmLib
     );
     baseAsset.setWhitelistManager(address(newManager), true);
     // create new account for that manager

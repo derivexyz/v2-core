@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import {IManager} from "./IManager.sol";
-import {IAllowList} from "./IAllowList.sol";
 
 interface IBaseManager is IManager {
   /////////////
@@ -30,24 +29,31 @@ interface IBaseManager is IManager {
 
   function payLiquidationFee(uint accountId, uint recipient, uint cashAmount) external;
 
+  function maxAccountSize() external view returns (uint);
+
   ////////////////
   //   Events   //
   ////////////////
 
-  /// @dev Emitted when OI fee rate is set
-  event OIFeeRateSet(address asset, uint oiFeeRate);
   event MinOIFeeSet(uint minOIFee);
-  event PerpSettled(uint indexed accountId, int netCash);
+
+  event CalleeWhitelisted(address callee);
+
+  event PerpSettled(uint indexed accountId, address perp, int pnl, int funding);
+
+  event OptionSettled(uint indexed accountId, address option, uint subId, int amount, int value);
+
   event FeeBypassedCallerSet(address caller, bool bypassed);
-  event AllowListSet(IAllowList _allowList);
+
   event FeeRecipientSet(uint _newAcc);
+
   event OptionSettlementBufferUpdated(uint optionSettlementBuffer);
+
+  event MaxAccountSizeUpdated(uint maxAccountSize);
 
   ////////////
   // Errors //
   ////////////
-
-  error BM_OIFeeRateTooHigh();
 
   error BM_MinOIFeeTooHigh();
 
@@ -77,4 +83,8 @@ interface IBaseManager is IManager {
   error BM_OnlySubAccountOwner();
 
   error BM_MergeOwnerMismatch();
+
+  error BM_UnauthorizedCall();
+
+  error BM_InvalidMaxAccountSize();
 }

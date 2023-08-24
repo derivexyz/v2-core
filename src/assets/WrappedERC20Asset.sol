@@ -16,6 +16,7 @@ import {PositionTracking} from "./utils/PositionTracking.sol";
 /**
  * @title Wrapped ERC20 Asset
  * @dev   Users can deposit the given ERC20, and can only have positive balances.
+ * @dev   Fee-on-transfer tokens are not supported
  * @author Lyra
  */
 contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20Asset {
@@ -58,7 +59,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
       ""
     );
 
-    emit Deposit(recipientAccount, msg.sender, assetAmount);
+    emit Deposit(recipientAccount, msg.sender, adjustmentAmount, assetAmount);
   }
 
   /**
@@ -88,7 +89,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
       ""
     );
 
-    emit Withdraw(accountId, msg.sender, assetAmount);
+    emit Withdraw(accountId, recipient, adjustmentAmount, assetAmount);
   }
 
   //////////////////////////
@@ -124,7 +125,8 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
 
     if (finalBalance < 0) revert WERC_CannotBeNegative();
 
-    return (finalBalance, adjustment.amount < 0);
+    // always need allowance: cannot force to send positive asset to other accounts
+    return (finalBalance, true);
   }
 
   /**

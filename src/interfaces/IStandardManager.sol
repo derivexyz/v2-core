@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IManager} from "./IManager.sol";
+import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
-import {IOption} from "./IOption.sol";
+import {IBaseManager} from "./IBaseManager.sol";
+import {IOptionAsset} from "./IOptionAsset.sol";
 
-interface IStandardManager {
+interface IStandardManager is IBaseManager {
   enum AssetType {
     NotSet,
     Option,
@@ -16,12 +17,11 @@ interface IStandardManager {
   struct AssetDetail {
     bool isWhitelisted;
     AssetType assetType;
-    uint8 marketId;
+    uint marketId;
   }
 
   /**
-   * @dev a standard manager portfolio contains up to 5 marketHoldings assets
-   * each marketHolding contains multiple derivative type
+   * @dev a standard manager portfolio contains multiple marketHoldings assets, each marketHolding contains multiple derivative type
    */
   struct StandardManagerPortfolio {
     // @dev each marketHolding take care of 1 base asset, for example ETH and BTC.
@@ -30,14 +30,14 @@ interface IStandardManager {
   }
 
   struct MarketHolding {
-    uint8 marketId;
+    uint marketId;
     // base position: doesn't contribute to margin, but increase total portfolio mark to market
     int basePosition;
     // perp position detail
     IPerpAsset perp;
     int perpPosition;
     // option position detail
-    IOption option;
+    IOptionAsset option;
     ExpiryHolding[] expiryHoldings;
     /// sum of all short positions, abs(perps) and base positions.
     /// used to increase margin requirement if USDC depeg. Should be positive
@@ -46,10 +46,10 @@ interface IStandardManager {
 
   /// @dev contains portfolio struct for single expiry assets
   struct ExpiryHolding {
+    /// array of option hold in this expiry
+    Option[] options;
     /// expiry timestamp
     uint expiry;
-    /// array of strike holding details
-    Option[] options;
     /// sum of all call positions, used to determine if portfolio max loss is bounded
     int netCalls;
     /// temporary variable to count how many options is used
@@ -93,16 +93,18 @@ interface IStandardManager {
   }
 
   struct DepegParams {
-    int128 threshold;
-    int128 depegFactor;
+    int threshold;
+    int depegFactor;
   }
 
   struct OracleContingencyParams {
     uint64 perpThreshold;
     uint64 optionThreshold;
     uint64 baseThreshold;
-    int64 OCFactor;
+    int OCFactor;
   }
+
+  function assetDetails(IAsset asset) external view returns (AssetDetail memory);
 
   ///////////////
   //   Errors  //
@@ -118,7 +120,7 @@ interface IStandardManager {
   error SRM_UnsupportedAsset();
 
   /// @dev Account is under water, need more cash
-  error SRM_PortfolioBelowMargin(uint accountId, int margin);
+  error SRM_PortfolioBelowMargin();
 
   /// @dev Invalid Parameters for perp margin requirements
   error SRM_InvalidPerpMarginParams();
@@ -144,18 +146,16 @@ interface IStandardManager {
   //    Events     //
   ///////////////////
 
-  event AssetWhitelisted(address asset, uint8 marketId, AssetType assetType);
+  event AssetWhitelisted(address asset, uint marketId, AssetType assetType);
 
-  event OraclesSet(
-    uint8 marketId, address spotOracle, address forwardOracle, address settlementOracle, address volFeed
-  );
+  event OraclesSet(uint marketId, address spotOracle, address forwardOracle, address volFeed);
 
-  event PricingModuleSet(uint8 marketId, address pricingModule);
+  event PricingModuleSet(uint marketId, address pricingModule);
 
-  event PerpMarginRequirementsSet(uint8 marketId, uint perpMMRequirement, uint perpIMRequirement);
+  event PerpMarginRequirementsSet(uint marketId, uint perpMMRequirement, uint perpIMRequirement);
 
   event OptionMarginParamsSet(
-    uint8 marketId,
+    uint marketId,
     int maxSpotReq,
     int minSpotReq,
     int mmCallSpotReq,
@@ -166,11 +166,11 @@ interface IStandardManager {
     int mmOffsetScale
   );
 
-  event BaseMarginDiscountFactorSet(uint8 marketId, uint baseMarginDiscountFactor);
+  event BaseMarginDiscountFactorSet(uint marketId, uint baseMarginDiscountFactor);
 
-  event DepegParametersSet(int128 threshold, int128 depegFactor);
+  event DepegParametersSet(int threshold, int depegFactor);
 
-  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int64 ocFactor);
+  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int ocFactor);
 
   event StableFeedUpdated(address stableFeed);
 

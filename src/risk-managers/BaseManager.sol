@@ -3,30 +3,26 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/access/Ownable2Step.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/Math.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
-import {IOption} from "../interfaces/IOption.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IBaseManager} from "../interfaces/IBaseManager.sol";
 
 import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
-import {IPositionTracking} from "../interfaces/IPositionTracking.sol";
 import {IDataReceiver} from "../interfaces/IDataReceiver.sol";
 
-import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
-import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {IAsset} from "../interfaces/IAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {IManager} from "../interfaces/IManager.sol";
-import {IAllowList} from "../interfaces/IAllowList.sol";
+import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 /**
  * @title BaseManager
@@ -51,11 +47,14 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev Dutch auction contract address, can trigger execute bid
   IDutchAuction public immutable liquidation;
 
+  /// @dev Portfolio viewer contract
+  IBasePortfolioViewer public viewer;
+
   /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
   uint public immutable accId;
 
-  /// @dev AllowList contract address
-  IAllowList public allowList;
+  /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
+  uint public maxAccountSize = 128;
 
   /// @dev within this buffer time, allow people to hold expired options in case the settlement price is not ready
   uint public optionSettlementBuffer = 5 minutes;
@@ -70,18 +69,23 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   mapping(uint => mapping(uint => uint)) public feeCharged;
 
   /// @dev keep track of the last tradeId that this manager updated before, to prevent double update
-  uint public lastOracleUpdateTradeId;
+  uint internal lastOracleUpdateTradeId;
 
   /// @dev tx msg.sender to Accounts that can bypass OI fee on perp or options
   mapping(address sender => bool) public feeBypassedCaller;
 
-  /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
-  mapping(address asset => uint) public OIFeeRateBPS;
+  mapping(address callee => bool) internal whitelistedCallee;
 
-  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IDutchAuction _liquidation) Ownable2Step() {
+  constructor(
+    ISubAccounts _subAccounts,
+    ICashAsset _cashAsset,
+    IDutchAuction _liquidation,
+    IBasePortfolioViewer _viewer
+  ) Ownable2Step() {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;
+    viewer = _viewer;
 
     accId = subAccounts.createAccount(address(this), IManager(address(this)));
   }
@@ -89,15 +93,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
   // Owner-only Functions //
   //////////////////////////
-
-  /**
-   * @notice Governance determined allowList
-   * @param _allowList The allowList contract, can be empty which will bypass allowList checks
-   */
-  function setAllowList(IAllowList _allowList) external onlyOwner {
-    allowList = _allowList;
-    emit AllowListSet(_allowList);
-  }
 
   /**
    * @dev Governance determined account to receive OI fee
@@ -109,21 +104,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     feeRecipientAcc = _newAcc;
     emit FeeRecipientSet(_newAcc);
-  }
-
-  /**
-   * @notice Governance determined OI fee rate to be set
-   * @dev Charged fee = contract traded * OIFee * spot
-   * @param newFeeRate OI fee rate in BPS
-   */
-  function setOIFeeRateBPS(address asset, uint newFeeRate) external onlyOwner {
-    if (newFeeRate > 0.2e18) {
-      revert BM_OIFeeRateTooHigh();
-    }
-
-    OIFeeRateBPS[asset] = newFeeRate;
-
-    emit OIFeeRateSet(asset, newFeeRate);
   }
 
   function setMinOIFee(uint newMinOIFee) external onlyOwner {
@@ -154,6 +134,26 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     optionSettlementBuffer = newBuffer;
     emit OptionSettlementBufferUpdated(newBuffer);
+  }
+
+  /**
+   * @notice Governance determined whitelist that can be called during processManagerData
+   */
+  function setWhitelistedCallee(address callee, bool whitelisted) external onlyOwner {
+    whitelistedCallee[callee] = whitelisted;
+
+    emit CalleeWhitelisted(callee);
+  }
+
+  /**
+   * @dev set max amount of assets in a single account
+   */
+  function setMaxAccountSize(uint _maxAccountSize) external onlyOwner {
+    if (_maxAccountSize < 8 || _maxAccountSize > 500) {
+      revert BM_InvalidMaxAccountSize();
+    }
+    maxAccountSize = _maxAccountSize;
+    emit MaxAccountSizeUpdated(_maxAccountSize);
   }
 
   ///////////////////
@@ -233,7 +233,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param accountId Id of account to force withdraw
    */
   function forceWithdrawAccount(uint accountId) external {
-    if (_canTrade(accountId)) {
+    if (viewer.canTrade(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
@@ -254,7 +254,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @param scenarioId Id of scenario used within liquidation module. Ignored for standard manager.
    */
   function forceLiquidateAccount(uint accountId, uint scenarioId) external {
-    if (_canTrade(accountId)) {
+    if (viewer.canTrade(accountId)) {
       revert BM_OnlyBlockedAccounts();
     }
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
@@ -280,6 +280,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     ManagerData[] memory managerDatas = abi.decode(managerData, (ManagerData[]));
     for (uint i; i < managerDatas.length; i++) {
       // invoke some actions if needed
+      if (!whitelistedCallee[managerDatas[i].receiver]) revert BM_UnauthorizedCall();
       IDataReceiver(managerDatas[i].receiver).acceptData(managerDatas[i].data);
     }
   }
@@ -301,12 +302,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     view
     returns (uint fee)
   {
-    bool oiIncreased = _getOIIncreased(asset, subId, tradeId);
-    if (!oiIncreased) return 0;
-
     (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
-    fee = SignedMath.abs(delta).multiplyDecimal(forwardPrice).multiplyDecimal(OIFeeRateBPS[address(asset)]);
+    fee = viewer.getAssetOIFee(asset, subId, delta, tradeId, forwardPrice);
   }
 
   /**
@@ -314,20 +312,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev if the OI after a batched trade is increased, all participants will be charged a fee if he trades this asset
    */
   function _getPerpOIFee(IPerpAsset perpAsset, int delta, uint tradeId) internal view returns (uint fee) {
-    bool oiIncreased = _getOIIncreased(perpAsset, 0, tradeId);
-    if (!oiIncreased) return 0;
-
     (uint perpPrice,) = perpAsset.getPerpPrice();
-    fee = SignedMath.abs(delta).multiplyDecimal(perpPrice).multiplyDecimal(OIFeeRateBPS[address(perpAsset)]);
-  }
-
-  /**
-   * @dev check if OI increased for a given asset and subId in a trade
-   */
-  function _getOIIncreased(IGlobalSubIdOITracking asset, uint subId, uint tradeId) internal view returns (bool) {
-    (, uint oiBefore) = asset.openInterestBeforeTrade(subId, tradeId);
-    uint oi = asset.openInterest(subId);
-    return oi > oiBefore;
+    fee = viewer.getAssetOIFee(perpAsset, 0, delta, tradeId, perpPrice);
   }
 
   /**
@@ -341,35 +327,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(Math.max(fee, minOIFee)));
   }
 
-  ////////////
-  // OI Cap //
-  ////////////
-
-  /**
-   * @notice check that all assets in an account is below the cap
-   * @dev this function assume all assets are compliant to IPositionTracking interface
-   */
-  function _checkAllAssetCaps(uint accountId, uint tradeId) internal view {
-    address[] memory assets = subAccounts.getUniqueAssets(accountId);
-    for (uint i; i < assets.length; i++) {
-      if (assets[i] == address(cashAsset)) continue;
-
-      _checkAssetCap(IPositionTracking(assets[i]), tradeId);
-    }
-  }
-
-  /**
-   * @dev check that an asset is not over the total position cap for this manager
-   */
-  function _checkAssetCap(IPositionTracking asset, uint tradeId) internal view {
-    uint totalPosCap = asset.totalPositionCap(IManager(address(this)));
-    (, uint preTradePos) = asset.totalPositionBeforeTrade(IManager(address(this)), tradeId);
-    uint postTradePos = asset.totalPosition(IManager(address(this)));
-
-    // If the trade increased OI and we are past the cap, revert.
-    if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
-  }
-
   ////////////////
   // Settlement //
   ////////////////
@@ -379,7 +336,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev this function will not revert even if settlement price is not updated
    * @param accountId Account Id to settle
    */
-  function _settleAccountOptions(IOption option, uint accountId) internal {
+  function _settleAccountOptions(IOptionAsset option, uint accountId) internal {
     ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
     int cashDelta = 0;
     for (uint i; i < balances.length; i++) {
@@ -395,6 +352,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       subAccounts.managerAdjustment(
         ISubAccounts.AssetAdjustment(accountId, option, balances[i].subId, -(balances[i].balance), bytes32(0))
       );
+
+      emit OptionSettled(accountId, address(option), balances[i].subId, balances[i].balance, value);
     }
 
     // update user cash amount
@@ -420,7 +379,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     // update user cash amount
     subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
 
-    emit PerpSettled(accountId, netCash);
+    emit PerpSettled(accountId, address(perp), pnl, funding);
   }
 
   /**
@@ -489,7 +448,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     // check if recipient under the same manager
     if (address(subAccounts.manager(to)) == address(this)) {
-      // increase to account balanace directly
+      // increase to account balance directly
       subAccounts.managerAdjustment(
         ISubAccounts.AssetAdjustment({acc: to, asset: cashAsset, subId: 0, amount: amount, assetData: bytes32(0)})
       );
@@ -510,80 +469,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
         ""
       );
     }
-  }
-
-  /**
-   * @dev get the original balances state before a trade is executed
-   */
-  function _undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    internal
-    view
-    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
-  {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-
-    // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
-    uint removedBalances = 0;
-    uint newBalances = 0;
-    ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
-
-    for (uint i = 0; i < assetDeltas.length; ++i) {
-      ISubAccounts.AssetDelta memory delta = assetDeltas[i];
-      if (delta.delta == 0) {
-        continue;
-      }
-      bool found = false;
-      for (uint j = 0; j < assetBalances.length; ++j) {
-        ISubAccounts.AssetBalance memory balance = assetBalances[j];
-        if (balance.asset == delta.asset && balance.subId == delta.subId) {
-          found = true;
-          assetBalances[j].balance = balance.balance - delta.delta;
-          if (assetBalances[j].balance == 0) {
-            removedBalances++;
-          }
-          break;
-        }
-      }
-      if (!found) {
-        preBalances[newBalances++] =
-          ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
-      }
-    }
-
-    newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
-
-    uint newBalancesIndex = 0;
-    for (uint i = 0; i < assetBalances.length; ++i) {
-      ISubAccounts.AssetBalance memory balance = assetBalances[i];
-      if (balance.balance != 0) {
-        newAssetBalances[newBalancesIndex++] = balance;
-      }
-    }
-    for (uint i = 0; i < newBalances; ++i) {
-      newAssetBalances[newBalancesIndex++] = preBalances[i];
-    }
-
-    return newAssetBalances;
-  }
-
-  /**
-   * @dev revert if the accountID is not on the allow list
-   */
-  function _verifyCanTrade(uint accountId) internal view {
-    if (!_canTrade(accountId)) {
-      revert BM_CannotTrade();
-    }
-  }
-
-  /**
-   * @dev return true if the owner of an account ID is on the allow list
-   */
-  function _canTrade(uint accountId) internal view returns (bool) {
-    if (allowList == IAllowList(address(0))) {
-      return true;
-    }
-    address user = subAccounts.ownerOf(accountId);
-    return allowList.canTrade(user);
   }
 
   ///////////////////
