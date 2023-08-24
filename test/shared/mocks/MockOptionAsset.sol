@@ -5,14 +5,14 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
-import {IOption} from "../../../src/interfaces/IOption.sol";
+import {IOptionAsset} from "../../../src/interfaces/IOptionAsset.sol";
 import {MockPositionTracking} from "./MockPositionTracking.sol";
 import {MockGlobalSubIdOITracking} from "./MockGlobalSubIdOITracking.sol";
 import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";
 import {IManager} from "../../../src/interfaces/IManager.sol";
 import {IGlobalSubIdOITracking} from "../../../src/interfaces/IGlobalSubIdOITracking.sol";
 
-contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOption {
+contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionAsset {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;

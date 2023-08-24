@@ -8,7 +8,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
-import {IOption} from "../interfaces/IOption.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
@@ -17,11 +17,11 @@ import {PositionTracking} from "./utils/PositionTracking.sol";
 import {GlobalSubIdOITracking} from "./utils/GlobalSubIdOITracking.sol";
 
 /**
- * @title Option
+ * @title OptionAsset
  * @author Lyra
  * @notice Option asset that defines subIds, value and settlement
  */
-contract Option is IOption, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
+contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeCast for uint;
   using SafeCast for int;
   using SignedDecimalMath for int;

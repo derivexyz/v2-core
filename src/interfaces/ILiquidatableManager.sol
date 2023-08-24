@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IBaseManager} from "./IBaseManager.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
-import {IOption} from "./IOption.sol";
+import {IOptionAsset} from "./IOptionAsset.sol";
 
 interface ILiquidatableManager is IBaseManager {
   /**
@@ -14,7 +14,7 @@ interface ILiquidatableManager is IBaseManager {
   /**
    * @notice can be called by anyone to settle option assets in an account
    */
-  function settleOptions(IOption _option, uint accountId) external;
+  function settleOptions(IOptionAsset _option, uint accountId) external;
 
   /**
    * @dev get initial margin or maintenance margin

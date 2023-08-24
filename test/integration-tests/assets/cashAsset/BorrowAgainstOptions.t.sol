@@ -15,7 +15,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
   uint charlieAcc;
 
   uint64 expiry;
-  IOption option;
+  IOptionAsset option;
 
   function setUp() public {
     _setupIntegrationTestComplete();

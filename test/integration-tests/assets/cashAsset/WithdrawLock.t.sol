@@ -12,7 +12,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
   using DecimalMath for uint;
 
   uint64 expiry;
-  IOption option;
+  IOptionAsset option;
 
   function setUp() public {
     _setupIntegrationTestComplete();

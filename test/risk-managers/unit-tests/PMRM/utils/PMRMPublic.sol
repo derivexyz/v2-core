@@ -7,7 +7,7 @@ contract PMRMPublic is PMRM {
   constructor(
     ISubAccounts subAccounts_,
     ICashAsset cashAsset_,
-    IOption option_,
+    IOptionAsset option_,
     IPerpAsset perp_,
     IWrappedERC20Asset baseAsset_,
     IDutchAuction liquidation_,

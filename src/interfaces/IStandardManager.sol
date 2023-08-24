@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
 import {IBaseManager} from "./IBaseManager.sol";
-import {IOption} from "./IOption.sol";
+import {IOptionAsset} from "./IOptionAsset.sol";
 
 interface IStandardManager is IBaseManager {
   enum AssetType {
@@ -37,7 +37,7 @@ interface IStandardManager is IBaseManager {
     IPerpAsset perp;
     int perpPosition;
     // option position detail
-    IOption option;
+    IOptionAsset option;
     ExpiryHolding[] expiryHoldings;
     /// sum of all short positions, abs(perps) and base positions.
     /// used to increase margin requirement if USDC depeg. Should be positive

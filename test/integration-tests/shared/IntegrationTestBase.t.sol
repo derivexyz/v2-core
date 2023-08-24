@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../src/SecurityModule.sol";
 import "../../../src/assets/CashAsset.sol";
-import "../../../src/assets/Option.sol";
+import "../../../src/assets/OptionAsset.sol";
 import "../../../src/assets/PerpAsset.sol";
 import "../../../src/assets/InterestRateModel.sol";
 
@@ -59,7 +59,7 @@ contract IntegrationTestBase is Test {
     uint id;
     MockERC20 erc20;
     // lyra asset
-    Option option;
+    OptionAsset option;
     PerpAsset perp;
     WrappedERC20Asset base;
     // feeds
@@ -208,7 +208,7 @@ contract IntegrationTestBase is Test {
     market.spotFeed = new LyraSpotFeed();
     market.forwardFeed = new LyraForwardFeed(market.spotFeed);
 
-    Option option = new Option(subAccounts, address(market.forwardFeed));
+    OptionAsset option = new OptionAsset(subAccounts, address(market.forwardFeed));
 
     PerpAsset perp = new PerpAsset(subAccounts, 0.0075e18);
 
@@ -408,7 +408,7 @@ contract IntegrationTestBase is Test {
   /**
    * @dev view function to help writing integration test
    */
-  function getOptionBalance(IOption option, uint acc, uint96 subId) public view returns (int) {
+  function getOptionBalance(IOptionAsset option, uint acc, uint96 subId) public view returns (int) {
     return subAccounts.getBalance(acc, option, subId);
   }
 

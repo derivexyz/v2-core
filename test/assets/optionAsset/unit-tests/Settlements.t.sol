@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockManager.sol";
-import "../../../../src/assets/Option.sol";
+import "../../../../src/assets/OptionAsset.sol";
 import "../../../../src/SubAccounts.sol";
 import "test/shared/mocks/MockFeeds.sol";
 
@@ -15,7 +15,7 @@ import "test/shared/mocks/MockFeeds.sol";
  * calcSettlementValue
  */
 contract UNIT_OptionAssetSettlementsTest is Test {
-  Option option;
+  OptionAsset option;
   SubAccounts subAccounts;
 
   MockFeeds feed;
@@ -30,7 +30,7 @@ contract UNIT_OptionAssetSettlementsTest is Test {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     feed = new MockFeeds();
-    option = new Option(subAccounts, address(feed));
+    option = new OptionAsset(subAccounts, address(feed));
 
     callId = option.getSubId(setExpiry, strike, true);
     putId = option.getSubId(setExpiry, strike, false);
