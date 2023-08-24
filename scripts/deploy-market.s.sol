@@ -57,6 +57,8 @@ contract DeployMarket is Utils {
 
     _setPermissionAndCaps(deployment, market);
 
+    _setupPerpAsset(market);
+
     _setupPMRMParams(market);
 
     _registerMarketToSRM(deployment, market);
@@ -86,7 +88,7 @@ contract DeployMarket is Utils {
       market.ibpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
       
       market.volFeed = LyraVolFeed(address(mockFeed));
-      market.rateFeed = LyraRateFeed(address(mockFeed));
+      market.rateFeed = LyraRateFeed(address(mockFeed));      
     } else {
       market.spotFeed = new LyraSpotFeed();
       market.forwardFeed = new LyraForwardFeed(market.spotFeed);
@@ -99,7 +101,8 @@ contract DeployMarket is Utils {
       market.rateFeed = new LyraRateFeed();
       market.volFeed = new LyraVolFeed();
 
-      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);
+      // init feeds
+      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);      
       market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
 
       market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
@@ -109,7 +112,6 @@ contract DeployMarket is Utils {
       market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
       market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
       market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
-
     }
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
@@ -161,6 +163,13 @@ contract DeployMarket is Utils {
 
     // set all scenarios!
     market.pmrm.setScenarios(getDefaultScenarios());
+  }
+
+  function _setupPerpAsset(Market memory market) internal {
+    // set perp asset params
+    market.perp.setSpotFeed(market.spotFeed);
+    market.perp.setPerpFeed(market.perpFeed);
+    market.perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
   }
 
   function _setPermissionAndCaps(Deployment memory deployment, Market memory market) internal {
