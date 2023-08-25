@@ -472,11 +472,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       }
 
       (int margin, int mtm) = _calcNetBasicMarginSingleExpiry(
-        marketHolding.marketId,
-        marketHolding.expiryHoldings[i],
-        indexPrice,
-        forwardPrice,
-        isInitial
+        marketHolding.marketId, marketHolding.expiryHoldings[i], indexPrice, forwardPrice, isInitial
       );
       netMargin += margin;
       totalMarkToMarket += mtm;
@@ -763,11 +759,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param price Assumed scenario price.
    * @return payoff Net profit or loss of the portfolio in cash, given a settlement price.
    */
-  function _calcMaxLoss(ExpiryHolding memory expiryHolding, uint price)
-    internal
-    pure
-    returns (int payoff)
-  {
+  function _calcMaxLoss(ExpiryHolding memory expiryHolding, uint price) internal pure returns (int payoff) {
     for (uint i; i < expiryHolding.options.length; i++) {
       payoff += _getSettlementValue(
         expiryHolding.options[i].strike, expiryHolding.options[i].balance, price, expiryHolding.options[i].isCall
