@@ -473,7 +473,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
       (int margin, int mtm) = _calcNetBasicMarginSingleExpiry(
         marketHolding.marketId,
-        marketHolding.option,
         marketHolding.expiryHoldings[i],
         indexPrice,
         forwardPrice,
@@ -536,14 +535,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function _calcNetBasicMarginSingleExpiry(
     uint marketId,
-    IOptionAsset option,
     ExpiryHolding memory expiryHolding,
     int indexPrice,
     int forwardPrice,
     bool isInitial
   ) internal view returns (int, int totalMarkToMarket) {
     // We make sure the evaluate the scenario at price = 0
-    int maxLossMargin = _calcMaxLoss(option, expiryHolding, 0);
+    int maxLossMargin = _calcMaxLoss(expiryHolding, 0);
     int totalIsolatedMargin = 0;
 
     for (uint i; i < expiryHolding.options.length; i++) {
@@ -556,7 +554,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       totalMarkToMarket += markToMarket;
 
       // calculate the max loss margin, update the maxLossMargin if it's lower than current
-      maxLossMargin = SignedMath.min(_calcMaxLoss(option, expiryHolding, optionPos.strike), maxLossMargin);
+      maxLossMargin = SignedMath.min(_calcMaxLoss(expiryHolding, optionPos.strike), maxLossMargin);
     }
 
     if (expiryHolding.netCalls < 0) {
@@ -765,13 +763,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param price Assumed scenario price.
    * @return payoff Net profit or loss of the portfolio in cash, given a settlement price.
    */
-  function _calcMaxLoss(IOptionAsset option, ExpiryHolding memory expiryHolding, uint price)
+  function _calcMaxLoss(ExpiryHolding memory expiryHolding, uint price)
     internal
     pure
     returns (int payoff)
   {
     for (uint i; i < expiryHolding.options.length; i++) {
-      payoff += option.getSettlementValue(
+      payoff += _getSettlementValue(
         expiryHolding.options[i].strike, expiryHolding.options[i].balance, price, expiryHolding.options[i].isCall
       );
     }
@@ -819,5 +817,25 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       IOptionPricing.Option({strike: uint128(strike), vol: uint128(vol), amount: amount, isCall: isCall});
 
     return pricing.getOptionValue(expiryData, option);
+  }
+
+  // strike per expiry
+  function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    internal
+    pure
+    returns (int)
+  {
+    int priceDiff = settlementPrice.toInt256() - strikePrice.toInt256();
+
+    if (isCall && priceDiff > 0) {
+      // ITM Call
+      return priceDiff.multiplyDecimal(balance);
+    } else if (!isCall && priceDiff < 0) {
+      // ITM Put
+      return -priceDiff.multiplyDecimal(balance);
+    } else {
+      // OTM
+      return 0;
+    }
   }
 }
