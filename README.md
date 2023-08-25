@@ -67,7 +67,4 @@ slither src --triage-mode
 
 ## Deployment
 
-```shell
-yarn
-yarn deploy
-```
+Got to [scripts](./scripts) to understand how to deploy **Lyra v2** to different networks.

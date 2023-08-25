@@ -2,7 +2,7 @@
 
 ## Setup
 
-Add `.env` file and do the following:
+Add an `.env` file with following:
 
 ```python
 # required
@@ -15,8 +15,8 @@ source .env
 ```
 
 Also, it's easier to add the rpc network into `foundry.toml`, so we can use the alias later in the script
-```
 
+```
 [rpc_endpoints]
 sepolia = https://sepolia.infura.io/v3/26251a7744c548a3adbc17880fc70764
 ```

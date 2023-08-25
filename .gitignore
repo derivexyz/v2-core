@@ -9,18 +9,11 @@ yarn-error.log
 .husky
 .vscode
 
-node_modules
 .env
 coverage
 coverage.json
 typechain
 typechain-types
-
-# Hardhat files
-cache
-artifacts
-cache_hardhat
-artifacts_hardhat
 
 # Keep local deployment config folder, but not track any content
 scripts/input/31337/*
