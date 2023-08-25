@@ -53,8 +53,10 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
 
     // don't need OI fee
     srm.setFeeBypassedCaller(address(this), true);
-    // markets["weth"].pmrm.setTrustedRiskAssessor(address(this), true);
-    // markets["wbtc"].pmrm.setTrustedRiskAssessor(address(this), true);
+
+    // comment out these 2 lines if don't want to simulate with trusted assessor
+    markets["weth"].pmrm.setTrustedRiskAssessor(address(this), true);
+    markets["wbtc"].pmrm.setTrustedRiskAssessor(address(this), true);
 
     srm.setMaxAccountSize(130);
   }
@@ -441,8 +443,8 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     uint gasUsed = gas - gasleft();
 
     uint totalAssets = subAccounts.getAccountBalances(account).length;
-    // console2.log("Total asset per account: ", totalAssets);
-    // console2.log("Margin check gas cost:", gasUsed);
+    console2.log("Total asset per account: ", totalAssets);
+    console2.log("Margin check gas cost:", gasUsed);
   }
 
   function _logTradeGas(uint from) internal {
@@ -463,7 +465,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     );
     uint gasUsed = gas - gasleft();
 
-    console2.log("Trading gas cost (not trusted):", gasUsed);
+    console2.log("Trading gas cost (trusted):", gasUsed);
   }
 
   function _setupAllFeedsForMarket(string memory market, uint64 expiry, uint96 spot) internal {
