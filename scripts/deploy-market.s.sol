@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import {Option} from "../src/assets/OptionAsset.sol";
+import {OptionAsset} from "../src/assets/OptionAsset.sol";
 import {PerpAsset} from "../src/assets/PerpAsset.sol";
 import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
