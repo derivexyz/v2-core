@@ -40,7 +40,7 @@ interface IStandardManager is IBaseManager {
     IOptionAsset option;
     ExpiryHolding[] expiryHoldings;
     /// sum of all short positions, abs(perps) and base positions.
-    /// used to increase margin requirement if USDC depeg. Should be positive
+    /// used to increase margin requirement if stable depegs. Should be positive
     int depegPenaltyPos;
   }
 

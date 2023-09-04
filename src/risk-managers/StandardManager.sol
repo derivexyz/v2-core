@@ -47,10 +47,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   // Variables //
   ///////////////
 
-  /// @dev Depeg IM parameters: use to increase margin requirement if USDC depeg
+  /// @dev Depeg IM parameters: use to increase margin requirement if stablecoin depegs
   DepegParams public depegParams;
 
-  /// @dev Oracle that returns USDC / USD price
+  /// @dev Oracle that returns stable / USD price
   ISpotFeed public stableFeed;
 
   /// @dev if turned on, people can borrow cash from standard manager, aka have negative balance.
@@ -220,7 +220,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @notice Set feed for USDC / USD price
+   * @notice Set feed for stable / USD price
    *
    */
   function setStableFeed(ISpotFeed _stableFeed) external onlyOwner {
@@ -359,7 +359,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev if the stable feed for USDC / USD return price lower than threshold, add extra amount to im
+   * @dev if the stable feed for stable / USD return price lower than threshold, add extra amount to im
    * @return a positive multiplier that should be multiply to S * sum(shorts + perps)
    */
   function _getDepegMultiplier(bool isInitial) internal view returns (int) {
@@ -512,7 +512,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     baseMargin = position.multiplyDecimal(discountFactor).multiplyDecimal(indexPrice);
 
     (uint stablePrice,) = stableFeed.getSpot();
-    // convert to denominate in USDC
+    // convert to denominate in stable
     baseMarkToMarket = position.multiplyDecimal(indexPrice).divideDecimal(stablePrice.toInt256());
 
     // add oracle contingency for spot asset, only for IM
