@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-interface ILyraRateFeed {
+import {IBaseLyraFeed} from "./IBaseLyraFeed.sol";
+
+
+interface ILyraRateFeed is IBaseLyraFeed {
   /// @dev structure to store in contract storage
   struct RateDetail {
     int96 rate;

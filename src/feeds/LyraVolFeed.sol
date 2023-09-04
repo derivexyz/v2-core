@@ -59,7 +59,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       volDetail.SVI_m,
       volDetail.SVI_sigma,
       volDetail.SVI_fwd,
-      volDetail.SVI_refTao
+      volDetail.SVI_refTau
     );
 
     return (vol, volDetail.confidence);
@@ -92,7 +92,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       int SVI_m,
       uint SVI_sigma,
       uint SVI_fwd,
-      uint64 SVI_refTao,
+      uint64 SVI_refTau,
       uint64 confidence
     ) = abi.decode(feedData.data, (uint64, int, uint, int, int, uint, uint, uint64, uint64));
 
@@ -109,7 +109,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
       SVI_m: SVI_m,
       SVI_sigma: SVI_sigma,
       SVI_fwd: SVI_fwd,
-      SVI_refTao: SVI_refTao,
+      SVI_refTau: SVI_refTau,
       confidence: confidence,
       timestamp: feedData.timestamp
     });

@@ -2,8 +2,9 @@
 pragma solidity ^0.8.18;
 
 import {ISpotFeed} from "./ISpotFeed.sol";
+import {IBaseLyraFeed} from "./IBaseLyraFeed.sol";
 
-interface ILyraForwardFeed {
+interface ILyraForwardFeed is IBaseLyraFeed {
   /// @dev structure to store in contract storage
   struct ForwardDetails {
     int96 fwdSpotDifference;

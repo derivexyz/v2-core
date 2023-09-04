@@ -638,11 +638,11 @@ contract IntegrationTestBase is Test {
     int SVI_m = -0.05e18;
     uint SVI_sigma = 0.05e18;
     uint SVI_fwd = fwdPrice;
-    uint64 SVI_refTao = uint64(Black76.annualise(uint64(expiry - block.timestamp)));
+    uint64 SVI_refTau = uint64(Black76.annualise(uint64(expiry - block.timestamp)));
     uint64 confidence = 1e18;
 
     // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
-    bytes memory volData = abi.encode(expiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTao, confidence);
+    bytes memory volData = abi.encode(expiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTau, confidence);
     return IBaseLyraFeed.FeedData({
       data: volData,
       timestamp: uint64(block.timestamp),

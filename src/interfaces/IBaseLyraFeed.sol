@@ -54,7 +54,12 @@ interface IBaseLyraFeed {
   //       Events       //
   ////////////////////////
 
+  /// @dev new signer added / removed
   event SignerUpdated(address indexed signer, bool isWhitelisted);
+
+  /// @dev new heartbeat threshold updated
   event HeartbeatUpdated(address indexed signer, uint heartbeat);
+
+  /// @dev new required signers updated
   event RequiredSignersUpdated(uint requiredSigners);
 }

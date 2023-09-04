@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-interface ILyraVolFeed {
+import {IBaseLyraFeed} from "./IBaseLyraFeed.sol";
+
+interface ILyraVolFeed is IBaseLyraFeed {
   /// @dev structure to store in contract storage
   struct VolDetails {
     int SVI_a;
@@ -10,7 +12,7 @@ interface ILyraVolFeed {
     int SVI_m;
     uint SVI_sigma;
     uint SVI_fwd;
-    uint64 SVI_refTao;
+    uint64 SVI_refTau;
     uint64 confidence;
     uint64 timestamp;
   }
