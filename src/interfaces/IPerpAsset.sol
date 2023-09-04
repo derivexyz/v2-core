@@ -49,11 +49,7 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   //   Events     //
   //////////////////
 
-  event FundingRateUpdated(int premium);
-
   event StaticUnderlyingInterestRateUpdated(int128 premium);
-
-  event FundingRateOracleUpdated(address oracle);
 
   event SpotFeedUpdated(address spotFeed);
 
@@ -73,17 +69,8 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   //   Errors   //
   ////////////////
 
-  /// @dev Caller is not the Account contract
-  error PA_NotAccount();
-
   /// @dev SubId is not 0
   error PA_InvalidSubId();
-
-  /// @dev Caller is not the liquidation module
-  error PA_NotLiquidationModule();
-
-  /// @dev Revert when user trying to upgrade to an unknown manager
-  error PA_UnknownManager();
 
   /// @dev Settlement can only be initiated by the manager of the account
   error PA_WrongManager();
@@ -91,18 +78,6 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   /// @dev Impact prices are invalid: bids higher than ask or negative
   error PA_InvalidImpactPrices();
 
-  /// @dev Caller is not the owner of the account
-  error PA_OnlyAccountOwner();
-
-  /// @dev Impact price must be positive
-  error PA_ImpactPriceMustBePositive();
-
   /// @dev Invalid static interest rate for base asset
   error PA_InvalidStaticInterestRate();
-
-  /// @dev Caller is not the impact price oracle address
-  error PA_OnlyImpactPriceOracle();
-
-  /// @dev Emitted when changing manager make total position exceed cap
-  error PA_ManagerChangeExceedCap();
 }

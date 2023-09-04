@@ -39,7 +39,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
   ////////////////////////////
 
   /**
-   * @dev Deposit USDC and increase account balance
+   * @dev Deposit ERC20 asset and increase account balance
    * @param recipientAccount account id to receive the cash asset
    * @param assetAmount amount of the wrapped asset to deposit
    */
@@ -63,10 +63,10 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
   }
 
   /**
-   * @notice Withdraw USDC from a Lyra account
+   * @notice Withdraw ERC20 asset from a Lyra account
    * @param accountId account id to withdraw
    * @param assetAmount the amount of the wrapped asset to withdraw in its native decimals
-   * @param recipient USDC recipient
+   * @param recipient ERC20 recipient
    */
   function withdraw(uint accountId, uint assetAmount, address recipient) external {
     if (msg.sender != subAccounts.ownerOf(accountId)) revert WERC_OnlyAccountOwner();

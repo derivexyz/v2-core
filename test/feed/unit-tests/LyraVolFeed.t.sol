@@ -137,12 +137,12 @@ contract UNIT_LyraVolFeed is LyraFeedTestUtils {
     int SVI_m = -0.05e18;
     uint SVI_sigma = 0.05e18;
     uint SVI_fwd = 1200e18;
-    uint64 SVI_refTao = uint64(Black76.annualise(uint64(defaultExpiry - block.timestamp)));
+    uint64 SVI_refTau = uint64(Black76.annualise(uint64(defaultExpiry - block.timestamp)));
     uint64 confidence = 1e18;
 
     // example data: a = 1, b = 1.5, sig = 0.05, rho = -0.1, m = -0.05
     bytes memory volData =
-      abi.encode(defaultExpiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTao, confidence);
+      abi.encode(defaultExpiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTau, confidence);
     return IBaseLyraFeed.FeedData({
       data: volData,
       timestamp: uint64(block.timestamp),

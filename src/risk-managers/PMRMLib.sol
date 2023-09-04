@@ -288,9 +288,9 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   }
 
   function _addVolShocks(IPMRM.ExpiryHoldings memory expiry) internal view {
-    int tao = (30 days * DecimalMath.UNIT / Math.max(expiry.secToExpiry, volShockParams.dteFloor)).toInt256();
+    int tau = (30 days * DecimalMath.UNIT / Math.max(expiry.secToExpiry, volShockParams.dteFloor)).toInt256();
     uint multShock = FixedPointMathLib.decPow(
-      tao, expiry.secToExpiry <= 30 days ? volShockParams.shortTermPower : volShockParams.longTermPower
+      tau, expiry.secToExpiry <= 30 days ? volShockParams.shortTermPower : volShockParams.longTermPower
     );
 
     expiry.volShockUp = DecimalMath.UNIT + volShockParams.volRangeUp.multiplyDecimal(multShock);
