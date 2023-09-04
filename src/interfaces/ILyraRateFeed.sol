@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import {IBaseLyraFeed} from "./IBaseLyraFeed.sol";
 
-
 interface ILyraRateFeed is IBaseLyraFeed {
   /// @dev structure to store in contract storage
   struct RateDetail {

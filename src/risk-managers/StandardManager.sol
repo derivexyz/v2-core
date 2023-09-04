@@ -365,10 +365,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function _getDepegMultiplier(bool isInitial) internal view returns (int) {
     if (!isInitial) return 0;
 
-    (uint usdcPrice,) = stableFeed.getSpot();
-    if (usdcPrice.toInt256() >= depegParams.threshold) return 0;
+    (uint stablePrice,) = stableFeed.getSpot();
+    if (stablePrice.toInt256() >= depegParams.threshold) return 0;
 
-    return (depegParams.threshold - int(usdcPrice)).multiplyDecimal(depegParams.depegFactor);
+    return (depegParams.threshold - int(stablePrice)).multiplyDecimal(depegParams.depegFactor);
   }
 
   /**
@@ -511,9 +511,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // the margin contributed by base asset is spot * positionSize * discount factor
     baseMargin = position.multiplyDecimal(discountFactor).multiplyDecimal(indexPrice);
 
-    (uint usdcPrice,) = stableFeed.getSpot();
+    (uint stablePrice,) = stableFeed.getSpot();
     // convert to denominate in USDC
-    baseMarkToMarket = position.multiplyDecimal(indexPrice).divideDecimal(usdcPrice.toInt256());
+    baseMarkToMarket = position.multiplyDecimal(indexPrice).divideDecimal(stablePrice.toInt256());
 
     // add oracle contingency for spot asset, only for IM
     if (!isInitial) return (baseMargin, baseMarkToMarket);
