@@ -8,7 +8,7 @@ import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeed} from "../src/feeds/LyraRateFeed.sol";
+import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {OptionPricing} from "../src/feeds/OptionPricing.sol";
 import {PMRM} from "../src/risk-managers/PMRM.sol";
@@ -88,7 +88,7 @@ contract DeployMarket is Utils {
       market.ibpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
       
       market.volFeed = LyraVolFeed(address(mockFeed));
-      market.rateFeed = LyraRateFeed(address(mockFeed));      
+      market.rateFeed = LyraRateFeedStatic(address(mockFeed));      
     } else {
       market.spotFeed = new LyraSpotFeed();
       market.forwardFeed = new LyraForwardFeed(market.spotFeed);
@@ -98,7 +98,7 @@ contract DeployMarket is Utils {
       market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
 
       // interest and vol feed
-      market.rateFeed = new LyraRateFeed();
+      market.rateFeed = new LyraRateFeedStatic();
       market.volFeed = new LyraVolFeed();
 
       // init feeds
@@ -109,7 +109,7 @@ contract DeployMarket is Utils {
       market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
 
       market.volFeed.setHeartbeat(VOL_HEARTBEAT);
-      market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
+      // market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
       market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
       market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
     }

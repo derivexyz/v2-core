@@ -13,7 +13,7 @@ import {ISpotFeed} from "../src/interfaces/ISpotFeed.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeed} from "../src/feeds/LyraRateFeed.sol";
+import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {OptionPricing} from "../src/feeds/OptionPricing.sol";
 
@@ -58,7 +58,7 @@ struct Market {
   LyraSpotDiffFeed iapFeed;
   LyraSpotDiffFeed ibpFeed;
   LyraVolFeed volFeed;
-  LyraRateFeed rateFeed;
+  LyraRateFeedStatic rateFeed;
   LyraForwardFeed forwardFeed;
   // pricing
   OptionPricing pricing;
