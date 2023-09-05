@@ -99,19 +99,28 @@ contract DeployMarket is Utils {
 
       // interest and vol feed
       market.rateFeed = new LyraRateFeedStatic();
+      
       market.volFeed = new LyraVolFeed();
 
       // init feeds
-      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);      
+      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);   
+      market.spotFeed.addSigner(config.feedSigner, true);
+
       market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
+      market.perpFeed.addSigner(config.feedSigner, true);
 
       market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+      market.iapFeed.addSigner(config.feedSigner, true);
+
       market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+      market.ibpFeed.addSigner(config.feedSigner, true);
 
       market.volFeed.setHeartbeat(VOL_HEARTBEAT);
+      market.volFeed.addSigner(config.feedSigner, true);
       // market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
       market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
       market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
+      market.forwardFeed.addSigner(config.feedSigner, true);
     }
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));

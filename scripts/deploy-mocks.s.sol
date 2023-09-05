@@ -40,6 +40,7 @@ contract DeployMocks is Utils {
     vm.serializeAddress(objKey, "usdc", address(usdc));
     vm.serializeAddress(objKey, "wbtc", address(wbtc));
     vm.serializeAddress(objKey, "weth", address(weth));
+    vm.serializeAddress(objKey, "feedSigner", 0x555eB362b5057e36f88cCb42b44D6dA5Fe7A0656);
     string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", false);
 
     // build path

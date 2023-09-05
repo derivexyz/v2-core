@@ -62,7 +62,7 @@ contract DeployCore is Utils {
 
     // nonce + 3: Deploy SM
     address srmAddr = computeCreateAddress(deployer, nonce + 6);
-    console2.log("predicted addr", srmAddr);
+    console2.log("predicted SRM addr", srmAddr);
     deployment.securityModule = new SecurityModule(deployment.subAccounts, deployment.cash, IManager(srmAddr));
 
     // nonce + 4: Deploy Auction
