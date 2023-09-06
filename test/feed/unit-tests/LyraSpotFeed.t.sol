@@ -136,19 +136,4 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
       signatures: new bytes[](1)
     });
   }
-
-  // function _getSignedSpotData(uint privateKey, ILyraSpotFeed.SpotData memory spotData)
-  //   internal
-  //   view
-  //   returns (bytes memory data)
-  // {
-  //   spotData.signature = _signSpotData(privateKey, spotData);
-  //   return abi.encode(spotData);
-  // }
-
-  // function _signSpotData(uint privateKey, ILyraSpotFeed.SpotData memory spotData) internal view returns (bytes memory) {
-  //   bytes32 structHash = feed.hashSpotData(spotData);
-  //   (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
-  //   return bytes.concat(r, s, bytes1(v));
-  // }
 }
