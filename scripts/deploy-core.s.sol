@@ -9,6 +9,7 @@ import "../src/SubAccounts.sol";
 import "../src/SecurityModule.sol";
 import "../src/risk-managers/StandardManager.sol";
 import "../src/risk-managers/SRMPortfolioViewer.sol";
+import "../src/periphery/OracleDataSubmitter.sol";
 
 import "../src/feeds/LyraSpotFeed.sol";
 
@@ -87,6 +88,8 @@ contract DeployCore is Utils {
       deployment.stableFeed = stableFeed;
     }
 
+    deployment.dataSubmitter = new OracleDataSubmitter();
+
     _setupCoreFunctions(deployment);
 
     // write to output
@@ -130,6 +133,8 @@ contract DeployCore is Utils {
     vm.serializeAddress(objKey, "auction", address(deployment.auction));
     vm.serializeAddress(objKey, "srm", address(deployment.srm));
     vm.serializeAddress(objKey, "srmViewer", address(deployment.srmViewer));
+    vm.serializeAddress(objKey, "dataSubmitter", address(deployment.dataSubmitter));
+
     string memory finalObj = vm.serializeAddress(objKey, "stableFeed", address(deployment.stableFeed));
 
     // build path

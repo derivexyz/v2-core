@@ -26,6 +26,8 @@ import {PMRM} from "../src/risk-managers/PMRM.sol";
 import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
 
+// Periphery Contracts
+import {OracleDataSubmitter} from "../src/periphery/OracleDataSubmitter.sol";
 
 struct ConfigJson { 
   address usdc;
@@ -46,6 +48,7 @@ struct Deployment {
   SRMPortfolioViewer srmViewer;
 
   ISpotFeed stableFeed;
+  OracleDataSubmitter dataSubmitter;
 }
 
 struct Market {
