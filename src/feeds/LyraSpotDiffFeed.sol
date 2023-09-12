@@ -10,7 +10,6 @@ import "./BaseLyraFeed.sol";
 
 // interfaces
 import {ILyraSpotDiffFeed} from "../interfaces/ILyraSpotDiffFeed.sol";
-import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
 import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 

@@ -125,11 +125,11 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     _checkManager(address(manager));
 
-    // Track total positions per manager, for caps
+    // take snapshot and track total positions per manager, for caps
     _takeTotalPositionSnapshotPreTrade(manager, tradeId);
     _updateTotalPositions(manager, preBalance, adjustment.amount);
 
-    // Track global subId OI (only subId == 0)
+    // take snapshot and track global OI
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 

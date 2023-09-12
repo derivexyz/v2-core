@@ -59,12 +59,12 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
       openInterestBeforeTrade[adjustment.subId][tradeId].oi = openInterest[adjustment.subId].toUint240();
     }
 
-    // take snapshot and update OI (for OI fee charging if needed)
+    // take snapshot and update global OI (for OI fee charging if needed)
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
-    // take snapshot and update total position 
-    _takeTotalPositionSnapshotPreTrade(manager, tradeId);    
+    // take snapshot and update total position
+    _takeTotalPositionSnapshotPreTrade(manager, tradeId);
     _updateTotalPositions(manager, preBalance, adjustment.amount);
     // update total position for account
     int postBalance = preBalance + adjustment.amount;

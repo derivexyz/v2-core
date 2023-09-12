@@ -16,6 +16,7 @@ import {IBaseLyraFeed} from "../interfaces/IBaseLyraFeed.sol";
  * @title BaseLyraFeed
  * @author Lyra
  * @dev Base contract for feeds that use multiple signers and signed messages to update their own data types.
+ * @dev We inherit ERC712 for easy signature verification, but the TypeHash and object is not ERC712 compliant.
  */
 abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyraFeed {
   bytes32 public constant FEED_DATA_TYPEHASH =
@@ -37,7 +38,7 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
   //    Constructor     //
   ////////////////////////
 
-  constructor(string memory name, string memory version) EIP712("LyraVolFeed", "1") {}
+  constructor(string memory name, string memory version) EIP712(name, version) {}
 
   ////////////////////////
   //  Admin Functions   //

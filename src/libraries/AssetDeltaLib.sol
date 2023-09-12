@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import {IAsset} from "../interfaces/IAsset.sol";
-import {IManager} from "../interfaces/IManager.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 
 /**
