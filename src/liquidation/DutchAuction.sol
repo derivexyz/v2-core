@@ -85,9 +85,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     cash = _cash;
   }
 
-  //////////////////////////
-  //  Owner-Only Actions  //
-  //////////////////////////
+  ////////////////////////
+  //     Owner-only     //
+  ////////////////////////
 
   /**
    * @notice Set buffer margin that will be used to determine the target margin level we liquidate to

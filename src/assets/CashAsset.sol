@@ -42,9 +42,9 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   /// @dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
 
-  /////////////////////////
-  //   State Variables   //
-  /////////////////////////
+  //////////////////////////
+  //      Variables       //
+  //////////////////////////
 
   /// @dev InterestRateModel contract address
   IInterestRateModel public rateModel;

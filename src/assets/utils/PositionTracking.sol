@@ -28,9 +28,9 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
   /// @dev Snapshot of total position before a trade, used to determine if a trade increases or decreases total position
   mapping(IManager manager => mapping(uint tradeId => OISnapshot)) public totalPositionBeforeTrade;
 
-  ///////////////////////
-  //    Admin-Only     //
-  ///////////////////////
+  /////////////////////
+  //   Owner-only    //
+  /////////////////////
 
   function setTotalPositionCap(IManager manager, uint cap) external onlyOwner {
     totalPositionCap[manager] = cap;
@@ -38,9 +38,9 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
     emit TotalPositionCapSet(address(manager), cap);
   }
 
-  ////////////////
-  //  Internal  //
-  /////////////////
+  /////////////////////
+  //    Internal     //
+  /////////////////////
 
   /**
    * @dev Update total position for a manager, base on adjustment of a single account

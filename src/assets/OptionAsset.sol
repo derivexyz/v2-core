@@ -27,7 +27,7 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
   using SignedDecimalMath for int;
 
   ///////////////////////
-  //  State Variables  //
+  //     Variables     //
   ///////////////////////
 
   /// @dev Contract to get spot prices which are locked in at settlement
@@ -91,9 +91,9 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
     _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
   }
 
-  ////////////
-  //  View  //
-  ////////////
+  ///////////////////////
+  //  View Functions   //
+  ///////////////////////
 
   /**
    * @notice Decode subId into expiry, strike and whether option is call or put

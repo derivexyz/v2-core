@@ -94,9 +94,9 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     perp = perp_;
   }
 
-  ////////////////////
-  //   Admin-Only   //
-  ////////////////////
+  /////////////////////
+  //   Owner-only    //
+  /////////////////////
 
   /**
    * @dev set max tradeable expiries in a single account

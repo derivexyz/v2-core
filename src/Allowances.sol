@@ -18,16 +18,22 @@ contract Allowances is IAllowances {
   ///////////////
 
   /// @dev accountId => owner => asset => subId => delegate => allowance to add
-  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public
-    positiveSubIdAllowance;
+  mapping(
+    uint accountId
+      => mapping(address owner => mapping(IAsset asset => mapping(uint subId => mapping(address delegate => uint))))
+  ) public positiveSubIdAllowance;
 
   /// @dev accountId => owner => asset => subId => delegate => allowance to reduce
-  mapping(uint => mapping(address => mapping(IAsset => mapping(uint => mapping(address => uint))))) public
-    negativeSubIdAllowance;
+  mapping(
+    uint accountId
+      => mapping(address owner => mapping(IAsset asset => mapping(uint subId => mapping(address delegate => uint))))
+  ) public negativeSubIdAllowance;
 
   /// @dev accountId => owner => asset => delegate => allowance
-  mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public positiveAssetAllowance;
-  mapping(uint => mapping(address => mapping(IAsset => mapping(address => uint)))) public negativeAssetAllowance;
+  mapping(uint accountId => mapping(address owner => mapping(IAsset asset => mapping(address delegate => uint)))) public
+    positiveAssetAllowance;
+  mapping(uint accountId => mapping(address owner => mapping(IAsset asset => mapping(address delegate => uint)))) public
+    negativeAssetAllowance;
 
   /////////////
   // Setting //

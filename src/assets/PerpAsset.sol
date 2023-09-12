@@ -164,9 +164,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     needAllowance = true;
   }
 
-  //////////////////////////////
-  //   Privileged Functions   //
-  //////////////////////////////
+  ///////////////////////////
+  //   Guarded Functions   //
+  ///////////////////////////
 
   /**
    * @notice Triggered when a user wants to migrate an account to a new manager
@@ -194,9 +194,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     return _clearRealizedPNL(accountId);
   }
 
-  ////////////////////////
-  //  Public Functions  //
-  ////////////////////////
+  //////////////////////////
+  //   Public Functions   //
+  //////////////////////////
 
   /**
    * @notice This function update funding for an account and apply to position detail

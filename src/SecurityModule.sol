@@ -54,9 +54,9 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
     stableAsset.safeApprove(address(_cashAsset), type(uint).max);
   }
 
-  ////////////////////////////
-  //  Owner-only Functions  //
-  ////////////////////////////
+  /////////////////////////////
+  //        Owner-Only       //
+  /////////////////////////////
 
   /**
    * @notice set which address can request funds from security module
@@ -87,7 +87,7 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
   }
 
   /////////////////////////////
-  //  Whitelisted Functions  //
+  //    Guarded Functions    //
   /////////////////////////////
 
   /**
