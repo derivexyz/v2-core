@@ -27,17 +27,21 @@ import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettlementFeed {
   uint64 public constant SETTLEMENT_TWAP_DURATION = 30 minutes;
 
+  ////////////////////////
+  //     Variables      //
+  ////////////////////////
+
   ISpotFeed public spotFeed;
 
   /// @dev secondary heartbeat for when the forward price is close to expiry
   uint64 public settlementHeartbeat = 5 minutes;
 
   /// @dev forward price data
-  mapping(uint64 => ForwardDetails) private forwardDetails;
+  mapping(uint64 expiry => ForwardDetails) private forwardDetails;
 
   /// @dev settlement price data, as time approach expiry
   ///      the spot data stored here start contributing to forward price
-  mapping(uint64 => SettlementDetails) private settlementDetails;
+  mapping(uint64 expiry => SettlementDetails) private settlementDetails;
 
   ////////////////////////
   //    Constructor     //
@@ -48,9 +52,9 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     emit SpotFeedUpdated(_spotFeed);
   }
 
-  ///////////
-  // Admin //
-  ///////////
+  ////////////////////////
+  // Owner Only Actions //
+  ////////////////////////
 
   /**
    * @dev in the last SETTLEMENT_TWAP_DURATION before expiry, we require constant update on settlement data

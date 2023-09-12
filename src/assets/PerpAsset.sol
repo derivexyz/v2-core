@@ -37,6 +37,17 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
+
+  /// @dev Max hourly funding rate
+  int public immutable maxRatePerHour;
+
+  /// @dev Min hourly funding rate
+  int public immutable minRatePerHour;
+
+  ///////////////////////
+  //  State Variables  //
+  ///////////////////////
+
   /// @dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
   ISpotFeed public spotFeed;
 
@@ -48,12 +59,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   /// @dev Mapping from account to position
   mapping(uint accountId => PositionDetail) public positions;
 
-  /// @dev Max hourly funding rate
-  int public immutable maxRatePerHour;
-
-  /// @dev Min hourly funding rate
-  int public immutable minRatePerHour;
-
   /// @dev static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
@@ -63,6 +68,10 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   /// @dev Last time aggregated funding rate was updated
   uint64 public lastFundingPaidAt;
 
+  ///////////////////////
+  //    Constructor    //
+  ///////////////////////
+
   constructor(ISubAccounts _subAccounts, int maxAbsRatePerHour) ManagerWhitelist(_subAccounts) {
     lastFundingPaidAt = uint64(block.timestamp);
 
@@ -70,9 +79,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     minRatePerHour = -maxAbsRatePerHour;
   }
 
-  //////////////////////////////
-  //   Owner Only Functions   //
-  //////////////////////////////
+  //////////////////////////
+  //  Owner Only Actions  //
+  //////////////////////////
 
   /**
    * @notice Set new spot feed address
@@ -99,6 +108,17 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     impactBidPriceFeed = _impactBidPriceFeed;
 
     emit ImpactFeedsUpdated(address(_impactAskPriceFeed), address(_impactBidPriceFeed));
+  }
+
+  /**
+   * @notice Set new static interest rate
+   * @param _staticInterestRate New static interest rate for the asset.
+   */
+  function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
+    if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
+    staticInterestRate = _staticInterestRate;
+
+    emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
   }
 
   ///////////////////////
@@ -145,6 +165,11 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     needAllowance = true;
   }
 
+
+  //////////////////////////////
+  //   Privileged Functions   //
+  //////////////////////////////
+
   /**
    * @notice Triggered when a user wants to migrate an account to a new manager
    * @dev block update with non-whitelisted manager
@@ -156,10 +181,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     uint pos = subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
     _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
   }
-
-  //////////////////////////////
-  //   Privileged Functions   //
-  //////////////////////////////
 
   /**
    * @notice Manager-only function to clear pnl and funding before risk checks
@@ -175,20 +196,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     return _clearRealizedPNL(accountId);
   }
 
-  /**
-   * @notice Set new static interest rate
-   * @param _staticInterestRate New static interest rate for the asset.
-   */
-  function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
-    if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
-    staticInterestRate = _staticInterestRate;
-
-    emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
-  }
-
-  //////////////////////
-  // Public Functions //
-  //////////////////////
+  ////////////////////////
+  //  Public Functions  //
+  ////////////////////////
 
   /**
    * @notice This function update funding for an account and apply to position detail
@@ -200,7 +210,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
-   * @notice a public function to settle position with index, update lastIndex price and move
+   * @notice Settle position with index, update lastIndex price and update position.PNL
    * @param accountId Account Id to settle
    */
   function realizePNLWithMark(uint accountId) external {
@@ -247,6 +257,10 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     (bid,) = impactBidPriceFeed.getResult();
     (ask,) = impactAskPriceFeed.getResult();
   }
+
+  //////////////////////////
+  //  Internal Functions  //
+  //////////////////////////
 
   /**
    * @notice real perp position pnl based on current market price
@@ -391,7 +405,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   //////////////////////////
-  //     Modifiers        //
+  //      Modifiers       //
   //////////////////////////
 
   modifier onlyManagerForAccount(uint accountId) {

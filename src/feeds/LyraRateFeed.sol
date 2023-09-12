@@ -14,6 +14,11 @@ import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
  * @notice Rate feed that takes off-chain updates, verify signature and update on-chain
  */
 contract LyraRateFeed is BaseLyraFeed, ILyraRateFeed, IInterestRateFeed {
+
+  ////////////////////////
+  //     Variables      //
+  ////////////////////////
+
   mapping(uint64 expiry => RateDetail) private rateDetails;
 
   ////////////////////////

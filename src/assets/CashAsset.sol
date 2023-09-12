@@ -39,21 +39,21 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   /// @dev The token address for stable coin
   IERC20Metadata public immutable wrappedAsset;
 
-  /// @dev InterestRateModel contract address
-  IInterestRateModel public rateModel;
-
   /// @dev Store stable coin decimal as immutable
   uint8 private immutable stableDecimals;
+
+  /////////////////////////
+  //   State Variables   //
+  /////////////////////////
+
+  /// @dev InterestRateModel contract address
+  IInterestRateModel public rateModel;
 
   /// @dev The address of liquidation module, which can trigger call of insolvency
   IDutchAuction public liquidationModule;
 
   /// @dev The security module accountId used for collecting a portion of fees
   uint public smId;
-
-  /////////////////////////
-  //   State Variables   //
-  /////////////////////////
 
   /// @dev Total amount of positive balances
   uint128 public totalSupply;

@@ -41,7 +41,7 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
   constructor(string memory name, string memory version) EIP712(name, version) {}
 
   ////////////////////////
-  //  Admin Functions   //
+  // Owner Only Actions //
   ////////////////////////
 
   function addSigner(address signer, bool isWhitelisted) external onlyOwner {

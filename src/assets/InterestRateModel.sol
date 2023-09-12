@@ -19,10 +19,6 @@ contract InterestRateModel is IInterestRateModel {
   using SafeCast for uint;
   using DecimalMath for uint;
 
-  /////////////////////
-  // State Variables //
-  /////////////////////
-
   /// @dev The base yearly interest rate represented as a mantissa (0-1e18)
   uint public immutable minRate;
 
@@ -59,7 +55,7 @@ contract InterestRateModel is IInterestRateModel {
   }
 
   ////////////////////////
-  //   Interest Rates   //
+  //  Public Functions  //
   ////////////////////////
 
   /**

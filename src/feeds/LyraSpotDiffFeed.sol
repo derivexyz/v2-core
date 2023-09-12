@@ -19,6 +19,11 @@ import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
  * @notice Feed that returns the total of a spot feed and the updated feed value
  */
 contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
+
+  ////////////////////////
+  //     Variables      //
+  ////////////////////////
+  
   ISpotFeed public spotFeed;
 
   SpotDiffDetail public spotDiffDetails;

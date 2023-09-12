@@ -26,6 +26,10 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
   using SafeCast for int;
   using SignedDecimalMath for int;
 
+  ///////////////////////
+  //  State Variables  //
+  ///////////////////////
+
   /// @dev Contract to get spot prices which are locked in at settlement
   ISettlementFeed public settlementFeed;
 
@@ -40,9 +44,9 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
     settlementFeed = ISettlementFeed(_settlementFeed);
   }
 
-  /////////////////////
-  //  Transfer Hook  //
-  /////////////////////
+  ///////////////////////
+  //   Transfer Hook   //
+  ///////////////////////
 
   function handleAdjustment(
     ISubAccounts.AssetAdjustment memory adjustment,

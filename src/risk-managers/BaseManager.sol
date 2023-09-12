@@ -34,10 +34,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   using SignedDecimalMath for int;
   using SafeCast for uint;
 
-  ///////////////
-  // Variables //
-  ///////////////
-
   /// @dev Account contract address
   ISubAccounts public immutable subAccounts;
 
@@ -46,6 +42,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /// @dev Dutch auction contract address, can trigger execute bid
   IDutchAuction public immutable liquidation;
+
+  /////////////////
+  //  Variables  //
+  /////////////////
 
   /// @dev Portfolio viewer contract
   IBasePortfolioViewer public viewer;
@@ -317,7 +317,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   /**
-   * @dev pay fee, carry up to minFee
+   * @dev Pay fee, carry up to minFee
    */
   function _payFee(uint accountId, uint fee) internal {
     // Only consider min fee if expected fee is > 0
