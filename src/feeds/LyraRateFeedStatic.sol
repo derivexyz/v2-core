@@ -12,8 +12,8 @@ import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
  * @notice Static feed contract we use that set static interest rates for PMRM.
  */
 contract LyraRateFeedStatic is Ownable2Step, IInterestRateFeed {
-
   event RateUpdated(int64 rate, uint64 confidence);
+
   error LRFS_StaticRateOutOfRange();
 
   ////////////////////////

@@ -617,7 +617,11 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev Return the total net margin and MtM in one function call
    */
-  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint) external view returns (int margin, int markToMarket) {
+  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint)
+    external
+    view
+    returns (int margin, int markToMarket)
+  {
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     return _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
   }
@@ -694,7 +698,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @notice Calculate isolated margin requirement for a put option
    * @param amount Expected a negative number, representing amount of shorts
-
+   *
    * @return Expected a negative number. Indicating how much cash is required to open this position in isolation
    */
   function _getIsolatedMarginForPut(

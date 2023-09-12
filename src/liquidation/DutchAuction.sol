@@ -455,7 +455,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @dev Starts an insolvent auction 
+   * @dev Starts an insolvent auction
    * @param accountId The id of the account that is being liquidated
    */
   function _startInsolventAuction(uint accountId, uint scenarioId, int mm, int bufferMargin, bool isForce) internal {

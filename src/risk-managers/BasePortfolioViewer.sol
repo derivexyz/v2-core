@@ -31,9 +31,9 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
   ISubAccounts public immutable subAccounts;
   ICashAsset public immutable cashAsset;
 
-  ///////////////
-  // Variables //
-  ///////////////
+  //////////////////////////
+  //      Variables       //
+  //////////////////////////
 
   /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   mapping(address asset => uint) public OIFeeRateBPS;
@@ -47,7 +47,7 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
   }
 
   //////////////////////////
-  //        Setter        //
+  //     Owner-Only       //
   //////////////////////////
 
   /**

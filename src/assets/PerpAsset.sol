@@ -37,7 +37,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
-
   /// @dev Max hourly funding rate
   int public immutable maxRatePerHour;
 
@@ -164,7 +163,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     needAllowance = true;
   }
-
 
   //////////////////////////////
   //   Privileged Functions   //
