@@ -137,7 +137,7 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
     (, uint preTradePos) = asset.totalPositionBeforeTrade(manager, tradeId);
     uint postTradePos = asset.totalPosition(manager);
 
-    // If the trade increased OI and we are past the cap, revert.
+    // If the trade increased total position and we are past the cap, revert.
     if (preTradePos < postTradePos && postTradePos > totalPosCap) revert BM_AssetCapExceeded();
   }
 

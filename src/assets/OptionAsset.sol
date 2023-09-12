@@ -29,16 +29,12 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
   /// @dev Contract to get spot prices which are locked in at settlement
   ISettlementFeed public settlementFeed;
 
-  ///////////////
-  // Variables //
-  ///////////////
-
   /// @dev Each account's total position: (sum of .abs() of all option positions)
   mapping(uint accountId => uint) public accountTotalPosition;
 
-  ////////////////////////
-  //    Constructor     //
-  ////////////////////////
+  ///////////////////////
+  //    Constructor    //
+  ///////////////////////
 
   constructor(ISubAccounts _subAccounts, address _settlementFeed) ManagerWhitelist(_subAccounts) {
     settlementFeed = ISettlementFeed(_settlementFeed);
@@ -63,16 +59,13 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
       openInterestBeforeTrade[adjustment.subId][tradeId].oi = openInterest[adjustment.subId].toUint240();
     }
 
-    // take snapshot for subId globally (if its the first time an adjustment is seen in the trade)
+    // take snapshot and update OI (for OI fee charging if needed)
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
-    // then update the subId OI
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
-    // TotalOI snapshot
-    _takeTotalOISnapshotPreTrade(manager, tradeId);
-    // update totalOI
-    _updateTotalOI(manager, preBalance, adjustment.amount);
-
+    // take snapshot and update total position 
+    _takeTotalPositionSnapshotPreTrade(manager, tradeId);    
+    _updateTotalPositions(manager, preBalance, adjustment.amount);
     // update total position for account
     int postBalance = preBalance + adjustment.amount;
     accountTotalPosition[adjustment.acc] =
@@ -89,14 +82,14 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
   function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
     _checkManager(address(newManager));
 
-    // migrate OI cap to new manager
+    // migrate total positions to a new manager
     uint pos = accountTotalPosition[accountId];
-    _migrateManagerOI(pos, subAccounts.manager(accountId), newManager);
+    _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
   }
 
-  //////////
-  // View //
-  //////////
+  ////////////
+  //  View  //
+  ////////////
 
   /**
    * @notice Decode subId into expiry, strike and whether option is call or put
@@ -138,10 +131,9 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
     return (getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
 
-  //////////////
-  // Internal //
-  ////////////
-
+  /**
+   * @notice Get settlement value of a specific option position.
+   */
   function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
     public
     pure

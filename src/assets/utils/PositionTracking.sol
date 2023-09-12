@@ -11,7 +11,9 @@ import {IManager} from "../../interfaces/IManager.sol";
 /**
  * @title PositionTracking
  * @author Lyra
- * @notice contract helping assets to track OI and total supply, useful for charging fees, caps.. etc
+ * @notice Contract helping assets to track total position size for each manager.
+ *         Total Position = sum of all positive & negative balances
+ * @dev    Managers must check the position cap themselves
  */
 contract PositionTracking is Ownable2Step, IPositionTracking {
   using SafeCast for uint;
@@ -23,6 +25,7 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
   /// @dev Each manager's max position sum. This aggregates .abs() of all opened position
   mapping(IManager manager => uint) public totalPosition;
 
+  /// @dev Snapshot of total position before a trade, used to determine if a trade increases or decreases total position
   mapping(IManager manager => mapping(uint tradeId => OISnapshot)) public totalPositionBeforeTrade;
 
   ///////////////////////
@@ -35,16 +38,16 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
     emit TotalPositionCapSet(address(manager), cap);
   }
 
-  //////////////
-  // Internal //
-  //////////////
+  ////////////////
+  //  Internal  //
+  /////////////////
 
   /**
-   * @dev update global OI for an subId, base on adjustment of a single account - note manager must check if it exceeds the cap
+   * @dev Update total position for a manager, base on adjustment of a single account
    * @param preBalance Account balance before an adjustment
    * @param change Change of balance
    */
-  function _updateTotalOI(IManager manager, int preBalance, int change) internal {
+  function _updateTotalPositions(IManager manager, int preBalance, int change) internal {
     int postBalance = preBalance + change;
 
     // update total position for manager, won't revert if it exceeds the cap, should only be checked by manager by the end of all transfers
@@ -52,9 +55,9 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
   }
 
   /**
-   * @dev Take snapshot of total OI before a trade
+   * @dev Take snapshot of total position before a trade
    */
-  function _takeTotalOISnapshotPreTrade(IManager manager, uint tradeId) internal {
+  function _takeTotalPositionSnapshotPreTrade(IManager manager, uint tradeId) internal {
     if (totalPositionBeforeTrade[manager][tradeId].initialized) return;
 
     uint oi = totalPosition[manager];
@@ -65,9 +68,9 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
   }
 
   /**
-   * @dev Move OI from one manager to another, to be called in manager change hook of the asset inheriting this.
+   * @dev Move total positions from one manager to another, to be called in manager change hook of the asset inheriting this.
    */
-  function _migrateManagerOI(uint pos, IManager oldManager, IManager newManager) internal {
+  function _migrateManagerTotalPositions(uint pos, IManager oldManager, IManager newManager) internal {
     totalPosition[oldManager] -= pos;
     totalPosition[newManager] += pos;
 
