@@ -206,6 +206,26 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(perpPrice, 550e18);
   }
 
+  function testSpotUpdateDoesNotBreakFunding() public {
+    _setPricesPositiveFunding();
+
+    vm.warp(block.timestamp + 1 hours);
+
+    // applying alice and bob before and after spot update should not make sum inconsistent
+    perp.applyFundingOnAccount(aliceAcc);
+
+    // spot price update kicks in at this point
+    spotFeed.setSpot(1000e18, 1e18);
+
+    perp.applyFundingOnAccount(bobAcc);
+
+    (, int aliceFunding,,,) = perp.positions(aliceAcc);
+    (, int bobFunding,,,) = perp.positions(bobAcc);
+
+    assertEq(aliceFunding, 0.75e18);
+    assertEq(bobFunding, -0.75e18);
+  }
+
   function _setPricesPositiveFunding() internal {
     bidImpactFeed.setSpotDiff(6e18, 1e18);
     askImpactFeed.setSpotDiff(6e18, 1e18);

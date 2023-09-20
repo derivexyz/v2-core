@@ -17,8 +17,8 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
     int128 funding;
     // Realized pnl, not yet settled as cash in Accounts
     int128 pnl;
-    // Last aggregated funding rate applied to this position
-    int128 lastAggregatedFundingRate;
+    // Last aggregated funding applied to this position.
+    int128 lastAggregatedFunding;
     // Timestamp of the last time funding was applied
     uint64 lastFundingPaid;
   }

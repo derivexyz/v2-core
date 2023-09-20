@@ -59,8 +59,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   /// @dev static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
-  /// @dev Latest aggregated funding rate
-  int128 public aggregatedFundingRate;
+  /// @dev Latest aggregated funding that should be applied to 1 contract.
+  int128 public aggregatedFunding;
 
   /// @dev Last time aggregated funding rate was updated
   uint64 public lastFundingPaidAt;
@@ -308,13 +308,13 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     int funding = _getUnrealizedFunding(accountId, size, indexPrice);
     // apply funding
     positions[accountId].funding += funding.toInt128();
-    positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
+    positions[accountId].lastAggregatedFunding = aggregatedFunding;
 
-    emit FundingAppliedOnAccount(accountId, funding, aggregatedFundingRate);
+    emit FundingAppliedOnAccount(accountId, funding, aggregatedFunding);
   }
 
   /**
-   * @dev Update funding rate, reflected on aggregatedFundingRate
+   * @dev Update funding rate, reflected on aggregatedFunding
    */
   function _updateFundingRate() internal {
     if (block.timestamp == lastFundingPaidAt) return;
@@ -325,11 +325,11 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    aggregatedFundingRate += (fundingRate * timeElapsed / 1 hours).toInt128();
+    aggregatedFunding += (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
 
     lastFundingPaidAt = (block.timestamp).toUint64();
 
-    emit FundingRateUpdated(aggregatedFundingRate, fundingRate, lastFundingPaidAt);
+    emit FundingRateUpdated(aggregatedFunding, fundingRate, lastFundingPaidAt);
   }
 
   /**
@@ -369,9 +369,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   function _getUnrealizedFunding(uint accountId, int size, int indexPrice) internal view returns (int funding) {
     PositionDetail storage position = positions[accountId];
 
-    int rateToPay = aggregatedFundingRate - position.lastAggregatedFundingRate;
+    int rateToPay = aggregatedFunding - position.lastAggregatedFunding;
 
-    funding = -size.multiplyDecimal(indexPrice).multiplyDecimal(rateToPay);
+    funding = -size.multiplyDecimal(rateToPay);
   }
 
   /**
