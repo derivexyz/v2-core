@@ -39,40 +39,16 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
   uint public lastTradeId = 0;
 
   /// @dev accountId to manager
-  mapping(uint => IManager) public manager;
+  mapping(uint accountId => IManager) public manager;
 
   /// @dev accountId => asset => subId => BalanceAndOrder struct
-  mapping(uint => mapping(IAsset => mapping(uint => BalanceAndOrder))) public balanceAndOrder;
+  mapping(uint accountId => mapping(IAsset asset => mapping(uint subId => BalanceAndOrder))) public balanceAndOrder;
 
   /// @dev accountId to non-zero assets array
-  mapping(uint => HeldAsset[]) public heldAssets;
+  mapping(uint accountId => HeldAsset[]) public heldAssets;
 
   /// @dev user nonce for permit. User => wordPosition => nonce bit map
-  mapping(address => mapping(uint => uint)) public nonceBitmap;
-
-  ///////////////
-  // Modifiers //
-  ///////////////
-
-  modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
-    if (!_isApprovedOrOwner(sender, accountId)) {
-      revert AC_NotOwnerOrERC721Approved(
-        sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
-      );
-    }
-    _;
-  }
-
-  modifier onlyManager(uint accountId) {
-    address accountManager = address(manager[accountId]);
-    if (msg.sender != accountManager) revert AC_OnlyManager();
-    _;
-  }
-
-  modifier onlyAsset(IAsset asset) {
-    if (msg.sender != address(asset)) revert AC_OnlyAsset();
-    _;
-  }
+  mapping(address account => mapping(uint wordPosition => uint nonce)) public nonceBitmap;
 
   ////////////////////////
   //    Constructor     //
@@ -732,5 +708,29 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
 
     // check if caller is manager
     return address(manager[accountId]) == msg.sender;
+  }
+
+  ///////////////
+  // Modifiers //
+  ///////////////
+
+  modifier onlyOwnerOrManagerOrERC721Approved(address sender, uint accountId) {
+    if (!_isApprovedOrOwner(sender, accountId)) {
+      revert AC_NotOwnerOrERC721Approved(
+        sender, accountId, ownerOf(accountId), manager[accountId], getApproved(accountId)
+      );
+    }
+    _;
+  }
+
+  modifier onlyManager(uint accountId) {
+    address accountManager = address(manager[accountId]);
+    if (msg.sender != accountManager) revert AC_OnlyManager();
+    _;
+  }
+
+  modifier onlyAsset(IAsset asset) {
+    if (msg.sender != address(asset)) revert AC_OnlyAsset();
+    _;
   }
 }

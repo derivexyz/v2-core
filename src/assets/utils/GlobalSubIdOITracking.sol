@@ -8,7 +8,8 @@ import {IGlobalSubIdOITracking} from "../../../src/interfaces/IGlobalSubIdOITrac
 
 /**
  * @title GlobalSubIdOITracking
- * @notice Contract helping assets to track OI and total supply globally for each subId
+ * @notice Contract helping assets to track Open Interest (OI) globally for each subId
+ *         This can later easily be used to see if OI increase or decreased for a subId in a trade, and charge fees accordingly
  */
 contract GlobalSubIdOITracking is IGlobalSubIdOITracking {
   using SafeCast for uint;
@@ -34,14 +35,13 @@ contract GlobalSubIdOITracking is IGlobalSubIdOITracking {
   }
 
   /**
-   * @dev update global OI for an subId
+   * @dev Update global OI for an subId
    * @param preBalance Account balance before an adjustment
    * @param change Change of balance
    */
   function _updateSubIdOI(uint subId, int preBalance, int change) internal {
     int postBalance = preBalance + change;
 
-    // update OI for subId
     openInterest[subId] =
       (openInterest[subId].toInt256() + SignedMath.max(0, postBalance) - SignedMath.max(0, preBalance)).toUint256();
   }

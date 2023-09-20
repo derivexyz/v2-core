@@ -4,6 +4,11 @@ pragma solidity ^0.8.13;
 import "lyra-utils/math/Black76.sol";
 import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 
+/**
+ * @title OptionPricing
+ * @author Lyra
+ * @notice Contract that calculates option value for a specific market. Can be extended in the future to add cache to safe gas ...etc
+ */
 contract OptionPricing is IOptionPricing {
   function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external pure returns (int) {
     int totalMTM;

@@ -26,7 +26,7 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
   using SafeCast for int;
   using UnorderedMemoryArray for uint[];
 
-  ///@dev standard manager contract where we read the assetDetails from
+  ///@dev Standard manager contract where we read the assetDetails from
   IStandardManager public standardManager;
 
   constructor(ISubAccounts _subAccounts, ICashAsset _cash) BasePortfolioViewer(_subAccounts, _cash) {}

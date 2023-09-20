@@ -9,7 +9,6 @@ import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {SubAccounts} from "../SubAccounts.sol";
 
 // inherited
-import "openzeppelin/utils/math/SafeMath.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
@@ -45,6 +44,19 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
 
+  /// @dev The security module that will help pay out for insolvent auctions
+  ISecurityModule public immutable securityModule;
+
+  /// @dev The cash asset address, will be used to socialize losses when there's systematic insolvency
+  ICashAsset public immutable cash;
+
+  /// @dev The accounts contract for resolving address to accountIds
+  SubAccounts public immutable subAccounts;
+
+  ///////////////////////
+  //  State Variables  //
+  ///////////////////////
+
   /// @dev Help defines buffer margin: maintenance margin - bufferPercentage * (maintenance margin - mtm)
   int public bufferMarginPercentage;
 
@@ -56,15 +68,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint accountId => Auction) public auctions;
-
-  /// @dev The security module that will help pay out for insolvent auctions
-  ISecurityModule public immutable securityModule;
-
-  /// @dev The cash asset address, will be used to socialize losses when there's systematic insolvency
-  ICashAsset public immutable cash;
-
-  /// @dev The accounts contract for resolving address to accountIds
-  SubAccounts public immutable subAccounts;
 
   /// @dev The parameters for the solvent auction phase
   SolventAuctionParams public solventAuctionParams;
@@ -82,9 +85,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     cash = _cash;
   }
 
-  /////////////
-  //  Admin  //
-  /////////////
+  ////////////////////////
+  //     Owner-only     //
+  ////////////////////////
 
   /**
    * @notice Set buffer margin that will be used to determine the target margin level we liquidate to
@@ -452,9 +455,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice Explain to an end user what this does
-   * @dev Explain to a developer any extra details
-   * @param accountId the id of the account that is being liquidated
+   * @dev Starts an insolvent auction
+   * @param accountId The id of the account that is being liquidated
    */
   function _startInsolventAuction(uint accountId, uint scenarioId, int mm, int bufferMargin, bool isForce) internal {
     // negative amount in cash, -100e18 means the SM will pay out $100 CASH at most
@@ -542,7 +544,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @dev bidder got paid to take on an insolvent account
+   * @dev Bidder got paid to take on an insolvent account
    * @param accountId Account being liquidated
    * @param bidderId Account getting paid from security module to take the liquidated account
    * @param percentOfAccount the percentage of the original portfolio that was put on auction
@@ -646,9 +648,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @dev get discount percentage
-   * the discount percentage decay from startingMtMPercentage to fastAuctionCutoffPercentage during the fast auction
-   * then decay from fastAuctionCutoffPercentage to 0 during the slow auction
+   * @notice Get discount percentage
+   * @dev the discount percentage decay from startingMtMPercentage to fastAuctionCutoffPercentage during the fast auction
+   *      then decay from fastAuctionCutoffPercentage to 0 during the slow auction
    */
   function _getDiscountPercentage(uint startTimestamp, uint currentTimestamp)
     internal
@@ -692,7 +694,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @notice gets the current bid price for a solvent auction at the current block
+   * @notice Gets the current bid price for a solvent auction at the current block
    * @dev invariant: returned bids should always be positive
    * @param accountId the uint id related to the auction
    * @return int the current bid price for the auction
@@ -717,8 +719,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @dev return the value that the security module will pay the liquidator
-   * @dev this can be translated to a "negative" bid price.
+   * @dev Return the value that the security module will pay the liquidator
+   * @dev This can be translated to a "negative" bid price.
    *
    * @return payout: a positive number indicating how much the security module will pay the liquidator
    */

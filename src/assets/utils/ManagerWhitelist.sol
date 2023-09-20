@@ -8,11 +8,11 @@ import {IManagerWhitelist} from "../../../src/interfaces/IManagerWhitelist.sol";
 
 /**
  * @title ManagerWhitelist
- * @dev   Abstract contract for assets to control whitelisted managers.
+ * @dev   Contract for assets to control whitelisted managers.
  * @author Lyra
  */
 
-contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
+abstract contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
   /// @dev Account contract address
   ISubAccounts public immutable subAccounts;
 

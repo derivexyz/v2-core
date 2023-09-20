@@ -116,8 +116,8 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
 
     _checkManager(address(manager));
 
-    _takeTotalOISnapshotPreTrade(manager, tradeId);
-    _updateTotalOI(manager, preBalance, adjustment.amount);
+    _takeTotalPositionSnapshotPreTrade(manager, tradeId);
+    _updateTotalPositions(manager, preBalance, adjustment.amount);
 
     if (adjustment.amount == 0) return (preBalance, false);
 
@@ -137,6 +137,6 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
     _checkManager(address(newManager));
 
     uint pos = subAccounts.getBalance(accountId, IAsset(address(this)), 0).toUint256();
-    _migrateManagerOI(pos, subAccounts.manager(accountId), newManager);
+    _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
   }
 }

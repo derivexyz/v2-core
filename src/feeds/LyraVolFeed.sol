@@ -23,8 +23,7 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
   //      Variable      //
   ////////////////////////
 
-  // expiry => vol details
-  mapping(uint => VolDetails) private volDetails;
+  mapping(uint expiry => VolDetails) private volDetails;
 
   ////////////////////////
   //    Constructor     //

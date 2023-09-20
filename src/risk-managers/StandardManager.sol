@@ -94,8 +94,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     ISRMPortfolioViewer _viewer
   ) BaseManager(subAccounts_, cashAsset_, _dutchAuction, _viewer) {}
 
-  ////////////////////////
-  //    Admin-Only     //
+  ///////////////////////
+  //    Owner-Only     //
   ///////////////////////
 
   /**
@@ -307,7 +307,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev perform a risk check on the account.
+   * @dev Perform a risk check on the account.
    */
   function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
@@ -334,10 +334,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @notice get the net margin for the option positions. This is expected to be negative
+   * @notice Get the net margin for the option positions. This is expected to be negative
    * @param accountId Account Id for which to check
-   * @return netMargin net margin. If negative, the account is under margin requirement
-   * @return totalMarkToMarket the mark-to-market value of the portfolio, should be positive unless portfolio is obviously insolvent
+   * @return netMargin Net margin. If negative, the account is under margin requirement
+   * @return totalMarkToMarket The mark-to-market value of the portfolio, should be positive unless portfolio is obviously insolvent
    */
   function _getMarginAndMarkToMarket(uint accountId, StandardManagerPortfolio memory portfolio, bool isInitial)
     internal
@@ -359,8 +359,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev if the stable feed for stable / USD return price lower than threshold, add extra amount to im
-   * @return a positive multiplier that should be multiply to S * sum(shorts + perps)
+   * @dev If the stable feed for stable / USD return price lower than threshold, add extra amount to im
+   * @return A positive multiplier that should be multiply to S * sum(shorts + perps)
    */
   function _getDepegMultiplier(bool isInitial) internal view returns (int) {
     if (!isInitial) return 0;
@@ -372,8 +372,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @notice return the margin for a specific market, including perp & option position
-   * @dev this function should normally return a negative number, -100e18 means it requires $100 cash as margin
+   * @notice Return the margin for a specific market, including perp & option position
+   * @dev This function should normally return a negative number, -100e18 means it requires $100 cash as margin
    *      it's possible that it return positive number because of unrealizedPNL from the perp position
    */
   function _getMarketMargin(uint accountId, MarketHolding memory marketHolding, bool isInitial, int depegMultiplier)
@@ -413,7 +413,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @notice get the margin required for the perp position of an market
+   * @notice Get the margin required for the perp position of an market
    * @param indexConf index confidence
    * @return netMargin for a perp position, always negative
    */
@@ -448,7 +448,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @notice get the net margin for the option positions. This is expected to be negative
+   * @notice Get the net margin for the option positions. This is expected to be negative
    * @param minConfidence minimum confidence of perp and index oracle. This will be used to compare with other oracles
    *        and if min of all confidence scores fall below a threshold, add a penalty to the margin
    */
@@ -591,40 +591,44 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   ////////////////////////
 
   /**
-   * @dev return the detail info of an asset. Should be empty if this is not trusted by standard manager
+   * @dev Return the detail info of an asset. Should be empty if this is not trusted by standard manager
    */
   function assetDetails(IAsset asset) external view returns (AssetDetail memory) {
     return _assetDetails[asset];
   }
 
   /**
-   * @dev return the addresses of feeds and pricing modules for a specific market
+   * @dev Return the addresses of feeds and pricing modules for a specific market
    */
   function getMarketFeeds(uint marketId) external view returns (ISpotFeed, IForwardFeed, IVolFeed, IOptionPricing) {
     return (spotFeeds[marketId], forwardFeeds[marketId], volFeeds[marketId], pricingModules[marketId]);
   }
 
   /**
-   * @dev return the total net margin of an account
+   * @dev Return the total net margin of an account
    * @return margin if it is negative, the account is insolvent
    */
-  function getMargin(uint accountId, bool isInitial) public view returns (int) {
+  function getMargin(uint accountId, bool isInitial) public view returns (int margin) {
     // get portfolio from array of balances
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
-    (int margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
+    (margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
     return margin;
   }
 
   /**
-   * @dev the function used by the auction contract
+   * @dev Return the total net margin and MtM in one function call
    */
-  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint) external view returns (int, int) {
+  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint)
+    external
+    view
+    returns (int margin, int markToMarket)
+  {
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     return _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
   }
 
   /**
-   * @dev return the isolated margin for a single option position
+   * @dev Return the isolated margin for a single option position
    * @return margin negative number, indicate margin requirement for a position
    * @return markToMarket the estimated worth of this position
    */
@@ -666,7 +670,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev calculate isolated margin requirement for a given number of calls and puts
+   * @dev Calculate isolated margin requirement for a given number of calls and puts
    */
   function _getIsolatedMargin(
     uint marketId,
@@ -693,8 +697,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev calculate isolated margin requirement for a put option
-   * @dev expected to return a negative number
+   * @notice Calculate isolated margin requirement for a put option
+   * @param amount Expected a negative number, representing amount of shorts
+   *
+   * @return Expected a negative number. Indicating how much cash is required to open this position in isolation
    */
   function _getIsolatedMarginForPut(
     uint marketId,
@@ -725,8 +731,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev calculate isolated margin requirement for a call option
-   * @param amount expected a negative number, representing amount of shorts
+   * @dev Calculate isolated margin requirement for a call option
+   * @param amount Expected a negative number, representing amount of shorts
+   *
+   * @return Expected a negative number. Indicating how much cash is required to open this position in isolation
    */
   function _getIsolatedMarginForCall(
     uint marketId,
@@ -755,7 +763,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Calculate the full portfolio payoff at a given settlement price.
    *         This is used in '_calcMaxLossMargin()' calculated the max loss of a given portfolio.
    * @param price Assumed scenario price.
-   * @return payoff Net $ profit or loss of the portfolio given a settlement price.
+   * @return payoff Net profit or loss of the portfolio in cash, given a settlement price.
    */
   function _calcMaxLoss(IOptionAsset option, ExpiryHolding memory expiryHolding, uint price)
     internal
@@ -772,7 +780,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev return index price for a market
+   * @dev Return index price for a market
    */
   function _getIndexPrice(uint marketId) internal view returns (int, uint) {
     (uint spot, uint confidence) = spotFeeds[marketId].getSpot();
@@ -780,7 +788,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev return the forward price for a specific market and expiry timestamp
+   * @dev Return the forward price for a specific market and expiry timestamp
    */
   function _getForwardPrice(uint marketId, uint expiry) internal view returns (int, uint) {
     (uint fwdPrice, uint confidence) = forwardFeeds[marketId].getForwardPrice(uint64(expiry));
@@ -789,7 +797,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev get the mark to market value of an option by querying the pricing module
+   * @dev Get the mark to market value of an option by querying the pricing module
    */
   function _getMarkToMarket(
     uint marketId,

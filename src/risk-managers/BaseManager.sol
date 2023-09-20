@@ -34,10 +34,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   using SignedDecimalMath for int;
   using SafeCast for uint;
 
-  ///////////////
-  // Variables //
-  ///////////////
-
   /// @dev Account contract address
   ISubAccounts public immutable subAccounts;
 
@@ -46,6 +42,10 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   /// @dev Dutch auction contract address, can trigger execute bid
   IDutchAuction public immutable liquidation;
+
+  //////////////////////////
+  //      Variables       //
+  //////////////////////////
 
   /// @dev Portfolio viewer contract
   IBasePortfolioViewer public viewer;
@@ -156,9 +156,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     emit MaxAccountSizeUpdated(_maxAccountSize);
   }
 
-  ///////////////////
-  // Liquidations ///
-  ///////////////////
+  //////////////////////
+  //   Liquidations   //
+  //////////////////////
 
   /**
    * @notice Transfers portion of account to the liquidator.
@@ -317,7 +317,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   /**
-   * @dev pay fee, carry up to minFee
+   * @dev Pay fee, carry up to minFee
    */
   function _payFee(uint accountId, uint fee) internal {
     // Only consider min fee if expected fee is > 0
@@ -327,9 +327,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     _symmetricManagerAdjustment(accountId, feeRecipientAcc, cashAsset, 0, int(Math.max(fee, minOIFee)));
   }
 
-  ////////////////
-  // Settlement //
-  ////////////////
+  //////////////////////////
+  //     Settlement       //
+  //////////////////////////
 
   /**
    * @dev settle an account by removing all expired option positions and adjust cash balance
@@ -471,19 +471,19 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
   }
 
-  ///////////////////
-  // Account Hooks //
-  ///////////////////
+  /////////////////////
+  //  Account Hooks  //
+  /////////////////////
 
   /**
-   * @notice Ensures new manager is valid.
-   * @param newManager IManager to change account to.
+   * @notice Called when upgraded to a new manager.
+   * @dev Doesn't do any checks, rely on all assets to do checks on new managers
    */
-  function handleManagerChange(uint, IManager newManager) external view virtual override {}
+  function handleManagerChange(uint, IManager /*newManager*/ ) external view virtual override {}
 
-  ////////////////////
-  //    Modifier    //
-  ////////////////////
+  /////////////////////
+  //    Modifier     //
+  /////////////////////
 
   modifier onlyLiquidations() {
     if (msg.sender != address(liquidation)) revert BM_OnlyLiquidationModule();

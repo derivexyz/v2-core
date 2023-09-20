@@ -18,7 +18,7 @@ contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
     "SpotData(uint96 price,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
   );
 
-  // pack the following into 1 storage slot
+  // Pack the following into 1 storage slot
   SpotDetail private spotDetail;
 
   ////////////////////////

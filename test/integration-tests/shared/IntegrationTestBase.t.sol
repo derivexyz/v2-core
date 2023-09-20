@@ -16,6 +16,7 @@ import "../../../src/SubAccounts.sol";
 
 import "../../../src/risk-managers/StandardManager.sol";
 import "../../../src/risk-managers/PMRM.sol";
+import "../../../src/risk-managers/PMRMLib.sol";
 import "../../../src/risk-managers/SRMPortfolioViewer.sol";
 
 import "../../../src/feeds/OptionPricing.sol";

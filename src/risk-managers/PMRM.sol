@@ -15,7 +15,6 @@ import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IPMRMLib} from "../interfaces/IPMRMLib.sol";
 import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
-import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
 import {IVolFeed} from "../interfaces/IVolFeed.sol";
@@ -28,7 +27,6 @@ import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 import {BaseManager} from "./BaseManager.sol";
-import {PMRMLib} from "./PMRMLib.sol";
 
 /**
  * @title PMRM
@@ -42,13 +40,13 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   using SafeCast for uint;
   using SafeCast for int;
 
-  ///////////////
-  // Variables //
-  ///////////////
-
   IOptionAsset public immutable option;
   IPerpAsset public immutable perp;
   IWrappedERC20Asset public immutable baseAsset;
+
+  /////////////////
+  //  Variables  //
+  /////////////////
 
   ISpotFeed public spotFeed;
   IInterestRateFeed public interestRateFeed;
@@ -94,9 +92,9 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     perp = perp_;
   }
 
-  ////////////////////
-  //   Admin-Only   //
-  ////////////////////
+  /////////////////////
+  //   Owner-only    //
+  /////////////////////
 
   /**
    * @dev set max tradeable expiries in a single account
@@ -416,7 +414,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * @dev return index of expiry in the array, revert if not found
+   * @dev Return index of expiry in the array, revert if not found
    */
   function findInArray(ExpiryHoldings[] memory expiryData, uint expiryToFind, uint arrayLen)
     internal
@@ -434,7 +432,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * @dev iterate through all asset delta, charge OI fee for perp and option assets
+   * @dev Iterate through all asset delta, charge OI fee for perp and option assets
    */
   function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
@@ -454,12 +452,12 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     _payFee(accountId, fee);
   }
 
-  //////////////
-  // External //
-  //////////////
+  ////////////////
+  //  External  //
+  ////////////////
 
   /**
-   * @notice can be called by anyone to settle a perp asset in an account
+   * @notice Can be called by anyone to settle a perp asset in an account
    */
   function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {
     if (_perp != perp) revert PMRM_UnsupportedAsset();
@@ -467,7 +465,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * @notice can be called by anyone to settle a perp asset in an account
+   * @notice Can be called by anyone to settle a perp asset in an account
    */
   function settleOptions(IOptionAsset _option, uint accountId) external {
     if (_option != option) revert PMRM_UnsupportedAsset();
@@ -475,7 +473,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * @dev merge multiple PMRM accounts into one
+   * @dev Merge multiple PMRM accounts into one
    * @param mergeIntoId the account id to merge into
    * @param mergeFromIds the account ids to merge from
    */
@@ -488,21 +486,21 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   ////////////
 
   /**
-   * @notice return all scenarios
+   * @notice Return all scenarios
    */
   function getScenarios() external view returns (IPMRM.Scenario[] memory) {
     return marginScenarios;
   }
 
   /**
-   * @notice turn balance into an arranged portfolio struct
+   * @notice Turn balance into an arranged portfolio struct
    */
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
     return _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
   }
 
   /**
-   * @notice get the initial margin or maintenance margin of an account
+   * @notice Get the initial margin or maintenance margin of an account
    * @dev if the returned value is negative, it means the account is under margin requirement
    */
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
@@ -512,7 +510,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   }
 
   /**
-   * @notice get margin level and mark to market of an account
+   * @notice Get margin level and mark to market of an account
    */
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId)
     external
