@@ -218,7 +218,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
-   * @dev This function reflect how much cash should be mark "available" for an account
+   * @notice This function reflect how much cash should be mark "available" for an account
+   * @dev The return WILL NOT be accurate if `_updateFundingRate` is not called in the same block
+   *
    * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
    */
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
@@ -296,6 +298,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
+   * @notice Apply the funding into positions[accountId].funding
+   * @dev This should be called after `_updateFundingRate`
+   *
    * Funding per Hour = (-1) × S × P × R
    * Where:
    *
@@ -307,9 +312,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    */
   function _applyFundingOnAccount(uint accountId) internal {
     int size = _getPositionSize(accountId);
-    int indexPrice = _getIndexPrice();
 
-    int funding = _getUnrealizedFunding(accountId, size, indexPrice);
+    int funding = _getFunding(aggregatedFunding, positions[accountId].lastAggregatedFunding, size);
     // apply funding
     positions[accountId].funding += funding.toInt128();
     positions[accountId].lastAggregatedFunding = aggregatedFunding;
@@ -373,7 +377,25 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   function _getUnrealizedFunding(uint accountId, int size, int indexPrice) internal view returns (int funding) {
     PositionDetail storage position = positions[accountId];
 
-    int rateToPay = aggregatedFunding - position.lastAggregatedFunding;
+    int fundingRate = _getFundingRate(indexPrice);
+
+    int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
+
+    int latestAggregatedFunding =
+      aggregatedFunding + (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
+
+    return _getFunding(latestAggregatedFunding, position.lastAggregatedFunding, size);
+  }
+
+  /**
+   * @dev Get the exact funding amount by aggregated funding and size
+   */
+  function _getFunding(int globalAggregatedFunding, int lastAggregatedFunding, int size)
+    internal
+    pure
+    returns (int funding)
+  {
+    int rateToPay = globalAggregatedFunding - lastAggregatedFunding;
 
     funding = -size.multiplyDecimal(rateToPay);
   }
