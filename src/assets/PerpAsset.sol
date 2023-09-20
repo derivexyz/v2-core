@@ -8,8 +8,6 @@ import "openzeppelin/utils/math/SafeCast.sol";
 
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
-import "openzeppelin/access/Ownable2Step.sol";
-
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";

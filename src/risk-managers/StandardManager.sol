@@ -612,6 +612,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // get portfolio from array of balances
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     (margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
+    return margin;
   }
 
   /**

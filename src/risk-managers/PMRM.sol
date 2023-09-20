@@ -15,7 +15,6 @@ import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IPMRMLib} from "../interfaces/IPMRMLib.sol";
 import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
-import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
 import {IVolFeed} from "../interfaces/IVolFeed.sol";
@@ -28,7 +27,6 @@ import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 import {BaseManager} from "./BaseManager.sol";
-import {PMRMLib} from "./PMRMLib.sol";
 
 /**
  * @title PMRM
