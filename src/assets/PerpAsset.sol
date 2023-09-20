@@ -45,18 +45,22 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   //  State Variables  //
   ///////////////////////
 
-  /// @dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
+  /// @dev Spot feed, used to determine funding by comparing index to impactAsk or impactBid
   ISpotFeed public spotFeed;
 
-  /// @dev perp feed, used for settling pnl before each trades
+  /// @dev Perp price feed, used for settling pnl before each trades
   ISpotDiffFeed public perpFeed;
+
+  /// @dev Impact ask price feed, used for determining funding
   ISpotDiffFeed public impactAskPriceFeed;
+
+  /// @dev Impact bid price feed, used for determining funding
   ISpotDiffFeed public impactBidPriceFeed;
 
   /// @dev Mapping from account to position
   mapping(uint accountId => PositionDetail) public positions;
 
-  /// @dev static hourly interest rate to borrow base asset, used to calculate funding
+  /// @dev Static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
   /// @dev Latest aggregated funding that should be applied to 1 contract.
