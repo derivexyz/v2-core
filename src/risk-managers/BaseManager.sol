@@ -372,14 +372,14 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
     int netCash = pnl + funding;
 
+    emit PerpSettled(accountId, address(perp), pnl, funding);
+
     if (netCash == 0) return;
 
     cashAsset.updateSettledCash(netCash);
 
     // update user cash amount
     subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, netCash, bytes32(0)));
-
-    emit PerpSettled(accountId, address(perp), pnl, funding);
   }
 
   /**
