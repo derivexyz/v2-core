@@ -26,8 +26,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
   uint constant ethDefaultPrice = 2000e18;
   uint constant btcDefaultPrice = 28000e18;
 
-  
-  /// @notice the order is according to the alphabet order of JSON file 
+  /// @notice the order is according to the alphabet order of JSON file
   struct Option {
     int amount;
     string expiry;
@@ -51,7 +50,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     jsonParser = new JsonMechIO();
     pricing = new OptionPricing();
 
-    expiries[0] = block.timestamp + 3 days + 8 hours;  //  2023 / 1 / 4
+    expiries[0] = block.timestamp + 3 days + 8 hours; //  2023 / 1 / 4
     expiries[1] = block.timestamp + 10 days + 8 hours; //  2023 / 1 / 11
     expiries[2] = block.timestamp + 17 days + 8 hours; //  2023 / 1 / 18
     expiries[3] = block.timestamp + 57 days + 8 hours; //  2023 / 2 / 27
@@ -109,7 +108,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
 
     ethPerp.setMockPerpPrice(ethDefaultPrice + 1e18, conf); // $1 diff
     btcPerp.setMockPerpPrice(btcDefaultPrice + 20e18, conf); // $20 diff
-    
+
     ethFeed.setForwardPrice(expiries[0], ethDefaultPrice + 0.91e18, conf);
     ethFeed.setForwardPrice(expiries[1], ethDefaultPrice + 2.83e18, conf);
     ethFeed.setForwardPrice(expiries[2], ethDefaultPrice + 4.75e18, conf);
@@ -118,7 +117,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     ethFeed.setForwardPrice(expiries[5], ethDefaultPrice + 61e18, conf);
     ethFeed.setForwardPrice(expiries[6], ethDefaultPrice + 63e18, conf);
     ethFeed.setForwardPrice(expiries[7], ethDefaultPrice + 66e18, conf);
-    
+
     btcFeed.setForwardPrice(expiries[0], btcDefaultPrice + 12.78e18, conf);
     btcFeed.setForwardPrice(expiries[1], btcDefaultPrice + 39.66e18, conf);
     btcFeed.setForwardPrice(expiries[2], btcDefaultPrice + 66.56e18, conf);
@@ -214,18 +213,15 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     _runTestCase(".test_short_call_spread_with_offset");
   }
 
-  function _runTestCase(string memory name) internal returns (ISubAccounts.AssetBalance[] memory)
-  {
-    
-    (ISubAccounts.AssetBalance[] memory balances, int _mmInteger, int _imInteger ) = _loadTestData(name);
-    (int im, int mm, ) = manager.getMarginByBalances(balances, aliceAcc);
+  function _runTestCase(string memory name) internal returns (ISubAccounts.AssetBalance[] memory) {
+    (ISubAccounts.AssetBalance[] memory balances, int _mmInteger, int _imInteger) = _loadTestData(name);
+    (int im, int mm,) = manager.getMarginByBalances(balances, aliceAcc);
 
     assertEq(mm / 1e18, _mmInteger, string.concat("MM not match for case: ", name));
     assertEq(im / 1e18, _imInteger, string.concat("IM not match for case: ", name));
   }
-  
-  function _loadTestData(string memory name) internal returns (ISubAccounts.AssetBalance[] memory, int mm, int im)
-  {
+
+  function _loadTestData(string memory name) internal returns (ISubAccounts.AssetBalance[] memory, int mm, int im) {
     string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases-2.json");
     bytes memory testCaseDetail = json.parseRaw(name);
     TestCase memory testCase = abi.decode(testCaseDetail, (TestCase));
@@ -235,13 +231,12 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](totalAssets);
 
     for (uint i = 0; i < testCase.options.length; i++) {
-
       Option memory option = testCase.options[i];
 
       uint128 strike = uint128(option.strike * 1e18);
       uint64 expiry = uint64(dateToExpiry[option.expiry]);
 
-      if (expiry == 0) revert (string.concat("Unset date to expiry value: ", option.expiry));
+      if (expiry == 0) revert(string.concat("Unset date to expiry value: ", option.expiry));
 
       // set vol and its confidence for this expiry + strike
       if (equal(option.underlying, "eth")) {
@@ -253,11 +248,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
       // fill in balance
       balances[i] = ISubAccounts.AssetBalance(
         equal(option.underlying, "eth") ? ethOption : btcOption,
-        OptionEncoding.toSubId(
-          expiry,
-          strike,
-          equal(option.typeOption, "call")
-        ),
+        OptionEncoding.toSubId(expiry, strike, equal(option.typeOption, "call")),
         option.amount
       );
     }
@@ -266,17 +257,9 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
       Option memory perp = testCase.perps[i];
 
       if (equal(perp.underlying, "eth")) {
-        balances[i + testCase.options.length] = ISubAccounts.AssetBalance(
-          ethPerp,
-          0,
-          perp.amount
-        );
+        balances[i + testCase.options.length] = ISubAccounts.AssetBalance(ethPerp, 0, perp.amount);
       } else {
-        balances[i + testCase.options.length] = ISubAccounts.AssetBalance(
-          btcPerp,
-          0,
-          perp.amount
-        );
+        balances[i + testCase.options.length] = ISubAccounts.AssetBalance(btcPerp, 0, perp.amount);
       }
     }
 
