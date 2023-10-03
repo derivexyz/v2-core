@@ -1,5 +1,6 @@
 {
   "test_long_ATM_call": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -16,6 +17,7 @@
     }
   },
   "test_long_ATM_put": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -32,6 +34,7 @@
     }
   },
   "test_short_ITM_call": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -48,6 +51,7 @@
     }
   },
   "test_short_ITM_put": {
+    "bases": [],
     "options": [
       {
         "amount": -2000000000000000000,
@@ -64,6 +68,7 @@
     }
   },
   "test_short_OTM_call": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -80,6 +85,7 @@
     }
   },
   "test_short_OTM_put": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -96,6 +102,7 @@
     }
   },
   "test_short_call_spread_with_MaxLoss": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -119,6 +126,7 @@
     }
   },
   "test_short_put_spread_with_MaxLoss": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -142,6 +150,7 @@
     }
   },
   "test_short_call_spread_with_iso_margin": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -165,6 +174,7 @@
     }
   },
   "test_short_put_spread_with_iso_margin": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -188,6 +198,7 @@
     }
   },
   "test_short_spread_over_two_expiries_both_MaxLoss": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -225,6 +236,7 @@
     }
   },
   "test_short_spread_two_expiries_both_iso": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -262,6 +274,7 @@
     }
   },
   "test_short_spread_two_currencies_one_iso_one_MaxLoss": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -299,6 +312,7 @@
     }
   },
   "test_two_currencies_two_expiries_each_iso_and_MaxLoss_for_each": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -364,6 +378,7 @@
     }
   },
   "test_long_call_spread": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -387,6 +402,7 @@
     }
   },
   "test_long_put_spread": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -410,6 +426,7 @@
     }
   },
   "test_long_box": {
+    "bases": [],
     "options": [
       {
         "amount": 1000000000000000000,
@@ -447,6 +464,7 @@
     }
   },
   "test_short_box": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -484,6 +502,7 @@
     }
   },
   "test_short_put_with_0_strike_MaxLoss": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -500,6 +519,7 @@
     }
   },
   "test_USDC_depeg": {
+    "bases": [],
     "options": [
       {
         "amount": -1000000000000000000,
@@ -516,6 +536,7 @@
     }
   },
   "test_short_call_spread_with_offset": {
+    "bases": [],
     "options": [
       {
         "amount": -1010000000000000000,
@@ -536,6 +557,71 @@
     "results": {
       "mm": -123,
       "im": -125
+    }
+  },
+  "test_short_eth_call_with_btc_collateral": {
+    "bases": [
+      {
+        "amount": 1000000000000000000,
+        "underlying": "btc"
+      }
+    ],
+    "options": [
+      {
+        "amount": -1000000000000000000,
+        "expiry": "20230118",
+        "strike": 2000,
+        "type": "call",
+        "underlying": "eth"
+      }
+    ],
+    "perps": [],
+    "results": {
+      "mm": 22160,
+      "im": 22010
+    }
+  },
+  "test_short_btc_spread_with_eth_collateral": {
+    "bases": [
+      {
+        "amount": 1000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "options": [
+      {
+        "amount": -1000000000000000000,
+        "expiry": "20230111",
+        "strike": 20000,
+        "type": "call",
+        "underlying": "btc"
+      },
+      {
+        "amount": 1000000000000000000,
+        "expiry": "20230111",
+        "strike": 22000,
+        "type": "call",
+        "underlying": "btc"
+      }
+    ],
+    "perps": [],
+    "results": {
+      "mm": -400,
+      "im": -400
+    }
+  },
+  "test_borrowing_ETH": {
+    "bases": [
+      {
+        "amount": 1000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "options": [],
+    "perps": [],
+    "results": {
+      "mm": 1600,
+      "im": 1600
     }
   }
 }

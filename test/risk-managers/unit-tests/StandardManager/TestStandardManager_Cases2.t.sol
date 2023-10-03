@@ -35,14 +35,25 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     string underlying;
   }
 
+  struct Base {
+    int amount;
+    string underlying;
+  }
+
+  struct Perp {
+    int amount;
+    string underlying;
+  }
+
   struct Result {
     int im;
     int mm;
   }
 
   struct TestCase {
+    Base[] bases;
     Option[] options;
-    Option[] perps;
+    Perp[] perps;
     Result result;
   }
 
@@ -93,9 +104,9 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
 
-    // base asset contribute 10% of its value to margin
-    manager.setBaseMarginDiscountFactor(ethMarketId, 0.1e18);
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.1e18);
+    // base asset contribute 80% of its value to margin
+    manager.setBaseMarginDiscountFactor(ethMarketId, 0.8e18);
+    manager.setBaseMarginDiscountFactor(btcMarketId, 0.8e18);
 
     _setDefaultEnv();
   }
@@ -213,6 +224,18 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     _runTestCase(".test_short_call_spread_with_offset");
   }
 
+  function testCase22() public {
+    _runTestCase(".test_short_eth_call_with_btc_collateral");
+  }
+
+  function testCase23() public {
+    _runTestCase(".test_short_btc_spread_with_eth_collateral");
+  }
+
+  function testCase24() public {
+    _runTestCase(".test_borrowing_ETH");
+  }
+
   function _runTestCase(string memory name) internal returns (ISubAccounts.AssetBalance[] memory) {
     (ISubAccounts.AssetBalance[] memory balances, int _mmInteger, int _imInteger) = _loadTestData(name);
     (int im, int mm,) = manager.getMarginByBalances(balances, aliceAcc);
@@ -226,10 +249,11 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     bytes memory testCaseDetail = json.parseRaw(name);
     TestCase memory testCase = abi.decode(testCaseDetail, (TestCase));
 
-    uint totalAssets = testCase.options.length + testCase.perps.length;
+    uint totalAssets = testCase.options.length + testCase.perps.length + testCase.bases.length;
 
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](totalAssets);
 
+    // put in options
     for (uint i = 0; i < testCase.options.length; i++) {
       Option memory option = testCase.options[i];
 
@@ -253,13 +277,27 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
       );
     }
 
+    // put in perps
     for (uint i = 0; i < testCase.perps.length; i++) {
-      Option memory perp = testCase.perps[i];
+      uint offset = testCase.options.length;
+      Perp memory perp = testCase.perps[i];
 
       if (equal(perp.underlying, "eth")) {
-        balances[i + testCase.options.length] = ISubAccounts.AssetBalance(ethPerp, 0, perp.amount);
+        balances[i + offset] = ISubAccounts.AssetBalance(ethPerp, 0, perp.amount);
       } else {
-        balances[i + testCase.options.length] = ISubAccounts.AssetBalance(btcPerp, 0, perp.amount);
+        balances[i + offset] = ISubAccounts.AssetBalance(btcPerp, 0, perp.amount);
+      }
+    }
+
+    // put in bases
+    for (uint i = 0; i < testCase.bases.length; i++) {
+      uint offset = testCase.options.length + testCase.perps.length;
+      Base memory base = testCase.bases[i];
+
+      if (equal(base.underlying, "eth")) {
+        balances[i + offset] = ISubAccounts.AssetBalance(wethAsset, 0, base.amount);
+      } else {
+        balances[i + offset] = ISubAccounts.AssetBalance(wbtcAsset, 0, base.amount);
       }
     }
 
