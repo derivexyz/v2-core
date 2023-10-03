@@ -164,7 +164,6 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
   function testCase26() public {
     _runTestCases(".Test26");
-    // mtm 0.3% diff
   }
 
   function testCase27() public {

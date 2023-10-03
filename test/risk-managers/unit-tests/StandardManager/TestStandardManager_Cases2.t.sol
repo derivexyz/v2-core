@@ -26,6 +26,8 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
   uint constant ethDefaultPrice = 2000e18;
   uint constant btcDefaultPrice = 28000e18;
 
+  uint constant mockAccIdToRequest = 1;
+
   /// @notice the order is according to the alphabet order of JSON file
   struct Option {
     int amount;
@@ -42,6 +44,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
 
   struct Perp {
     int amount;
+    int entryPrice;
     string underlying;
   }
 
@@ -52,6 +55,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
 
   struct TestCase {
     Base[] bases;
+    int cash;
     Option[] options;
     Perp[] perps;
     Result result;
@@ -120,6 +124,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     ethPerp.setMockPerpPrice(ethDefaultPrice + 1e18, conf); // $1 diff
     btcPerp.setMockPerpPrice(btcDefaultPrice + 20e18, conf); // $20 diff
 
+    // set all default expiries
     ethFeed.setForwardPrice(expiries[0], ethDefaultPrice + 0.91e18, conf);
     ethFeed.setForwardPrice(expiries[1], ethDefaultPrice + 2.83e18, conf);
     ethFeed.setForwardPrice(expiries[2], ethDefaultPrice + 4.75e18, conf);
@@ -217,6 +222,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
 
   function testCase20() public {
     stableFeed.setSpot(0.1e18, 1e18);
+
     _runTestCase(".test_USDC_depeg");
   }
 
@@ -236,9 +242,119 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     _runTestCase(".test_borrowing_ETH");
   }
 
-  function _runTestCase(string memory name) internal returns (ISubAccounts.AssetBalance[] memory) {
+  function testCase25() public {
+    _runTestCase(".test_short_eth_call_with_USDC_and_BTC");
+  }
+
+  function testCase26() public {
+    _runTestCase(".test_long_ATM_perp");
+  }
+
+  function testCase27() public {
+    _runTestCase(".test_long_OTM_perp");
+  }
+
+  function testCase28() public {
+    _runTestCase(".test_long_ITM_perp");
+  }
+
+  function testCase29() public {
+    _runTestCase(".test_short_ATM_perp");
+  }
+
+  function testCase30() public {
+    _runTestCase(".test_short_OTM_perp");
+  }
+
+  function testCase31() public {
+    _runTestCase(".test_short_ITM_perp");
+  }
+
+  function testCase32() public {
+    _runTestCase(".test_long_perp_with_btc");
+  }
+
+  function testCase33() public {
+    // 2023-1-18, 2000 Call: {"vol": 0.5, "confidence": 0.1}
+    ethFeed.setVol(uint64(dateToExpiry["20230118"]), 2000e18, 0.5e18, 0.1e18);
+    _runTestCase(".test_short_call_low_vol_conf");
+  }
+
+  function testCase34() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    // 2023-1-18, 2000 Call: {"vol": 0.5, "confidence": 0.5}
+    ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.5e18);
+    // forward conf < 0.4, right under the edge
+    ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18 - 1);
+
+    _runTestCase(".test_short_call_low_vol_and_fwd_confidence");
+  }
+
+  function testCase35() public {
+    // same as previous
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.5e18);
+    ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18);
+    // also spot conf = 0.2
+    ethFeed.setSpot(ethDefaultPrice, 0.2e18);
+
+    _runTestCase(".test_short_call_low_spot_vol_fwd_confidence");
+  }
+
+  function testCase36() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    // same as previous
+    ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.5e18);
+    ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18);
+    ethFeed.setSpot(ethDefaultPrice, 0.2e18);
+
+    _runTestCase(".test_long_call_low_spot_vol_fwd_confidence");
+  }
+
+  function testCase37() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.3e18); // 0.3 conf
+    ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18);
+    ethFeed.setSpot(ethDefaultPrice, 0.9e18); // 0.9
+
+    _runTestCase(".test_short_options_two_expiries_low_conf_one_expiry");
+  }
+
+  function testCase38() public {
+    ethPerp.setMockPerpPrice(ethDefaultPrice + 1e18, 0.1e18); // $1 diff
+
+    _runTestCase(".test_long_eth_perp_low_perp_confidence");
+  }
+
+  function testCase39() public {
+    ethFeed.setSpot(ethDefaultPrice, 0.1e18); // 0.1 conf
+
+    _runTestCase(".test_base_asset_low_spot_confidence");
+  }
+
+  function testCase40() public {
+    _runTestCase(".test_ITM_put_with_IM_multiple_of_MM");
+  }
+
+  function testCase41() public {
+    stableFeed.setSpot(0.1e18, 1e18);
+    _runTestCase(".test_long_perp_and_USDC_depeg");
+  }
+
+  function testCase42() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    // stableFeed.setSpot(0.97e18, 1e18);
+    
+    // ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.5e18); // 0.5 conf
+    // ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0);
+    ethFeed.setSpot(ethDefaultPrice, 0.2e18); // 0.2 conf
+
+    _runTestCase(".test_general_portfolio");
+  }
+
+  function _runTestCase(string memory name) internal {
     (ISubAccounts.AssetBalance[] memory balances, int _mmInteger, int _imInteger) = _loadTestData(name);
-    (int im, int mm,) = manager.getMarginByBalances(balances, aliceAcc);
+    (int im, int mm,) = manager.getMarginByBalances(balances, mockAccIdToRequest);
 
     assertEq(mm / 1e18, _mmInteger, string.concat("MM not match for case: ", name));
     assertEq(im / 1e18, _imInteger, string.concat("IM not match for case: ", name));
@@ -249,7 +365,7 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
     bytes memory testCaseDetail = json.parseRaw(name);
     TestCase memory testCase = abi.decode(testCaseDetail, (TestCase));
 
-    uint totalAssets = testCase.options.length + testCase.perps.length + testCase.bases.length;
+    uint totalAssets = testCase.options.length + testCase.perps.length + testCase.bases.length + 1;
 
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](totalAssets);
 
@@ -264,9 +380,11 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
 
       // set vol and its confidence for this expiry + strike
       if (equal(option.underlying, "eth")) {
-        ethFeed.setVol(expiry, strike, 0.5e18, 1e18);
+        (uint oldVol,) = ethFeed.getVol(strike, expiry);
+        if (oldVol == 0) ethFeed.setVol(expiry, strike, 0.5e18, 1e18);
       } else {
-        btcFeed.setVol(expiry, strike, 0.5e18, 1e18);
+        (uint oldVol,) = btcFeed.getVol(strike, expiry);
+        if (oldVol == 0) btcFeed.setVol(expiry, strike, 0.5e18, 1e18);
       }
 
       // fill in balance
@@ -284,8 +402,16 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
 
       if (equal(perp.underlying, "eth")) {
         balances[i + offset] = ISubAccounts.AssetBalance(ethPerp, 0, perp.amount);
+
+        (uint perpPrice,) = ethPerp.getPerpPrice();
+        int pnl = (int(perpPrice) - perp.entryPrice).multiplyDecimal(perp.amount);
+        ethPerp.mockAccountPnlAndFunding(mockAccIdToRequest, pnl, 0);
       } else {
         balances[i + offset] = ISubAccounts.AssetBalance(btcPerp, 0, perp.amount);
+
+        (uint perpPrice,) = btcPerp.getPerpPrice();
+        int pnl = (int(perpPrice) - perp.entryPrice).multiplyDecimal(perp.amount);
+        btcPerp.mockAccountPnlAndFunding(mockAccIdToRequest, pnl, 0);
       }
     }
 
@@ -300,6 +426,9 @@ contract UNIT_TestStandardManager_TestCases2 is TestStandardManagerBase {
         balances[i + offset] = ISubAccounts.AssetBalance(wbtcAsset, 0, base.amount);
       }
     }
+
+    // put in cash at the end
+    balances[totalAssets - 1] = ISubAccounts.AssetBalance(cash, 0, testCase.cash);
 
     mm = testCase.result.mm;
     im = testCase.result.im;
