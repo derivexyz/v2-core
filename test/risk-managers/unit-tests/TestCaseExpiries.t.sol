@@ -92,23 +92,23 @@ abstract contract TestCaseExpiries {
     // btcPerp.setMockPerpPrice(btcDefaultPrice + 20e18, conf); // $20 diff
 
     // set all default expiries
-    ethFeeds.setForwardPrice(expiries[0], ethDefaultPrice + 0.91e18, conf);
-    ethFeeds.setForwardPrice(expiries[1], ethDefaultPrice + 2.83e18, conf);
-    ethFeeds.setForwardPrice(expiries[2], ethDefaultPrice + 4.75e18, conf);
-    ethFeeds.setForwardPrice(expiries[3], ethDefaultPrice + 15.76e18, conf);
-    ethFeeds.setForwardPrice(expiries[4], ethDefaultPrice + 59e18, conf);
-    ethFeeds.setForwardPrice(expiries[5], ethDefaultPrice + 61e18, conf);
-    ethFeeds.setForwardPrice(expiries[6], ethDefaultPrice + 63e18, conf);
-    ethFeeds.setForwardPrice(expiries[7], ethDefaultPrice + 66e18, conf);
+    ethFeeds.setForwardPrice(expiries[0], ethDefaultPrice + 0.91345e18, conf);
+    ethFeeds.setForwardPrice(expiries[1], ethDefaultPrice + 2.83305e18, conf);
+    ethFeeds.setForwardPrice(expiries[2], ethDefaultPrice + 4.75450e18, conf);
+    ethFeeds.setForwardPrice(expiries[3], ethDefaultPrice + 15.76960e18, conf);
+    ethFeeds.setForwardPrice(expiries[4], ethDefaultPrice + 59.87416e18, conf);
+    ethFeeds.setForwardPrice(expiries[5], ethDefaultPrice + 61.85933e18, conf);
+    ethFeeds.setForwardPrice(expiries[6], ethDefaultPrice + 63.82840e18, conf);
+    ethFeeds.setForwardPrice(expiries[7], ethDefaultPrice + 66.3744e18, conf);
 
-    btcFeeds.setForwardPrice(expiries[0], btcDefaultPrice + 12.78e18, conf);
-    btcFeeds.setForwardPrice(expiries[1], btcDefaultPrice + 39.66e18, conf);
-    btcFeeds.setForwardPrice(expiries[2], btcDefaultPrice + 66.56e18, conf);
-    btcFeeds.setForwardPrice(expiries[3], btcDefaultPrice + 220e18, conf);
-    btcFeeds.setForwardPrice(expiries[4], btcDefaultPrice + 838e18, conf);
-    btcFeeds.setForwardPrice(expiries[5], btcDefaultPrice + 865e18, conf);
-    btcFeeds.setForwardPrice(expiries[6], btcDefaultPrice + 893e18, conf);
-    btcFeeds.setForwardPrice(expiries[7], btcDefaultPrice + 929e18, conf);
+    btcFeeds.setForwardPrice(expiries[0], btcDefaultPrice + 12.78830e18, conf);
+    btcFeeds.setForwardPrice(expiries[1], btcDefaultPrice + 39.66276e18, conf);
+    btcFeeds.setForwardPrice(expiries[2], btcDefaultPrice + 66.56301e18, conf);
+    btcFeeds.setForwardPrice(expiries[3], btcDefaultPrice + 220.77451e18, conf);
+    btcFeeds.setForwardPrice(expiries[4], btcDefaultPrice + 838.23835e18, conf);
+    btcFeeds.setForwardPrice(expiries[5], btcDefaultPrice + 865.90472e18, conf);
+    btcFeeds.setForwardPrice(expiries[6], btcDefaultPrice + 893.59763e18, conf);
+    btcFeeds.setForwardPrice(expiries[7], btcDefaultPrice + 929.24184e18, conf);
   }
 
   function _ethFeeds() internal virtual returns (MockFeeds feed);

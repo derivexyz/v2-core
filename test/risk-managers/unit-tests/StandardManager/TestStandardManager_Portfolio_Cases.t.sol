@@ -49,12 +49,12 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
   }
 
   /// @dev override to set up the environment
-  function _ethFeeds() internal override returns (MockFeeds feed) {
+  function _ethFeeds() internal view override returns (MockFeeds feed) {
     return ethFeed;
   }
 
   /// @dev override to setup the environment
-  function _btcFeeds() internal override returns (MockFeeds feed) {
+  function _btcFeeds() internal view override returns (MockFeeds feed) {
     return btcFeed;
   }
 
@@ -265,8 +265,8 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
     // stableFeed.setSpot(0.97e18, 1e18);
 
     // ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.5e18); // 0.5 conf
-    // ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0);
-    ethFeed.setSpot(ethDefaultPrice, 0.2e18); // 0.2 conf
+    // ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18 - 1);
+    // ethFeed.setSpot(ethDefaultPrice, 0.2e18); // 0.2 conf
 
     _runTestCase(".test_general_portfolio");
   }
