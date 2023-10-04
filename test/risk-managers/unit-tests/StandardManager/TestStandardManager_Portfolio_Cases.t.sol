@@ -262,11 +262,11 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
 
   function testCase42() public {
     uint64 expiry = uint64(dateToExpiry["20230118"]);
-    // stableFeed.setSpot(0.97e18, 1e18);
+    stableFeed.setSpot(0.97e18, 1e18);
 
-    // ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.5e18); // 0.5 conf
-    // ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18 - 1);
-    // ethFeed.setSpot(ethDefaultPrice, 0.2e18); // 0.2 conf
+    ethFeed.setVol(expiry, 2000e18, 0.5e18, 0.5e18); // 0.5 conf
+    ethFeed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18 - 1);
+    ethFeed.setSpot(ethDefaultPrice, 0.2e18); // 0.2 conf
 
     _runTestCase(".test_general_portfolio");
   }
