@@ -8,6 +8,7 @@ import "../../shared/mocks/MockFeeds.sol";
  * This is a shared util python generated test cases.
  * We hard coded certain expires
  */
+
 abstract contract TestCaseExpiries {
   using stdJson for string;
   using SignedDecimalMath for int;
@@ -78,7 +79,6 @@ abstract contract TestCaseExpiries {
     dateToExpiry["20230825"] = expiries[7];
   }
 
-
   function _setDefaultSpotAndForward() internal {
     uint conf = 1e18;
 
@@ -115,7 +115,6 @@ abstract contract TestCaseExpiries {
 
   function _btcFeeds() internal virtual returns (MockFeeds feed);
 
-  
   function equal(string memory a, string memory b) internal pure returns (bool) {
     return keccak256(bytes(a)) == keccak256(bytes(b));
   }

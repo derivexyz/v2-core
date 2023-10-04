@@ -12,9 +12,8 @@ import "../TestCaseExpiries.t.sol";
 contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStandardManagerBase {
   using stdJson for string;
   using SignedDecimalMath for int;
-  
-  uint constant mockAccIdToRequest = 1;
 
+  uint constant mockAccIdToRequest = 1;
 
   function setUp() public override {
     super.setUp();
@@ -281,7 +280,8 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
   }
 
   function _loadTestData(string memory name) internal returns (ISubAccounts.AssetBalance[] memory, int mm, int im) {
-    string memory json = jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases-portfolio.json");
+    string memory json =
+      jsonParser.jsonFromRelPath("/test/risk-managers/unit-tests/StandardManager/test-cases-portfolio.json");
     bytes memory testCaseDetail = json.parseRaw(name);
     TestCase memory testCase = abi.decode(testCaseDetail, (TestCase));
 
