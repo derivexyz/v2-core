@@ -520,6 +520,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       maxOfCurrent = _getMaxProportion(markToMarket, bufferMargin, discount, currentAuction.reservedCash);
     }
 
+    // calculate percentage of the original portfolio, to percentage of current portfolio
     uint convertedPercentage = percentOfAccount.divideDecimal(currentAuction.percentageLeft);
     if (convertedPercentage >= maxOfCurrent) {
       convertedPercentage = maxOfCurrent;

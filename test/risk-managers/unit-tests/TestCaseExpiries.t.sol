@@ -4,11 +4,11 @@ import "../../shared/utils/JsonMechIO.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "../../../src/feeds/OptionPricing.sol";
 import "../../shared/mocks/MockFeeds.sol";
+
 /**
  * This is a shared util python generated test cases.
  * We hard coded certain expires
  */
-
 abstract contract TestCaseExpiries {
   using stdJson for string;
   using SignedDecimalMath for int;
@@ -87,9 +87,6 @@ abstract contract TestCaseExpiries {
 
     ethFeeds.setSpot(ethDefaultPrice, conf);
     btcFeeds.setSpot(btcDefaultPrice, conf);
-
-    // ethPerp.setMockPerpPrice(ethDefaultPrice + 1e18, conf); // $1 diff
-    // btcPerp.setMockPerpPrice(btcDefaultPrice + 20e18, conf); // $20 diff
 
     // set all default expiries
     ethFeeds.setForwardPrice(expiries[0], ethDefaultPrice + 0.91345e18, conf);

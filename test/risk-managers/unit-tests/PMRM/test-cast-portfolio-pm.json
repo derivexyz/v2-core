@@ -1,0 +1,399 @@
+{
+  "test_short_ITM_call_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 1400,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_ITM_put_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 3000,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_ATM_put_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 2000,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_ATM_call_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 2000,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_OTM_call_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 2700,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_OTM_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 1700,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_ITM_call_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 500,
+              "type": "call",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 700,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_OTM_call_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 3500,
+              "type": "call",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 3700,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_ITM_call_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 500,
+              "type": "call",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 700,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_OTM_call_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 3500,
+              "type": "call",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 3700,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_ITM_put_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 3500,
+              "type": "put",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 3900,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_OTM_put_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 800,
+              "type": "put",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 900,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_ATM_put_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 1900,
+              "type": "put",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 2200,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_OTM_put_spread_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 1600,
+              "type": "put",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 1900,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_box_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 1000,
+              "type": "call",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 2000,
+              "type": "put",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_short_box_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 1000,
+              "type": "put",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230111",
+              "strike": 2000,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  },
+  "test_long_box_short_box_different_expiries_pm": {
+      "bases": [],
+      "cash": 0,
+      "options": [
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 1000,
+              "type": "call",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230118",
+              "strike": 2000,
+              "type": "put",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230227",
+              "strike": 1000,
+              "type": "put",
+              "underlying": "eth"
+          },
+          {
+              "amount": 1000000000000000000,
+              "expiry": "20230227",
+              "strike": 2000,
+              "type": "call",
+              "underlying": "eth"
+          }
+      ],
+      "perps": [],
+      "results": {
+          "im": 0,
+          "mm": 0
+      }
+  }
+}
