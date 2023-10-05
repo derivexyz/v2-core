@@ -498,7 +498,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     borrowIndex = totalBorrow.divideDecimal(prevBorrow).multiplyDecimal(borrowIndex).toUint96();
     supplyIndex = totalSupply.divideDecimal(prevSupply).multiplyDecimal(supplyIndex).toUint96();
 
-    emit InterestAccrued(interestAccrued, borrowIndex, totalSupply, totalBorrow);
+    emit InterestAccrued(interestAccrued, borrowIndex, supplyIndex, totalSupply, totalBorrow);
   }
 
   /**
