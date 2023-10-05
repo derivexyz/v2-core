@@ -34,6 +34,25 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
 
     _setupPerpPrices();
 
+    IPMRMLib.MarginParameters memory marginParams = IPMRMLib.MarginParameters({
+      imFactor: 1.3e18,
+      baseStaticDiscount: 0.95e18,
+      rateMultScale: 4e18,
+      rateAddScale: 0.12e18 // override this param
+    });
+    lib.setMarginParams(marginParams);
+
+    IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
+      pegLossThreshold: 0.98e18,
+      pegLossFactor: 2e18,
+      confThreshold: 0.6e18,
+      confMargin: 0.5e18,
+      basePercent: 0.025e18, // override this param
+      perpPercent: 0.025e18, // override this param
+      optionPercent: 0.01e18
+    });
+    lib.setOtherContingencyParams(otherContParams);
+
     // set back timestamp
     vm.warp(originalTime);
   }
@@ -108,8 +127,6 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   }
 
   function testCase15() public {
-    // 930, 928
-    // 946, 944
     _runTestCase(".test_long_box_pm");
   }
 
@@ -118,8 +135,48 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   }
 
   function testCase17() public {
-    // wrong!
-    // _runTestCase(".test_long_box_short_box_different_expiries_pm");
+    _runTestCase(".test_long_box_short_box_different_expiries_pm");
+  }
+
+  function testCase18() public {
+    _runTestCase(".test_long_ATM_perp_pm");
+  }
+
+  function testCase19() public {
+    _runTestCase(".test_long_ITM_perp_pm");
+  }
+
+  // do the same for test_long_ITM_perp_pm test_long_OTM_perp_pm test_short_ATM_perp_pm test_short_ITM_perp_pm test_short_OTM_perp_pm
+  function testCase20() public {
+    _runTestCase(".test_long_OTM_perp_pm");
+  }
+
+  function testCase21() public {
+    _runTestCase(".test_short_ATM_perp_pm");
+  }
+
+  function testCase22() public {
+    _runTestCase(".test_short_ITM_perp_pm");
+  }
+
+  function testCase23() public {
+    _runTestCase(".test_short_OTM_perp_pm");
+  }
+
+  function testCase24() public {
+    _runTestCase(".test_long_base_pm");
+  }
+
+  function testCase25() public {
+    _runTestCase(".test_covered_atm_call_pm");
+  }
+
+  function testCase26() public {
+    _runTestCase(".test_covered_itm_call_pm");
+  }
+
+  function testCase27() public {
+    _runTestCase(".test_delta_hedged_perp_pm");
   }
 
   function _runTestCase(string memory name) internal {

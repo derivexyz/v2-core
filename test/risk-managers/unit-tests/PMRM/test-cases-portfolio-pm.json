@@ -128,8 +128,8 @@
     ],
     "perps": [],
     "results": {
-      "im": 160,
-      "mm": 169
+      "im": 159,
+      "mm": 168
     }
   },
   "test_long_OTM_call_spread_pm": {
@@ -228,8 +228,8 @@
     ],
     "perps": [],
     "results": {
-      "im": 346,
-      "mm": 358
+      "im": 345,
+      "mm": 357
     }
   },
   "test_long_OTM_put_spread_pm": {
@@ -342,8 +342,8 @@
     ],
     "perps": [],
     "results": {
-      "im": 930,
-      "mm": 946
+      "im": 928,
+      "mm": 944
     }
   },
   "test_short_box_pm": {
@@ -450,6 +450,184 @@
     "results": {
       "im": -103,
       "mm": -79
+    }
+  },
+  "test_long_ATM_perp_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": 1000000000000000000,
+        "entryPrice": 2000000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": -454,
+      "mm": -349
+    }
+  },
+  "test_long_ITM_perp_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": 1000000000000000000,
+        "entryPrice": 1805000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": -259,
+      "mm": -154
+    }
+  },
+  "test_long_OTM_perp_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": 1000000000000000000,
+        "entryPrice": 2305000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": -759,
+      "mm": -654
+    }
+  },
+  "test_short_ATM_perp_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": -1000000000000000000,
+        "entryPrice": 2005000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": -451,
+      "mm": -346
+    }
+  },
+  "test_short_ITM_perp_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": -1000000000000000000,
+        "entryPrice": 2505000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": 48,
+      "mm": 153
+    }
+  },
+  "test_short_OTM_perp_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": -1000000000000000000,
+        "entryPrice": 1205000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": -1251,
+      "mm": -1146
+    }
+  },
+  "test_long_base_pm": {
+    "bases": [
+      {
+        "amount": 1000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "cash": 0,
+    "options": [],
+    "perps": [],
+    "results": {
+      "im": 1545,
+      "mm": 1650
+    }
+  },
+  "test_covered_atm_call_pm": {
+    "bases": [
+      {
+        "amount": 1000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "cash": 0,
+    "options": [
+      {
+        "amount": -1000000000000000000,
+        "expiry": "20230118",
+        "strike": 2000,
+        "type": "call",
+        "underlying": "eth"
+      }
+    ],
+    "perps": [],
+    "results": {
+      "im": 1509,
+      "mm": 1602
+    }
+  },
+  "test_covered_itm_call_pm": {
+    "bases": [
+      {
+        "amount": 1000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "cash": 0,
+    "options": [
+      {
+        "amount": -1000000000000000000,
+        "expiry": "20230118",
+        "strike": 1500,
+        "type": "call",
+        "underlying": "eth"
+      }
+    ],
+    "perps": [],
+    "results": {
+      "im": 1361,
+      "mm": 1391
+    }
+  },
+  "test_delta_hedged_perp_pm": {
+    "bases": [
+      {
+        "amount": 1000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": -1000000000000000000,
+        "entryPrice": 2005000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": 1873,
+      "mm": 1903
     }
   }
 }
