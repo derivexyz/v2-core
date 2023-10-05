@@ -128,7 +128,10 @@ function getPMRMParams() pure returns (
 
 function getDefaultScenarios() pure returns (IPMRM.Scenario[] memory) {
   IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](21);
-  // add these 27 scenarios to the array
+
+  // scenarios[0] = IPMRM.Scenario({spotShock: 1.2e18, volShock: IPMRM.VolShockDirection.Up});
+  // scenarios[1] = IPMRM.Scenario({spotShock: 1.2e18, volShock: IPMRM.VolShockDirection.None});
+  // scenarios[2] = IPMRM.Scenario({spotShock: 1.2e18, volShock: IPMRM.VolShockDirection.Down});
   scenarios[0] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
   scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
   scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
@@ -150,6 +153,9 @@ function getDefaultScenarios() pure returns (IPMRM.Scenario[] memory) {
   scenarios[18] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
   scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
   scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
+  // scenarios[24] = IPMRM.Scenario({spotShock: 0.8e18, volShock: IPMRM.VolShockDirection.Up});
+  // scenarios[25] = IPMRM.Scenario({spotShock: 0.8e18, volShock: IPMRM.VolShockDirection.None});
+  // scenarios[26] = IPMRM.Scenario({spotShock: 0.8e18, volShock: IPMRM.VolShockDirection.Down});
 
   return scenarios;
 }

@@ -68,3 +68,7 @@ slither src --triage-mode
 ## Deployment
 
 Got to [scripts](./scripts) to understand how to deploy **Lyra v2** to different networks.
+
+## Gas Metrics
+
+See docs in [test/integration-tests/metrics](./test/integration-tests/metrics/) for more detail.
