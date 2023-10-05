@@ -116,14 +116,14 @@ abstract contract TestCaseExpiries {
     MockFeeds ethFeeds = _ethFeeds();
 
     // set all default expiries
-    ethFeeds.setInterestRate(expiries[0], 0, 1e18);
-    ethFeeds.setInterestRate(expiries[1], 0, 1e18);
-    ethFeeds.setInterestRate(expiries[2], 0, 1e18);
-    ethFeeds.setInterestRate(expiries[3], 0, 1e18);
-    ethFeeds.setInterestRate(expiries[4], 0, 1e18);
-    ethFeeds.setInterestRate(expiries[5], 0, 1e18);
-    ethFeeds.setInterestRate(expiries[6], 0, 1e18);
-    ethFeeds.setInterestRate(expiries[7], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[0], 0.02e18, 1e18);
+    ethFeeds.setInterestRate(expiries[1], 0.02e18, 1e18);
+    ethFeeds.setInterestRate(expiries[2], 0.02e18, 1e18);
+    ethFeeds.setInterestRate(expiries[3], 0.02e18, 1e18);
+    ethFeeds.setInterestRate(expiries[4], 0.02e18, 1e18);
+    ethFeeds.setInterestRate(expiries[5], 0.02e18, 1e18);
+    ethFeeds.setInterestRate(expiries[6], 0.02e18, 1e18);
+    ethFeeds.setInterestRate(expiries[7], 0.02e18, 1e18);
   }
 
   function _ethFeeds() internal virtual returns (MockFeeds feed);

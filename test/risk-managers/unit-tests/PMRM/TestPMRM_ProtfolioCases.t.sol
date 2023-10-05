@@ -68,7 +68,53 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   }
 
   function testCase5() public {
-    // _runTestCase(".test_long_OTM_call_pm");
+    _runTestCase(".test_short_OTM_call_pm");
+  }
+
+  function testCase6() public {
+    _runTestCase(".test_short_OTM_pm");
+  }
+
+  function testCase7() public {
+    _runTestCase(".test_long_ITM_call_spread_pm");
+  }
+
+  function testCase8() public {
+    _runTestCase(".test_long_OTM_call_spread_pm");
+  }
+
+  function testCase9() public {
+    _runTestCase(".test_short_ITM_call_spread_pm");
+  }
+
+  function testCase10() public {
+    _runTestCase(".test_short_OTM_call_spread_pm");
+  }
+
+  function testCase11() public {
+    _runTestCase(".test_long_ITM_put_spread_pm");
+  }
+
+  function testCase12() public {
+    _runTestCase(".test_long_OTM_put_spread_pm");
+  }
+
+  function testCase13() public {
+    _runTestCase(".test_short_ATM_put_spread_pm");
+  }
+
+  function testCase14() public {
+    _runTestCase(".test_short_OTM_put_spread_pm");
+  }
+
+  function testCase15() public {
+    // 930, 928
+    // 946, 944
+    _runTestCase(".test_long_box_pm");
+  }
+
+  function testCase16() public {
+    _runTestCase(".test_short_box_pm");
   }
 
   function _runTestCase(string memory name) internal {
