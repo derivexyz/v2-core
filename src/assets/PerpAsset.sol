@@ -155,7 +155,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
     // calculate funding from the last period, reflect changes in position.funding
-    _updateFundingRate();
+    _updateFunding();
 
     // update last index price and settle unrealized pnl into position.pnl
     _realizePNLWithMark(adjustment.acc, preBalance);
@@ -205,7 +205,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @param accountId Account Id to apply funding
    */
   function applyFundingOnAccount(uint accountId) external {
-    _updateFundingRate();
+    _updateFunding();
     _applyFundingOnAccount(accountId);
   }
 
@@ -219,7 +219,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
   /**
    * @notice This function reflect how much cash should be mark "available" for an account
-   * @dev The return WILL NOT be accurate if `_updateFundingRate` is not called in the same block
+   * @dev The return WILL NOT be accurate if `_updateFunding` is not called in the same block
    *
    * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
    */
@@ -284,7 +284,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @notice return pnl and funding kept in position storage and clear storage
    */
   function _clearRealizedPNL(uint accountId) internal returns (int pnl, int funding) {
-    _updateFundingRate();
+    _updateFunding();
     _applyFundingOnAccount(accountId);
 
     PositionDetail storage position = positions[accountId];
@@ -299,7 +299,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
   /**
    * @notice Apply the funding into positions[accountId].funding
-   * @dev This should be called after `_updateFundingRate`
+   * @dev This should be called after `_updateFunding`
    *
    * Funding per Hour = (-1) × S × P × R
    * Where:
@@ -322,9 +322,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
-   * @dev Update funding rate, reflected on aggregatedFunding
+   * @dev Update global funding, reflected on aggregatedFunding
    */
-  function _updateFundingRate() internal {
+  function _updateFunding() internal {
     if (block.timestamp == lastFundingPaidAt) return;
 
     int indexPrice = _getIndexPrice();
@@ -337,7 +337,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     lastFundingPaidAt = (block.timestamp).toUint64();
 
-    emit FundingRateUpdated(aggregatedFunding, fundingRate, lastFundingPaidAt);
+    emit AggregatedFundingUpdated(aggregatedFunding, fundingRate, lastFundingPaidAt);
   }
 
   /**

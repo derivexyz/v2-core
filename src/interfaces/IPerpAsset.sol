@@ -57,7 +57,7 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   event ImpactFeedsUpdated(address askImpactFeed, address bidImpactFeed);
 
-  event FundingRateUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
+  event AggregatedFundingUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
 
   event FundingAppliedOnAccount(uint accountId, int funding, int128 aggregatedFundingRate);
 
