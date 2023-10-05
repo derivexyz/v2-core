@@ -20,6 +20,9 @@ contract UNIT_PerpAssetPNL is Test {
   MockFeeds spotFeed;
   MockSpotDiffFeed perpFeed;
 
+  MockSpotDiffFeed iap;
+  MockSpotDiffFeed ibp;
+
   // keeper address to set impact prices
   address keeper = address(0xb0ba);
   // users
@@ -44,11 +47,15 @@ contract UNIT_PerpAssetPNL is Test {
 
     perpFeed = new MockSpotDiffFeed(spotFeed);
 
+    iap = new MockSpotDiffFeed(spotFeed);
+    ibp = new MockSpotDiffFeed(spotFeed);
+
     manager = new MockManager(address(subAccounts));
     perp = new PerpAsset(subAccounts, 0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);
+    perp.setImpactFeeds(iap, ibp);
 
     perp.setWhitelistManager(address(manager), true);
 

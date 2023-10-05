@@ -45,22 +45,26 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   //  State Variables  //
   ///////////////////////
 
-  /// @dev spot feed, used to determine funding by comparing index to impactAsk or impactBid
+  /// @dev Spot feed, used to determine funding by comparing index to impactAsk or impactBid
   ISpotFeed public spotFeed;
 
-  /// @dev perp feed, used for settling pnl before each trades
+  /// @dev Perp price feed, used for settling pnl before each trades
   ISpotDiffFeed public perpFeed;
+
+  /// @dev Impact ask price feed, used for determining funding
   ISpotDiffFeed public impactAskPriceFeed;
+
+  /// @dev Impact bid price feed, used for determining funding
   ISpotDiffFeed public impactBidPriceFeed;
 
   /// @dev Mapping from account to position
   mapping(uint accountId => PositionDetail) public positions;
 
-  /// @dev static hourly interest rate to borrow base asset, used to calculate funding
+  /// @dev Static hourly interest rate to borrow base asset, used to calculate funding
   int128 public staticInterestRate;
 
-  /// @dev Latest aggregated funding rate
-  int128 public aggregatedFundingRate;
+  /// @dev Latest aggregated funding that should be applied to 1 contract.
+  int128 public aggregatedFunding;
 
   /// @dev Last time aggregated funding rate was updated
   uint64 public lastFundingPaidAt;
@@ -151,7 +155,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
     // calculate funding from the last period, reflect changes in position.funding
-    _updateFundingRate();
+    _updateFunding();
 
     // update last index price and settle unrealized pnl into position.pnl
     _realizePNLWithMark(adjustment.acc, preBalance);
@@ -201,7 +205,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @param accountId Account Id to apply funding
    */
   function applyFundingOnAccount(uint accountId) external {
-    _updateFundingRate();
+    _updateFunding();
     _applyFundingOnAccount(accountId);
   }
 
@@ -214,7 +218,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
-   * @dev This function reflect how much cash should be mark "available" for an account
+   * @notice This function reflect how much cash should be mark "available" for an account
+   * @dev The return WILL NOT be accurate if `_updateFunding` is not called in the same block
+   *
    * @return totalCash is the sum of total funding, realized PNL and unrealized PNL
    */
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash) {
@@ -278,7 +284,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @notice return pnl and funding kept in position storage and clear storage
    */
   function _clearRealizedPNL(uint accountId) internal returns (int pnl, int funding) {
-    _updateFundingRate();
+    _updateFunding();
     _applyFundingOnAccount(accountId);
 
     PositionDetail storage position = positions[accountId];
@@ -292,6 +298,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   /**
+   * @notice Apply the funding into positions[accountId].funding
+   * @dev This should be called after `_updateFunding`
+   *
    * Funding per Hour = (-1) × S × P × R
    * Where:
    *
@@ -303,20 +312,19 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    */
   function _applyFundingOnAccount(uint accountId) internal {
     int size = _getPositionSize(accountId);
-    int indexPrice = _getIndexPrice();
 
-    int funding = _getUnrealizedFunding(accountId, size, indexPrice);
+    int funding = _getFunding(aggregatedFunding, positions[accountId].lastAggregatedFunding, size);
     // apply funding
     positions[accountId].funding += funding.toInt128();
-    positions[accountId].lastAggregatedFundingRate = aggregatedFundingRate;
+    positions[accountId].lastAggregatedFunding = aggregatedFunding;
 
-    emit FundingAppliedOnAccount(accountId, funding, aggregatedFundingRate);
+    emit FundingAppliedOnAccount(accountId, funding, aggregatedFunding);
   }
 
   /**
-   * @dev Update funding rate, reflected on aggregatedFundingRate
+   * @dev Update global funding, reflected on aggregatedFunding
    */
-  function _updateFundingRate() internal {
+  function _updateFunding() internal {
     if (block.timestamp == lastFundingPaidAt) return;
 
     int indexPrice = _getIndexPrice();
@@ -325,11 +333,11 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    aggregatedFundingRate += (fundingRate * timeElapsed / 1 hours).toInt128();
+    aggregatedFunding += (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
 
     lastFundingPaidAt = (block.timestamp).toUint64();
 
-    emit FundingRateUpdated(aggregatedFundingRate, fundingRate, lastFundingPaidAt);
+    emit AggregatedFundingUpdated(aggregatedFunding, fundingRate, lastFundingPaidAt);
   }
 
   /**
@@ -369,9 +377,27 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   function _getUnrealizedFunding(uint accountId, int size, int indexPrice) internal view returns (int funding) {
     PositionDetail storage position = positions[accountId];
 
-    int rateToPay = aggregatedFundingRate - position.lastAggregatedFundingRate;
+    int fundingRate = _getFundingRate(indexPrice);
 
-    funding = -size.multiplyDecimal(indexPrice).multiplyDecimal(rateToPay);
+    int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
+
+    int latestAggregatedFunding =
+      aggregatedFunding + (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
+
+    return _getFunding(latestAggregatedFunding, position.lastAggregatedFunding, size);
+  }
+
+  /**
+   * @dev Get the exact funding amount by aggregated funding and size
+   */
+  function _getFunding(int globalAggregatedFunding, int lastAggregatedFunding, int size)
+    internal
+    pure
+    returns (int funding)
+  {
+    int rateToPay = globalAggregatedFunding - lastAggregatedFunding;
+
+    funding = -size.multiplyDecimal(rateToPay);
   }
 
   /**

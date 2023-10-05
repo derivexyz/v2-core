@@ -17,8 +17,8 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
     int128 funding;
     // Realized pnl, not yet settled as cash in Accounts
     int128 pnl;
-    // Last aggregated funding rate applied to this position
-    int128 lastAggregatedFundingRate;
+    // Last aggregated funding applied to this position.
+    int128 lastAggregatedFunding;
     // Timestamp of the last time funding was applied
     uint64 lastFundingPaid;
   }
@@ -57,7 +57,7 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   event ImpactFeedsUpdated(address askImpactFeed, address bidImpactFeed);
 
-  event FundingRateUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
+  event AggregatedFundingUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
 
   event FundingAppliedOnAccount(uint accountId, int funding, int128 aggregatedFundingRate);
 

@@ -57,7 +57,7 @@ interface ICashAsset is IERC20BasedAsset {
   ////////////////
 
   /// @dev Emitted when interest related state variables are updated
-  event InterestAccrued(uint interestAccrued, uint borrowIndex, uint totalSupply, uint totalBorrow);
+  event InterestAccrued(uint interestAccrued, uint borrowIndex, uint supplyIndex, uint totalSupply, uint totalBorrow);
 
   /// @dev Emitted when the security module fee is set
   event SmFeeSet(uint fee);
