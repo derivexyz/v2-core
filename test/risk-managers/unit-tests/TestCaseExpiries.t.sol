@@ -112,6 +112,20 @@ abstract contract TestCaseExpiries {
     btcFeeds.setForwardPrice(expiries[7], btcDefaultPrice + 929.24184e18, conf);
   }
 
+  function _setRateFeedForETH() internal {
+    MockFeeds ethFeeds = _ethFeeds();
+
+    // set all default expiries
+    ethFeeds.setInterestRate(expiries[0], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[1], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[2], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[3], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[4], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[5], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[6], 0, 1e18);
+    ethFeeds.setInterestRate(expiries[7], 0, 1e18);
+  }
+
   function _ethFeeds() internal virtual returns (MockFeeds feed);
 
   function _btcFeeds() internal virtual returns (MockFeeds feed);

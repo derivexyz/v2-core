@@ -29,6 +29,9 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     // setup default expires
     _setDefaultSpotAndForwardForETH();
 
+    // setup default rate feed for all expires
+    _setRateFeedForETH();
+
     _setupPerpPrices();
 
     // set back timestamp
