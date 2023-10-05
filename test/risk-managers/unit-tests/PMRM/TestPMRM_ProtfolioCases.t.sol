@@ -117,6 +117,11 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     _runTestCase(".test_short_box_pm");
   }
 
+  function testCase17() public {
+    // wrong!
+    // _runTestCase(".test_long_box_short_box_different_expiries_pm");
+  }
+
   function _runTestCase(string memory name) internal {
     (ISubAccounts.AssetBalance[] memory balances, int _mmInteger, int _imInteger) = _loadTestData(name);
     int im = pmrm.getMarginByBalances(balances, true);
