@@ -4,7 +4,7 @@
       "cash": 0,
       "options": [
           {
-              "amount": 1000000000000000000,
+              "amount": -1000000000000000000,
               "expiry": "20230118",
               "strike": 1400,
               "type": "call",
@@ -13,8 +13,8 @@
       ],
       "perps": [],
       "results": {
-          "im": 0,
-          "mm": 0
+          "im": -1021,
+          "mm": -925
       }
   },
   "test_short_ITM_put_pm": {
@@ -22,7 +22,7 @@
       "cash": 0,
       "options": [
           {
-              "amount": 1000000000000000000,
+              "amount": -1500000000000000000,
               "expiry": "20230118",
               "strike": 3000,
               "type": "put",
@@ -31,8 +31,8 @@
       ],
       "perps": [],
       "results": {
-          "im": 0,
-          "mm": 0
+          "im": -2118,
+          "mm": -1973
       }
   },
   "test_long_ATM_put_pm": {
@@ -49,8 +49,8 @@
       ],
       "perps": [],
       "results": {
-          "im": 0,
-          "mm": 0
+          "im": -23,
+          "mm": 1
       }
   },
   "test_long_ATM_call_pm": {
@@ -67,7 +67,7 @@
       ],
       "perps": [],
       "results": {
-          "im": 0,
+          "im": -26,
           "mm": 0
       }
   },

@@ -79,14 +79,11 @@ abstract contract TestCaseExpiries {
     dateToExpiry["20230825"] = expiries[7];
   }
 
-  function _setDefaultSpotAndForward() internal {
+  function _setDefaultSpotAndForwardForETH() internal {
     uint conf = 1e18;
 
     MockFeeds ethFeeds = _ethFeeds();
-    MockFeeds btcFeeds = _btcFeeds();
-
     ethFeeds.setSpot(ethDefaultPrice, conf);
-    btcFeeds.setSpot(btcDefaultPrice, conf);
 
     // set all default expiries
     ethFeeds.setForwardPrice(expiries[0], ethDefaultPrice + 0.91345e18, conf);
@@ -97,6 +94,13 @@ abstract contract TestCaseExpiries {
     ethFeeds.setForwardPrice(expiries[5], ethDefaultPrice + 61.85933e18, conf);
     ethFeeds.setForwardPrice(expiries[6], ethDefaultPrice + 63.8284e18, conf);
     ethFeeds.setForwardPrice(expiries[7], ethDefaultPrice + 66.3744e18, conf);
+  }
+
+  function _setDefaultSpotAndForwardForBTC() internal {
+    uint conf = 1e18;
+    MockFeeds btcFeeds = _btcFeeds();
+
+    btcFeeds.setSpot(btcDefaultPrice, conf);
 
     btcFeeds.setForwardPrice(expiries[0], btcDefaultPrice + 12.7883e18, conf);
     btcFeeds.setForwardPrice(expiries[1], btcDefaultPrice + 39.66276e18, conf);

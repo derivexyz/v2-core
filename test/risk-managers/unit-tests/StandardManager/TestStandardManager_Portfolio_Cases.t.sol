@@ -43,7 +43,9 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
     manager.setBaseMarginDiscountFactor(ethMarketId, 0.8e18);
     manager.setBaseMarginDiscountFactor(btcMarketId, 0.8e18);
 
-    _setDefaultSpotAndForward();
+    _setDefaultSpotAndForwardForETH();
+
+    _setDefaultSpotAndForwardForBTC();
 
     _setUpAdditional();
   }
