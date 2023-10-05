@@ -179,6 +179,50 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     _runTestCase(".test_delta_hedged_perp_pm");
   }
 
+  function testCase28() public {
+    _runTestCase(".test_long_forward_pm");
+  }
+
+  function testCase29() public {
+    _runTestCase(".test_short_forward_pm");
+  }
+
+  function testCase30() public {
+    _runTestCase(".test_long_ITM_forward_pm");
+  }
+
+  function testCase31() public {
+    _runTestCase(".test_short_ITM_forward_pm");
+  }
+
+  function testCase32() public {
+    _runTestCase(".test_long_OTM_forward_pm");
+  }
+
+  function testCase33() public {
+    _runTestCase(".test_short_OTM_forward_pm");
+  }
+  
+  function testCase34() public {
+    _runTestCase(".test_long_perp_short_call_pm");
+  }
+
+  function testCase35() public {
+    _runTestCase(".test_short_perp_long_call_pm");
+  }
+
+  function testCase36() public {
+    _runTestCase(".test_multi_expiry_pm");
+  }
+
+  function testCase37() public {
+    _runTestCase(".test_long_jelly_roll_pm");
+  }
+
+  function testCase38() public {
+    _runTestCase(".test_short_jelly_roll_pm");
+  }
+
   function _runTestCase(string memory name) internal {
     (ISubAccounts.AssetBalance[] memory balances, int _mmInteger, int _imInteger) = _loadTestData(name);
     int im = pmrm.getMarginByBalances(balances, true);
