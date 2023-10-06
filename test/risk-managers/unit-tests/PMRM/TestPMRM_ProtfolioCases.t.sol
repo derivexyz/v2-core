@@ -249,10 +249,10 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   // }
 
   // function testCase42() public {
-  //   uint64 expiry = uint64(dateToExpiry["20230118"]);
-  //   feed.setSpot(ethDefaultPrice, 0.1e18);
-  //   feed.setVol(expiry, 1700e18, 0.01e18, 0.1e18);
-  //   feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.02e18);
+  // uint64 expiry = uint64(dateToExpiry["20230118"]);
+  // feed.setSpot(ethDefaultPrice, 0.1e18);
+  // feed.setVol(expiry, 1700e18, 0.01e18, 0.1e18);
+  // feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.02e18);
 
   //   _runTestCase(".test_oracle_cont_base_asset_pm");
   // }
@@ -265,10 +265,22 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   //   _runTestCase(".test_oracle_cont_long_perp_asset_pm");
   // }
 
-  // function testCase44() public {
-  //   // _runTestCase(".test_general_portfolio_pm");
-  // }
+  function testCase44() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    feed.setSpot(2004e18, 0.3e18);
 
+    feed.setVol(expiry, 1700e18, 0.15e18, 0.1e18);
+    feed.setVol(expiry, 2100e18, 1.01e18, 0.1e18);
+    feed.setVol(expiry, 1000e18, 0.33e18, 0.1e18);
+
+    feed.setForwardPrice(uint64(dateToExpiry["20230227"]), 2014.7545e18, 0.2e18);
+
+    // set perp price
+    mockPerp.setMockPerpPrice(2017e18, 0.3e18);
+    // perpFeed.setSpotDiff(17e18, 0.3e18);
+
+    _runTestCase(".test_general_portfolio_pm");
+  }
 
   function _runTestCase(string memory name) internal {
     (ISubAccounts.AssetBalance[] memory balances, int _mmInteger, int _imInteger) = _loadTestData(name);

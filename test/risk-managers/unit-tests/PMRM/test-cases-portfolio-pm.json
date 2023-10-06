@@ -993,10 +993,12 @@
     }
   },
   "test_oracle_cont_base_asset_pm": {
-    "bases": [{
+    "bases": [
+      {
         "amount": 1000000000000000000,
         "underlying": "eth"
-      }],
+      }
+    ],
     "cash": 0,
     "options": [],
     "perps": [],
@@ -1022,16 +1024,26 @@
     }
   },
   "test_general_portfolio_pm": {
-    "bases": {
-      "eth": 100000000000000000000
-    },
-    "cash": 0,
+    "bases": [
+      {
+        "amount": 100000000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "cash": -4342420000000000000000,
     "options": [
       {
         "amount": -1000000000000000000,
         "expiry": "20230118",
         "strike": 1700,
         "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": 32000000000000000000,
+        "expiry": "20230118",
+        "strike": 1700,
+        "type": "put",
         "underlying": "eth"
       },
       {
@@ -1042,10 +1054,24 @@
         "underlying": "eth"
       },
       {
+        "amount": 4000000000000000000,
+        "expiry": "20230118",
+        "strike": 2100,
+        "type": "put",
+        "underlying": "eth"
+      },
+      {
         "amount": -111000000000000000000,
         "expiry": "20230118",
         "strike": 1000,
         "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": -344000000000000000000,
+        "expiry": "20230118",
+        "strike": 1000,
+        "type": "put",
         "underlying": "eth"
       },
       {
@@ -1056,10 +1082,24 @@
         "underlying": "eth"
       },
       {
+        "amount": 34000000000000000000,
+        "expiry": "20230227",
+        "strike": 2700,
+        "type": "put",
+        "underlying": "eth"
+      },
+      {
         "amount": -200000000000000000,
         "expiry": "20230227",
         "strike": 3100,
         "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": 14000000000000000000,
+        "expiry": "20230227",
+        "strike": 3100,
+        "type": "put",
         "underlying": "eth"
       },
       {
@@ -1068,18 +1108,25 @@
         "strike": 1500,
         "type": "call",
         "underlying": "eth"
+      },
+      {
+        "amount": 344000000000000000,
+        "expiry": "20230227",
+        "strike": 1500,
+        "type": "put",
+        "underlying": "eth"
       }
     ],
     "perps": [
       {
-        "amount": -52090000000000000000,
-        "quote": -107530000000000000000,
+        "amount": 5200000000000000000,
+        "entryPrice": 2005000000000000000000,
         "underlying": "eth"
       }
     ],
     "results": {
-      "im": -502899,
-      "mm": 93602
+      "im": -371689,
+      "mm": 93595
     }
   }
 }
