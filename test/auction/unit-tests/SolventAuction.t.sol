@@ -385,6 +385,53 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.terminateAuction(aliceAcc);
   }
 
+  ///@dev test that the second bider's percentage is capped at max liquidatable percentage
+  function testPercentageCappedRaceCondition() public {
+    address sean = address(0x9999);
+    uint seanAcc = subAccounts.createAccount(sean, manager);
+    _mintAndDepositCash(aliceAcc, 20_000e18);
+
+    // Make maintenance margin == buffer margin, for easy computation
+    dutchAuction.setBufferMarginPercentage(0);
+
+    // setup initial env: MM = -8545.5, MtM = 6000, (BM = -10000), discount = 0.2
+    manager.setMockMargin(seanAcc, false, scenario, -10000e18);
+    manager.setMarkToMarket(seanAcc, 6000e18);
+    dutchAuction.startAuction(seanAcc, scenario);
+
+    {
+      (, int bufferMargin,) = dutchAuction.getMarginAndMarkToMarket(seanAcc, scenario);
+      assertEq(bufferMargin / 1e18, -10000);
+    }
+
+    // fast forward to all the way to the end of fast auction
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength);
+
+    // discount should be 20%
+    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 4800e18);
+
+    // Alice liquidates 30% of the portfolio
+    vm.prank(alice);
+    {
+      (uint finalPercentage, uint cashFromAlice,) = dutchAuction.bid(seanAcc, aliceAcc, 0.3e18, 0);
+      assertEq(finalPercentage, 0.3e18);
+      assertEq(cashFromAlice / 1e18, 1440); // 30% of portfolio, price at 4800
+    }
+
+    // before Round 2, set MtM and Maintenance margin
+    manager.setMarkToMarket(seanAcc, 4200e18 + 1440e18);
+    manager.setMockMargin(seanAcc, false, scenario, -7000e18 + 1440e18);
+
+    uint maxF = dutchAuction.getMaxProportion(seanAcc, scenario);
+    assertEq(maxF / 1e14, 5366); // 53.66% of CURRENT can be liquidated. (37.5676% of original)
+
+    // check that Bob's max liquidatable percentage is capped
+    vm.prank(bob);
+    (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 0.5e18, 0);
+    assertEq(finalPercentage / 1e14, 3756); // capped at 37.5675 of original
+    assertEq(cashFromBob / 1e18, 1803); // 37.5675% of portfolio, price at 4800
+  }
+
   function _startDefaultSolventAuction(uint acc) internal {
     // -100 maintenance margin
     manager.setMockMargin(acc, false, scenario, -100e18);

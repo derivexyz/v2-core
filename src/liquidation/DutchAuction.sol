@@ -687,7 +687,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ILiquidatableManager(manager).getMarginAndMarkToMarket(accountId, false, scenarioId);
     // derive Buffer margin from maintenance margin and mark to market
     int mmBuffer = maintenanceMargin - markToMarket; // a negative number added to the mtm to become maintenance margin
-
     // a more conservative buffered margin that we liquidate to
     int bufferMargin = maintenanceMargin + mmBuffer.multiplyDecimal(bufferMarginPercentage);
 
