@@ -11,7 +11,7 @@ import "./utils/PMRMTestBase.sol";
 
 import "../TestCaseExpiries.t.sol";
 
-import "forge-std/console2.sol";
+import {getPMRMParams} from "../../../../scripts/config.sol";
 
 contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   using SignedDecimalMath for int;
@@ -34,23 +34,15 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
 
     _setupPerpPrices();
 
-    IPMRMLib.MarginParameters memory marginParams = IPMRMLib.MarginParameters({
-      imFactor: 1.3e18,
-      baseStaticDiscount: 0.95e18,
-      rateMultScale: 4e18,
-      rateAddScale: 0.12e18 // override this param
-    });
+    (, IPMRMLib.OtherContingencyParameters memory otherContParams, IPMRMLib.MarginParameters memory marginParams,) =
+      getPMRMParams();
+
+    marginParams.rateAddScale = 0.12e18;
     lib.setMarginParams(marginParams);
 
-    IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
-      pegLossThreshold: 0.98e18,
-      pegLossFactor: 2e18,
-      confThreshold: 0.6e18,
-      confMargin: 0.4e18,
-      basePercent: 0.025e18, // override this param
-      perpPercent: 0.025e18, // override this param
-      optionPercent: 0.01e18
-    });
+    otherContParams.confMargin = 0.4e18;
+    otherContParams.basePercent = 0.025e18;
+    otherContParams.perpPercent = 0.025e18;
     lib.setOtherContingencyParams(otherContParams);
 
     // set back timestamp
@@ -277,10 +269,8 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     feed.setVol(expiry, 1000e18, 0.33e18, 0.1e18);
 
     feed.setForwardPrice(uint64(dateToExpiry["20230227"]), 2014.7545e18, 0.2e18);
-
     // set perp price
     mockPerp.setMockPerpPrice(2017e18, 0.3e18);
-    // perpFeed.setSpotDiff(17e18, 0.3e18);
 
     _runTestCase(".test_general_portfolio_pm");
   }

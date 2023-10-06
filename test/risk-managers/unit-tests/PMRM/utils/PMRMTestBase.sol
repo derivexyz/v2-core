@@ -40,6 +40,7 @@ import {PMRMPublic} from "../../../../risk-managers/unit-tests/PMRM/utils/PMRMPu
 import {IPMRMLib} from "../../../../../src/interfaces/IPMRMLib.sol";
 
 import "../../../../shared/utils/JsonMechIO.sol";
+import {getPMRMParams} from "../../../../../scripts/config.sol";
 
 contract PMRMTestBase is JsonMechIO {
   using stdJson for string;
@@ -132,37 +133,12 @@ contract PMRMTestBase is JsonMechIO {
   }
 
   function setDefaultParameters() internal {
-    IPMRMLib.BasisContingencyParameters memory basisContParams = IPMRMLib.BasisContingencyParameters({
-      scenarioSpotUp: 1.05e18,
-      scenarioSpotDown: 0.95e18,
-      basisContAddFactor: 0.25e18,
-      basisContMultFactor: 0.01e18
-    });
-
-    IPMRMLib.OtherContingencyParameters memory otherContParams = IPMRMLib.OtherContingencyParameters({
-      pegLossThreshold: 0.98e18,
-      pegLossFactor: 2e18,
-      confThreshold: 0.6e18,
-      confMargin: 0.5e18,
-      basePercent: 0.02e18,
-      perpPercent: 0.02e18,
-      optionPercent: 0.01e18
-    });
-
-    IPMRMLib.MarginParameters memory marginParams = IPMRMLib.MarginParameters({
-      imFactor: 1.3e18,
-      baseStaticDiscount: 0.95e18,
-      rateMultScale: 4e18,
-      rateAddScale: 0.05e18
-    });
-
-    IPMRMLib.VolShockParameters memory volShockParams = IPMRMLib.VolShockParameters({
-      volRangeUp: 0.45e18,
-      volRangeDown: 0.3e18,
-      shortTermPower: 0.3e18,
-      longTermPower: 0.13e18,
-      dteFloor: 1 days
-    });
+    (
+      IPMRMLib.BasisContingencyParameters memory basisContParams,
+      IPMRMLib.OtherContingencyParameters memory otherContParams,
+      IPMRMLib.MarginParameters memory marginParams,
+      IPMRMLib.VolShockParameters memory volShockParams
+    ) = getPMRMParams();
 
     lib.setBasisContingencyParams(basisContParams);
     lib.setOtherContingencyParams(otherContParams);
