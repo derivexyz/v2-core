@@ -232,38 +232,41 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     _runTestCase(".test_depeg_contingency_pm");
   }
 
-  // function testCase40() public {
-  //   uint64 expiry = uint64(dateToExpiry["20230118"]);
-  //   feed.setSpot(ethDefaultPrice, 0.1e18);
-  //   feed.setVol(expiry, 1700e18, 0.5e18, 0.3e18);
-  //   feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18);
-  //   _runTestCase(".test_oracle_cont_long_call_pm");
-  // }
+  function testCase40() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    feed.setSpot(ethDefaultPrice, 0.1e18);
+    feed.setVol(expiry, 1700e18, 0.5e18, 0.3e18);
+    feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18);
+    _runTestCase(".test_oracle_cont_long_call_pm");
+  }
 
-  // function testCase41() public {
-  //   uint64 expiry = uint64(dateToExpiry["20230118"]);
-  //   feed.setSpot(ethDefaultPrice, 0.1e18);
-  //   feed.setVol(expiry, 1700e18, 0.5e18, 0.1e18);
-  //   feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18);
-  //   _runTestCase(".test_oracle_cont_short_call_pm");
-  // }
+  function testCase41() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    feed.setSpot(ethDefaultPrice, 0.1e18);
+    feed.setVol(expiry, 1700e18, 0.5e18, 0.1e18);
+    feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.4e18);
+    _runTestCase(".test_oracle_cont_short_call_pm");
+  }
 
-  // function testCase42() public {
-  // uint64 expiry = uint64(dateToExpiry["20230118"]);
-  // feed.setSpot(ethDefaultPrice, 0.1e18);
-  // feed.setVol(expiry, 1700e18, 0.01e18, 0.1e18);
-  // feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.02e18);
+  function testCase42() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    feed.setSpot(ethDefaultPrice, 0.1e18);
+    feed.setVol(expiry, 1700e18, 0.01e18, 0.1e18);
+    feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.02e18);
 
-  //   _runTestCase(".test_oracle_cont_base_asset_pm");
-  // }
+    _runTestCase(".test_oracle_cont_base_asset_pm");
+  }
 
-  // function testCase43() public {
-  //   uint64 expiry = uint64(dateToExpiry["20230118"]);
-  //   feed.setSpot(ethDefaultPrice, 0.3e18);
-  //   feed.setVol(expiry, 1700e18, 0.5e18, 0.1e18);
-  //   feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.02e18);
-  //   _runTestCase(".test_oracle_cont_long_perp_asset_pm");
-  // }
+  function testCase43() public {
+    uint64 expiry = uint64(dateToExpiry["20230118"]);
+    feed.setSpot(ethDefaultPrice, 0.3e18);
+
+    feed.setVol(expiry, 1700e18, 0.5e18, 0.1e18);
+    feed.setForwardPrice(expiry, ethDefaultPrice + 4.75e18, 0.02e18);
+
+    mockPerp.setMockPerpPrice(2001e18, 0.1e18);
+    _runTestCase(".test_oracle_cont_long_perp_asset_pm");
+  }
 
   function testCase44() public {
     uint64 expiry = uint64(dateToExpiry["20230118"]);
