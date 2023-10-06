@@ -937,5 +937,149 @@
       "im": -352,
       "mm": -337
     }
+  },
+  "test_depeg_contingency_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [
+      {
+        "amount": -1000000000000000000,
+        "expiry": "20230118",
+        "strike": 1700,
+        "type": "put",
+        "underlying": "eth"
+      }
+    ],
+    "perps": [],
+    "results": {
+      "im": -364,
+      "mm": -131
+    }
+  },
+  "test_oracle_cont_long_call_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [
+      {
+        "amount": 1000000000000000000,
+        "expiry": "20230118",
+        "strike": 1700,
+        "type": "call",
+        "underlying": "eth"
+      }
+    ],
+    "perps": [],
+    "results": {
+      "im": -968,
+      "mm": 46
+    }
+  },
+  "test_oracle_cont_short_call_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [
+      {
+        "amount": -1000000000000000000,
+        "expiry": "20230118",
+        "strike": 1700,
+        "type": "call",
+        "underlying": "eth"
+      }
+    ],
+    "perps": [],
+    "results": {
+      "im": -1661,
+      "mm": -629
+    }
+  },
+  "test_oracle_cont_base_asset_pm": {
+    "bases": [{
+        "amount": 1000000000000000000,
+        "underlying": "eth"
+      }],
+    "cash": 0,
+    "options": [],
+    "perps": [],
+    "results": {
+      "im": 609,
+      "mm": 1650
+    }
+  },
+  "test_oracle_cont_long_perp_asset_pm": {
+    "bases": [],
+    "cash": 0,
+    "options": [],
+    "perps": [
+      {
+        "amount": 100000000,
+        "quote": -2005000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": -1395,
+      "mm": -354
+    }
+  },
+  "test_general_portfolio_pm": {
+    "bases": {
+      "eth": 100000000000000000000
+    },
+    "cash": 0,
+    "options": [
+      {
+        "amount": -1000000000000000000,
+        "expiry": "20230118",
+        "strike": 1700,
+        "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": 11000000000000000000,
+        "expiry": "20230118",
+        "strike": 2100,
+        "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": -111000000000000000000,
+        "expiry": "20230118",
+        "strike": 1000,
+        "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": -4000000000000000000,
+        "expiry": "20230227",
+        "strike": 2700,
+        "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": -200000000000000000,
+        "expiry": "20230227",
+        "strike": 3100,
+        "type": "call",
+        "underlying": "eth"
+      },
+      {
+        "amount": -111110000000000000,
+        "expiry": "20230227",
+        "strike": 1500,
+        "type": "call",
+        "underlying": "eth"
+      }
+    ],
+    "perps": [
+      {
+        "amount": -52090000000000000000,
+        "quote": -107530000000000000000,
+        "underlying": "eth"
+      }
+    ],
+    "results": {
+      "im": -502899,
+      "mm": 93602
+    }
   }
 }

@@ -13,6 +13,8 @@ import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 import {IPMRM} from "../interfaces/IPMRM.sol";
 import {IPMRMLib} from "../interfaces/IPMRMLib.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title PMRMLib
  * @notice Functions for helping compute PMRM value and risk (maintenance/initial margin and MTM)
@@ -275,6 +277,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       portfolio.confidenceContingency +=
         _getConfidenceContingency(expiry.minConfidence, expiry.netOptions, portfolio.spotPrice);
     }
+
+    console2.log("portfolio.confidenceContingency", portfolio.confidenceContingency);
 
     return portfolio;
   }
