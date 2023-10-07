@@ -7,7 +7,6 @@ import "openzeppelin/utils/math/Math.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
 
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";

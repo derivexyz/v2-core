@@ -520,6 +520,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       maxOfCurrent = _getMaxProportion(markToMarket, bufferMargin, discount, currentAuction.reservedCash);
     }
 
+    // calculate percentage of the original portfolio, to percentage of current portfolio
     uint convertedPercentage = percentOfAccount.divideDecimal(currentAuction.percentageLeft);
     if (convertedPercentage >= maxOfCurrent) {
       convertedPercentage = maxOfCurrent;
@@ -686,7 +687,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ILiquidatableManager(manager).getMarginAndMarkToMarket(accountId, false, scenarioId);
     // derive Buffer margin from maintenance margin and mark to market
     int mmBuffer = maintenanceMargin - markToMarket; // a negative number added to the mtm to become maintenance margin
-
     // a more conservative buffered margin that we liquidate to
     int bufferMargin = maintenanceMargin + mmBuffer.multiplyDecimal(bufferMarginPercentage);
 
