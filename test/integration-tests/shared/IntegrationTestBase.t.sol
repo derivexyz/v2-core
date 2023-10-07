@@ -307,19 +307,9 @@ contract IntegrationTestBase is Test {
     srm.setOraclesForMarket(market.id, market.spotFeed, market.forwardFeed, market.volFeed);
 
     // set params
-    IStandardManager.OptionMarginParams memory params = IStandardManager.OptionMarginParams({
-      maxSpotReq: 0.15e18,
-      minSpotReq: 0.1e18,
-      mmCallSpotReq: 0.075e18,
-      mmPutSpotReq: 0.075e18,
-      MMPutMtMReq: 0.075e18,
-      unpairedIMScale: 1.2e18,
-      unpairedMMScale: 1.1e18,
-      mmOffsetScale: 1.05e18
-    });
-    srm.setOptionMarginParams(market.id, params);
+    srm.setOptionMarginParams(market.id, getDefaultSRMOptionParam());
 
-    srm.setOracleContingencyParams(market.id, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18));
+    srm.setOracleContingencyParams(market.id, getDefaultSRMOracleContingency());
 
     srm.setPerpMarginRequirements(market.id, 0.05e18, 0.065e18);
   }

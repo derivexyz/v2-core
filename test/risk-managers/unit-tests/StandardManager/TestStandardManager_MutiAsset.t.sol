@@ -11,6 +11,10 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     super.setUp();
     manager.setWhitelistedCallee(address(ethFeed), true);
     manager.setWhitelistedCallee(address(btcFeed), true);
+
+    // override perp MM to 0.1e18
+    manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
   }
 
   function testCanTradeMultipleMarkets() public {

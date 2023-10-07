@@ -10,11 +10,13 @@ import {IAsset} from "../../../../src/interfaces/IAsset.sol";
 
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockPerp.sol";
-import "../../../shared/mocks/MockOptionAsset.sol";
+import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../shared/mocks/MockOptionPricing.sol";
 import "../../../shared/mocks/MockTrackableAsset.sol";
-import "../../../auction/mocks/MockCashAsset.sol";
+import {MockCash} from "../../../auction/mocks/MockCashAsset.sol";
+
+import "../../../../scripts/config.sol";
 
 /**
  * @dev shard contract setting up environment for testing StandardManager
@@ -148,13 +150,14 @@ contract TestStandardManagerBase is Test {
     usdc.approve(address(cash), type(uint).max);
 
     // set init perp trading parameters
-    manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
-    manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
+    manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
 
-    manager.setOptionMarginParams(ethMarketId, _getDefaultOptionMarginParams());
-    manager.setOptionMarginParams(btcMarketId, _getDefaultOptionMarginParams());
+    // set init option trading params
+    manager.setOptionMarginParams(ethMarketId, getDefaultSRMOptionParam());
+    manager.setOptionMarginParams(btcMarketId, getDefaultSRMOptionParam());
 
-    // set caps
+    // the rest can vary in tests
   }
 
   /////////////
@@ -182,18 +185,5 @@ contract TestStandardManagerBase is Test {
 
   function _getPerpBalance(IPerpAsset perp, uint acc) public view returns (int) {
     return subAccounts.getBalance(acc, perp, 0);
-  }
-
-  function _getDefaultOptionMarginParams() internal pure returns (IStandardManager.OptionMarginParams memory) {
-    return IStandardManager.OptionMarginParams({
-      maxSpotReq: 0.15e18,
-      minSpotReq: 0.1e18,
-      mmCallSpotReq: 0.075e18,
-      mmPutSpotReq: 0.075e18,
-      MMPutMtMReq: 0.075e18,
-      unpairedIMScale: 1.4e18,
-      unpairedMMScale: 1.2e18,
-      mmOffsetScale: 1.05e18
-    });
   }
 }

@@ -21,27 +21,14 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
     manager.setPricingModule(ethMarketId, pricing);
     manager.setPricingModule(btcMarketId, pricing);
 
-    // override settings
-    IStandardManager.OptionMarginParams memory params = getDefaultSRMOptionParam();
-
-    manager.setOptionMarginParams(ethMarketId, params);
-    manager.setOptionMarginParams(btcMarketId, params);
-
-    manager.setOracleContingencyParams(
-      ethMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)
-    );
-    manager.setOracleContingencyParams(
-      btcMarketId, IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18)
-    );
-    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
-
-    // maintenance margin is 5% of perp price, maintenance margin = 1.3x
-    manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
-    manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
+    manager.setOracleContingencyParams(ethMarketId, getDefaultSRMOracleContingency());
+    manager.setOracleContingencyParams(btcMarketId, getDefaultSRMOracleContingency());
 
     // base asset contribute 80% of its value to margin
     manager.setBaseMarginDiscountFactor(ethMarketId, 0.8e18);
     manager.setBaseMarginDiscountFactor(btcMarketId, 0.8e18);
+
+    manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
     _setDefaultSpotAndForwardForETH();
 

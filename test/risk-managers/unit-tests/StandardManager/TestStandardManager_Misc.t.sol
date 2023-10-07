@@ -6,6 +6,7 @@ import {ISRMPortfolioViewer} from "../../../../src/interfaces/ISRMPortfolioViewe
 import {IStandardManager} from "../../../../src/interfaces/IStandardManager.sol";
 import {MockManager} from "../../../shared/mocks/MockManager.sol";
 import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
+import "../../../../scripts/config.sol";
 
 contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   function testCanTransferCash() public {
@@ -26,7 +27,7 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   }
 
   function testCannotSetInvalidMarginParams() public {
-    IStandardManager.OptionMarginParams memory params = _getDefaultOptionMarginParams();
+    IStandardManager.OptionMarginParams memory params = getDefaultSRMOptionParam();
 
     vm.expectRevert(IStandardManager.SRM_InvalidOptionMarginParams.selector);
     params.maxSpotReq = 1.5e18;
