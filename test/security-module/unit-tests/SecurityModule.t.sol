@@ -4,11 +4,10 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 
 import "../../shared/mocks/MockERC20.sol";
-import "../mocks/MockCash.sol";
+import "../../shared/mocks/MockCash.sol";
 import "../../shared/mocks/MockManager.sol";
 
 import "../../../src/SecurityModule.sol";
-import "../../../src/assets/CashAsset.sol";
 import "../../../src/SubAccounts.sol";
 
 /**
@@ -20,7 +19,7 @@ contract UNIT_SecurityModule is Test {
 
   address public constant liquidation = address(0xdead);
 
-  MockCashAssetWithExchangeRate mockCash;
+  MockCash mockCash;
   MockERC20 usdc;
   MockManager manager;
   SubAccounts subAccounts;
@@ -38,7 +37,7 @@ contract UNIT_SecurityModule is Test {
     usdc.setDecimals(6);
 
     // // probably use mock
-    mockCash = new MockCashAssetWithExchangeRate(subAccounts, usdc);
+    mockCash = new MockCash(usdc, subAccounts);
     mockCash.setTokenToCashRate(1e30); // 1e12 * 1e18
 
     securityModule = new SecurityModule(subAccounts, ICashAsset(address(mockCash)), IManager(manager));

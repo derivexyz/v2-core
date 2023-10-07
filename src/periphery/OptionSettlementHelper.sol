@@ -8,7 +8,7 @@ import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
 
 /**
  * @title OptionSettlementHelper
- * @notice helper contract compliant with IDataReceiver interface, so we can settle options if necessary before running margin checks
+ * @notice Helper contract compliant with IDataReceiver interface, so we can settle options if necessary before running margin checks
  */
 contract OptionSettlementHelper is IDataReceiver {
   function acceptData(bytes calldata data) external {

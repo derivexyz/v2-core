@@ -19,7 +19,7 @@ import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockOptionAsset.sol";
-import "../../auction/mocks/MockCashAsset.sol";
+import "../../shared/mocks/MockCash.sol";
 import "../../shared/mocks/MockPerp.sol";
 import "../mocks/BaseManagerTester.sol";
 import "../mocks/MockDutchAuction.sol";

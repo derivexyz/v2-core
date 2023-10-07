@@ -1,6 +1,5 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import {IAsset} from "../../../../../src/interfaces/IAsset.sol";
@@ -33,7 +32,7 @@ import {MockFeeds} from "../../../../shared/mocks/MockFeeds.sol";
 import {MockFeeds} from "../../../../shared/mocks/MockFeeds.sol";
 import {MockPerp} from "../../../../shared/mocks/MockPerp.sol";
 import {MockSpotDiffFeed} from "../../../../shared/mocks/MockSpotDiffFeed.sol";
-import {MockCash} from "../../../../auction/mocks/MockCashAsset.sol";
+import {MockCash} from "../../../../shared/mocks/MockCash.sol";
 import {MockDutchAuction} from "../../../../risk-managers/mocks/MockDutchAuction.sol";
 import {PMRMPublic} from "../../../../risk-managers/unit-tests/PMRM/utils/PMRMPublic.sol";
 

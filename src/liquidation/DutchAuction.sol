@@ -18,7 +18,7 @@ import "openzeppelin/access/Ownable2Step.sol";
 /**
  * @title Dutch Auction
  * @author Lyra
- * @notice Is used to liquidate an account that does not meet the margin requirements
+ * @notice This module is used to liquidate an account that does not meet the margin requirements
  * There are 3 stages of an auction on an account:
  *
  * 1. SolventFastAuction:

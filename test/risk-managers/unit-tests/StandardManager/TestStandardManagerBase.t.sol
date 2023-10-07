@@ -14,7 +14,7 @@ import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../shared/mocks/MockOptionPricing.sol";
 import "../../../shared/mocks/MockTrackableAsset.sol";
-import {MockCash} from "../../../auction/mocks/MockCashAsset.sol";
+import "../../../shared/mocks/MockCash.sol";
 
 import "../../../../scripts/config.sol";
 

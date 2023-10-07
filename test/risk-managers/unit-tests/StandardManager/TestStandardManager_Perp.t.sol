@@ -15,7 +15,7 @@ import "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../shared/mocks/MockOptionPricing.sol";
 
-import "../../../auction/mocks/MockCashAsset.sol";
+import "../../../shared/mocks/MockCash.sol";
 
 contract UNIT_TestStandardManager is Test {
   SubAccounts subAccounts;

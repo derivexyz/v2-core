@@ -8,10 +8,10 @@ import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 
 /**
  * @title PerpSettlementHelper
- * @notice helper contract compliant with IDataReceiver interface, so we can settle perps if necessary before running margin checks
+ * @notice Helper contract compliant with IDataReceiver interface, so we can settle perps if necessary before running margin checks
  */
 contract PerpSettlementHelper is IDataReceiver {
-  ///@dev just a random function so forge coverage won't confuse this with OptionSettlementHelper
+  ///@dev Another public function so forge coverage won't confuse this with OptionSettlementHelper
   string public name = "PerpSettlementHelper";
 
   function acceptData(bytes calldata data) external {

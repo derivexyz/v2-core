@@ -12,14 +12,13 @@ import "../../../../src/SubAccounts.sol";
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import {IDutchAuction} from "../../../../src/interfaces/IDutchAuction.sol";
 
-import "../../../shared/mocks/MockManager.sol";
 import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockPerp.sol";
 import "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 import "../../../shared/mocks/MockOptionPricing.sol";
 
-import "../../../auction/mocks/MockCashAsset.sol";
+import "../../../shared/mocks/MockCash.sol";
 
 /**
  * Focusing on the margin rules for options
@@ -180,14 +179,14 @@ contract UNIT_TestStandardManager_Option is Test {
   function testSetStableFeed() public {
     MockFeeds newFeed = new MockFeeds();
     manager.setStableFeed(newFeed);
-    // assertEq(address(manager.stableFeed()), address(newFeed));
+    assertEq(address(manager.stableFeed()), address(newFeed));
   }
 
   function testSetDepegParameters() public {
     manager.setDepegParameters(IStandardManager.DepegParams(0.99e18, 1.2e18));
-    // (int threshold, int depegFactor) = manager.depegParams();
-    // assertEq(threshold, 0.99e18);
-    // assertEq(depegFactor, 1.2e18);
+    (int threshold, int depegFactor) = manager.depegParams();
+    assertEq(threshold, 0.99e18);
+    assertEq(depegFactor, 1.2e18);
   }
 
   function testCannotSetInvalidDepegParameters() public {
@@ -203,12 +202,12 @@ contract UNIT_TestStandardManager_Option is Test {
       ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.7e18, 0.05e18)
     );
 
-    // (uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int128 factor) =
-    //   manager.oracleContingencyParams(ethMarketId);
-    // assertEq(prepThreshold, 0.8e18);
-    // assertEq(optionThreshold, 0.9e18);
-    // assertEq(baseThreshold, 0.7e18);
-    // assertEq(factor, 0.05e18);
+    (uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int factor) =
+      manager.oracleContingencyParams(ethMarketId);
+    assertEq(prepThreshold, 0.8e18);
+    assertEq(optionThreshold, 0.9e18);
+    assertEq(baseThreshold, 0.7e18);
+    assertEq(factor, 0.05e18);
   }
 
   function testCannotSetInvalidOracleContingencyParams() public {

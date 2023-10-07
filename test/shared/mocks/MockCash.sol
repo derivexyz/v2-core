@@ -10,7 +10,7 @@ import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";
 import {IERC20BasedAsset} from "../../../src/interfaces/IERC20BasedAsset.sol";
 import {IManager} from "../../../src/interfaces/IManager.sol";
 import {IAsset} from "../../../src/interfaces/IAsset.sol";
-import {MockAsset} from "../../shared/mocks/MockAsset.sol";
+import {MockAsset} from "./MockAsset.sol";
 
 /**
  * @title MockCash
