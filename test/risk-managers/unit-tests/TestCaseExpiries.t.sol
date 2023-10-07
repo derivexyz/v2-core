@@ -25,7 +25,7 @@ abstract contract TestCaseExpiries {
 
   /// @notice the order is according to the alphabet order of JSON file
   struct Option {
-    int amount;
+    int amount; // 1e8
     string expiry;
     uint strike;
     string typeOption;
@@ -33,13 +33,13 @@ abstract contract TestCaseExpiries {
   }
 
   struct Base {
-    int amount;
+    int amount; // 1e8
     string underlying;
   }
 
   struct Perp {
-    int amount;
-    int entryPrice;
+    int amount; // 1e8
+    int entryPrice; // 1e8
     string underlying;
   }
 
@@ -50,7 +50,7 @@ abstract contract TestCaseExpiries {
 
   struct TestCase {
     Base[] bases;
-    int cash;
+    int cash; // 1e18
     Option[] options;
     Perp[] perps;
     Result result;

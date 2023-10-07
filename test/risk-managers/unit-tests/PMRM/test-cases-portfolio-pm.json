@@ -4,7 +4,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 1400,
         "type": "call",
@@ -22,7 +22,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1500000000000000000,
+        "amount": -150000000,
         "expiry": "20230118",
         "strike": 3000,
         "type": "put",
@@ -40,7 +40,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "put",
@@ -58,7 +58,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "call",
@@ -76,7 +76,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 2700,
         "type": "call",
@@ -94,7 +94,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 1700,
         "type": "put",
@@ -112,14 +112,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 700,
         "type": "call",
@@ -137,14 +137,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 3500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 3700,
         "type": "call",
@@ -162,14 +162,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 700,
         "type": "call",
@@ -187,14 +187,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 3500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 3700,
         "type": "call",
@@ -212,14 +212,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 3500,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 3900,
         "type": "put",
@@ -237,14 +237,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 800,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 900,
         "type": "put",
@@ -262,14 +262,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 1900,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 2200,
         "type": "put",
@@ -287,14 +287,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 1600,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 1900,
         "type": "put",
@@ -312,28 +312,28 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 1000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 1000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "call",
@@ -351,28 +351,28 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 1000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 1000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "put",
@@ -390,56 +390,56 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 1000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 1000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230227",
         "strike": 1000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230227",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230227",
         "strike": 1000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230227",
         "strike": 2000,
         "type": "put",
@@ -458,8 +458,8 @@
     "options": [],
     "perps": [
       {
-        "amount": 1000000000000000000,
-        "entryPrice": 2000000000000000000000,
+        "amount": 100000000,
+        "entryPrice": 200000000000,
         "underlying": "eth"
       }
     ],
@@ -474,8 +474,8 @@
     "options": [],
     "perps": [
       {
-        "amount": 1000000000000000000,
-        "entryPrice": 1805000000000000000000,
+        "amount": 100000000,
+        "entryPrice": 180500000000,
         "underlying": "eth"
       }
     ],
@@ -490,8 +490,8 @@
     "options": [],
     "perps": [
       {
-        "amount": 1000000000000000000,
-        "entryPrice": 2305000000000000000000,
+        "amount": 100000000,
+        "entryPrice": 230500000000,
         "underlying": "eth"
       }
     ],
@@ -506,8 +506,8 @@
     "options": [],
     "perps": [
       {
-        "amount": -1000000000000000000,
-        "entryPrice": 2005000000000000000000,
+        "amount": -100000000,
+        "entryPrice": 200500000000,
         "underlying": "eth"
       }
     ],
@@ -522,8 +522,8 @@
     "options": [],
     "perps": [
       {
-        "amount": -1000000000000000000,
-        "entryPrice": 2505000000000000000000,
+        "amount": -100000000,
+        "entryPrice": 250500000000,
         "underlying": "eth"
       }
     ],
@@ -538,8 +538,8 @@
     "options": [],
     "perps": [
       {
-        "amount": -1000000000000000000,
-        "entryPrice": 1205000000000000000000,
+        "amount": -100000000,
+        "entryPrice": 120500000000,
         "underlying": "eth"
       }
     ],
@@ -551,7 +551,7 @@
   "test_long_base_pm": {
     "bases": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "underlying": "eth"
       }
     ],
@@ -566,14 +566,14 @@
   "test_covered_atm_call_pm": {
     "bases": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "underlying": "eth"
       }
     ],
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "call",
@@ -589,14 +589,14 @@
   "test_covered_itm_call_pm": {
     "bases": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "underlying": "eth"
       }
     ],
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 1500,
         "type": "call",
@@ -612,7 +612,7 @@
   "test_delta_hedged_perp_pm": {
     "bases": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "underlying": "eth"
       }
     ],
@@ -620,8 +620,8 @@
     "options": [],
     "perps": [
       {
-        "amount": -1000000000000000000,
-        "entryPrice": 2005000000000000000000,
+        "amount": -100000000,
+        "entryPrice": 200500000000,
         "underlying": "eth"
       }
     ],
@@ -635,14 +635,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "put",
@@ -660,14 +660,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "put",
@@ -685,14 +685,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 1500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 1500,
         "type": "put",
@@ -710,14 +710,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 1500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 1500,
         "type": "put",
@@ -735,14 +735,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 3500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 3500,
         "type": "put",
@@ -760,14 +760,14 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 3500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 3500,
         "type": "put",
@@ -785,7 +785,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "call",
@@ -794,8 +794,8 @@
     ],
     "perps": [
       {
-        "amount": 1000000000000000000,
-        "entryPrice": 2005000000000000000000,
+        "amount": 100000000,
+        "entryPrice": 200500000000,
         "underlying": "eth"
       }
     ],
@@ -809,7 +809,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "call",
@@ -818,8 +818,8 @@
     ],
     "perps": [
       {
-        "amount": -1000000000000000000,
-        "entryPrice": 2005000000000000000000,
+        "amount": -100000000,
+        "entryPrice": 200500000000,
         "underlying": "eth"
       }
     ],
@@ -833,21 +833,21 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 2500,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -3000000000000000000,
+        "amount": -300000000,
         "expiry": "20230227",
         "strike": 1900,
         "type": "call",
@@ -865,28 +865,28 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230227",
         "strike": 2300,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230227",
         "strike": 2300,
         "type": "put",
@@ -904,28 +904,28 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230111",
         "strike": 2000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230227",
         "strike": 2300,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230227",
         "strike": 2300,
         "type": "put",
@@ -943,7 +943,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 1700,
         "type": "put",
@@ -961,7 +961,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "expiry": "20230118",
         "strike": 1700,
         "type": "call",
@@ -979,7 +979,7 @@
     "cash": 0,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 1700,
         "type": "call",
@@ -995,7 +995,7 @@
   "test_oracle_cont_base_asset_pm": {
     "bases": [
       {
-        "amount": 1000000000000000000,
+        "amount": 100000000,
         "underlying": "eth"
       }
     ],
@@ -1013,8 +1013,8 @@
     "options": [],
     "perps": [
       {
-        "amount": 1000000000000000000,
-        "entryPrice": 2005000000000000000000,
+        "amount": 100000000,
+        "entryPrice": 200500000000,
         "underlying": "eth"
       }
     ],
@@ -1026,91 +1026,91 @@
   "test_general_portfolio_pm": {
     "bases": [
       {
-        "amount": 100000000000000000000,
+        "amount": 10000000000,
         "underlying": "eth"
       }
     ],
-    "cash": -4342420000000000000000,
+    "cash": -434242000000,
     "options": [
       {
-        "amount": -1000000000000000000,
+        "amount": -100000000,
         "expiry": "20230118",
         "strike": 1700,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 32000000000000000000,
+        "amount": 3200000000,
         "expiry": "20230118",
         "strike": 1700,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": 11000000000000000000,
+        "amount": 1100000000,
         "expiry": "20230118",
         "strike": 2100,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 4000000000000000000,
+        "amount": 400000000,
         "expiry": "20230118",
         "strike": 2100,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -111000000000000000000,
+        "amount": -11100000000,
         "expiry": "20230118",
         "strike": 1000,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": -344000000000000000000,
+        "amount": -34400000000,
         "expiry": "20230118",
         "strike": 1000,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -4000000000000000000,
+        "amount": -400000000,
         "expiry": "20230227",
         "strike": 2700,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 34000000000000000000,
+        "amount": 3400000000,
         "expiry": "20230227",
         "strike": 2700,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -200000000000000000,
+        "amount": -20000000,
         "expiry": "20230227",
         "strike": 3100,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 14000000000000000000,
+        "amount": 1400000000,
         "expiry": "20230227",
         "strike": 3100,
         "type": "put",
         "underlying": "eth"
       },
       {
-        "amount": -111110000000000000,
+        "amount": -11111000,
         "expiry": "20230227",
         "strike": 1500,
         "type": "call",
         "underlying": "eth"
       },
       {
-        "amount": 344000000000000000,
+        "amount": 34400000,
         "expiry": "20230227",
         "strike": 1500,
         "type": "put",
@@ -1119,8 +1119,8 @@
     ],
     "perps": [
       {
-        "amount": 5200000000000000000,
-        "entryPrice": 2005000000000000000000,
+        "amount": 520000000,
+        "entryPrice": 200500000000,
         "underlying": "eth"
       }
     ],

@@ -313,7 +313,7 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
       balances[i] = ISubAccounts.AssetBalance(
         equal(option.underlying, "eth") ? ethOption : btcOption,
         OptionEncoding.toSubId(expiry, strike, equal(option.typeOption, "call")),
-        option.amount
+        option.amount * 1e10
       );
     }
 
@@ -323,16 +323,16 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
       Perp memory perp = testCase.perps[i];
 
       if (equal(perp.underlying, "eth")) {
-        balances[i + offset] = ISubAccounts.AssetBalance(ethPerp, 0, perp.amount);
+        balances[i + offset] = ISubAccounts.AssetBalance(ethPerp, 0, perp.amount * 1e10);
 
         (uint perpPrice,) = ethPerp.getPerpPrice();
-        int pnl = (int(perpPrice) - perp.entryPrice).multiplyDecimal(perp.amount);
+        int pnl = (int(perpPrice) - (perp.entryPrice * 1e10)).multiplyDecimal(perp.amount * 1e10);
         ethPerp.mockAccountPnlAndFunding(mockAccIdToRequest, pnl, 0);
       } else {
-        balances[i + offset] = ISubAccounts.AssetBalance(btcPerp, 0, perp.amount);
+        balances[i + offset] = ISubAccounts.AssetBalance(btcPerp, 0, perp.amount * 1e10);
 
         (uint perpPrice,) = btcPerp.getPerpPrice();
-        int pnl = (int(perpPrice) - perp.entryPrice).multiplyDecimal(perp.amount);
+        int pnl = (int(perpPrice) - (perp.entryPrice * 1e10)).multiplyDecimal(perp.amount * 1e10);
         btcPerp.mockAccountPnlAndFunding(mockAccIdToRequest, pnl, 0);
       }
     }
@@ -343,14 +343,14 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
       Base memory base = testCase.bases[i];
 
       if (equal(base.underlying, "eth")) {
-        balances[i + offset] = ISubAccounts.AssetBalance(wethAsset, 0, base.amount);
+        balances[i + offset] = ISubAccounts.AssetBalance(wethAsset, 0, base.amount * 1e10);
       } else {
-        balances[i + offset] = ISubAccounts.AssetBalance(wbtcAsset, 0, base.amount);
+        balances[i + offset] = ISubAccounts.AssetBalance(wbtcAsset, 0, base.amount * 1e10);
       }
     }
 
     // put in cash at the end
-    balances[totalAssets - 1] = ISubAccounts.AssetBalance(cash, 0, testCase.cash);
+    balances[totalAssets - 1] = ISubAccounts.AssetBalance(cash, 0, testCase.cash * 1e10);
 
     mm = testCase.result.mm;
     im = testCase.result.im;

@@ -138,7 +138,6 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     _runTestCase(".test_long_ITM_perp_pm");
   }
 
-  // do the same for test_long_ITM_perp_pm test_long_OTM_perp_pm test_short_ATM_perp_pm test_short_ITM_perp_pm test_short_OTM_perp_pm
   function testCase20() public {
     _runTestCase(".test_long_OTM_perp_pm");
   }
@@ -308,7 +307,9 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
 
       // fill in balance
       balances[i] = ISubAccounts.AssetBalance(
-        option, OptionEncoding.toSubId(expiry, strike, equal(optionDetail.typeOption, "call")), optionDetail.amount
+        option,
+        OptionEncoding.toSubId(expiry, strike, equal(optionDetail.typeOption, "call")),
+        optionDetail.amount * 1e10
       );
     }
 
@@ -316,10 +317,10 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     for (uint i = 0; i < testCase.perps.length; i++) {
       uint offset = testCase.options.length;
       Perp memory perp = testCase.perps[i];
-      balances[i + offset] = ISubAccounts.AssetBalance(mockPerp, 0, perp.amount);
+      balances[i + offset] = ISubAccounts.AssetBalance(mockPerp, 0, perp.amount * 1e10);
 
       (uint perpPrice,) = mockPerp.getPerpPrice();
-      int pnl = (int(perpPrice) - perp.entryPrice).multiplyDecimal(perp.amount);
+      int pnl = (int(perpPrice) - (perp.entryPrice * 1e10)).multiplyDecimal(perp.amount * 1e10);
       mockPerp.mockAccountPnlAndFunding(mockAccIdToRequest, pnl, 0);
     }
 
@@ -327,11 +328,11 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     for (uint i = 0; i < testCase.bases.length; i++) {
       uint offset = testCase.options.length + testCase.perps.length;
       Base memory base = testCase.bases[i];
-      balances[i + offset] = ISubAccounts.AssetBalance(baseAsset, 0, base.amount);
+      balances[i + offset] = ISubAccounts.AssetBalance(baseAsset, 0, base.amount * 1e10);
     }
 
     // put in cash at the end
-    balances[totalAssets - 1] = ISubAccounts.AssetBalance(cash, 0, testCase.cash);
+    balances[totalAssets - 1] = ISubAccounts.AssetBalance(cash, 0, testCase.cash * 1e10);
 
     mm = testCase.result.mm;
     im = testCase.result.im;
