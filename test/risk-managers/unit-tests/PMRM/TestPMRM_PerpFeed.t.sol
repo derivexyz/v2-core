@@ -1,10 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
-
-import "forge-std/console2.sol";
 
 contract TestPMRM_PerpFeed is PMRMSimTest {
   function test_perpFeedAffectsPMRM() public {

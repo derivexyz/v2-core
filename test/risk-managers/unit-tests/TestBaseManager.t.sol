@@ -2,12 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "openzeppelin/token/ERC20/IERC20.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import {IManager} from "../../../src/interfaces/IManager.sol";
-import {ICashAsset} from "../../../src/interfaces/ICashAsset.sol";
-import {IOptionAsset} from "../../../src/interfaces/IOptionAsset.sol";
 import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 
 import "../../../src/SubAccounts.sol";

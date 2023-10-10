@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
 import "../../../../src/periphery/PerpSettlementHelper.sol";
@@ -7,8 +8,6 @@ import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
-
-import "forge-std/console2.sol";
 
 contract TestPMRM_Settlement is PMRMTestBase {
   PerpSettlementHelper perpHelper;

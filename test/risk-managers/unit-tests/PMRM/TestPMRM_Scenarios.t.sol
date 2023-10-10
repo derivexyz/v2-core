@@ -1,12 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-
 import "../../../../src/risk-managers/PMRM.sol";
-import "../../../../src/interfaces/ISubAccounts.sol";
-import "../../../shared/mocks/MockFeeds.sol";
-
-import "../../../shared/mocks/MockFeeds.sol";
 
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMSimTest.sol";
 

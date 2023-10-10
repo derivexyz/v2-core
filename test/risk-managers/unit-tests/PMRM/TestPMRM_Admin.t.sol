@@ -1,21 +1,17 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
-
-import "forge-std/Test.sol";
 
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 import "../../../../src/interfaces/IBaseManager.sol";
-import "forge-std/console2.sol";
 
 contract TestPMRM_Admin is PMRMTestBase {
   function testSetNoScenarios() public {
-    ////
     // Remove all scenarios
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
     pmrm.setScenarios(scenarios);
     IPMRM.Scenario[] memory res = pmrm.getScenarios();
     assertEq(res.length, 0);
 
-    /////
     // Add scenarios
     scenarios = new IPMRM.Scenario[](3);
     scenarios[0] = IPMRM.Scenario({spotShock: 0, volShock: IPMRM.VolShockDirection.None});
