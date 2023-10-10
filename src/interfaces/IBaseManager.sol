@@ -47,8 +47,6 @@ interface IBaseManager is IManager {
 
   event FeeRecipientSet(uint _newAcc);
 
-  event OptionSettlementBufferUpdated(uint optionSettlementBuffer);
-
   event MaxAccountSizeUpdated(uint maxAccountSize);
 
   ////////////

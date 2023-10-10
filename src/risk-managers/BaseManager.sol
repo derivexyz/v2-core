@@ -56,9 +56,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
   uint public maxAccountSize = 128;
 
-  /// @dev within this buffer time, allow people to hold expired options in case the settlement price is not ready
-  uint public optionSettlementBuffer = 5 minutes;
-
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
@@ -124,16 +121,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     feeBypassedCaller[caller] = bypassed;
 
     emit FeeBypassedCallerSet(caller, bypassed);
-  }
-
-  /**
-   * @notice Governance determined option settlement buffer
-   */
-  function setSettlementBuffer(uint newBuffer) external onlyOwner {
-    if (newBuffer > 2 hours) revert BM_InvalidSettlementBuffer();
-
-    optionSettlementBuffer = newBuffer;
-    emit OptionSettlementBufferUpdated(newBuffer);
   }
 
   /**

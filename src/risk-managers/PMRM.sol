@@ -316,9 +316,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
       ISubAccounts.AssetBalance memory currentAsset = assets[i];
       if (address(currentAsset.asset) == address(option)) {
         (uint optionExpiry,,) = OptionEncoding.fromSubId(currentAsset.subId.toUint96());
-        if (optionExpiry + optionSettlementBuffer < block.timestamp) {
-          revert PMRM_OptionExpired();
-        }
 
         bool found = false;
         for (uint j = 0; j < seenExpiries; j++) {
@@ -354,7 +351,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
       // We dont compare this to the portfolio.minConfidence yet - we do that in preComputes
       uint minConfidence = Math.min(fwdConfidence, rateConfidence);
 
-      // if an option just expired few seconds ago, also set secToExpiry to 0
+      // if an option expired, also set secToExpiry to 0
       uint64 secToExpiry =
         expiryCount[i].expiry > uint64(block.timestamp) ? uint64(expiryCount[i].expiry - block.timestamp) : 0;
       portfolio.expiries[i] = ExpiryHoldings({

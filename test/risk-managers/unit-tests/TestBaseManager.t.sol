@@ -77,16 +77,6 @@ contract UNIT_TestBaseManager is Test {
     usdc.approve(address(cash), 2000_000e18);
   }
 
-  function testSetSettlementBuffer() public {
-    tester.setSettlementBuffer(10 minutes);
-    assertEq(tester.optionSettlementBuffer(), 10 minutes);
-  }
-
-  function testCannotSetInvalidSettlementBuffer() public {
-    vm.expectRevert(IBaseManager.BM_InvalidSettlementBuffer.selector);
-    tester.setSettlementBuffer(3 days);
-  }
-
   function testTransferWithoutMarginPositiveAmount() public {
     int amount = 5000 * 1e18;
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, amount);
