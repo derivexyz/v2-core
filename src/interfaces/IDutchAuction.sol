@@ -88,6 +88,8 @@ interface IDutchAuction {
 
   event WithdrawBlockThresholdSet(int withdrawBlockThreshold);
 
+  event PerpAssetAdded(address perpAsset);
+
   ////////////
   // ERRORS //
   ////////////

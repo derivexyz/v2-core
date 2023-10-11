@@ -5,11 +5,12 @@ import "forge-std/Test.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "../shared/IntegrationTestBase.t.sol";
-import {IManager} from "../../../src/interfaces/IManager.sol";
 
+import {getDefaultAuctionParam} from "../../../scripts/config.sol";
 /**
  * @dev testing liquidation process
  */
+
 contract INTEGRATION_Liquidation is IntegrationTestBase {
   // value used for test
   int constant amountOfContracts = 1e18;
@@ -39,6 +40,9 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     putId = OptionEncoding.toSubId(expiry, strike, false);
 
     option = markets["weth"].option;
+
+    auction.addPerpAsset(address(markets["weth"].perp));
+    auction.addPerpAsset(address(markets["wbtc"].perp));
   }
 
   ///@dev alice go short, bob go long
@@ -180,5 +184,65 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     vm.expectRevert(IDutchAuction.DA_MaxCashExceeded.selector);
     auction.bid(aliceAcc, liquidator2, percentageToBid, cashFromLiquidator1);
     vm.stopPrank();
+  }
+
+  function test_BMAfterLiquidation() public {
+    // start liquidation on acc1, discount = 20%
+    IDutchAuction.SolventAuctionParams memory params = getDefaultAuctionParam();
+    params.startingMtMPercentage = 0.8e18;
+    params.liquidatorFeeRate = 0;
+    auction.setSolventAuctionParams(params);
+    auction.setBufferMarginPercentage(0.05e18);
+    markets["weth"].spotFeed.setHeartbeat(1 hours);
+    markets["weth"].perpFeed.setHeartbeat(1 hours);
+
+    _setSpotPrice("weth", 1000e18, 1e18);
+    _setPerpPrice("weth", 1000e18, 1e18);
+
+    uint acc1 = subAccounts.createAccountWithApproval(alice, address(this), srm);
+    uint acc2 = subAccounts.createAccountWithApproval(bob, address(this), srm);
+
+    _depositCash(alice, acc1, 65e18);
+    _depositCash(bob, acc2, 65e18);
+
+    _tradePerp(acc1, acc2); // acc1 short, acc2 long
+
+    // both accounts have MtM = 65, IM = 0, MM = 15 now
+    assertEq(getAccMaintenanceMargin(acc1), 15e18);
+
+    // price increases, acc1 is underwater
+    _setSpotPrice("weth", 1035e18, 1e18);
+    _setPerpPrice("weth", 1035e18, 1e18);
+
+    (int mm, int mtm) = srm.getMarginAndMarkToMarket(acc1, false, 0);
+    assertEq(mm, -21.75e18);
+    assertEq(mtm, 30e18);
+
+    auction.startAuction(acc1, 0);
+
+    // BM = -21.75 + (0.05 * -51.75) = -24.33
+    assertEq(_getBufferMM(acc1) / 1e16, -2433);
+
+    uint f_max = auction.getMaxProportion(acc1, 0);
+    assertEq(f_max / 1e14, 5034);
+
+    // Alice bids 10%
+    vm.prank(alice);
+    auction.bid(acc1, aliceAcc, 0.1e18, 0);
+
+    // Bob bids remaining 40.34%
+    vm.prank(bob);
+    (uint finalPercentage,,) = auction.bid(acc1, bobAcc, f_max, 0);
+    assertEq(finalPercentage / 1e14, 4034);
+
+    // Buffer margin after liquidating all is close to 0
+    assertEq(_getBufferMM(acc1) / 1e10, 0);
+  }
+
+  function _getBufferMM(uint acc) internal view returns (int bufferMargin) {
+    (int mm, int mtm) = srm.getMarginAndMarkToMarket(acc, false, 0);
+    int mmBuffer = mm - mtm; // a negative number added to the mtm to become maintenance margin
+
+    bufferMargin = mm + (mmBuffer * auction.bufferMarginPercentage() / 1e18);
   }
 }
