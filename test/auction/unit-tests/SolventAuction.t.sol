@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./DutchAuctionBase.sol";
+import {getDefaultAuctionParam} from "../../../scripts/config.sol";
 
 contract UNIT_TestSolventAuction is DutchAuctionBase {
   uint scenario = 1;
@@ -394,7 +395,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     // Make maintenance margin == buffer margin, for easy computation
     dutchAuction.setBufferMarginPercentage(0);
 
-    // setup initial env: MM = -8545.5, MtM = 6000, (BM = -10000), discount = 0.2
+    // setup initial env: MtM = 6000, MM = BM = -10000, discount = 0.2
     manager.setMockMargin(seanAcc, false, scenario, -10000e18);
     manager.setMarkToMarket(seanAcc, 6000e18);
     dutchAuction.startAuction(seanAcc, scenario);
@@ -432,6 +433,54 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
       assertEq(finalPercentage / 1e14, 3756); // capped at 37.5675 of original
       assertEq(cashFromBob / 1e18, 1803); // 37.5675% of portfolio, price at 4800
     }
+  }
+
+  function testConvertToInsolventAuction_WithReservedCash() public {
+    // If an auction is bid several times (with reserved cash), and MtM (with added cash) < reserved cash
+    // It should be terminated and restart as an insolvent auction
+
+    address sean = address(0x9999);
+    uint seanAcc = subAccounts.createAccount(sean, manager);
+    _mintAndDepositCash(aliceAcc, 20_000e18);
+
+    // Make maintenance margin == buffer margin, for easy computation
+    dutchAuction.setBufferMarginPercentage(0);
+
+    // set fast auction cutoff to be 70%
+    IDutchAuction.SolventAuctionParams memory params = getDefaultAuctionParam();
+    params.fastAuctionCutoffPercentage = 0.7e18;
+    dutchAuction.setSolventAuctionParams(params);
+
+    // Auction starts
+    manager.setMockMargin(seanAcc, false, scenario, -10000e18);
+    manager.setMarkToMarket(seanAcc, 8000e18);
+    dutchAuction.startAuction(seanAcc, scenario);
+
+    // Alice liquidate Sean: paying $1200 into reserved funds
+    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 8000e18);
+
+    vm.prank(alice);
+    (, uint cashPaid,) = dutchAuction.bid(seanAcc, aliceAcc, 0.2e18, 0);
+    assertEq(cashPaid, 1600e18);
+
+    // setup env: MtM = 9600, MM = BM = -10000, discount = 30%, liquidated = 20%
+    vm.warp(block.timestamp + params.fastAuctionLength);
+
+    manager.setMockMargin(seanAcc, false, scenario, -10000e18);
+    manager.setMarkToMarket(seanAcc, 9600e18);
+
+    int bidPrice = dutchAuction.getCurrentBidPrice(seanAcc);
+    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 7000e18);
+    manager.setMarkToMarket(seanAcc, 1000e18);
+
+    // Can restart auction
+    dutchAuction.terminateAuction(seanAcc);
+
+    // MtM should now be 1000 - 1600 = -600
+    manager.setMarkToMarket(seanAcc, -600e18);
+    dutchAuction.startAuction(seanAcc, scenario);
+
+    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 0);
   }
 
   function _startDefaultSolventAuction(uint acc) internal {
