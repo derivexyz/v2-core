@@ -15,7 +15,7 @@ import "../../../../shared/mocks/MockAsset.sol";
 import "../../../../shared/mocks/MockOptionAsset.sol";
 import "../../../../shared/mocks/MockSM.sol";
 import "../../../../shared/mocks/MockFeeds.sol";
-import "../../../../auction/mocks/MockCashAsset.sol";
+import "../../../../shared/mocks/MockCash.sol";
 
 import "../../../../risk-managers/mocks/MockDutchAuction.sol";
 import "../../../../shared/utils/JsonMechIO.sol";

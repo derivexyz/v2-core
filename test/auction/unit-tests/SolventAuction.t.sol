@@ -427,9 +427,11 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // check that Bob's max liquidatable percentage is capped
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 0.5e18, 0);
-    assertEq(finalPercentage / 1e14, 3756); // capped at 37.5675 of original
-    assertEq(cashFromBob / 1e18, 1803); // 37.5675% of portfolio, price at 4800
+    {
+      (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 0.5e18, 0);
+      assertEq(finalPercentage / 1e14, 3756); // capped at 37.5675 of original
+      assertEq(cashFromBob / 1e18, 1803); // 37.5675% of portfolio, price at 4800
+    }
   }
 
   function _startDefaultSolventAuction(uint acc) internal {

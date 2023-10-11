@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
-import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 import {ISRMPortfolioViewer} from "../../../../src/interfaces/ISRMPortfolioViewer.sol";
 import {IStandardManager} from "../../../../src/interfaces/IStandardManager.sol";
 import {MockManager} from "../../../shared/mocks/MockManager.sol";

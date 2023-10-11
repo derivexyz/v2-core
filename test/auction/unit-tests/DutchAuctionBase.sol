@@ -8,7 +8,7 @@ import "../../../src/SubAccounts.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockSM.sol";
-import "../mocks/MockCashAsset.sol";
+import "../../shared/mocks/MockCash.sol";
 import "../mocks/MockLiquidatableManager.sol";
 import "../../../src/liquidation/DutchAuction.sol";
 
