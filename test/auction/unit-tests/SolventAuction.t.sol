@@ -196,6 +196,28 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(bobPercentage, percentage, "bobPercentage should be 10%");
   }
 
+  function testBidShouldSettlePerps() public {
+    dutchAuction.addPerpAsset(address(perpAsset));
+
+    // trade perp
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: charlieAcc,
+      asset: perpAsset,
+      subId: 0,
+      amount: 1e18,
+      assetData: bytes32(0)
+    });
+    subAccounts.submitTransfer(transfer, "");
+
+    _startDefaultSolventAuction(aliceAcc);
+
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
+
+    assertEq(manager.perpSettled(aliceAcc), true);
+  }
+
   function testCannotBidWithInvalidPercentage() public {
     _startDefaultSolventAuction(aliceAcc);
     vm.expectRevert(IDutchAuction.DA_InvalidPercentage.selector);
@@ -469,7 +491,6 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMockMargin(seanAcc, false, scenario, -10000e18);
     manager.setMarkToMarket(seanAcc, 9600e18);
 
-    int bidPrice = dutchAuction.getCurrentBidPrice(seanAcc);
     assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 7000e18);
     manager.setMarkToMarket(seanAcc, 1000e18);
 
