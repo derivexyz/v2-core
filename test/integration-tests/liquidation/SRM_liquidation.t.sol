@@ -48,6 +48,10 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     _submitTrade(fromAcc, option, callId, amountOfContracts, toAcc, cash, 0, premium);
   }
 
+  function _tradePerp(uint fromAcc, uint toAcc) internal {
+    _submitTrade(fromAcc, markets["weth"].perp, 0, amountOfContracts, toAcc, cash, 0, 0);
+  }
+
   function _refreshOracles(uint96 price) internal {
     _setSpotPrice("weth", price, 1e18);
     _setForwardPrice("weth", expiry, price, 1e18);
