@@ -189,7 +189,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     }
 
     IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
-      secToExpiry: expiry.secToExpiry.toUint64(),
+      secToExpiry: expiry.secToExpiry.toUint64(), // if expiry is in the past, expiry.secToExpiry will be 0
       forwardPrice: (expiry.forwardVariablePortion.multiplyDecimal(spotShock) + expiry.forwardFixedPortion).toUint128(),
       discountFactor: DecimalMath.UNIT.toUint64()
     });
