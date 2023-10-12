@@ -4,7 +4,6 @@ pragma solidity ^0.8.18;
 import {IDataReceiver} from "../interfaces/IDataReceiver.sol";
 
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
-import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 
 /**
  * @title PerpSettlementHelper
@@ -15,8 +14,8 @@ contract PerpSettlementHelper is IDataReceiver {
   string public name = "PerpSettlementHelper";
 
   function acceptData(bytes calldata data) external {
-    (address manager, address perp, uint accountId) = abi.decode(data, (address, address, uint));
+    (address manager, uint accountId) = abi.decode(data, (address, uint));
 
-    ILiquidatableManager(manager).settlePerpsWithIndex(IPerpAsset(perp), accountId);
+    ILiquidatableManager(manager).settlePerpsWithIndex(accountId);
   }
 }

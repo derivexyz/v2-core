@@ -179,17 +179,17 @@ contract IntegrationTestBase is Test {
   }
 
   function _deployMarket(string memory key, uint96 initSpotPrice) internal returns (uint marketId) {
-    marketId = _deployMarketContracts(key);
+    _deployMarketContracts(key);
+
+    // setup asset configs for standard manager
+    marketId = _registerMarketToSRM(key);
+    // whitelist standard manager to control these assets
+    _setupAssetCapsForManager(key, srm, 1000e18);
 
     // set up PMRM for this market
     _setPMRMParams(markets[key].pmrm, markets[key].pmrmLib);
     // whitelist PMRM to control all assets
     _setupAssetCapsForManager(key, markets[key].pmrm, 1000e18);
-
-    // setup asset configs for standard manager
-    _registerMarketToSRM(key);
-    // whitelist standard manager to control these assets
-    _setupAssetCapsForManager(key, srm, 1000e18);
 
     cash.setWhitelistManager(address(markets[key].pmrm), true);
 
@@ -199,10 +199,8 @@ contract IntegrationTestBase is Test {
     _setSpotPrice(key, initSpotPrice, 1e18);
   }
 
-  function _deployMarketContracts(string memory token) internal returns (uint marketId) {
+  function _deployMarketContracts(string memory token) internal {
     Market storage market = markets[token];
-    marketId = nextId++;
-    market.id = marketId;
 
     MockERC20 erc20 = new MockERC20(token, token);
 
@@ -293,25 +291,28 @@ contract IntegrationTestBase is Test {
     markets[key].forwardFeed.addSigner(signer, true);
   }
 
-  function _registerMarketToSRM(string memory key) internal {
+  function _registerMarketToSRM(string memory key) internal returns (uint marketId) {
     Market storage market = markets[key];
 
-    srm.setPricingModule(market.id, market.pricing);
-
     // set assets per market
-    srm.whitelistAsset(market.perp, market.id, IStandardManager.AssetType.Perpetual);
-    srm.whitelistAsset(market.option, market.id, IStandardManager.AssetType.Option);
-    srm.whitelistAsset(market.base, market.id, IStandardManager.AssetType.Base);
+    marketId = srm.createMarket(key);
+    market.id = marketId;
+
+    srm.setPricingModule(marketId, market.pricing);
+
+    srm.whitelistAsset(market.perp, marketId, IStandardManager.AssetType.Perpetual);
+    srm.whitelistAsset(market.option, marketId, IStandardManager.AssetType.Option);
+    srm.whitelistAsset(market.base, marketId, IStandardManager.AssetType.Base);
 
     // set oracles
-    srm.setOraclesForMarket(market.id, market.spotFeed, market.forwardFeed, market.volFeed);
+    srm.setOraclesForMarket(marketId, market.spotFeed, market.forwardFeed, market.volFeed);
 
     // set params
-    srm.setOptionMarginParams(market.id, getDefaultSRMOptionParam());
+    srm.setOptionMarginParams(marketId, getDefaultSRMOptionParam());
 
-    srm.setOracleContingencyParams(market.id, getDefaultSRMOracleContingency());
+    srm.setOracleContingencyParams(marketId, getDefaultSRMOracleContingency());
 
-    srm.setPerpMarginRequirements(market.id, 0.05e18, 0.065e18);
+    srm.setPerpMarginRequirements(marketId, 0.05e18, 0.065e18);
   }
 
   /**

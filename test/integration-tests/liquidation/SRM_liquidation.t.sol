@@ -40,9 +40,6 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     putId = OptionEncoding.toSubId(expiry, strike, false);
 
     option = markets["weth"].option;
-
-    auction.addPerpAsset(address(markets["weth"].perp));
-    auction.addPerpAsset(address(markets["wbtc"].perp));
   }
 
   ///@dev alice go short, bob go long

@@ -76,9 +76,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /// @dev The parameters for the insolvent auction phase
   InsolventAuctionParams public insolventAuctionParams;
 
-  /// @dev Array of perp addresses. When liquidated account contains perp asset, it needs to be settled
-  address[] public perps;
-
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -140,15 +137,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     withdrawBlockThreshold = _withdrawBlockThreshold;
 
     emit WithdrawBlockThresholdSet(_withdrawBlockThreshold);
-  }
-
-  /**
-   * @dev Add a perp asset to the list of perps. Perps need to be settled before each bids
-   */
-  function addPerpAsset(address perp) external onlyOwner {
-    perps.push(perp);
-
-    emit PerpAssetAdded(perp);
   }
 
   /////////////////////
@@ -280,8 +268,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_InvalidPercentage();
     }
 
-    // Settle perps to make sure the PNL is realized in cash.
-    _settlePerps(accountId);
+    // Settle perps to make sure all PNL is realized in cash.
+    ILiquidatableManager(address(subAccounts.manager(accountId))).settlePerpsWithIndex(accountId);
 
     // get bidder address and make sure that they own the account
     if (subAccounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
@@ -445,19 +433,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   //////////////////////////////
   //    Internal Functions    //
   //////////////////////////////
-
-  /**
-   * @notice Settle perp asset for the liquidated account before bid
-   * @dev This can make sure the perp PNL is realized in cash asset before a bid is executed
-   */
-  function _settlePerps(uint accountId) internal {
-    address manager = address(subAccounts.manager(accountId));
-    for (uint i = 0; i < perps.length; i++) {
-      if (subAccounts.getBalance(accountId, IPerpAsset(perps[i]), 0) == 0) continue;
-
-      ILiquidatableManager(manager).settlePerpsWithIndex(IPerpAsset(perps[i]), accountId);
-    }
-  }
 
   /**
    * @notice Starts an auction that starts with a positive upper bound

@@ -61,7 +61,7 @@ contract DeployMarket is Utils {
 
     _setupPMRMParams(market);
 
-    _registerMarketToSRM(deployment, market);
+    _registerMarketToSRM(marketName, deployment, market);
 
     _writeToMarketJson(marketName, market);
 
@@ -180,13 +180,10 @@ contract DeployMarket is Utils {
     console2.log("All asset whitelist both managers!");
   }
 
-  function _registerMarketToSRM(Deployment memory deployment, Market memory market) internal {
+  function _registerMarketToSRM(string memory marketName, Deployment memory deployment, Market memory market) internal {
     // find market ID
-    uint marketId = 1;
-    for (; marketId < 10; marketId++) {
-      (int maxSpotReq,,,,,,,) = deployment.srm.optionMarginParams(marketId);
-      if (maxSpotReq == 0) break;
-    }
+    uint marketId = deployment.srm.createMarket(marketName);
+
     console2.log("market ID for newly created market:", marketId);
 
     deployment.srm.setPricingModule(marketId, market.pricing);

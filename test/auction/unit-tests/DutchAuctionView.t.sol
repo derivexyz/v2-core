@@ -70,14 +70,6 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     assertEq(dutchAuction.withdrawBlockThreshold(), -100e18);
   }
 
-  function testAddPerpAsset() public {
-    dutchAuction.addPerpAsset(address(0x1));
-    dutchAuction.addPerpAsset(address(0x2));
-
-    assertEq(dutchAuction.perps(0), address(0x1));
-    assertEq(dutchAuction.perps(1), address(0x2));
-  }
-
   function testCannotSetPositiveWithdrawBlockThreshold() public {
     vm.expectRevert(IDutchAuction.DA_InvalidWithdrawBlockThreshold.selector);
     dutchAuction.setWithdrawBlockThreshold(100e18);

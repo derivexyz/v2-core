@@ -110,6 +110,9 @@ interface IStandardManager is IBaseManager {
   //   Errors  //
   ///////////////
 
+  /// @dev Market is not created yet
+  error SRM_MarketNotCreated();
+
   /// @dev Caller is not the Accounts contract
   error SRM_NotAccounts();
 
@@ -145,6 +148,8 @@ interface IStandardManager is IBaseManager {
   ///////////////////
   //    Events     //
   ///////////////////
+
+  event MarketCreated(uint marketId, string marketName);
 
   event AssetWhitelisted(address asset, uint marketId, AssetType assetType);
 

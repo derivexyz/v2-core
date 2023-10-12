@@ -197,19 +197,6 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   }
 
   function testBidShouldSettlePerps() public {
-    dutchAuction.addPerpAsset(address(perpAsset));
-
-    // trade perp
-    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
-      fromAcc: aliceAcc,
-      toAcc: charlieAcc,
-      asset: perpAsset,
-      subId: 0,
-      amount: 1e18,
-      assetData: bytes32(0)
-    });
-    subAccounts.submitTransfer(transfer, "");
-
     _startDefaultSolventAuction(aliceAcc);
 
     vm.prank(bob);

@@ -60,7 +60,7 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     mockMarkToMarket[accountId] = markToMarket;
   }
 
-  function settlePerpsWithIndex(IPerpAsset, /*_perp*/ uint accountId) external {
+  function settlePerpsWithIndex(uint accountId) external {
     perpSettled[accountId] = true;
   }
 

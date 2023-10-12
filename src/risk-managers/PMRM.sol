@@ -456,8 +456,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   /**
    * @notice Can be called by anyone to settle a perp asset in an account
    */
-  function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {
-    if (_perp != perp) revert PMRM_UnsupportedAsset();
+  function settlePerpsWithIndex(uint accountId) external {
     _settlePerpUnrealizedPNL(perp, accountId);
   }
 

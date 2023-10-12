@@ -36,7 +36,7 @@ contract UNIT_TestStandardManager_Option is Test {
   OptionSettlementHelper optionHelper;
   uint expiry;
 
-  uint8 ethMarketId = 1;
+  uint ethMarketId;
 
   MockFeeds feed;
   MockFeeds stableFeed;
@@ -75,6 +75,8 @@ contract UNIT_TestStandardManager_Option is Test {
     );
 
     viewer.setStandardManager(manager);
+
+    ethMarketId = manager.createMarket("eth");
 
     manager.setPricingModule(ethMarketId, pricing);
 
@@ -129,19 +131,24 @@ contract UNIT_TestStandardManager_Option is Test {
   }
 
   function testWhitelistAsset() public {
-    manager.whitelistAsset(perp, 2, IStandardManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 2, IStandardManager.AssetType.Option);
+    uint newMarketId = manager.createMarket("btc");
+
+    manager.whitelistAsset(perp, newMarketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, newMarketId, IStandardManager.AssetType.Option);
 
     IStandardManager.AssetDetail memory perpDetail = manager.assetDetails(perp);
     IStandardManager.AssetDetail memory optionDetail = manager.assetDetails(option);
 
     assertEq(perpDetail.isWhitelisted, true);
     assertEq(uint(perpDetail.assetType), uint(IStandardManager.AssetType.Perpetual));
-    assertEq(perpDetail.marketId, 2);
+    assertEq(perpDetail.marketId, newMarketId);
 
     assertEq(optionDetail.isWhitelisted, true);
     assertEq(uint(optionDetail.assetType), uint(IStandardManager.AssetType.Option));
-    assertEq(optionDetail.marketId, 2);
+    assertEq(optionDetail.marketId, newMarketId);
+
+    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Perpetual)), address(perp));
+    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Option)), address(option));
   }
 
   function testSetOptionParameters() public {

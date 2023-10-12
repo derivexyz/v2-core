@@ -54,8 +54,8 @@ contract TestStandardManagerBase is Test {
   MockFeeds btcFeed;
   MockFeeds stableFeed;
 
-  uint8 ethMarketId = 1;
-  uint8 btcMarketId = 2;
+  uint ethMarketId;
+  uint btcMarketId;
 
   address alice = address(0xaa);
   address bob = address(0xbb);
@@ -106,6 +106,9 @@ contract TestStandardManagerBase is Test {
       IDutchAuction(address(0)),
       portfolioViewer
     );
+
+    ethMarketId = manager.createMarket("eth");
+    btcMarketId = manager.createMarket("btc");
 
     portfolioViewer.setStandardManager(manager);
 

@@ -184,7 +184,8 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     assertEq(im, 0);
   }
 
-  function testCanTradeMultiMarketsNotInOrder() public {
+  function testCanTradeMultiMarkets() public {
+    uint dogeMarketId = manager.createMarket("doge");
     // Setup doge market
     MockOption dogeOption = new MockOption(subAccounts);
     MockFeeds dogeFeed = new MockFeeds();
@@ -194,15 +195,15 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
 
     dogeFeed.setForwardPrice(expiry1, 0.0005e18, 1e18);
 
-    manager.whitelistAsset(dogeOption, 5, IStandardManager.AssetType.Option);
+    manager.whitelistAsset(dogeOption, dogeMarketId, IStandardManager.AssetType.Option);
 
-    manager.setOraclesForMarket(5, dogeFeed, dogeFeed, dogeFeed);
+    manager.setOraclesForMarket(dogeMarketId, dogeFeed, dogeFeed, dogeFeed);
 
-    manager.setPricingModule(5, pricing);
+    manager.setPricingModule(dogeMarketId, pricing);
 
     IStandardManager.OptionMarginParams memory params =
       IStandardManager.OptionMarginParams(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
-    manager.setOptionMarginParams(5, params);
+    manager.setOptionMarginParams(dogeMarketId, params);
 
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
@@ -211,7 +212,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     ethPricing.setMockMTM(ethStrike, expiry1, true, 100e18);
 
     (int ethMargin1,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
-    (int dogeMargin1,) = manager.getIsolatedMargin(5, dogeStrike, expiry1, true, -1000e18, true);
+    (int dogeMargin1,) = manager.getIsolatedMargin(dogeMarketId, dogeStrike, expiry1, true, -1000e18, true);
 
     int ethPerpMargin = -150e18;
     int btcPerpMargin = -2000e18;
