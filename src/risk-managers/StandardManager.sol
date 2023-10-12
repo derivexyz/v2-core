@@ -606,7 +606,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function settlePerpsWithIndex(uint accountId) external {
     for (uint id = 1; id <= lastMarketId; id++) {
       IPerpAsset perp = IPerpAsset(address(assetMap[id][AssetType.Perpetual]));
-      if (subAccounts.getBalance(accountId, perp, 0) == 0) continue;
+      if (address(perp) == address(0) || subAccounts.getBalance(accountId, perp, 0) == 0) continue;
       _settlePerpUnrealizedPNL(perp, accountId);
     }
   }

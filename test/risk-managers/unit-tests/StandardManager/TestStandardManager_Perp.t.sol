@@ -268,6 +268,18 @@ contract UNIT_TestStandardManager is Test {
     assertLt(_getCashBalance(aliceAcc), 0);
   }
 
+  function testCanSettleWhenPerpForSomeMarketIsUnset() public {
+    _tradePerpContract(aliceAcc, bobAcc, 1e18);
+    perp.mockAccountPnlAndFunding(aliceAcc, 0, 1000e18);
+
+    // perp address for Lyra market is unset
+    manager.createMarket("LYRA");
+
+    manager.settlePerpsWithIndex(aliceAcc);
+
+    assertEq(_getCashBalance(aliceAcc), 1000e18);
+  }
+
   function testCannotHaveNegativeCash() public {
     // assume alice has 1000 unrealized pnl (report by perp contract)
     perp.mockAccountPnlAndFunding(aliceAcc, 0, 1000e18);
