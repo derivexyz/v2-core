@@ -182,8 +182,7 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   }
 
   function _verifySettlementDataValid(uint settlementStartAggregate, uint currentSpotAggregate) internal pure {
-    if (settlementStartAggregate == 0 || currentSpotAggregate == 0 || settlementStartAggregate >= currentSpotAggregate)
-    {
+    if (settlementStartAggregate >= currentSpotAggregate) {
       revert LFF_InvalidSettlementData();
     }
   }
