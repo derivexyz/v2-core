@@ -6,7 +6,7 @@ import "forge-std/console2.sol";
 import "test/shared/utils/JsonMechIO.sol";
 import "./util/LiquidationSimBase.sol";
 
-contract LiquidationSimTests is LiquidationSimBase {
+contract LiquidationSimTests_PM is LiquidationSimBase {
   using stdJson for string;
 
   function testLiquidationSim1() public {

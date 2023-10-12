@@ -21,6 +21,8 @@ import "../../../shared/mocks/MockOptionPricing.sol";
 
 import "../../../shared/mocks/MockCash.sol";
 
+import "../../../../scripts/config.sol";
+
 /**
  * Focusing on the margin rules for options
  */
@@ -36,7 +38,7 @@ contract UNIT_TestStandardManager_Option is Test {
   OptionSettlementHelper optionHelper;
   uint expiry;
 
-  uint8 ethMarketId = 1;
+  uint ethMarketId;
 
   MockFeeds feed;
   MockFeeds stableFeed;
@@ -76,6 +78,8 @@ contract UNIT_TestStandardManager_Option is Test {
 
     viewer.setStandardManager(manager);
 
+    ethMarketId = manager.createMarket("eth");
+
     manager.setPricingModule(ethMarketId, pricing);
 
     manager.whitelistAsset(perp, ethMarketId, IStandardManager.AssetType.Perpetual);
@@ -102,9 +106,9 @@ contract UNIT_TestStandardManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
-    IStandardManager.OptionMarginParams memory params =
-      IStandardManager.OptionMarginParams(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
-
+    IStandardManager.OptionMarginParams memory params = getDefaultSRMOptionParam();
+    params.unpairedIMScale = 1.4e18;
+    params.unpairedMMScale = 1.2e18;
     manager.setOptionMarginParams(ethMarketId, params);
 
     manager.setStableFeed(stableFeed);
@@ -129,19 +133,24 @@ contract UNIT_TestStandardManager_Option is Test {
   }
 
   function testWhitelistAsset() public {
-    manager.whitelistAsset(perp, 2, IStandardManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 2, IStandardManager.AssetType.Option);
+    uint newMarketId = manager.createMarket("btc");
+
+    manager.whitelistAsset(perp, newMarketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, newMarketId, IStandardManager.AssetType.Option);
 
     IStandardManager.AssetDetail memory perpDetail = manager.assetDetails(perp);
     IStandardManager.AssetDetail memory optionDetail = manager.assetDetails(option);
 
     assertEq(perpDetail.isWhitelisted, true);
     assertEq(uint(perpDetail.assetType), uint(IStandardManager.AssetType.Perpetual));
-    assertEq(perpDetail.marketId, 2);
+    assertEq(perpDetail.marketId, newMarketId);
 
     assertEq(optionDetail.isWhitelisted, true);
     assertEq(uint(optionDetail.assetType), uint(IStandardManager.AssetType.Option));
-    assertEq(optionDetail.marketId, 2);
+    assertEq(optionDetail.marketId, newMarketId);
+
+    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Perpetual)), address(perp));
+    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Option)), address(option));
   }
 
   function testSetOptionParameters() public {
@@ -168,6 +177,13 @@ contract UNIT_TestStandardManager_Option is Test {
     assertEq(mmOffsetScale, 1.05e18);
   }
 
+  function testCannotSetOptionParamsForInvalidMarketId() public {
+    vm.expectRevert(IStandardManager.SRM_MarketNotCreated.selector);
+    IStandardManager.OptionMarginParams memory params = getDefaultSRMOptionParam();
+
+    manager.setOptionMarginParams(5, params);
+  }
+
   function testSetOracles() public {
     MockFeeds newFeed = new MockFeeds();
     manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed);
@@ -175,6 +191,11 @@ contract UNIT_TestStandardManager_Option is Test {
     assertEq(address(spotF), address(newFeed));
     assertEq(address(forwardF), address(newFeed));
     assertEq(address(volFeed), address(newFeed));
+  }
+
+  function testCannotSetOraclesForNonExistentMarket() public {
+    vm.expectRevert(IStandardManager.SRM_MarketNotCreated.selector);
+    manager.setOraclesForMarket(5, feed, feed, feed);
   }
 
   function testSetStableFeed() public {

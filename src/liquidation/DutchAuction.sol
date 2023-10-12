@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
 import {ISecurityModule} from "../interfaces/ISecurityModule.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
+import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {SubAccounts} from "../SubAccounts.sol";
 
@@ -267,6 +268,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_InvalidPercentage();
     }
 
+    // Settle perps to make sure all PNL is realized in cash.
+    ILiquidatableManager(address(subAccounts.manager(accountId))).settlePerpsWithIndex(accountId);
+
     // get bidder address and make sure that they own the account
     if (subAccounts.ownerOf(bidderId) != msg.sender) revert DA_SenderNotOwner();
 
@@ -426,9 +430,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     return largeInsolventAuctionCount > 0;
   }
 
-  ///////////////////////
-  // Internal Mutators //
-  ///////////////////////
+  //////////////////////////////
+  //    Internal Functions    //
+  //////////////////////////////
 
   /**
    * @notice Starts an auction that starts with a positive upper bound

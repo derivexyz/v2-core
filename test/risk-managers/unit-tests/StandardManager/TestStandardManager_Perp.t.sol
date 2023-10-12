@@ -36,6 +36,8 @@ contract UNIT_TestStandardManager is Test {
   uint aliceAcc;
   uint bobAcc;
 
+  uint marketId;
+
   function setUp() public {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
@@ -58,12 +60,14 @@ contract UNIT_TestStandardManager is Test {
       viewer
     );
 
+    marketId = manager.createMarket("eth");
+
     viewer.setStandardManager(manager);
 
-    manager.whitelistAsset(perp, 1, IStandardManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, 1, IStandardManager.AssetType.Option);
+    manager.whitelistAsset(perp, marketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(option, marketId, IStandardManager.AssetType.Option);
 
-    manager.setOraclesForMarket(1, feed, feed, feed);
+    manager.setOraclesForMarket(marketId, feed, feed, feed);
 
     manager.setStableFeed(stableFeed);
     stableFeed.setSpot(1e18, 1e18);
@@ -90,7 +94,7 @@ contract UNIT_TestStandardManager is Test {
 
   function testSetPricingModule() public {
     MockOptionPricing pricing = new MockOptionPricing();
-    manager.setPricingModule(1, pricing);
+    manager.setPricingModule(marketId, pricing);
     // assertEq(address(manager.pricingModules(1)), address(pricing));
   }
 
@@ -105,12 +109,12 @@ contract UNIT_TestStandardManager is Test {
   function testCannotSetPerpMarginRequirementFromNonOwner() public {
     vm.startPrank(alice);
     vm.expectRevert();
-    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(marketId, 0.05e18, 0.1e18);
     vm.stopPrank();
   }
 
   function setPerpMarginRequirementsRatios() public {
-    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(marketId, 0.05e18, 0.1e18);
     (uint mmPerpReq, uint imPerpReq) = manager.perpMarginRequirements(1);
 
     assertEq(mmPerpReq, 0.1e18);
@@ -119,20 +123,20 @@ contract UNIT_TestStandardManager is Test {
 
   function testCannotSetPerpMMLargerThanIM() public {
     vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
-    manager.setPerpMarginRequirements(1, 0.1e18, 0.05e18);
+    manager.setPerpMarginRequirements(marketId, 0.1e18, 0.05e18);
   }
 
   function testCannotSetInvalidPerpMarginRequirement() public {
     vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
-    manager.setPerpMarginRequirements(1, 0.1e18, 0);
+    manager.setPerpMarginRequirements(marketId, 0.1e18, 0);
 
     vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
-    manager.setPerpMarginRequirements(1, 0.1e18, 1e18);
+    manager.setPerpMarginRequirements(marketId, 0.1e18, 1e18);
 
     vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
-    manager.setPerpMarginRequirements(1, 1e18, 0.1e18);
+    manager.setPerpMarginRequirements(marketId, 1e18, 0.1e18);
     vm.expectRevert(IStandardManager.SRM_InvalidPerpMarginParams.selector);
-    manager.setPerpMarginRequirements(1, 0, 0.1e18);
+    manager.setPerpMarginRequirements(marketId, 0, 0.1e18);
   }
 
   ////////////////////
@@ -154,7 +158,7 @@ contract UNIT_TestStandardManager is Test {
   }
 
   function testCanTradePerpWithEnoughMargin() public {
-    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(marketId, 0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1500e18);
@@ -165,7 +169,7 @@ contract UNIT_TestStandardManager is Test {
   }
 
   function testCannotTradePerpWithInsufficientMargin() public {
-    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
+    manager.setPerpMarginRequirements(marketId, 0.05e18, 0.1e18);
 
     // trade 10 contracts, margin requirement = 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1499e18);
@@ -178,8 +182,8 @@ contract UNIT_TestStandardManager is Test {
 
   function testOracleContingencyOnPerps() public {
     // set oracle contingency params
-    manager.setPerpMarginRequirements(1, 0.05e18, 0.1e18);
-    manager.setOracleContingencyParams(1, IStandardManager.OracleContingencyParams(0.75e18, 0, 0, 0.1e18));
+    manager.setPerpMarginRequirements(marketId, 0.05e18, 0.1e18);
+    manager.setOracleContingencyParams(marketId, IStandardManager.OracleContingencyParams(0.75e18, 0, 0, 0.1e18));
 
     // requirement: 10 * 1500 * 0.1 = 1500
     cash.deposit(aliceAcc, 1500e18);
@@ -212,34 +216,38 @@ contract UNIT_TestStandardManager is Test {
   //        Settlement   Tests
   //======================================
 
-  // tests around settling perp's unrealized PNL with spot
-  function testCannotSettleWithMaliciousPerpContract() public {
-    MockPerp badPerp = new MockPerp(subAccounts);
-    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
-    manager.settlePerpsWithIndex(badPerp, aliceAcc);
-  }
-
   function testNoCashMovesIfNothingToSettle() public {
     int cashBefore = _getCashBalance(aliceAcc);
     perp.mockAccountPnlAndFunding(aliceAcc, 0, 0);
-    manager.settlePerpsWithIndex(perp, aliceAcc);
+    manager.settlePerpsWithIndex(aliceAcc);
+    int cashAfter = _getCashBalance(aliceAcc);
+    assertEq(cashAfter, cashBefore);
+  }
+
+  function testWontSettlePerpIfNoBalance() public {
+    int cashBefore = _getCashBalance(aliceAcc);
+    perp.mockAccountPnlAndFunding(aliceAcc, 1e18, 100e18);
+    manager.settlePerpsWithIndex(aliceAcc);
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashAfter, cashBefore);
   }
 
   function testCashChangesBasedOnPerpContractPNLAndFundingValues() public {
+    _tradePerpContract(aliceAcc, bobAcc, 1e18);
     int cashBefore = _getCashBalance(aliceAcc);
     perp.mockAccountPnlAndFunding(aliceAcc, 1e18, 100e18);
-    manager.settlePerpsWithIndex(perp, aliceAcc);
+    manager.settlePerpsWithIndex(aliceAcc);
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashAfter - cashBefore, 101e18);
   }
 
   function testSettlePerpWithManagerData() public {
+    _tradePerpContract(aliceAcc, bobAcc, 1e18);
+
     int cashBefore = _getCashBalance(aliceAcc);
     perp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
 
-    bytes memory data = abi.encode(address(manager), address(perp), aliceAcc);
+    bytes memory data = abi.encode(address(manager), aliceAcc);
     IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
     allData[0] = IBaseManager.ManagerData({receiver: address(perpHelper), data: data});
     bytes memory managerData = abi.encode(allData);
@@ -253,27 +261,23 @@ contract UNIT_TestStandardManager is Test {
     assertEq(cashAfter - cashBefore, 100e18);
   }
 
-  function testCannotSettleWithBadPerp() public {
-    MockPerp badPerp = new MockPerp(subAccounts);
-    badPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
-
-    bytes memory data = abi.encode(address(manager), address(badPerp), aliceAcc);
-    IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
-    allData[0] = IBaseManager.ManagerData({receiver: address(perpHelper), data: data});
-    bytes memory managerData = abi.encode(allData);
-
-    // only transfer 0 cash
-    ISubAccounts.AssetTransfer memory transfer =
-      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 0, assetData: ""});
-
-    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
-    subAccounts.submitTransfer(transfer, managerData);
+  function testCanSettleIntoNegativeCash() public {
+    _tradePerpContract(aliceAcc, bobAcc, 1e18);
+    perp.mockAccountPnlAndFunding(aliceAcc, 0, -10000e18);
+    manager.settlePerpsWithIndex(aliceAcc);
+    assertLt(_getCashBalance(aliceAcc), 0);
   }
 
-  function testCanSettleIntoNegativeCash() public {
-    perp.mockAccountPnlAndFunding(aliceAcc, 0, -10000e18);
-    manager.settlePerpsWithIndex(perp, aliceAcc);
-    assertLt(_getCashBalance(aliceAcc), 0);
+  function testCanSettleWhenPerpForSomeMarketIsUnset() public {
+    _tradePerpContract(aliceAcc, bobAcc, 1e18);
+    perp.mockAccountPnlAndFunding(aliceAcc, 0, 1000e18);
+
+    // perp address for Lyra market is unset
+    manager.createMarket("LYRA");
+
+    manager.settlePerpsWithIndex(aliceAcc);
+
+    assertEq(_getCashBalance(aliceAcc), 1000e18);
   }
 
   function testCannotHaveNegativeCash() public {
@@ -290,6 +294,16 @@ contract UNIT_TestStandardManager is Test {
 
     vm.expectRevert(IStandardManager.SRM_NoNegativeCash.selector);
     subAccounts.submitTransfer(transfer, "");
+  }
+
+  function testCannotHave2PerpContractsForSameMarket() public {
+    // create another perp contract
+    MockPerp perp2 = new MockPerp(subAccounts);
+    manager.whitelistAsset(perp2, marketId, IStandardManager.AssetType.Perpetual);
+
+    // trade old perp should revert
+    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
+    _tradePerpContract(aliceAcc, bobAcc, 1e18);
   }
 
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {

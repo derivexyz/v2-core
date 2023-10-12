@@ -58,6 +58,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /// @dev True if an IAsset address is whitelisted.
   mapping(IAsset asset => AssetDetail) internal _assetDetails;
 
+  /// @dev Increasing Market Id
+  uint public lastMarketId = 0;
+
+  /// @dev Mapping from marketId to asset type to IAsset address
+  mapping(uint marketId => mapping(AssetType assetType => IAsset)) public assetMap;
+
   /// @dev Perp Margin Requirements: maintenance and initial margin requirements
   mapping(uint marketId => PerpMarginRequirements) public perpMarginRequirements;
 
@@ -97,12 +103,24 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   //    Owner-Only     //
   ///////////////////////
 
+  function createMarket(string calldata _marketName) external onlyOwner returns (uint marketId) {
+    marketId = ++lastMarketId;
+    emit MarketCreated(marketId, _marketName);
+  }
+
   /**
    * @notice Whitelist an asset to be used in Manager
    * @dev the standard manager only support option asset & perp asset
    */
   function whitelistAsset(IAsset _asset, uint _marketId, AssetType _type) external onlyOwner {
+    _checkMarketExist(_marketId);
+
+    IAsset previousAsset = assetMap[_marketId][_type];
+    delete _assetDetails[previousAsset];
+
     _assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
+
+    assetMap[_marketId][_type] = _asset;
 
     emit AssetWhitelisted(address(_asset), _marketId, _type);
   }
@@ -123,6 +141,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     external
     onlyOwner
   {
+    _checkMarketExist(marketId);
+
     // registered asset
     spotFeeds[marketId] = spotFeed;
     forwardFeeds[marketId] = forwardFeed;
@@ -137,6 +157,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param _imPerpReq new initial margin requirement
    */
   function setPerpMarginRequirements(uint marketId, uint _mmPerpReq, uint _imPerpReq) external onlyOwner {
+    _checkMarketExist(marketId);
+
     if (_mmPerpReq > _imPerpReq || _mmPerpReq == 0 || _mmPerpReq >= 1e18 || _imPerpReq >= 1e18) {
       revert SRM_InvalidPerpMarginParams();
     }
@@ -151,6 +173,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev if this factor is 0 (unset), base asset won't contribute to margin
    */
   function setBaseMarginDiscountFactor(uint marketId, uint discountFactor) external onlyOwner {
+    _checkMarketExist(marketId);
+
     if (discountFactor >= 1e18) {
       revert SRM_InvalidBaseDiscountFactor();
     }
@@ -164,6 +188,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Set the option margin parameters for an market
    */
   function setOptionMarginParams(uint marketId, OptionMarginParams calldata params) external onlyOwner {
+    _checkMarketExist(marketId);
+
     if (
       params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 // 0 < x < 1.2
         || params.minSpotReq < 0 || params.minSpotReq > 1.2e18 // 0 < x < 1,2
@@ -196,6 +222,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @notice Set the option margin parameters for an market
    */
   function setOracleContingencyParams(uint marketId, OracleContingencyParams memory params) external onlyOwner {
+    _checkMarketExist(marketId);
     if (
       params.perpThreshold > 1e18 || params.optionThreshold > 1e18 || params.baseThreshold > 1e18
         || params.OCFactor > 1e18
@@ -233,6 +260,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @param _pricing new pricing module
    */
   function setPricingModule(uint marketId, IOptionPricing _pricing) external onlyOwner {
+    _checkMarketExist(marketId);
+
     pricingModules[marketId] = IOptionPricing(_pricing);
 
     emit PricingModuleSet(marketId, address(_pricing));
@@ -574,9 +603,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev settle perp value with index price
    */
-  function settlePerpsWithIndex(IPerpAsset perp, uint accountId) external {
-    if (!_assetDetails[perp].isWhitelisted) revert SRM_UnsupportedAsset();
-    _settlePerpUnrealizedPNL(perp, accountId);
+  function settlePerpsWithIndex(uint accountId) external {
+    for (uint id = 1; id <= lastMarketId; id++) {
+      IPerpAsset perp = IPerpAsset(address(assetMap[id][AssetType.Perpetual]));
+      if (address(perp) == address(0) || subAccounts.getBalance(accountId, perp, 0) == 0) continue;
+      _settlePerpUnrealizedPNL(perp, accountId);
+    }
   }
 
   ////////////////////////
@@ -639,6 +671,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   //////////////////////////
   //       Internal       //
   //////////////////////////
+
+  function _checkMarketExist(uint marketId) internal view {
+    if (marketId > lastMarketId) revert SRM_MarketNotCreated();
+  }
 
   function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal

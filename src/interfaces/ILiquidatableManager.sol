@@ -7,9 +7,9 @@ import {IOptionAsset} from "./IOptionAsset.sol";
 
 interface ILiquidatableManager is IBaseManager {
   /**
-   * @notice can be called by anyone to settle a perp asset in an account
+   * @notice can be called by anyone to settle all perp asset in an account
    */
-  function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external;
+  function settlePerpsWithIndex(uint accountId) external;
 
   /**
    * @notice can be called by anyone to settle option assets in an account

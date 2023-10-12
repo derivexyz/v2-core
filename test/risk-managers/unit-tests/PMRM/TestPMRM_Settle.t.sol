@@ -28,7 +28,7 @@ contract TestPMRM_Settlement is PMRMTestBase {
     int cashBefore = _getCashBalance(aliceAcc);
     mockPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
 
-    pmrm.settlePerpsWithIndex(mockPerp, aliceAcc);
+    pmrm.settlePerpsWithIndex(aliceAcc);
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashAfter - cashBefore, 100e18);
   }
@@ -37,7 +37,7 @@ contract TestPMRM_Settlement is PMRMTestBase {
     int cashBefore = _getCashBalance(aliceAcc);
     mockPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
 
-    bytes memory data = abi.encode(address(pmrm), address(mockPerp), aliceAcc);
+    bytes memory data = abi.encode(address(pmrm), aliceAcc);
     IBaseManager.ManagerData[] memory allData = new IBaseManager.ManagerData[](1);
     allData[0] = IBaseManager.ManagerData({receiver: address(perpHelper), data: data});
     bytes memory managerData = abi.encode(allData);
@@ -49,11 +49,6 @@ contract TestPMRM_Settlement is PMRMTestBase {
 
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashAfter - cashBefore, 100e18);
-  }
-
-  function testCanSettlePerpWithBadAddress() public {
-    vm.expectRevert(IPMRM.PMRM_UnsupportedAsset.selector);
-    pmrm.settlePerpsWithIndex(IPerpAsset(address(option)), aliceAcc);
   }
 
   function testCanSettleOptions() public {

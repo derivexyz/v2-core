@@ -9,10 +9,12 @@ import {IPerpAsset} from "../../../src/interfaces/IPerpAsset.sol";
 import {IOptionAsset} from "../../../src/interfaces/IOptionAsset.sol";
 
 contract MockLiquidatableManager is MockManager, ILiquidatableManager {
-  mapping(uint tradeId => mapping(uint account => uint fee)) mockFeeCharged;
-  mapping(uint account => mapping(bool isInitial => mapping(uint scenario => int margin))) mockMargin;
+  mapping(uint tradeId => mapping(uint account => uint fee)) public mockFeeCharged;
+  mapping(uint account => mapping(bool isInitial => mapping(uint scenario => int margin))) public mockMargin;
 
-  mapping(uint => int) mockMarkToMarket;
+  mapping(uint => int) public mockMarkToMarket;
+
+  mapping(uint => bool) public perpSettled;
 
   uint public feePaid;
 
@@ -58,7 +60,9 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
     mockMarkToMarket[accountId] = markToMarket;
   }
 
-  function settlePerpsWithIndex(IPerpAsset _perp, uint accountId) external {}
+  function settlePerpsWithIndex(uint accountId) external {
+    perpSettled[accountId] = true;
+  }
 
   function settleOptions(IOptionAsset _option, uint accountId) external {}
 

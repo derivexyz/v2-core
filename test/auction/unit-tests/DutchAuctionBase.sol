@@ -7,6 +7,7 @@ import "forge-std/Script.sol";
 import "../../../src/SubAccounts.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockAsset.sol";
+import "../../shared/mocks/MockPerp.sol";
 import "../../shared/mocks/MockSM.sol";
 import "../../shared/mocks/MockCash.sol";
 import "../mocks/MockLiquidatableManager.sol";
@@ -26,6 +27,7 @@ contract DutchAuctionBase is Test {
   MockSM sm;
   MockERC20 usdc;
   MockCash usdcAsset;
+  MockPerp perpAsset;
   MockAsset optionAsset;
   MockLiquidatableManager manager;
   DutchAuction dutchAuction;
@@ -59,6 +61,8 @@ contract DutchAuctionBase is Test {
     // optionAsset: not allow deposit, can be negative
     optionAsset = new MockAsset(IERC20(address(0)), subAccounts, true);
 
+    perpAsset = new MockPerp(subAccounts);
+
     /* Risk Manager */
     manager = new MockLiquidatableManager(address(subAccounts));
 
@@ -79,9 +83,9 @@ contract DutchAuctionBase is Test {
     charlie = address(0xcc);
     usdc.approve(address(usdcAsset), type(uint).max);
 
-    aliceAcc = subAccounts.createAccount(alice, manager);
-    bobAcc = subAccounts.createAccount(bob, manager);
-    charlieAcc = subAccounts.createAccount(charlie, manager);
+    aliceAcc = subAccounts.createAccountWithApproval(alice, address(this), manager);
+    bobAcc = subAccounts.createAccountWithApproval(bob, address(this), manager);
+    charlieAcc = subAccounts.createAccountWithApproval(charlie, address(this), manager);
   }
 
   //////////////////////////

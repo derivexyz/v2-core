@@ -62,7 +62,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     // alice is short, bob is long
     _setPerpPrice("weth", 1600e18, 1e18);
 
-    srm.settlePerpsWithIndex(markets["weth"].perp, aliceAcc);
+    srm.settlePerpsWithIndex(aliceAcc);
 
     int cashAfter = _getCashBalance(aliceAcc);
     assertEq(cashBefore - 100e18, cashAfter);
@@ -75,8 +75,8 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     // alice is short, bob is long
     _setPerpPrice("weth", 1600e18, 1e18);
 
-    srm.settlePerpsWithIndex(markets["weth"].perp, aliceAcc);
-    srm.settlePerpsWithIndex(markets["weth"].perp, bobAcc);
+    srm.settlePerpsWithIndex(aliceAcc);
+    srm.settlePerpsWithIndex(bobAcc);
 
     int aliceCashAfter = _getCashBalance(aliceAcc);
     int bobCashAfter = _getCashBalance(bobAcc);
@@ -90,7 +90,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
 
   function testCanSettleIntoNegativeCash() public {
     _setPerpPrice("weth", 200_000e18, 1e18);
-    srm.settlePerpsWithIndex(markets["weth"].perp, aliceAcc);
+    srm.settlePerpsWithIndex(aliceAcc);
     assertLt(_getCashBalance(aliceAcc), 0);
   }
 
