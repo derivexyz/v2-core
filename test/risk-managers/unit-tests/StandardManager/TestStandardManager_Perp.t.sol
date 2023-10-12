@@ -284,6 +284,16 @@ contract UNIT_TestStandardManager is Test {
     subAccounts.submitTransfer(transfer, "");
   }
 
+  function testCannotHave2PerpContractsForSameMarket() public {
+    // create another perp contract
+    MockPerp perp2 = new MockPerp(subAccounts);
+    manager.whitelistAsset(perp2, marketId, IStandardManager.AssetType.Perpetual);
+
+    // trade old perp should revert
+    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
+    _tradePerpContract(aliceAcc, bobAcc, 1e18);
+  }
+
   function _tradePerpContract(uint fromAcc, uint toAcc, int amount) internal {
     ISubAccounts.AssetTransfer memory transfer =
       ISubAccounts.AssetTransfer({fromAcc: fromAcc, toAcc: toAcc, asset: perp, subId: 0, amount: amount, assetData: ""});

@@ -115,6 +115,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function whitelistAsset(IAsset _asset, uint _marketId, AssetType _type) external onlyOwner {
     _checkMarketExist(_marketId);
 
+    IAsset previousAsset = assetMap[_marketId][_type];
+    delete _assetDetails[previousAsset];
+
     _assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
 
     assetMap[_marketId][_type] = _asset;
