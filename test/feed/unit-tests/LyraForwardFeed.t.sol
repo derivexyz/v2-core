@@ -248,7 +248,7 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
 
     uint newCurAggregate = 0;
     feedData.data =
-      abi.encode(defaultExpiry, newCurAggregate, currentSpotAggregate, fwdSpotDifference, defaultConfidence);
+      abi.encode(defaultExpiry, settlementStartAggregate, newCurAggregate, fwdSpotDifference, defaultConfidence);
     bytes memory data = _signFeedData(feed, pk, feedData);
 
     vm.expectRevert(ILyraForwardFeed.LFF_InvalidSettlementData.selector);
