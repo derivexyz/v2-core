@@ -35,7 +35,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import {IPMRMLib} from "../../../src/interfaces/IPMRMLib.sol";
 import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 
-import "../../../scripts/config.sol";
+import "../../../scripts/config-local.sol";
 
 /**
  * @dev real Accounts contract

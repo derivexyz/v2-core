@@ -21,7 +21,7 @@ import "../../../shared/mocks/MockOptionPricing.sol";
 
 import "../../../shared/mocks/MockCash.sol";
 
-import "../../../../scripts/config.sol";
+import "../../../../scripts/config-local.sol";
 
 /**
  * Focusing on the margin rules for options

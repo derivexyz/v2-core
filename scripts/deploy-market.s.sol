@@ -26,7 +26,7 @@ import {Deployment, ConfigJson, Market} from "./types.sol";
 import {Utils} from "./utils.sol";
 
 // get all default params
-import "./config.sol";
+import "./config-local.sol";
 
 
 /**

@@ -39,7 +39,7 @@ import {PMRMPublic} from "../../../../risk-managers/unit-tests/PMRM/utils/PMRMPu
 import {IPMRMLib} from "../../../../../src/interfaces/IPMRMLib.sol";
 
 import "../../../../shared/utils/JsonMechIO.sol";
-import {getPMRMParams, getDefaultScenarios} from "../../../../../scripts/config.sol";
+import {getPMRMParams, getDefaultScenarios} from "../../../../../scripts/config-local.sol";
 
 contract PMRMTestBase is JsonMechIO {
   using stdJson for string;

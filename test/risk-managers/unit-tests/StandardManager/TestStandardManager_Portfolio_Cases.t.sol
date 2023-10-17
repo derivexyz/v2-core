@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "./TestStandardManagerBase.t.sol";
 
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "../../../../scripts/config.sol";
+import "../../../../scripts/config-local.sol";
 import "../TestCaseExpiries.t.sol";
 
 /**

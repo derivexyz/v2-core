@@ -22,7 +22,7 @@ import {Deployment, ConfigJson} from "./types.sol";
 import {Utils} from "./utils.sol";
 
 // get all default params
-import "./config.sol";
+import "./config-local.sol";
 
 
 contract DeployCore is Utils {

@@ -6,7 +6,7 @@ import {ISRMPortfolioViewer} from "../../../../src/interfaces/ISRMPortfolioViewe
 import {IStandardManager} from "../../../../src/interfaces/IStandardManager.sol";
 import {MockManager} from "../../../shared/mocks/MockManager.sol";
 import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
-import "../../../../scripts/config.sol";
+import "../../../../scripts/config-local.sol";
 
 contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   function testCanTransferCash() public {

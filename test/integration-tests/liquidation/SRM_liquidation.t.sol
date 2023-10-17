@@ -6,7 +6,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "../shared/IntegrationTestBase.t.sol";
 
-import {getDefaultAuctionParam} from "../../../scripts/config.sol";
+import {getDefaultAuctionParam} from "../../../scripts/config-local.sol";
 /**
  * @dev testing liquidation process
  */

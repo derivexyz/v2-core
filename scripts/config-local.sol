@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT
+
+// Config used for integration test, generating integration test anvil state, and more general testing scenarios
+
 pragma solidity ^0.8.0;
 
 import {IDutchAuction} from "../src/interfaces/IDutchAuction.sol";
