@@ -28,6 +28,7 @@ contract Utils is Script {
     deployment.securityModule = SecurityModule(abi.decode(vm.parseJson(content, ".securityModule"), (address)));
     deployment.auction = DutchAuction(abi.decode(vm.parseJson(content, ".auction"), (address)));
     deployment.srm = StandardManager(abi.decode(vm.parseJson(content, ".srm"), (address)));
+    deployment.srmViewer = SRMPortfolioViewer(abi.decode(vm.parseJson(content, ".srmViewer"), (address)));
     deployment.stableFeed = ISpotFeed(abi.decode(vm.parseJson(content, ".stableFeed"), (address)));
   }
 

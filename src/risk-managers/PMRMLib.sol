@@ -56,7 +56,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function setOtherContingencyParams(IPMRMLib.OtherContingencyParameters memory _otherContParams) external onlyOwner {
     if (
-      _otherContParams.pegLossThreshold > 1e18 || _otherContParams.pegLossFactor > 2e18
+      _otherContParams.pegLossThreshold > 1e18 || _otherContParams.pegLossFactor > 20e18
         || _otherContParams.confThreshold > 1e18 || _otherContParams.confMargin > 1.5e18
         || _otherContParams.basePercent > 1e18 || _otherContParams.perpPercent > 1e18
         || _otherContParams.optionPercent > 1e18

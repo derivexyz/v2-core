@@ -222,7 +222,7 @@ contract DeployMarket is Utils {
 
     deployment.srm.setBaseMarginDiscountFactor(marketId, SRM_BASE_DISCOUNT);
 
-    deployment.srmViewer.setOIFeeRateBPS(address(market.perp), MIN_OI_FEE);
+    deployment.srmViewer.setOIFeeRateBPS(address(market.perp), OI_FEE_BPS);
     deployment.srmViewer.setOIFeeRateBPS(address(market.option), OI_FEE_BPS);
     deployment.srmViewer.setOIFeeRateBPS(address(market.base), OI_FEE_BPS);
     deployment.srm.setMinOIFee(MIN_OI_FEE);
