@@ -50,6 +50,9 @@ function getDefaultDepegParam() pure returns (IStandardManager.DepegParams memor
 //  ----------------------------------------
 int constant MAX_Abs_Rate_Per_Hour = 0.1e18;
 
+uint256 constant MIN_OI_FEE = 0;
+uint256 constant OI_FEE_BPS = 0;
+
 uint64 constant SPOT_HEARTBEAT = 10 minutes;
 uint64 constant FORWARD_HEARTBEAT = 10 minutes;
 uint64 constant SETTLEMENT_HEARTBEAT = 1 hours;

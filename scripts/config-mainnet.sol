@@ -18,37 +18,47 @@ function getDefaultInterestRateModel() pure returns (
   uint highRateMultiplier, 
   uint optimalUtil
 ) {
-  minRate = 0.06 * 1e18;
-  rateMultiplier = 0.2 * 1e18;
-  highRateMultiplier = 0.4 * 1e18;
-  optimalUtil = 0.6 * 1e18;
+  minRate = 0.04e18;
+  rateMultiplier = 0.1e18;
+  highRateMultiplier = 1.25e18;
+  optimalUtil = 0.7e18;
 }
+
+// Liquidations
+
+int constant BUFFER_MARGIN_SCALE = 0.3e18;
 
 function getDefaultAuctionParam() pure returns (IDutchAuction.SolventAuctionParams memory param) {
   param = IDutchAuction.SolventAuctionParams({
-    startingMtMPercentage: 1e18,
-    fastAuctionCutoffPercentage: 0.8e18,
-    fastAuctionLength: 10 minutes,
-    slowAuctionLength: 2 hours,
-    liquidatorFeeRate: 0.05e18
+    startingMtMPercentage: 0.95e18,
+    fastAuctionCutoffPercentage: 0.7e18,
+    fastAuctionLength: 20 minutes,
+    slowAuctionLength: 3 hours,
+    liquidatorFeeRate: 0
   });
 }
 
 function getDefaultInsolventAuctionParam() pure returns (IDutchAuction.InsolventAuctionParams memory param) {
-  param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5 seconds, bufferMarginScalar: 1.2e18});
+  param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 6 seconds, bufferMarginScalar: 1.2e18});
 }
 
 function getDefaultDepegParam() pure returns (IStandardManager.DepegParams memory param) {
   param = IStandardManager.DepegParams({threshold: 0.98e18, depegFactor: 1.2e18});
 }
 
+// Cash Asset
+uint256 constant CASH_SM_FEE=0.2e18;
 
-//  ----------------------------------------
-//
-//    Read anytime deploying a new market
-//
-//  ----------------------------------------
+// Assets
+
 int constant MAX_Abs_Rate_Per_Hour = 0.1e18;
+
+uint256 constant MIN_OI_FEE = 2e18;
+uint256 constant OI_FEE_BPS = 0.001e18;
+
+uint256 constant SRM_BASE_DISCOUNT = 0.75e18;
+
+// Feeds
 
 uint64 constant SPOT_HEARTBEAT = 10 minutes;
 uint64 constant FORWARD_HEARTBEAT = 10 minutes;
@@ -69,10 +79,10 @@ uint constant INIT_CAP_BASE = 1_000e18;
 function getDefaultSRMOptionParam() pure returns (IStandardManager.OptionMarginParams memory param) {
   param =IStandardManager.OptionMarginParams({
       maxSpotReq: 0.15e18,
-      minSpotReq: 0.1e18,
-      mmCallSpotReq: 0.075e18,
-      mmPutSpotReq: 0.075e18,
-      MMPutMtMReq: 0.075e18,
+      minSpotReq: 0.12e18,
+      mmCallSpotReq: 0.1e18,
+      mmPutSpotReq: 0.1e18,
+      MMPutMtMReq: 0.1e18,
       unpairedIMScale: 1.2e18,
       unpairedMMScale: 1.1e18,
       mmOffsetScale: 1.05e18
@@ -105,19 +115,19 @@ function getPMRMParams() pure returns (
 
   otherContParams = IPMRMLib.OtherContingencyParameters({
     pegLossThreshold: 0.98e18,
-    pegLossFactor: 2e18,
+    pegLossFactor: 4e18,
     confThreshold: 0.6e18,
     confMargin: 0.5e18,
-    basePercent: 0.02e18,
-    perpPercent: 0.02e18,
+    basePercent: 0.025e18,
+    perpPercent: 0.025e18,
     optionPercent: 0.01e18
   });
 
   marginParams = IPMRMLib.MarginParameters({
     imFactor: 1.3e18,
     baseStaticDiscount: 0.95e18,
-    rateMultScale: 4e18,
-    rateAddScale: 0.05e18
+    rateMultScale: 2e18,
+    rateAddScale: 0.12e18
   });
 
   volShockParams = IPMRMLib.VolShockParameters({

@@ -8,8 +8,6 @@ import {Utils} from "./utils.sol";
 
 import {MockERC20} from "../test/shared/mocks/MockERC20.sol";
 
-// get all default params
-import "./config-local.sol";
 
 // Deploy mocked contracts: then write to script/input as input for deploying core and v2 markets
 contract DeployMocks is Utils {

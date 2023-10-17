@@ -21,9 +21,8 @@ import "forge-std/console2.sol";
 import {Deployment, ConfigJson} from "./types.sol";
 import {Utils} from "./utils.sol";
 
-// get all default params
-import "./config-local.sol";
-
+// Read from deployment config
+import "./config-mainnet.sol";
 
 contract DeployCore is Utils {
 
@@ -102,6 +101,7 @@ contract DeployCore is Utils {
     // setup cash
     deployment.cash.setLiquidationModule(deployment.auction);
     deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
+    deployment.cash.setSmFee(CASH_SM_FEE);
 
     // set parameter for auction
     deployment.auction.setSolventAuctionParams(getDefaultAuctionParam());
@@ -114,7 +114,11 @@ contract DeployCore is Utils {
 
     // global setting for SRM
     deployment.srm.setStableFeed(deployment.stableFeed);
-    deployment.srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
+    
+    // set SRM parameters
+    deployment.srm.setDepegParameters(getDefaultDepegParam());
+
+    deployment.auction.setBufferMarginPercentage(BUFFER_MARGIN_SCALE);
 
     console2.log("Core contracts deployed and setup!");
   }
