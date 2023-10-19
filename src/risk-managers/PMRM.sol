@@ -243,6 +243,8 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     } else {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
       (int postIM,, uint worstScenario) = lib.getMarginAndMarkToMarket(portfolio, true, marginScenarios, true);
+
+      // if post trade IM is < 0, you must have newMM > oldMM and newMM > 0. (aka the trade increases account health )
       if (postIM < 0) {
         int postMM;
         IPMRM.Scenario[] memory postScenarios = new IPMRM.Scenario[](0);
@@ -258,7 +260,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
 
         // we have to use all scenarios for the pre-check as we don't know if the worst scenario is different
         (int preMM,,) = lib.getMarginAndMarkToMarket(prePortfolio, false, marginScenarios, true);
-        if (postMM < preMM) {
+        if (postMM < preMM || postMM < 0) {
           revert PMRM_InsufficientMargin();
         }
       }
