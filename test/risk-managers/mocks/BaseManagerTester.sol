@@ -26,10 +26,6 @@ contract BaseManagerTester is BaseManager {
     spotFeed = spotFeed_;
   }
 
-  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    _mergeAccounts(mergeIntoId, mergeFromIds);
-  }
-
   function symmetricManagerAdjustment(uint from, uint to, IAsset asset, uint96 subId, int amount) external {
     _symmetricManagerAdjustment(from, to, asset, subId, amount);
   }

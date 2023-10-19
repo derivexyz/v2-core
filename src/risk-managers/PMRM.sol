@@ -470,15 +470,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     _settleAccountOptions(_option, accountId);
   }
 
-  /**
-   * @dev Merge multiple PMRM accounts into one
-   * @param mergeIntoId the account id to merge into
-   * @param mergeFromIds the account ids to merge from
-   */
-  function mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) external {
-    _mergeAccounts(mergeIntoId, mergeFromIds);
-  }
-
   ////////////
   //  View  //
   ////////////
