@@ -379,7 +379,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     _settlePerpRealizedPNL(perp, accountId);
   }
 
-
   /**
    * @dev transfer asset from one account to another without invoking manager hook
    * @param from Account id of the from account. Must be controlled by this manager
