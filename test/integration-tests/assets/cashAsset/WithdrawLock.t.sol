@@ -62,7 +62,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     _depositCash(address(bob), newAcc, 2000e18);
 
     vm.startPrank(bob);
-    auction.bid(aliceAcc, newAcc, 1e18, 0);
+    auction.bid(aliceAcc, newAcc, 1e18, 0, 0);
 
     uint usdcBefore = usdc.balanceOf(bob);
     cash.withdraw(bobAcc, 100e6, bob);

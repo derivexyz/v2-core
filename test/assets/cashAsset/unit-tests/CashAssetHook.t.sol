@@ -72,18 +72,4 @@ contract UNIT_CashAssetHook is Test {
     // todo: updaete this check to include interest
     assertEq(postBalance, delta);
   }
-
-  function testChangeManagerHookRevertOnNonWhitelistedManager() public {
-    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
-
-    vm.prank(account);
-    cashAsset.handleManagerChange(0, manager);
-  }
-
-  function testWillNotRevertOnLegalManagerUpdate() public {
-    cashAsset.setWhitelistManager(address(manager), true);
-
-    vm.prank(account);
-    cashAsset.handleManagerChange(0, manager);
-  }
 }

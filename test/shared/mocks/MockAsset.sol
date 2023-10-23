@@ -27,8 +27,6 @@ contract MockAsset is IAsset {
   // default: need negative allowacen to subtract someone's balance
   bool needNegativeAllowance = true;
 
-  bool revertHandleManagerChange;
-
   // mocked state to test # of calls
   bool recordMangerChangeCalls;
   uint public handleManagerCalled;
@@ -104,11 +102,6 @@ contract MockAsset is IAsset {
     return (result, needAllowance);
   }
 
-  function handleManagerChange(uint, IManager) public virtual {
-    if (revertHandleManagerChange) revert();
-    if (recordMangerChangeCalls) handleManagerCalled += 1;
-  }
-
   function setNeedPositiveAllowance(bool _needPositiveAllowance) external {
     needPositiveAllowance = _needPositiveAllowance;
   }
@@ -119,10 +112,6 @@ contract MockAsset is IAsset {
 
   function setRevertAdjustmentFromManager(address _manager, bool _revert) external {
     revertFromManager[_manager] = _revert;
-  }
-
-  function setRevertHandleManagerChange(bool _revert) external {
-    revertHandleManagerChange = _revert;
   }
 
   function setRecordManagerChangeCalls(bool _record) external {

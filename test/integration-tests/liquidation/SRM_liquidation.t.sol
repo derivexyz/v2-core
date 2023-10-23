@@ -130,11 +130,11 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     // liquidator 1 bid 30%
     vm.startPrank(charlie);
     uint percentageToBid = maxPercentageToBid / 2;
-    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0);
+    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0, 0);
     assertEq(finalPercentage1, percentageToBid);
 
     // liquidator 2 also bid 30%, but it is executed after liquidator 1
-    (uint finalPercentage2, uint cashFromLiquidator2,) = auction.bid(aliceAcc, liquidator2, percentageToBid, 0);
+    (uint finalPercentage2, uint cashFromLiquidator2,) = auction.bid(aliceAcc, liquidator2, percentageToBid, 0, 0);
     assertEq(finalPercentage2, percentageToBid);
     assertEq(cashFromLiquidator1, cashFromLiquidator2);
 
@@ -169,7 +169,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     // liquidator 1 bid 10%
     vm.startPrank(charlie);
     uint percentageToBid = 0.1e18;
-    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0);
+    (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0, 0);
     assertEq(finalPercentage1, percentageToBid);
     vm.stopPrank();
 
@@ -179,7 +179,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     // bid reverts
     vm.startPrank(charlie);
     vm.expectRevert(IDutchAuction.DA_MaxCashExceeded.selector);
-    auction.bid(aliceAcc, liquidator2, percentageToBid, cashFromLiquidator1);
+    auction.bid(aliceAcc, liquidator2, percentageToBid, cashFromLiquidator1, 0);
     vm.stopPrank();
   }
 
@@ -225,11 +225,11 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
     // Alice bids 10%
     vm.prank(alice);
-    auction.bid(acc1, aliceAcc, 0.1e18, 0);
+    auction.bid(acc1, aliceAcc, 0.1e18, 0, 0);
 
     // Bob bids remaining 40.34%
     vm.prank(bob);
-    (uint finalPercentage,,) = auction.bid(acc1, bobAcc, f_max, 0);
+    (uint finalPercentage,,) = auction.bid(acc1, bobAcc, f_max, 0, 0);
     assertEq(finalPercentage / 1e14, 4034);
 
     // Buffer margin after liquidating all is close to 0
