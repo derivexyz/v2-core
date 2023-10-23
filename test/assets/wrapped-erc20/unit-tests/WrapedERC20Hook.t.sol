@@ -86,30 +86,6 @@ contract UNIT_WrappedBaseAssetHook is Test {
     assertEq(subAccounts.getBalance(accId, asset, 0), 0);
   }
 
-  function testCannotChangeManagerIfExceedCap() public {
-    _mintAndDeposit(100e8);
-
-    // create a second manager with less cap
-    MockManager manager2 = new MockManager(address(subAccounts));
-    asset.setWhitelistManager(address(manager2), true);
-    asset.setTotalPositionCap(manager2, 1e18);
-
-    vm.expectRevert(IPositionTracking.PT_CapExceeded.selector);
-    subAccounts.changeManager(accId, manager2, "");
-  }
-
-  function testCanChangeManagerIfCapIsSafe() public {
-    _mintAndDeposit(100e8);
-
-    // create a second manager with less cap
-    MockManager manager2 = new MockManager(address(subAccounts));
-    asset.setWhitelistManager(address(manager2), true);
-
-    asset.setTotalPositionCap(manager2, 100e18);
-
-    subAccounts.changeManager(accId, manager2, "");
-  }
-
   function testCannotTransferPositiveBalanceWithoutApproval() public {
     _mintAndDeposit(100e8);
 

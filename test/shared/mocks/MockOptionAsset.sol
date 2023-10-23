@@ -19,8 +19,6 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionA
 
   ISubAccounts immutable subAccounts;
 
-  bool revertHandleManagerChange;
-
   // mocked state to test # of calls
   bool recordMangerChangeCalls;
   uint public handleManagerCalled;
@@ -53,17 +51,8 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionA
     needAllowance = true;
   }
 
-  function handleManagerChange(uint, IManager) public virtual {
-    if (revertHandleManagerChange) revert();
-    if (recordMangerChangeCalls) handleManagerCalled += 1;
-  }
-
   function setRevertAdjustmentFromManager(address _manager, bool _revert) external {
     revertFromManager[_manager] = _revert;
-  }
-
-  function setRevertHandleManagerChange(bool _revert) external {
-    revertHandleManagerChange = _revert;
   }
 
   function setRecordManagerChangeCalls(bool _record) external {
