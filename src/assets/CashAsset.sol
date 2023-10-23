@@ -371,8 +371,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
     _checkManager(address(manager));
     if (preBalance == 0) {
-      // TODO: test that it was fine to remove  "&& adjustment.amount == 0"
-      return (0, false);
+      return (adjustment.amount, false);
     }
 
     // Accrue interest and update indexes
