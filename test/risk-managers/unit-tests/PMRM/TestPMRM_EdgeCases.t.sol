@@ -58,4 +58,63 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     // since there are no scenarios, worstScenario is the basisContingency
     assertEq(worstScenario, 0);
   }
+
+  function testPMRM_CannotTradeIfExceed_MaxAssets() public {
+    uint expiry = block.timestamp + 1000;
+    pmrm.setMaxAccountSize(10);
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](pmrm.maxAccountSize() + 1);
+    for (uint i = 0; i < transfers.length; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        // asset: IAsset(address(option)),
+        // subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        // balance: 1e18
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 1e18,
+        assetData: ""
+      });
+    }
+    vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
+    subAccounts.submitTransfers(transfers, "");
+  }
+
+  function testPMRM_CanTradeIfMaxAccountSizeDecreased() public {
+    uint expiry = block.timestamp + 1000;
+    pmrm.setMaxAccountSize(10);
+
+    _depositCash(aliceAcc, 2_000_000e18);
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](9);
+    for (uint i = 0; i < transfers.length; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 1e18,
+        assetData: ""
+      });
+    }
+    // this should go through
+    subAccounts.submitTransfers(transfers, "");
+
+    // assume the owner lower the max asset now
+    pmrm.setMaxAccountSize(8);
+
+    ISubAccounts.AssetTransfer[] memory newTransfers = new ISubAccounts.AssetTransfer[](3);
+    for (uint i = 0; i < newTransfers.length; i++) {
+      newTransfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: bobAcc,
+        toAcc: aliceAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 1e18,
+        assetData: ""
+      });
+    }
+
+    // closing / having same # of assets should be allowed
+    subAccounts.submitTransfers(newTransfers, "");
+  }
 }

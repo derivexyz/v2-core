@@ -28,21 +28,6 @@ contract UNIT_TestPMRM_ArrangePortfolio is PMRMTestBase {
     pmrm.arrangePortfolioByBalances(balances);
   }
 
-  function testPMRMArrangePortfolio_MaxAssets() public {
-    uint expiry = block.timestamp + 1000;
-    pmrm.setMaxAccountSize(10);
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](pmrm.maxAccountSize() + 1);
-    for (uint i = 0; i < balances.length; i++) {
-      balances[i] = ISubAccounts.AssetBalance({
-        asset: IAsset(address(option)),
-        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
-        balance: 1e18
-      });
-    }
-    vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
-    pmrm.arrangePortfolioByBalances(balances);
-  }
-
   function testPMRMArrangePortfolio_ExpiredOption() public {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
 
