@@ -41,7 +41,8 @@ contract UNIT_PerpAssetFunding is Test {
     bidImpactFeed = new MockSpotDiffFeed(spotFeed);
 
     manager = new MockManager(address(subAccounts));
-    perp = new PerpAsset(subAccounts, 0.0075e18);
+    perp = new PerpAsset(subAccounts);
+    perp.setRateBounds(0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);
@@ -96,8 +97,7 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(perp.staticInterestRate(), 0.000125e16);
   }
 
-  function testCannotSetNegativeRate() public {
-    vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
+  function testCanSetNegativeRate() public {
     perp.setStaticInterestRate(-0.000001e16);
   }
 

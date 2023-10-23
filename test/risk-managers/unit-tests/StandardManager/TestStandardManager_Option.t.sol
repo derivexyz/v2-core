@@ -158,14 +158,14 @@ contract UNIT_TestStandardManager_Option is Test {
       IStandardManager.OptionMarginParams(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18, 1.2e18, 1.05e18);
     manager.setOptionMarginParams(ethMarketId, params);
     (
-      int maxSpotReq,
-      int minSpotReq,
-      int mmCallSpotReq,
-      int mmPutSpotReq,
-      int MMPutMtMReq,
-      int unpairedIMScale,
-      int unpairedMMScale,
-      int mmOffsetScale
+      uint maxSpotReq,
+      uint minSpotReq,
+      uint mmCallSpotReq,
+      uint mmPutSpotReq,
+      uint MMPutMtMReq,
+      uint unpairedIMScale,
+      uint unpairedMMScale,
+      uint mmOffsetScale
     ) = manager.optionMarginParams(ethMarketId);
     assertEq(maxSpotReq, 0.2e18);
     assertEq(minSpotReq, 0.15e18);
@@ -206,7 +206,7 @@ contract UNIT_TestStandardManager_Option is Test {
 
   function testSetDepegParameters() public {
     manager.setDepegParameters(IStandardManager.DepegParams(0.99e18, 1.2e18));
-    (int threshold, int depegFactor) = manager.depegParams();
+    (uint threshold, uint depegFactor) = manager.depegParams();
     assertEq(threshold, 0.99e18);
     assertEq(depegFactor, 1.2e18);
   }
@@ -224,7 +224,7 @@ contract UNIT_TestStandardManager_Option is Test {
       ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.7e18, 0.05e18)
     );
 
-    (uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int factor) =
+    (uint prepThreshold, uint optionThreshold, uint baseThreshold, uint factor) =
       manager.oracleContingencyParams(ethMarketId);
     assertEq(prepThreshold, 0.8e18);
     assertEq(optionThreshold, 0.9e18);

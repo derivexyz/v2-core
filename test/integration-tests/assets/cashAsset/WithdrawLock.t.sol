@@ -28,7 +28,7 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     _setForwardPrice("weth", expiry, 2000e18, 1e18);
     _setDefaultSVIForExpiry("weth", expiry);
 
-    auction.setWithdrawBlockThreshold(-100e18);
+    //    auction.setWithdrawBlockThreshold(-100e18);
   }
 
   function testBigInsolventAuctionLockWithdraw() public {

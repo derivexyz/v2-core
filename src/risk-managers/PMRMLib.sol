@@ -46,8 +46,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   function setBasisContingencyParams(IPMRMLib.BasisContingencyParameters memory _basisContParams) external onlyOwner {
     if (
       _basisContParams.scenarioSpotUp <= 1e18 || _basisContParams.scenarioSpotUp > 3e18
-        || _basisContParams.scenarioSpotDown >= 1e18 || _basisContParams.basisContMultFactor > 5e18
-        || _basisContParams.basisContAddFactor > 5e18
+        || _basisContParams.scenarioSpotDown >= 1e18 //
+        || _basisContParams.basisContMultFactor > 5e18
+      //
+      || _basisContParams.basisContAddFactor > 5e18
     ) {
       revert PMRML_InvalidBasisContingencyParameters();
     }
@@ -97,7 +99,6 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
    * @return markToMarket The mark-to-market value of the portfolio
    * @return worstScenario The index of the worst scenario, if == scenarios.length, it is the basis contingency
    */
-  ///
   function getMarginAndMarkToMarket(
     IPMRM.Portfolio memory portfolio,
     bool isInitial,

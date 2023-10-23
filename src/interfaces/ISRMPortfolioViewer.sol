@@ -14,15 +14,8 @@ import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 interface ISRMPortfolioViewer is IBasePortfolioViewer {
   function getSRMPortfolio(uint accountId) external view returns (IStandardManager.StandardManagerPortfolio memory);
 
-  function getSRMPortfolioPreTrade(uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas)
-    external
-    view
-    returns (IStandardManager.StandardManagerPortfolio memory);
-
   function arrangeSRMPortfolio(ISubAccounts.AssetBalance[] memory assets)
     external
     view
     returns (IStandardManager.StandardManagerPortfolio memory);
-
-  error SRM_TooManyAssets();
 }

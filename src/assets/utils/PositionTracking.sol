@@ -66,16 +66,4 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
 
     emit SnapshotTaken(address(manager), tradeId, oi);
   }
-
-  /**
-   * @dev Move total positions from one manager to another, to be called in manager change hook of the asset inheriting this.
-   */
-  function _migrateManagerTotalPositions(uint pos, IManager oldManager, IManager newManager) internal {
-    totalPosition[oldManager] -= pos;
-    totalPosition[newManager] += pos;
-
-    if (totalPosition[newManager] > totalPositionCap[newManager]) {
-      revert OIT_CapExceeded();
-    }
-  }
 }

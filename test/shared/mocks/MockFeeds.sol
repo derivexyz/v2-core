@@ -8,17 +8,8 @@ import {IForwardFeed} from "../../../src/interfaces/IForwardFeed.sol";
 import {ISettlementFeed} from "../../../src/interfaces/ISettlementFeed.sol";
 
 import {IDataReceiver} from "../../../src/interfaces/IDataReceiver.sol";
-import {ITraderCheck} from "../../../src/interfaces/ITraderCheck.sol";
 
-contract MockFeeds is
-  ISpotFeed,
-  IVolFeed,
-  IForwardFeed,
-  IInterestRateFeed,
-  ISettlementFeed,
-  IDataReceiver,
-  ITraderCheck
-{
+contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver {
   uint public spot;
   uint public spotConfidence;
   mapping(uint => uint) forwardPrices;
@@ -29,11 +20,6 @@ contract MockFeeds is
   mapping(uint => uint) settlementPrice;
   mapping(uint64 => mapping(uint128 => uint)) vols;
   mapping(uint64 => uint) volConfidences;
-  mapping(address => bool) public canTrade;
-
-  function setCanTrade(address account, bool _canTrade) external {
-    canTrade[account] = _canTrade;
-  }
 
   function setSpot(uint _spot, uint _confidence) external {
     spot = _spot;

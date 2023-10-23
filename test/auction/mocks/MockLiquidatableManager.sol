@@ -68,8 +68,4 @@ contract MockLiquidatableManager is MockManager, ILiquidatableManager {
 
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public override {}
-
-  function forceAuction(IDutchAuction auction, uint accountId, uint scenario) external {
-    auction.startForcedAuction(accountId, scenario);
-  }
 }

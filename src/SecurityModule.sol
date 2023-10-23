@@ -74,6 +74,13 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
     cashAsset.withdraw(accountId, stableAmount, recipient);
   }
 
+  /**
+   * @dev Recover ERC20 token from the module
+   */
+  function recoverERC20(address tokenAddress, address recipient, uint tokenAmount) external onlyOwner {
+    IERC20Metadata(tokenAddress).safeTransfer(recipient, tokenAmount);
+  }
+
   /////////////////////////////
   //     Public Functions    //
   /////////////////////////////
@@ -84,6 +91,11 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
   function donate(uint stableAmount) external {
     stableAsset.safeTransferFrom(msg.sender, address(this), stableAmount);
     cashAsset.deposit(accountId, stableAmount);
+  }
+
+  function payCashInsolvency() external {
+    // Donate full balance as the function will cap amount burnt to the size of the insolvency
+    cashAsset.donateBalance(accountId, subAccounts.getBalance(accountId, IAsset(address(cashAsset)), 0).toUint256());
   }
 
   /////////////////////////////

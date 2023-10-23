@@ -54,12 +54,16 @@ abstract contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
     if (!whitelistedManager[manager]) revert MW_UnknownManager();
   }
 
+  function _checkCallerIsAccounts() internal view {
+    if (msg.sender != address(subAccounts)) revert MW_OnlyAccounts();
+  }
+
   ///////////////////
   //   Modifiers   //
   ///////////////////
 
   modifier onlyAccounts() {
-    if (msg.sender != address(subAccounts)) revert MW_OnlyAccounts();
+    _checkCallerIsAccounts();
     _;
   }
 }

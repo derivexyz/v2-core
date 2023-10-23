@@ -75,20 +75,8 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
     accountTotalPosition[adjustment.acc] =
       accountTotalPosition[adjustment.acc] + SignedMath.abs(postBalance) - SignedMath.abs(preBalance);
 
-    // always need allowance: cannot force to send positive asset to other accounts
+    // always need allowance: cannot force send positive asset to other accounts
     return (postBalance, true);
-  }
-
-  /**
-   * @notice Triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
-   */
-  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
-    _checkManager(address(newManager));
-
-    // migrate total positions to a new manager
-    uint pos = accountTotalPosition[accountId];
-    _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
   }
 
   ///////////////////////
@@ -139,7 +127,7 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
    * @notice Get settlement value of a specific option position.
    */
   function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
-    public
+    internal
     pure
     returns (int)
   {

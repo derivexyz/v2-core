@@ -22,6 +22,7 @@ interface ILyraVolFeed is IBaseLyraFeed {
   ////////////////////////
   error LVF_MissingExpiryData();
   error LVF_InvalidVolDataTimestamp();
+  error LVF_InvalidConfidence();
 
   ////////////////////////
   //       Events       //

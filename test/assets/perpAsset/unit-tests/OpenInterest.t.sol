@@ -41,7 +41,8 @@ contract UNIT_PerpOIAndCap is Test {
 
     manager = new MockManager(address(subAccounts));
     manager2 = new MockManager(address(subAccounts));
-    perp = new PerpAsset(subAccounts, 0.0075e18);
+    perp = new PerpAsset(subAccounts);
+    perp.setRateBounds(0.0075e18);
 
     perp.setSpotFeed(feed);
     perp.setPerpFeed(perpFeed);
@@ -67,7 +68,7 @@ contract UNIT_PerpOIAndCap is Test {
 
   function testCannotChangeManagerIfCapNotSet() public {
     _transferPerp(aliceAcc, bobAcc, 100e18);
-    vm.expectRevert(IPositionTracking.OIT_CapExceeded.selector);
+    vm.expectRevert(IPositionTracking.PT_CapExceeded.selector);
     subAccounts.changeManager(aliceAcc, manager2, "");
   }
 

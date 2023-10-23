@@ -125,7 +125,9 @@ contract DeployMarket is Utils {
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
 
-    market.perp = new PerpAsset(deployment.subAccounts, MAX_Abs_Rate_Per_Hour);
+    market.perp = new PerpAsset(deployment.subAccounts);
+    perp.setRateBounds(MAX_Abs_Rate_Per_Hour);
+
 
     market.base = new WrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
 
