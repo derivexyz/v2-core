@@ -5,6 +5,7 @@ import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
+import "lyra-utils/math/UintLib.sol";
 
 import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
 
@@ -101,10 +102,11 @@ contract InterestRateModel is IInterestRateModel {
 
   function _getUtilRate(uint supply, uint borrows) internal pure returns (uint) {
     // Utilization rate is 0 when there are no borrows
-    if (borrows == 0) {
+    if (borrows == 0 || supply == 0) {
       return 0;
     }
 
-    return borrows.divideDecimal(supply);
+    // make sure util rate cannot
+    return UintLib.min(borrows.divideDecimal(supply), 1e18);
   }
 }

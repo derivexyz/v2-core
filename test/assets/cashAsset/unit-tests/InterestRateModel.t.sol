@@ -94,6 +94,13 @@ contract UNIT_InterestRateModel is Test {
     }
   }
 
+  function testFuzzUtilizationRateBounded(uint supply, uint borrows) public {
+    vm.assume(supply < 10000000000000000000000000000 ether);
+    vm.assume(borrows < 10000000000000000000000000000 ether);
+    uint util = rateModel.getUtilRate(supply, borrows);
+    assertLe(util, 1e18);
+  }
+
   function testFuzzBorrowRate(uint supply, uint borrows) public {
     vm.assume(supply <= 10000000000000000000000000000 ether);
     vm.assume(supply >= borrows);
