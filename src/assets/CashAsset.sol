@@ -370,10 +370,6 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     if (adjustment.subId != 0) revert CA_InvalidSubId();
 
     _checkManager(address(manager));
-    if (preBalance == 0) {
-      return (adjustment.amount, false);
-    }
-
     // Accrue interest and update indexes
     _accrueInterest();
 
