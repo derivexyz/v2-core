@@ -312,8 +312,11 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     );
   }
 
+  /**
+   * @notice Donate to the system during insolvency.
+   * @dev This function makes sure no one accidentally burn more than needed to go back to solvency
+   */
   function donateBalance(uint accountId, uint amount) external returns (uint burntAmount) {
-    // TODO: test
     if (msg.sender != address(subAccounts.ownerOf(accountId))) {
       revert CA_DonateBalanceNotAuthorized();
     }
