@@ -5,7 +5,6 @@ pragma solidity ^0.8.18;
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
 import {ISecurityModule} from "../interfaces/ISecurityModule.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
-import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {SubAccounts} from "../SubAccounts.sol";
 
