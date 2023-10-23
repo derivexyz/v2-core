@@ -357,6 +357,13 @@ contract UNIT_TestBaseManager is Test {
     assertEq(subAccounts.getBalance(aliceAcc, cash, 0), 199e18);
   }
 
+  function testChargeAllOIFeeCoverage() external {
+    // balances
+    ISubAccounts.AssetDelta[] memory assetDeltas = new ISubAccounts.AssetDelta[](0);
+    vm.expectRevert(IBaseManager.BM_NotImplemented.selector);
+    tester.chargeAllOIFee(address(this), 0, 0, assetDeltas);
+  }
+
   ///////////////////////////
   //   Undo Asset Deltas   //
   ///////////////////////////
