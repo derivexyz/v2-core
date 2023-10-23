@@ -218,6 +218,8 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
     vm.warp(block.timestamp + 30 days);
     cashAsset.deposit(posAccount, amountToBorrow);
+    uint cashExchangeRate = cashAsset.getCashToStableExchangeRate();
+    assertEq(cashExchangeRate, 1e18);
 
     // Positive bal > because it has accrued interest
     posBal = subAccounts.getBalance(posAccount, cashAsset, 0);

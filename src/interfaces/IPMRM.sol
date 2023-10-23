@@ -101,9 +101,10 @@ interface IPMRM {
   // Errors //
   ////////////
   error PMRM_InvalidSpotShock();
-  error PMRM_InvalidMaxExpiries();
   error PMRM_UnsupportedAsset();
   error PMRM_InsufficientMargin();
+  error PMRM_InvalidScenarios();
+  error PMRM_InvalidMaxExpiries();
   error PMRM_FindInArrayError();
   error PMRM_OptionExpired();
   error PMRM_TooManyExpiries();

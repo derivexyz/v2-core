@@ -14,10 +14,6 @@ import {ILyraSpotFeed} from "../interfaces/ILyraSpotFeed.sol";
  * @notice Spot feed that takes off-chain updates, verify signature and update on-chain
  */
 contract LyraSpotFeed is BaseLyraFeed, ILyraSpotFeed, ISpotFeed {
-  bytes32 public constant SPOT_DATA_TYPEHASH = keccak256(
-    "SpotData(uint96 price,uint64 confidence,uint64 timestamp,uint256 deadline,address signer,bytes signature)"
-  );
-
   // Pack the following into 1 storage slot
   SpotDetail private spotDetail;
 

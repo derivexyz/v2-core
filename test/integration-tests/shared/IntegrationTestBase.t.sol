@@ -158,8 +158,6 @@ contract IntegrationTestBase is Test {
     cash.setLiquidationModule(auction);
     cash.setSmFeeRecipient(securityModule.accountId());
     smAcc = securityModule.accountId();
-
-    // todo: allow list
   }
 
   function _setupCoreContracts() internal {
@@ -209,7 +207,8 @@ contract IntegrationTestBase is Test {
 
     OptionAsset option = new OptionAsset(subAccounts, address(market.forwardFeed));
 
-    PerpAsset perp = new PerpAsset(subAccounts, 0.0075e18);
+    PerpAsset perp = new PerpAsset(subAccounts);
+    perp.setRateBounds(0.0075e18);
 
     WrappedERC20Asset base = new WrappedERC20Asset(subAccounts, erc20);
 

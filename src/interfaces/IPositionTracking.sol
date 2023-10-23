@@ -28,5 +28,5 @@ interface IPositionTracking {
   event TotalPositionCapSet(address manager, uint oiCap);
 
   /// @dev Reverts if total position exceeds cap
-  error OIT_CapExceeded();
+  error PT_CapExceeded();
 }

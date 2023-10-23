@@ -145,7 +145,11 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
     _checkNotStale(fwdDetailsTimestamp);
 
     // user should attach the latest settlement data to the forward data
-    if (block.timestamp > settlementFeedStart && fwdDetailsTimestamp + settlementHeartbeat < block.timestamp) {
+    // Note: this will allow old data be used up to settlementHeartbeat AFTER the settlement period starts
+    if (
+      block.timestamp > settlementFeedStart
+        && Math.max(fwdDetailsTimestamp, settlementFeedStart) + settlementHeartbeat < block.timestamp
+    ) {
       revert LFF_SettlementDataTooOld();
     }
   }

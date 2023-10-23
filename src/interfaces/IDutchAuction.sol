@@ -17,8 +17,6 @@ interface IDutchAuction {
     uint startTime;
     /// The total amount of cash paid into the account during the auction
     uint reservedCash;
-    /// Is this a forced liquidation
-    bool isForce;
     /*------------------------- *
      * Insolvent Auction Params *
     /*------------------------- */
@@ -28,35 +26,31 @@ interface IDutchAuction {
     uint stepInsolvent;
     /// The timestamp of the last increase of steps for insolvent auction
     uint lastStepUpdate;
-    /// If this auction is blocking cash withdraw
-    bool isBlockingWithdraw;
   }
 
   struct SolventAuctionParams {
     /// Starting percentage of MtM. 1e18 is 100%
-    uint64 startingMtMPercentage;
+    uint startingMtMPercentage;
     /// Percentage that starts the slow auction
-    uint64 fastAuctionCutoffPercentage;
+    uint fastAuctionCutoffPercentage;
     /// Fast auction length in seconds
-    uint32 fastAuctionLength;
+    uint fastAuctionLength;
     /// Slow auction length in seconds
-    uint32 slowAuctionLength;
+    uint slowAuctionLength;
     // Liquidator fee rate in percentage, 1e18 = 100%
-    uint64 liquidatorFeeRate;
+    uint liquidatorFeeRate;
   }
 
   struct InsolventAuctionParams {
     /// total seconds
-    uint32 totalSteps;
+    uint totalSteps;
     // Amount of seconds to go to next step
-    uint32 coolDown;
+    uint coolDown;
     /// buffer margin scalar. liquidation will go from 0 to (buffer margin) * scalar
-    int64 bufferMarginScalar;
+    int bufferMarginScalar;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
-
-  function startForcedAuction(uint accountId, uint scenarioId) external;
 
   function getIsWithdrawBlocked() external view returns (bool);
 
@@ -123,6 +117,9 @@ interface IDutchAuction {
 
   /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
   error DA_InvalidPercentage();
+
+  /// @dev emitted when a bid is submitted and the lastTradeId of the account mismatches the expected value
+  error DA_InvalidLastTradeId();
 
   /// @dev emitted when a bid is submitted for 0% of the portfolio
   error DA_AmountIsZero();

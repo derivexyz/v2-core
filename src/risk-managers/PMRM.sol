@@ -149,6 +149,10 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    *                   Each Scenario struct contains relevant data for a specific scenario.
    */
   function setScenarios(IPMRM.Scenario[] memory _scenarios) external onlyOwner {
+    if (_scenarios.length == 0) {
+      // TODO: make error
+      revert PMRM_InvalidScenarios();
+    }
     for (uint i = 0; i < _scenarios.length; i++) {
       if (_scenarios[i].spotShock > 3e18) {
         revert PMRM_InvalidSpotShock();
@@ -187,14 +191,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
   ) public onlyAccounts {
-    viewer.verifyCanTrade(accountId);
-
-    _processManagerData(tradeId, managerData);
-
-    _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
-
-    // check caps are not exceeded
-    viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
+    _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -213,21 +210,34 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
       }
     }
 
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
+
+    // TODO: test max account size properly (risk adding = false allowed creating unliquidatable portfolios)
+    if (assetBalances.length > maxAccountSize && previousBalances.length < assetBalances.length) {
+      revert PMRM_TooManyAssets();
+    }
+
     if (!riskAdding) {
+      // otherwise you can add 1000s of random strikes to the portfolio
       // Early exit if only adding cash/option/baseAsset
       return;
     }
-    _assessRisk(caller, accountId, assetDeltas);
+    _assessRisk(caller, accountId, assetBalances, previousBalances);
   }
 
   ///////////////////////
   // Arrange Portfolio //
   ///////////////////////
 
-  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
+  function _assessRisk(
+    address caller,
+    uint accountId,
+    ISubAccounts.AssetBalance[] memory assetBalances,
+    ISubAccounts.AssetBalance[] memory preBalances
+  ) internal view {
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
 
     if (isTrustedRiskAssessor) {
@@ -255,8 +265,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
         (postMM,,) = lib.getMarginAndMarkToMarket(portfolio, false, postScenarios, true);
 
         // Note: cash interest is also undone here, but this is not a significant issue
-        IPMRM.Portfolio memory prePortfolio =
-          _arrangePortfolio(accountId, viewer.undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
+        IPMRM.Portfolio memory prePortfolio = _arrangePortfolio(accountId, preBalances, !isTrustedRiskAssessor);
 
         // we have to use all scenarios for the pre-check as we don't know if the worst scenario is different
         (int preMM,,) = lib.getMarginAndMarkToMarket(prePortfolio, false, marginScenarios, true);
@@ -305,10 +314,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     returns (uint seenExpiries, IPMRM.PortfolioExpiryData[] memory expiryCount)
   {
     uint assetLen = assets.length;
-
-    if (assetLen > maxAccountSize) {
-      revert PMRM_TooManyAssets();
-    }
 
     seenExpiries = 0;
     expiryCount = new IPMRM.PortfolioExpiryData[](maxExpiries > assetLen ? assetLen : maxExpiries);
@@ -435,6 +440,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    */
   function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
+    override
   {
     if (feeBypassedCaller[caller]) return;
 
@@ -506,8 +512,9 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     view
     returns (int margin, int mtm)
   {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, subAccounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
+    // TODO: test bad scenarioId
     scenarios[0] = marginScenarios[scenarioId];
 
     (margin, mtm,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios, true);

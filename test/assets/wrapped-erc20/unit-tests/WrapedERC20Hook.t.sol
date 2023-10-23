@@ -94,7 +94,7 @@ contract UNIT_WrappedBaseAssetHook is Test {
     asset.setWhitelistManager(address(manager2), true);
     asset.setTotalPositionCap(manager2, 1e18);
 
-    vm.expectRevert(IPositionTracking.OIT_CapExceeded.selector);
+    vm.expectRevert(IPositionTracking.PT_CapExceeded.selector);
     subAccounts.changeManager(accId, manager2, "");
   }
 

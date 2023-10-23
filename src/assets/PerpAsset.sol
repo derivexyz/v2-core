@@ -26,6 +26,9 @@ import {GlobalSubIdOITracking} from "./utils/GlobalSubIdOITracking.sol";
  * @dev settlement refers to the action initiate by the manager that print / burn cash based on accounts' PNL and funding
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
+ * TODO: how do we close all perps
+ *  - add flag + freeze funding + spot price
+ *  - in manager: if flag is active -> force close perp + pay out due cash
  */
 contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
@@ -36,10 +39,13 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   using DecimalMath for uint;
 
   /// @dev Max hourly funding rate
-  int public immutable maxRatePerHour;
+  int public maxRatePerHour;
 
   /// @dev Min hourly funding rate
-  int public immutable minRatePerHour;
+  int public minRatePerHour;
+
+  /// @dev Convergence period for funding rate in hours
+  int public fundingConvergencePeriod = 8e18;
 
   ///////////////////////
   //  State Variables  //
@@ -61,23 +67,20 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   mapping(uint accountId => PositionDetail) public positions;
 
   /// @dev Static hourly interest rate to borrow base asset, used to calculate funding
-  int128 public staticInterestRate;
+  int public staticInterestRate;
 
   /// @dev Latest aggregated funding that should be applied to 1 contract.
-  int128 public aggregatedFunding;
+  int public aggregatedFunding;
 
   /// @dev Last time aggregated funding rate was updated
-  uint64 public lastFundingPaidAt;
+  uint public lastFundingPaidAt;
 
   ///////////////////////
   //    Constructor    //
   ///////////////////////
 
-  constructor(ISubAccounts _subAccounts, int maxAbsRatePerHour) ManagerWhitelist(_subAccounts) {
-    lastFundingPaidAt = uint64(block.timestamp);
-
-    maxRatePerHour = maxAbsRatePerHour;
-    minRatePerHour = -maxAbsRatePerHour;
+  constructor(ISubAccounts _subAccounts) ManagerWhitelist(_subAccounts) {
+    lastFundingPaidAt = block.timestamp;
   }
 
   //////////////////////////
@@ -115,11 +118,26 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @notice Set new static interest rate
    * @param _staticInterestRate New static interest rate for the asset.
    */
-  function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
-    if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
+  function setStaticInterestRate(int _staticInterestRate) external onlyOwner {
+    // TODO: bounds
     staticInterestRate = _staticInterestRate;
 
     emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
+  }
+
+  function setRateBounds(int maxAbsRatePerHour) external onlyOwner {
+    if (maxAbsRatePerHour < 0) revert PA_InvalidRateBounds();
+    maxRatePerHour = maxAbsRatePerHour;
+    minRatePerHour = -maxAbsRatePerHour;
+
+    emit RateBoundsUpdated(maxAbsRatePerHour);
+  }
+
+  function setConvergencePeriod(uint _fundingConvergencePeriod) external onlyOwner {
+    // TODO: bounds
+    fundingConvergencePeriod = _fundingConvergencePeriod.toInt256();
+
+    emit ConvergencePeriodUpdated(fundingConvergencePeriod);
   }
 
   ///////////////////////
@@ -154,6 +172,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
+    // Must apply funding on each adjustment to ensure index is updated properly for
+    _applyFundingOnAccount(adjustment.acc);
+
     // calculate funding from the last period, reflect changes in position.funding
     _updateFunding();
 
@@ -169,18 +190,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   ///////////////////////////
   //   Guarded Functions   //
   ///////////////////////////
-
-  /**
-   * @notice Triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
-   */
-  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
-    _checkManager(address(newManager));
-
-    // update total position
-    uint pos = subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
-    _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
-  }
 
   /**
    * @notice Manager-only function to clear pnl and funding before risk checks
@@ -274,8 +283,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     int perpPrice = _getPerpPrice();
     int pnl = _getUnrealizedPnl(accountId, preBalance, perpPrice);
 
-    position.lastMarkPrice = uint(perpPrice).toUint128();
-    position.pnl += pnl.toInt128();
+    position.lastMarkPrice = uint(perpPrice);
+    position.pnl += pnl;
 
     emit PositionSettled(accountId, pnl, position.pnl, uint(perpPrice));
   }
@@ -315,7 +324,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     int funding = _getFunding(aggregatedFunding, positions[accountId].lastAggregatedFunding, size);
     // apply funding
-    positions[accountId].funding += funding.toInt128();
+    positions[accountId].funding += funding;
     positions[accountId].lastAggregatedFunding = aggregatedFunding;
 
     emit FundingAppliedOnAccount(accountId, funding, aggregatedFunding);
@@ -328,14 +337,11 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     if (block.timestamp == lastFundingPaidAt) return;
 
     int indexPrice = _getIndexPrice();
-
     int fundingRate = _getFundingRate(indexPrice);
-
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    aggregatedFunding += (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
-
-    lastFundingPaidAt = (block.timestamp).toUint64();
+    aggregatedFunding += (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice);
+    lastFundingPaidAt = block.timestamp;
 
     emit AggregatedFundingUpdated(aggregatedFunding, fundingRate, lastFundingPaidAt);
   }
@@ -345,7 +351,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    */
   function _getFundingRate(int indexPrice) internal view returns (int fundingRate) {
     int premium = _getPremium(indexPrice);
-    fundingRate = premium / 8 + staticInterestRate;
+    fundingRate = premium.divideDecimalRound(fundingConvergencePeriod) + staticInterestRate;
 
     // capped at max / min
     if (fundingRate > maxRatePerHour) {
@@ -381,8 +387,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    int latestAggregatedFunding =
-      aggregatedFunding + (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
+    int latestAggregatedFunding = aggregatedFunding + (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice);
 
     return _getFunding(latestAggregatedFunding, position.lastAggregatedFunding, size);
   }

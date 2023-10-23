@@ -52,6 +52,8 @@ interface ICashAsset is IERC20BasedAsset {
    */
   function forceWithdraw(uint accountId) external;
 
+  function donateBalance(uint accountId, uint amount) external returns (uint burntAmount);
+
   ////////////////
   //   Events   //
   ////////////////
@@ -118,4 +120,7 @@ interface ICashAsset is IERC20BasedAsset {
 
   /// @dev Calling force withdraw when user has a negative balance
   error CA_ForceWithdrawNegativeBalance();
+
+  /// @dev Only the owner of the account can call the donate function
+  error CA_DonateBalanceNotAuthorized();
 }

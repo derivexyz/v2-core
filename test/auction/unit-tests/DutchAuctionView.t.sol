@@ -17,13 +17,8 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     );
 
     // check if params changed
-    (
-      uint64 startingMtMPercentage,
-      uint64 cutoff,
-      uint32 fastAuctionLength,
-      uint32 slowAuctionLength,
-      uint64 liquidatorFeeRate
-    ) = dutchAuction.solventAuctionParams();
+    (uint startingMtMPercentage, uint cutoff, uint fastAuctionLength, uint slowAuctionLength, uint liquidatorFeeRate) =
+      dutchAuction.solventAuctionParams();
     assertEq(startingMtMPercentage, 0.98e18);
     assertEq(cutoff, 0.8e18);
     assertEq(fastAuctionLength, 300);
@@ -64,16 +59,16 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     vm.expectRevert(IDutchAuction.DA_InvalidBufferMarginParameter.selector);
     dutchAuction.setBufferMarginPercentage(4.1e18);
   }
-
-  function testSetWithdrawBlockThreshold() public {
-    dutchAuction.setWithdrawBlockThreshold(-100e18);
-    assertEq(dutchAuction.withdrawBlockThreshold(), -100e18);
-  }
-
-  function testCannotSetPositiveWithdrawBlockThreshold() public {
-    vm.expectRevert(IDutchAuction.DA_InvalidWithdrawBlockThreshold.selector);
-    dutchAuction.setWithdrawBlockThreshold(100e18);
-  }
+  //
+  //  function testSetWithdrawBlockThreshold() public {
+  //    dutchAuction.setWithdrawBlockThreshold(-100e18);
+  //    assertEq(dutchAuction.withdrawBlockThreshold(), -100e18);
+  //  }
+  //
+  //  function testCannotSetPositiveWithdrawBlockThreshold() public {
+  //    vm.expectRevert(IDutchAuction.DA_InvalidWithdrawBlockThreshold.selector);
+  //    dutchAuction.setWithdrawBlockThreshold(100e18);
+  //  }
 
   function testSetInsolventAuctionParameters() public {
     dutchAuction.setInsolventAuctionParams(
@@ -81,7 +76,7 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     );
 
     // expect value
-    (uint32 totalSteps, uint32 coolDown, int64 scalar) = dutchAuction.insolventAuctionParams();
+    (uint totalSteps, uint coolDown, int scalar) = dutchAuction.insolventAuctionParams();
     assertEq(totalSteps, 100);
     assertEq(coolDown, 2);
     assertEq(scalar, 1.2e18);

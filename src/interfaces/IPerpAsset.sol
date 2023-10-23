@@ -12,15 +12,15 @@ import {IGlobalSubIdOITracking} from "./IGlobalSubIdOITracking.sol";
 interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   struct PositionDetail {
     // Spot price the last time user interact with perp contract
-    uint128 lastMarkPrice;
+    uint lastMarkPrice;
     // All funding, not yet settled as cash in Accounts
-    int128 funding;
+    int funding;
     // Realized pnl, not yet settled as cash in Accounts
-    int128 pnl;
+    int pnl;
     // Last aggregated funding applied to this position.
-    int128 lastAggregatedFunding;
+    int lastAggregatedFunding;
     // Timestamp of the last time funding was applied
-    uint64 lastFundingPaid;
+    uint lastFundingPaid;
   }
 
   /**
@@ -49,7 +49,7 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   //   Events     //
   //////////////////
 
-  event StaticUnderlyingInterestRateUpdated(int128 premium);
+  event StaticUnderlyingInterestRateUpdated(int premium);
 
   event SpotFeedUpdated(address spotFeed);
 
@@ -59,11 +59,15 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   event AggregatedFundingUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
 
-  event FundingAppliedOnAccount(uint accountId, int funding, int128 aggregatedFundingRate);
+  event FundingAppliedOnAccount(uint accountId, int funding, int aggregatedFundingRate);
 
   event PositionSettled(uint indexed account, int pnlChange, int totalPnl, uint perpPrice);
 
   event PositionCleared(uint indexed account);
+
+  event RateBoundsUpdated(int maxAbsRatePerHour);
+
+  event ConvergencePeriodUpdated(int fundingConvergencePeriod);
 
   ////////////////
   //   Errors   //
@@ -78,6 +82,5 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   /// @dev Impact prices are invalid: bids higher than ask or negative
   error PA_InvalidImpactPrices();
 
-  /// @dev Invalid static interest rate for base asset
-  error PA_InvalidStaticInterestRate();
+  error PA_InvalidRateBounds();
 }

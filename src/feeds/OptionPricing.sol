@@ -8,6 +8,7 @@ import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
  * @title OptionPricing
  * @author Lyra
  * @notice Contract that calculates option value for a specific market. Can be extended in the future to add cache to safe gas ...etc
+ * TODO (anton): purge
  */
 contract OptionPricing is IOptionPricing {
   function getExpiryOptionsValue(Expiry memory expiryDetails, Option[] memory options) external pure returns (int) {

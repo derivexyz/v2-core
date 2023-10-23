@@ -31,17 +31,17 @@ interface IStandardManager is IBaseManager {
 
   struct MarketHolding {
     uint marketId;
-    // base position: doesn't contribute to margin, but increase total portfolio mark to market
-    int basePosition;
-    // perp position detail
+    /// base position: doesn't contribute to margin, but increase total portfolio mark to market
+    uint basePosition;
+    /// perp position detail
     IPerpAsset perp;
     int perpPosition;
-    // option position detail
+    /// option position detail
     IOptionAsset option;
     ExpiryHolding[] expiryHoldings;
-    /// sum of all short positions, abs(perps) and base positions.
-    /// used to increase margin requirement if stable depegs. Should be positive
-    int depegPenaltyPos;
+    // sum of all short positions and abs(perps) for the market.
+    // used to increase margin requirement if stable price depegs.
+    uint depegPenaltyPos;
   }
 
   /// @dev contains portfolio struct for single expiry assets
@@ -55,7 +55,7 @@ interface IStandardManager is IBaseManager {
     /// temporary variable to count how many options is used
     uint numOptions;
     /// total short position size. should be positive
-    int totalShortPositions;
+    uint totalShortPositions;
   }
 
   struct Option {
@@ -75,33 +75,33 @@ interface IStandardManager is IBaseManager {
   /// @dev Struct for Option Margin Parameters
   struct OptionMarginParams {
     /// @dev Percentage of spot to add to initial margin if option is ITM. Decreases as option becomes more OTM.
-    int maxSpotReq;
+    uint maxSpotReq;
     /// @dev Minimum amount of spot price to add as initial margin.
-    int minSpotReq;
+    uint minSpotReq;
     /// @dev Minimum amount of spot price to add as maintenance margin.
-    int mmCallSpotReq;
+    uint mmCallSpotReq;
     /// @dev Minimum amount of spot to add for maintenance margin
-    int mmPutSpotReq;
+    uint mmPutSpotReq;
     /// @dev Minimum amount of mtm to add for maintenance margin for puts
-    int MMPutMtMReq;
+    uint MMPutMtMReq;
     /// @dev Scaler applied to forward by amount if max loss is unbounded, when calculating IM
-    int unpairedIMScale;
+    uint unpairedIMScale;
     /// @dev Scaler applied to forward by amount if max loss is unbounded, when calculating MM
-    int unpairedMMScale;
+    uint unpairedMMScale;
     /// @dev Scale the MM for a put as minimum of IM
-    int mmOffsetScale;
+    uint mmOffsetScale;
   }
 
   struct DepegParams {
-    int threshold;
-    int depegFactor;
+    uint threshold;
+    uint depegFactor;
   }
 
   struct OracleContingencyParams {
-    uint64 perpThreshold;
-    uint64 optionThreshold;
-    uint64 baseThreshold;
-    int OCFactor;
+    uint perpThreshold;
+    uint optionThreshold;
+    uint baseThreshold;
+    uint OCFactor;
   }
 
   function assetDetails(IAsset asset) external view returns (AssetDetail memory);
@@ -121,6 +121,8 @@ interface IStandardManager is IBaseManager {
 
   /// @dev Not supported asset
   error SRM_UnsupportedAsset();
+
+  error SRM_TooManyAssets();
 
   /// @dev Account is under water, need more cash
   error SRM_PortfolioBelowMargin();
@@ -161,21 +163,21 @@ interface IStandardManager is IBaseManager {
 
   event OptionMarginParamsSet(
     uint marketId,
-    int maxSpotReq,
-    int minSpotReq,
-    int mmCallSpotReq,
-    int mmPutSpotReq,
-    int MMPutMtMReq,
-    int unpairedIMScale,
-    int unpairedMMScale,
-    int mmOffsetScale
+    uint maxSpotReq,
+    uint minSpotReq,
+    uint mmCallSpotReq,
+    uint mmPutSpotReq,
+    uint MMPutMtMReq,
+    uint unpairedIMScale,
+    uint unpairedMMScale,
+    uint mmOffsetScale
   );
 
   event BaseMarginDiscountFactorSet(uint marketId, uint baseMarginDiscountFactor);
 
-  event DepegParametersSet(int threshold, int depegFactor);
+  event DepegParametersSet(uint threshold, uint depegFactor);
 
-  event OracleContingencySet(uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int ocFactor);
+  event OracleContingencySet(uint prepThreshold, uint optionThreshold, uint baseThreshold, uint OCFactor);
 
   event StableFeedUpdated(address stableFeed);
 

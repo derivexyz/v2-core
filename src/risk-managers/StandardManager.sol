@@ -46,20 +46,20 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   // Variables //
   ///////////////
 
-  /// @dev Depeg IM parameters: use to increase margin requirement if stablecoin depegs
-  DepegParams public depegParams;
+  /// @dev if turned on, people can borrow cash from standard manager, aka have negative balance.
+  bool public borrowingEnabled;
+
+  /// @dev Increasing Market Id
+  uint public lastMarketId = 0;
 
   /// @dev Oracle that returns stable / USD price
   ISpotFeed public stableFeed;
 
-  /// @dev if turned on, people can borrow cash from standard manager, aka have negative balance.
-  bool public borrowingEnabled;
+  /// @dev Depeg IM parameters: use to increase margin requirement if stablecoin depegs
+  DepegParams public depegParams;
 
   /// @dev True if an IAsset address is whitelisted.
   mapping(IAsset asset => AssetDetail) internal _assetDetails;
-
-  /// @dev Increasing Market Id
-  uint public lastMarketId = 0;
 
   /// @dev Mapping from marketId to asset type to IAsset address
   mapping(uint marketId => mapping(AssetType assetType => IAsset)) public assetMap;
@@ -71,7 +71,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   mapping(uint marketId => OptionMarginParams) public optionMarginParams;
 
   /// @dev Base margin discount: each base asset be treated as "spot * discount_factor" amount of cash
-  mapping(uint marketId => int) public baseMarginDiscountFactor;
+  mapping(uint marketId => uint) public baseMarginDiscountFactor;
 
   /// @dev Oracle Contingency parameters. used to increase margin requirement if oracle has low confidence
   mapping(uint marketId => OracleContingencyParams) public oracleContingencyParams;
@@ -113,6 +113,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev the standard manager only support option asset & perp asset
    */
   function whitelistAsset(IAsset _asset, uint _marketId, AssetType _type) external onlyOwner {
+    // TODO(anton): make sure you can't put the same asset on multiple markets/different types etc.
     _checkMarketExist(_marketId);
 
     IAsset previousAsset = assetMap[_marketId][_type];
@@ -179,7 +180,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       revert SRM_InvalidBaseDiscountFactor();
     }
 
-    baseMarginDiscountFactor[marketId] = int(discountFactor);
+    baseMarginDiscountFactor[marketId] = discountFactor;
 
     emit BaseMarginDiscountFactorSet(marketId, discountFactor);
   }
@@ -191,14 +192,14 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     _checkMarketExist(marketId);
 
     if (
-      params.maxSpotReq < 0 || params.maxSpotReq > 1.2e18 // 0 < x < 1.2
-        || params.minSpotReq < 0 || params.minSpotReq > 1.2e18 // 0 < x < 1,2
-        || params.mmCallSpotReq < 0 || params.mmCallSpotReq > 1e18 // 0 < x < 1
-        || params.mmPutSpotReq < 0 || params.mmPutSpotReq > 1e18 // 0 < x < 1
-        || params.MMPutMtMReq < 0 || params.MMPutMtMReq > 1e18 // 0 < x < 1
-        || params.unpairedMMScale < 1e18 || params.unpairedMMScale > 3e18 // 1 < x < 3
-        || params.unpairedIMScale < 1e18 || params.unpairedIMScale > 3e18 // 1 < x < 3
-        || params.mmOffsetScale < 1e18 || params.mmOffsetScale > 3e18 // 1 < x < 3
+      params.maxSpotReq > 1.2e18 // 0 <= x <= 1.2
+        || params.minSpotReq > 1.2e18 // 0 <= x <= 1.2
+        || params.mmCallSpotReq > 1e18 // 0 <= x <= 1
+        || params.mmPutSpotReq > 1e18 // 0 <= x <= 1
+        || params.MMPutMtMReq > 1e18 // 0 <= x <= 1
+        || params.unpairedMMScale < 1e18 || params.unpairedMMScale > 3e18 // 1 <= x <= 3
+        || params.unpairedIMScale < 1e18 || params.unpairedIMScale > 3e18 // 1 <= x <= 3
+        || params.mmOffsetScale < 1e18 || params.mmOffsetScale > 3e18 // 1 <= x <= 3
     ) {
       revert SRM_InvalidOptionMarginParams();
     }
@@ -224,8 +225,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function setOracleContingencyParams(uint marketId, OracleContingencyParams memory params) external onlyOwner {
     _checkMarketExist(marketId);
     if (
-      params.perpThreshold > 1e18 || params.optionThreshold > 1e18 || params.baseThreshold > 1e18
-        || params.OCFactor > 1e18
+      params.perpThreshold > 1e18 //
+        || params.optionThreshold > 1e18
+      //
+      || params.baseThreshold > 1e18
+      //
+      || params.OCFactor > 1e18
     ) {
       revert SRM_InvalidOracleContingencyParams();
     }
@@ -282,21 +287,20 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
   ) public override onlyAccounts {
-    // check if account is valid
-    viewer.verifyCanTrade(accountId);
-
-    // send data to oracles if needed
-    _processManagerData(tradeId, managerData);
-
-    viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
+    _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
     bool riskAdding = false;
 
+    bool isPositiveCashDelta = true;
+
     // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
       if (address(assetDeltas[i].asset) == address(cashAsset)) {
-        if (assetDeltas[i].delta < 0) riskAdding = true;
+        if (assetDeltas[i].delta < 0) {
+          riskAdding = true;
+          isPositiveCashDelta = false;
+        }
         continue;
       }
 
@@ -325,40 +329,54 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       }
     }
 
-    // iterate through delta again and charge all fees
-    _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
+    ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
+
+    // TODO: test max account size properly (risk adding = false allowed creating unliquidatable portfolios)
+    if (assetBalances.length > maxAccountSize && previousBalances.length < assetBalances.length) {
+      revert SRM_TooManyAssets();
+    }
 
     // only bypass risk check if we are only reducing perp position, increasing cash, or increasing option position
     if (!riskAdding) return;
 
-    _performRiskCheck(accountId, assetDeltas);
+    _performRiskCheck(accountId, assetBalances, previousBalances, isPositiveCashDelta);
   }
 
   /**
    * @dev Perform a risk check on the account.
    */
-  function _performRiskCheck(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
-    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
+  function _performRiskCheck(
+    uint accountId,
+    ISubAccounts.AssetBalance[] memory assetBalances,
+    ISubAccounts.AssetBalance[] memory previousBalances,
+    bool isPositiveCashDelta
+  ) internal view {
+    StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).arrangeSRMPortfolio(assetBalances);
+
+    // TODO: add tests that we allow people to have neg cash if they already had it previously (only close neg cash)
+    // need to compare cash delta to previous balance -> if post_trade_cash < 0 -> delta can only be positive
 
     // account can only have negative cash if borrowing is enabled
-    if (!borrowingEnabled && portfolio.cash < 0) revert SRM_NoNegativeCash();
+    if (!borrowingEnabled && portfolio.cash < 0 && !isPositiveCashDelta) revert SRM_NoNegativeCash();
 
     // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
     (int postIM,) = _getMarginAndMarkToMarket(accountId, portfolio, true);
 
-    // cash deposited has to cover the margin requirement
-    if (postIM < 0) {
-      StandardManagerPortfolio memory prePortfolio =
-        ISRMPortfolioViewer(address(viewer)).getSRMPortfolioPreTrade(accountId, assetDeltas);
+    // cash deposited covers the IM requirement
+    if (postIM >= 0) return;
 
-      (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
-      (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
+    // otherwise we check that the risk of the portfolio (MM) improves
+    StandardManagerPortfolio memory prePortfolio =
+      ISRMPortfolioViewer(address(viewer)).arrangeSRMPortfolio(previousBalances);
 
-      // allow the trade to pass if the net margin increased (risk reduced), and it is now above the solvent line
-      if (postMM > preMM && postMM > 0) return;
+    (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
+    (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
 
-      revert SRM_PortfolioBelowMargin();
-    }
+    // allow the trade to pass if the net margin increased (risk reduced), and it is now above the solvent line
+    if (postMM > preMM && postMM > 0) return;
+
+    revert SRM_PortfolioBelowMargin();
   }
 
   /**
@@ -372,7 +390,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     view
     returns (int netMargin, int totalMarkToMarket)
   {
-    int depegMultiplier = _getDepegMultiplier(isInitial);
+    uint depegMultiplier = _getDepegMultiplier(isInitial);
 
     // for each markets, get margin and sum it up
     for (uint i = 0; i < portfolio.marketHoldings.length; i++) {
@@ -390,13 +408,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev If the stable feed for stable / USD return price lower than threshold, add extra amount to im
    * @return A positive multiplier that should be multiply to S * sum(shorts + perps)
    */
-  function _getDepegMultiplier(bool isInitial) internal view returns (int) {
+  function _getDepegMultiplier(bool isInitial) internal view returns (uint) {
     if (!isInitial) return 0;
 
     (uint stablePrice,) = stableFeed.getSpot();
-    if (stablePrice.toInt256() >= depegParams.threshold) return 0;
+    if (stablePrice >= depegParams.threshold) return 0;
 
-    return (depegParams.threshold - int(stablePrice)).multiplyDecimal(depegParams.depegFactor);
+    return (depegParams.threshold - stablePrice).multiplyDecimal(depegParams.depegFactor);
   }
 
   /**
@@ -404,26 +422,26 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev This function should normally return a negative number, -100e18 means it requires $100 cash as margin
    *      it's possible that it return positive number because of unrealizedPNL from the perp position
    */
-  function _getMarketMargin(uint accountId, MarketHolding memory marketHolding, bool isInitial, int depegMultiplier)
+  function _getMarketMargin(uint accountId, MarketHolding memory marketHolding, bool isInitial, uint depegMultiplier)
     internal
     view
     returns (int margin, int markToMarket)
   {
-    (int indexPrice, uint indexConf) = _getIndexPrice(marketHolding.marketId);
+    (uint spotPrice, uint spotConf) = _getSpotPrice(marketHolding.marketId);
 
     // also getting confidence because we need to find the
-    int netPerpMargin = _getNetPerpMargin(marketHolding, indexPrice, isInitial, indexConf);
-    (int netOptionMargin, int optionMtm) = _getNetOptionMarginAndMtM(marketHolding, indexPrice, isInitial, indexConf);
-
-    // base value is the mark to market value of ETH or BTC hold in the account
-    (int baseMargin, int baseMtM) =
-      _getBaseMarginAndMtM(marketHolding.marketId, marketHolding.basePosition, indexPrice, indexConf, isInitial);
+    int netPerpMargin = _getNetPerpMargin(marketHolding, spotPrice, isInitial, spotConf);
+    (int netOptionMargin, int optionMtm) = _getNetOptionMarginAndMtM(marketHolding, spotPrice, isInitial, spotConf);
 
     // apply depeg IM penalty
     if (depegMultiplier != 0) {
       // depeg multiplier should be 0 for maintenance margin, or when there is no depeg
-      margin = -marketHolding.depegPenaltyPos.multiplyDecimal(depegMultiplier).multiplyDecimal(indexPrice);
+      margin = -(marketHolding.depegPenaltyPos.multiplyDecimal(depegMultiplier).multiplyDecimal(spotPrice).toInt256());
     }
+
+    // base value is the mark to market value of ETH or BTC hold in the account
+    (int baseMargin, int baseMtM) =
+      _getBaseMarginAndMtM(marketHolding.marketId, marketHolding.basePosition, spotPrice, spotConf, isInitial);
 
     int unrealizedPerpPNL;
     if (marketHolding.perpPosition != 0) {
@@ -442,10 +460,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
   /**
    * @notice Get the margin required for the perp position of an market
-   * @param indexConf index confidence
+   * @param spotConf index confidence
    * @return netMargin for a perp position, always negative
    */
-  function _getNetPerpMargin(MarketHolding memory marketHolding, int indexPrice, bool isInitial, uint indexConf)
+  function _getNetPerpMargin(MarketHolding memory marketHolding, uint spotPrice, bool isInitial, uint spotConf)
     internal
     view
     returns (int netMargin)
@@ -464,14 +482,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     if (!isInitial) return netMargin;
 
     // if the min of two confidences is below threshold, apply penalty (becomes more negative)
-    uint minConf = Math.min(confidence, indexConf);
+    uint minConf = Math.min(confidence, spotConf);
     OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
     if (ocParam.perpThreshold != 0 && minConf < ocParam.perpThreshold) {
-      int diff = 1e18 - int(minConf);
-      int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(
-        int(SignedMath.abs(position))
-      );
-      netMargin -= penalty;
+      uint diff = 1e18 - minConf;
+      uint penalty =
+        diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(spotPrice).multiplyDecimal(SignedMath.abs(position));
+      netMargin -= penalty.toInt256();
     }
   }
 
@@ -482,25 +499,25 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    */
   function _getNetOptionMarginAndMtM(
     MarketHolding memory marketHolding,
-    int indexPrice,
+    uint spotPrice,
     bool isInitial,
     uint minConfidence
   ) internal view returns (int netMargin, int totalMarkToMarket) {
     // for each expiry, sum up the margin requirement.
     // Also keep track of min confidence so we can apply oracle contingency on each expiry's bases
     for (uint i = 0; i < marketHolding.expiryHoldings.length; i++) {
-      (int forwardPrice, uint localMin) =
+      (uint forwardPrice, uint localMinConf) =
         _getForwardPrice(marketHolding.marketId, marketHolding.expiryHoldings[i].expiry);
-      localMin = Math.min(minConfidence, localMin);
+      localMinConf = Math.min(minConfidence, localMinConf);
 
       {
         uint volConf =
           volFeeds[marketHolding.marketId].getExpiryMinConfidence(uint64(marketHolding.expiryHoldings[i].expiry));
-        localMin = Math.min(localMin, volConf);
+        localMinConf = Math.min(localMinConf, volConf);
       }
 
       (int margin, int mtm) = _calcNetBasicMarginSingleExpiry(
-        marketHolding.marketId, marketHolding.expiryHoldings[i], indexPrice, forwardPrice, isInitial
+        marketHolding.marketId, marketHolding.expiryHoldings[i], spotPrice, forwardPrice, isInitial
       );
       netMargin += margin;
       totalMarkToMarket += mtm;
@@ -509,12 +526,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       if (!isInitial) continue;
       OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
 
-      if (ocParam.optionThreshold != 0 && localMin < uint(ocParam.optionThreshold)) {
-        int diff = 1e18 - int(localMin);
-        int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(
+      if (ocParam.optionThreshold != 0 && localMinConf < uint(ocParam.optionThreshold)) {
+        uint diff = 1e18 - localMinConf;
+        uint penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(spotPrice).multiplyDecimal(
           marketHolding.expiryHoldings[i].totalShortPositions
         );
-        netMargin -= penalty;
+        netMargin -= penalty.toInt256();
       }
     }
   }
@@ -522,30 +539,31 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev calculate the margin contributed by base asset, and the mark to market value
    */
-  function _getBaseMarginAndMtM(uint marketId, int position, int indexPrice, uint indexConf, bool isInitial)
+  function _getBaseMarginAndMtM(uint marketId, uint position, uint spotPrice, uint spotConf, bool isInitial)
     internal
     view
     returns (int baseMargin, int baseMarkToMarket)
   {
     if (position == 0) return (0, 0);
 
-    int discountFactor = baseMarginDiscountFactor[marketId];
+    (uint stablePrice,) = stableFeed.getSpot();
+
+    uint notional = position.multiplyDecimal(spotPrice);
 
     // the margin contributed by base asset is spot * positionSize * discount factor
-    baseMargin = position.multiplyDecimal(discountFactor).multiplyDecimal(indexPrice);
+    baseMargin = notional.multiplyDecimal(baseMarginDiscountFactor[marketId]).toInt256();
 
-    (uint stablePrice,) = stableFeed.getSpot();
     // convert to denominate in stable
-    baseMarkToMarket = position.multiplyDecimal(indexPrice).divideDecimal(stablePrice.toInt256());
+    baseMarkToMarket = notional.divideDecimal(stablePrice).toInt256();
 
     // add oracle contingency for spot asset, only for IM
     if (!isInitial) return (baseMargin, baseMarkToMarket);
 
     OracleContingencyParams memory ocParam = oracleContingencyParams[marketId];
-    if (ocParam.baseThreshold != 0 && indexConf < uint(ocParam.baseThreshold)) {
-      int diff = 1e18 - int(indexConf);
-      int penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(indexPrice).multiplyDecimal(position);
-      baseMargin -= penalty;
+    if (ocParam.baseThreshold != 0 && spotConf < uint(ocParam.baseThreshold)) {
+      uint diff = 1e18 - spotConf;
+      uint penalty = diff.multiplyDecimal(ocParam.OCFactor).multiplyDecimal(notional);
+      baseMargin -= penalty.toInt256();
     }
   }
 
@@ -560,8 +578,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function _calcNetBasicMarginSingleExpiry(
     uint marketId,
     ExpiryHolding memory expiryHolding,
-    int indexPrice,
-    int forwardPrice,
+    uint spotPrice,
+    uint forwardPrice,
     bool isInitial
   ) internal view returns (int, int totalMarkToMarket) {
     // We make sure the evaluate the scenario at price = 0
@@ -573,7 +591,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
       // calculate isolated margin for this strike, aggregate to isolatedMargin
       (int isolatedMargin, int markToMarket) =
-        _getIsolatedMargin(marketId, expiryHolding.expiry, optionPos, indexPrice, forwardPrice, isInitial);
+        _getIsolatedMargin(marketId, expiryHolding.expiry, optionPos, spotPrice, forwardPrice, isInitial);
       totalIsolatedMargin += isolatedMargin;
       totalMarkToMarket += markToMarket;
 
@@ -582,12 +600,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     }
 
     if (expiryHolding.netCalls < 0) {
-      int unpairedScale =
+      uint unpairedScale =
         isInitial ? optionMarginParams[marketId].unpairedIMScale : optionMarginParams[marketId].unpairedMMScale;
-      maxLossMargin += expiryHolding.netCalls.multiplyDecimal(unpairedScale).multiplyDecimal(forwardPrice);
+      maxLossMargin += unpairedScale.multiplyDecimal(forwardPrice).toInt256().multiplyDecimal(expiryHolding.netCalls);
     }
 
-    // return the better of the 2 is the margin
+    // return the better of the 2 as the margin
     return (SignedMath.max(totalIsolatedMargin, maxLossMargin), totalMarkToMarket);
   }
 
@@ -662,10 +680,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     view
     returns (int margin, int markToMarket)
   {
-    (int indexPrice,) = _getIndexPrice(marketId);
-    (int forwardPrice,) = _getForwardPrice(marketId, expiry);
+    (uint spotPrice,) = _getSpotPrice(marketId);
+    (uint forwardPrice,) = _getForwardPrice(marketId, expiry);
     Option memory optionPos = Option({strike: strike, isCall: isCall, balance: balance});
-    return _getIsolatedMargin(marketId, expiry, optionPos, indexPrice, forwardPrice, isInitial);
+    return _getIsolatedMargin(marketId, expiry, optionPos, spotPrice, forwardPrice, isInitial);
   }
 
   //////////////////////////
@@ -678,6 +696,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
   function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
+    override
   {
     if (feeBypassedCaller[caller]) return;
 
@@ -705,8 +724,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint marketId,
     uint expiry,
     Option memory optionPos,
-    int indexPrice,
-    int forwardPrice,
+    uint spotPrice,
+    uint forwardPrice,
     bool isInitial
   ) internal view returns (int margin, int markToMarket) {
     (uint vol,) = volFeeds[marketId].getVol(uint128(optionPos.strike), uint64(expiry));
@@ -718,10 +737,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
     if (optionPos.isCall) {
       margin =
-        _getIsolatedMarginForCall(marketId, markToMarket, optionPos.strike, optionPos.balance, indexPrice, isInitial);
+        _getIsolatedMarginForCall(marketId, markToMarket, optionPos.strike, optionPos.balance, spotPrice, isInitial);
     } else {
       margin =
-        _getIsolatedMarginForPut(marketId, markToMarket, optionPos.strike, optionPos.balance, indexPrice, isInitial);
+        _getIsolatedMarginForPut(marketId, markToMarket, optionPos.strike, optionPos.balance, spotPrice, isInitial);
     }
   }
 
@@ -736,26 +755,34 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     int markToMarket,
     uint strike,
     int amount,
-    int indexPrice,
+    uint spotPrice,
     bool isInitial
   ) internal view returns (int) {
     OptionMarginParams memory params = optionMarginParams[marketId];
 
     int maintenanceMargin = SignedMath.min(
-      params.mmPutSpotReq.multiplyDecimal(indexPrice).multiplyDecimal(amount),
-      params.MMPutMtMReq.multiplyDecimal(markToMarket)
+      params.mmPutSpotReq.multiplyDecimal(spotPrice).toInt256().multiplyDecimal(amount),
+      params.MMPutMtMReq.toInt256().multiplyDecimal(markToMarket)
     ) + markToMarket;
 
     if (!isInitial) return maintenanceMargin;
 
-    int otmRatio = SignedMath.max(indexPrice - strike.toInt256(), 0).divideDecimal(indexPrice);
-    int imMultiplier = SignedMath.max(params.maxSpotReq - otmRatio, params.minSpotReq);
+    uint otmRatio = 0;
+    if (spotPrice > strike) {
+      otmRatio = (spotPrice - strike).divideDecimal(spotPrice);
+    }
+    uint imMultiplier;
+    if (params.maxSpotReq > otmRatio && params.maxSpotReq - otmRatio > params.minSpotReq) {
+      imMultiplier = params.maxSpotReq - otmRatio;
+    } else {
+      imMultiplier = params.minSpotReq;
+    }
+    imMultiplier = imMultiplier.multiplyDecimal(spotPrice);
 
     int margin = SignedMath.min(
-      imMultiplier.multiplyDecimal(indexPrice).multiplyDecimal(amount) + markToMarket,
-      maintenanceMargin.multiplyDecimal(params.mmOffsetScale)
+      imMultiplier.toInt256().multiplyDecimal(amount) + markToMarket,
+      maintenanceMargin.multiplyDecimal(params.mmOffsetScale.toInt256())
     );
-
     return margin;
   }
 
@@ -770,22 +797,24 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     int markToMarket,
     uint strike,
     int amount,
-    int indexPrice,
+    uint spotPrice,
     bool isInitial
   ) internal view returns (int) {
     OptionMarginParams memory params = optionMarginParams[marketId];
 
-    int maintenanceMargin = (params.mmCallSpotReq.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
+    if (!isInitial) {
+      int mmReqAdd = params.mmCallSpotReq.multiplyDecimal(spotPrice).toInt256().multiplyDecimal(amount);
+      return markToMarket + mmReqAdd;
+    }
 
-    if (!isInitial) return maintenanceMargin;
+    uint otmRatio = 0;
+    if (strike > spotPrice) {
+      otmRatio = (strike - spotPrice).divideDecimal(spotPrice);
+    }
 
-    int otmRatio = SignedMath.max((strike.toInt256() - indexPrice), 0).divideDecimal(indexPrice);
+    int imMultiplier = Math.max(params.maxSpotReq - otmRatio, params.minSpotReq).multiplyDecimal(spotPrice).toInt256();
 
-    int imMultiplier = SignedMath.max(params.maxSpotReq - otmRatio, params.minSpotReq);
-
-    int margin = (imMultiplier.multiplyDecimal(indexPrice)).multiplyDecimal(amount) + markToMarket;
-
-    return margin;
+    return imMultiplier.multiplyDecimal(amount) + markToMarket;
   }
 
   /**
@@ -807,18 +836,17 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   /**
    * @dev Return index price for a market
    */
-  function _getIndexPrice(uint marketId) internal view returns (int, uint) {
-    (uint spot, uint confidence) = spotFeeds[marketId].getSpot();
-    return (int(spot), confidence);
+  function _getSpotPrice(uint marketId) internal view returns (uint, uint) {
+    return spotFeeds[marketId].getSpot();
   }
 
   /**
    * @dev Return the forward price for a specific market and expiry timestamp
    */
-  function _getForwardPrice(uint marketId, uint expiry) internal view returns (int, uint) {
+  function _getForwardPrice(uint marketId, uint expiry) internal view returns (uint, uint) {
     (uint fwdPrice, uint confidence) = forwardFeeds[marketId].getForwardPrice(uint64(expiry));
     if (fwdPrice == 0) revert SRM_NoForwardPrice();
-    return (int(fwdPrice), confidence);
+    return (fwdPrice, confidence);
   }
 
   /**
@@ -827,7 +855,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function _getMarkToMarket(
     uint marketId,
     int amount,
-    int forwardPrice,
+    uint forwardPrice,
     uint strike,
     uint expiry,
     uint vol,
@@ -838,10 +866,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint64 secToExpiry = expiry > block.timestamp ? uint64(expiry - block.timestamp) : 0;
 
     IOptionPricing.Expiry memory expiryData =
-      IOptionPricing.Expiry({secToExpiry: secToExpiry, forwardPrice: uint128(uint(forwardPrice)), discountFactor: 1e18});
+      IOptionPricing.Expiry({secToExpiry: secToExpiry, forwardPrice: forwardPrice.toUint128(), discountFactor: 1e18});
 
     IOptionPricing.Option memory option =
-      IOptionPricing.Option({strike: uint128(strike), vol: uint128(vol), amount: amount, isCall: isCall});
+      IOptionPricing.Option({strike: strike.toUint128(), vol: vol.toUint128(), amount: amount, isCall: isCall});
 
     return pricing.getOptionValue(expiryData, option);
   }
