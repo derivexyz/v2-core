@@ -141,6 +141,37 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     vm.stopPrank();
   }
 
+  function testLiquidationFrontrunProtection() public {
+    uint scenario = 0;
+    _tradeCall(aliceAcc, bobAcc);
+    _refreshOracles(2600e18);
+
+    auction.startAuction(aliceAcc, scenario);
+
+    uint liquidator1 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
+    uint liquidator2 = subAccounts.createAccountWithApproval(charlie, address(this), srm);
+
+    _depositCash(charlie, liquidator1, 5000e18);
+    _depositCash(charlie, liquidator2, 5000e18);
+
+    vm.warp(block.timestamp + 10 minutes);
+    _refreshOracles(2600e18);
+
+    // max it can bid is around 60%
+    uint maxPercentageToBid = auction.getMaxProportion(aliceAcc, scenario);
+    uint lastTradeId = subAccounts.lastAccountTradeId(aliceAcc);
+
+    vm.startPrank(charlie);
+    uint percentageToBid = maxPercentageToBid / 2;
+    auction.bid(aliceAcc, liquidator1, percentageToBid, 0, lastTradeId);
+
+    // Liquidator 2 reverts, because the portfolio changed since lastTradeId
+    vm.expectRevert(IDutchAuction.DA_InvalidLastTradeId.selector);
+    auction.bid(aliceAcc, liquidator2, percentageToBid, 0, lastTradeId);
+
+    vm.stopPrank();
+  }
+
   function testCannotMakeBidderPayMoreThanMaxCash() public {
     // Front running issue:
     // depositing (updating account with positive value) last second may result in making liquidator pay more than intended
