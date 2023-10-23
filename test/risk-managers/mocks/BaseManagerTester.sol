@@ -46,6 +46,14 @@ contract BaseManagerTester is BaseManager {
     _settleAccountOptions(option, accountId);
   }
 
+  function chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
+    external
+  {
+    // Each manager must implement their own logic to charge OI fee
+
+    _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
+  }
+
   function handleAdjustment(
     uint, /*accountId*/
     uint, /*tradeId*/
