@@ -469,7 +469,9 @@ contract UNIT_TestStandardManager_Option is Test {
     subAccounts.submitTransfers(transfers, "");
   }
 
-  function testAllowRiskReducingTrade() public {
+  function testAllowRiskReducingTrade_MMEnough() public {
+    // a risk reducing trade is allowed if MM(post) > MM (pre) && MM(post > 0)
+
     uint strike = 2000e18;
     cash.deposit(aliceAcc, 2500e18);
 
@@ -479,10 +481,38 @@ contract UNIT_TestStandardManager_Option is Test {
     // assume that option price changes: now need more margin and the account is insolvent
     pricing.setMockMTM(strike, expiry, true, 300e18);
 
+    // MM is now negative
+    (int mmBefore,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    assertLt(mmBefore, 0);
+
+    // alice can still close position (pay premium), bob short, alice long,
+    int closeAmount = 5e18;
+    int premium = 100e18;
+    // this trade can go through
+    _tradeOption(bobAcc, aliceAcc, closeAmount, premium, expiry, strike, true);
+
+    (int mmAfter,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
+    assertGt(mmAfter, 0);
+  }
+
+  function testDisallowRiskReducingTrade_MMNotEnough() public {
+    // a risk reducing trade is NOT allowed if MM(post) > MM (pre), but MM(post < 0)
+
+    uint strike = 2000e18;
+    cash.deposit(aliceAcc, 2500e18);
+
+    pricing.setMockMTM(strike, expiry, true, 100e18);
+    _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
+
+    // assume that option price changes: now need more margin and the account is insolvent
+    pricing.setMockMTM(strike, expiry, true, 260e18);
+
     // alice can still close position (pay premium), bob short, alice long,
     int closeAmount = 1e18;
     int premium = 100e18;
-    // this trade can go through
+    // this trade cannot go through: closing 1 option will not be enough
+
+    vm.expectRevert(IStandardManager.SRM_PortfolioBelowMargin.selector);
     _tradeOption(bobAcc, aliceAcc, closeAmount, premium, expiry, strike, true);
   }
 

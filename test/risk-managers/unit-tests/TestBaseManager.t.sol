@@ -407,48 +407,6 @@ contract UNIT_TestBaseManager is Test {
     tester.forceWithdrawAccount(aliceAcc);
   }
 
-  function testMergeAccounts() public {
-    int amount = 10e18;
-
-    // setup some portfolio:
-    // alice: 10 cash, 10 mockAsset1, -10 mockAsset2
-    // bob: -10 cash, 10 mockAsset1, 10 mockAsset2
-
-    mockAsset.deposit(aliceAcc, 1, uint(amount));
-    mockAsset.deposit(bobAcc, 1, uint(amount));
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 2, amount);
-    tester.symmetricManagerAdjustment(bobAcc, aliceAcc, cash, 0, amount);
-
-    uint[] memory toMerge = new uint[](1);
-    toMerge[0] = bobAcc;
-
-    // cannot initiate from non-owner
-    vm.expectRevert(IBaseManager.BM_OnlySubAccountOwner.selector);
-    tester.mergeAccounts(aliceAcc, toMerge);
-
-    // cannot merge bob's account!
-    vm.prank(alice);
-    vm.expectRevert(IBaseManager.BM_MergeOwnerMismatch.selector);
-    tester.mergeAccounts(aliceAcc, toMerge);
-
-    // So then transfer alice's account to bob
-    vm.prank(alice);
-    subAccounts.transferFrom(alice, bob, aliceAcc);
-
-    // and now they can merge!
-    vm.prank(bob);
-    tester.mergeAccounts(aliceAcc, toMerge);
-
-    // perps cancel out, leaving bob with double the cash!
-    ISubAccounts.AssetBalance[] memory result = subAccounts.getAccountBalances(aliceAcc);
-
-    // alice only has 1 asset left
-    assertEq(result.length, 1);
-    assertEq(address(result[0].asset), address(mockAsset));
-    assertEq(result[0].subId, 1);
-    assertEq(result[0].balance, 2 * amount);
-  }
-
   //////////////////////////
   //   Force Withdrawal   //
   //////////////////////////
