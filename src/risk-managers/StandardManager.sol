@@ -771,11 +771,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     if (spotPrice > strike) {
       otmRatio = (spotPrice - strike).divideDecimal(spotPrice);
     }
-    uint imMultiplier;
+    uint imMultiplier = params.minSpotReq;
     if (params.maxSpotReq > otmRatio && params.maxSpotReq - otmRatio > params.minSpotReq) {
       imMultiplier = params.maxSpotReq - otmRatio;
-    } else {
-      imMultiplier = params.minSpotReq;
     }
     imMultiplier = imMultiplier.multiplyDecimal(spotPrice);
 
@@ -812,9 +810,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       otmRatio = (strike - spotPrice).divideDecimal(spotPrice);
     }
 
-    int imMultiplier = Math.max(params.maxSpotReq - otmRatio, params.minSpotReq).multiplyDecimal(spotPrice).toInt256();
+    uint imMultiplier = params.minSpotReq;
+    if (params.maxSpotReq > otmRatio && params.maxSpotReq - otmRatio > params.minSpotReq) {
+      imMultiplier = params.maxSpotReq - otmRatio;
+    }
+    imMultiplier = imMultiplier.multiplyDecimal(spotPrice);
 
-    return imMultiplier.multiplyDecimal(amount) + markToMarket;
+    return imMultiplier.toInt256().multiplyDecimal(amount) + markToMarket;
   }
 
   /**
