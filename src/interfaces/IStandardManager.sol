@@ -113,6 +113,9 @@ interface IStandardManager is IBaseManager {
   /// @dev Market is not created yet
   error SRM_MarketNotCreated();
 
+  /// @dev One asset cannot be assign to multiple markets
+  error SRM_CannotSetSameAsset();
+
   /// @dev Caller is not the Accounts contract
   error SRM_NotAccounts();
 
@@ -122,6 +125,7 @@ interface IStandardManager is IBaseManager {
   /// @dev Not supported asset
   error SRM_UnsupportedAsset();
 
+  /// @dev Too many assets in one subaccount
   error SRM_TooManyAssets();
 
   /// @dev Account is under water, need more cash
