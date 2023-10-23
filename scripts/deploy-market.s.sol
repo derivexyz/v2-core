@@ -8,7 +8,7 @@ import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeed} from "../src/feeds/LyraRateFeed.sol";
+import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {OptionPricing} from "../src/feeds/OptionPricing.sol";
 import {PMRM} from "../src/risk-managers/PMRM.sol";
@@ -26,7 +26,7 @@ import {Deployment, ConfigJson, Market} from "./types.sol";
 import {Utils} from "./utils.sol";
 
 // get all default params
-import "./config.sol";
+import "./config-mainnet.sol";
 
 
 /**
@@ -88,7 +88,7 @@ contract DeployMarket is Utils {
       market.ibpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
       
       market.volFeed = LyraVolFeed(address(mockFeed));
-      market.rateFeed = LyraRateFeed(address(mockFeed));      
+      market.rateFeed = LyraRateFeedStatic(address(mockFeed));      
     } else {
       market.spotFeed = new LyraSpotFeed();
       market.forwardFeed = new LyraForwardFeed(market.spotFeed);
@@ -98,20 +98,29 @@ contract DeployMarket is Utils {
       market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
 
       // interest and vol feed
-      market.rateFeed = new LyraRateFeed();
+      market.rateFeed = new LyraRateFeedStatic();
+      
       market.volFeed = new LyraVolFeed();
 
       // init feeds
-      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);      
+      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);   
+      market.spotFeed.addSigner(config.feedSigner, true);
+
       market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
+      market.perpFeed.addSigner(config.feedSigner, true);
 
       market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+      market.iapFeed.addSigner(config.feedSigner, true);
+
       market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+      market.ibpFeed.addSigner(config.feedSigner, true);
 
       market.volFeed.setHeartbeat(VOL_HEARTBEAT);
-      market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
+      market.volFeed.addSigner(config.feedSigner, true);
+      // market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
       market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
       market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
+      market.forwardFeed.addSigner(config.feedSigner, true);
     }
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
@@ -163,6 +172,13 @@ contract DeployMarket is Utils {
 
     // set all scenarios!
     market.pmrm.setScenarios(getDefaultScenarios());
+
+    // set fees
+    market.pmrmViewer.setOIFeeRateBPS(address(market.perp), OI_FEE_BPS);
+    market.pmrmViewer.setOIFeeRateBPS(address(market.option), OI_FEE_BPS);
+    market.pmrmViewer.setOIFeeRateBPS(address(market.base), OI_FEE_BPS);
+
+    market.pmrm.setMinOIFee(MIN_OI_FEE);
   }
 
   function _setupPerpAsset(Market memory market) internal {
@@ -203,6 +219,13 @@ contract DeployMarket is Utils {
 
     (uint mmReq, uint imReq) = getDefaultSRMPerpRequirements();
     deployment.srm.setPerpMarginRequirements(marketId, mmReq, imReq);
+
+    deployment.srm.setBaseMarginDiscountFactor(marketId, SRM_BASE_DISCOUNT);
+
+    deployment.srmViewer.setOIFeeRateBPS(address(market.perp), OI_FEE_BPS);
+    deployment.srmViewer.setOIFeeRateBPS(address(market.option), OI_FEE_BPS);
+    deployment.srmViewer.setOIFeeRateBPS(address(market.base), OI_FEE_BPS);
+    deployment.srm.setMinOIFee(MIN_OI_FEE);
   }
 
   function _whitelistAndSetCapForManager(address manager, Market memory market) internal {

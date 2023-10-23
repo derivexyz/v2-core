@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./DutchAuctionBase.sol";
-import {getDefaultAuctionParam} from "../../../scripts/config.sol";
+import {getDefaultAuctionParam} from "../../../scripts/config-local.sol";
 
 contract UNIT_TestSolventAuction is DutchAuctionBase {
   uint scenario = 1;

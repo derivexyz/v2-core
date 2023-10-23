@@ -17,7 +17,7 @@ import "../../../shared/mocks/MockOptionPricing.sol";
 import "../../../shared/mocks/MockTrackableAsset.sol";
 import "../../../shared/mocks/MockCash.sol";
 
-import "../../../../scripts/config.sol";
+import "../../../../scripts/config-local.sol";
 
 /**
  * @dev shard contract setting up environment for testing StandardManager

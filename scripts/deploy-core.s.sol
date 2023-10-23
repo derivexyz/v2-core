@@ -9,6 +9,7 @@ import "../src/SubAccounts.sol";
 import "../src/SecurityModule.sol";
 import "../src/risk-managers/StandardManager.sol";
 import "../src/risk-managers/SRMPortfolioViewer.sol";
+import "../src/periphery/OracleDataSubmitter.sol";
 
 import "../src/feeds/LyraSpotFeed.sol";
 
@@ -20,9 +21,8 @@ import "forge-std/console2.sol";
 import {Deployment, ConfigJson} from "./types.sol";
 import {Utils} from "./utils.sol";
 
-// get all default params
-import "./config.sol";
-
+// Read from deployment config
+import "./config-mainnet.sol";
 
 contract DeployCore is Utils {
 
@@ -62,7 +62,7 @@ contract DeployCore is Utils {
 
     // nonce + 3: Deploy SM
     address srmAddr = computeCreateAddress(deployer, nonce + 6);
-    console2.log("predicted addr", srmAddr);
+    console2.log("predicted SRM addr", srmAddr);
     deployment.securityModule = new SecurityModule(deployment.subAccounts, deployment.cash, IManager(srmAddr));
 
     // nonce + 4: Deploy Auction
@@ -87,6 +87,8 @@ contract DeployCore is Utils {
       deployment.stableFeed = stableFeed;
     }
 
+    deployment.dataSubmitter = new OracleDataSubmitter();
+
     _setupCoreFunctions(deployment);
 
     // write to output
@@ -99,6 +101,7 @@ contract DeployCore is Utils {
     // setup cash
     deployment.cash.setLiquidationModule(deployment.auction);
     deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
+    deployment.cash.setSmFee(CASH_SM_FEE);
 
     // set parameter for auction
     deployment.auction.setSolventAuctionParams(getDefaultAuctionParam());
@@ -111,7 +114,11 @@ contract DeployCore is Utils {
 
     // global setting for SRM
     deployment.srm.setStableFeed(deployment.stableFeed);
-    deployment.srm.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
+    
+    // set SRM parameters
+    deployment.srm.setDepegParameters(getDefaultDepegParam());
+
+    deployment.auction.setBufferMarginPercentage(BUFFER_MARGIN_SCALE);
 
     console2.log("Core contracts deployed and setup!");
   }
@@ -130,6 +137,8 @@ contract DeployCore is Utils {
     vm.serializeAddress(objKey, "auction", address(deployment.auction));
     vm.serializeAddress(objKey, "srm", address(deployment.srm));
     vm.serializeAddress(objKey, "srmViewer", address(deployment.srmViewer));
+    vm.serializeAddress(objKey, "dataSubmitter", address(deployment.dataSubmitter));
+
     string memory finalObj = vm.serializeAddress(objKey, "stableFeed", address(deployment.stableFeed));
 
     // build path

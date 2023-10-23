@@ -12,7 +12,7 @@ import "./utils/PMRMTestBase.sol";
 
 import "../TestCaseExpiries.t.sol";
 
-import {getPMRMParams} from "../../../../scripts/config.sol";
+import {getPMRMParams} from "../../../../scripts/config-local.sol";
 
 contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   using SignedDecimalMath for int;

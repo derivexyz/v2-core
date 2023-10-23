@@ -354,8 +354,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
       (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
 
-      // allow the trade to pass if the net margin increased (risk reduced)
-      if (postMM > preMM) return;
+      // allow the trade to pass if the net margin increased (risk reduced), and it is now above the solvent line
+      if (postMM > preMM && postMM > 0) return;
 
       revert SRM_PortfolioBelowMargin();
     }

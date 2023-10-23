@@ -8,8 +8,6 @@ import {Utils} from "./utils.sol";
 
 import {MockERC20} from "../test/shared/mocks/MockERC20.sol";
 
-// get all default params
-import "./config.sol";
 
 // Deploy mocked contracts: then write to script/input as input for deploying core and v2 markets
 contract DeployMocks is Utils {
@@ -40,7 +38,8 @@ contract DeployMocks is Utils {
     vm.serializeAddress(objKey, "usdc", address(usdc));
     vm.serializeAddress(objKey, "wbtc", address(wbtc));
     vm.serializeAddress(objKey, "weth", address(weth));
-    string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", true);
+    vm.serializeAddress(objKey, "feedSigner", 0x555eB362b5057e36f88cCb42b44D6dA5Fe7A0656);
+    string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", false);
 
     // build path
     _writeToInput("config", finalObj);

@@ -175,7 +175,7 @@ contract TestPMRM_Admin is PMRMTestBase {
     lib.setOtherContingencyParams(otherContParams);
     otherContParams.pegLossThreshold = 1;
 
-    otherContParams.pegLossFactor = 2e18 + 1;
+    otherContParams.pegLossFactor = 20e18 + 1;
     vm.expectRevert(IPMRMLib.PMRML_InvalidOtherContingencyParameters.selector);
     lib.setOtherContingencyParams(otherContParams);
     otherContParams.pegLossFactor = 2;

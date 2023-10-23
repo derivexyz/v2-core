@@ -14,6 +14,7 @@ contract Utils is Script {
     config.usdc = abi.decode(vm.parseJson(file, ".usdc"), (address));
     config.weth = abi.decode(vm.parseJson(file, ".weth"), (address));
     config.wbtc = abi.decode(vm.parseJson(file, ".wbtc"), (address));
+    config.feedSigner = abi.decode(vm.parseJson(file, ".feedSigner"), (address));
     config.useMockedFeed = abi.decode(vm.parseJson(file, ".useMockedFeed"), (bool));
   }
 
@@ -27,6 +28,7 @@ contract Utils is Script {
     deployment.securityModule = SecurityModule(abi.decode(vm.parseJson(content, ".securityModule"), (address)));
     deployment.auction = DutchAuction(abi.decode(vm.parseJson(content, ".auction"), (address)));
     deployment.srm = StandardManager(abi.decode(vm.parseJson(content, ".srm"), (address)));
+    deployment.srmViewer = SRMPortfolioViewer(abi.decode(vm.parseJson(content, ".srmViewer"), (address)));
     deployment.stableFeed = ISpotFeed(abi.decode(vm.parseJson(content, ".stableFeed"), (address)));
   }
 

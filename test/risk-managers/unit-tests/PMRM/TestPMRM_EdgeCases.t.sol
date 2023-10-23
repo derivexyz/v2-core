@@ -27,36 +27,6 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     _doBalanceTransfer(aliceAcc, bobAcc, balances);
   }
 
-  function testPMRM_merge() public {
-    ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".SinglePerp");
-
-    _depositCash(aliceAcc, 2_000 ether);
-    _depositCash(bobAcc, 2_000 ether);
-    _doBalanceTransfer(aliceAcc, bobAcc, balances);
-
-    uint[] memory mergeAccs = new uint[](1);
-    mergeAccs[0] = bobAcc;
-
-    // Fails when not owned by the same user
-    vm.prank(alice);
-    vm.expectRevert(IBaseManager.BM_MergeOwnerMismatch.selector);
-    pmrm.mergeAccounts(aliceAcc, mergeAccs);
-
-    // So then transfer alice's account to bob
-    vm.prank(alice);
-    subAccounts.transferFrom(alice, bob, aliceAcc);
-
-    // and now they can merge!
-    vm.prank(bob);
-    pmrm.mergeAccounts(aliceAcc, mergeAccs);
-
-    // perps cancel out, leaving bob with double the cash!
-    ISubAccounts.AssetBalance[] memory bals = subAccounts.getAccountBalances(aliceAcc);
-    assertEq(bals.length, 1);
-    assertEq(bals[0].balance, 4_000 ether);
-    assertEq(address(bals[0].asset), address(cash));
-  }
-
   function testPMRM_invalidSpotShock() public {
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
     scenarios[0] = IPMRM.Scenario({spotShock: 3e18 + 1, volShock: IPMRM.VolShockDirection.None});

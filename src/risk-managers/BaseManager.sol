@@ -380,29 +380,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   /**
-   * @dev merge bunch of accounts into one.
-   * @dev reverts if the msg.sender is not the owner of all accounts
-   */
-  function _mergeAccounts(uint mergeIntoId, uint[] memory mergeFromIds) internal {
-    address owner = subAccounts.ownerOf(mergeIntoId);
-    if (owner != msg.sender) revert BM_OnlySubAccountOwner();
-
-    for (uint i = 0; i < mergeFromIds.length; ++i) {
-      // check owner of all accounts is the same - note this ignores
-      if (owner != subAccounts.ownerOf(mergeFromIds[i])) {
-        revert BM_MergeOwnerMismatch();
-      }
-      // Move all assets of the other
-      ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(mergeFromIds[i]);
-      for (uint j = 0; j < assets.length; ++j) {
-        _symmetricManagerAdjustment(
-          mergeFromIds[i], mergeIntoId, assets[j].asset, SafeCast.toUint96(assets[j].subId), assets[j].balance
-        );
-      }
-    }
-  }
-
-  /**
    * @dev transfer asset from one account to another without invoking manager hook
    * @param from Account id of the from account. Must be controlled by this manager
    * @param to Account id of the to account. Must be controlled by this manager

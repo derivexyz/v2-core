@@ -13,7 +13,7 @@ import {ISpotFeed} from "../src/interfaces/ISpotFeed.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeed} from "../src/feeds/LyraRateFeed.sol";
+import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {OptionPricing} from "../src/feeds/OptionPricing.sol";
 
@@ -26,12 +26,15 @@ import {PMRM} from "../src/risk-managers/PMRM.sol";
 import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
 
+// Periphery Contracts
+import {OracleDataSubmitter} from "../src/periphery/OracleDataSubmitter.sol";
 
 struct ConfigJson { 
   address usdc;
   address wbtc; // needed if you want to use deploy-market.s.sol with market = wbtc
   address weth; // needed if you want to use deploy-market.s.sol with market = weth
   bool useMockedFeed;
+  address feedSigner;
 }
 
 struct Deployment {
@@ -45,6 +48,7 @@ struct Deployment {
   SRMPortfolioViewer srmViewer;
 
   ISpotFeed stableFeed;
+  OracleDataSubmitter dataSubmitter;
 }
 
 struct Market {
@@ -58,7 +62,7 @@ struct Market {
   LyraSpotDiffFeed iapFeed;
   LyraSpotDiffFeed ibpFeed;
   LyraVolFeed volFeed;
-  LyraRateFeed rateFeed;
+  LyraRateFeedStatic rateFeed;
   LyraForwardFeed forwardFeed;
   // pricing
   OptionPricing pricing;
