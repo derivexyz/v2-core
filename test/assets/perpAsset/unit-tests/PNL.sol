@@ -51,7 +51,8 @@ contract UNIT_PerpAssetPNL is Test {
     ibp = new MockSpotDiffFeed(spotFeed);
 
     manager = new MockManager(address(subAccounts));
-    perp = new PerpAsset(subAccounts, 0.0075e18);
+    perp = new PerpAsset(subAccounts);
+    perp.setRateBounds(0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);

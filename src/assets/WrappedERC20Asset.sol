@@ -128,15 +128,4 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
     // always need allowance: cannot force to send positive asset to other accounts
     return (finalBalance, true);
   }
-
-  /**
-   * @notice Triggered when a user wants to migrate an account to a new manager.
-   * @dev Blocks updating to non-whitelisted manager.
-   */
-  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
-    _checkManager(address(newManager));
-
-    uint pos = subAccounts.getBalance(accountId, IAsset(address(this)), 0).toUint256();
-    _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
-  }
 }

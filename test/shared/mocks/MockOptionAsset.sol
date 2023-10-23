@@ -94,25 +94,6 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionA
     return mockedExpiryPrice[expiry];
   }
 
-  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
-    public
-    pure
-    returns (int)
-  {
-    int priceDiff = settlementPrice.toInt256() - strikePrice.toInt256();
-
-    if (isCall && priceDiff > 0) {
-      // ITM Call
-      return priceDiff.multiplyDecimal(balance);
-    } else if (!isCall && priceDiff < 0) {
-      // ITM Put
-      return -priceDiff.multiplyDecimal(balance);
-    } else {
-      // OTM
-      return 0;
-    }
-  }
-
   // add in a function prefixed with test here to prevent coverage from picking it up.
   function test() public {}
 }

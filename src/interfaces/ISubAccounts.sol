@@ -93,15 +93,6 @@ interface ISubAccounts is IERC721 {
    */
   function createAccountWithApproval(address owner, address spender, IManager _manager) external returns (uint newId);
 
-  /**
-   * @notice Assigns new manager to account. No balances are adjusted.
-   *         msg.sender must be ERC721 approved or owner
-   * @param accountId ID of account
-   * @param newManager new IManager
-   * @param newManagerData data to be passed to manager._managerHook
-   */
-  function changeManager(uint accountId, IManager newManager, bytes memory newManagerData) external;
-
   ///////////////
   // Approvals //
   ///////////////

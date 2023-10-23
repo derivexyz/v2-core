@@ -26,7 +26,8 @@ contract UNIT_PerpAssetHook is Test {
 
     manager = new MockManager(account);
 
-    perp = new PerpAsset(ISubAccounts(account), 0.0075e18);
+    perp = new PerpAsset(ISubAccounts(account));
+    perp.setRateBounds(0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);

@@ -18,10 +18,4 @@ interface IManager {
     ISubAccounts.AssetDelta[] memory deltas,
     bytes memory data
   ) external;
-
-  /**
-   * @notice triggered when a user want to change to a new manager
-   * @dev    a manager should only allow migrating to another manager it trusts.
-   */
-  function handleManagerChange(uint accountId, IManager newManager) external;
 }
