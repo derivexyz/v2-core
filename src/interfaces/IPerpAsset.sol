@@ -83,4 +83,8 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   error PA_InvalidImpactPrices();
 
   error PA_InvalidRateBounds();
+
+  error PA_InvalidConvergencePeriod();
+
+  error PA_InvalidStaticInterestRate();
 }
