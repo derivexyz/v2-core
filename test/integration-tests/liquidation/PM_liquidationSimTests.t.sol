@@ -67,7 +67,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     _depositCash(liqAcc, 1000000000e18);
 
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
-      auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated, 0);
+      auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated, 0, 0);
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {

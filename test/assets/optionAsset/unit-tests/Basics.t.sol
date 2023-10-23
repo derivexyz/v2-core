@@ -100,59 +100,6 @@ contract UNIT_TestOptionBasics is Test {
     // todo: test out of bounds subId
   }
 
-  ////////////////////
-  // Manager Change //
-  ////////////////////
-
-  function testValidManagerChange() public {
-    /* ensure account holds asset before manager changed*/
-    option.setWhitelistManager(address(manager), true);
-    option.setTotalPositionCap(manager, 1000e18);
-
-    vm.startPrank(alice);
-    ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
-      fromAcc: bobAcc,
-      toAcc: aliceAcc,
-      asset: IAsset(option),
-      subId: 1,
-      amount: 1e18,
-      assetData: ""
-    });
-    subAccounts.submitTransfer(assetTransfer, "");
-    vm.stopPrank();
-
-    MockManager newManager = new MockManager(address(subAccounts));
-
-    // whitelist new manager
-    option.setWhitelistManager(address(newManager), true);
-    option.setTotalPositionCap(newManager, 1000e18);
-
-    vm.startPrank(alice);
-    subAccounts.changeManager(aliceAcc, IManager(address(newManager)), "");
-  }
-
-  function testInvalidManagerChange() public {
-    /* ensure account holds asset before manager changed*/
-    option.setWhitelistManager(address(manager), true);
-
-    vm.startPrank(alice);
-    ISubAccounts.AssetTransfer memory assetTransfer = ISubAccounts.AssetTransfer({
-      fromAcc: bobAcc,
-      toAcc: aliceAcc,
-      asset: IAsset(option),
-      subId: 1,
-      amount: 1e18,
-      assetData: ""
-    });
-    subAccounts.submitTransfer(assetTransfer, "");
-    MockManager newManager = new MockManager(address(subAccounts));
-
-    // new manager not whitelisted
-    vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
-    subAccounts.changeManager(aliceAcc, IManager(address(newManager)), "");
-    vm.stopPrank();
-  }
-
   ///////////
   // Utils //
   ///////////

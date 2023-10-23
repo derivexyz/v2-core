@@ -191,19 +191,6 @@ contract UNIT_OptionAssetOITest is Test {
     assertEq(uint(tradeAmount), option.totalPosition(manager2));
   }
 
-  function testChangeManagerShouldMoveTotalPos() public {
-    uint totalPos1Before = option.totalPosition(manager);
-    uint totalPos2Before = option.totalPosition(manager2);
-
-    subAccounts.changeManager(accountNeg, manager2, "");
-
-    uint totalPos1After = option.totalPosition(manager);
-    uint totalPos2After = option.totalPosition(manager2);
-
-    assertEq(totalPos1After, totalPos1Before - uint(tradeAmount));
-    assertEq(totalPos2After, totalPos2Before + uint(tradeAmount));
-  }
-
   /// @dev util function to transfer
   function _transfer(uint from, uint to, int amount) internal {
     ISubAccounts.AssetTransfer memory transfer =

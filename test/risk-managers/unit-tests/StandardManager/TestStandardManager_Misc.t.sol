@@ -61,29 +61,6 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     assertEq(_getCashBalance(bobAcc), -int(btcSpot / 2));
   }
 
-  function testCannotChangeFromBadManagerWithInvalidAsset() public {
-    // create accounts with bad manager
-    MockManager badManager = new MockManager(address(subAccounts));
-    MockOption badAsset = new MockOption(subAccounts);
-    uint badAcc = subAccounts.createAccount(address(this), badManager);
-    uint badAcc2 = subAccounts.createAccount(address(this), badManager);
-
-    // create bad positions
-    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
-      fromAcc: badAcc,
-      toAcc: badAcc2,
-      asset: badAsset,
-      subId: 0,
-      amount: 100e18,
-      assetData: ""
-    });
-    subAccounts.submitTransfer(transfer, "");
-
-    // alice migrate to a our manager
-    vm.expectRevert(IStandardManager.SRM_UnsupportedAsset.selector);
-    subAccounts.changeManager(badAcc, manager, "");
-  }
-
   function testCannotTradeMoreThanMaxAccountSize() public {
     manager.setMaxAccountSize(10);
 
@@ -99,7 +76,7 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
       });
     }
 
-    vm.expectRevert(ISRMPortfolioViewer.SRM_TooManyAssets.selector);
+    vm.expectRevert(IStandardManager.SRM_TooManyAssets.selector);
     subAccounts.submitTransfers(transfers, "");
   }
 }
