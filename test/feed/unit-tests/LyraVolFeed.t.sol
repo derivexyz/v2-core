@@ -100,6 +100,15 @@ contract UNIT_LyraVolFeed is LyraFeedTestUtils {
     feed.acceptData(data);
   }
 
+  function testCannotSetInvalidConfidence() public {
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
+    volData.data = abi.encode(defaultExpiry, 0, 0, 0, 0, 0, 0, 0, 1.2e18);
+    bytes memory data = _signFeedData(feed, pk, volData);
+
+    vm.expectRevert(ILyraVolFeed.LVF_InvalidConfidence.selector);
+    feed.acceptData(data);
+  }
+
   function testIgnoreUpdateIfOlderDataIsPushed() public {
     IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
 
