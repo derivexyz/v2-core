@@ -59,16 +59,6 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     vm.expectRevert(IDutchAuction.DA_InvalidBufferMarginParameter.selector);
     dutchAuction.setBufferMarginPercentage(4.1e18);
   }
-  //
-  //  function testSetWithdrawBlockThreshold() public {
-  //    dutchAuction.setWithdrawBlockThreshold(-100e18);
-  //    assertEq(dutchAuction.withdrawBlockThreshold(), -100e18);
-  //  }
-  //
-  //  function testCannotSetPositiveWithdrawBlockThreshold() public {
-  //    vm.expectRevert(IDutchAuction.DA_InvalidWithdrawBlockThreshold.selector);
-  //    dutchAuction.setWithdrawBlockThreshold(100e18);
-  //  }
 
   function testSetInsolventAuctionParameters() public {
     dutchAuction.setInsolventAuctionParams(
@@ -80,6 +70,13 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     assertEq(totalSteps, 100);
     assertEq(coolDown, 2);
     assertEq(scalar, 1.2e18);
+  }
+
+  function testCannotSetInvalidInsolventAuctionParameters() public {
+    vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
+    dutchAuction.setInsolventAuctionParams(
+      IDutchAuction.InsolventAuctionParams({totalSteps: 0, coolDown: 0, bufferMarginScalar: 1.2e18})
+    );
   }
 
   function testGetDiscountPercentage() public {
