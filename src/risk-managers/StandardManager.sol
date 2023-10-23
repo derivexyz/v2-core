@@ -113,8 +113,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev the standard manager only support option asset & perp asset
    */
   function whitelistAsset(IAsset _asset, uint _marketId, AssetType _type) external onlyOwner {
-    // TODO(anton): make sure you can't put the same asset on multiple markets/different types etc.
     _checkMarketExist(_marketId);
+
+    if (_assetDetails[_asset].isWhitelisted) revert SRM_CannotSetSameAsset();
 
     IAsset previousAsset = assetMap[_marketId][_type];
     delete _assetDetails[previousAsset];

@@ -135,11 +135,14 @@ contract UNIT_TestStandardManager_Option is Test {
   function testWhitelistAsset() public {
     uint newMarketId = manager.createMarket("btc");
 
-    manager.whitelistAsset(perp, newMarketId, IStandardManager.AssetType.Perpetual);
-    manager.whitelistAsset(option, newMarketId, IStandardManager.AssetType.Option);
+    MockPerp btcPerp = new MockPerp(subAccounts);
+    MockOption btcOption = new MockOption(subAccounts);
 
-    IStandardManager.AssetDetail memory perpDetail = manager.assetDetails(perp);
-    IStandardManager.AssetDetail memory optionDetail = manager.assetDetails(option);
+    manager.whitelistAsset(btcPerp, newMarketId, IStandardManager.AssetType.Perpetual);
+    manager.whitelistAsset(btcOption, newMarketId, IStandardManager.AssetType.Option);
+
+    IStandardManager.AssetDetail memory perpDetail = manager.assetDetails(btcPerp);
+    IStandardManager.AssetDetail memory optionDetail = manager.assetDetails(btcOption);
 
     assertEq(perpDetail.isWhitelisted, true);
     assertEq(uint(perpDetail.assetType), uint(IStandardManager.AssetType.Perpetual));
@@ -149,8 +152,15 @@ contract UNIT_TestStandardManager_Option is Test {
     assertEq(uint(optionDetail.assetType), uint(IStandardManager.AssetType.Option));
     assertEq(optionDetail.marketId, newMarketId);
 
-    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Perpetual)), address(perp));
-    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Option)), address(option));
+    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Perpetual)), address(btcPerp));
+    assertEq(address(manager.assetMap(newMarketId, IStandardManager.AssetType.Option)), address(btcOption));
+  }
+
+  function testCannotReuseAssetForDifferentMarkets() public {
+    uint dogeMarketId = manager.createMarket("doge");
+
+    vm.expectRevert(IStandardManager.SRM_CannotSetSameAsset.selector);
+    manager.whitelistAsset(option, dogeMarketId, IStandardManager.AssetType.Option);
   }
 
   function testSetOptionParameters() public {
