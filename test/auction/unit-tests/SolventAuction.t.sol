@@ -120,7 +120,8 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     uint percentage = 0.1e18;
     // bid on the auction
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
+      dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
 
     assertEq(finalPercentage, percentage); // bid max
     assertEq(cashToBidder, 0); // 0 dollar paid from SM
