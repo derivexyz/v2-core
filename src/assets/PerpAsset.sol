@@ -119,22 +119,28 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @param _staticInterestRate New static interest rate for the asset.
    */
   function setStaticInterestRate(int _staticInterestRate) external onlyOwner {
-    // TODO: bounds
+    if (_staticInterestRate < -0.001e18 || _staticInterestRate > 0.001e18) revert PA_InvalidStaticInterestRate();
     staticInterestRate = _staticInterestRate;
 
     emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
   }
 
-  function setRateBounds(int maxAbsRatePerHour) external onlyOwner {
-    if (maxAbsRatePerHour < 0) revert PA_InvalidRateBounds();
-    maxRatePerHour = maxAbsRatePerHour;
-    minRatePerHour = -maxAbsRatePerHour;
+  /**
+   * @notice Set new rate bounds
+   */
+  function setRateBounds(int _maxAbsRatePerHour) external onlyOwner {
+    if (_maxAbsRatePerHour < 0) revert PA_InvalidRateBounds();
+    maxRatePerHour = _maxAbsRatePerHour;
+    minRatePerHour = -_maxAbsRatePerHour;
 
-    emit RateBoundsUpdated(maxAbsRatePerHour);
+    emit RateBoundsUpdated(_maxAbsRatePerHour);
   }
 
+  /**
+   * @notice Set new funding convergence period
+   */
   function setConvergencePeriod(uint _fundingConvergencePeriod) external onlyOwner {
-    // TODO: bounds
+    if (_fundingConvergencePeriod < 0.05e18 || _fundingConvergencePeriod > 240e18) revert PA_InvalidConvergencePeriod();
     fundingConvergencePeriod = _fundingConvergencePeriod.toInt256();
 
     emit ConvergencePeriodUpdated(fundingConvergencePeriod);

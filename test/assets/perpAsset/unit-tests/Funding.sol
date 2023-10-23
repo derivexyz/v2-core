@@ -95,10 +95,41 @@ contract UNIT_PerpAssetFunding is Test {
   function testSetInterestRate() public {
     perp.setStaticInterestRate(0.000125e16); // 0.0125%
     assertEq(perp.staticInterestRate(), 0.000125e16);
+
+    perp.setStaticInterestRate(-0.000125e16);
+    assertEq(perp.staticInterestRate(), -0.000125e16);
   }
 
-  function testCanSetNegativeRate() public {
-    perp.setStaticInterestRate(-0.000001e16);
+  function testCannotSetRateOOB() public {
+    vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
+    perp.setStaticInterestRate(-0.002e18);
+
+    vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
+    perp.setStaticInterestRate(0.002e18);
+  }
+
+  function testCanSetRateBounds() public {
+    perp.setRateBounds(0.0005e18);
+    assertEq(perp.maxRatePerHour(), 0.0005e18);
+    assertEq(perp.minRatePerHour(), -0.0005e18);
+  }
+
+  function testCanSetRateBoundsOOB() public {
+    vm.expectRevert(IPerpAsset.PA_InvalidRateBounds.selector);
+    perp.setRateBounds(-0.0005e18);
+  }
+
+  function testSetConvergencePeriod() public {
+    perp.setConvergencePeriod(1e18); // 1 hour
+    assertEq(perp.fundingConvergencePeriod(), 1e18);
+  }
+
+  function testCannotSetConvergencePeriodOOB() public {
+    vm.expectRevert(IPerpAsset.PA_InvalidConvergencePeriod.selector);
+    perp.setConvergencePeriod(0.0001e18);
+
+    vm.expectRevert(IPerpAsset.PA_InvalidConvergencePeriod.selector);
+    perp.setConvergencePeriod(500e18);
   }
 
   function testSetImpactPrices() public {
