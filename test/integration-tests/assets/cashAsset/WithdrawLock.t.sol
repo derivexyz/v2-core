@@ -32,6 +32,8 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
   }
 
   function testBigInsolventAuctionLockWithdraw() public {
+    auction.setSMAccount(smAcc);
+
     // trade 2000 call
     _tradeCall(2000e18);
 

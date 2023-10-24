@@ -21,6 +21,7 @@ import "../../../shared/mocks/MockFeeds.sol";
 import "../../../shared/mocks/MockCash.sol";
 
 import "../../../../scripts/config-local.sol";
+import "../../mocks/MockDutchAuction.sol";
 
 /**
  * Focusing on the margin rules for options
@@ -68,7 +69,7 @@ contract UNIT_TestStandardManager_Option is Test {
     manager = new StandardManager(
       subAccounts,
       ICashAsset(address(cash)),
-      IDutchAuction(address(0)),
+      IDutchAuction(new MockDutchAuction()),
       viewer
     );
 

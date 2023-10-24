@@ -89,6 +89,8 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   }
 
   function testInsolventAuctionBlockWithdraw() public {
+    dutchAuction.setSMAccount(charlieAcc);
+
     _startDefaultInsolventAuction(aliceAcc);
 
     assertEq(dutchAuction.getIsWithdrawBlocked(), true);
@@ -121,7 +123,9 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   }
 
   function testTerminatingAuctionFreeWithdrawLock() public {
-    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    dutchAuction.setSMAccount(charlieAcc);
+    _mintAndDepositCash(charlieAcc, 50e18);
+
     _startDefaultInsolventAuction(aliceAcc);
     // lock withdraw
     assertEq(dutchAuction.getIsWithdrawBlocked(), true);
@@ -135,9 +139,27 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   }
 
   function testTerminatingAuctionDoesNotFreeLockIfOthersOutstanding() public {
-    dutchAuction.setWithdrawBlockThreshold(-50e18);
     _startDefaultInsolventAuction(aliceAcc);
+    assertEq(dutchAuction.totalInsolventMM(), 300e18);
+    // No sm is set, so withdrawals are not blocked
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+
     _startDefaultInsolventAuction(bobAcc);
+    assertEq(dutchAuction.totalInsolventMM(), 600e18);
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+
+    dutchAuction.setSMAccount(charlieAcc);
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+
+    _mintAndDepositCash(charlieAcc, 599e18);
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+    _mintAndDepositCash(charlieAcc, 1e18);
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+
+    vm.prank(charlie);
+    usdcAsset.withdraw(charlieAcc, 600e18, charlie);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
 
     // alice is back above margin, auction terminated
     manager.setMockMargin(aliceAcc, false, scenario, 100e18);
@@ -145,6 +167,12 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // still blocked because of bob
     assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+
+    manager.setMockMargin(bobAcc, false, scenario, 100e18);
+    dutchAuction.terminateAuction(bobAcc);
+
+    // and is cleared once terminated
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
   }
 
   /**

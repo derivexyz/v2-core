@@ -15,6 +15,8 @@ import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title Dutch Auction
  * @author Lyra
@@ -60,11 +62,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /// @dev Help defines buffer margin: maintenance margin - bufferPercentage * (maintenance margin - mtm)
   int public bufferMarginPercentage;
 
-  /// @dev The number of big insolvent auctions that are blocking withdraws
-  uint public largeInsolventAuctionCount;
+  /// @dev The sum of cached MMs for all insolvent auctions
+  uint public totalInsolventMM;
 
-  /// @dev if an insolvent account has margin lower than this number, it will block from withdrawing cash
-  int public withdrawBlockThreshold;
+  /// @dev The subaccount of the SM, to track the total balance against the totalInsolventMM
+  uint public smAccount;
 
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint accountId => Auction) public auctions;
@@ -117,11 +119,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /**
    * @notice Sets the threshold, below which an auction will block cash withdraw to prevent bank-run
    */
-  function setWithdrawBlockThreshold(int _withdrawBlockThreshold) external onlyOwner {
-    if (_withdrawBlockThreshold > 0) revert DA_InvalidWithdrawBlockThreshold();
-    withdrawBlockThreshold = _withdrawBlockThreshold;
+  function setSMAccount(uint _smAccount) external onlyOwner {
+    smAccount = _smAccount;
 
-    emit WithdrawBlockThresholdSet(_withdrawBlockThreshold);
+    emit SMAccountSet(_smAccount);
   }
 
   /////////////////////
@@ -177,7 +178,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       scenarioId: scenarioId,
       insolvent: false,
       ongoing: true,
-      isBlockingWithdraw: false,
+      cachedMM: 0,
       startTime: block.timestamp,
       percentageLeft: 1e18,
       reservedCash: 0
@@ -191,16 +192,16 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId The id of the account that is being liquidated
    */
   function _startInsolventAuction(uint accountId, uint scenarioId, int maintenanceMargin) internal {
-    // if MM is below the withdraw block threshold, track this insolvent auction
-    bool shouldPauseWithdraw = maintenanceMargin < withdrawBlockThreshold;
-    if (shouldPauseWithdraw) largeInsolventAuctionCount += 1;
+    // Track the total MM to pause withdrawals if the SM balance is emptied
+    uint insolventMM = (-maintenanceMargin).toUint256();
+    totalInsolventMM += insolventMM;
 
     auctions[accountId] = Auction({
       accountId: accountId,
       scenarioId: scenarioId,
       insolvent: true,
       ongoing: true,
-      isBlockingWithdraw: shouldPauseWithdraw,
+      cachedMM: insolventMM,
       startTime: block.timestamp,
       percentageLeft: 1e18,
       reservedCash: 0
@@ -464,6 +465,14 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
+   * @notice returns whether an auction is live
+   */
+  function isAuctionLive(uint accountId) external view returns (bool) {
+    console2.log("hi");
+    return auctions[accountId].ongoing;
+  }
+
+  /**
    * @notice External view to get the maximum size of the portfolio that could be bought at the current price
    * @param accountId the id of the account being liquidated
    * @return uint the proportion of the portfolio that could be bought at the current price
@@ -507,7 +516,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev return true if the withdraw should be blocked
    */
   function getIsWithdrawBlocked() external view returns (bool) {
-    return largeInsolventAuctionCount > 0;
+    if (totalInsolventMM > 0 && smAccount != 0) {
+      int cashBalance = subAccounts.getBalance(smAccount, cash, 0);
+      // Note, negative cash balances in sm account will cause reverts
+      return totalInsolventMM > cashBalance.toUint256();
+    }
+    return false;
   }
 
   //////////////////////////////
@@ -523,9 +537,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     Auction storage auction = auctions[accountId];
     auction.ongoing = false;
 
-    if (auction.isBlockingWithdraw) {
-      largeInsolventAuctionCount -= 1;
-    }
+    totalInsolventMM -= auction.cachedMM;
 
     emit AuctionEnded(accountId, block.timestamp);
   }

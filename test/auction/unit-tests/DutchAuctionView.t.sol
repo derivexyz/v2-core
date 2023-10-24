@@ -60,14 +60,11 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     );
   }
 
-  function testSetWithdrawBlockThreshold() public {
-    dutchAuction.setWithdrawBlockThreshold(-100e18);
-    assertEq(dutchAuction.withdrawBlockThreshold(), -100e18);
-  }
-
-  function testCannotSetPositiveWithdrawBlockThreshold() public {
-    vm.expectRevert(IDutchAuction.DA_InvalidWithdrawBlockThreshold.selector);
-    dutchAuction.setWithdrawBlockThreshold(100e18);
+  function testSetSMAccount() public {
+    dutchAuction.setSMAccount(0);
+    assertEq(dutchAuction.smAccount(), 0);
+    dutchAuction.setSMAccount(100000);
+    assertEq(dutchAuction.smAccount(), 100000);
   }
 
   function testSetBufferMarginPercentage() public {

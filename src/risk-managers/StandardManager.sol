@@ -338,6 +338,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     ISubAccounts.AssetBalance[] memory previousBalances,
     bool isPositiveCashDelta
   ) internal view {
+    _checkIfLiveAuction(accountId);
+
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).arrangeSRMPortfolio(assetBalances);
 
     // TODO: add tests that we allow people to have neg cash if they already had it previously (only close neg cash)

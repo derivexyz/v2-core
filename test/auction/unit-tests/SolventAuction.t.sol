@@ -191,6 +191,29 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(bobPercentage, percentage, "bobPercentage should be 10%");
   }
 
+  function testChangingMMDuringAuction() public {
+    manager.setMockMargin(aliceAcc, false, scenario, -1000e18);
+    manager.setMarkToMarket(aliceAcc, 1400e18);
+
+    dutchAuction.startAuction(aliceAcc, scenario);
+
+    // fast forward to half way through the fast auction, should give me 90% discount
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
+
+    uint percentage = 0.1e18;
+    vm.prank(bob);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+
+    // mark to market is changed to 1000, now i need to pay 90% of 1000 * 10% = 90
+    manager.setMockMargin(aliceAcc, false, scenario, 10e18);
+
+    vm.prank(bob);
+    (uint bobPercentage2, uint cashFromBob2,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+
+    // Second liquidation paid less, as mm has increased
+    assertGt(cashFromBob, cashFromBob2);
+  }
+
   function testBidShouldSettlePerps() public {
     _startDefaultSolventAuction(aliceAcc);
 

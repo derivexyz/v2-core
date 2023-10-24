@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
+import {ICashAsset} from "./ICashAsset.sol";
+
 interface IDutchAuction {
   struct Auction {
     /// the accountId that is being liquidated
@@ -11,8 +13,8 @@ interface IDutchAuction {
     bool insolvent;
     /// If an auction is active
     bool ongoing;
-    /// If this auction is blocking cash withdraw
-    bool isBlockingWithdraw;
+    /// For insolvent auctions, snapshot MM at the time the auction starts
+    uint cachedMM;
     /// The percentage of the portfolio that is left to be auctioned
     uint percentageLeft;
     /// The startTime of the auction
@@ -36,9 +38,13 @@ interface IDutchAuction {
     uint liquidatorFeeRate;
   }
 
+  function cash() external view returns (ICashAsset);
+
   function startAuction(uint accountId, uint scenarioId) external;
 
   function getIsWithdrawBlocked() external view returns (bool);
+
+  function isAuctionLive(uint accountId) external view returns (bool);
 
   ////////////
   // EVENTS //
@@ -64,7 +70,7 @@ interface IDutchAuction {
 
   event AuctionParamsSet(AuctionParams params);
 
-  event WithdrawBlockThresholdSet(int withdrawBlockThreshold);
+  event SMAccountSet(uint smAccount);
 
   ////////////
   // ERRORS //
@@ -85,6 +91,9 @@ interface IDutchAuction {
 
   /// @dev revert if trying to start an auction when it's above maintenance margin (well collateralized)
   error DA_AccountIsAboveMaintenanceMargin();
+
+  /// @dev revert if trying to end an auction when it's below maintenance margin
+  error DA_AccountIsBelowMaintenanceMargin();
 
   /// @dev emitted when someone tries mark an insolvent auction again
   error DA_AuctionAlreadyInInsolvencyMode();

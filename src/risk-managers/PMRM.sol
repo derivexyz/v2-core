@@ -236,6 +236,8 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     ISubAccounts.AssetBalance[] memory assetBalances,
     ISubAccounts.AssetBalance[] memory preBalances
   ) internal view {
+    _checkIfLiveAuction(accountId);
+
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
