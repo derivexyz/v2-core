@@ -15,7 +15,6 @@ import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
 import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
-import {OptionPricing} from "../src/feeds/OptionPricing.sol";
 
 // Standard Manager (SRM)
 import {StandardManager} from "../src/risk-managers/StandardManager.sol";
@@ -64,8 +63,6 @@ struct Market {
   LyraVolFeed volFeed;
   LyraRateFeedStatic rateFeed;
   LyraForwardFeed forwardFeed;
-  // pricing
-  OptionPricing pricing;
   // manager for specific market
   PMRM pmrm;
   PMRMLib pmrmLib;

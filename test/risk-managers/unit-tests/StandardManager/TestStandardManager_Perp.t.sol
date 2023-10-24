@@ -14,7 +14,6 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockPerp.sol";
 import "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
-import "../../../shared/mocks/MockOptionPricing.sol";
 
 import "../../../shared/mocks/MockCash.sol";
 
@@ -86,16 +85,6 @@ contract UNIT_TestStandardManager is Test {
     perpHelper = new PerpSettlementHelper();
 
     manager.setWhitelistedCallee(address(perpHelper), true);
-  }
-
-  /////////////
-  // Setters //
-  /////////////
-
-  function testSetPricingModule() public {
-    MockOptionPricing pricing = new MockOptionPricing();
-    manager.setPricingModule(marketId, pricing);
-    // assertEq(address(manager.pricingModules(1)), address(pricing));
   }
 
   ////////////////////

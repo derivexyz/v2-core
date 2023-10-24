@@ -3,8 +3,6 @@ pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
 
-import "../../../../src/feeds/OptionPricing.sol";
-
 import "../../../shared/utils/JsonMechIO.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
@@ -17,18 +15,12 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
   JsonMechIO immutable jsonParser;
 
-  OptionPricing immutable pricing;
-
   constructor() {
     jsonParser = new JsonMechIO();
-    pricing = new OptionPricing();
   }
 
   function setUp() public override {
     super.setUp();
-
-    manager.setPricingModule(ethMarketId, pricing);
-    manager.setPricingModule(btcMarketId, pricing);
 
     // override settings
     manager.setOracleContingencyParams(ethMarketId, getDefaultSRMOracleContingency());

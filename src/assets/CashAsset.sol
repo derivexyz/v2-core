@@ -29,12 +29,8 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
   using ConvertDecimals for uint;
   using SafeCast for uint;
-  using SafeCast for uint128;
   using SafeCast for int;
-  using SafeCast for int128;
-  using SignedDecimalMath for int128;
   using SignedDecimalMath for int;
-  using DecimalMath for uint128;
   using DecimalMath for uint;
 
   /// @dev The token address for stable coin
@@ -415,7 +411,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     // accruedSmFees cover as much of the insolvency as possible
     // totalSupply/Borrow will be updated in the following adjustment
     if (lossAmountInCash <= accruedSmFees) {
-      accruedSmFees -= lossAmountInCash.toUint128();
+      accruedSmFees -= lossAmountInCash;
     } else {
       accruedSmFees = 0;
     }
@@ -451,7 +447,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    */
   function updateSettledCash(int amountCash) external {
     _checkManager(address(msg.sender));
-    netSettledCash += amountCash.toInt128();
+    netSettledCash += amountCash;
 
     emit SettledCashUpdated(amountCash, netSettledCash);
   }

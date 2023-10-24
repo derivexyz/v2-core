@@ -157,8 +157,6 @@ interface IStandardManager is IBaseManager {
 
   event OraclesSet(uint marketId, address spotOracle, address forwardOracle, address volFeed);
 
-  event PricingModuleSet(uint marketId, address pricingModule);
-
   event PerpMarginRequirementsSet(uint marketId, uint perpMMRequirement, uint perpIMRequirement);
 
   event OptionMarginParamsSet(

@@ -9,7 +9,6 @@ import "lyra-utils/math/Black76.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 
-import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
 import {IPMRM} from "../interfaces/IPMRM.sol";
 import {IPMRMLib} from "../interfaces/IPMRMLib.sol";
 
@@ -23,25 +22,16 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   using SafeCast for uint;
   using SafeCast for int;
 
-  /// @dev Pricing module to get option mark-to-market price
-  IOptionPricing public optionPricing;
-
   BasisContingencyParameters internal basisContParams;
   OtherContingencyParameters internal otherContParams;
   MarginParameters internal marginParams;
   VolShockParameters internal volShockParams;
 
-  constructor(IOptionPricing _optionPricing) Ownable2Step() {
-    optionPricing = _optionPricing;
-  }
+  constructor() Ownable2Step() {}
 
   ///////////
   // Admin //
   ///////////
-
-  function setOptionPricing(IOptionPricing _optionPricing) external onlyOwner {
-    optionPricing = _optionPricing;
-  }
 
   function setBasisContingencyParams(IPMRMLib.BasisContingencyParameters memory _basisContParams) external onlyOwner {
     if (
@@ -189,24 +179,27 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       volShock = expiry.volShockDown;
     }
 
-    IOptionPricing.Expiry memory expiryDetails = IOptionPricing.Expiry({
-      secToExpiry: expiry.secToExpiry.toUint64(), // if expiry is in the past, expiry.secToExpiry will be 0
-      forwardPrice: (expiry.forwardVariablePortion.multiplyDecimal(spotShock) + expiry.forwardFixedPortion).toUint128(),
-      discountFactor: DecimalMath.UNIT.toUint64()
-    });
+    uint64 secToExpiry = expiry.secToExpiry.toUint64();
+    uint128 forwardPrice =
+      (expiry.forwardVariablePortion.multiplyDecimal(spotShock) + expiry.forwardFixedPortion).toUint128();
 
-    IOptionPricing.Option[] memory optionDetails = new IOptionPricing.Option[](expiry.options.length);
+    int totalMTM = 0;
     for (uint i = 0; i < expiry.options.length; i++) {
       IPMRM.StrikeHolding memory option = expiry.options[i];
-      optionDetails[i] = IOptionPricing.Option({
-        strike: option.strike.toUint128(),
-        vol: option.vol.multiplyDecimal(volShock).toUint128(),
-        amount: option.amount,
-        isCall: option.isCall
-      });
+      (uint call, uint put) = Black76.prices(
+        Black76.Black76Inputs({
+          timeToExpirySec: secToExpiry,
+          volatility: option.vol.multiplyDecimal(volShock).toUint128(),
+          fwdPrice: forwardPrice,
+          strikePrice: option.strike.toUint128(),
+          discount: 1e18
+        })
+      );
+
+      totalMTM += (option.isCall ? call.toInt256() : put.toInt256()).multiplyDecimal(option.amount);
     }
 
-    return optionPricing.getExpiryOptionsValue(expiryDetails, optionDetails);
+    return totalMTM;
   }
 
   function _applyMTMDiscount(int shockedExpiryMTM, uint staticDiscount) internal pure returns (int) {

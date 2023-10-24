@@ -10,7 +10,6 @@ import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
 import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
-import {OptionPricing} from "../src/feeds/OptionPricing.sol";
 import {PMRM} from "../src/risk-managers/PMRM.sol";
 import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
@@ -132,8 +131,6 @@ contract DeployMarket is Utils {
     market.base = new WrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
 
 
-    market.pricing = new OptionPricing();
-
     IPMRM.Feeds memory feeds = IPMRM.Feeds({
       spotFeed: market.spotFeed,
       stableFeed: deployment.stableFeed,
@@ -143,7 +140,7 @@ contract DeployMarket is Utils {
       settlementFeed: market.forwardFeed
     });
 
-    market.pmrmLib = new PMRMLib(market.pricing);
+    market.pmrmLib = new PMRMLib();
     market.pmrmViewer = new BasePortfolioViewer(deployment.subAccounts, deployment.cash);
 
     market.pmrm = new PMRM(
@@ -204,7 +201,6 @@ contract DeployMarket is Utils {
 
     console2.log("market ID for newly created market:", marketId);
 
-    deployment.srm.setPricingModule(marketId, market.pricing);
 
     // set assets per market
     deployment.srm.whitelistAsset(market.perp, marketId, IStandardManager.AssetType.Perpetual);
@@ -257,7 +253,6 @@ contract DeployMarket is Utils {
     vm.serializeAddress(objKey, "volFeed", address(market.volFeed));
     vm.serializeAddress(objKey, "rateFeed", address(market.rateFeed));
     vm.serializeAddress(objKey, "forwardFeed", address(market.forwardFeed));
-    vm.serializeAddress(objKey, "pricing", address(market.pricing));
     vm.serializeAddress(objKey, "pmrm", address(market.pmrm));
     vm.serializeAddress(objKey, "pmrmLib", address(market.pmrmLib));
     string memory finalObj = vm.serializeAddress(objKey, "pmrmViewer", address(market.pmrmViewer));

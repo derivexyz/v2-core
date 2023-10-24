@@ -19,9 +19,6 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
   function setUp() public override {
     super.setUp();
 
-    manager.setPricingModule(ethMarketId, pricing);
-    manager.setPricingModule(btcMarketId, pricing);
-
     manager.setOracleContingencyParams(ethMarketId, getDefaultSRMOracleContingency());
     manager.setOracleContingencyParams(btcMarketId, getDefaultSRMOracleContingency());
 
