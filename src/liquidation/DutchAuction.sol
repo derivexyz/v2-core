@@ -67,10 +67,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   mapping(uint accountId => Auction) public auctions;
 
   /// @dev The parameters for the solvent auction phase
-  SolventAuctionParams public solventAuctionParams;
-
-  /// @dev The parameters for the insolvent auction phase
-  InsolventAuctionParams public insolventAuctionParams;
+  AuctionParams public auctionParams;
 
   ////////////////////////
   //    Constructor     //
@@ -102,30 +99,16 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev This function is used to set the parameters for the fast and slow solvent auctions
    * @param _params New parameters
    */
-  function setSolventAuctionParams(SolventAuctionParams memory _params) external onlyOwner {
+  function setAuctionParams(AuctionParams memory _params) external onlyOwner {
     if (
       _params.startingMtMPercentage > 1e18 // cannot start with > 100% of mark to market
         || _params.liquidatorFeeRate > 0.1e18 // liquidator fee cannot be higher than 10%
         || _params.fastAuctionCutoffPercentage > _params.startingMtMPercentage
     ) revert DA_InvalidParameter();
 
-    solventAuctionParams = _params;
+    auctionParams = _params;
 
-    emit SolventAuctionParamsSet(_params);
-  }
-
-  /**
-   * @notice Sets the insolvent auction parameters
-   * @dev This function is used to set the parameters for the dutch auction
-   * @param _params New parameters
-   */
-  function setInsolventAuctionParams(InsolventAuctionParams memory _params) external onlyOwner {
-    if (_params.length == 0 || _params.length > 1 days) revert DA_InvalidParameter();
-    if (_params.endingMtMScaler < 1e18) revert DA_InvalidParameter();
-
-    insolventAuctionParams = _params;
-
-    emit InsolventAuctionParamsSet(_params);
+    emit AuctionParamsSet(_params);
   }
 
   /////////////////////
@@ -539,9 +522,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function _getLiquidationFee(int markToMarket, int bufferMargin) internal view returns (uint fee) {
     uint maxProportion = _getMaxProportion(markToMarket, bufferMargin, 1e18, 0);
-    fee = maxProportion.multiplyDecimal(SignedMath.abs(markToMarket)).multiplyDecimal(
-      solventAuctionParams.liquidatorFeeRate
-    );
+    fee = maxProportion.multiplyDecimal(SignedMath.abs(markToMarket)).multiplyDecimal(auctionParams.liquidatorFeeRate);
   }
 
   /**
@@ -585,7 +566,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     view
     returns (uint discount, bool isFast)
   {
-    SolventAuctionParams memory params = solventAuctionParams;
+    AuctionParams memory params = auctionParams;
 
     uint timeElapsed = currentTimestamp - startTimestamp;
 
@@ -632,7 +613,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     if (!auction.ongoing) revert DA_AuctionNotStarted();
 
-    uint totalLength = solventAuctionParams.fastAuctionLength + solventAuctionParams.slowAuctionLength;
+    uint totalLength = auctionParams.fastAuctionLength + auctionParams.slowAuctionLength;
     if (block.timestamp > auction.startTime + totalLength) return 0;
 
     // calculate discount percentage
@@ -648,20 +629,20 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
   /**
    * @dev Return a "negative" bid price. Meaning this is how much the SM is paying the liquidator to take on the risk
-   * @dev Revert if markToMarket is positive
-   * @return price: a negative number indicating
+   * @dev If MtM is 0, return 0.
+   * @return bidPrice a negative number,
    */
   function _getInsolventAuctionBidPrice(uint accountId, int maintenanceMargin) internal view returns (int) {
     if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
-    if (maintenanceMargin > 0) revert DA_AuctionShouldBeTerminated();
+    if (maintenanceMargin > 0) return 0;
 
     uint timeElapsed = block.timestamp - auctions[accountId].startTime;
-    int scaler;
-    if (timeElapsed >= insolventAuctionParams.length) {
+    if (timeElapsed >= auctionParams.insolventAuctionLength) {
       return maintenanceMargin;
     } else {
       // scaler is linearly growing from 1 to endingMtMScaler, over the length of the auction
-      return int(timeElapsed).multiplyDecimal(maintenanceMargin).divideDecimal(int(insolventAuctionParams.length));
+      return
+        int(timeElapsed).multiplyDecimal(maintenanceMargin).divideDecimal(int(auctionParams.insolventAuctionLength));
     }
   }
 }

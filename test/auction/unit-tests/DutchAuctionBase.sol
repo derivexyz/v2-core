@@ -41,8 +41,7 @@ contract DutchAuctionBase is Test {
 
     dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
 
-    dutchAuction.setSolventAuctionParams(_getDefaultSolventParams());
-    dutchAuction.setInsolventAuctionParams(_getDefaultInsolventParams());
+    dutchAuction.setAuctionParams(_getDefaultSolventParams());
 
     dutchAuction.setBufferMarginPercentage(0.1e18);
   }
@@ -92,18 +91,14 @@ contract DutchAuctionBase is Test {
   ///       Helpers      ///
   //////////////////////////
 
-  function _getDefaultSolventParams() internal pure returns (IDutchAuction.SolventAuctionParams memory) {
-    return IDutchAuction.SolventAuctionParams({
+  function _getDefaultSolventParams() internal pure returns (IDutchAuction.AuctionParams memory) {
+    return IDutchAuction.AuctionParams({
       startingMtMPercentage: 1e18,
       fastAuctionCutoffPercentage: 0.8e18,
       fastAuctionLength: 10 minutes,
       slowAuctionLength: 2 hours,
-      // insolventAuctionLength: 10 minutes,
+      insolventAuctionLength: 10 minutes,
       liquidatorFeeRate: 0
     });
-  }
-
-  function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
-    return IDutchAuction.InsolventAuctionParams({length: 10 minutes, endingMtMScaler: 1.2e18});
   }
 }

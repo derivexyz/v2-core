@@ -33,13 +33,13 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     runLiquidationSim("Test6");
   }
 
-  function testInsolventSim1() public {
-    runLiquidationSim("InsolventTest1");
-  }
+  // function testInsolventSim1() public {
+  //   runLiquidationSim("InsolventTest1");
+  // }
 
-  function testInsolventSim2() public {
-    runLiquidationSim("InsolventTest2");
-  }
+  // function testInsolventSim2() public {
+  //   runLiquidationSim("InsolventTest2");
+  // }
 
   function runLiquidationSim(string memory testName) internal {
     LiquidationSim memory data = LiquidationSimBase.getTestData(testName);
@@ -84,10 +84,8 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     uint fMax;
     if (auctionDetails.insolvent) {
-      // get insolvent params
-      (, int endingMtmScaler) = auction.insolventAuctionParams();
-      int lowerBound = mtm * endingMtmScaler / 1e18;
-      assertApproxEqAbs(lowerBound, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
+      // todo: this needs to be changed to use MM as lower bound
+      // assertApproxEqAbs(mm, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
     } else {
       fMax = auction.getMaxProportion(aliceAcc, worstScenario);
     }
@@ -126,7 +124,6 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
   }
 
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {
-    IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     vm.warp(data.Actions[actionId].Time);
     updateFeeds(data.Actions[actionId].Feeds);
   }

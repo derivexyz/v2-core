@@ -19,7 +19,7 @@ interface IDutchAuction {
     uint reservedCash;
   }
 
-  struct SolventAuctionParams {
+  struct AuctionParams {
     /// Starting percentage of MtM. 1e18 is 100%
     uint startingMtMPercentage;
     /// Percentage that starts the slow auction
@@ -28,15 +28,10 @@ interface IDutchAuction {
     uint fastAuctionLength;
     /// Slow auction length in seconds
     uint slowAuctionLength;
+    /// Insolvent auction length in seconds
+    uint insolventAuctionLength;
     // Liquidator fee rate in percentage, 1e18 = 100%
     uint liquidatorFeeRate;
-  }
-
-  struct InsolventAuctionParams {
-    /// total seconds for insolvent auction
-    uint length;
-    /// mtm scaler. liquidation will go from MtM (negative) to MtM * scalar
-    int endingMtMScaler;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
@@ -65,9 +60,7 @@ interface IDutchAuction {
 
   event BufferMarginPercentageSet(int bufferMarginPercentage);
 
-  event SolventAuctionParamsSet(SolventAuctionParams params);
-
-  event InsolventAuctionParamsSet(InsolventAuctionParams params);
+  event AuctionParamsSet(AuctionParams params);
 
   event WithdrawBlockThresholdSet(int withdrawBlockThreshold);
 
