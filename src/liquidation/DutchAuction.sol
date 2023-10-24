@@ -311,7 +311,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     bool canTerminateAfterwards;
     if (auctions[accountId].insolvent) {
       (canTerminateAfterwards, finalPercentage, cashToBidder) =
-        _bidOnInsolventAuction(accountId, bidderId, percentOfAccount, markToMarket);
+        _bidOnInsolventAuction(accountId, bidderId, percentOfAccount, margin);
     } else {
       (canTerminateAfterwards, finalPercentage, cashFromBidder) =
         _bidOnSolventAuction(accountId, bidderId, percentOfAccount, margin, markToMarket);
@@ -384,7 +384,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param bidderId Account getting paid from security module to take the liquidated account
    * @param percentOfAccount the percentage of the original portfolio that was put on auction
    */
-  function _bidOnInsolventAuction(uint accountId, uint bidderId, uint percentOfAccount, int markToMarket)
+  function _bidOnInsolventAuction(uint accountId, uint bidderId, uint percentOfAccount, int maintenanceMargin)
     internal
     returns (bool canTerminate, uint percentLiquidated, uint cashToBidder)
   {
@@ -396,7 +396,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     // the account is insolvent when the bid price for the account falls below zero
     // someone get paid from security module to take on the risk
     cashToBidder =
-      (-_getInsolventAuctionBidPrice(accountId, markToMarket)).toUint256().multiplyDecimal(percentLiquidated);
+      (-_getInsolventAuctionBidPrice(accountId, maintenanceMargin)).toUint256().multiplyDecimal(percentLiquidated);
 
     // we first ask the security module to compensate the bidder
     uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
@@ -485,13 +485,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function getCurrentBidPrice(uint accountId) external view returns (int) {
     bool insolvent = auctions[accountId].insolvent;
-    (,, int markToMarket) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
+    (int maintenanceMargin,, int markToMarket) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
     if (!insolvent) {
       return _getSolventAuctionBidPrice(accountId, markToMarket);
     } else {
-      // the payout is the positive amount security module will pay the liquidator (bidder)
-      // which is a "negative" bid price
-      return _getInsolventAuctionBidPrice(accountId, markToMarket);
+      // this function returns a negative bid price
+      return _getInsolventAuctionBidPrice(accountId, maintenanceMargin);
     }
   }
 
@@ -652,22 +651,17 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev Revert if markToMarket is positive
    * @return price: a negative number indicating
    */
-  function _getInsolventAuctionBidPrice(uint accountId, int markToMarket) internal view returns (int) {
+  function _getInsolventAuctionBidPrice(uint accountId, int maintenanceMargin) internal view returns (int) {
     if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
-    if (markToMarket > 0) revert DA_AuctionShouldBeTerminated();
+    if (maintenanceMargin > 0) revert DA_AuctionShouldBeTerminated();
 
     uint timeElapsed = block.timestamp - auctions[accountId].startTime;
     int scaler;
-    if (timeElapsed > insolventAuctionParams.length) {
-      scaler = insolventAuctionParams.endingMtMScaler;
+    if (timeElapsed >= insolventAuctionParams.length) {
+      return maintenanceMargin;
     } else {
       // scaler is linearly growing from 1 to endingMtMScaler, over the length of the auction
-      scaler = 1e18
-        + int(timeElapsed).multiplyDecimal(insolventAuctionParams.endingMtMScaler - 1e18).divideDecimal(
-          int(insolventAuctionParams.length)
-        );
+      return int(timeElapsed).multiplyDecimal(maintenanceMargin).divideDecimal(int(insolventAuctionParams.length));
     }
-
-    return markToMarket.multiplyDecimal(scaler);
   }
 }

@@ -96,8 +96,9 @@ contract DutchAuctionBase is Test {
     return IDutchAuction.SolventAuctionParams({
       startingMtMPercentage: 1e18,
       fastAuctionCutoffPercentage: 0.8e18,
-      fastAuctionLength: 600,
-      slowAuctionLength: 7200,
+      fastAuctionLength: 10 minutes,
+      slowAuctionLength: 2 hours,
+      // insolventAuctionLength: 10 minutes,
       liquidatorFeeRate: 0
     });
   }

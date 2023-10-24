@@ -51,15 +51,15 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   function testBidForInsolventAuctionFromSM() public {
     _startDefaultInsolventAuction(aliceAcc);
 
-    // increase step to 1
-    // _increaseInsolventStep(1, aliceAcc);
+    // increase 2% of time
+    vm.warp(block.timestamp + 12);
 
     vm.prank(bob);
     // bid 50% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
-    // 1% of 384 * 50% = 19.2
-    uint expectedTotalPayoutFromSM = 1.92e18;
+    // 2% of 300 * 50% = 3
+    uint expectedTotalPayoutFromSM = 3e18;
 
     assertEq(finalPercentage, 0.5e18);
     assertEq(cashFromBidder, 0);
@@ -69,36 +69,45 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   function testBidForInsolventAuctionMakesSMInsolvent() public {
     _startDefaultInsolventAuction(aliceAcc);
 
-    // increase step to 5
-    // _increaseInsolventStep(5, aliceAcc);
+    // fast forward 50% of auction
+    vm.warp(block.timestamp + 5 minutes);
 
     vm.prank(bob);
     // bid 100% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
-    // 5% of 384 = 19.2
-    uint expectedPayout = 19.2e18;
+    // 50% of 300 = 150
+    uint expectedPayout = 150e18;
 
     assertEq(finalPercentage, 1e18);
     assertEq(cashFromBidder, 0);
     assertEq(cashToBidder, expectedPayout);
 
     assertEq(usdcAsset.isSocialized(), true);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
   }
 
-  //  function testInsolventAuctionBelowThresholdBlockWithdraw() public {
-  //    dutchAuction.setWithdrawBlockThreshold(-50e18);
-  //    _startDefaultInsolventAuction(aliceAcc);
-  //
-  //    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
-  //  }
-  //
-  //  function testInsolventAuctionsAboveThresholdDoesNotBlockWithdraw() public {
-  //    dutchAuction.setWithdrawBlockThreshold(-500e18);
-  //
-  //    _startDefaultInsolventAuction(aliceAcc);
-  //    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
-  //  }
+  function testInsolventAuctionBlockWithdraw() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+
+    vm.warp(block.timestamp + 2 minutes);
+
+    // bid the first half
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0, 0);
+
+    // still blocked
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+
+    vm.warp(block.timestamp + 2 minutes);
+    vm.prank(bob);
+    dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0, 0);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+  }
 
   function testTerminatesInsolventAuction() public {
     _startDefaultInsolventAuction(aliceAcc);
@@ -137,16 +146,15 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   //    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
   //  }
 
+  /**
+   * @dev default insolvent auction: 0 -> -300
+   */
   function _startDefaultInsolventAuction(uint acc) internal {
     // -300 maintenance margin
     manager.setMockMargin(acc, false, scenario, -300e18);
 
     // mark to market: negative!!
     manager.setMarkToMarket(acc, -100e18);
-
-    // buffer is -200
-    // (default) buffer margin is -300 - 20 = -320
-    // lowest bid is buffer margin * 1.2 = -384
 
     // start an auction on Alice's account
     dutchAuction.startAuction(acc, scenario);
