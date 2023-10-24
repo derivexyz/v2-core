@@ -125,9 +125,6 @@ interface IDutchAuction {
   /// @dev emitted when owner trying to set a invalid buffer margin param
   error DA_InvalidBufferMarginParameter();
 
-  /// @dev emitted when a user tries to increment the step for an insolvent auction
-  error DA_SolventAuctionCannotIncrement();
-
   /// @dev emitted when a user doesn't own the account that they are trying to bid from
   error DA_SenderNotOwner();
 
@@ -140,17 +137,8 @@ interface IDutchAuction {
   /// @dev emitted when a user tries to bid on an auction, but it should be terminated
   error DA_AuctionShouldBeTerminated();
 
-  /// @dev emitted when a increase the step for an insolvent auction that has already reach its steps
-  error DA_MaxStepReachedInsolventAuction();
-
-  /// @dev emitted when IncrementInsolventAuction is spammed
-  error DA_InCoolDown();
-
   /// @dev emitted when reserved cash exceeds MTM. Auction should be terminated and restarted.
   error DA_ReservedCashGreaterThanMtM();
-
-  /// @dev emitted when trying to continue a forced auction when MM > 0.
-  error DA_CannotStepSolventForcedAuction();
 
   /// @dev emitted when calling force liquidate not from the account's manager.
   error DA_OnlyManager();

@@ -84,7 +84,9 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     uint fMax;
     if (auctionDetails.insolvent) {
-      int lowerBound = int(auctionDetails.stepSize) * -100;
+      // get insolvent params
+      (, int endingMtmScaler) = auction.insolventAuctionParams();
+      int lowerBound = mtm * endingMtmScaler / 1e18;
       assertApproxEqAbs(lowerBound, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
     } else {
       fMax = auction.getMaxProportion(aliceAcc, worstScenario);
@@ -125,15 +127,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
 
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
-    if (auctionDetails.insolvent) {
-      uint currentBlockTime = block.timestamp;
-      for (uint i = 0; i < data.Actions[actionId].Time - currentBlockTime; ++i) {
-        vm.warp(block.timestamp + 1);
-        auction.continueInsolventAuction(aliceAcc);
-      }
-    } else {
-      vm.warp(data.Actions[actionId].Time);
-    }
+    vm.warp(data.Actions[actionId].Time);
     updateFeeds(data.Actions[actionId].Feeds);
   }
 }

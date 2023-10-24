@@ -340,14 +340,6 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.updateScenarioId(aliceAcc, newId);
   }
 
-  function testCannotStepNonInsolventAuction() public {
-    _startDefaultSolventAuction(aliceAcc);
-
-    // increment the insolvent auction
-    vm.expectRevert(IDutchAuction.DA_SolventAuctionCannotIncrement.selector);
-    dutchAuction.continueInsolventAuction(aliceAcc);
-  }
-
   function testTerminatesSolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
 
