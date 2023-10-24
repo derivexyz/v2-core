@@ -119,32 +119,33 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     // check that the auction is terminated
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
   }
-  //
-  //  function testTerminatingAuctionFreeWithdrawLock() public {
-  //    dutchAuction.setWithdrawBlockThreshold(-50e18);
-  //    _startDefaultInsolventAuction(aliceAcc);
-  //    // lock withdraw
-  //
-  //    // set maintenance margin > 0
-  //    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
-  //    // terminate the auction
-  //    dutchAuction.terminateAuction(aliceAcc);
-  //
-  //    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
-  //  }
-  //
-  //  function testTerminatingAuctionDoesNotFreeLockIfOthersOutstanding() public {
-  //    dutchAuction.setWithdrawBlockThreshold(-50e18);
-  //    _startDefaultInsolventAuction(aliceAcc);
-  //    _startDefaultInsolventAuction(bobAcc);
-  //
-  //    // alice is back above margin, auction terminated
-  //    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
-  //    dutchAuction.terminateAuction(aliceAcc);
-  //
-  //    // still blocked because of bob
-  //    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
-  //  }
+
+  function testTerminatingAuctionFreeWithdrawLock() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+    // lock withdraw
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+
+    // set maintenance margin > 0
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+
+    assertEq(dutchAuction.getIsWithdrawBlocked(), false);
+  }
+
+  function testTerminatingAuctionDoesNotFreeLockIfOthersOutstanding() public {
+    dutchAuction.setWithdrawBlockThreshold(-50e18);
+    _startDefaultInsolventAuction(aliceAcc);
+    _startDefaultInsolventAuction(bobAcc);
+
+    // alice is back above margin, auction terminated
+    manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+    dutchAuction.terminateAuction(aliceAcc);
+
+    // still blocked because of bob
+    assertEq(dutchAuction.getIsWithdrawBlocked(), true);
+  }
 
   /**
    * @dev default insolvent auction: 0 -> -300
