@@ -260,6 +260,6 @@ contract PMRMTestBase is JsonMechIO {
   }
 
   function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
-    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 0, bufferMarginScalar: 1.1e18});
+    return IDutchAuction.InsolventAuctionParams({length: 10 minutes, endingMtMScaler: 1.2e18});
   }
 }

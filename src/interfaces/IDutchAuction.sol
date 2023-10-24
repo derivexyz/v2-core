@@ -17,15 +17,6 @@ interface IDutchAuction {
     uint startTime;
     /// The total amount of cash paid into the account during the auction
     uint reservedCash;
-    /*------------------------- *
-     * Insolvent Auction Params *
-    /*------------------------- */
-    /// The change in value of the portfolio per step in dollars when not insolvent
-    uint stepSize;
-    /// The current step if the auction is insolvent
-    uint stepInsolvent;
-    /// The timestamp of the last increase of steps for insolvent auction
-    uint lastStepUpdate;
   }
 
   struct SolventAuctionParams {
@@ -42,12 +33,10 @@ interface IDutchAuction {
   }
 
   struct InsolventAuctionParams {
-    /// total seconds
-    uint totalSteps;
-    // Amount of seconds to go to next step
-    uint coolDown;
-    /// buffer margin scalar. liquidation will go from 0 to (buffer margin) * scalar
-    int bufferMarginScalar;
+    /// total seconds for insolvent auction
+    uint length;
+    /// mtm scaler. liquidation will go from MtM (negative) to MtM * scalar
+    int endingMtMScaler;
   }
 
   function startAuction(uint accountId, uint scenarioId) external;
@@ -62,7 +51,7 @@ interface IDutchAuction {
   event SolventAuctionStarted(uint accountId, uint scenarioId, int markToMarket, uint fee);
 
   // emitted when an insolvent auction starts
-  event InsolventAuctionStarted(uint accountId, uint steps, uint stepSize);
+  event InsolventAuctionStarted(uint accountId, uint scenarioId, int markToMarket);
 
   // emitted when a bid is placed
   event Bid(uint accountId, uint bidderId, uint finalPercentage, uint cashFromBidder, uint cashToBidder);

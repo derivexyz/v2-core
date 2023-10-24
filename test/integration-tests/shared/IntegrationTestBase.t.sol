@@ -428,7 +428,7 @@ contract IntegrationTestBase is Test {
   }
 
   function _getDefaultInsolventAuctionParam() internal pure returns (IDutchAuction.InsolventAuctionParams memory param) {
-    param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5 seconds, bufferMarginScalar: 1.2e18});
+    param = IDutchAuction.InsolventAuctionParams({length: 10 minutes, endingMtMScaler: 1.2e18});
   }
 
   function getSubId(uint expiry, uint strike, bool isCall) public pure returns (uint96) {

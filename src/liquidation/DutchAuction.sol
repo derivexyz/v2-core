@@ -35,7 +35,7 @@ import "openzeppelin/access/Ownable2Step.sol";
  * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even if it's given for free.
  * or, it can be started if mark to market value of a portfolio is negative.
  * the insolvent auction that will print the liquidator cash or pay out from security module for liquidator to take the position
- * the price of portfolio went from 0 to Buffer margin * scalar (negative)
+ * the price of portfolio went from 0 to MtM * scaler (negative)
  * can be un-flagged if maintenance margin > 0
  */
 contract DutchAuction is IDutchAuction, Ownable2Step {
@@ -120,7 +120,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param _params New parameters
    */
   function setInsolventAuctionParams(InsolventAuctionParams memory _params) external onlyOwner {
-    if (_params.totalSteps == 0) revert DA_InvalidParameter();
+    if (_params.length == 0 || _params.length > 1 days) revert DA_InvalidParameter();
+    if (_params.endingMtMScaler < 1e18) revert DA_InvalidParameter();
 
     insolventAuctionParams = _params;
 
@@ -182,10 +183,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
-      reservedCash: 0,
-      stepSize: 0,
-      stepInsolvent: 0,
-      lastStepUpdate: 0
+      reservedCash: 0
     });
 
     emit SolventAuctionStarted(accountId, scenarioId, markToMarket, fee);
@@ -195,16 +193,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev Starts an insolvent auction
    * @param accountId The id of the account that is being liquidated
    */
-  function _startInsolventAuction(uint accountId, uint scenarioId, int bufferMargin) internal {
-    // negative amount in cash, -100e18 means the SM will pay out $100 CASH at most
-    int lowerBound = bufferMargin.multiplyDecimal(insolventAuctionParams.bufferMarginScalar);
-
+  function _startInsolventAuction(uint accountId, uint scenarioId, int markToMarket) internal {
     insolventAuctionCount += 1;
-
-    // decrease value every step
-    uint numSteps = insolventAuctionParams.totalSteps;
-    uint stepSize = SignedMath.abs(lowerBound) / numSteps;
-
     auctions[accountId] = Auction({
       accountId: accountId,
       scenarioId: scenarioId,
@@ -212,12 +202,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       ongoing: true,
       startTime: block.timestamp,
       percentageLeft: 1e18,
-      reservedCash: 0,
-      stepSize: stepSize,
-      stepInsolvent: 0,
-      lastStepUpdate: block.timestamp
+      reservedCash: 0
     });
-    emit InsolventAuctionStarted(accountId, numSteps, stepSize);
+    emit InsolventAuctionStarted(accountId, scenarioId, markToMarket);
   }
 
   /////////////////////////
@@ -279,41 +266,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     _terminateAuction(accountId);
   }
 
-  /////////////////////////
-  //  Insolvent Auction  //
-  /////////////////////////
-
-  /**
-   * @notice This function can only be used for when the auction is insolvent and is a safety mechanism for
-   * if the network is down for rpc provider is unable to submit requests to sequencer, potentially resulting
-   * massive insolvency due to bids falling to v_lower.
-   * @dev This is to prevent an auction falling all the way through if a provider or the network goes down
-   * @param accountId the accountId that relates to the auction that is being stepped
-   * @return uint the step that the auction is on
-   */
-  function continueInsolventAuction(uint accountId) external returns (uint) {
-    if (!auctions[accountId].ongoing) revert DA_NotOngoingAuction();
-
-    Auction storage auction = auctions[accountId];
-    if (!auction.insolvent) {
-      revert DA_SolventAuctionCannotIncrement();
-    }
-
-    uint lastIncrement = auction.lastStepUpdate;
-    if (block.timestamp <= lastIncrement + insolventAuctionParams.coolDown && lastIncrement != 0) {
-      revert DA_InCoolDown();
-    }
-
-    uint newStep = ++auction.stepInsolvent;
-    if (newStep > insolventAuctionParams.totalSteps) revert DA_MaxStepReachedInsolventAuction();
-
-    auction.lastStepUpdate = block.timestamp;
-
-    emit InsolventAuctionStepIncremented(accountId, newStep);
-
-    return newStep;
-  }
-
   ////////////////////////
   //   Auction Bidding  //
   ////////////////////////
@@ -359,7 +311,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     bool canTerminateAfterwards;
     if (auctions[accountId].insolvent) {
       (canTerminateAfterwards, finalPercentage, cashToBidder) =
-        _bidOnInsolventAuction(accountId, bidderId, percentOfAccount);
+        _bidOnInsolventAuction(accountId, bidderId, percentOfAccount, markToMarket);
     } else {
       (canTerminateAfterwards, finalPercentage, cashFromBidder) =
         _bidOnSolventAuction(accountId, bidderId, percentOfAccount, margin, markToMarket);
@@ -432,7 +384,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param bidderId Account getting paid from security module to take the liquidated account
    * @param percentOfAccount the percentage of the original portfolio that was put on auction
    */
-  function _bidOnInsolventAuction(uint accountId, uint bidderId, uint percentOfAccount)
+  function _bidOnInsolventAuction(uint accountId, uint bidderId, uint percentOfAccount, int markToMarket)
     internal
     returns (bool canTerminate, uint percentLiquidated, uint cashToBidder)
   {
@@ -443,7 +395,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
 
     // the account is insolvent when the bid price for the account falls below zero
     // someone get paid from security module to take on the risk
-    cashToBidder = _getInsolventAuctionPayout(accountId).multiplyDecimal(percentLiquidated);
+    cashToBidder =
+      (-_getInsolventAuctionBidPrice(accountId, markToMarket)).toUint256().multiplyDecimal(percentLiquidated);
+
     // we first ask the security module to compensate the bidder
     uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
     // if amount paid is less than we requested: we trigger socialize losses on cash asset (which will print cash)
@@ -531,13 +485,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function getCurrentBidPrice(uint accountId) external view returns (int) {
     bool insolvent = auctions[accountId].insolvent;
+    (,, int markToMarket) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
     if (!insolvent) {
-      (,, int markToMarket) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
       return _getSolventAuctionBidPrice(accountId, markToMarket);
     } else {
       // the payout is the positive amount security module will pay the liquidator (bidder)
       // which is a "negative" bid price
-      return -_getInsolventAuctionPayout(accountId).toInt256();
+      return _getInsolventAuctionBidPrice(accountId, markToMarket);
     }
   }
 
@@ -694,14 +648,26 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   }
 
   /**
-   * @dev Return the value that the security module will pay the liquidator
-   * @dev This can be translated to a "negative" bid price.
-   *
-   * @return payout: a positive number indicating how much the security module will pay the liquidator
+   * @dev Return a "negative" bid price. Meaning this is how much the SM is paying the liquidator to take on the risk
+   * @dev Revert if markToMarket is positive
+   * @return price: a negative number indicating
    */
-  function _getInsolventAuctionPayout(uint accountId) internal view returns (uint) {
+  function _getInsolventAuctionBidPrice(uint accountId, int markToMarket) internal view returns (int) {
     if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
+    if (markToMarket > 0) revert DA_AuctionShouldBeTerminated();
 
-    return auctions[accountId].stepSize * auctions[accountId].stepInsolvent;
+    uint timeElapsed = block.timestamp - auctions[accountId].startTime;
+    int scaler;
+    if (timeElapsed > insolventAuctionParams.length) {
+      scaler = insolventAuctionParams.endingMtMScaler;
+    } else {
+      // scaler is linearly growing from 1 to endingMtMScaler, over the length of the auction
+      scaler = 1e18
+        + int(timeElapsed).multiplyDecimal(insolventAuctionParams.endingMtMScaler - 1e18).divideDecimal(
+          int(insolventAuctionParams.length)
+        );
+    }
+
+    return markToMarket.multiplyDecimal(scaler);
   }
 }

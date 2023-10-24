@@ -52,7 +52,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     _startDefaultInsolventAuction(aliceAcc);
 
     // increase step to 1
-    _increaseInsolventStep(1, aliceAcc);
+    // _increaseInsolventStep(1, aliceAcc);
 
     vm.prank(bob);
     // bid 50% of the portfolio
@@ -70,7 +70,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     _startDefaultInsolventAuction(aliceAcc);
 
     // increase step to 5
-    _increaseInsolventStep(5, aliceAcc);
+    // _increaseInsolventStep(5, aliceAcc);
 
     vm.prank(bob);
     // bid 100% of the portfolio
@@ -90,7 +90,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     _startDefaultInsolventAuction(aliceAcc);
 
     // increase step to 5
-    _increaseInsolventStep(5, aliceAcc);
+    // _increaseInsolventStep(5, aliceAcc);
 
     // bid 100% of the portfolio
     vm.prank(bob);
@@ -100,35 +100,35 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     dutchAuction.continueInsolventAuction(aliceAcc);
   }
 
-  function testIncreaseStepMax() public {
-    dutchAuction.setInsolventAuctionParams(
-      IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0, bufferMarginScalar: 1e18})
-    );
-    _startDefaultInsolventAuction(aliceAcc);
+  // function testIncreaseStepMax() public {
+  //   dutchAuction.setInsolventAuctionParams(
+  //     IDutchAuction.InsolventAuctionParams({totalSteps: 2, coolDown: 0, bufferMarginScalar: 1e18})
+  //   );
+  //   _startDefaultInsolventAuction(aliceAcc);
 
-    vm.warp(block.timestamp + 1);
-    dutchAuction.continueInsolventAuction(aliceAcc);
-    vm.warp(block.timestamp + 1);
-    dutchAuction.continueInsolventAuction(aliceAcc);
+  //   vm.warp(block.timestamp + 1);
+  //   dutchAuction.continueInsolventAuction(aliceAcc);
+  //   vm.warp(block.timestamp + 1);
+  //   dutchAuction.continueInsolventAuction(aliceAcc);
 
-    vm.warp(block.timestamp + 1);
-    vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
-    dutchAuction.continueInsolventAuction(aliceAcc);
-  }
+  //   vm.warp(block.timestamp + 1);
+  //   vm.expectRevert(IDutchAuction.DA_MaxStepReachedInsolventAuction.selector);
+  //   dutchAuction.continueInsolventAuction(aliceAcc);
+  // }
 
-  function testCannotSpamIncrementStep() public {
-    _startDefaultInsolventAuction(aliceAcc);
+  // function testCannotSpamIncrementStep() public {
+  //   _startDefaultInsolventAuction(aliceAcc);
 
-    vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
-    dutchAuction.continueInsolventAuction(aliceAcc);
+  //   vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
+  //   dutchAuction.continueInsolventAuction(aliceAcc);
 
-    // cannot spam even if "coolDown" config is not set
-    dutchAuction.setInsolventAuctionParams(
-      IDutchAuction.InsolventAuctionParams({totalSteps: 1, coolDown: 0, bufferMarginScalar: 1.05e18})
-    );
-    vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
-    dutchAuction.continueInsolventAuction(aliceAcc);
-  }
+  //   // cannot spam even if "coolDown" config is not set
+  //   dutchAuction.setInsolventAuctionParams(
+  //     IDutchAuction.InsolventAuctionParams({totalSteps: 1, coolDown: 0, bufferMarginScalar: 1.05e18})
+  //   );
+  //   vm.expectRevert(IDutchAuction.DA_InCoolDown.selector);
+  //   dutchAuction.continueInsolventAuction(aliceAcc);
+  // }
   //
   //  function testInsolventAuctionBelowThresholdBlockWithdraw() public {
   //    dutchAuction.setWithdrawBlockThreshold(-50e18);
