@@ -60,8 +60,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
   /// @dev Help defines buffer margin: maintenance margin - bufferPercentage * (maintenance margin - mtm)
   int public bufferMarginPercentage;
 
-  /// @dev The number of insolvent auctions that are blocking withdraws
-  uint public insolventAuctionCount;
+  /// @dev The number of big insolvent auctions that are blocking withdraws
+  uint public largeInsolventAuctionCount;
+
+  /// @dev if an insolvent account has margin lower than this number, it will block from withdrawing cash
+  int public withdrawBlockThreshold;
 
   /// @dev AccountId => Auction for when an auction is started
   mapping(uint accountId => Auction) public auctions;
@@ -111,6 +114,16 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     emit AuctionParamsSet(_params);
   }
 
+  /**
+   * @notice Sets the threshold, below which an auction will block cash withdraw to prevent bank-run
+   */
+  function setWithdrawBlockThreshold(int _withdrawBlockThreshold) external onlyOwner {
+    if (_withdrawBlockThreshold > 0) revert DA_InvalidWithdrawBlockThreshold();
+    withdrawBlockThreshold = _withdrawBlockThreshold;
+
+    emit WithdrawBlockThresholdSet(_withdrawBlockThreshold);
+  }
+
   /////////////////////
   //  Begin Auction  //
   /////////////////////
@@ -149,7 +162,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       // solvent auction goes from mark to market * static discount -> 0
       _startSolventAuction(accountId, scenarioId, markToMarket, fee);
     } else {
-      _startInsolventAuction(accountId, scenarioId, bufferMargin);
+      _startInsolventAuction(accountId, scenarioId, maintenanceMargin);
     }
   }
 
@@ -164,6 +177,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       scenarioId: scenarioId,
       insolvent: false,
       ongoing: true,
+      isBlockingWithdraw: false,
       startTime: block.timestamp,
       percentageLeft: 1e18,
       reservedCash: 0
@@ -176,18 +190,22 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev Starts an insolvent auction
    * @param accountId The id of the account that is being liquidated
    */
-  function _startInsolventAuction(uint accountId, uint scenarioId, int markToMarket) internal {
-    insolventAuctionCount += 1;
+  function _startInsolventAuction(uint accountId, uint scenarioId, int maintenanceMargin) internal {
+    // if MM is below the withdraw block threshold, track this insolvent auction
+    bool shouldPauseWithdraw = maintenanceMargin < withdrawBlockThreshold;
+    if (shouldPauseWithdraw) largeInsolventAuctionCount += 1;
+
     auctions[accountId] = Auction({
       accountId: accountId,
       scenarioId: scenarioId,
       insolvent: true,
       ongoing: true,
+      isBlockingWithdraw: shouldPauseWithdraw,
       startTime: block.timestamp,
       percentageLeft: 1e18,
       reservedCash: 0
     });
-    emit InsolventAuctionStarted(accountId, scenarioId, markToMarket);
+    emit InsolventAuctionStarted(accountId, scenarioId, maintenanceMargin);
   }
 
   /////////////////////////
@@ -219,7 +237,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    */
   function convertToInsolventAuction(uint accountId) external {
     uint scenarioId = auctions[accountId].scenarioId;
-    (int maintenanceMargin, int bufferMargin, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
+    (int maintenanceMargin,, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
 
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode();
@@ -235,7 +253,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
       revert DA_AccountIsAboveMaintenanceMargin();
     }
 
-    _startInsolventAuction(accountId, scenarioId, bufferMargin);
+    _startInsolventAuction(accountId, scenarioId, maintenanceMargin);
   }
 
   /**
@@ -489,7 +507,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev return true if the withdraw should be blocked
    */
   function getIsWithdrawBlocked() external view returns (bool) {
-    return insolventAuctionCount > 0;
+    return largeInsolventAuctionCount > 0;
   }
 
   //////////////////////////////
@@ -505,8 +523,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     Auction storage auction = auctions[accountId];
     auction.ongoing = false;
 
-    if (auction.insolvent) {
-      insolventAuctionCount -= 1;
+    if (auction.isBlockingWithdraw) {
+      largeInsolventAuctionCount -= 1;
     }
 
     emit AuctionEnded(accountId, block.timestamp);

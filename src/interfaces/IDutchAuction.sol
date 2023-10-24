@@ -11,6 +11,8 @@ interface IDutchAuction {
     bool insolvent;
     /// If an auction is active
     bool ongoing;
+    /// If this auction is blocking cash withdraw
+    bool isBlockingWithdraw;
     /// The percentage of the portfolio that is left to be auctioned
     uint percentageLeft;
     /// The startTime of the auction
@@ -46,7 +48,7 @@ interface IDutchAuction {
   event SolventAuctionStarted(uint accountId, uint scenarioId, int markToMarket, uint fee);
 
   // emitted when an insolvent auction starts
-  event InsolventAuctionStarted(uint accountId, uint scenarioId, int markToMarket);
+  event InsolventAuctionStarted(uint accountId, uint scenarioId, int maintenanceMargin);
 
   // emitted when a bid is placed
   event Bid(uint accountId, uint bidderId, uint finalPercentage, uint cashFromBidder, uint cashToBidder);
