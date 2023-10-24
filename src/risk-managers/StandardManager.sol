@@ -8,6 +8,7 @@ import "openzeppelin/utils/math/Math.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/arrays/UnorderedMemoryArray.sol";
+import "lyra-utils/math/Black76.sol";
 
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IAsset} from "../interfaces/IAsset.sol";
@@ -24,10 +25,10 @@ import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 
-import {IOptionPricing} from "../interfaces/IOptionPricing.sol";
-
 import {IManager} from "../interfaces/IManager.sol";
 import {BaseManager} from "./BaseManager.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title StandardManager
@@ -84,9 +85,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
 
   /// @dev Mapping from marketId to vol oracle
   mapping(uint marketId => IVolFeed) internal volFeeds;
-
-  /// @dev Mapping from marketId to forward price oracle
-  mapping(uint marketId => IOptionPricing) internal pricingModules;
 
   ////////////////////////
   //    Constructor     //
@@ -258,18 +256,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     stableFeed = _stableFeed;
 
     emit StableFeedUpdated(address(_stableFeed));
-  }
-
-  /**
-   * @notice Set the pricing module
-   * @param _pricing new pricing module
-   */
-  function setPricingModule(uint marketId, IOptionPricing _pricing) external onlyOwner {
-    _checkMarketExist(marketId);
-
-    pricingModules[marketId] = IOptionPricing(_pricing);
-
-    emit PricingModuleSet(marketId, address(_pricing));
   }
 
   ///////////////////////
@@ -641,10 +627,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev Return the addresses of feeds and pricing modules for a specific market
+   * @dev Return the addresses of feeds for a specific market
    */
-  function getMarketFeeds(uint marketId) external view returns (ISpotFeed, IForwardFeed, IVolFeed, IOptionPricing) {
-    return (spotFeeds[marketId], forwardFeeds[marketId], volFeeds[marketId], pricingModules[marketId]);
+  function getMarketFeeds(uint marketId) external view returns (ISpotFeed, IForwardFeed, IVolFeed) {
+    return (spotFeeds[marketId], forwardFeeds[marketId], volFeeds[marketId]);
   }
 
   /**
@@ -729,8 +715,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     bool isInitial
   ) internal view returns (int margin, int markToMarket) {
     (uint vol,) = volFeeds[marketId].getVol(uint128(optionPos.strike), uint64(expiry));
-    markToMarket =
-      _getMarkToMarket(marketId, optionPos.balance, forwardPrice, optionPos.strike, expiry, vol, optionPos.isCall);
+    markToMarket = _getMarkToMarket(optionPos.balance, forwardPrice, optionPos.strike, expiry, vol, optionPos.isCall);
 
     // a long position doesn't have any "margin", cannot be used to offset other positions
     if (optionPos.balance > 0) return (margin, markToMarket);
@@ -814,6 +799,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     if (params.maxSpotReq > otmRatio && params.maxSpotReq - otmRatio > params.minSpotReq) {
       imMultiplier = params.maxSpotReq - otmRatio;
     }
+
     imMultiplier = imMultiplier.multiplyDecimal(spotPrice);
 
     return imMultiplier.toInt256().multiplyDecimal(amount) + markToMarket;
@@ -852,28 +838,26 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   }
 
   /**
-   * @dev Get the mark to market value of an option by querying the pricing module
+   * @dev Get the mark to market value of an option by querying block scholes
    */
-  function _getMarkToMarket(
-    uint marketId,
-    int amount,
-    uint forwardPrice,
-    uint strike,
-    uint expiry,
-    uint vol,
-    bool isCall
-  ) internal view returns (int value) {
-    IOptionPricing pricing = IOptionPricing(pricingModules[marketId]);
-
+  function _getMarkToMarket(int amount, uint forwardPrice, uint strike, uint expiry, uint vol, bool isCall)
+    internal
+    view
+    returns (int value)
+  {
     uint64 secToExpiry = expiry > block.timestamp ? uint64(expiry - block.timestamp) : 0;
 
-    IOptionPricing.Expiry memory expiryData =
-      IOptionPricing.Expiry({secToExpiry: secToExpiry, forwardPrice: forwardPrice.toUint128(), discountFactor: 1e18});
+    (uint call, uint put) = Black76.prices(
+      Black76.Black76Inputs({
+        timeToExpirySec: secToExpiry,
+        volatility: vol.toUint128(),
+        fwdPrice: forwardPrice.toUint128(),
+        strikePrice: strike.toUint128(),
+        discount: 1e18
+      })
+    );
 
-    IOptionPricing.Option memory option =
-      IOptionPricing.Option({strike: strike.toUint128(), vol: vol.toUint128(), amount: amount, isCall: isCall});
-
-    return pricing.getOptionValue(expiryData, option);
+    return (isCall ? call.toInt256() : put.toInt256()).multiplyDecimal(amount);
   }
 
   // strike per expiry

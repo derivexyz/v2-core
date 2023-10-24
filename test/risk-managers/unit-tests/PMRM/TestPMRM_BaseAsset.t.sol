@@ -41,7 +41,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     // decrease the cap to 0
     baseAsset.setTotalPositionCap(pmrm, 0);
 
-    PMRMLib pmrmLib = new PMRMLib(IOptionPricing(optionPricing));
+    PMRMLib pmrmLib = new PMRMLib();
 
     // other PMRM
     PMRM newManager = new PMRMPublic(

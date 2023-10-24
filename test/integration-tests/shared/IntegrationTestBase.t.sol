@@ -19,8 +19,6 @@ import "../../../src/risk-managers/PMRM.sol";
 import "../../../src/risk-managers/PMRMLib.sol";
 import "../../../src/risk-managers/SRMPortfolioViewer.sol";
 
-import "../../../src/feeds/OptionPricing.sol";
-
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../../src/feeds/LyraSpotDiffFeed.sol";
@@ -71,8 +69,6 @@ contract IntegrationTestBase is Test {
     LyraVolFeed volFeed;
     LyraRateFeed rateFeed;
     LyraForwardFeed forwardFeed;
-    // pricing
-    OptionPricing pricing;
     // manager for specific market
     PMRM pmrm;
     PMRMLib pmrmLib;
@@ -236,8 +232,6 @@ contract IntegrationTestBase is Test {
     market.forwardFeed.setHeartbeat(20 minutes);
     market.forwardFeed.setSettlementHeartbeat(60 minutes);
 
-    market.pricing = new OptionPricing();
-
     IPMRM.Feeds memory feeds = IPMRM.Feeds({
       spotFeed: market.spotFeed,
       stableFeed: stableFeed,
@@ -248,7 +242,7 @@ contract IntegrationTestBase is Test {
     });
 
     market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);
-    market.pmrmLib = new PMRMLib(market.pricing);
+    market.pmrmLib = new PMRMLib();
 
     market.pmrm = new PMRM(
       subAccounts, 
@@ -296,8 +290,6 @@ contract IntegrationTestBase is Test {
     // set assets per market
     marketId = srm.createMarket(key);
     market.id = marketId;
-
-    srm.setPricingModule(marketId, market.pricing);
 
     srm.whitelistAsset(market.perp, marketId, IStandardManager.AssetType.Perpetual);
     srm.whitelistAsset(market.option, marketId, IStandardManager.AssetType.Option);
