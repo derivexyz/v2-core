@@ -326,13 +326,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     // only bypass risk check if we are only reducing perp position, increasing cash, or increasing option position
     if (!riskAdding) return;
 
-    _performRiskCheck(accountId, assetBalances, previousBalances, isPositiveCashDelta);
+    _assessRisk(accountId, assetBalances, previousBalances, isPositiveCashDelta);
   }
 
   /**
    * @dev Perform a risk check on the account.
    */
-  function _performRiskCheck(
+  function _assessRisk(
     uint accountId,
     ISubAccounts.AssetBalance[] memory assetBalances,
     ISubAccounts.AssetBalance[] memory previousBalances,

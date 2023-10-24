@@ -57,6 +57,12 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   event ImpactFeedsUpdated(address askImpactFeed, address bidImpactFeed);
 
+  event RateBoundsUpdated(int maxAbsRatePerHour);
+
+  event ConvergencePeriodUpdated(int fundingConvergencePeriod);
+
+  event Disabled(int indexPrice, int aggregatedFunding);
+
   event AggregatedFundingUpdated(int aggregatedFundingRate, int fundingRate, uint lastFundingPaidAt);
 
   event FundingAppliedOnAccount(uint accountId, int funding, int aggregatedFundingRate);
@@ -64,10 +70,6 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   event PositionSettled(uint indexed account, int pnlChange, int totalPnl, uint perpPrice);
 
   event PositionCleared(uint indexed account);
-
-  event RateBoundsUpdated(int maxAbsRatePerHour);
-
-  event ConvergencePeriodUpdated(int fundingConvergencePeriod);
 
   ////////////////
   //   Errors   //

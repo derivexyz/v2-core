@@ -229,8 +229,8 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testIndexPrice() public {
     spotFeed.setSpot(500e18, 1e18);
-    (uint spotPrice,) = perp.getIndexPrice();
-    assertEq(spotPrice, 500e18);
+    (uint indexPrice,) = perp.getIndexPrice();
+    assertEq(indexPrice, 500e18);
 
     perpFeed.setSpotDiff(50e18, 1e18);
     (uint perpPrice,) = perp.getPerpPrice();
