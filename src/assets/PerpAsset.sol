@@ -152,6 +152,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
   function disable() external onlyOwner {
     _updateFunding();
+    // If frozen previously, this will just return itself
     frozenPerpPrice = _getPerpPrice();
 
     isDisabled = true;

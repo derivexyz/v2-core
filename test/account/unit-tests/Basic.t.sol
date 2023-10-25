@@ -25,7 +25,11 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
 
   function testCanTransferToAnyoneWith0Amount() public {
     vm.prank(alice);
+    assertEq(subAccounts.lastAccountTradeId(aliceAcc), 1);
+    assertEq(subAccounts.lastAccountTradeId(bobAcc), 2);
     transferToken(aliceAcc, bobAcc, usdcAsset, 0, 0);
+    assertEq(subAccounts.lastAccountTradeId(aliceAcc), 3);
+    assertEq(subAccounts.lastAccountTradeId(bobAcc), 3);
   }
 
   function testTransfersUpdateBalances() public {

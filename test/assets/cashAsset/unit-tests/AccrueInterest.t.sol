@@ -271,9 +271,9 @@ contract UNIT_CashAssetAccrueInterest is Test {
     vm.prank(address(manager));
     cashAsset.updateSettledCash(posSettledCash);
 
-    // Increase cash balance reflected in increased exchange rate
+    // Increase cash balance is _not_ accounted for in cashExchangeRate
     cashExchangeRate = cashAsset.getCashToStableExchangeRate();
-    assertGt(cashExchangeRate, 1e18);
+    assertEq(cashExchangeRate, 1e18);
   }
 
   function testNegativeSettledCashDecreasesCashBalance() public {

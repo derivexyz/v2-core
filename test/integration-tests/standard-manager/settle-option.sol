@@ -47,12 +47,16 @@ contract INTEGRATION_SRM_OptionSettlement is IntegrationTestBase {
     _setSpotPrice("weth", 2500e18, 1e18);
     _setSettlementPrice("weth", expiry, 2500e18);
 
+    assertEq(subAccounts.lastAccountTradeId(aliceAcc), 3);
     int aliceCashBefore = getCashBalance(aliceAcc);
     uint oiBefore = markets["weth"].option.openInterest(callId);
 
     srm.settleOptions(markets["weth"].option, aliceAcc);
     int aliceCashAfter = getCashBalance(aliceAcc);
     uint oiAfter = markets["weth"].option.openInterest(callId);
+
+    // Settling updates last trade id, as a balance is adjusted
+    assertEq(subAccounts.lastAccountTradeId(aliceAcc), 5);
 
     // payout is 500 USDC per contract
     int expectedPayout = 500 * amountOfContracts;

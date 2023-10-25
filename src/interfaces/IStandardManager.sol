@@ -5,6 +5,9 @@ import {IAsset} from "./IAsset.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";
 import {IBaseManager} from "./IBaseManager.sol";
 import {IOptionAsset} from "./IOptionAsset.sol";
+import {ISpotFeed} from "./ISpotFeed.sol";
+import {IForwardFeed} from "./IForwardFeed.sol";
+import {IVolFeed} from "./IVolFeed.sol";
 
 interface IStandardManager is IBaseManager {
   enum AssetType {
@@ -20,6 +23,16 @@ interface IStandardManager is IBaseManager {
     uint marketId;
   }
 
+  struct MarketParameters {
+    PerpMarginRequirements perpMarginRequirements;
+    OptionMarginParams optionMarginParams;
+    OracleContingencyParams oracleContingencyParams;
+    uint baseAssetMarginFactor;
+    ISpotFeed spotFeed;
+    IForwardFeed forwardFeed;
+    IVolFeed volFeed;
+  }
+
   /**
    * @dev a standard manager portfolio contains multiple marketHoldings assets, each marketHolding contains multiple derivative type
    */
@@ -31,6 +44,7 @@ interface IStandardManager is IBaseManager {
 
   struct MarketHolding {
     uint marketId;
+    MarketParameters params;
     /// base position: doesn't contribute to margin, but increase total portfolio mark to market
     uint basePosition;
     /// perp position detail
@@ -171,7 +185,7 @@ interface IStandardManager is IBaseManager {
     uint mmOffsetScale
   );
 
-  event BaseMarginDiscountFactorSet(uint marketId, uint baseMarginDiscountFactor);
+  event BaseAssetMarginFactorSet(uint marketId, uint baseAssetMarginFactor);
 
   event DepegParametersSet(uint threshold, uint depegFactor);
 

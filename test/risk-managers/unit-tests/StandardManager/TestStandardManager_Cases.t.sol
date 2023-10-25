@@ -28,8 +28,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
     // base asset contribute 10% of its value to margin
-    manager.setBaseMarginDiscountFactor(ethMarketId, 0.1e18);
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.1e18);
+    manager.setBaseAssetMarginFactor(ethMarketId, 0.1e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.1e18);
   }
 
   function testCase1() public {

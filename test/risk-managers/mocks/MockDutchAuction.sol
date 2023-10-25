@@ -9,11 +9,11 @@ contract MockDutchAuction is IDutchAuction {
   ICashAsset public cash;
   mapping(uint => bool) public isAuctionLive;
 
-  function startAuction(uint accountId, uint scenarioId) external {
+  function startAuction(uint accountId, uint) external {
     isAuctionLive[accountId] = true;
   }
 
-  function startForcedAuction(uint accountId, uint scenarioId) external {
+  function startForcedAuction(uint accountId, uint) external {
     isAuctionLive[accountId] = true;
   }
 

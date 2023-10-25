@@ -9,13 +9,12 @@ import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {SubAccounts} from "../SubAccounts.sol";
 
 // inherited
+import "openzeppelin/security/ReentrancyGuard.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
-
-import "forge-std/console2.sol";
 
 /**
  * @title Dutch Auction
@@ -34,13 +33,14 @@ import "forge-std/console2.sol";
  * can be un-flagged if buffer margin > 0
  *
  * 3. InsolventAuction
- * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even if it's given for free.
- * or, it can be started if mark to market value of a portfolio is negative.
- * the insolvent auction that will print the liquidator cash or pay out from security module for liquidator to take the position
- * the price of portfolio went from 0 to MtM * scaler (negative)
+ * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even
+ * if it's given for free, or, it can be started if mark to market value of a portfolio is negative.
+ *
+ * the insolvent auction that will pay out from security module or print cash to the liquidator to take on the position
+ * the price of portfolio goes from 0 to MM
  * can be un-flagged if maintenance margin > 0
  */
-contract DutchAuction is IDutchAuction, Ownable2Step {
+contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   using SafeCast for int;
   using SafeCast for uint;
   using SignedDecimalMath for int;
@@ -134,7 +134,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId The id of the account being liquidated
    * @param scenarioId id to compute the IM with for PMRM, ignored for standard manager
    */
-  function startAuction(uint accountId, uint scenarioId) external {
+  function startAuction(uint accountId, uint scenarioId) external nonReentrant {
     _startAuction(accountId, scenarioId);
   }
 
@@ -217,11 +217,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @notice anyone can come in during the auction to supply a scenario ID that will make the IM worse
    * @param scenarioId new scenarioId
    */
-  function updateScenarioId(uint accountId, uint scenarioId) external {
+  function updateScenarioId(uint accountId, uint scenarioId) external nonReentrant {
     if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
 
     // check if the new scenarioId is worse than the current one
-    // TODO: add a test for how this works for basis (should revert/not allow updates as margin is the "same")
+    // TODO: add a test for how this works for basis contingency in PMRM (should revert/not allow updates as margin is the "same")
     (int newMargin,,) = _getMarginAndMarkToMarket(accountId, scenarioId);
     (int currentMargin,,) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
 
@@ -236,16 +236,15 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev This function can only be called on auctions that has already started as solvent
    * @param accountId the accountID being liquidated
    */
-  function convertToInsolventAuction(uint accountId) external {
+  function convertToInsolventAuction(uint accountId) external nonReentrant {
     uint scenarioId = auctions[accountId].scenarioId;
     (int maintenanceMargin,, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
 
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode();
     }
-    // TODO: THIS WILL REVERT IF MTM < 0 -> CANNOT CONVERT AUCTION. Have to terminate -> restart
-    //  - todo: test to show this flow/check that terminate will work in this situation
-    // Could do if (mtm > 0 && _getSolvent[...]) to resolve
+
+    // Note: must terminate auction -> start insolvent auction to convert a solvent auction with mtm < 0 into insolvent
     if (_getSolventAuctionBidPrice(accountId, markToMarket) > 0) {
       revert DA_OngoingSolventAuction();
     }
@@ -262,7 +261,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev This is to allow account owner to cancel the auction after adding more collateral
    * @param accountId the accountId that relates to the auction that is being stepped
    */
-  function terminateAuction(uint accountId) external {
+  function terminateAuction(uint accountId) external nonReentrant {
     (bool canTerminate,,) = getAuctionStatus(accountId);
     if (!canTerminate) revert DA_AuctionCannotTerminate();
     _terminateAuction(accountId);
@@ -468,7 +467,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @notice returns whether an auction is live
    */
   function isAuctionLive(uint accountId) external view returns (bool) {
-    console2.log("hi");
     return auctions[accountId].ongoing;
   }
 
@@ -624,9 +622,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     (int maintenanceMargin, int markToMarket) =
       ILiquidatableManager(manager).getMarginAndMarkToMarket(accountId, false, scenarioId);
     // derive Buffer margin from maintenance margin and mark to market
-    int mmBuffer = maintenanceMargin - markToMarket; // a negative number added to the mtm to become maintenance margin
-    // TODO: invariant test -> add an assertion mmBuffer is negative
-    // a more conservative buffered margin that we liquidate to
+    int mmBuffer = maintenanceMargin - markToMarket;
+
+    // Buffer margin is a more conservative margin value that we liquidate to, as we do not want users to be flagged
+    // multiple times in short order if the price moves against them
     int bufferMargin = maintenanceMargin + mmBuffer.multiplyDecimal(bufferMarginPercentage);
 
     return (maintenanceMargin, bufferMargin, markToMarket);
@@ -670,9 +669,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
     if (timeElapsed >= auctionParams.insolventAuctionLength) {
       return maintenanceMargin;
     } else {
-      // scaler is linearly growing from 1 to endingMtMScaler, over the length of the auction
-      return
-        int(timeElapsed).multiplyDecimal(maintenanceMargin).divideDecimal(int(auctionParams.insolventAuctionLength));
+      // scaler is linearly growing from 1 to MM, over the length of the auction
+      return maintenanceMargin * int(timeElapsed) / int(auctionParams.insolventAuctionLength);
     }
   }
 }
