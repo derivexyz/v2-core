@@ -216,10 +216,10 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
   function test_BMAfterLiquidation() public {
     // start liquidation on acc1, discount = 20%
-    IDutchAuction.SolventAuctionParams memory params = getDefaultAuctionParam();
+    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
     params.startingMtMPercentage = 0.8e18;
     params.liquidatorFeeRate = 0;
-    auction.setSolventAuctionParams(params);
+    auction.setAuctionParams(params);
     auction.setBufferMarginPercentage(0.05e18);
     markets["weth"].spotFeed.setHeartbeat(1 hours);
     markets["weth"].perpFeed.setHeartbeat(1 hours);

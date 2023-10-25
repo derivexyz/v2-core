@@ -158,9 +158,7 @@ contract IntegrationTestBase is Test {
 
   function _setupCoreContracts() internal {
     // set parameter for auction
-    auction.setSolventAuctionParams(_getDefaultAuctionParam());
-
-    auction.setInsolventAuctionParams(_getDefaultInsolventAuctionParam());
+    auction.setAuctionParams(_getDefaultAuctionParam());
 
     // allow liquidation to request payout from sm
     securityModule.setWhitelistModule(address(auction), true);
@@ -417,18 +415,15 @@ contract IntegrationTestBase is Test {
     optimalUtil = 0.6 * 1e18;
   }
 
-  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.SolventAuctionParams memory param) {
-    param = IDutchAuction.SolventAuctionParams({
+  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.AuctionParams memory param) {
+    param = IDutchAuction.AuctionParams({
       startingMtMPercentage: 1e18,
       fastAuctionCutoffPercentage: 0.8e18,
       fastAuctionLength: 10 minutes,
       slowAuctionLength: 2 hours,
+      insolventAuctionLength: 10 minutes,
       liquidatorFeeRate: 0.05e18
     });
-  }
-
-  function _getDefaultInsolventAuctionParam() internal pure returns (IDutchAuction.InsolventAuctionParams memory param) {
-    param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5 seconds, bufferMarginScalar: 1.2e18});
   }
 
   function getSubId(uint expiry, uint strike, bool isCall) public pure returns (uint96) {

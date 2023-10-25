@@ -257,6 +257,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
   }
 
+  function _checkIfLiveAuction(uint accountId) internal view {
+    // TODO: add test case
+    if (liquidation.isAuctionLive(accountId)) {
+      revert BM_AccountUnderLiquidation();
+    }
+  }
+
   ////////////////
   //   OI Fee   //
   ////////////////

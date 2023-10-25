@@ -24,18 +24,15 @@ function getDefaultInterestRateModel() pure returns (
   optimalUtil = 0.6 * 1e18;
 }
 
-function getDefaultAuctionParam() pure returns (IDutchAuction.SolventAuctionParams memory param) {
-  param = IDutchAuction.SolventAuctionParams({
+function getDefaultAuctionParam() pure returns (IDutchAuction.AuctionParams memory param) {
+  param = IDutchAuction.AuctionParams({
     startingMtMPercentage: 1e18,
     fastAuctionCutoffPercentage: 0.8e18,
     fastAuctionLength: 10 minutes,
     slowAuctionLength: 2 hours,
+    insolventAuctionLength: 10 minutes,
     liquidatorFeeRate: 0.05e18
   });
-}
-
-function getDefaultInsolventAuctionParam() pure returns (IDutchAuction.InsolventAuctionParams memory param) {
-  param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5 seconds, bufferMarginScalar: 1.2e18});
 }
 
 function getDefaultDepegParam() pure returns (IStandardManager.DepegParams memory param) {

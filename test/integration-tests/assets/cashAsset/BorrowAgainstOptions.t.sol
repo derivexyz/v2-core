@@ -68,11 +68,15 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
 
     _submitTrade(aliceAcc, option, putId, 1e18, charlieAcc, cash, 0, 0);
 
+    assertEq(subAccounts.lastAccountTradeId(charlieAcc), 3);
+
     assertEq(cash.borrowIndex(), 1e18);
     assertEq(cash.supplyIndex(), 1e18);
 
     // Borrow against the option
     _withdrawCash(charlie, charlieAcc, 50e18);
+
+    assertEq(subAccounts.lastAccountTradeId(charlieAcc), 4);
 
     // Charlie balance should be -borrowed amount + oiFee
     // (uint forwardPrice,) = _getForwardPrice("weth", expiry);
@@ -82,7 +86,23 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     vm.warp(block.timestamp + 1 weeks);
     cash.accrueInterest();
 
+    assertEq(subAccounts.lastAccountTradeId(charlieAcc), 4);
+
+    markets["weth"].pmrm.settleInterest(charlieAcc);
+
+    assertEq(subAccounts.lastAccountTradeId(charlieAcc), 5);
+
     assertApproxEqAbs(cash.borrowIndex(), 1001171311598975475, 0.01e18);
     assertApproxEqAbs(cash.supplyIndex(), 1000006089602394193, 0.01e18);
+    //    // interest accural breaks if you run it long enough
+    //    for (uint i=0; i<5; i++) {
+    //      console2.log(i);
+    //      vm.warp(block.timestamp + 100 weeks);
+    //      markets["weth"].pmrm.settleInterest(charlieAcc);
+    //      srm.settleInterest(aliceAcc);
+    //    }
+    //
+    //    vm.warp(block.timestamp + 100000 weeks);
+    //    srm.settleInterest(aliceAcc);
   }
 }

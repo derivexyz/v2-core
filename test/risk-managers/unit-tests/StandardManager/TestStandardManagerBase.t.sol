@@ -17,6 +17,7 @@ import "../../../shared/mocks/MockTrackableAsset.sol";
 import "../../../shared/mocks/MockCash.sol";
 
 import "../../../../scripts/config-local.sol";
+import "../../mocks/MockDutchAuction.sol";
 
 /**
  * @dev shard contract setting up environment for testing StandardManager
@@ -96,7 +97,7 @@ contract TestStandardManagerBase is Test {
     manager = new StandardManagerPublic(
       subAccounts,
       ICashAsset(address(cash)),
-      IDutchAuction(address(0)),
+      IDutchAuction(new MockDutchAuction()),
       portfolioViewer
     );
 

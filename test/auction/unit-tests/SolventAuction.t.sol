@@ -22,15 +22,9 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   /////////////////////////
 
   function testStartAuctionPaysFee() public {
-    dutchAuction.setSolventAuctionParams(
-      IDutchAuction.SolventAuctionParams({
-        startingMtMPercentage: 1e18,
-        fastAuctionCutoffPercentage: 0.8e18,
-        fastAuctionLength: 600,
-        slowAuctionLength: 7200,
-        liquidatorFeeRate: 0.01e18
-      })
-    );
+    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
+    params.liquidatorFeeRate = 0.01e18;
+    dutchAuction.setAuctionParams(params);
     // start auction
     _startDefaultSolventAuction(aliceAcc);
 
@@ -59,7 +53,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   function testSolventAuctionTerminatedIfMaxProportionIsBid() public {
     _startDefaultSolventAuction(aliceAcc);
 
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
 
     vm.warp(block.timestamp + params.fastAuctionLength);
 
@@ -197,6 +191,29 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(bobPercentage, percentage, "bobPercentage should be 10%");
   }
 
+  function testChangingMMDuringAuction() public {
+    manager.setMockMargin(aliceAcc, false, scenario, -1000e18);
+    manager.setMarkToMarket(aliceAcc, 1400e18);
+
+    dutchAuction.startAuction(aliceAcc, scenario);
+
+    // fast forward to half way through the fast auction, should give me 90% discount
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
+
+    uint percentage = 0.1e18;
+    vm.prank(bob);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+
+    // mark to market is changed to 1000, now i need to pay 90% of 1000 * 10% = 90
+    manager.setMockMargin(aliceAcc, false, scenario, 10e18);
+
+    vm.prank(bob);
+    (uint bobPercentage2, uint cashFromBob2,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+
+    // Second liquidation paid less, as mm has increased
+    assertGt(cashFromBob, cashFromBob2);
+  }
+
   function testBidShouldSettlePerps() public {
     _startDefaultSolventAuction(aliceAcc);
 
@@ -250,7 +267,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
   function testCannotBidOnEndedAuction() public {
     _startDefaultSolventAuction(aliceAcc);
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
     vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength + 5);
 
     vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
@@ -262,7 +279,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   function testConvertToInsolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
 
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
@@ -302,7 +319,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   function testCannotMarkInsolventIfAccountMMIsOK() public {
     _startDefaultSolventAuction(aliceAcc);
 
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
     vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength);
 
     // assume MM is back above 0
@@ -338,14 +355,6 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     vm.expectRevert(IDutchAuction.DA_ScenarioIdNotWorse.selector);
     dutchAuction.updateScenarioId(aliceAcc, newId);
-  }
-
-  function testCannotStepNonInsolventAuction() public {
-    _startDefaultSolventAuction(aliceAcc);
-
-    // increment the insolvent auction
-    vm.expectRevert(IDutchAuction.DA_SolventAuctionCannotIncrement.selector);
-    dutchAuction.continueInsolventAuction(aliceAcc);
   }
 
   function testTerminatesSolventAuction() public {
@@ -457,9 +466,9 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.setBufferMarginPercentage(0);
 
     // set fast auction cutoff to be 70%
-    IDutchAuction.SolventAuctionParams memory params = getDefaultAuctionParam();
+    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
     params.fastAuctionCutoffPercentage = 0.7e18;
-    dutchAuction.setSolventAuctionParams(params);
+    dutchAuction.setAuctionParams(params);
 
     // Auction starts
     manager.setMockMargin(seanAcc, false, scenario, -10000e18);

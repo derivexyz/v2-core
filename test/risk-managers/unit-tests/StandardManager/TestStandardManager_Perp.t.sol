@@ -16,6 +16,7 @@ import "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
 
 import "../../../shared/mocks/MockCash.sol";
+import "../../mocks/MockDutchAuction.sol";
 
 contract UNIT_TestStandardManager is Test {
   SubAccounts subAccounts;
@@ -25,6 +26,7 @@ contract UNIT_TestStandardManager is Test {
   MockPerp perp;
   MockOption option;
   MockFeeds stableFeed;
+  MockDutchAuction auction;
   PerpSettlementHelper perpHelper;
 
   MockFeeds feed;
@@ -48,6 +50,7 @@ contract UNIT_TestStandardManager is Test {
 
     option = new MockOption(subAccounts);
 
+    auction = new MockDutchAuction();
     feed = new MockFeeds();
     stableFeed = new MockFeeds();
     viewer = new SRMPortfolioViewer(subAccounts, cash);
@@ -55,7 +58,7 @@ contract UNIT_TestStandardManager is Test {
     manager = new StandardManager(
       subAccounts,
       ICashAsset(address(cash)),
-      IDutchAuction(address(0)),
+      IDutchAuction(address(auction)),
       viewer
     );
 

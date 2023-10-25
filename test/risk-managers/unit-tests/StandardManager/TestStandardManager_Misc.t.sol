@@ -48,7 +48,7 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     cash.deposit(aliceAcc, uint(50000e18));
 
     // can only borrow 50% of base asset's value
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18);
 
     // bob deposit 1 WBTC
     wbtc.mint(address(this), 1e18);

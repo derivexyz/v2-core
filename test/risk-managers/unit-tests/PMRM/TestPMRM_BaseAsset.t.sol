@@ -50,7 +50,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
       option,
       mockPerp,
       baseAsset,
-      IDutchAuction(address(0)),
+      IDutchAuction(new MockDutchAuction()),
       IPMRM.Feeds({
         spotFeed: ISpotFeed(feed),
         stableFeed: ISpotFeed(stableFeed),

@@ -4,8 +4,9 @@ pragma solidity ^0.8.18;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/Math.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
-import "lyra-utils/encoding/OptionEncoding.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 
+import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
@@ -150,7 +151,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    */
   function setScenarios(IPMRM.Scenario[] memory _scenarios) external onlyOwner {
     if (_scenarios.length == 0) {
-      // TODO: make error
       revert PMRM_InvalidScenarios();
     }
     for (uint i = 0; i < _scenarios.length; i++) {
@@ -190,7 +190,8 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     address caller,
     ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
-  ) public onlyAccounts {
+  ) external onlyAccounts {
+    // } nonReentrant {
     _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
     bool riskAdding = false;
@@ -213,7 +214,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
 
-    // TODO: test max account size properly (risk adding = false allowed creating unliquidatable portfolios)
+    // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
     if (assetBalances.length > maxAccountSize && previousBalances.length < assetBalances.length) {
       revert PMRM_TooManyAssets();
     }
@@ -236,6 +237,8 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     ISubAccounts.AssetBalance[] memory assetBalances,
     ISubAccounts.AssetBalance[] memory preBalances
   ) internal view {
+    _checkIfLiveAuction(accountId);
+
     bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
 
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
@@ -514,7 +517,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
-    // TODO: test bad scenarioId
+
     scenarios[0] = marginScenarios[scenarioId];
 
     (margin, mtm,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios, true);
