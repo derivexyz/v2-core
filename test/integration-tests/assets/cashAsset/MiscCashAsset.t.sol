@@ -61,18 +61,130 @@ contract INTEGRATION_CashAssetMisc is IntegrationTestBase {
     // bob can unlock by bidding the whole portfolio him self from a new acc ;)
     uint newAcc = subAccounts.createAccount(bob, srm);
     _depositCash(address(bob), newAcc, 2000e18);
+  }
 
-    vm.startPrank(bob);
-    auction.bid(aliceAcc, newAcc, 1e18, 0, 0);
+  /// high netSettledCash
+  function testExchangeRateIsStableWithTinyNetSettledCash() public {
+    srm.setBorrowingEnabled(true);
+    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18);
 
-    uint usdcBefore = usdc.balanceOf(bob);
-    cash.withdraw(bobAcc, 100e6, bob);
-    uint usdcAfter = usdc.balanceOf(bob);
-    assertEq(usdcAfter, usdcBefore + 100e6);
+    _tradeCall(2000e18);
+
+    vm.warp(expiry);
+    _setSpotPrice("weth", 4000e18, 1e18);
+    _setSettlementPrice("weth", expiry, 502000e18);
+
+    srm.settleOptions(option, aliceAcc);
+
+    assertEq(cash.netSettledCash(), -500000e18);
+
+    // when you withdraw all cash, exchange rate is still == 1 (as totalSupply == totalBorrow)
+    assertEq(cash.getCashToStableExchangeRate(), 1e18);
+
+    // 0 interest accrued
+    srm.settleInterest(aliceAcc);
+    srm.settleInterest(bobAcc);
+
+    int interest = 33_229_591160183198430000;
+    // TODO: there seems to be a rounding error here
+    int posInterest = 33_229_591160183198312000;
+
+    uint snapshot = vm.snapshot();
+    {
+      vm.warp(block.timestamp + 10 weeks);
+
+      // 35,000 interest...
+      assertEq(cash.calculateBalanceWithInterest(aliceAcc), 2000e18 - 500_000e18 - interest);
+      assertEq(cash.calculateBalanceWithInterest(bobAcc), 2_000e18 + interest);
+
+      srm.settleOptions(option, bobAcc);
+      assertEq(cash.calculateBalanceWithInterest(bobAcc), 502_000e18 + interest);
+      assertEq(cash.getCashToStableExchangeRate(), 1e18);
+    }
+
+    // No difference if the option was settled or not
+
+    vm.revertTo(snapshot);
+    {
+      srm.settleOptions(option, bobAcc);
+      assertEq(cash.netSettledCash(), 0);
+
+      vm.warp(block.timestamp + 10 weeks);
+
+      assertEq(cash.calculateBalanceWithInterest(aliceAcc), -498_000e18 - interest, "a");
+      // Interest is subtly different because some interest is applied to bob when the option is settled, so he has a bigger
+      // portion
+      assertEq(cash.calculateBalanceWithInterest(bobAcc), 502_000e18 + posInterest, "B");
+      assertEq(cash.getCashToStableExchangeRate(), 1e18);
+      assertEq(cash.calculateBalanceWithInterest(aliceAcc), -498_000e18 - interest, "a");
+    }
   }
 
   /// high netSettledCash
   function testExchangeRateIsStableWithLargeNetSettledCash() public {
+    srm.setBorrowingEnabled(true);
+    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18);
+
+    _tradeCall(2000e18);
+
+    vm.warp(expiry);
+    _setSpotPrice("weth", 4000e18, 1e18);
+    _setSettlementPrice("weth", expiry, 502000e18);
+
+    srm.settleOptions(option, bobAcc);
+
+    assertEq(cash.netSettledCash(), 500000e18);
+
+    // when you withdraw all cash, exchange rate is still == 1 (as totalSupply == totalBorrow)
+    assertEq(cash.getCashToStableExchangeRate(), 1e18);
+
+    srm.settleInterest(aliceAcc);
+    srm.settleInterest(bobAcc);
+
+    uint snapshot = vm.snapshot();
+    {
+      // 0 interest accrued as the system does not know alice is insolvent yet
+
+      vm.warp(block.timestamp + 10 weeks);
+
+      // 35,000 interest...
+      assertEq(cash.calculateBalanceWithInterest(aliceAcc), 2000e18, "a");
+      assertEq(cash.calculateBalanceWithInterest(bobAcc), 502_000e18, "B");
+
+      srm.settleOptions(option, aliceAcc);
+      assertEq(cash.calculateBalanceWithInterest(bobAcc), 502_000e18, "c");
+      assertEq(cash.calculateBalanceWithInterest(aliceAcc), -498_000e18, "d");
+      assertEq(cash.getCashToStableExchangeRate(), 1e18);
+    }
+
+    int interest = 33_229_591160183198430000;
+    // TODO: there seems to be a rounding error here
+    int posInterest = 33_229_591160183198312000;
+
+    vm.revertTo(snapshot);
+    {
+      // But if we settle alice at the same time, then interest begins to be charged
+      srm.settleOptions(option, aliceAcc);
+      assertEq(cash.netSettledCash(), 0);
+
+      vm.warp(block.timestamp + 10 weeks);
+
+      assertEq(cash.getCashToStableExchangeRate(), 1e18);
+      // Again, subtle difference...
+      assertEq(cash.calculateBalanceWithInterest(bobAcc), 502_000e18 + posInterest, "B");
+      assertEq(cash.calculateBalanceWithInterest(aliceAcc), -498_000e18 - interest, "a");
+
+      srm.settleInterest(aliceAcc);
+      srm.settleInterest(bobAcc);
+
+      assertEq(cash.calculateBalanceWithInterest(bobAcc), 502_000e18 + posInterest, "B");
+      assertEq(cash.calculateBalanceWithInterest(aliceAcc), -498_000e18 - interest, "a");
+      assertEq(cash.getCashToStableExchangeRate(), 1e18);
+    }
+  }
+
+  /// Exchange rate when balance is 0
+  function testExchangeRateIsStableWhenCashBalanceIsZero() public {
     srm.setBorrowingEnabled(true);
     srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18);
 
@@ -82,8 +194,12 @@ contract INTEGRATION_CashAssetMisc is IntegrationTestBase {
     vm.startPrank(alice);
     cash.withdraw(aliceAcc, usdc.balanceOf(address(cash)), alice);
 
-    console2.log(cash.getCurrentInterestRate());
-    console2.log(cash.getCashToStableExchangeRate());
+    // when you withdraw all cash, exchange rate is still == 1 (as totalSupply == totalBorrow)
+    assertEq(cash.getCashToStableExchangeRate(), 1e18);
+    vm.warp(block.timestamp + 10 weeks);
+
+    srm.settleInterest(aliceAcc);
+    assertEq(cash.getCashToStableExchangeRate(), 1e18);
   }
 
   function _tradeCall(uint strike) public {

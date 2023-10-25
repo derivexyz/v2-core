@@ -83,16 +83,12 @@ contract InterestRateModel is IInterestRateModel {
   function getBorrowRate(uint supply, uint borrows) external view returns (uint) {
     uint util = _getUtilRate(supply, borrows);
 
-    console2.log("util", util);
-
     if (util <= optimalUtil) {
       return util.multiplyDecimal(rateMultiplier) + minRate;
     } else {
       uint normalRate = optimalUtil.multiplyDecimal(rateMultiplier) + minRate;
-      console2.log("normalRate", normalRate);
 
       uint excessUtil = util - optimalUtil;
-      console2.log("excessUtil", excessUtil);
 
       return excessUtil.multiplyDecimal(highRateMultiplier) + normalRate;
     }

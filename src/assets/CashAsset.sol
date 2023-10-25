@@ -19,8 +19,6 @@ import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 
 import {ManagerWhitelist} from "./utils/ManagerWhitelist.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title Cash asset with built-in lending feature.
  * @dev   Users can deposit a stable token and credit this cash asset into their subAccounts.
@@ -348,16 +346,6 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     return _getExchangeRate();
   }
 
-  function getCurrentInterestRate() external view returns (uint) {
-    uint realSupply = totalSupply;
-
-    if (netSettledCash < 0) {
-      realSupply += (-netSettledCash).toUint256(); // util = totalBorrow/(totalSupply + netBurned)
-    }
-
-    return rateModel.getBorrowRate(realSupply, totalBorrow);
-  }
-
   //////////////////////////
   //    Account Hooks     //
   //////////////////////////
@@ -510,7 +498,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
     if (netSettledCash < 0) {
       realSupply += (-netSettledCash).toUint256(); // util = totalBorrow/(totalSupply + netBurned)
     }
-    // TODO: if we have a large netSettledCash, does interest accrual get messed up? Should have a test case for each direction - make sure the exchange rate stays at 1
+
     // Note: we ignore including netSettledCash in totalBorrow intentionally since all it would do is increase/spike
     // the interest rate temporarily (which causes unintentional side-effects with a large enough settlement amount)
 

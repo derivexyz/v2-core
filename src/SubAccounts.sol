@@ -50,7 +50,6 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
   /// @dev user nonce for permit. User => wordPosition => nonce bit map
   mapping(address account => mapping(uint wordPosition => uint nonce)) public nonceBitmap;
 
-  // TODO: test thoroughly
   /// @dev the trade id of the last trade that was executed for an account
   mapping(uint accountId => uint tradeId) public lastAccountTradeId;
 
