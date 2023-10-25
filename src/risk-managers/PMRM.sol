@@ -151,7 +151,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    */
   function setScenarios(IPMRM.Scenario[] memory _scenarios) external onlyOwner {
     if (_scenarios.length == 0) {
-      // TODO: make error
       revert PMRM_InvalidScenarios();
     }
     for (uint i = 0; i < _scenarios.length; i++) {
@@ -215,7 +214,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
 
-    // TODO: test max account size properly (risk adding = false allowed creating unliquidatable portfolios)
+    // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
     if (assetBalances.length > maxAccountSize && previousBalances.length < assetBalances.length) {
       revert PMRM_TooManyAssets();
     }
@@ -469,7 +468,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    * @notice Can be called by anyone to settle a perp asset in an account
    */
   function settlePerpsWithIndex(uint accountId) external {
-    // TODO: any way to make this nonReentrant?
     _settlePerpUnrealizedPNL(perp, accountId);
   }
 
@@ -477,7 +475,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    * @notice Can be called by anyone to settle a perp asset in an account
    */
   function settleOptions(IOptionAsset _option, uint accountId) external {
-    // TODO: any way to make this nonReentrant?
     if (_option != option) revert PMRM_UnsupportedAsset();
     _settleAccountOptions(_option, accountId);
   }
@@ -520,7 +517,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   {
     IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
-    // TODO: test bad scenarioId
+
     scenarios[0] = marginScenarios[scenarioId];
 
     (margin, mtm,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios, true);

@@ -117,4 +117,9 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     // closing / having same # of assets should be allowed
     subAccounts.submitTransfers(newTransfers, "");
   }
+
+  function testRevertsIfUsingBadScenarioId() public {
+    vm.expectRevert();
+    pmrm.getMarginAndMarkToMarket(aliceAcc, true, 10000);
+  }
 }

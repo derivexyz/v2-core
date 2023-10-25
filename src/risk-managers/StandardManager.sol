@@ -315,7 +315,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
     ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
 
-    // TODO: test max account size properly (risk adding = false allowed creating unliquidatable portfolios)
+    // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
     if (assetBalances.length > maxAccountSize && previousBalances.length < assetBalances.length) {
       revert SRM_TooManyAssets();
     }
@@ -340,9 +340,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).arrangeSRMPortfolio(assetBalances);
 
     // TODO: add tests that we allow people to have neg cash if they already had it previously (only close neg cash)
-    // need to compare cash delta to previous balance -> if post_trade_cash < 0 -> delta can only be positive
 
-    // account can only have negative cash if borrowing is enabled
+    // account can only have negative cash if borrowing is enabled. However allow closing of negative positions if they
+    // already had them.
     if (!borrowingEnabled && portfolio.cash < 0 && !isPositiveCashDelta) revert SRM_NoNegativeCash();
 
     // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
@@ -600,7 +600,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
    * @dev This function can be called by anyone
    */
   function settleOptions(IOptionAsset option, uint accountId) external {
-    // TODO: any way to make this nonReentrant?
     if (!_assetDetails[option].isWhitelisted) revert SRM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
   }
@@ -609,7 +608,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
    * @dev settle perp value with index price
    */
   function settlePerpsWithIndex(uint accountId) external {
-    // TODO: any way to make this nonReentrant?
     for (uint id = 1; id <= lastMarketId; id++) {
       IPerpAsset perp = IPerpAsset(address(assetMap[id][AssetType.Perpetual]));
       if (address(perp) == address(0) || subAccounts.getBalance(accountId, perp, 0) == 0) continue;

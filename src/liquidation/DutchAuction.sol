@@ -33,10 +33,11 @@ import "openzeppelin/access/Ownable2Step.sol";
  * can be un-flagged if buffer margin > 0
  *
  * 3. InsolventAuction
- * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even if it's given for free.
- * or, it can be started if mark to market value of a portfolio is negative.
- * the insolvent auction that will print the liquidator cash or pay out from security module for liquidator to take the position
- * the price of portfolio went from 0 to MtM * scaler (negative)
+ * insolvent auction will kick off if no one bid on the solvent auction, meaning no one wants to take the portfolio even
+ * if it's given for free, or, it can be started if mark to market value of a portfolio is negative.
+ *
+ * the insolvent auction that will pay out from security module or print cash to the liquidator to take on the position
+ * the price of portfolio goes from 0 to MM
  * can be un-flagged if maintenance margin > 0
  */
 contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
@@ -220,7 +221,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
 
     // check if the new scenarioId is worse than the current one
-    // TODO: add a test for how this works for basis (should revert/not allow updates as margin is the "same")
+    // TODO: add a test for how this works for basis contingency in PMRM (should revert/not allow updates as margin is the "same")
     (int newMargin,,) = _getMarginAndMarkToMarket(accountId, scenarioId);
     (int currentMargin,,) = _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
 
@@ -242,9 +243,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     if (auctions[accountId].insolvent) {
       revert DA_AuctionAlreadyInInsolvencyMode();
     }
-    // TODO: THIS WILL REVERT IF MTM < 0 -> CANNOT CONVERT AUCTION. Have to terminate -> restart
-    //  - todo: test to show this flow/check that terminate will work in this situation
-    // Could do if (mtm > 0 && _getSolvent[...]) to resolve
+
+    // Note: must terminate auction -> start insolvent auction to convert a solvent auction with mtm < 0 into insolvent
     if (_getSolventAuctionBidPrice(accountId, markToMarket) > 0) {
       revert DA_OngoingSolventAuction();
     }
@@ -622,9 +622,10 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     (int maintenanceMargin, int markToMarket) =
       ILiquidatableManager(manager).getMarginAndMarkToMarket(accountId, false, scenarioId);
     // derive Buffer margin from maintenance margin and mark to market
-    int mmBuffer = maintenanceMargin - markToMarket; // a negative number added to the mtm to become maintenance margin
-    // TODO: invariant test -> add an assertion mmBuffer is negative
-    // a more conservative buffered margin that we liquidate to
+    int mmBuffer = maintenanceMargin - markToMarket;
+
+    // Buffer margin is a more conservative margin value that we liquidate to, as we do not want users to be flagged
+    // multiple times in short order if the price moves against them
     int bufferMargin = maintenanceMargin + mmBuffer.multiplyDecimal(bufferMarginPercentage);
 
     return (maintenanceMargin, bufferMargin, markToMarket);
@@ -668,9 +669,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     if (timeElapsed >= auctionParams.insolventAuctionLength) {
       return maintenanceMargin;
     } else {
-      // scaler is linearly growing from 1 to endingMtMScaler, over the length of the auction
-      return
-        int(timeElapsed).multiplyDecimal(maintenanceMargin).divideDecimal(int(auctionParams.insolventAuctionLength));
+      // scaler is linearly growing from 1 to MM, over the length of the auction
+      return maintenanceMargin * int(timeElapsed) / int(auctionParams.insolventAuctionLength);
     }
   }
 }
