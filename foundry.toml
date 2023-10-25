@@ -3,7 +3,7 @@ src = 'src'
 out = 'out'
 
 optimizer = true
-optimizer_runs = 10
+optimizer_runs = 100
 fs_permissions = [{ access = "read-write", path = "./"}]
 
 solc_version="0.8.18"
@@ -24,3 +24,5 @@ conduit_prod = "https://l2-prod-testnet-0eakp60405.t.conduit.xyz"
 conduit_staging = "https://l2-staging-9ns7v94tpj.t.conduit.xyz"
 
 sepolia = "https://sepolia.infura.io/v3/26251a7744c548a3adbc17880fc70764"
+
+local = "http://localhost:8545"

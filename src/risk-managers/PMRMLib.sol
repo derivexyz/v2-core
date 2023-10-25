@@ -171,7 +171,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     IPMRM.ExpiryHoldings memory expiry,
     uint spotShock,
     IPMRM.VolShockDirection volShockDirection
-  ) internal view returns (int mtm) {
+  ) internal pure returns (int mtm) {
     uint volShock = DecimalMath.UNIT;
     if (volShockDirection == IPMRM.VolShockDirection.Up) {
       volShock = expiry.volShockUp;

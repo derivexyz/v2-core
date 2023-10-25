@@ -12,6 +12,7 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
+import {IAsset} from "../interfaces/IAsset.sol";
 
 import {IManager} from "../interfaces/IManager.sol";
 
@@ -26,9 +27,6 @@ import {GlobalSubIdOITracking} from "./utils/GlobalSubIdOITracking.sol";
  * @dev settlement refers to the action initiate by the manager that print / burn cash based on accounts' PNL and funding
  *      this contract keep track of users' pending funding and PNL, during trades
  *      and update them when settlement is called
- * TODO: how do we close all perps
- *  - add flag + freeze funding + spot price
- *  - in manager: if flag is active -> force close perp + pay out due cash
  */
 contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, ManagerWhitelist {
   using SafeERC20 for IERC20Metadata;
@@ -74,6 +72,12 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
   /// @dev Last time aggregated funding rate was updated
   uint public lastFundingPaidAt;
+
+  /// @dev Flag to turn off the perp and allow migration
+  bool public isDisabled;
+
+  /// @dev Perp price at the time of disabling
+  int public frozenPerpPrice;
 
   ///////////////////////
   //    Constructor    //
@@ -144,6 +148,16 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     fundingConvergencePeriod = _fundingConvergencePeriod.toInt256();
 
     emit ConvergencePeriodUpdated(fundingConvergencePeriod);
+  }
+
+  function disable() external onlyOwner {
+    _updateFunding();
+    // If frozen previously, this will just return itself
+    frozenPerpPrice = _getPerpPrice();
+
+    isDisabled = true;
+
+    emit Disabled(frozenPerpPrice, aggregatedFunding);
   }
 
   ///////////////////////
@@ -252,6 +266,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @dev Return the hourly funding rate for an account
    */
   function getFundingRate() external view returns (int fundingRate) {
+    if (isDisabled) {
+      return 0;
+    }
     int indexPrice = _getIndexPrice();
     fundingRate = _getFundingRate(indexPrice);
   }
@@ -267,6 +284,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @dev Return the current mark price for the perp asset
    */
   function getPerpPrice() external view returns (uint, uint) {
+    if (isDisabled) {
+      return (uint(frozenPerpPrice), 1e18);
+    }
     return perpFeed.getResult();
   }
 
@@ -309,6 +329,21 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     position.funding = 0;
     position.pnl = 0;
 
+    if (isDisabled) {
+      // If the perp has been disabled/migration enabled delete the position after realising PNL/funding
+      subAccounts.assetAdjustment(
+        ISubAccounts.AssetAdjustment({
+          acc: accountId,
+          asset: IAsset(address(this)),
+          subId: 0,
+          amount: -_getPositionSize(accountId),
+          assetData: bytes32(0)
+        }),
+        false,
+        ""
+      );
+    }
+
     emit PositionCleared(accountId);
   }
 
@@ -340,7 +375,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @dev Update global funding, reflected on aggregatedFunding
    */
   function _updateFunding() internal {
-    if (block.timestamp == lastFundingPaidAt) return;
+    if (block.timestamp == lastFundingPaidAt || isDisabled) return;
 
     int indexPrice = _getIndexPrice();
     int fundingRate = _getFundingRate(indexPrice);
@@ -389,6 +424,10 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   function _getUnrealizedFunding(uint accountId, int size, int indexPrice) internal view returns (int funding) {
     PositionDetail storage position = positions[accountId];
 
+    if (isDisabled) {
+      return _getFunding(aggregatedFunding, position.lastAggregatedFunding, size);
+    }
+
     int fundingRate = _getFundingRate(indexPrice);
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
@@ -428,11 +467,19 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   function _getIndexPrice() internal view returns (int) {
+    if (isDisabled) {
+      // Note: this value should not get used anywhere when disabled, but must be left in for
+      // certain function parameters
+      return 0;
+    }
     (uint spotPrice,) = spotFeed.getSpot();
     return spotPrice.toInt256();
   }
 
   function _getPerpPrice() internal view returns (int) {
+    if (isDisabled) {
+      return frozenPerpPrice;
+    }
     (uint perpPrice,) = perpFeed.getResult();
     return perpPrice.toInt256();
   }

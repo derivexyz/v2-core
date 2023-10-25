@@ -102,12 +102,12 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
 
   function testCannotSetInvalidBaseMarginFactor() public {
     vm.expectRevert(IStandardManager.SRM_InvalidBaseDiscountFactor.selector);
-    manager.setBaseMarginDiscountFactor(btcMarketId, 1.01e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 1.01e18);
   }
 
   function testBaseAssetCanAddMargin() public {
     // enable a discount factor of 50%
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18);
 
     _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
 
@@ -120,7 +120,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
       btcMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.5e18, 0.5e18, 0.1e18)
     );
     // enable a discount factor of 50%
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18);
     btcFeed.setSpot(btcSpot, 0.3e18);
 
     _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
