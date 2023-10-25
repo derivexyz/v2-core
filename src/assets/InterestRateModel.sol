@@ -2,12 +2,14 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/Math.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
-import "lyra-utils/math/UintLib.sol";
 
 import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title Interest Rate Model
@@ -81,11 +83,17 @@ contract InterestRateModel is IInterestRateModel {
   function getBorrowRate(uint supply, uint borrows) external view returns (uint) {
     uint util = _getUtilRate(supply, borrows);
 
+    console2.log("util", util);
+
     if (util <= optimalUtil) {
       return util.multiplyDecimal(rateMultiplier) + minRate;
     } else {
       uint normalRate = optimalUtil.multiplyDecimal(rateMultiplier) + minRate;
+      console2.log("normalRate", normalRate);
+
       uint excessUtil = util - optimalUtil;
+      console2.log("excessUtil", excessUtil);
+
       return excessUtil.multiplyDecimal(highRateMultiplier) + normalRate;
     }
   }
@@ -106,7 +114,7 @@ contract InterestRateModel is IInterestRateModel {
       return 0;
     }
 
-    // make sure util rate cannot
-    return UintLib.min(borrows.divideDecimal(supply), 1e18);
+    // make sure util rate cannot exceed 1
+    return Math.min(borrows.divideDecimal(supply), 1e18);
   }
 }

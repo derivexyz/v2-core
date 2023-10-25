@@ -69,7 +69,7 @@ contract UNIT_CashAssetHook is Test {
     (int postBalance, bool needAllowance) = cashAsset.handleAdjustment(adjustment, 0, 0, manager, address(this));
 
     assertEq(needAllowance, true);
-    // todo: updaete this check to include interest
+    // todo: update this check to include interest
     assertEq(postBalance, delta);
   }
 }

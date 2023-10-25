@@ -5,10 +5,7 @@ import "forge-std/console2.sol";
 
 import "../../shared/IntegrationTestBase.t.sol";
 
-/**
- * @dev testing charge of OI fee in a real setting
- */
-contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
+contract INTEGRATION_CashAssetMisc is IntegrationTestBase {
   using DecimalMath for uint;
 
   uint64 expiry;
@@ -30,6 +27,8 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
 
     //    auction.setWithdrawBlockThreshold(-100e18);
   }
+
+  /// Withdraw lock
 
   function testBigInsolventAuctionLockWithdraw() public {
     auction.setSMAccount(smAcc);
@@ -70,6 +69,21 @@ contract INTEGRATION_BorrowAgainstOptionsTest is IntegrationTestBase {
     cash.withdraw(bobAcc, 100e6, bob);
     uint usdcAfter = usdc.balanceOf(bob);
     assertEq(usdcAfter, usdcBefore + 100e6);
+  }
+
+  /// high netSettledCash
+  function testExchangeRateIsStableWithLargeNetSettledCash() public {
+    srm.setBorrowingEnabled(true);
+    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18);
+
+    _setSpotPrice("weth", 4000e18, 1e18);
+    _depositBase("weth", alice, aliceAcc, 1000e18);
+
+    vm.startPrank(alice);
+    cash.withdraw(aliceAcc, usdc.balanceOf(address(cash)), alice);
+
+    console2.log(cash.getCurrentInterestRate());
+    console2.log(cash.getCashToStableExchangeRate());
   }
 
   function _tradeCall(uint strike) public {

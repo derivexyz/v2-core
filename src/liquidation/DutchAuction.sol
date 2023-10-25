@@ -9,13 +9,12 @@ import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {SubAccounts} from "../SubAccounts.sol";
 
 // inherited
+import "openzeppelin/security/ReentrancyGuard.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "openzeppelin/access/Ownable2Step.sol";
-
-import "forge-std/console2.sol";
 
 /**
  * @title Dutch Auction
@@ -40,7 +39,7 @@ import "forge-std/console2.sol";
  * the price of portfolio went from 0 to MtM * scaler (negative)
  * can be un-flagged if maintenance margin > 0
  */
-contract DutchAuction is IDutchAuction, Ownable2Step {
+contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   using SafeCast for int;
   using SafeCast for uint;
   using SignedDecimalMath for int;
@@ -134,7 +133,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @param accountId The id of the account being liquidated
    * @param scenarioId id to compute the IM with for PMRM, ignored for standard manager
    */
-  function startAuction(uint accountId, uint scenarioId) external {
+  function startAuction(uint accountId, uint scenarioId) external nonReentrant {
     _startAuction(accountId, scenarioId);
   }
 
@@ -217,7 +216,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @notice anyone can come in during the auction to supply a scenario ID that will make the IM worse
    * @param scenarioId new scenarioId
    */
-  function updateScenarioId(uint accountId, uint scenarioId) external {
+  function updateScenarioId(uint accountId, uint scenarioId) external nonReentrant {
     if (!auctions[accountId].ongoing) revert DA_AuctionNotStarted();
 
     // check if the new scenarioId is worse than the current one
@@ -236,7 +235,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev This function can only be called on auctions that has already started as solvent
    * @param accountId the accountID being liquidated
    */
-  function convertToInsolventAuction(uint accountId) external {
+  function convertToInsolventAuction(uint accountId) external nonReentrant {
     uint scenarioId = auctions[accountId].scenarioId;
     (int maintenanceMargin,, int markToMarket) = _getMarginAndMarkToMarket(accountId, scenarioId);
 
@@ -262,7 +261,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @dev This is to allow account owner to cancel the auction after adding more collateral
    * @param accountId the accountId that relates to the auction that is being stepped
    */
-  function terminateAuction(uint accountId) external {
+  function terminateAuction(uint accountId) external nonReentrant {
     (bool canTerminate,,) = getAuctionStatus(accountId);
     if (!canTerminate) revert DA_AuctionCannotTerminate();
     _terminateAuction(accountId);
@@ -468,7 +467,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step {
    * @notice returns whether an auction is live
    */
   function isAuctionLive(uint accountId) external view returns (bool) {
-    console2.log("hi");
     return auctions[accountId].ongoing;
   }
 

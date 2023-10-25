@@ -4,8 +4,9 @@ pragma solidity ^0.8.18;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/Math.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
-import "lyra-utils/encoding/OptionEncoding.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 
+import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
@@ -190,7 +191,8 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     address caller,
     ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
-  ) public onlyAccounts {
+  ) external onlyAccounts {
+    // } nonReentrant {
     _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
     bool riskAdding = false;
@@ -467,6 +469,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    * @notice Can be called by anyone to settle a perp asset in an account
    */
   function settlePerpsWithIndex(uint accountId) external {
+    // TODO: any way to make this nonReentrant?
     _settlePerpUnrealizedPNL(perp, accountId);
   }
 
@@ -474,6 +477,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    * @notice Can be called by anyone to settle a perp asset in an account
    */
   function settleOptions(IOptionAsset _option, uint accountId) external {
+    // TODO: any way to make this nonReentrant?
     if (_option != option) revert PMRM_UnsupportedAsset();
     _settleAccountOptions(_option, accountId);
   }

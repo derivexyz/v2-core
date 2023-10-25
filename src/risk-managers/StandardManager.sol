@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/Math.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
@@ -28,15 +29,12 @@ import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {BaseManager} from "./BaseManager.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title StandardManager
  * @author Lyra
  * @notice Risk Manager that margin perp and option in isolation.
  */
-
-contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager {
+contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager, ReentrancyGuard {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -72,7 +70,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   mapping(uint marketId => OptionMarginParams) public optionMarginParams;
 
   /// @dev Base margin discount: each base asset be treated as "spot * discount_factor" amount of cash
-  mapping(uint marketId => uint) public baseMarginDiscountFactor;
+  mapping(uint marketId => uint) public baseAssetMarginFactor;
 
   /// @dev Oracle Contingency parameters. used to increase margin requirement if oracle has low confidence
   mapping(uint marketId => OracleContingencyParams) public oracleContingencyParams;
@@ -111,11 +109,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev the standard manager only support option asset & perp asset
    */
   function whitelistAsset(IAsset _asset, uint _marketId, AssetType _type) external onlyOwner {
-    // TODO(anton): make sure you can't put the same asset on multiple markets/different types etc.
     _checkMarketExist(_marketId);
 
     IAsset previousAsset = assetMap[_marketId][_type];
+    AssetDetail memory previousDetails = _assetDetails[previousAsset];
+
     delete _assetDetails[previousAsset];
+    delete assetMap[previousDetails.marketId][previousDetails.assetType];
 
     _assetDetails[_asset] = AssetDetail({isWhitelisted: true, marketId: _marketId, assetType: _type});
 
@@ -142,7 +142,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   {
     _checkMarketExist(marketId);
 
-    // registered asset
     spotFeeds[marketId] = spotFeed;
     forwardFeeds[marketId] = forwardFeed;
     volFeeds[marketId] = volFeed;
@@ -171,16 +170,16 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev Set discount factor for base asset
    * @dev if this factor is 0 (unset), base asset won't contribute to margin
    */
-  function setBaseMarginDiscountFactor(uint marketId, uint discountFactor) external onlyOwner {
+  function setBaseAssetMarginFactor(uint marketId, uint marginFactor) external onlyOwner {
     _checkMarketExist(marketId);
 
-    if (discountFactor >= 1e18) {
+    if (marginFactor > 1e18) {
       revert SRM_InvalidBaseDiscountFactor();
     }
 
-    baseMarginDiscountFactor[marketId] = discountFactor;
+    baseAssetMarginFactor[marketId] = marginFactor;
 
-    emit BaseMarginDiscountFactorSet(marketId, discountFactor);
+    emit BaseAssetMarginFactorSet(marketId, marginFactor);
   }
 
   /**
@@ -223,12 +222,10 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
   function setOracleContingencyParams(uint marketId, OracleContingencyParams memory params) external onlyOwner {
     _checkMarketExist(marketId);
     if (
-      params.perpThreshold > 1e18 //
-        || params.optionThreshold > 1e18
-      //
-      || params.baseThreshold > 1e18
-      //
-      || params.OCFactor > 1e18
+      params.perpThreshold > 1e18 // 0 <= x < 1
+        || params.optionThreshold > 1e18 // 0 <= x < 1
+        || params.baseThreshold > 1e18 // 0 <= x < 1
+        || params.OCFactor > 1e18
     ) {
       revert SRM_InvalidOracleContingencyParams();
     }
@@ -272,7 +269,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     address caller,
     ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
-  ) public override onlyAccounts {
+  ) external override onlyAccounts nonReentrant {
     _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
@@ -510,8 +507,9 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
       netMargin += margin;
       totalMarkToMarket += mtm;
 
-      // add oracle contingency on this expiry if min conf is too low, only for IM
       if (!isInitial) continue;
+
+      // add oracle contingency on this expiry if min conf is too low, only for IM
       OracleContingencyParams memory ocParam = oracleContingencyParams[marketHolding.marketId];
 
       if (ocParam.optionThreshold != 0 && localMinConf < uint(ocParam.optionThreshold)) {
@@ -539,7 +537,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
     uint notional = position.multiplyDecimal(spotPrice);
 
     // the margin contributed by base asset is spot * positionSize * discount factor
-    baseMargin = notional.multiplyDecimal(baseMarginDiscountFactor[marketId]).toInt256();
+    baseMargin = notional.multiplyDecimal(baseAssetMarginFactor[marketId]).toInt256();
 
     // convert to denominate in stable
     baseMarkToMarket = notional.divideDecimal(stablePrice).toInt256();
@@ -602,6 +600,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev This function can be called by anyone
    */
   function settleOptions(IOptionAsset option, uint accountId) external {
+    // TODO: any way to make this nonReentrant?
     if (!_assetDetails[option].isWhitelisted) revert SRM_UnsupportedAsset();
     _settleAccountOptions(option, accountId);
   }
@@ -610,6 +609,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev settle perp value with index price
    */
   function settlePerpsWithIndex(uint accountId) external {
+    // TODO: any way to make this nonReentrant?
     for (uint id = 1; id <= lastMarketId; id++) {
       IPerpAsset perp = IPerpAsset(address(assetMap[id][AssetType.Perpetual]));
       if (address(perp) == address(0) || subAccounts.getBalance(accountId, perp, 0) == 0) continue;
@@ -639,7 +639,7 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager 
    * @dev Return the total net margin of an account
    * @return margin if it is negative, the account is insolvent
    */
-  function getMargin(uint accountId, bool isInitial) public view returns (int margin) {
+  function getMargin(uint accountId, bool isInitial) external view returns (int margin) {
     // get portfolio from array of balances
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).getSRMPortfolio(accountId);
     (margin,) = _getMarginAndMarkToMarket(accountId, portfolio, isInitial);
