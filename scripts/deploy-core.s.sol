@@ -98,6 +98,8 @@ contract DeployCore is Utils {
   function _setupCoreFunctions(Deployment memory deployment) internal {
     deployment.srmViewer.setStandardManager(deployment.srm);
 
+    deployment.auction.setSMAccount(deployment.securityModule.accountId());
+
     // setup cash
     deployment.cash.setLiquidationModule(deployment.auction);
     deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
