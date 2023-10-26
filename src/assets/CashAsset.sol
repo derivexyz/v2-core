@@ -183,7 +183,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
         acc: recipientAccount,
         asset: ICashAsset(address(this)),
         subId: 0,
-        amount: SafeCast.toInt256(amountInAccount),
+        amount: amountInAccount.toInt256(),
         assetData: bytes32(0)
       }),
       true, // do trigger callback on handleAdjustment so we apply interest
@@ -247,7 +247,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
         acc: accountId,
         asset: ICashAsset(address(this)),
         subId: 0,
-        amount: -SafeCast.toInt256(cashAmount),
+        amount: -(cashAmount.toInt256()),
         assetData: bytes32(0)
       }),
       true, // do trigger callback on handleAdjustment so we apply interest

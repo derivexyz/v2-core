@@ -169,6 +169,12 @@ interface ISubAccounts is IERC721 {
   function manager(uint accountId) external view returns (IManager);
 
   /**
+   * @dev return the tradeId for when the account was last interacted with
+   * @param accountId ID of account
+   */
+  function lastAccountTradeId(uint accountId) external view returns (uint lastTradeId);
+
+  /**
    * @dev return amount of asset in the account, and the order (index) of the asset in the asset array
    * @param accountId ID of account
    * @param asset IAsset of balance

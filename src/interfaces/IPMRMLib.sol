@@ -45,22 +45,19 @@ interface IPMRMLib {
     uint optionPercent;
   }
 
-  function getMarginAndMarkToMarket(
-    IPMRM.Portfolio memory portfolio,
-    bool isInitial,
-    IPMRM.Scenario[] memory scenarios,
-    bool useBasisContingency
-  ) external view returns (int margin, int markToMarket, uint worstScenario);
+  function getMarginAndMarkToMarket(IPMRM.Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios)
+    external
+    view
+    returns (int margin, int markToMarket, uint worstScenario);
 
   function getScenarioMtM(IPMRM.Portfolio memory portfolio, IPMRM.Scenario memory scenario)
     external
     view
     returns (int scenarioMtM);
 
-  function addPrecomputes(IPMRM.Portfolio memory portfolio, bool addBasisCont)
-    external
-    view
-    returns (IPMRM.Portfolio memory);
+  function addPrecomputes(IPMRM.Portfolio memory portfolio) external view returns (IPMRM.Portfolio memory);
+
+  function getBasisContingencyScenarios() external view returns (IPMRM.Scenario[] memory);
 
   ////////////
   // Errors //

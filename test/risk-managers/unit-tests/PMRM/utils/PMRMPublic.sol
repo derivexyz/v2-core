@@ -21,12 +21,12 @@ contract PMRMPublic is PMRM {
     view
     returns (IPMRM.Portfolio memory portfolio)
   {
-    return _arrangePortfolio(0, assets, true);
+    return _arrangePortfolio(0, assets);
   }
 
   function getMarginByBalances(ISubAccounts.AssetBalance[] memory assets, bool isInitial) external view returns (int) {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, assets, true);
-    (int im,,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, assets);
+    (int im,,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios);
     return im;
   }
 
@@ -56,9 +56,8 @@ contract PMRMPublic is PMRM {
   function getMarginAndMarkToMarketPub(
     IPMRM.Portfolio memory portfolio,
     bool isInitial,
-    IPMRM.Scenario[] memory scenarios,
-    bool useBasisContingency
+    IPMRM.Scenario[] memory scenarios
   ) external view returns (int, int, uint) {
-    return lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios, useBasisContingency);
+    return lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios);
   }
 }

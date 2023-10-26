@@ -85,7 +85,10 @@ contract UNIT_TestPMRM_RiskBypass is PMRMSimTest {
   }
 
   function testPMRM_riskReducingTradeBasisContingency() public {
-    _depositCash(bobAcc, 150_000 ether);
+    _depositCash(bobAcc, 150_000e18);
+
+    // TODO: double check this test, originally didnt have to add cash to alice
+    _depositCash(aliceAcc, 15_000e18);
 
     ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BasisContingency");
     setBalances(aliceAcc, balances);

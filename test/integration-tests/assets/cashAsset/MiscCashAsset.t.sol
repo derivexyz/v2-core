@@ -66,7 +66,7 @@ contract INTEGRATION_CashAssetMisc is IntegrationTestBase {
   /// high netSettledCash
   function testExchangeRateIsStableWithTinyNetSettledCash() public {
     srm.setBorrowingEnabled(true);
-    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18);
+    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18, 1e18);
 
     _tradeCall(2000e18);
 
@@ -123,7 +123,7 @@ contract INTEGRATION_CashAssetMisc is IntegrationTestBase {
   /// high netSettledCash
   function testExchangeRateIsStableWithLargeNetSettledCash() public {
     srm.setBorrowingEnabled(true);
-    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18);
+    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18, 1e18);
 
     _tradeCall(2000e18);
 
@@ -186,7 +186,7 @@ contract INTEGRATION_CashAssetMisc is IntegrationTestBase {
   /// Exchange rate when balance is 0
   function testExchangeRateIsStableWhenCashBalanceIsZero() public {
     srm.setBorrowingEnabled(true);
-    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18);
+    srm.setBaseAssetMarginFactor(markets["weth"].id, 1e18, 1e18);
 
     _setSpotPrice("weth", 4000e18, 1e18);
     _depositBase("weth", alice, aliceAcc, 1000e18);

@@ -39,12 +39,23 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   function testCannotBidOnInsolventAuctionIfAccountUnderwater() public {
     _startDefaultInsolventAuction(aliceAcc);
 
-    // bidder bob is also under water
-    manager.setMockMargin(bobAcc, false, scenario, -300e18);
+    vm.prank(bob);
+    usdcAsset.withdraw(bobAcc, 19999e18, bob);
 
     vm.prank(bob);
+    vm.expectRevert(IDutchAuction.DA_InsufficientCash.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
-    vm.expectRevert(IDutchAuction.DA_BidderInsolvent.selector);
+    vm.prank(bob);
+    usdcAsset.withdraw(bobAcc, 1e18, bob);
+
+    vm.prank(bob);
+    vm.expectRevert(IDutchAuction.DA_InvalidBidderPortfolio.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
+
+    // Can bid successfully with enough collateral
+    _mintAndDepositCash(bobAcc, 20000e18);
+    vm.prank(bob);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
   }
 

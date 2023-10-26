@@ -45,18 +45,21 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     pmrm.findInArrayPub(expiryData, 0, 0);
   }
 
+  function testPMRM_noScenarios() public {
+    // Cannot set no scenarios
+    vm.expectRevert(IPMRM.PMRM_InvalidScenarios.selector);
+    pmrm.setScenarios(new IPMRM.Scenario[](0));
+  }
+
   function testPMRM_invalidGetMarginState() public {
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
 
     IPMRM.Portfolio memory portfolio;
     vm.expectRevert(IPMRMLib.PMRML_InvalidGetMarginState.selector);
-    pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios, false);
+    pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios);
 
-    (int margin, int mtm, uint worstScenario) = pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios, true);
-    assertEq(margin, 0);
-    assertEq(mtm, 0);
-    // since there are no scenarios, worstScenario is the basisContingency
-    assertEq(worstScenario, 0);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidGetMarginState.selector);
+    pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios);
   }
 
   function testPMRM_CannotTradeIfExceed_MaxAssets() public {
@@ -65,9 +68,6 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](pmrm.maxAccountSize() + 1);
     for (uint i = 0; i < transfers.length; i++) {
       transfers[i] = ISubAccounts.AssetTransfer({
-        // asset: IAsset(address(option)),
-        // subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
-        // balance: 1e18
         fromAcc: aliceAcc,
         toAcc: bobAcc,
         asset: option,
@@ -85,6 +85,7 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     pmrm.setMaxAccountSize(10);
 
     _depositCash(aliceAcc, 2_000_000e18);
+    _depositCash(bobAcc, 2_000_000e18);
     ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](9);
     for (uint i = 0; i < transfers.length; i++) {
       transfers[i] = ISubAccounts.AssetTransfer({

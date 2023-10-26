@@ -69,8 +69,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
   /// @dev Option Margin Parameters. See getIsolatedMargin for how it is used in the formula
   mapping(uint marketId => OptionMarginParams) public optionMarginParams;
 
-  /// @dev Base margin discount: each base asset be treated as "spot * discount_factor" amount of cash
-  mapping(uint marketId => uint) public baseAssetMarginFactor;
+  /// @dev Base margin factor: each base asset be treated as "spot * discount_factor" amount of cash
+  mapping(uint marketId => BaseMarginParams) public baseMarginParams;
 
   /// @dev Oracle Contingency parameters. used to increase margin requirement if oracle has low confidence
   mapping(uint marketId => OracleContingencyParams) public oracleContingencyParams;
@@ -170,16 +170,16 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
    * @dev Set discount factor for base asset
    * @dev if this factor is 0 (unset), base asset won't contribute to margin
    */
-  function setBaseAssetMarginFactor(uint marketId, uint marginFactor) external onlyOwner {
+  function setBaseAssetMarginFactor(uint marketId, uint marginFactor, uint initialMarginMultiplier) external onlyOwner {
     _checkMarketExist(marketId);
 
-    if (marginFactor > 1e18) {
+    if (marginFactor > 1e18 || initialMarginMultiplier > 1e18) {
       revert SRM_InvalidBaseDiscountFactor();
     }
 
-    baseAssetMarginFactor[marketId] = marginFactor;
+    baseMarginParams[marketId] = BaseMarginParams({marginFactor: marginFactor, IMScale: initialMarginMultiplier});
 
-    emit BaseAssetMarginFactorSet(marketId, marginFactor);
+    emit BaseMarginParamsSet(marketId, marginFactor, initialMarginMultiplier);
   }
 
   /**
@@ -274,8 +274,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
 
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
     bool riskAdding = false;
-
     bool isPositiveCashDelta = true;
+    bool cashOnly = true;
 
     // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -286,6 +286,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
         }
         continue;
       }
+
+      cashOnly = false;
 
       AssetDetail memory detail = _assetDetails[assetDeltas[i].asset];
 
@@ -312,7 +314,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
       }
     }
 
+    if (riskAdding || !cashOnly) {
+      _checkIfLiveAuction(accountId);
+    }
+
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
+    // TODO: convert to just counting the length
     ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
 
     // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
@@ -323,20 +330,18 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     // only bypass risk check if we are only reducing perp position, increasing cash, or increasing option position
     if (!riskAdding) return;
 
-    _assessRisk(accountId, assetBalances, previousBalances, isPositiveCashDelta);
+    _assessRisk(caller, accountId, assetBalances, isPositiveCashDelta);
   }
 
   /**
    * @dev Perform a risk check on the account.
    */
   function _assessRisk(
+    address caller,
     uint accountId,
     ISubAccounts.AssetBalance[] memory assetBalances,
-    ISubAccounts.AssetBalance[] memory previousBalances,
     bool isPositiveCashDelta
   ) internal view {
-    _checkIfLiveAuction(accountId);
-
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).arrangeSRMPortfolio(assetBalances);
 
     // TODO: add tests that we allow people to have neg cash if they already had it previously (only close neg cash)
@@ -345,21 +350,13 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     // already had them.
     if (!borrowingEnabled && portfolio.cash < 0 && !isPositiveCashDelta) revert SRM_NoNegativeCash();
 
-    // the net margin here should always be zero or negative, unless there is unrealized pnl from a perp that was not traded in this tx
-    (int postIM,) = _getMarginAndMarkToMarket(accountId, portfolio, true);
-
-    // cash deposited covers the IM requirement
-    if (postIM >= 0) return;
-
-    // otherwise we check that the risk of the portfolio (MM) improves
-    StandardManagerPortfolio memory prePortfolio =
-      ISRMPortfolioViewer(address(viewer)).arrangeSRMPortfolio(previousBalances);
-
-    (int preMM,) = _getMarginAndMarkToMarket(accountId, prePortfolio, false);
-    (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
-
-    // allow the trade to pass if the net margin increased (risk reduced), and it is now above the solvent line
-    if (postMM > preMM && postMM > 0) return;
+    if (trustedRiskAssessor[caller]) {
+      (int postMM,) = _getMarginAndMarkToMarket(accountId, portfolio, false);
+      if (postMM >= 0) return;
+    } else {
+      (int postIM,) = _getMarginAndMarkToMarket(accountId, portfolio, true);
+      if (postIM >= 0) return;
+    }
 
     revert SRM_PortfolioBelowMargin();
   }
@@ -537,13 +534,20 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     uint notional = position.multiplyDecimal(spotPrice);
 
     // the margin contributed by base asset is spot * positionSize * discount factor
-    baseMargin = notional.multiplyDecimal(baseAssetMarginFactor[marketId]).toInt256();
+    baseMargin = notional.multiplyDecimal(baseMarginParams[marketId].marginFactor).toInt256();
 
     // convert to denominate in stable
     baseMarkToMarket = notional.divideDecimal(stablePrice).toInt256();
 
     // add oracle contingency for spot asset, only for IM
     if (!isInitial) return (baseMargin, baseMarkToMarket);
+
+    // TODO: test imFactor
+    baseMargin = baseMargin.multiplyDecimal(baseMarginParams[marketId].IMScale.toInt256());
+
+    if (baseMargin == 0) {
+      return (0, baseMarkToMarket);
+    }
 
     OracleContingencyParams memory ocParam = oracleContingencyParams[marketId];
     if (ocParam.baseThreshold != 0 && spotConf < uint(ocParam.baseThreshold)) {

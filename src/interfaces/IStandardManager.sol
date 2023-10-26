@@ -23,16 +23,6 @@ interface IStandardManager is IBaseManager {
     uint marketId;
   }
 
-  struct MarketParameters {
-    PerpMarginRequirements perpMarginRequirements;
-    OptionMarginParams optionMarginParams;
-    OracleContingencyParams oracleContingencyParams;
-    uint baseAssetMarginFactor;
-    ISpotFeed spotFeed;
-    IForwardFeed forwardFeed;
-    IVolFeed volFeed;
-  }
-
   /**
    * @dev a standard manager portfolio contains multiple marketHoldings assets, each marketHolding contains multiple derivative type
    */
@@ -44,7 +34,6 @@ interface IStandardManager is IBaseManager {
 
   struct MarketHolding {
     uint marketId;
-    MarketParameters params;
     /// base position: doesn't contribute to margin, but increase total portfolio mark to market
     uint basePosition;
     /// perp position detail
@@ -118,6 +107,11 @@ interface IStandardManager is IBaseManager {
     uint OCFactor;
   }
 
+  struct BaseMarginParams {
+    uint marginFactor;
+    uint IMScale;
+  }
+
   function assetDetails(IAsset asset) external view returns (AssetDetail memory);
 
   ///////////////
@@ -185,7 +179,7 @@ interface IStandardManager is IBaseManager {
     uint mmOffsetScale
   );
 
-  event BaseAssetMarginFactorSet(uint marketId, uint baseAssetMarginFactor);
+  event BaseMarginParamsSet(uint marketId, uint baseAssetMarginFactor, uint baseAssetIMScale);
 
   event DepegParametersSet(uint threshold, uint depegFactor);
 

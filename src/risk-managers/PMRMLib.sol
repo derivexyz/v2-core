@@ -46,6 +46,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     basisContParams = _basisContParams;
   }
 
+  /// @dev Note: sufficiently large spot shock down and basePercent means adding base to the portfolio will always
+  /// decrease MM -
   function setOtherContingencyParams(IPMRMLib.OtherContingencyParameters memory _otherContParams) external onlyOwner {
     if (
       _otherContParams.pegLossThreshold > 1e18 || _otherContParams.pegLossFactor > 20e18
@@ -89,15 +91,14 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
    * @return markToMarket The mark-to-market value of the portfolio
    * @return worstScenario The index of the worst scenario, if == scenarios.length, it is the basis contingency
    */
-  function getMarginAndMarkToMarket(
-    IPMRM.Portfolio memory portfolio,
-    bool isInitial,
-    IPMRM.Scenario[] memory scenarios,
-    bool useBasisContingency
-  ) external view returns (int margin, int markToMarket, uint worstScenario) {
-    if (!useBasisContingency && scenarios.length == 0) revert PMRML_InvalidGetMarginState();
+  function getMarginAndMarkToMarket(IPMRM.Portfolio memory portfolio, bool isInitial, IPMRM.Scenario[] memory scenarios)
+    external
+    view
+    returns (int margin, int markToMarket, uint worstScenario)
+  {
+    if (scenarios.length == 0) revert PMRML_InvalidGetMarginState();
 
-    int minSPAN = useBasisContingency ? portfolio.basisContingency : type(int).max;
+    int minSPAN = portfolio.basisContingency;
     worstScenario = scenarios.length;
 
     for (uint i = 0; i < scenarios.length; ++i) {
@@ -111,7 +112,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       }
     }
 
-    minSPAN -= SafeCast.toInt256(portfolio.staticContingency);
+    minSPAN -= portfolio.staticContingency.toInt256();
 
     if (isInitial) {
       uint mFactor = marginParams.imFactor;
@@ -230,14 +231,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   /////////////////
 
   // Precomputes are values used within SPAN for all shocks, so we only calculate them once
-  function addPrecomputes(IPMRM.Portfolio memory portfolio, bool addBasisCont)
-    external
-    view
-    returns (IPMRM.Portfolio memory)
-  {
+  function addPrecomputes(IPMRM.Portfolio memory portfolio) external view returns (IPMRM.Portfolio memory) {
     portfolio.baseValue =
       _getBaseValue(portfolio.basePosition, portfolio.spotPrice, portfolio.stablePrice, DecimalMath.UNIT);
-    portfolio.totalMtM += SafeCast.toInt256(portfolio.baseValue);
+    portfolio.totalMtM += portfolio.baseValue.toInt256();
     portfolio.totalMtM += portfolio.perpValue;
 
     uint basePerpContingencyFactor = SignedMath.abs(portfolio.perpPosition).multiplyDecimal(otherContParams.perpPercent);
@@ -257,9 +254,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
       expiry.mtm = _getExpiryShockedMTM(expiry, DecimalMath.UNIT, IPMRM.VolShockDirection.None);
       portfolio.totalMtM += expiry.mtm;
 
-      if (addBasisCont) {
-        _addBasisContingency(portfolio, expiry);
-      }
+      _addBasisContingency(portfolio, expiry);
 
       _addVolShocks(expiry);
       _addStaticDiscount(expiry);
@@ -377,5 +372,13 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function getOtherContingencyParams() external view returns (IPMRMLib.OtherContingencyParameters memory) {
     return otherContParams;
+  }
+
+  function getBasisContingencyScenarios() external view returns (IPMRM.Scenario[] memory scenarios) {
+    scenarios = new IPMRM.Scenario[](3);
+    scenarios[0] = IPMRM.Scenario({spotShock: basisContParams.scenarioSpotUp, volShock: IPMRM.VolShockDirection.None});
+    scenarios[1] = IPMRM.Scenario({spotShock: basisContParams.scenarioSpotDown, volShock: IPMRM.VolShockDirection.None});
+    scenarios[2] = IPMRM.Scenario({spotShock: DecimalMath.UNIT, volShock: IPMRM.VolShockDirection.None});
+    return scenarios;
   }
 }

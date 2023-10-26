@@ -218,7 +218,7 @@ contract DeployMarket is Utils {
     (uint mmReq, uint imReq) = getDefaultSRMPerpRequirements();
     deployment.srm.setPerpMarginRequirements(marketId, mmReq, imReq);
 
-    deployment.srm.setBaseAssetMarginFactor(marketId, SRM_BASE_DISCOUNT);
+    deployment.srm.setBaseAssetMarginFactor(marketId, SRM_BASE_DISCOUNT, SRM_IM_BASE_DISCOUNT);
 
     deployment.srmViewer.setOIFeeRateBPS(address(market.perp), OI_FEE_BPS);
     deployment.srmViewer.setOIFeeRateBPS(address(market.option), OI_FEE_BPS);

@@ -117,6 +117,9 @@ interface IDutchAuction {
   /// @dev emitted when a bid is submitted for 0% of the portfolio
   error DA_AmountIsZero();
 
+  /// @dev emitted when a bidder doesn't have only cash in their portfolio
+  error DA_InvalidBidderPortfolio();
+
   /// @dev emitted when bidder doesn't have enough cash for bidding
   error DA_InsufficientCash();
 

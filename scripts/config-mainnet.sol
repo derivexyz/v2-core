@@ -54,6 +54,7 @@ uint256 constant MIN_OI_FEE = 2e18;
 uint256 constant OI_FEE_BPS = 0.001e18;
 
 uint256 constant SRM_BASE_DISCOUNT = 0.75e18;
+uint256 constant SRM_IM_BASE_DISCOUNT = 0.8e18;
 
 // Feeds
 

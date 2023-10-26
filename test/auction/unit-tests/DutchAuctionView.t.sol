@@ -86,27 +86,23 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     // fast forward 300 seconds
     vm.warp(block.timestamp + 300);
 
-    (uint discount, bool isFast) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    uint discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.9e18);
-    assertTrue(isFast);
 
     // fast forward 300 seconds, 600 seconds into the auction
     vm.warp(block.timestamp + 300);
-    (discount, isFast) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.8e18);
-    assertTrue(!isFast);
 
     // fast forward 360 seconds, 960 seconds into the auction
     vm.warp(block.timestamp + 360);
-    (discount, isFast) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.76e18);
-    assertTrue(!isFast);
 
     // fast forward 7200 seconds, everything ends
     vm.warp(block.timestamp + 7200);
-    (discount, isFast) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0);
-    assertTrue(!isFast);
   }
 
   function testGetDiscountPercentage2() public {
@@ -121,23 +117,22 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     // auction starts!
     uint startTime = block.timestamp;
 
-    (uint discount, bool isFast) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    uint discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.96e18);
-    assertTrue(isFast);
 
     // fast forward 150 seconds, half of fast auction
     vm.warp(block.timestamp + 150);
-    (discount,) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.88e18);
 
     // another 150 seconds
     vm.warp(block.timestamp + 150);
-    (discount,) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.8e18);
 
     // pass 90% of slow auction
     vm.warp(block.timestamp + 6480);
-    (discount,) = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
+    discount = dutchAuction.getDiscountPercentage(startTime, block.timestamp);
     assertEq(discount, 0.08e18);
   }
 }

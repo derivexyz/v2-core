@@ -22,7 +22,7 @@ contract INTEGRATION_SRM_BaseAsset is IntegrationTestBase {
   // example of using the test setup
   function testCanBorrowAgainstBase() public {
     srm.setBorrowingEnabled(true);
-    srm.setBaseAssetMarginFactor(markets["wbtc"].id, 0.5e18);
+    srm.setBaseAssetMarginFactor(markets["wbtc"].id, 0.5e18, 1e18);
 
     _withdrawCash(bob, bobAcc, DEFAULT_DEPOSIT);
 
