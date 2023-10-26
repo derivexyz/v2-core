@@ -66,8 +66,6 @@ interface IBaseManager is IManager {
 
   error BM_AccountUnderLiquidation();
 
-  error BM_LiquidatorCanOnlyHaveCash();
-
   error BM_OnlyLiquidationModule();
 
   error BM_OnlyAccounts();

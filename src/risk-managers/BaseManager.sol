@@ -171,15 +171,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   {
     if (portion > 1e18) revert BM_InvalidBidPortion();
 
-    // check that liquidator only has cash and nothing else
-    ISubAccounts.AssetBalance[] memory liquidatorAssets = subAccounts.getAccountBalances(liquidatorId);
-    if (
-      liquidatorAssets.length != 0
-        && (liquidatorAssets.length != 1 || address(liquidatorAssets[0].asset) != address(cashAsset))
-    ) {
-      revert BM_LiquidatorCanOnlyHaveCash();
-    }
-
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
     // transfer liquidated account's asset to liquidator

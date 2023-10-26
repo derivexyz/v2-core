@@ -242,29 +242,6 @@ contract UNIT_TestBaseManager is Test {
     vm.stopPrank();
   }
 
-  function testCannotExecuteBidIfLiquidatorHoldsNonCash() external {
-    vm.startPrank(address(mockAuction));
-
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
-    vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
-
-    vm.stopPrank();
-  }
-
-  function testCannotExecuteBidIfHoldTooManyAssets() external {
-    vm.startPrank(address(mockAuction));
-
-    // balance[0] is cash
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1e18);
-    // balance[1] is not cash
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
-    vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
-
-    vm.stopPrank();
-  }
-
   function testExecuteBidFromBidderWithNoCash() external {
     // under some edge cases, people should be able to just "receive" the portfolio without paying anything
     // for example at the end of insolvent auction, anyone can use a empty account to receive the portfolio + initial margin
