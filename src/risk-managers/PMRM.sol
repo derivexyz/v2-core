@@ -214,11 +214,12 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
     }
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    // TODO: change undoAssetDeltas to only return the length
-    ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
 
     // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
-    if (assetBalances.length > maxAccountSize && previousBalances.length < assetBalances.length) {
+    if (
+      assetBalances.length > maxAccountSize //
+        && viewer.getPreviousAssetsLength(assetBalances, assetDeltas) < assetBalances.length
+    ) {
       revert PMRM_TooManyAssets();
     }
 

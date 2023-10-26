@@ -319,11 +319,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     }
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    // TODO: convert to just counting the length
-    ISubAccounts.AssetBalance[] memory previousBalances = viewer.undoAssetDeltas(accountId, assetDeltas);
 
     // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
-    if (assetBalances.length > maxAccountSize && previousBalances.length < assetBalances.length) {
+    if (
+      assetBalances.length > maxAccountSize //
+        && viewer.getPreviousAssetsLength(assetBalances, assetDeltas) < assetBalances.length
+    ) {
       revert SRM_TooManyAssets();
     }
 

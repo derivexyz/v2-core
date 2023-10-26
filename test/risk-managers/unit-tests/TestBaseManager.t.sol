@@ -341,48 +341,41 @@ contract UNIT_TestBaseManager is Test {
     tester.chargeAllOIFee(address(this), 0, 0, assetDeltas);
   }
 
-  ///////////////////////////
-  //   Undo Asset Deltas   //
-  ///////////////////////////
+  /////////////////////////////
+  // getPreviousAssetsLength //
+  /////////////////////////////
 
   function testUndoAssetDeltasToZero() public {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
     balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
     balances[1] = ISubAccounts.AssetBalance({asset: IAsset(mockAsset), subId: 0, balance: 10e18});
 
-    tester.setBalances(aliceAcc, balances);
-
     ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](2);
     deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: 100e18});
     deltas[1] = ISubAccounts.AssetDelta({asset: IAsset(mockAsset), subId: 0, delta: 10e18});
-    ISubAccounts.AssetBalance[] memory res = viewer.undoAssetDeltas(aliceAcc, deltas);
-    assertEq(res.length, 0);
+
+    assertEq(viewer.getPreviousAssetsLength(balances, deltas), 0);
   }
 
   function testUndoAssetDeltasEmptyCurrentAccount() public {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](0);
-    tester.setBalances(aliceAcc, balances);
 
     ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](2);
     deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: -100e18});
     // 0 delta is ignored
     deltas[1] = ISubAccounts.AssetDelta({asset: IAsset(mockAsset), subId: 0, delta: 0});
-    ISubAccounts.AssetBalance[] memory res = viewer.undoAssetDeltas(aliceAcc, deltas);
-    assertEq(res.length, 1);
-    assertEq(res[0].balance, 100e18);
+
+    assertEq(viewer.getPreviousAssetsLength(balances, deltas), 1);
   }
 
   function testUndoAssetDeltasZeroDelta() public {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
     balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
-    tester.setBalances(aliceAcc, balances);
 
     ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](1);
     deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: 0});
 
-    ISubAccounts.AssetBalance[] memory res = viewer.undoAssetDeltas(aliceAcc, deltas);
-    assertEq(res.length, 1);
-    assertEq(res[0].balance, 100e18);
+    assertEq(viewer.getPreviousAssetsLength(balances, deltas), 1);
   }
 
   /////////////////

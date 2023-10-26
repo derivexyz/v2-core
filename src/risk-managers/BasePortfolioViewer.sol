@@ -115,19 +115,15 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
   }
 
   /**
-   * @dev get the original balances state before a trade is executed
+   * @dev get the length of the original asset state before a trade is executed
    */
-  function undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    public
-    view
-    returns (ISubAccounts.AssetBalance[] memory newAssetBalances)
-  {
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-
+  function getPreviousAssetsLength(
+    ISubAccounts.AssetBalance[] memory assetBalances,
+    ISubAccounts.AssetDelta[] memory assetDeltas
+  ) external pure returns (uint) {
     // keep track of how many new elements to add to the result. Can be negative (remove balances that end at 0)
     uint removedBalances = 0;
     uint newBalances = 0;
-    ISubAccounts.AssetBalance[] memory preBalances = new ISubAccounts.AssetBalance[](assetDeltas.length);
 
     for (uint i = 0; i < assetDeltas.length; ++i) {
       ISubAccounts.AssetDelta memory delta = assetDeltas[i];
@@ -139,32 +135,17 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
         ISubAccounts.AssetBalance memory balance = assetBalances[j];
         if (balance.asset == delta.asset && balance.subId == delta.subId) {
           found = true;
-          assetBalances[j].balance = balance.balance - delta.delta;
-          if (assetBalances[j].balance == 0) {
+          if (balance.balance == delta.delta) {
             removedBalances++;
           }
           break;
         }
       }
       if (!found) {
-        preBalances[newBalances++] =
-          ISubAccounts.AssetBalance({asset: delta.asset, subId: delta.subId, balance: -delta.delta});
+        newBalances++;
       }
     }
 
-    newAssetBalances = new ISubAccounts.AssetBalance[](assetBalances.length + newBalances - removedBalances);
-
-    uint newBalancesIndex = 0;
-    for (uint i = 0; i < assetBalances.length; ++i) {
-      ISubAccounts.AssetBalance memory balance = assetBalances[i];
-      if (balance.balance != 0) {
-        newAssetBalances[newBalancesIndex++] = balance;
-      }
-    }
-    for (uint i = 0; i < newBalances; ++i) {
-      newAssetBalances[newBalancesIndex++] = preBalances[i];
-    }
-
-    return newAssetBalances;
+    return (assetBalances.length + newBalances - removedBalances);
   }
 }

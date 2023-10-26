@@ -22,10 +22,10 @@ interface IBasePortfolioViewer {
 
   function checkAllAssetCaps(IManager manager, uint accountId, uint tradeId) external view;
 
-  function undoAssetDeltas(uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas)
-    external
-    view
-    returns (ISubAccounts.AssetBalance[] memory newAssetBalances);
+  function getPreviousAssetsLength(
+    ISubAccounts.AssetBalance[] memory assetBalances,
+    ISubAccounts.AssetDelta[] memory assetDeltas
+  ) external view returns (uint);
 
   /// @dev Emitted when OI fee rate is set
   event OIFeeRateSet(address asset, uint oiFeeRate);
