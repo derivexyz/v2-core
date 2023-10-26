@@ -145,6 +145,12 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // bid from charlie with no cash
     vm.prank(charlie);
+    vm.expectRevert(IDutchAuction.DA_InvalidBidderPortfolio.selector);
+    dutchAuction.bid(aliceAcc, charlieAcc, 1e18, 0, 0);
+
+    // bid from charlie with not enough cash
+    _mintAndDepositCash(charlieAcc, 1e18);
+    vm.prank(charlie);
     vm.expectRevert(IDutchAuction.DA_InsufficientCash.selector);
     dutchAuction.bid(aliceAcc, charlieAcc, 1e18, 0, 0);
   }
@@ -202,13 +208,13 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     uint percentage = 0.1e18;
     vm.prank(bob);
-    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+    (, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
 
     // mark to market is changed to 1000, now i need to pay 90% of 1000 * 10% = 90
     manager.setMockMargin(aliceAcc, false, scenario, 10e18);
 
     vm.prank(bob);
-    (uint bobPercentage2, uint cashFromBob2,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+    (, uint cashFromBob2,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
 
     // Second liquidation paid less, as mm has increased
     assertGt(cashFromBob, cashFromBob2);

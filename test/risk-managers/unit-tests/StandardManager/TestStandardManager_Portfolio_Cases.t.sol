@@ -23,8 +23,8 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
     manager.setOracleContingencyParams(btcMarketId, getDefaultSRMOracleContingency());
 
     // base asset contribute 80% of its value to margin
-    manager.setBaseAssetMarginFactor(ethMarketId, 0.8e18);
-    manager.setBaseAssetMarginFactor(btcMarketId, 0.8e18);
+    manager.setBaseAssetMarginFactor(ethMarketId, 0.8e18, 1e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.8e18, 1e18);
 
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 

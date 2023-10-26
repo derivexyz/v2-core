@@ -62,6 +62,9 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
       viewer,
       pmrmLib
     );
+
+    newManager.setScenarios(getDefaultScenarios());
+
     baseAsset.setWhitelistManager(address(newManager), true);
     // create new account for that manager
     uint newAcc = subAccounts.createAccount(address(this), IManager(address(newManager)));

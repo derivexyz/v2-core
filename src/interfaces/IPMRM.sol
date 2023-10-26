@@ -94,7 +94,6 @@ interface IPMRM {
   event StableFeedUpdated(ISpotFeed stableFeed);
   event ForwardFeedUpdated(IForwardFeed forwardFeed);
   event SettlementFeedUpdated(ISettlementFeed settlementFeed);
-  event TrustedRiskAssessorUpdated(address riskAssessor, bool trusted);
   event ScenariosUpdated(IPMRM.Scenario[] scenarios);
 
   ////////////

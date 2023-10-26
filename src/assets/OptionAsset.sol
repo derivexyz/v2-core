@@ -110,7 +110,7 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
    * @return priceSettled Whether the settlement price of the option has been set.
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
-    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId.toUint96());
 
     // Return false if settlement price has not been locked in
     if (expiry > block.timestamp) {
@@ -120,13 +120,13 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
     (bool isSettled, uint settlementPrice) = settlementFeed.getSettlementPrice(uint64(expiry));
     if (!isSettled) return (0, false);
 
-    return (getSettlementValue(strike, balance, settlementPrice, isCall), true);
+    return (_getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
 
   /**
    * @notice Get settlement value of a specific option position.
    */
-  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+  function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
     internal
     pure
     returns (int)

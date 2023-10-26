@@ -49,6 +49,8 @@ interface IBaseManager is IManager {
 
   event MaxAccountSizeUpdated(uint maxAccountSize);
 
+  event TrustedRiskAssessorUpdated(address riskAssessor, bool trusted);
+
   ////////////
   // Errors //
   ////////////

@@ -9,8 +9,6 @@ import "lyra-utils/math/FixedPointMathLib.sol";
 
 import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title Interest Rate Model
  * @author Lyra

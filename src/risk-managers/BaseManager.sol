@@ -72,6 +72,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
 
   mapping(address callee => bool) internal whitelistedCallee;
 
+  mapping(address => bool) public trustedRiskAssessor;
+
   constructor(
     ISubAccounts _subAccounts,
     ICashAsset _cashAsset,
@@ -140,6 +142,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     }
     maxAccountSize = _maxAccountSize;
     emit MaxAccountSizeUpdated(_maxAccountSize);
+  }
+
+  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
+    trustedRiskAssessor[riskAssessor] = trusted;
+    emit TrustedRiskAssessorUpdated(riskAssessor, trusted);
   }
 
   //////////////////////
@@ -281,7 +288,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     view
     returns (uint fee)
   {
-    (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    (uint expiry,,) = OptionEncoding.fromSubId(subId.toUint96());
     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
     fee = viewer.getAssetOIFee(asset, subId, delta, tradeId, forwardPrice);
   }
