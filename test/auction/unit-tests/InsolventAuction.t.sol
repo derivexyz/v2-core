@@ -127,6 +127,10 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // set maintenance margin > 0
     manager.setMockMargin(aliceAcc, false, scenario, 100e18);
+
+
+    assertEq(dutchAuction.getCurrentBidPrice(aliceAcc), 0);
+
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
     // check that the auction is terminated
