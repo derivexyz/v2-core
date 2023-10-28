@@ -113,7 +113,7 @@ contract PMRMTestBase is JsonMechIO {
     addScenarios();
 
     baseAsset.setWhitelistManager(address(pmrm), true);
-    baseAsset.setTotalPositionCap(pmrm, 100e18);
+    baseAsset.setTotalPositionCap(pmrm, 10000e18);
 
     _setupAliceAndBob();
 

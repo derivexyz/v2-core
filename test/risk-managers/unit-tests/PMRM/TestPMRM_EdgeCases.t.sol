@@ -183,4 +183,106 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     vm.expectRevert();
     pmrm.getMarginAndMarkToMarket(aliceAcc, true, 10000);
   }
+
+  function testPMRMCanTradeMoreThanMaxAccountSizeIfAlreadyHadIt() public {
+    uint64 expiry = uint64(block.timestamp + 1 weeks);
+
+    _depositCash(aliceAcc, 10_000e18);
+    _depositCash(bobAcc, 10_000e18);
+
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](11);
+    for (uint i; i < 11; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 0.1e18,
+        assetData: ""
+      });
+    }
+    subAccounts.submitTransfers(transfers, "");
+
+    assertEq(subAccounts.getAccountBalances(bobAcc).length, 12);
+
+    pmrm.setMaxAccountSize(8);
+
+    // Close 2 positions against each other
+    transfers = new ISubAccounts.AssetTransfer[](2);
+    for (uint i; i < 2; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: bobAcc,
+        toAcc: aliceAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 0.1e18,
+        assetData: ""
+      });
+    }
+    // This can go through since the account size is being reduced
+    subAccounts.submitTransfers(transfers, "");
+
+    assertEq(subAccounts.getAccountBalances(bobAcc).length, 10);
+
+    // Cannot then reopen those same positions (inverted)
+    vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
+    subAccounts.submitTransfers(transfers, "");
+
+    // Can reopen them if the account size is increased
+    pmrm.setMaxAccountSize(12);
+    subAccounts.submitTransfers(transfers, "");
+    assertEq(subAccounts.getAccountBalances(bobAcc).length, 12);
+  }
+
+  function testPMRMCanSettlePerpsIfBeyondMaxAssetSize() public {
+    uint64 expiry = uint64(block.timestamp + 1 weeks);
+
+    _depositCash(aliceAcc, 10_000e18);
+    _depositCash(bobAcc, 10_000e18);
+
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](11);
+    for (uint i; i < 10; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 0.1e18,
+        assetData: ""
+      });
+    }
+    transfers[10] = ISubAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: mockPerp,
+      subId: 0,
+      amount: 10e18,
+      assetData: ""
+    });
+    subAccounts.submitTransfers(transfers, "");
+    assertEq(subAccounts.getAccountBalances(bobAcc).length, 12);
+    pmrm.setMaxAccountSize(8);
+
+    weth.mint(address(this), 1000e18);
+    weth.approve(address(baseAsset), 1000e18);
+    // CANNOT deposit base if that exceeds the account limit
+    vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
+    baseAsset.deposit(bobAcc, uint(1000e18));
+
+    pmrm.setMaxAccountSize(14);
+    // we deposit wbtc so we can remove all cash to test the perp settlement
+    baseAsset.deposit(bobAcc, uint(1000e18));
+
+    assertEq(subAccounts.getAccountBalances(bobAcc).length, 13);
+
+    pmrm.setMaxAccountSize(8);
+    cash.withdraw(bobAcc, 10000e18, bob);
+
+    assertEq(subAccounts.getAccountBalances(bobAcc).length, 12);
+
+    mockPerp.mockAccountPnlAndFunding(bobAcc, 100e18, 100e18);
+    pmrm.settlePerpsWithIndex(bobAcc);
+
+    assertEq(subAccounts.getAccountBalances(bobAcc).length, 13);
+  }
 }

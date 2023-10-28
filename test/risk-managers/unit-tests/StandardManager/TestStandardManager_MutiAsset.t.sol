@@ -235,7 +235,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     _deposit(wbtc, wbtcAsset, aliceAcc, 100e18);
 
     (int im, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
-    (int mm, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+    (int mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
 
     assertEq(im, 0);
     assertEq(mm, 0);
@@ -244,7 +244,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     manager.setBorrowingEnabled(true);
 
     (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
-    (mm, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
 
     assertEq(im, 0);
     assertEq(mm, 0);
@@ -253,7 +253,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18, 1e18);
 
     (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
-    (mm, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
 
     assertEq(im, 10000 * 100e18);
     assertEq(mm, 10000 * 100e18);
@@ -262,7 +262,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     manager.setBaseAssetMarginFactor(btcMarketId, 1e18, 0.5e18);
 
     (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
-    (mm, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
 
     assertEq(im, 10000 * 100e18, "im");
     assertEq(mm, 20000 * 100e18, "mm");
@@ -271,7 +271,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18, 0);
 
     (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
-    (mm, ) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
 
     assertEq(im, 0, "im");
     assertEq(mm, 10000 * 100e18, "mm");
