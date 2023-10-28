@@ -12,6 +12,7 @@ import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 import {ISpotDiffFeed} from "../interfaces/ISpotDiffFeed.sol";
+import {IAsset} from "../interfaces/IAsset.sol";
 
 import {IManager} from "../interfaces/IManager.sol";
 
@@ -36,10 +37,13 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   using DecimalMath for uint;
 
   /// @dev Max hourly funding rate
-  int public immutable maxRatePerHour;
+  int public maxRatePerHour;
 
   /// @dev Min hourly funding rate
-  int public immutable minRatePerHour;
+  int public minRatePerHour;
+
+  /// @dev Convergence period for funding rate in hours
+  int public fundingConvergencePeriod = 8e18;
 
   ///////////////////////
   //  State Variables  //
@@ -61,23 +65,26 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   mapping(uint accountId => PositionDetail) public positions;
 
   /// @dev Static hourly interest rate to borrow base asset, used to calculate funding
-  int128 public staticInterestRate;
+  int public staticInterestRate;
 
   /// @dev Latest aggregated funding that should be applied to 1 contract.
-  int128 public aggregatedFunding;
+  int public aggregatedFunding;
 
   /// @dev Last time aggregated funding rate was updated
-  uint64 public lastFundingPaidAt;
+  uint public lastFundingPaidAt;
+
+  /// @dev Flag to turn off the perp and allow migration
+  bool public isDisabled;
+
+  /// @dev Perp price at the time of disabling
+  int public frozenPerpPrice;
 
   ///////////////////////
   //    Constructor    //
   ///////////////////////
 
-  constructor(ISubAccounts _subAccounts, int maxAbsRatePerHour) ManagerWhitelist(_subAccounts) {
-    lastFundingPaidAt = uint64(block.timestamp);
-
-    maxRatePerHour = maxAbsRatePerHour;
-    minRatePerHour = -maxAbsRatePerHour;
+  constructor(ISubAccounts _subAccounts) ManagerWhitelist(_subAccounts) {
+    lastFundingPaidAt = block.timestamp;
   }
 
   //////////////////////////
@@ -115,11 +122,42 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @notice Set new static interest rate
    * @param _staticInterestRate New static interest rate for the asset.
    */
-  function setStaticInterestRate(int128 _staticInterestRate) external onlyOwner {
-    if (_staticInterestRate < 0) revert PA_InvalidStaticInterestRate();
+  function setStaticInterestRate(int _staticInterestRate) external onlyOwner {
+    if (_staticInterestRate < -0.001e18 || _staticInterestRate > 0.001e18) revert PA_InvalidStaticInterestRate();
     staticInterestRate = _staticInterestRate;
 
     emit StaticUnderlyingInterestRateUpdated(_staticInterestRate);
+  }
+
+  /**
+   * @notice Set new rate bounds
+   */
+  function setRateBounds(int _maxAbsRatePerHour) external onlyOwner {
+    if (_maxAbsRatePerHour < 0) revert PA_InvalidRateBounds();
+    maxRatePerHour = _maxAbsRatePerHour;
+    minRatePerHour = -_maxAbsRatePerHour;
+
+    emit RateBoundsUpdated(_maxAbsRatePerHour);
+  }
+
+  /**
+   * @notice Set new funding convergence period
+   */
+  function setConvergencePeriod(uint _fundingConvergencePeriod) external onlyOwner {
+    if (_fundingConvergencePeriod < 0.05e18 || _fundingConvergencePeriod > 240e18) revert PA_InvalidConvergencePeriod();
+    fundingConvergencePeriod = _fundingConvergencePeriod.toInt256();
+
+    emit ConvergencePeriodUpdated(fundingConvergencePeriod);
+  }
+
+  function disable() external onlyOwner {
+    _updateFunding();
+    // If frozen previously, this will just return itself
+    frozenPerpPrice = _getPerpPrice();
+
+    isDisabled = true;
+
+    emit Disabled(frozenPerpPrice, aggregatedFunding);
   }
 
   ///////////////////////
@@ -154,6 +192,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
+    // Must apply funding on each adjustment to ensure index is updated properly for
+    _applyFundingOnAccount(adjustment.acc);
+
     // calculate funding from the last period, reflect changes in position.funding
     _updateFunding();
 
@@ -169,18 +210,6 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   ///////////////////////////
   //   Guarded Functions   //
   ///////////////////////////
-
-  /**
-   * @notice Triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
-   */
-  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
-    _checkManager(address(newManager));
-
-    // update total position
-    uint pos = subAccounts.getBalance(accountId, IPerpAsset(address(this)), 0).abs();
-    _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
-  }
 
   /**
    * @notice Manager-only function to clear pnl and funding before risk checks
@@ -237,6 +266,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @dev Return the hourly funding rate for an account
    */
   function getFundingRate() external view returns (int fundingRate) {
+    if (isDisabled) {
+      return 0;
+    }
     int indexPrice = _getIndexPrice();
     fundingRate = _getFundingRate(indexPrice);
   }
@@ -252,6 +284,9 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @dev Return the current mark price for the perp asset
    */
   function getPerpPrice() external view returns (uint, uint) {
+    if (isDisabled) {
+      return (uint(frozenPerpPrice), 1e18);
+    }
     return perpFeed.getResult();
   }
 
@@ -274,8 +309,8 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     int perpPrice = _getPerpPrice();
     int pnl = _getUnrealizedPnl(accountId, preBalance, perpPrice);
 
-    position.lastMarkPrice = uint(perpPrice).toUint128();
-    position.pnl += pnl.toInt128();
+    position.lastMarkPrice = uint(perpPrice);
+    position.pnl += pnl;
 
     emit PositionSettled(accountId, pnl, position.pnl, uint(perpPrice));
   }
@@ -293,6 +328,21 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     position.funding = 0;
     position.pnl = 0;
+
+    if (isDisabled) {
+      // If the perp has been disabled/migration enabled delete the position after realising PNL/funding
+      subAccounts.assetAdjustment(
+        ISubAccounts.AssetAdjustment({
+          acc: accountId,
+          asset: IAsset(address(this)),
+          subId: 0,
+          amount: -_getPositionSize(accountId),
+          assetData: bytes32(0)
+        }),
+        false,
+        ""
+      );
+    }
 
     emit PositionCleared(accountId);
   }
@@ -315,7 +365,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
 
     int funding = _getFunding(aggregatedFunding, positions[accountId].lastAggregatedFunding, size);
     // apply funding
-    positions[accountId].funding += funding.toInt128();
+    positions[accountId].funding += funding;
     positions[accountId].lastAggregatedFunding = aggregatedFunding;
 
     emit FundingAppliedOnAccount(accountId, funding, aggregatedFunding);
@@ -325,17 +375,14 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    * @dev Update global funding, reflected on aggregatedFunding
    */
   function _updateFunding() internal {
-    if (block.timestamp == lastFundingPaidAt) return;
+    if (block.timestamp == lastFundingPaidAt || isDisabled) return;
 
     int indexPrice = _getIndexPrice();
-
     int fundingRate = _getFundingRate(indexPrice);
-
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    aggregatedFunding += (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
-
-    lastFundingPaidAt = (block.timestamp).toUint64();
+    aggregatedFunding += (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice);
+    lastFundingPaidAt = block.timestamp;
 
     emit AggregatedFundingUpdated(aggregatedFunding, fundingRate, lastFundingPaidAt);
   }
@@ -345,7 +392,7 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
    */
   function _getFundingRate(int indexPrice) internal view returns (int fundingRate) {
     int premium = _getPremium(indexPrice);
-    fundingRate = premium / 8 + staticInterestRate;
+    fundingRate = premium.divideDecimalRound(fundingConvergencePeriod) + staticInterestRate;
 
     // capped at max / min
     if (fundingRate > maxRatePerHour) {
@@ -377,12 +424,15 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   function _getUnrealizedFunding(uint accountId, int size, int indexPrice) internal view returns (int funding) {
     PositionDetail storage position = positions[accountId];
 
+    if (isDisabled) {
+      return _getFunding(aggregatedFunding, position.lastAggregatedFunding, size);
+    }
+
     int fundingRate = _getFundingRate(indexPrice);
 
     int timeElapsed = (block.timestamp - lastFundingPaidAt).toInt256();
 
-    int latestAggregatedFunding =
-      aggregatedFunding + (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice).toInt128();
+    int latestAggregatedFunding = aggregatedFunding + (fundingRate * timeElapsed / 1 hours).multiplyDecimal(indexPrice);
 
     return _getFunding(latestAggregatedFunding, position.lastAggregatedFunding, size);
   }
@@ -417,11 +467,19 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   }
 
   function _getIndexPrice() internal view returns (int) {
+    if (isDisabled) {
+      // Note: this value should not get used anywhere when disabled, but must be left in for
+      // certain function parameters
+      return 0;
+    }
     (uint spotPrice,) = spotFeed.getSpot();
     return spotPrice.toInt256();
   }
 
   function _getPerpPrice() internal view returns (int) {
+    if (isDisabled) {
+      return frozenPerpPrice;
+    }
     (uint perpPrice,) = perpFeed.getResult();
     return perpPrice.toInt256();
   }

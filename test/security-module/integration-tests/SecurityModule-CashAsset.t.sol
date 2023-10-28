@@ -61,6 +61,7 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     // 10000 USDC with 6 decimals
     usdc.mint(address(this), 20_000_000e6);
     usdc.approve(address(securityModule), type(uint).max);
+    usdc.approve(address(cashAsset), type(uint).max);
 
     accountId = subAccounts.createAccount(address(this), manager);
 
@@ -78,6 +79,14 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     assertEq(cashBalance, 1000e18);
   }
 
+  function testRecoverERC20() public {
+    usdc.mint(address(securityModule), 100e6);
+
+    securityModule.recoverERC20(address(usdc), address(this), 100e6);
+
+    assertEq(usdc.balanceOf(address(securityModule)), 0);
+  }
+
   function testWithdrawFromSM() public {
     uint depositAmount = 1000e6;
     securityModule.donate(depositAmount);
@@ -86,9 +95,24 @@ contract INTEGRATION_SecurityModule_CashAsset is Test {
     usdc.balanceOf(address(this));
   }
 
-  // test the numbers increased when we have fee cut on SM
-  function testWithdrawFromSMCanCollectFeeFromInterest() public {}
+  function testPaySMFeeForInsolvency() public {
+    // deposit cash to CashAsset directly
+    uint tradingAcc = subAccounts.createAccount(address(this), manager);
+    cashAsset.deposit(tradingAcc, 1000e6);
 
-  // test the numbers when we have withdraw fee enabled on cash asset
-  function testWithdrawFromSMWhenFeeSwitchIsOn() public {}
+    // assume that sm has some fees (in cash)
+    securityModule.donate(1000e6);
+
+    // simulate insolvency: cash has less USDC than expected
+    usdc.burn(address(cashAsset), 200e6);
+    uint exchangeRate = cashAsset.getCashToStableExchangeRate();
+    assertEq(exchangeRate, 0.9e18);
+
+    // any one can trigger SM to bail out cash asset
+    vm.prank(address(0x0fac));
+    securityModule.payCashInsolvency();
+
+    int smCashBalance = subAccounts.getBalance(smAccId, IAsset(address(cashAsset)), 0);
+    assertEq(smCashBalance, 800e18);
+  }
 }

@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "../../../shared/mocks/MockManager.sol";
 import "../../../shared/mocks/MockFeeds.sol";
-
+import "../../../../src/SubAccounts.sol";
 import "../../../../src/assets/PerpAsset.sol";
 import "../../../../src/interfaces/ISubAccounts.sol";
 import "../../../../src/interfaces/IManagerWhitelist.sol";
@@ -14,19 +14,20 @@ import "../../../shared/mocks/MockSpotDiffFeed.sol";
 contract UNIT_PerpAssetHook is Test {
   PerpAsset perp;
   MockManager manager;
-  address account;
+  SubAccounts subAccounts;
   MockFeeds spotFeed;
   MockSpotDiffFeed perpFeed;
 
   function setUp() public {
-    account = address(0xaa);
+    subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     spotFeed = new MockFeeds();
     perpFeed = new MockSpotDiffFeed(spotFeed);
 
-    manager = new MockManager(account);
+    manager = new MockManager(address(subAccounts));
 
-    perp = new PerpAsset(ISubAccounts(account), 0.0075e18);
+    perp = new PerpAsset(subAccounts);
+    perp.setRateBounds(0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);
@@ -45,7 +46,7 @@ contract UNIT_PerpAssetHook is Test {
     ISubAccounts.AssetAdjustment memory adjustment = ISubAccounts.AssetAdjustment(0, perp, 0, 0, 0x00);
     vm.expectRevert(IManagerWhitelist.MW_UnknownManager.selector);
 
-    vm.prank(account);
+    vm.prank(address(subAccounts));
     perp.handleAdjustment(adjustment, 0, 0, manager, address(this));
   }
 
@@ -54,7 +55,7 @@ contract UNIT_PerpAssetHook is Test {
     int preBalance = 0;
     int amount = 100;
     ISubAccounts.AssetAdjustment memory adjustment = ISubAccounts.AssetAdjustment(0, perp, 0, amount, 0x00);
-    vm.prank(account);
+    vm.prank(address(subAccounts));
     (int postBalance, bool needAllowance) = perp.handleAdjustment(adjustment, 0, preBalance, manager, address(this));
     assertEq(postBalance, amount);
     assertEq(needAllowance, true);

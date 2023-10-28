@@ -26,8 +26,7 @@ import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 /**
  * @title BaseManager
- * @notice Base contract for all managers. Handles OI fee, settling, liquidations and allowList. Also provides other
- *        utility functions.
+ * @notice Base contract for all managers. Handles OI fee, settling, liquidations and other utility functions.
  */
 abstract contract BaseManager is IBaseManager, Ownable2Step {
   using DecimalMath for uint;
@@ -72,6 +71,8 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   mapping(address sender => bool) public feeBypassedCaller;
 
   mapping(address callee => bool) internal whitelistedCallee;
+
+  mapping(address => bool) public trustedRiskAssessor;
 
   constructor(
     ISubAccounts _subAccounts,
@@ -143,6 +144,11 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     emit MaxAccountSizeUpdated(_maxAccountSize);
   }
 
+  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
+    trustedRiskAssessor[riskAssessor] = trusted;
+    emit TrustedRiskAssessorUpdated(riskAssessor, trusted);
+  }
+
   //////////////////////
   //   Liquidations   //
   //////////////////////
@@ -164,15 +170,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     onlyLiquidations
   {
     if (portion > 1e18) revert BM_InvalidBidPortion();
-
-    // check that liquidator only has cash and nothing else
-    ISubAccounts.AssetBalance[] memory liquidatorAssets = subAccounts.getAccountBalances(liquidatorId);
-    if (
-      liquidatorAssets.length != 0
-        && (liquidatorAssets.length != 1 || address(liquidatorAssets[0].asset) != address(cashAsset))
-    ) {
-      revert BM_LiquidatorCanOnlyHaveCash();
-    }
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
@@ -215,45 +212,31 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, 0, bytes32(0)));
   }
 
-  /**
-   * @dev force a cash only account to leave the system if it's not on the allowlist
-   * @param accountId Id of account to force withdraw
-   */
-  function forceWithdrawAccount(uint accountId) external {
-    if (viewer.canTrade(accountId)) {
-      revert BM_OnlyBlockedAccounts();
-    }
-    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
-    if (balances.length != 1 || address(balances[0].asset) != address(cashAsset)) {
-      revert BM_InvalidForceWithdrawAccountState();
-    }
-
-    cashAsset.forceWithdraw(accountId);
-  }
-
-  //////////////////////////
-  //   Keeper Functions   //
-  //////////////////////////
-
-  /**
-   * @dev keeper can call this function to force liquidate an account that has been removed from the allowlist
-   * @param accountId Id of account to force liquidate
-   * @param scenarioId Id of scenario used within liquidation module. Ignored for standard manager.
-   */
-  function forceLiquidateAccount(uint accountId, uint scenarioId) external {
-    if (viewer.canTrade(accountId)) {
-      revert BM_OnlyBlockedAccounts();
-    }
-    ISubAccounts.AssetBalance[] memory balances = subAccounts.getAccountBalances(accountId);
-    if (balances.length == 1 && address(balances[0].asset) == address(cashAsset) && balances[0].balance > 0) {
-      revert BM_InvalidForceLiquidateAccountState();
-    }
-    liquidation.startForcedAuction(accountId, scenarioId);
-  }
-
   //////////////////////////
   //  Internal Functions  //
   //////////////////////////
+
+  function _preAdjustmentHooks(
+    uint accountId,
+    uint tradeId,
+    address caller,
+    ISubAccounts.AssetDelta[] memory assetDeltas,
+    bytes calldata managerData
+  ) internal {
+    _processManagerData(tradeId, managerData);
+    viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
+    _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
+  }
+
+  function _chargeAllOIFee(
+    address, /*caller*/
+    uint, /*accountId*/
+    uint, /*tradeId*/
+    ISubAccounts.AssetDelta[] memory /*assetDeltas*/
+  ) internal virtual {
+    // Each manager must implement their own logic to charge OI fee
+    revert BM_NotImplemented();
+  }
 
   /**
    * @dev send custom data to oracles. Oracles should implement the verification logic on their own
@@ -269,6 +252,13 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       // invoke some actions if needed
       if (!whitelistedCallee[managerDatas[i].receiver]) revert BM_UnauthorizedCall();
       IDataReceiver(managerDatas[i].receiver).acceptData(managerDatas[i].data);
+    }
+  }
+
+  function _checkIfLiveAuction(uint accountId) internal view {
+    // TODO: add test case
+    if (liquidation.isAuctionLive(accountId)) {
+      revert BM_AccountUnderLiquidation();
     }
   }
 
@@ -289,7 +279,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     view
     returns (uint fee)
   {
-    (uint expiry,,) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    (uint expiry,,) = OptionEncoding.fromSubId(subId.toUint96());
     (uint forwardPrice,) = forwardFeed.getForwardPrice(uint64(expiry));
     fee = viewer.getAssetOIFee(asset, subId, delta, tradeId, forwardPrice);
   }
@@ -434,16 +424,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
       );
     }
   }
-
-  /////////////////////
-  //  Account Hooks  //
-  /////////////////////
-
-  /**
-   * @notice Called when upgraded to a new manager.
-   * @dev Doesn't do any checks, rely on all assets to do checks on new managers
-   */
-  function handleManagerChange(uint, IManager /*newManager*/ ) external view virtual override {}
 
   /////////////////////
   //    Modifier     //

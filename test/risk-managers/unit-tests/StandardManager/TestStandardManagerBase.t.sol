@@ -13,11 +13,11 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockPerp.sol";
 import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
-import "../../../shared/mocks/MockOptionPricing.sol";
 import "../../../shared/mocks/MockTrackableAsset.sol";
 import "../../../shared/mocks/MockCash.sol";
 
 import "../../../../scripts/config-local.sol";
+import "../../mocks/MockDutchAuction.sol";
 
 /**
  * @dev shard contract setting up environment for testing StandardManager
@@ -37,9 +37,6 @@ contract TestStandardManagerBase is Test {
   // mocked base asset!
   MockTrackableAsset wethAsset;
   MockTrackableAsset wbtcAsset;
-
-  MockOptionPricing btcPricing;
-  MockOptionPricing ethPricing;
 
   SRMPortfolioViewer portfolioViewer;
 
@@ -95,15 +92,12 @@ contract TestStandardManagerBase is Test {
     wbtc = new MockERC20("wbtc", "wbtc");
     wbtcAsset = new MockTrackableAsset(wbtc, subAccounts, false); // false as it cannot go negative
 
-    ethPricing = new MockOptionPricing();
-    btcPricing = new MockOptionPricing();
-
     portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
 
     manager = new StandardManagerPublic(
       subAccounts,
       ICashAsset(address(cash)),
-      IDutchAuction(address(0)),
+      IDutchAuction(new MockDutchAuction()),
       portfolioViewer
     );
 
@@ -111,9 +105,6 @@ contract TestStandardManagerBase is Test {
     btcMarketId = manager.createMarket("btc");
 
     portfolioViewer.setStandardManager(manager);
-
-    manager.setPricingModule(ethMarketId, ethPricing);
-    manager.setPricingModule(btcMarketId, btcPricing);
 
     manager.whitelistAsset(ethPerp, ethMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(ethOption, ethMarketId, IStandardManager.AssetType.Option);

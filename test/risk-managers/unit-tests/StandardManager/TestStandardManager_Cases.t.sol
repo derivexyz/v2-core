@@ -3,8 +3,6 @@ pragma solidity ^0.8.13;
 
 import "./TestStandardManagerBase.t.sol";
 
-import "../../../../src/feeds/OptionPricing.sol";
-
 import "../../../shared/utils/JsonMechIO.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
@@ -17,18 +15,12 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
 
   JsonMechIO immutable jsonParser;
 
-  OptionPricing immutable pricing;
-
   constructor() {
     jsonParser = new JsonMechIO();
-    pricing = new OptionPricing();
   }
 
   function setUp() public override {
     super.setUp();
-
-    manager.setPricingModule(ethMarketId, pricing);
-    manager.setPricingModule(btcMarketId, pricing);
 
     // override settings
     manager.setOracleContingencyParams(ethMarketId, getDefaultSRMOracleContingency());
@@ -36,8 +28,8 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
     // base asset contribute 10% of its value to margin
-    manager.setBaseMarginDiscountFactor(ethMarketId, 0.1e18);
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.1e18);
+    manager.setBaseAssetMarginFactor(ethMarketId, 0.1e18, 1e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.1e18, 1e18);
   }
 
   function testCase1() public {

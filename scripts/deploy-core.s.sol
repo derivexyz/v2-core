@@ -98,15 +98,16 @@ contract DeployCore is Utils {
   function _setupCoreFunctions(Deployment memory deployment) internal {
     deployment.srmViewer.setStandardManager(deployment.srm);
 
+    deployment.auction.setSMAccount(deployment.securityModule.accountId());
+
     // setup cash
     deployment.cash.setLiquidationModule(deployment.auction);
     deployment.cash.setSmFeeRecipient(deployment.securityModule.accountId());
     deployment.cash.setSmFee(CASH_SM_FEE);
 
     // set parameter for auction
-    deployment.auction.setSolventAuctionParams(getDefaultAuctionParam());
-    deployment.auction.setInsolventAuctionParams(getDefaultInsolventAuctionParam());
-
+    deployment.auction.setAuctionParams(getDefaultAuctionParam());
+    
     // allow liquidation to request payout from sm
     deployment.securityModule.setWhitelistModule(address(deployment.auction), true);
 

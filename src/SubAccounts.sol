@@ -50,6 +50,9 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
   /// @dev user nonce for permit. User => wordPosition => nonce bit map
   mapping(address account => mapping(uint wordPosition => uint nonce)) public nonceBitmap;
 
+  /// @dev the trade id of the last trade that was executed for an account
+  mapping(uint accountId => uint tradeId) public lastAccountTradeId;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -94,51 +97,6 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
     manager[newId] = _manager;
     _mint(owner, newId);
     emit AccountCreated(owner, newId, address(_manager));
-  }
-
-  /**
-   * @notice Assigns new manager to account. No balances are adjusted.
-   *         msg.sender must be ERC721 approved or owner
-   * @param accountId ID of account
-   * @param newManager new IManager
-   * @param newManagerData data to be passed to manager._managerHook
-   */
-  function changeManager(uint accountId, IManager newManager, bytes memory newManagerData)
-    external
-    onlyOwnerOrManagerOrERC721Approved(msg.sender, accountId)
-  {
-    IManager oldManager = manager[accountId];
-    if (oldManager == newManager) {
-      revert AC_CannotChangeToSameManager(msg.sender, accountId);
-    }
-    oldManager.handleManagerChange(accountId, newManager);
-
-    /* get unique assets to only call to asset once */
-    (address[] memory uniqueAssets, uint uniqueLength) = _getUniqueAssets(heldAssets[accountId]);
-    for (uint i; i < uniqueLength; ++i) {
-      IAsset(uniqueAssets[i]).handleManagerChange(accountId, newManager);
-    }
-
-    // construct asset delta array from existing balances
-    uint assetsLength = heldAssets[accountId].length;
-    AssetDelta[] memory deltas = new AssetDelta[](assetsLength);
-    for (uint i; i < assetsLength; i++) {
-      HeldAsset memory heldAsset = heldAssets[accountId][i];
-      deltas[i] = AssetDelta({
-        asset: heldAsset.asset,
-        subId: heldAsset.subId,
-        delta: balanceAndOrder[accountId][heldAsset.asset][heldAsset.subId].balance
-      });
-    }
-    // update the manager after all checks (external calls) are done. expected reentry pattern
-    manager[accountId] = newManager;
-
-    uint tradeId = ++lastTradeId;
-
-    // trigger the manager hook on the new manager. Same as post-transfer checks
-    _managerHook(accountId, tradeId, msg.sender, deltas, newManagerData);
-
-    emit AccountManagerChanged(accountId, address(oldManager), address(newManager));
   }
 
   ////////////////
@@ -511,6 +469,8 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
     returns (int postBalance, int delta, bool needAllowance)
   {
     BalanceAndOrder storage userBalanceAndOrder = balanceAndOrder[adjustment.acc][adjustment.asset][adjustment.subId];
+    lastAccountTradeId[adjustment.acc] = tradeId;
+
     int preBalance = int(userBalanceAndOrder.balance);
 
     // allow asset to modify final balance in special cases

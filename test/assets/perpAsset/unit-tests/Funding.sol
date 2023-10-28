@@ -41,7 +41,8 @@ contract UNIT_PerpAssetFunding is Test {
     bidImpactFeed = new MockSpotDiffFeed(spotFeed);
 
     manager = new MockManager(address(subAccounts));
-    perp = new PerpAsset(subAccounts, 0.0075e18);
+    perp = new PerpAsset(subAccounts);
+    perp.setRateBounds(0.0075e18);
 
     perp.setSpotFeed(spotFeed);
     perp.setPerpFeed(perpFeed);
@@ -94,11 +95,41 @@ contract UNIT_PerpAssetFunding is Test {
   function testSetInterestRate() public {
     perp.setStaticInterestRate(0.000125e16); // 0.0125%
     assertEq(perp.staticInterestRate(), 0.000125e16);
+
+    perp.setStaticInterestRate(-0.000125e16);
+    assertEq(perp.staticInterestRate(), -0.000125e16);
   }
 
-  function testCannotSetNegativeRate() public {
+  function testCannotSetRateOOB() public {
     vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
-    perp.setStaticInterestRate(-0.000001e16);
+    perp.setStaticInterestRate(-0.002e18);
+
+    vm.expectRevert(IPerpAsset.PA_InvalidStaticInterestRate.selector);
+    perp.setStaticInterestRate(0.002e18);
+  }
+
+  function testCanSetRateBounds() public {
+    perp.setRateBounds(0.0005e18);
+    assertEq(perp.maxRatePerHour(), 0.0005e18);
+    assertEq(perp.minRatePerHour(), -0.0005e18);
+  }
+
+  function testCanSetRateBoundsOOB() public {
+    vm.expectRevert(IPerpAsset.PA_InvalidRateBounds.selector);
+    perp.setRateBounds(-0.0005e18);
+  }
+
+  function testSetConvergencePeriod() public {
+    perp.setConvergencePeriod(1e18); // 1 hour
+    assertEq(perp.fundingConvergencePeriod(), 1e18);
+  }
+
+  function testCannotSetConvergencePeriodOOB() public {
+    vm.expectRevert(IPerpAsset.PA_InvalidConvergencePeriod.selector);
+    perp.setConvergencePeriod(0.0001e18);
+
+    vm.expectRevert(IPerpAsset.PA_InvalidConvergencePeriod.selector);
+    perp.setConvergencePeriod(500e18);
   }
 
   function testSetImpactPrices() public {
@@ -198,8 +229,8 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testIndexPrice() public {
     spotFeed.setSpot(500e18, 1e18);
-    (uint spotPrice,) = perp.getIndexPrice();
-    assertEq(spotPrice, 500e18);
+    (uint indexPrice,) = perp.getIndexPrice();
+    assertEq(indexPrice, 500e18);
 
     perpFeed.setSpotDiff(50e18, 1e18);
     (uint perpPrice,) = perp.getPerpPrice();

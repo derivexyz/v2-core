@@ -10,8 +10,6 @@ import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 import "../../../src/SubAccounts.sol";
 import "../../../src/risk-managers/SRMPortfolioViewer.sol";
 
-import "../../../src/feeds/AllowList.sol";
-
 import {MockAsset} from "../../shared/mocks/MockAsset.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../shared/mocks/MockFeeds.sol";
@@ -244,29 +242,6 @@ contract UNIT_TestBaseManager is Test {
     vm.stopPrank();
   }
 
-  function testCannotExecuteBidIfLiquidatorHoldsNonCash() external {
-    vm.startPrank(address(mockAuction));
-
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
-    vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
-
-    vm.stopPrank();
-  }
-
-  function testCannotExecuteBidIfHoldTooManyAssets() external {
-    vm.startPrank(address(mockAuction));
-
-    // balance[0] is cash
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1e18);
-    // balance[1] is not cash
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1e18);
-    vm.expectRevert(IBaseManager.BM_LiquidatorCanOnlyHaveCash.selector);
-    tester.executeBid(aliceAcc, bobAcc, 0.5e18, 0, 0);
-
-    vm.stopPrank();
-  }
-
   function testExecuteBidFromBidderWithNoCash() external {
     // under some edge cases, people should be able to just "receive" the portfolio without paying anything
     // for example at the end of insolvent auction, anyone can use a empty account to receive the portfolio + initial margin
@@ -359,129 +334,48 @@ contract UNIT_TestBaseManager is Test {
     assertEq(subAccounts.getBalance(aliceAcc, cash, 0), 199e18);
   }
 
-  // ------------------------
-  //      force withdraw
-  // ------------------------
-
-  function testCanSetAllowlist() public {
-    AllowList allowlist = new AllowList();
-    viewer.setAllowList(allowlist);
-
-    assertEq(address(viewer.allowList()), address(allowlist));
+  function testChargeAllOIFeeCoverage() external {
+    // balances
+    ISubAccounts.AssetDelta[] memory assetDeltas = new ISubAccounts.AssetDelta[](0);
+    vm.expectRevert(IBaseManager.BM_NotImplemented.selector);
+    tester.chargeAllOIFee(address(this), 0, 0, assetDeltas);
   }
 
-  function testCannotForceWithdrawIFOnAllowlist() public {
-    vm.expectRevert(IBaseManager.BM_OnlyBlockedAccounts.selector);
-    tester.forceWithdrawAccount(aliceAcc);
-  }
-
-  function testCanForceWithdrawCashAccounts() public {
-    AllowList allowlist = new AllowList();
-    viewer.setAllowList(allowlist);
-    allowlist.setAllowListEnabled(true);
-
-    // alice with -$1000 cash, bob with +1000 cash
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1000e18);
-
-    tester.forceWithdrawAccount(aliceAcc);
-  }
-
-  function testCanForceWithdrawNonCashAccount() public {
-    AllowList allowlist = new AllowList();
-    viewer.setAllowList(allowlist);
-    allowlist.setAllowListEnabled(true);
-
-    // alice has no asset
-    vm.expectRevert(IBaseManager.BM_InvalidForceWithdrawAccountState.selector);
-    tester.forceWithdrawAccount(aliceAcc);
-
-    // alice with -$1000 mockAsset
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, 1000e18);
-
-    vm.expectRevert(IBaseManager.BM_InvalidForceWithdrawAccountState.selector);
-    tester.forceWithdrawAccount(aliceAcc);
-
-    // alice has cash and other assets
-    tester.symmetricManagerAdjustment(aliceAcc, bobAcc, cash, 0, 1000e18);
-    vm.expectRevert(IBaseManager.BM_InvalidForceWithdrawAccountState.selector);
-    tester.forceWithdrawAccount(aliceAcc);
-  }
-
-  //////////////////////////
-  //   Force Withdrawal   //
-  //////////////////////////
-
-  function testCantForceWithdrawWithNoAllowlist() public {
-    vm.expectRevert(IBaseManager.BM_OnlyBlockedAccounts.selector);
-    tester.forceLiquidateAccount(aliceAcc, 0);
-  }
-
-  function testCantForceLiquidateOnlyCashAccount() public {
-    viewer.setAllowList(feed);
-
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
-    balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
-
-    tester.setBalances(aliceAcc, balances);
-
-    vm.expectRevert(IBaseManager.BM_InvalidForceLiquidateAccountState.selector);
-    tester.forceLiquidateAccount(aliceAcc, 0);
-  }
-
-  function testCanForceLiquidateAccountSuccessfully() public {
-    viewer.setAllowList(feed);
-
-    ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
-    balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
-    balances[1] = ISubAccounts.AssetBalance({asset: IAsset(mockAsset), subId: 0, balance: 10e18});
-
-    tester.setBalances(aliceAcc, balances);
-
-    tester.forceLiquidateAccount(aliceAcc, 0);
-  }
-
-  ///////////////////////////
-  //   Undo Asset Deltas   //
-  ///////////////////////////
+  /////////////////////////////
+  // getPreviousAssetsLength //
+  /////////////////////////////
 
   function testUndoAssetDeltasToZero() public {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](2);
     balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
     balances[1] = ISubAccounts.AssetBalance({asset: IAsset(mockAsset), subId: 0, balance: 10e18});
 
-    tester.setBalances(aliceAcc, balances);
-
     ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](2);
     deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: 100e18});
     deltas[1] = ISubAccounts.AssetDelta({asset: IAsset(mockAsset), subId: 0, delta: 10e18});
-    ISubAccounts.AssetBalance[] memory res = viewer.undoAssetDeltas(aliceAcc, deltas);
-    assertEq(res.length, 0);
+
+    assertEq(viewer.getPreviousAssetsLength(balances, deltas), 0);
   }
 
   function testUndoAssetDeltasEmptyCurrentAccount() public {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](0);
-    tester.setBalances(aliceAcc, balances);
 
     ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](2);
     deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: -100e18});
     // 0 delta is ignored
     deltas[1] = ISubAccounts.AssetDelta({asset: IAsset(mockAsset), subId: 0, delta: 0});
-    ISubAccounts.AssetBalance[] memory res = viewer.undoAssetDeltas(aliceAcc, deltas);
-    assertEq(res.length, 1);
-    assertEq(res[0].balance, 100e18);
+
+    assertEq(viewer.getPreviousAssetsLength(balances, deltas), 1);
   }
 
   function testUndoAssetDeltasZeroDelta() public {
     ISubAccounts.AssetBalance[] memory balances = new ISubAccounts.AssetBalance[](1);
     balances[0] = ISubAccounts.AssetBalance({asset: IAsset(cash), subId: 0, balance: 100e18});
-    tester.setBalances(aliceAcc, balances);
 
     ISubAccounts.AssetDelta[] memory deltas = new ISubAccounts.AssetDelta[](1);
     deltas[0] = ISubAccounts.AssetDelta({asset: IAsset(cash), subId: 0, delta: 0});
 
-    ISubAccounts.AssetBalance[] memory res = viewer.undoAssetDeltas(aliceAcc, deltas);
-    assertEq(res.length, 1);
-    assertEq(res[0].balance, 100e18);
+    assertEq(viewer.getPreviousAssetsLength(balances, deltas), 1);
   }
 
   /////////////////

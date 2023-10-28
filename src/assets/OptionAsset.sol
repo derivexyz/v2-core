@@ -75,20 +75,8 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
     accountTotalPosition[adjustment.acc] =
       accountTotalPosition[adjustment.acc] + SignedMath.abs(postBalance) - SignedMath.abs(preBalance);
 
-    // always need allowance: cannot force to send positive asset to other accounts
+    // always need allowance: cannot force send positive asset to other accounts
     return (postBalance, true);
-  }
-
-  /**
-   * @notice Triggered when a user wants to migrate an account to a new manager
-   * @dev block update with non-whitelisted manager
-   */
-  function handleManagerChange(uint accountId, IManager newManager) external onlyAccounts {
-    _checkManager(address(newManager));
-
-    // migrate total positions to a new manager
-    uint pos = accountTotalPosition[accountId];
-    _migrateManagerTotalPositions(pos, subAccounts.manager(accountId), newManager);
   }
 
   ///////////////////////
@@ -122,7 +110,7 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
    * @return priceSettled Whether the settlement price of the option has been set.
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
-    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(SafeCast.toUint96(subId));
+    (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId.toUint96());
 
     // Return false if settlement price has not been locked in
     if (expiry > block.timestamp) {
@@ -132,14 +120,14 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
     (bool isSettled, uint settlementPrice) = settlementFeed.getSettlementPrice(uint64(expiry));
     if (!isSettled) return (0, false);
 
-    return (getSettlementValue(strike, balance, settlementPrice, isCall), true);
+    return (_getSettlementValue(strike, balance, settlementPrice, isCall), true);
   }
 
   /**
    * @notice Get settlement value of a specific option position.
    */
-  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
-    public
+  function _getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
+    internal
     pure
     returns (int)
   {

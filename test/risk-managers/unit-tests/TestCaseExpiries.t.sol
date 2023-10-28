@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import "../../shared/utils/JsonMechIO.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "../../../src/feeds/OptionPricing.sol";
 import "../../shared/mocks/MockFeeds.sol";
 
 /**
@@ -15,7 +14,6 @@ abstract contract TestCaseExpiries {
   using SignedDecimalMath for int;
 
   JsonMechIO immutable jsonParser;
-  OptionPricing immutable pricing;
 
   uint[8] expiries;
 
@@ -59,7 +57,6 @@ abstract contract TestCaseExpiries {
 
   constructor() {
     jsonParser = new JsonMechIO();
-    pricing = new OptionPricing();
 
     expiries[0] = block.timestamp + 3 days + 8 hours; //  2023 / 1 / 4
     expiries[1] = block.timestamp + 10 days + 8 hours; //  2023 / 1 / 11

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/Math.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/ConvertDecimals.sol";
 import "lyra-utils/math/FixedPointMathLib.sol";
@@ -84,7 +85,9 @@ contract InterestRateModel is IInterestRateModel {
       return util.multiplyDecimal(rateMultiplier) + minRate;
     } else {
       uint normalRate = optimalUtil.multiplyDecimal(rateMultiplier) + minRate;
+
       uint excessUtil = util - optimalUtil;
+
       return excessUtil.multiplyDecimal(highRateMultiplier) + normalRate;
     }
   }
@@ -101,10 +104,11 @@ contract InterestRateModel is IInterestRateModel {
 
   function _getUtilRate(uint supply, uint borrows) internal pure returns (uint) {
     // Utilization rate is 0 when there are no borrows
-    if (borrows == 0) {
+    if (borrows == 0 || supply == 0) {
       return 0;
     }
 
-    return borrows.divideDecimal(supply);
+    // make sure util rate cannot exceed 1
+    return Math.min(borrows.divideDecimal(supply), 1e18);
   }
 }

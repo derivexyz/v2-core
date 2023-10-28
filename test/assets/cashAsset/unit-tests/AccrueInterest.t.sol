@@ -218,6 +218,8 @@ contract UNIT_CashAssetAccrueInterest is Test {
 
     vm.warp(block.timestamp + 30 days);
     cashAsset.deposit(posAccount, amountToBorrow);
+    uint cashExchangeRate = cashAsset.getCashToStableExchangeRate();
+    assertEq(cashExchangeRate, 1e18);
 
     // Positive bal > because it has accrued interest
     posBal = subAccounts.getBalance(posAccount, cashAsset, 0);
@@ -269,9 +271,9 @@ contract UNIT_CashAssetAccrueInterest is Test {
     vm.prank(address(manager));
     cashAsset.updateSettledCash(posSettledCash);
 
-    // Increase cash balance reflected in increased exchange rate
+    // Increase cash balance is _not_ accounted for in cashExchangeRate
     cashExchangeRate = cashAsset.getCashToStableExchangeRate();
-    assertGt(cashExchangeRate, 1e18);
+    assertEq(cashExchangeRate, 1e18);
   }
 
   function testNegativeSettledCashDecreasesCashBalance() public {

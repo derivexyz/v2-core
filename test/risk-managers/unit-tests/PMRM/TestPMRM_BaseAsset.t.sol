@@ -41,7 +41,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
     // decrease the cap to 0
     baseAsset.setTotalPositionCap(pmrm, 0);
 
-    PMRMLib pmrmLib = new PMRMLib(IOptionPricing(optionPricing));
+    PMRMLib pmrmLib = new PMRMLib();
 
     // other PMRM
     PMRM newManager = new PMRMPublic(
@@ -50,7 +50,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
       option,
       mockPerp,
       baseAsset,
-      IDutchAuction(address(0)),
+      IDutchAuction(new MockDutchAuction()),
       IPMRM.Feeds({
         spotFeed: ISpotFeed(feed),
         stableFeed: ISpotFeed(stableFeed),
@@ -62,6 +62,9 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
       viewer,
       pmrmLib
     );
+
+    newManager.setScenarios(getDefaultScenarios());
+
     baseAsset.setWhitelistManager(address(newManager), true);
     // create new account for that manager
     uint newAcc = subAccounts.createAccount(address(this), IManager(address(newManager)));

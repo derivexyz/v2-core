@@ -19,8 +19,6 @@ import "../../../src/risk-managers/PMRM.sol";
 import "../../../src/risk-managers/PMRMLib.sol";
 import "../../../src/risk-managers/SRMPortfolioViewer.sol";
 
-import "../../../src/feeds/OptionPricing.sol";
-
 import "../../shared/mocks/MockFeeds.sol";
 import "../../shared/mocks/MockERC20.sol";
 import "../../../src/feeds/LyraSpotDiffFeed.sol";
@@ -71,8 +69,6 @@ contract IntegrationTestBase is Test {
     LyraVolFeed volFeed;
     LyraRateFeed rateFeed;
     LyraForwardFeed forwardFeed;
-    // pricing
-    OptionPricing pricing;
     // manager for specific market
     PMRM pmrm;
     PMRMLib pmrmLib;
@@ -158,15 +154,11 @@ contract IntegrationTestBase is Test {
     cash.setLiquidationModule(auction);
     cash.setSmFeeRecipient(securityModule.accountId());
     smAcc = securityModule.accountId();
-
-    // todo: allow list
   }
 
   function _setupCoreContracts() internal {
     // set parameter for auction
-    auction.setSolventAuctionParams(_getDefaultAuctionParam());
-
-    auction.setInsolventAuctionParams(_getDefaultInsolventAuctionParam());
+    auction.setAuctionParams(_getDefaultAuctionParam());
 
     // allow liquidation to request payout from sm
     securityModule.setWhitelistModule(address(auction), true);
@@ -209,7 +201,8 @@ contract IntegrationTestBase is Test {
 
     OptionAsset option = new OptionAsset(subAccounts, address(market.forwardFeed));
 
-    PerpAsset perp = new PerpAsset(subAccounts, 0.0075e18);
+    PerpAsset perp = new PerpAsset(subAccounts);
+    perp.setRateBounds(0.0075e18);
 
     WrappedERC20Asset base = new WrappedERC20Asset(subAccounts, erc20);
 
@@ -237,8 +230,6 @@ contract IntegrationTestBase is Test {
     market.forwardFeed.setHeartbeat(20 minutes);
     market.forwardFeed.setSettlementHeartbeat(60 minutes);
 
-    market.pricing = new OptionPricing();
-
     IPMRM.Feeds memory feeds = IPMRM.Feeds({
       spotFeed: market.spotFeed,
       stableFeed: stableFeed,
@@ -249,7 +240,7 @@ contract IntegrationTestBase is Test {
     });
 
     market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);
-    market.pmrmLib = new PMRMLib(market.pricing);
+    market.pmrmLib = new PMRMLib();
 
     market.pmrm = new PMRM(
       subAccounts, 
@@ -297,8 +288,6 @@ contract IntegrationTestBase is Test {
     // set assets per market
     marketId = srm.createMarket(key);
     market.id = marketId;
-
-    srm.setPricingModule(marketId, market.pricing);
 
     srm.whitelistAsset(market.perp, marketId, IStandardManager.AssetType.Perpetual);
     srm.whitelistAsset(market.option, marketId, IStandardManager.AssetType.Option);
@@ -426,18 +415,15 @@ contract IntegrationTestBase is Test {
     optimalUtil = 0.6 * 1e18;
   }
 
-  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.SolventAuctionParams memory param) {
-    param = IDutchAuction.SolventAuctionParams({
+  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.AuctionParams memory param) {
+    param = IDutchAuction.AuctionParams({
       startingMtMPercentage: 1e18,
       fastAuctionCutoffPercentage: 0.8e18,
       fastAuctionLength: 10 minutes,
       slowAuctionLength: 2 hours,
+      insolventAuctionLength: 10 minutes,
       liquidatorFeeRate: 0.05e18
     });
-  }
-
-  function _getDefaultInsolventAuctionParam() internal pure returns (IDutchAuction.InsolventAuctionParams memory param) {
-    param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 5 seconds, bufferMarginScalar: 1.2e18});
   }
 
   function getSubId(uint expiry, uint strike, bool isCall) public pure returns (uint96) {

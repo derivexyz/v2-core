@@ -50,15 +50,15 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
   //   uint64 expiry = uint64(block.timestamp + 4 weeks);
   //   // set vol for this expiry
   //   _setSpotPrice("weth", 2000e18, 1e18);
-  //   _setDefaultSVIForExpiry("weth", expiry);
   //   _setForwardPrice("weth", expiry, 2000e18, 1e18);
-
+  //   _setDefaultSVIForExpiry("weth", expiry);
+  //
   //   _openBox("weth", expiry, aliceAcc, bobAcc, 1000e18);
-
+  //
   //   jsonParser = new JsonMechIO();
   //   string memory json =
   //     jsonParser.jsonFromRelPath("/test/integration-tests/assets/cashAsset/json/testInterestPaidForHighUtil.json");
-
+  //
   //   uint stateIdx = 0;
   //   uint maxDelta = 1e12; // 6 decimals accuracy (18 total decimals, allowing the last 6 to be wrong)
   //   assertApproxEqAbs(int(getCashBalance(aliceAcc)), jsonParser.readTableValue(json, "Account0", stateIdx), maxDelta);
@@ -79,23 +79,24 @@ contract MECH_InterestRateFeesTest is PositionBuilderBase {
   //     jsonParser.readTableValue(json, "borrowRate", stateIdx),
   //     maxDelta
   //   );
-
+  //
   //   // warp and trigger state updates
   //   vm.warp(block.timestamp + 14 days);
   //   stateIdx = 1;
-
+  //
   //   _setSpotPrice("weth", 2000e18, 1e18);
-  //   // set vol for this expiry
-  //   _setDefaultSVIForExpiry("weth", expiry);
   //   // set forward price for expiry
   //   _setForwardPrice("weth", expiry, 2000e18, 1e18);
-
+  //   // set vol for this expiry
+  //   _setDefaultSVIForExpiry("weth", expiry);
+  //
+  //
   //   // trigger cash updates, deposit $1 to alice to bypass an IM revert due to accrued interest
   //   _depositCash(address(alice), aliceAcc, 10e18);
   //   cash.transferSmFees();
   //   _depositCash(address(bob), bobAcc, 0);
   //   _depositCash(address(securityModule), smAcc, 0);
-
+  //
   //   assertApproxEqAbs(int(getCashBalance(aliceAcc)), jsonParser.readTableValue(json, "Account0", stateIdx), maxDelta);
   //   assertApproxEqAbs(int(getCashBalance(bobAcc)), jsonParser.readTableValue(json, "Account1", stateIdx), maxDelta);
   //   assertApproxEqAbs(int(getCashBalance(smAcc)), jsonParser.readTableValue(json, "SM", stateIdx), maxDelta);

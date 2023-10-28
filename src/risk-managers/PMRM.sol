@@ -4,8 +4,9 @@ pragma solidity ^0.8.18;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/Math.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
-import "lyra-utils/encoding/OptionEncoding.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
 
+import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
@@ -34,7 +35,7 @@ import {BaseManager} from "./BaseManager.sol";
  * @notice Risk Manager that uses a SPAN like methodology to margin an options portfolio.
  */
 
-contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
+contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
@@ -62,7 +63,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
   uint public maxExpiries = 11;
 
   IPMRM.Scenario[] internal marginScenarios;
-  mapping(address => bool) public trustedRiskAssessor;
 
   ////////////////////////
   //    Constructor     //
@@ -137,11 +137,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     emit SettlementFeedUpdated(_settlementFeed);
   }
 
-  function setTrustedRiskAssessor(address riskAssessor, bool trusted) external onlyOwner {
-    trustedRiskAssessor[riskAssessor] = trusted;
-    emit TrustedRiskAssessorUpdated(riskAssessor, trusted);
-  }
-
   /**
    * @notice Sets the scenarios for managing margin positions.
    * @dev Only the contract owner can invoke this function.
@@ -149,6 +144,9 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    *                   Each Scenario struct contains relevant data for a specific scenario.
    */
   function setScenarios(IPMRM.Scenario[] memory _scenarios) external onlyOwner {
+    if (_scenarios.length == 0) {
+      revert PMRM_InvalidScenarios();
+    }
     for (uint i = 0; i < _scenarios.length; i++) {
       if (_scenarios[i].spotShock > 3e18) {
         revert PMRM_InvalidSpotShock();
@@ -186,18 +184,16 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     address caller,
     ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
-  ) public onlyAccounts {
-    viewer.verifyCanTrade(accountId);
-
-    _processManagerData(tradeId, managerData);
-
-    _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
-
-    // check caps are not exceeded
-    viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
+  ) external onlyAccounts nonReentrant {
+    _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
     bool riskAdding = false;
+    bool cashOnly = true;
     for (uint i = 0; i < assetDeltas.length; i++) {
+      if (assetDeltas[i].asset != cashAsset) {
+        cashOnly = false;
+      }
+
       if (assetDeltas[i].asset == perp) {
         // Settle perp PNL into cash if the user traded perp in this tx.
         _settlePerpRealizedPNL(perp, accountId);
@@ -213,58 +209,44 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
       }
     }
 
+    if (riskAdding || !cashOnly) {
+      _checkIfLiveAuction(accountId);
+    }
+
+    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
+
+    // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
+    if (
+      assetBalances.length > maxAccountSize //
+        && viewer.getPreviousAssetsLength(assetBalances, assetDeltas) < assetBalances.length
+    ) {
+      revert PMRM_TooManyAssets();
+    }
+
     if (!riskAdding) {
       // Early exit if only adding cash/option/baseAsset
       return;
     }
-    _assessRisk(caller, accountId, assetDeltas);
+    _assessRisk(caller, accountId, assetBalances);
   }
 
   ///////////////////////
   // Arrange Portfolio //
   ///////////////////////
 
-  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetDelta[] memory assetDeltas) internal view {
-    bool isTrustedRiskAssessor = trustedRiskAssessor[caller];
+  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetBalance[] memory assetBalances) internal view {
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances);
 
-    ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances, !isTrustedRiskAssessor);
-
-    if (isTrustedRiskAssessor) {
-      // If the caller is a trusted risk assessor, use a single predefined scenario for checking margin
-      IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
-      scenarios[0] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-      (int atmMM,,) = lib.getMarginAndMarkToMarket(portfolio, false, scenarios, false);
-
-      // revert if below maintenance margin
-      if (atmMM < 0) {
-        revert PMRM_InsufficientMargin();
-      }
+    if (trustedRiskAssessor[caller]) {
+      // If the caller is a trusted risk assessor, only use the basis contingency scenarios (3 scenarios)
+      (int atmMM,,) = lib.getMarginAndMarkToMarket(portfolio, false, lib.getBasisContingencyScenarios());
+      if (atmMM >= 0) return;
     } else {
       // If the caller is not a trusted risk assessor, use all the margin scenarios
-      (int postIM,, uint worstScenario) = lib.getMarginAndMarkToMarket(portfolio, true, marginScenarios, true);
-
-      // if post trade IM is < 0, you must have newMM > oldMM and newMM > 0. (aka the trade increases account health )
-      if (postIM < 0) {
-        int postMM;
-        IPMRM.Scenario[] memory postScenarios = new IPMRM.Scenario[](0);
-        if (worstScenario != marginScenarios.length) {
-          postScenarios = new IPMRM.Scenario[](1);
-          postScenarios[0] = marginScenarios[worstScenario];
-        }
-        (postMM,,) = lib.getMarginAndMarkToMarket(portfolio, false, postScenarios, true);
-
-        // Note: cash interest is also undone here, but this is not a significant issue
-        IPMRM.Portfolio memory prePortfolio =
-          _arrangePortfolio(accountId, viewer.undoAssetDeltas(accountId, assetDeltas), !isTrustedRiskAssessor);
-
-        // we have to use all scenarios for the pre-check as we don't know if the worst scenario is different
-        (int preMM,,) = lib.getMarginAndMarkToMarket(prePortfolio, false, marginScenarios, true);
-        if (postMM < preMM || postMM < 0) {
-          revert PMRM_InsufficientMargin();
-        }
-      }
+      (int postIM,,) = lib.getMarginAndMarkToMarket(portfolio, true, marginScenarios);
+      if (postIM >= 0) return;
     }
+    revert PMRM_InsufficientMargin();
   }
 
   /**
@@ -273,7 +255,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    * @param assets Array of balances for given asset and subId.
    * @return portfolio Cash + option holdings.
    */
-  function _arrangePortfolio(uint accountId, ISubAccounts.AssetBalance[] memory assets, bool addForwardCont)
+  function _arrangePortfolio(uint accountId, ISubAccounts.AssetBalance[] memory assets)
     internal
     view
     returns (IPMRM.Portfolio memory portfolio)
@@ -294,7 +276,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
       portfolio.minConfidence = Math.min(portfolio.minConfidence, perpConfidence);
     }
 
-    portfolio = lib.addPrecomputes(portfolio, addForwardCont);
+    portfolio = lib.addPrecomputes(portfolio);
 
     return portfolio;
   }
@@ -305,10 +287,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     returns (uint seenExpiries, IPMRM.PortfolioExpiryData[] memory expiryCount)
   {
     uint assetLen = assets.length;
-
-    if (assetLen > maxAccountSize) {
-      revert PMRM_TooManyAssets();
-    }
 
     seenExpiries = 0;
     expiryCount = new IPMRM.PortfolioExpiryData[](maxExpiries > assetLen ? assetLen : maxExpiries);
@@ -435,6 +413,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    */
   function _chargeAllOIFee(address caller, uint accountId, uint tradeId, ISubAccounts.AssetDelta[] memory assetDeltas)
     internal
+    override
   {
     if (feeBypassedCaller[caller]) return;
 
@@ -485,7 +464,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    * @notice Turn balance into an arranged portfolio struct
    */
   function arrangePortfolio(uint accountId) external view returns (IPMRM.Portfolio memory portfolio) {
-    return _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
+    return _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId));
   }
 
   /**
@@ -493,8 +472,8 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
    * @dev if the returned value is negative, it means the account is under margin requirement
    */
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId), true);
-    (int margin,,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios, true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId));
+    (int margin,,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios);
     return margin;
   }
 
@@ -506,11 +485,12 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager {
     view
     returns (int margin, int mtm)
   {
-    IPMRM.Portfolio memory portfolio = _arrangePortfolio(0, subAccounts.getAccountBalances(accountId), true);
+    IPMRM.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId));
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](1);
+
     scenarios[0] = marginScenarios[scenarioId];
 
-    (margin, mtm,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios, true);
+    (margin, mtm,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, scenarios);
     return (margin, mtm);
   }
 }

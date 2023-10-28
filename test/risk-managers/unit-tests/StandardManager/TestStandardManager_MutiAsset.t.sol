@@ -102,12 +102,14 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
 
   function testCannotSetInvalidBaseMarginFactor() public {
     vm.expectRevert(IStandardManager.SRM_InvalidBaseDiscountFactor.selector);
-    manager.setBaseMarginDiscountFactor(btcMarketId, 1.01e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 1.01e18, 1e18);
+    vm.expectRevert(IStandardManager.SRM_InvalidBaseDiscountFactor.selector);
+    manager.setBaseAssetMarginFactor(btcMarketId, 1e18, 1.01e18);
   }
 
   function testBaseAssetCanAddMargin() public {
     // enable a discount factor of 50%
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18, 1e18);
 
     _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
 
@@ -120,7 +122,7 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
       btcMarketId, IStandardManager.OracleContingencyParams(0.5e18, 0.5e18, 0.5e18, 0.1e18)
     );
     // enable a discount factor of 50%
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.5e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18, 1e18);
     btcFeed.setSpot(btcSpot, 0.3e18);
 
     _deposit(wbtc, wbtcAsset, aliceAcc, 2e18);
@@ -189,7 +191,6 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     // Setup doge market
     MockOption dogeOption = new MockOption(subAccounts);
     MockFeeds dogeFeed = new MockFeeds();
-    MockOptionPricing pricing = new MockOptionPricing();
 
     dogeFeed.setSpot(0.0005e18, 1e18);
 
@@ -199,8 +200,6 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
 
     manager.setOraclesForMarket(dogeMarketId, dogeFeed, dogeFeed, dogeFeed);
 
-    manager.setPricingModule(dogeMarketId, pricing);
-
     IStandardManager.OptionMarginParams memory params =
       IStandardManager.OptionMarginParams(0.15e18, 0.1e18, 0.075e18, 0.075e18, 0.075e18, 1.4e18, 1.2e18, 1.05e18);
     manager.setOptionMarginParams(dogeMarketId, params);
@@ -208,8 +207,6 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     // summarize the initial margin for 2 options
     uint ethStrike = 2000e18;
     uint dogeStrike = 0.0006e18;
-    pricing.setMockMTM(dogeStrike, expiry1, true, 0.0005e18);
-    ethPricing.setMockMTM(ethStrike, expiry1, true, 100e18);
 
     (int ethMargin1,) = manager.getIsolatedMargin(ethMarketId, ethStrike, expiry1, true, -1e18, true);
     (int dogeMargin1,) = manager.getIsolatedMargin(dogeMarketId, dogeStrike, expiry1, true, -1000e18, true);

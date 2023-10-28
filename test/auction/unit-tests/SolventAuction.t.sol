@@ -22,15 +22,9 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   /////////////////////////
 
   function testStartAuctionPaysFee() public {
-    dutchAuction.setSolventAuctionParams(
-      IDutchAuction.SolventAuctionParams({
-        startingMtMPercentage: 1e18,
-        fastAuctionCutoffPercentage: 0.8e18,
-        fastAuctionLength: 600,
-        slowAuctionLength: 7200,
-        liquidatorFeeRate: 0.01e18
-      })
-    );
+    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
+    params.liquidatorFeeRate = 0.01e18;
+    dutchAuction.setAuctionParams(params);
     // start auction
     _startDefaultSolventAuction(aliceAcc);
 
@@ -59,14 +53,14 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   function testSolventAuctionTerminatedIfMaxProportionIsBid() public {
     _startDefaultSolventAuction(aliceAcc);
 
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
 
     vm.warp(block.timestamp + params.fastAuctionLength);
 
     uint maxProportion = dutchAuction.getMaxProportion(aliceAcc, scenario);
 
     vm.prank(bob);
-    dutchAuction.bid(aliceAcc, bobAcc, maxProportion, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, maxProportion, 0, 0);
 
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
     assertEq(auction.ongoing, false);
@@ -98,7 +92,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // bid on the auction
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
     assertEq(finalPercentage, maxProportion); // bid max
     assertEq(cashToBidder, 0); // bid max
@@ -120,7 +114,8 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     uint percentage = 0.1e18;
     // bid on the auction
     vm.prank(bob);
-    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
+      dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
 
     assertEq(finalPercentage, percentage); // bid max
     assertEq(cashToBidder, 0); // 0 dollar paid from SM
@@ -142,7 +137,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     // bid on the auction
     vm.prank(bob);
     vm.expectRevert(IDutchAuction.DA_MaxCashExceeded.selector);
-    dutchAuction.bid(aliceAcc, bobAcc, percentage, maxCash);
+    dutchAuction.bid(aliceAcc, bobAcc, percentage, maxCash, 0);
   }
 
   function testCannotBidWithNoCash() public {
@@ -150,8 +145,14 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // bid from charlie with no cash
     vm.prank(charlie);
+    vm.expectRevert(IDutchAuction.DA_InvalidBidderPortfolio.selector);
+    dutchAuction.bid(aliceAcc, charlieAcc, 1e18, 0, 0);
+
+    // bid from charlie with not enough cash
+    _mintAndDepositCash(charlieAcc, 1e18);
+    vm.prank(charlie);
     vm.expectRevert(IDutchAuction.DA_InsufficientCash.selector);
-    dutchAuction.bid(aliceAcc, charlieAcc, 1e18, 0);
+    dutchAuction.bid(aliceAcc, charlieAcc, 1e18, 0, 0);
   }
 
   function testBidRaceCondition() public {
@@ -164,12 +165,12 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     uint percentage = 0.1e18;
 
     vm.prank(bob);
-    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
     // after the first liquidation, mtm should only be slightly reduced (10% reduced, and cash added from bob)
     manager.setMarkToMarket(aliceAcc, 270e18 + int(cashFromBob));
 
     vm.prank(charlie);
-    (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage, 0);
+    (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage, 0, 0);
 
     assertEq(cashFromCharlie, cashFromBob, "charlie and bob should pay the same amount");
     assertEq(charliePercentage, bobPercentage, "charlie should receive the same percentage as bob");
@@ -190,17 +191,40 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMarkToMarket(aliceAcc, 1000e18);
 
     vm.prank(bob);
-    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0);
+    (uint bobPercentage, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
 
     assertEq(cashFromBob, 90e18, "cashFromBob should be 90");
     assertEq(bobPercentage, percentage, "bobPercentage should be 10%");
+  }
+
+  function testChangingMMDuringAuction() public {
+    manager.setMockMargin(aliceAcc, false, scenario, -1000e18);
+    manager.setMarkToMarket(aliceAcc, 1400e18);
+
+    dutchAuction.startAuction(aliceAcc, scenario);
+
+    // fast forward to half way through the fast auction, should give me 90% discount
+    vm.warp(block.timestamp + _getDefaultSolventParams().fastAuctionLength / 2);
+
+    uint percentage = 0.1e18;
+    vm.prank(bob);
+    (, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+
+    // mark to market is changed to 1000, now i need to pay 90% of 1000 * 10% = 90
+    manager.setMockMargin(aliceAcc, false, scenario, 10e18);
+
+    vm.prank(bob);
+    (, uint cashFromBob2,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
+
+    // Second liquidation paid less, as mm has increased
+    assertGt(cashFromBob, cashFromBob2);
   }
 
   function testBidShouldSettlePerps() public {
     _startDefaultSolventAuction(aliceAcc);
 
     vm.prank(bob);
-    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
     assertEq(manager.perpSettled(aliceAcc), true);
   }
@@ -208,16 +232,16 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   function testCannotBidWithInvalidPercentage() public {
     _startDefaultSolventAuction(aliceAcc);
     vm.expectRevert(IDutchAuction.DA_InvalidPercentage.selector);
-    dutchAuction.bid(aliceAcc, bobAcc, 1.01e18, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 1.01e18, 0, 0);
 
     vm.expectRevert(IDutchAuction.DA_InvalidPercentage.selector);
-    dutchAuction.bid(aliceAcc, bobAcc, 0, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 0, 0, 0);
   }
 
   function testCannotBidFromNonOwner() public {
     _startDefaultSolventAuction(aliceAcc);
     vm.expectRevert(IDutchAuction.DA_SenderNotOwner.selector);
-    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
   }
 
   function testCanStillBidWhenMMIsZero() public {
@@ -226,7 +250,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMockMargin(aliceAcc, false, scenario, 1e18);
 
     vm.prank(bob);
-    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
     assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
   }
@@ -237,7 +261,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMockMargin(aliceAcc, false, scenario, 100e18);
     vm.prank(bob);
     vm.expectRevert(IDutchAuction.DA_AuctionShouldBeTerminated.selector);
-    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
   }
 
   function testCannotGetMaxProportionOnInsolventAuction() public {
@@ -249,19 +273,19 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
   function testCannotBidOnEndedAuction() public {
     _startDefaultSolventAuction(aliceAcc);
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
     vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength + 5);
 
     vm.expectRevert(IDutchAuction.DA_SolventAuctionEnded.selector);
     vm.prank(bob);
-    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
   }
 
   //  test that an auction can start as solvent and convert to insolvent
   function testConvertToInsolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
 
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
 
     // testing that the view returns the correct auction.
     DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
@@ -301,7 +325,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   function testCannotMarkInsolventIfAccountMMIsOK() public {
     _startDefaultSolventAuction(aliceAcc);
 
-    IDutchAuction.SolventAuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
     vm.warp(block.timestamp + params.fastAuctionLength + params.slowAuctionLength);
 
     // assume MM is back above 0
@@ -339,14 +363,6 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.updateScenarioId(aliceAcc, newId);
   }
 
-  function testCannotStepNonInsolventAuction() public {
-    _startDefaultSolventAuction(aliceAcc);
-
-    // increment the insolvent auction
-    vm.expectRevert(IDutchAuction.DA_SolventAuctionCannotIncrement.selector);
-    dutchAuction.continueInsolventAuction(aliceAcc);
-  }
-
   function testTerminatesSolventAuction() public {
     _startDefaultSolventAuction(aliceAcc);
 
@@ -380,14 +396,14 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     uint percentage = 0.1e18;
 
     vm.prank(bob);
-    (, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0);
+    (, uint cashFromBob,) = dutchAuction.bid(aliceAcc, bobAcc, percentage, 0, 0);
 
     // We set the MTM to be lower than the reserved cash
     manager.setMarkToMarket(aliceAcc, int(cashFromBob) - 1);
 
     vm.prank(charlie);
     vm.expectRevert(IDutchAuction.DA_AuctionShouldBeTerminated.selector);
-    dutchAuction.bid(aliceAcc, charlieAcc, percentage, 0);
+    dutchAuction.bid(aliceAcc, charlieAcc, percentage, 0, 0);
 
     vm.expectRevert(IDutchAuction.DA_ReservedCashGreaterThanMtM.selector);
     dutchAuction.convertToInsolventAuction(aliceAcc);
@@ -423,7 +439,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     // Alice liquidates 30% of the portfolio
     vm.prank(alice);
     {
-      (uint finalPercentage, uint cashFromAlice,) = dutchAuction.bid(seanAcc, aliceAcc, 0.3e18, 0);
+      (uint finalPercentage, uint cashFromAlice,) = dutchAuction.bid(seanAcc, aliceAcc, 0.3e18, 0, 0);
       assertEq(finalPercentage, 0.3e18);
       assertEq(cashFromAlice / 1e18, 1440); // 30% of portfolio, price at 4800
     }
@@ -438,7 +454,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     // check that Bob's max liquidatable percentage is capped
     vm.prank(bob);
     {
-      (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 0.5e18, 0);
+      (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 0.5e18, 0, 0);
       assertEq(finalPercentage / 1e14, 3756); // capped at 37.5675 of original
       assertEq(cashFromBob / 1e18, 1803); // 37.5675% of portfolio, price at 4800
     }
@@ -456,9 +472,9 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.setBufferMarginPercentage(0);
 
     // set fast auction cutoff to be 70%
-    IDutchAuction.SolventAuctionParams memory params = getDefaultAuctionParam();
+    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
     params.fastAuctionCutoffPercentage = 0.7e18;
-    dutchAuction.setSolventAuctionParams(params);
+    dutchAuction.setAuctionParams(params);
 
     // Auction starts
     manager.setMockMargin(seanAcc, false, scenario, -10000e18);
@@ -469,7 +485,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 8000e18);
 
     vm.prank(alice);
-    (, uint cashPaid,) = dutchAuction.bid(seanAcc, aliceAcc, 0.2e18, 0);
+    (, uint cashPaid,) = dutchAuction.bid(seanAcc, aliceAcc, 0.2e18, 0, 0);
     assertEq(cashPaid, 1600e18);
 
     // setup env: MtM = 9600, MM = BM = -10000, discount = 30%, liquidated = 20%

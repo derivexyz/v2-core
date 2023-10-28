@@ -5,22 +5,23 @@ import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 import "../../../../src/interfaces/IBaseManager.sol";
 
 contract TestPMRM_Admin is PMRMTestBase {
-  function testSetNoScenarios() public {
+  function testCannotSetNoScenarios() public {
     // Remove all scenarios
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
+    vm.expectRevert(IPMRM.PMRM_InvalidScenarios.selector);
     pmrm.setScenarios(scenarios);
-    IPMRM.Scenario[] memory res = pmrm.getScenarios();
-    assertEq(res.length, 0);
+  }
 
+  function testAddScenarios() public {
     // Add scenarios
-    scenarios = new IPMRM.Scenario[](3);
+    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](3);
     scenarios[0] = IPMRM.Scenario({spotShock: 0, volShock: IPMRM.VolShockDirection.None});
     scenarios[1] = IPMRM.Scenario({spotShock: 1, volShock: IPMRM.VolShockDirection.Up});
     scenarios[2] = IPMRM.Scenario({spotShock: 2, volShock: IPMRM.VolShockDirection.Down});
 
     pmrm.setScenarios(scenarios);
 
-    res = pmrm.getScenarios();
+    IPMRM.Scenario[] memory res = pmrm.getScenarios();
     assertEq(res.length, 3);
     assertEq(res[0].spotShock, 0);
     assertEq(uint8(res[0].volShock), uint8(IPMRM.VolShockDirection.None));
@@ -103,10 +104,6 @@ contract TestPMRM_Admin is PMRMTestBase {
     assertEq(address(pmrm.settlementFeed()), address(feed));
     pmrm.setSettlementFeed(ISettlementFeed(address(0)));
     assertEq(address(pmrm.settlementFeed()), address(0));
-
-    assertEq(address(lib.optionPricing()), address(optionPricing));
-    lib.setOptionPricing(IOptionPricing(address(0)));
-    assertEq(address(lib.optionPricing()), address(0));
   }
 
   function testSetPMRMParametersBasisContingency() public {

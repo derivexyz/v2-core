@@ -33,13 +33,13 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     runLiquidationSim("Test6");
   }
 
-  function testInsolventSim1() public {
-    runLiquidationSim("InsolventTest1");
-  }
+  // function testInsolventSim1() public {
+  //   runLiquidationSim("InsolventTest1");
+  // }
 
-  function testInsolventSim2() public {
-    runLiquidationSim("InsolventTest2");
-  }
+  // function testInsolventSim2() public {
+  //   runLiquidationSim("InsolventTest2");
+  // }
 
   function runLiquidationSim(string memory testName) internal {
     LiquidationSim memory data = LiquidationSimBase.getTestData(testName);
@@ -67,7 +67,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     _depositCash(liqAcc, 1000000000e18);
 
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
-      auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated, 0);
+      auction.bid(aliceAcc, liqAcc, data.Actions[actionId].Liquidator.PercentLiquidated, 0, 0);
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {
@@ -84,8 +84,8 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     uint fMax;
     if (auctionDetails.insolvent) {
-      int lowerBound = int(auctionDetails.stepSize) * -100;
-      assertApproxEqAbs(lowerBound, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
+      // todo: this needs to be changed to use MM as lower bound
+      // assertApproxEqAbs(mm, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
     } else {
       fMax = auction.getMaxProportion(aliceAcc, worstScenario);
     }
@@ -124,16 +124,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
   }
 
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {
-    IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
-    if (auctionDetails.insolvent) {
-      uint currentBlockTime = block.timestamp;
-      for (uint i = 0; i < data.Actions[actionId].Time - currentBlockTime; ++i) {
-        vm.warp(block.timestamp + 1);
-        auction.continueInsolventAuction(aliceAcc);
-      }
-    } else {
-      vm.warp(data.Actions[actionId].Time);
-    }
+    vm.warp(data.Actions[actionId].Time);
     updateFeeds(data.Actions[actionId].Feeds);
   }
 }

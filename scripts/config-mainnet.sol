@@ -28,18 +28,15 @@ function getDefaultInterestRateModel() pure returns (
 
 int constant BUFFER_MARGIN_SCALE = 0.3e18;
 
-function getDefaultAuctionParam() pure returns (IDutchAuction.SolventAuctionParams memory param) {
-  param = IDutchAuction.SolventAuctionParams({
+function getDefaultAuctionParam() pure returns (IDutchAuction.AuctionParams memory param) {
+  param = IDutchAuction.AuctionParams({
     startingMtMPercentage: 0.95e18,
     fastAuctionCutoffPercentage: 0.7e18,
     fastAuctionLength: 20 minutes,
     slowAuctionLength: 3 hours,
+    insolventAuctionLength: 10 minutes,
     liquidatorFeeRate: 0
   });
-}
-
-function getDefaultInsolventAuctionParam() pure returns (IDutchAuction.InsolventAuctionParams memory param) {
-  param = IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 6 seconds, bufferMarginScalar: 1.2e18});
 }
 
 function getDefaultDepegParam() pure returns (IStandardManager.DepegParams memory param) {
@@ -57,6 +54,7 @@ uint256 constant MIN_OI_FEE = 2e18;
 uint256 constant OI_FEE_BPS = 0.001e18;
 
 uint256 constant SRM_BASE_DISCOUNT = 0.75e18;
+uint256 constant SRM_IM_BASE_DISCOUNT = 0.8e18;
 
 // Feeds
 

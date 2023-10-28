@@ -6,7 +6,6 @@ import {IAsset} from "../../../../../src/interfaces/IAsset.sol";
 import {ISubAccounts} from "../../../../../src/interfaces/ISubAccounts.sol";
 import {IManager} from "../../../../../src/interfaces/IManager.sol";
 import {IDutchAuction} from "../../../../../src/interfaces/IDutchAuction.sol";
-import {IOptionPricing} from "../../../../../src/interfaces/IOptionPricing.sol";
 import {ISpotFeed} from "../../../../../src/interfaces/ISpotFeed.sol";
 import {IForwardFeed} from "../../../../../src/interfaces/IForwardFeed.sol";
 import {IInterestRateFeed} from "../../../../../src/interfaces/IInterestRateFeed.sol";
@@ -17,7 +16,6 @@ import {IPMRM} from "../../../../../src/interfaces/IPMRM.sol";
 import {SubAccounts} from "../../../../../src/SubAccounts.sol";
 import {CashAsset} from "../../../../../src/assets/CashAsset.sol";
 import {WrappedERC20Asset} from "../../../../../src/assets/WrappedERC20Asset.sol";
-import {OptionPricing} from "../../../../../src/feeds/OptionPricing.sol";
 import {PMRM} from "../../../../../src/risk-managers/PMRM.sol";
 import {PMRMLib} from "../../../../../src/risk-managers/PMRMLib.sol";
 import {BasePortfolioViewer} from "../../../../../src/risk-managers/BasePortfolioViewer.sol";
@@ -58,7 +56,6 @@ contract PMRMTestBase is JsonMechIO {
   MockSpotDiffFeed perpFeed;
   MockFeeds stableFeed;
   uint feeRecipient;
-  OptionPricing optionPricing;
   MockPerp mockPerp;
 
   address alice = address(0xaa);
@@ -87,13 +84,12 @@ contract PMRMTestBase is JsonMechIO {
     mockPerp = new MockPerp(subAccounts);
 
     option = new MockOption(subAccounts);
-    optionPricing = new OptionPricing();
 
     sm = new MockSM(subAccounts, cash);
     auction = new DutchAuction(subAccounts, sm, cash);
 
     viewer = new BasePortfolioViewer(subAccounts, cash);
-    lib = new PMRMLib(optionPricing);
+    lib = new PMRMLib();
 
     pmrm = new PMRMPublic(
       subAccounts,
@@ -124,8 +120,7 @@ contract PMRMTestBase is JsonMechIO {
     feeRecipient = subAccounts.createAccount(address(this), pmrm);
     pmrm.setFeeRecipient(feeRecipient);
 
-    auction.setSolventAuctionParams(_getDefaultSolventParams());
-    auction.setInsolventAuctionParams(_getDefaultInsolventParams());
+    auction.setAuctionParams(_getDefaultSolventParams());
     auction.setBufferMarginPercentage(0.2e18);
 
     sm.createAccountForSM(pmrm);
@@ -253,17 +248,14 @@ contract PMRMTestBase is JsonMechIO {
     return subAccounts.getBalance(acc, cash, 0);
   }
 
-  function _getDefaultSolventParams() internal pure returns (IDutchAuction.SolventAuctionParams memory) {
-    return IDutchAuction.SolventAuctionParams({
+  function _getDefaultSolventParams() internal pure returns (IDutchAuction.AuctionParams memory) {
+    return IDutchAuction.AuctionParams({
       startingMtMPercentage: 0.98e18,
       fastAuctionCutoffPercentage: 0.8e18,
       fastAuctionLength: 100,
       slowAuctionLength: 14400,
+      insolventAuctionLength: 10 minutes,
       liquidatorFeeRate: 0.02e18
     });
-  }
-
-  function _getDefaultInsolventParams() internal pure returns (IDutchAuction.InsolventAuctionParams memory) {
-    return IDutchAuction.InsolventAuctionParams({totalSteps: 100, coolDown: 0, bufferMarginScalar: 1.1e18});
   }
 }

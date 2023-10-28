@@ -90,6 +90,10 @@ contract MockCash is ICashAsset, MockAsset {
     token.transfer(recipient, amount);
   }
 
+  function donateBalance(uint, uint) external pure returns (uint burntAmount) {
+    return 0;
+  }
+
   function calculateBalanceWithInterest(uint) external view returns (int balance) {
     return mockedBalanceWithInterest;
   }

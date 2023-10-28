@@ -19,15 +19,12 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
   function setUp() public override {
     super.setUp();
 
-    manager.setPricingModule(ethMarketId, pricing);
-    manager.setPricingModule(btcMarketId, pricing);
-
     manager.setOracleContingencyParams(ethMarketId, getDefaultSRMOracleContingency());
     manager.setOracleContingencyParams(btcMarketId, getDefaultSRMOracleContingency());
 
     // base asset contribute 80% of its value to margin
-    manager.setBaseMarginDiscountFactor(ethMarketId, 0.8e18);
-    manager.setBaseMarginDiscountFactor(btcMarketId, 0.8e18);
+    manager.setBaseAssetMarginFactor(ethMarketId, 0.8e18, 1e18);
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.8e18, 1e18);
 
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 

@@ -23,10 +23,4 @@ interface IAsset {
     IManager manager,
     address caller
   ) external returns (int finalBalance, bool needAllowance);
-
-  /**
-   * @notice triggered when a user wants to migrate an account to a new manager
-   * @dev an asset can block a migration to a un-trusted manager, e.g. a manager that does not take care of liquidation
-   */
-  function handleManagerChange(uint accountId, IManager newManager) external;
 }

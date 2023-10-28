@@ -42,20 +42,7 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
    * @dev get the portfolio struct for standard risk manager
    */
   function getSRMPortfolio(uint accountId) external view returns (IStandardManager.StandardManagerPortfolio memory) {
-    ISubAccounts.AssetBalance[] memory assets = subAccounts.getAccountBalances(accountId);
-    return arrangeSRMPortfolio(assets);
-  }
-
-  /**
-   * @dev get the pre-trade portfolio of an standard account
-   */
-  function getSRMPortfolioPreTrade(uint accountId, ISubAccounts.AssetDelta[] calldata assetDeltas)
-    external
-    view
-    returns (IStandardManager.StandardManagerPortfolio memory)
-  {
-    ISubAccounts.AssetBalance[] memory assets = undoAssetDeltas(accountId, assetDeltas);
-    return arrangeSRMPortfolio(assets);
+    return arrangeSRMPortfolio(subAccounts.getAccountBalances(accountId));
   }
 
   /**
@@ -105,7 +92,7 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
           // if it's perp asset, update the perp position directly
           portfolio.marketHoldings[i].perp = IPerpAsset(address(currentAsset.asset));
           portfolio.marketHoldings[i].perpPosition = currentAsset.balance;
-          portfolio.marketHoldings[i].depegPenaltyPos += SignedMath.abs(currentAsset.balance).toInt256();
+          portfolio.marketHoldings[i].depegPenaltyPos += SignedMath.abs(currentAsset.balance);
         } else if (detail.assetType == IStandardManager.AssetType.Option) {
           portfolio.marketHoldings[i].option = IOptionAsset(address(currentAsset.asset));
           (uint expiry,,) = OptionEncoding.fromSubId(uint96(currentAsset.subId));
@@ -114,8 +101,8 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
           // print all seen expiries
           expiryOptionCounts[expiryIndex]++;
         } else {
-          // base asset, update holding.basePosition directly. This balance should always be positive
-          portfolio.marketHoldings[i].basePosition = currentAsset.balance;
+          // base asset, update holding.basePosition directly. This balance is assumed to be positive
+          portfolio.marketHoldings[i].basePosition = currentAsset.balance.toUint256();
         }
       }
 
@@ -125,7 +112,6 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
       for (uint j; j < numExpires; j++) {
         portfolio.marketHoldings[i].expiryHoldings[j].expiry = seenExpires[j];
         portfolio.marketHoldings[i].expiryHoldings[j].options = new IStandardManager.Option[](expiryOptionCounts[j]);
-        // portfolio.marketHoldings[i].expiryHoldings[j].minConfidence = 1e18;
       }
 
       // 5. put options into expiry holdings
@@ -148,9 +134,10 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
             portfolio.marketHoldings[i].expiryHoldings[expiryIndex].netCalls += currentAsset.balance;
           }
           if (currentAsset.balance < 0) {
+            uint shortPos = (-currentAsset.balance).toUint256();
             // short option will be added to depegPenaltyPos
-            portfolio.marketHoldings[i].depegPenaltyPos -= currentAsset.balance;
-            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].totalShortPositions -= currentAsset.balance;
+            portfolio.marketHoldings[i].depegPenaltyPos += shortPos;
+            portfolio.marketHoldings[i].expiryHoldings[expiryIndex].totalShortPositions += shortPos;
           }
         }
       }
@@ -166,8 +153,6 @@ contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
     view
     returns (uint marketCount, int cashBalance, uint trackedMarketBitMap)
   {
-    if (userBalances.length > standardManager.maxAccountSize()) revert SRM_TooManyAssets();
-
     ISubAccounts.AssetBalance memory currentAsset;
 
     // count how many unique markets there are

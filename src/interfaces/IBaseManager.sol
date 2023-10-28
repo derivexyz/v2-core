@@ -49,6 +49,8 @@ interface IBaseManager is IManager {
 
   event MaxAccountSizeUpdated(uint maxAccountSize);
 
+  event TrustedRiskAssessorUpdated(address riskAssessor, bool trusted);
+
   ////////////
   // Errors //
   ////////////
@@ -59,18 +61,10 @@ interface IBaseManager is IManager {
 
   /// @dev bad action
   error BN_InvalidAction();
-  /// @dev User is not allowlisted, so trade is blocked
-  error BM_CannotTrade();
-
-  error BM_OnlyBlockedAccounts();
-
-  error BM_InvalidForceWithdrawAccountState();
-
-  error BM_InvalidForceLiquidateAccountState();
 
   error BM_InvalidBidPortion();
 
-  error BM_LiquidatorCanOnlyHaveCash();
+  error BM_AccountUnderLiquidation();
 
   error BM_OnlyLiquidationModule();
 
@@ -85,4 +79,6 @@ interface IBaseManager is IManager {
   error BM_UnauthorizedCall();
 
   error BM_InvalidMaxAccountSize();
+
+  error BM_NotImplemented();
 }

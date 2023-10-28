@@ -17,11 +17,11 @@ import "../../../shared/mocks/MockERC20.sol";
 import "../../../shared/mocks/MockPerp.sol";
 import "../../../shared/mocks/MockOptionAsset.sol";
 import "../../../shared/mocks/MockFeeds.sol";
-import "../../../shared/mocks/MockOptionPricing.sol";
 
 import "../../../shared/mocks/MockCash.sol";
 
 import "../../../../scripts/config-local.sol";
+import "../../mocks/MockDutchAuction.sol";
 
 /**
  * Focusing on the margin rules for options
@@ -34,7 +34,6 @@ contract UNIT_TestStandardManager_Option is Test {
   MockERC20 usdc;
   MockPerp perp;
   MockOption option;
-  MockOptionPricing pricing;
   OptionSettlementHelper optionHelper;
   uint expiry;
 
@@ -65,22 +64,18 @@ contract UNIT_TestStandardManager_Option is Test {
 
     stableFeed = new MockFeeds();
 
-    pricing = new MockOptionPricing();
-
     viewer = new SRMPortfolioViewer(subAccounts, cash);
 
     manager = new StandardManager(
       subAccounts,
       ICashAsset(address(cash)),
-      IDutchAuction(address(0)),
+      IDutchAuction(new MockDutchAuction()),
       viewer
     );
 
     viewer.setStandardManager(manager);
 
     ethMarketId = manager.createMarket("eth");
-
-    manager.setPricingModule(ethMarketId, pricing);
 
     manager.whitelistAsset(perp, ethMarketId, IStandardManager.AssetType.Perpetual);
     manager.whitelistAsset(option, ethMarketId, IStandardManager.AssetType.Option);
@@ -158,14 +153,14 @@ contract UNIT_TestStandardManager_Option is Test {
       IStandardManager.OptionMarginParams(0.2e18, 0.15e18, 0.1e18, 0.07e18, 0.09e18, 1.4e18, 1.2e18, 1.05e18);
     manager.setOptionMarginParams(ethMarketId, params);
     (
-      int maxSpotReq,
-      int minSpotReq,
-      int mmCallSpotReq,
-      int mmPutSpotReq,
-      int MMPutMtMReq,
-      int unpairedIMScale,
-      int unpairedMMScale,
-      int mmOffsetScale
+      uint maxSpotReq,
+      uint minSpotReq,
+      uint mmCallSpotReq,
+      uint mmPutSpotReq,
+      uint MMPutMtMReq,
+      uint unpairedIMScale,
+      uint unpairedMMScale,
+      uint mmOffsetScale
     ) = manager.optionMarginParams(ethMarketId);
     assertEq(maxSpotReq, 0.2e18);
     assertEq(minSpotReq, 0.15e18);
@@ -187,7 +182,7 @@ contract UNIT_TestStandardManager_Option is Test {
   function testSetOracles() public {
     MockFeeds newFeed = new MockFeeds();
     manager.setOraclesForMarket(ethMarketId, newFeed, newFeed, newFeed);
-    (ISpotFeed spotF, IForwardFeed forwardF, IVolFeed volFeed,) = manager.getMarketFeeds(ethMarketId);
+    (ISpotFeed spotF, IForwardFeed forwardF, IVolFeed volFeed) = manager.getMarketFeeds(ethMarketId);
     assertEq(address(spotF), address(newFeed));
     assertEq(address(forwardF), address(newFeed));
     assertEq(address(volFeed), address(newFeed));
@@ -206,7 +201,7 @@ contract UNIT_TestStandardManager_Option is Test {
 
   function testSetDepegParameters() public {
     manager.setDepegParameters(IStandardManager.DepegParams(0.99e18, 1.2e18));
-    (int threshold, int depegFactor) = manager.depegParams();
+    (uint threshold, uint depegFactor) = manager.depegParams();
     assertEq(threshold, 0.99e18);
     assertEq(depegFactor, 1.2e18);
   }
@@ -224,7 +219,7 @@ contract UNIT_TestStandardManager_Option is Test {
       ethMarketId, IStandardManager.OracleContingencyParams(0.8e18, 0.9e18, 0.7e18, 0.05e18)
     );
 
-    (uint64 prepThreshold, uint64 optionThreshold, uint64 baseThreshold, int factor) =
+    (uint prepThreshold, uint optionThreshold, uint baseThreshold, uint factor) =
       manager.oracleContingencyParams(ethMarketId);
     assertEq(prepThreshold, 0.8e18);
     assertEq(optionThreshold, 0.9e18);
@@ -270,35 +265,30 @@ contract UNIT_TestStandardManager_Option is Test {
   }
 
   function testGetIsolatedMarginShortATMCall() public {
-    uint strike = 1500e18;
-    pricing.setMockMTM(strike, expiry, true, 100e18);
+    uint strike = 1400e18; // mtm = 100
 
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
-    // (0.15 * 1500) + 100
-    assertEq(im / 1e18, -325);
-    // (0.075 * 1500) + 100
-    assertEq(mm / 1e18, -212);
+    assertApproxEqRel(im, -325e18, 0.01e18); // (0.15 * 1500) + 100
+    assertApproxEqRel(mm, -212.5e18, 0.01e18); // (0.075 * 1500) + 100
   }
 
   function testGetIsolatedMarginShortITMCall() public {
-    uint strike = 400e18;
-    pricing.setMockMTM(strike, expiry, true, 1100e18);
+    uint strike = 400e18; // mtm = 1100
 
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
-    assertEq(im / 1e18, -1325);
-    assertEq(mm / 1e18, -1212);
+    assertApproxEqRel(im, -1325e18, 0.01e18);
+    assertApproxEqRel(mm, -1212e18, 0.01e18);
   }
 
   function testGetIsolatedMarginShortOTMCall() public {
-    uint strike = 3000e18;
-    pricing.setMockMTM(strike, expiry, true, 10e18);
+    uint strike = 1600e18; // mtm = 0
 
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -1e18, false);
-    assertEq(im / 1e18, -160);
-    assertEq(mm / 1e18, -122);
+    assertApproxEqRel(im, -150e18, 0.01e18);
+    assertApproxEqRel(mm, -112.5e18, 0.01e18);
   }
 
   //////////////
@@ -313,31 +303,33 @@ contract UNIT_TestStandardManager_Option is Test {
   }
 
   function testGetIsolatedMarginShortATMPut() public {
-    uint strike = 1500e18;
-    pricing.setMockMTM(strike, expiry, false, 100e18);
+    uint strike = 1600e18;
+
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
     // 0.15 * 1500 + 100 = 325
-    assertEq(im / 1e18, -325);
-    assertEq(mm / 1e18, -212);
+    assertApproxEqRel(im, -325e18, 0.01e18);
+    assertApproxEqRel(mm, -212e18, 0.01e18);
   }
 
   function testGetIsolatedMarginShortITMPut() public {
     uint strike = 3000e18;
-    pricing.setMockMTM(strike, expiry, false, 1500e18);
+
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
-    assertEq(im / 1e18, -1725);
-    assertEq(mm / 1e18, -1612);
+
+    assertApproxEqRel(im, -1725e18, 0.01e18);
+    assertApproxEqRel(mm, -1612e18, 0.01e18);
   }
 
   function testGetIsolatedMarginShortOTMPut() public {
-    uint strike = 400e18;
-    pricing.setMockMTM(strike, expiry, false, 10e18);
+    uint strike = 1400e18;
+
     (int im,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, true);
     (int mm,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, false, -1e18, false);
-    assertEq(im / 1e18, -160);
-    assertEq(mm / 1e18, -122);
+
+    assertApproxEqRel(im, -150e18, 0.01e18);
+    assertApproxEqRel(mm, -112.5e18, 0.01e18);
   }
 
   ////////////////////
@@ -473,13 +465,13 @@ contract UNIT_TestStandardManager_Option is Test {
     // a risk reducing trade is allowed if MM(post) > MM (pre) && MM(post > 0)
 
     uint strike = 2000e18;
-    cash.deposit(aliceAcc, 2500e18);
+    cash.deposit(aliceAcc, 2600e18);
 
-    pricing.setMockMTM(strike, expiry, true, 100e18);
+    feed.setForwardPricePortions(expiry, 0, 2100e18, 1e18);
     _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
     // assume that option price changes: now need more margin and the account is insolvent
-    pricing.setMockMTM(strike, expiry, true, 300e18);
+    feed.setForwardPricePortions(expiry, 0, 2300e18, 1e18);
 
     // MM is now negative
     (int mmBefore,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 1);
@@ -499,13 +491,13 @@ contract UNIT_TestStandardManager_Option is Test {
     // a risk reducing trade is NOT allowed if MM(post) > MM (pre), but MM(post < 0)
 
     uint strike = 2000e18;
-    cash.deposit(aliceAcc, 2500e18);
+    cash.deposit(aliceAcc, 2600e18);
 
-    pricing.setMockMTM(strike, expiry, true, 100e18);
+    feed.setForwardPricePortions(expiry, 0, 2100e18, 1e18);
     _transferOption(aliceAcc, bobAcc, 10e18, expiry, strike, true);
 
     // assume that option price changes: now need more margin and the account is insolvent
-    pricing.setMockMTM(strike, expiry, true, 260e18);
+    feed.setForwardPricePortions(expiry, 0, 2260e18, 1e18);
 
     // alice can still close position (pay premium), bob short, alice long,
     int closeAmount = 1e18;
@@ -524,7 +516,6 @@ contract UNIT_TestStandardManager_Option is Test {
 
     // start a trade
     uint strike = 2000e18;
-    pricing.setMockMTM(strike, expiry, true, 100e18);
 
     (int callMargin,) = manager.getIsolatedMargin(ethMarketId, strike, expiry, true, -10e18, true);
     cash.deposit(aliceAcc, uint(-callMargin));

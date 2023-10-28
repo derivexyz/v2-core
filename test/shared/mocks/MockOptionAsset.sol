@@ -19,8 +19,6 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionA
 
   ISubAccounts immutable subAccounts;
 
-  bool revertHandleManagerChange;
-
   // mocked state to test # of calls
   bool recordMangerChangeCalls;
   uint public handleManagerCalled;
@@ -53,17 +51,8 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionA
     needAllowance = true;
   }
 
-  function handleManagerChange(uint, IManager) public virtual {
-    if (revertHandleManagerChange) revert();
-    if (recordMangerChangeCalls) handleManagerCalled += 1;
-  }
-
   function setRevertAdjustmentFromManager(address _manager, bool _revert) external {
     revertFromManager[_manager] = _revert;
-  }
-
-  function setRevertHandleManagerChange(bool _revert) external {
-    revertHandleManagerChange = _revert;
   }
 
   function setRecordManagerChangeCalls(bool _record) external {
@@ -92,25 +81,6 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionA
 
   function settlementPrices(uint expiry) external view returns (uint price) {
     return mockedExpiryPrice[expiry];
-  }
-
-  function getSettlementValue(uint strikePrice, int balance, uint settlementPrice, bool isCall)
-    public
-    pure
-    returns (int)
-  {
-    int priceDiff = settlementPrice.toInt256() - strikePrice.toInt256();
-
-    if (isCall && priceDiff > 0) {
-      // ITM Call
-      return priceDiff.multiplyDecimal(balance);
-    } else if (!isCall && priceDiff < 0) {
-      // ITM Put
-      return -priceDiff.multiplyDecimal(balance);
-    } else {
-      // OTM
-      return 0;
-    }
   }
 
   // add in a function prefixed with test here to prevent coverage from picking it up.

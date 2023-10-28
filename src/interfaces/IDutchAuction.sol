@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
+import {ICashAsset} from "./ICashAsset.sol";
+
 interface IDutchAuction {
   struct Auction {
     /// the accountId that is being liquidated
@@ -11,54 +13,38 @@ interface IDutchAuction {
     bool insolvent;
     /// If an auction is active
     bool ongoing;
+    /// For insolvent auctions, snapshot MM at the time the auction starts
+    uint cachedMM;
     /// The percentage of the portfolio that is left to be auctioned
     uint percentageLeft;
     /// The startTime of the auction
     uint startTime;
     /// The total amount of cash paid into the account during the auction
     uint reservedCash;
-    /// Is this a forced liquidation
-    bool isForce;
-    /*------------------------- *
-     * Insolvent Auction Params *
-    /*------------------------- */
-    /// The change in value of the portfolio per step in dollars when not insolvent
-    uint stepSize;
-    /// The current step if the auction is insolvent
-    uint stepInsolvent;
-    /// The timestamp of the last increase of steps for insolvent auction
-    uint lastStepUpdate;
-    /// If this auction is blocking cash withdraw
-    bool isBlockingWithdraw;
   }
 
-  struct SolventAuctionParams {
+  struct AuctionParams {
     /// Starting percentage of MtM. 1e18 is 100%
-    uint64 startingMtMPercentage;
+    uint startingMtMPercentage;
     /// Percentage that starts the slow auction
-    uint64 fastAuctionCutoffPercentage;
+    uint fastAuctionCutoffPercentage;
     /// Fast auction length in seconds
-    uint32 fastAuctionLength;
+    uint fastAuctionLength;
     /// Slow auction length in seconds
-    uint32 slowAuctionLength;
+    uint slowAuctionLength;
+    /// Insolvent auction length in seconds
+    uint insolventAuctionLength;
     // Liquidator fee rate in percentage, 1e18 = 100%
-    uint64 liquidatorFeeRate;
+    uint liquidatorFeeRate;
   }
 
-  struct InsolventAuctionParams {
-    /// total seconds
-    uint32 totalSteps;
-    // Amount of seconds to go to next step
-    uint32 coolDown;
-    /// buffer margin scalar. liquidation will go from 0 to (buffer margin) * scalar
-    int64 bufferMarginScalar;
-  }
+  function cash() external view returns (ICashAsset);
 
   function startAuction(uint accountId, uint scenarioId) external;
 
-  function startForcedAuction(uint accountId, uint scenarioId) external;
-
   function getIsWithdrawBlocked() external view returns (bool);
+
+  function isAuctionLive(uint accountId) external view returns (bool);
 
   ////////////
   // EVENTS //
@@ -68,7 +54,7 @@ interface IDutchAuction {
   event SolventAuctionStarted(uint accountId, uint scenarioId, int markToMarket, uint fee);
 
   // emitted when an insolvent auction starts
-  event InsolventAuctionStarted(uint accountId, uint steps, uint stepSize);
+  event InsolventAuctionStarted(uint accountId, uint scenarioId, int maintenanceMargin);
 
   // emitted when a bid is placed
   event Bid(uint accountId, uint bidderId, uint finalPercentage, uint cashFromBidder, uint cashToBidder);
@@ -82,11 +68,9 @@ interface IDutchAuction {
 
   event BufferMarginPercentageSet(int bufferMarginPercentage);
 
-  event SolventAuctionParamsSet(SolventAuctionParams params);
+  event AuctionParamsSet(AuctionParams params);
 
-  event InsolventAuctionParamsSet(InsolventAuctionParams params);
-
-  event WithdrawBlockThresholdSet(int withdrawBlockThreshold);
+  event SMAccountSet(uint smAccount);
 
   ////////////
   // ERRORS //
@@ -108,6 +92,9 @@ interface IDutchAuction {
   /// @dev revert if trying to start an auction when it's above maintenance margin (well collateralized)
   error DA_AccountIsAboveMaintenanceMargin();
 
+  /// @dev revert if trying to end an auction when it's below maintenance margin
+  error DA_AccountIsBelowMaintenanceMargin();
+
   /// @dev emitted when someone tries mark an insolvent auction again
   error DA_AuctionAlreadyInInsolvencyMode();
 
@@ -124,8 +111,14 @@ interface IDutchAuction {
   /// @dev emitted when a bid is submitted where percentage > 100% of portfolio
   error DA_InvalidPercentage();
 
+  /// @dev emitted when a bid is submitted and the lastTradeId of the account mismatches the expected value
+  error DA_InvalidLastTradeId();
+
   /// @dev emitted when a bid is submitted for 0% of the portfolio
   error DA_AmountIsZero();
+
+  /// @dev emitted when a bidder doesn't have only cash in their portfolio
+  error DA_InvalidBidderPortfolio();
 
   /// @dev emitted when bidder doesn't have enough cash for bidding
   error DA_InsufficientCash();
@@ -139,9 +132,6 @@ interface IDutchAuction {
   /// @dev emitted when owner trying to set a invalid buffer margin param
   error DA_InvalidBufferMarginParameter();
 
-  /// @dev emitted when a user tries to increment the step for an insolvent auction
-  error DA_SolventAuctionCannotIncrement();
-
   /// @dev emitted when a user doesn't own the account that they are trying to bid from
   error DA_SenderNotOwner();
 
@@ -154,17 +144,8 @@ interface IDutchAuction {
   /// @dev emitted when a user tries to bid on an auction, but it should be terminated
   error DA_AuctionShouldBeTerminated();
 
-  /// @dev emitted when a increase the step for an insolvent auction that has already reach its steps
-  error DA_MaxStepReachedInsolventAuction();
-
-  /// @dev emitted when IncrementInsolventAuction is spammed
-  error DA_InCoolDown();
-
   /// @dev emitted when reserved cash exceeds MTM. Auction should be terminated and restarted.
   error DA_ReservedCashGreaterThanMtM();
-
-  /// @dev emitted when trying to continue a forced auction when MM > 0.
-  error DA_CannotStepSolventForcedAuction();
 
   /// @dev emitted when calling force liquidate not from the account's manager.
   error DA_OnlyManager();

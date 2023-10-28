@@ -13,7 +13,7 @@ import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
 import {IPerpAsset} from "../../../../src/interfaces/IPerpAsset.sol";
 import "../../../shared/mocks/MockSpotDiffFeed.sol";
 
-contract UNIT_PerpAssetPNL is Test {
+contract UNIT_PerpAssetMigration is Test {
   PerpAsset perp;
   MockManager manager;
   SubAccounts subAccounts;
@@ -71,131 +71,6 @@ contract UNIT_PerpAssetPNL is Test {
     _tradePerpContract(aliceAcc, bobAcc, oneContract);
   }
 
-  function testInitState() public {
-    // alice is short, bob is long
-    int alicePnl = _getPNL(aliceAcc);
-    int bobPnl = _getPNL(bobAcc);
-
-    assertEq(alicePnl, 0);
-    assertEq(bobPnl, 0);
-
-    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 0);
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 0);
-  }
-
-  function testRevertsForInvalidSubId() public {
-    ISubAccounts.AssetTransfer memory transfer =
-      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: perp, subId: 1, amount: 1e18, assetData: ""});
-    vm.expectRevert(IPerpAsset.PA_InvalidSubId.selector);
-    subAccounts.submitTransfer(transfer, "");
-  }
-
-  /* -------------------------- */
-  /* Test Long position on Bob  */
-  /* -------------------------- */
-
-  function testCanRealizeProfitForAnyone() public {
-    // price increase, in favor of Bob's position
-    _setMarkPrices(1600e18);
-
-    perp.realizePNLWithMark(bobAcc);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, 100e18);
-  }
-
-  function testCanRealizeLossesForAnyone() public {
-    // price increase, in favor of Bob's position
-    _setMarkPrices(1400e18);
-
-    perp.realizePNLWithMark(bobAcc);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, -100e18);
-  }
-
-  function testIncreaseLongPosition() public {
-    // price increase, in favor of Bob's position
-    _setMarkPrices(1600e18);
-
-    // bob has $100 in unrealized PNL
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
-
-    // bob trade with charlie to increase long position
-    _tradePerpContract(charlieAcc, bobAcc, oneContract);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, 100e18);
-  }
-
-  function testCloseLongPositionWithProfit() public {
-    // price increase, in favor of Bob's position
-    _setMarkPrices(1600e18);
-
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
-
-    // bob trade with charlie to completely close his long position
-    _tradePerpContract(bobAcc, charlieAcc, oneContract);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, 100e18);
-
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
-  }
-
-  function testCloseLongPositionWithLosses() public {
-    // price decrease, against of Bob's position
-    _setMarkPrices(1400e18);
-
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
-
-    // bob trade with charlie to completely close his long position
-    _tradePerpContract(bobAcc, charlieAcc, oneContract);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, -100e18);
-  }
-
-  function testPartialCloseLongPositionWithProfit() public {
-    // price increase, in favor of Bob's position
-    _setMarkPrices(1600e18);
-
-    // bob trade with charlie to close half of his long position
-    _tradePerpContract(bobAcc, charlieAcc, oneContract / 2);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, 100e18);
-
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 100e18);
-  }
-
-  function testPartialCloseLongPositionWithLosses() public {
-    // price decrease, against of Bob's position
-    _setMarkPrices(1400e18);
-
-    // bob trade with charlie to close half of his long position
-    _tradePerpContract(bobAcc, charlieAcc, oneContract / 2);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, -100e18);
-
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
-  }
-
-  function testFromLongToShort() public {
-    // price decrease, against of Bob's position
-    _setMarkPrices(1400e18);
-
-    // bob trade with charlie to close his long position
-    // + and open a short position
-    _tradePerpContract(bobAcc, charlieAcc, 2 * oneContract);
-
-    int pnl = _getPNL(bobAcc);
-    assertEq(pnl, -100e18); // loss is realized
-
-    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
-  }
-
   /* ------------------------------ */
   /*  Test Short position on Alice  */
   /* ------------------------------ */
@@ -209,6 +84,10 @@ contract UNIT_PerpAssetPNL is Test {
 
     int pnl = _getPNL(aliceAcc);
     assertEq(pnl, -100e18);
+    assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), -100e18);
+
+    perp.disable();
+    _setMarkPrices(8888e18);
 
     // unrealized loss
     assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), -100e18);
@@ -220,6 +99,9 @@ contract UNIT_PerpAssetPNL is Test {
 
     // alice trade with charlie to completely close her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract);
+
+    perp.disable();
+    _setMarkPrices(8888e18);
 
     int pnl = _getPNL(aliceAcc);
     assertEq(pnl, 100e18);
@@ -234,6 +116,9 @@ contract UNIT_PerpAssetPNL is Test {
     // alice trade with charlie to completely close her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract);
 
+    perp.disable();
+    _setMarkPrices(8888e18);
+
     int pnl = _getPNL(aliceAcc);
     assertEq(pnl, -100e18);
 
@@ -247,6 +132,9 @@ contract UNIT_PerpAssetPNL is Test {
     // alice trade with charlie to close half of her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract / 2);
 
+    perp.disable();
+    _setMarkPrices(8888e18);
+
     int pnl = _getPNL(aliceAcc);
     assertEq(pnl, 100e18);
 
@@ -259,6 +147,9 @@ contract UNIT_PerpAssetPNL is Test {
 
     // alice trade with charlie to close half of her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract / 2);
+
+    perp.disable();
+    _setMarkPrices(8888e18);
 
     // pnl of the whole old position is updated to position.PNL
     int pnl = _getPNL(aliceAcc);
@@ -275,18 +166,18 @@ contract UNIT_PerpAssetPNL is Test {
     // + and open a long position
     _tradePerpContract(charlieAcc, aliceAcc, 2 * oneContract);
 
+    perp.disable();
+    _setMarkPrices(8888e18);
+
     int pnl = _getPNL(aliceAcc);
     assertEq(pnl, -100e18); // loss is realized
   }
 
+  // Test Funding
+
   /* ------------------ */
   /*   Test settlement  */
   /* ------------------ */
-
-  function testCannotSettleWithArbitraryAccount() public {
-    vm.expectRevert(IPerpAsset.PA_WrongManager.selector);
-    perp.settleRealizedPNLAndFunding(bobAcc);
-  }
 
   function testMockSettleBob() public {
     // price decrease, against of Bob's position
@@ -296,10 +187,17 @@ contract UNIT_PerpAssetPNL is Test {
     _tradePerpContract(bobAcc, charlieAcc, oneContract);
     assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
 
-    // mock settle
+    perp.disable();
+    _setMarkPrices(8888e18);
+
+    // Once disabled, even after the mark price changes, the unsettled value is unchanged
+    assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), -100e18);
+
     vm.prank(address(manager));
     perp.settleRealizedPNLAndFunding(bobAcc);
+
     assertEq(perp.getUnsettledAndUnrealizedCash(bobAcc), 0);
+    assertEq(subAccounts.getBalance(bobAcc, perp, 0), 0);
   }
 
   function testMockSettleAlice() public {
@@ -310,10 +208,14 @@ contract UNIT_PerpAssetPNL is Test {
     _tradePerpContract(charlieAcc, aliceAcc, oneContract);
     assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 100e18);
 
+    perp.disable();
+    _setMarkPrices(8888e18);
+
     // mock settle
     vm.prank(address(manager));
     perp.settleRealizedPNLAndFunding(aliceAcc);
     assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 0);
+    assertEq(subAccounts.getBalance(aliceAcc, perp, 0), 0);
   }
 
   function _setMarkPrices(uint price) internal {

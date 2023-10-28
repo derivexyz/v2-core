@@ -45,17 +45,82 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     pmrm.findInArrayPub(expiryData, 0, 0);
   }
 
+  function testPMRM_noScenarios() public {
+    // Cannot set no scenarios
+    vm.expectRevert(IPMRM.PMRM_InvalidScenarios.selector);
+    pmrm.setScenarios(new IPMRM.Scenario[](0));
+  }
+
   function testPMRM_invalidGetMarginState() public {
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
 
     IPMRM.Portfolio memory portfolio;
     vm.expectRevert(IPMRMLib.PMRML_InvalidGetMarginState.selector);
-    pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios, false);
+    pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios);
 
-    (int margin, int mtm, uint worstScenario) = pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios, true);
-    assertEq(margin, 0);
-    assertEq(mtm, 0);
-    // since there are no scenarios, worstScenario is the basisContingency
-    assertEq(worstScenario, 0);
+    vm.expectRevert(IPMRMLib.PMRML_InvalidGetMarginState.selector);
+    pmrm.getMarginAndMarkToMarketPub(portfolio, true, scenarios);
+  }
+
+  function testPMRM_CannotTradeIfExceed_MaxAssets() public {
+    uint expiry = block.timestamp + 1000;
+    pmrm.setMaxAccountSize(10);
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](pmrm.maxAccountSize() + 1);
+    for (uint i = 0; i < transfers.length; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 1e18,
+        assetData: ""
+      });
+    }
+    vm.expectRevert(IPMRM.PMRM_TooManyAssets.selector);
+    subAccounts.submitTransfers(transfers, "");
+  }
+
+  function testPMRM_CanTradeIfMaxAccountSizeDecreased() public {
+    uint expiry = block.timestamp + 1000;
+    pmrm.setMaxAccountSize(10);
+
+    _depositCash(aliceAcc, 2_000_000e18);
+    _depositCash(bobAcc, 2_000_000e18);
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](9);
+    for (uint i = 0; i < transfers.length; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 1e18,
+        assetData: ""
+      });
+    }
+    // this should go through
+    subAccounts.submitTransfers(transfers, "");
+
+    // assume the owner lower the max asset now
+    pmrm.setMaxAccountSize(8);
+
+    ISubAccounts.AssetTransfer[] memory newTransfers = new ISubAccounts.AssetTransfer[](3);
+    for (uint i = 0; i < newTransfers.length; i++) {
+      newTransfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: bobAcc,
+        toAcc: aliceAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 1e18,
+        assetData: ""
+      });
+    }
+
+    // closing / having same # of assets should be allowed
+    subAccounts.submitTransfers(newTransfers, "");
+  }
+
+  function testRevertsIfUsingBadScenarioId() public {
+    vm.expectRevert();
+    pmrm.getMarginAndMarkToMarket(aliceAcc, true, 10000);
   }
 }

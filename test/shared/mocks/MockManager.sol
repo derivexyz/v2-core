@@ -47,10 +47,6 @@ contract MockManager is IManager {
     if (revertHandleAdjustment) revert();
   }
 
-  function handleManagerChange(uint, IManager) public view virtual {
-    if (revertHandleManager) revert();
-  }
-
   function setRevertHandleManager(bool _revert) external {
     revertHandleManager = _revert;
   }

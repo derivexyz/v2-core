@@ -100,6 +100,8 @@ contract LyraVolFeed is BaseLyraFeed, ILyraVolFeed, IVolFeed {
 
     if (feedData.timestamp > expiry) revert LVF_InvalidVolDataTimestamp();
 
+    if (confidence > 1e18) revert LVF_InvalidConfidence();
+
     // update spot price
     VolDetails memory newVolDetails = VolDetails({
       SVI_a: SVI_a,

@@ -94,16 +94,16 @@ interface IPMRM {
   event StableFeedUpdated(ISpotFeed stableFeed);
   event ForwardFeedUpdated(IForwardFeed forwardFeed);
   event SettlementFeedUpdated(ISettlementFeed settlementFeed);
-  event TrustedRiskAssessorUpdated(address riskAssessor, bool trusted);
   event ScenariosUpdated(IPMRM.Scenario[] scenarios);
 
   ////////////
   // Errors //
   ////////////
   error PMRM_InvalidSpotShock();
-  error PMRM_InvalidMaxExpiries();
   error PMRM_UnsupportedAsset();
   error PMRM_InsufficientMargin();
+  error PMRM_InvalidScenarios();
+  error PMRM_InvalidMaxExpiries();
   error PMRM_FindInArrayError();
   error PMRM_OptionExpired();
   error PMRM_TooManyExpiries();
