@@ -20,7 +20,7 @@ contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking,
 
   function updateFundingRate() external {}
 
-  function applyFundingOnAccount(uint accountId) external {}
+  function realizeAccountPNL(uint accountId) external {}
 
   function settleRealizedPNLAndFunding(uint accountId) external view returns (int, int) {
     return (mockedFunding[accountId], mockedPNL[accountId]);
@@ -47,6 +47,4 @@ contract MockPerp is MockAsset, MockPositionTracking, MockGlobalSubIdOITracking,
   }
 
   function getImpactPrices() external view returns (uint, uint) {}
-
-  function realizePNLWithMark(uint account) external {}
 }

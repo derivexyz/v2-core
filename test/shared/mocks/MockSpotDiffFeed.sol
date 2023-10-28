@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 import {ISpotDiffFeed} from "../../../src/interfaces/ISpotDiffFeed.sol";
 import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
 
+import "forge-std/console2.sol";
+
 contract MockSpotDiffFeed is ISpotDiffFeed {
   ISpotFeed public spotFeed;
   int public spotDiff;

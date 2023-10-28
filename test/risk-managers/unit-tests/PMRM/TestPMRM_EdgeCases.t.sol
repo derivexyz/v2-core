@@ -119,6 +119,66 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     subAccounts.submitTransfers(newTransfers, "");
   }
 
+  function testPMRMCanOnlyDepositCashIfLiveAuction() public {
+    _depositCash(bobAcc, 100_000e18);
+    weth.mint(address(this), 1e18);
+    weth.approve(address(baseAsset), 1e18);
+    baseAsset.deposit(bobAcc, 1e18);
+
+    uint expiry = block.timestamp + 1000;
+
+    MockDutchAuction mockAuction = new MockDutchAuction();
+    pmrm.setLiquidation(mockAuction);
+    mockAuction.startAuction(aliceAcc, 0);
+
+    // Can always deposit cash
+    _depositCash(aliceAcc, 1e18);
+
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](1);
+    transfers[0] =
+      ISubAccounts.AssetTransfer({fromAcc: bobAcc, toAcc: aliceAcc, asset: cash, subId: 0, amount: 1e18, assetData: ""});
+
+    // can also transfer cash from another account (doesn't require approvals)
+    subAccounts.submitTransfers(transfers, "");
+
+    // CANNOT deposit base asset
+    weth.mint(address(this), 1e18);
+    weth.approve(address(baseAsset), 1e18);
+    vm.expectRevert(IBaseManager.BM_AccountUnderLiquidation.selector);
+    baseAsset.deposit(aliceAcc, 1e18);
+
+    // CANNOT transfer cash out
+    transfers[0] =
+      ISubAccounts.AssetTransfer({fromAcc: aliceAcc, toAcc: bobAcc, asset: cash, subId: 0, amount: 1e18, assetData: ""});
+    vm.expectRevert(IBaseManager.BM_AccountUnderLiquidation.selector);
+    subAccounts.submitTransfers(transfers, "");
+
+    // CANNOT transfer long options in (even though risk reducing)
+    transfers[0] = ISubAccounts.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: option,
+      subId: OptionEncoding.toSubId(expiry, 1500e18, true),
+      amount: 1e18,
+      assetData: ""
+    });
+
+    vm.expectRevert(IBaseManager.BM_AccountUnderLiquidation.selector);
+    subAccounts.submitTransfers(transfers, "");
+
+    // CANNOT transfer base asset in
+    transfers[0] = ISubAccounts.AssetTransfer({
+      fromAcc: bobAcc,
+      toAcc: aliceAcc,
+      asset: baseAsset,
+      subId: 0,
+      amount: 1e18,
+      assetData: ""
+    });
+    vm.expectRevert(IBaseManager.BM_AccountUnderLiquidation.selector);
+    subAccounts.submitTransfers(transfers, "");
+  }
+
   function testRevertsIfUsingBadScenarioId() public {
     vm.expectRevert();
     pmrm.getMarginAndMarkToMarket(aliceAcc, true, 10000);

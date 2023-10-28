@@ -409,6 +409,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     // we first ask the security module to compensate the bidder
     uint amountPaid = securityModule.requestPayout(bidderId, cashToBidder);
     // if amount paid is less than we requested: we trigger socialize losses on cash asset (which will print cash)
+    // TODO: what if MTM > 0
     if (cashToBidder > amountPaid) {
       uint loss = cashToBidder - amountPaid;
       cash.socializeLoss(loss, bidderId);

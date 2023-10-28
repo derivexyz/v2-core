@@ -230,19 +230,12 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   //////////////////////////
 
   /**
-   * @notice This function update funding for an account and apply to position detail
-   * @param accountId Account Id to apply funding
-   */
-  function applyFundingOnAccount(uint accountId) external {
-    _updateFunding();
-    _applyFundingOnAccount(accountId);
-  }
-
-  /**
    * @notice Settle position with index, update lastIndex price and update position.PNL
    * @param accountId Account Id to settle
    */
-  function realizePNLWithMark(uint accountId) external {
+  function realizeAccountPNL(uint accountId) external {
+    _updateFunding();
+    _applyFundingOnAccount(accountId);
     _realizePNLWithMark(accountId, _getPositionSize(accountId));
   }
 

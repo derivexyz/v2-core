@@ -75,6 +75,13 @@ contract UNIT_TestBaseManager is Test {
     usdc.approve(address(cash), 2000_000e18);
   }
 
+  function testCannotSetLiquidationToZero() public {
+    vm.expectRevert(IBaseManager.BM_InvalidLiquidation.selector);
+    tester.setLiquidation(IDutchAuction(address(0)));
+
+    tester.setLiquidation(IDutchAuction(bob));
+  }
+
   function testTransferWithoutMarginPositiveAmount() public {
     int amount = 5000 * 1e18;
     tester.symmetricManagerAdjustment(aliceAcc, bobAcc, mockAsset, 0, amount);

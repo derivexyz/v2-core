@@ -35,6 +35,8 @@ interface IBaseManager is IManager {
   //   Events   //
   ////////////////
 
+  event LiquidationSet(address liquidation);
+
   event MinOIFeeSet(uint minOIFee);
 
   event CalleeWhitelisted(address callee);
@@ -54,6 +56,8 @@ interface IBaseManager is IManager {
   ////////////
   // Errors //
   ////////////
+
+  error BM_InvalidLiquidation();
 
   error BM_MinOIFeeTooHigh();
 

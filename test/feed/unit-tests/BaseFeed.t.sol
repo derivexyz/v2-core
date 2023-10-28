@@ -157,6 +157,11 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
     feed.acceptData(data);
   }
 
+  function testCanHashFeedData() public view {
+    IBaseLyraFeed.FeedData memory spotData = _getDefaultSpotDataMultipleSigners(3);
+    feed.hashFeedData(spotData);
+  }
+
   function _getDefaultSpotDataMultipleSigners(uint numSigners) internal view returns (IBaseLyraFeed.FeedData memory) {
     uint96 price = 1000e18;
     uint64 confidence = 1e18;

@@ -179,8 +179,8 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testApplyZeroFundingNoTimeElapse() public {
     // apply funding
-    perp.applyFundingOnAccount(aliceAcc);
-    perp.applyFundingOnAccount(bobAcc);
+    perp.realizeAccountPNL(aliceAcc);
+    perp.realizeAccountPNL(bobAcc);
 
     (, int funding,,,) = perp.positions(aliceAcc);
 
@@ -194,8 +194,8 @@ contract UNIT_PerpAssetFunding is Test {
     vm.warp(block.timestamp + 1 hours);
 
     // alice is short, bob is long
-    perp.applyFundingOnAccount(aliceAcc);
-    perp.applyFundingOnAccount(bobAcc);
+    perp.realizeAccountPNL(aliceAcc);
+    perp.realizeAccountPNL(bobAcc);
 
     // alice received funding
     (, int aliceFunding,,,) = perp.positions(aliceAcc);
@@ -214,8 +214,8 @@ contract UNIT_PerpAssetFunding is Test {
     vm.warp(block.timestamp + 1 hours);
 
     // alice is short, bob is long
-    perp.applyFundingOnAccount(aliceAcc);
-    perp.applyFundingOnAccount(bobAcc);
+    perp.realizeAccountPNL(aliceAcc);
+    perp.realizeAccountPNL(bobAcc);
 
     // alice paid funding
     (, int aliceFunding,,,) = perp.positions(aliceAcc);
@@ -243,12 +243,12 @@ contract UNIT_PerpAssetFunding is Test {
     vm.warp(block.timestamp + 1 hours);
 
     // applying alice and bob before and after spot update should not make sum inconsistent
-    perp.applyFundingOnAccount(aliceAcc);
+    perp.realizeAccountPNL(aliceAcc);
 
     // spot price update kicks in at this point
     spotFeed.setSpot(1000e18, 1e18);
 
-    perp.applyFundingOnAccount(bobAcc);
+    perp.realizeAccountPNL(bobAcc);
 
     (, int aliceFunding,,,) = perp.positions(aliceAcc);
     (, int bobFunding,,,) = perp.positions(bobAcc);
@@ -270,7 +270,7 @@ contract UNIT_PerpAssetFunding is Test {
     assertEq(unrealized, 0.75e18);
 
     // apply funding
-    perp.applyFundingOnAccount(aliceAcc);
+    perp.realizeAccountPNL(aliceAcc);
     int unrealized2 = perp.getUnsettledAndUnrealizedCash(aliceAcc);
     assertEq(unrealized2, 0.75e18); // same value, but got from positions.funding
   }

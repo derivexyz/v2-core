@@ -218,6 +218,30 @@ contract UNIT_PerpAssetMigration is Test {
     assertEq(subAccounts.getBalance(aliceAcc, perp, 0), 0);
   }
 
+  function testFeedFreezing() public {
+    ibp.setSpotDiff(100e18, 1e18);
+    iap.setSpotDiff(120e18, 1e18);
+    assertGt(perp.getFundingRate(), 0);
+
+    _setMarkPrices(1600e18);
+    (uint perpPrice,) = perp.getPerpPrice();
+    assertEq(perpPrice, 1600e18);
+
+    perp.disable();
+    assertEq(perp.getFundingRate(), 0);
+    assertTrue(perp.isDisabled());
+
+    (perpPrice,) = perp.getPerpPrice();
+    assertEq(perpPrice, 1600e18);
+    assertEq(perp.frozenPerpPrice(), 1600e18);
+
+    _setMarkPrices(4000e18);
+
+    // Price doesn't change after the perp is disabled
+    (perpPrice,) = perp.getPerpPrice();
+    assertEq(perpPrice, 1600e18);
+  }
+
   function _setMarkPrices(uint price) internal {
     (uint spot,) = spotFeed.getSpot();
     perpFeed.setSpotDiff(int(price) - int(spot), 1e18);

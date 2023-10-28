@@ -98,7 +98,7 @@ contract UNIT_PerpAssetPNL is Test {
     // price increase, in favor of Bob's position
     _setMarkPrices(1600e18);
 
-    perp.realizePNLWithMark(bobAcc);
+    perp.realizeAccountPNL(bobAcc);
 
     int pnl = _getPNL(bobAcc);
     assertEq(pnl, 100e18);
@@ -108,7 +108,7 @@ contract UNIT_PerpAssetPNL is Test {
     // price increase, in favor of Bob's position
     _setMarkPrices(1400e18);
 
-    perp.realizePNLWithMark(bobAcc);
+    perp.realizeAccountPNL(bobAcc);
 
     int pnl = _getPNL(bobAcc);
     assertEq(pnl, -100e18);

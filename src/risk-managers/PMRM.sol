@@ -57,7 +57,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
   ISettlementFeed public settlementFeed;
 
   /// @dev lib contract
-  IPMRMLib public lib;
+  IPMRMLib public immutable lib;
 
   /// @dev Value to help optimise the arranging of portfolio. Should be minimised if possible.
   uint public maxExpiries = 11;
