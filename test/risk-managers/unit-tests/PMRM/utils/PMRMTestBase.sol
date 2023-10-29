@@ -120,8 +120,7 @@ contract PMRMTestBase is JsonMechIO {
     feeRecipient = subAccounts.createAccount(address(this), pmrm);
     pmrm.setFeeRecipient(feeRecipient);
 
-    auction.setAuctionParams(_getDefaultSolventParams());
-    auction.setBufferMarginPercentage(0.2e18);
+    auction.setAuctionParams(_getDefaultAuctionParams());
 
     sm.createAccountForSM(pmrm);
   }
@@ -248,14 +247,15 @@ contract PMRMTestBase is JsonMechIO {
     return subAccounts.getBalance(acc, cash, 0);
   }
 
-  function _getDefaultSolventParams() internal pure returns (IDutchAuction.AuctionParams memory) {
+  function _getDefaultAuctionParams() internal pure returns (IDutchAuction.AuctionParams memory) {
     return IDutchAuction.AuctionParams({
       startingMtMPercentage: 0.98e18,
       fastAuctionCutoffPercentage: 0.8e18,
       fastAuctionLength: 100,
       slowAuctionLength: 14400,
       insolventAuctionLength: 10 minutes,
-      liquidatorFeeRate: 0.02e18
+      liquidatorFeeRate: 0.02e18,
+      bufferMarginPercentage: 0.2e18
     });
   }
 }

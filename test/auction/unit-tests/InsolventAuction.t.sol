@@ -21,7 +21,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     // getting the current bid price
     int currentBidPrice = dutchAuction.getCurrentBidPrice(aliceAcc);
-    assertEq(currentBidPrice, 0); // start with 0
+    assertEq(currentBidPrice, -100e18); // start with -MTM
   }
 
   function testCanBidOnInsolventAuctionWith0Bid() public {
@@ -30,10 +30,41 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     vm.prank(bob);
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
-    // pay 0 and receive 0 extra cash from SM
-    assertEq(finalPercentage, 1e18);
+    assertEq(finalPercentage, 1e18, "finalPercentage");
     assertEq(cashFromBidder, 0);
+    // Receive 100 from the auction, as the MTM is -100
+    assertEq(cashToBidder, 100e18);
+  }
+
+  function testCanBidOnInsolventAuctionWith0BidPositiveMTM() public {
+    _startDefaultInsolventAuction(aliceAcc);
+    manager.setMarkToMarket(aliceAcc, 100e18);
+
+    vm.prank(bob);
+    (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
+
+    assertEq(finalPercentage, 1e18, "finalPercentage");
+    assertEq(cashFromBidder, 0);
+    // Receive 0 from the auction, as the MTM is > 0
     assertEq(cashToBidder, 0);
+  }
+
+  function testCanAddALimitToTheCashReceived() public {
+    _startDefaultInsolventAuction(aliceAcc);
+
+    vm.startPrank(bob);
+    vm.expectRevert(IDutchAuction.DA_CashLimitExceeded.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, -200e18, 0);
+
+    // This increases the price by -100
+    vm.warp(block.timestamp + _getDefaultAuctionParams().insolventAuctionLength / 2);
+
+    vm.expectRevert(IDutchAuction.DA_CashLimitExceeded.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, -201e18, 0);
+
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, -200e18, 0);
+
+    vm.stopPrank();
   }
 
   function testCannotBidOnInsolventAuctionIfAccountUnderwater() public {
@@ -69,8 +100,8 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     // bid 50% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0, 0);
 
-    // 2% of 300 * 50% = 3
-    uint expectedTotalPayoutFromSM = 3e18;
+    // ((0.02 * 200) + 100) * 0.5 = 110
+    uint expectedTotalPayoutFromSM = 52e18;
 
     assertEq(finalPercentage, 0.5e18);
     assertEq(cashFromBidder, 0);
@@ -87,8 +118,8 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     // bid 100% of the portfolio
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) = dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
-    // 50% of 300 = 150
-    uint expectedPayout = 150e18;
+    // (50% of 200) + 100 = 200
+    uint expectedPayout = 200e18;
 
     assertEq(finalPercentage, 1e18);
     assertEq(cashFromBidder, 0);
@@ -190,7 +221,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
   }
 
   /**
-   * @dev default insolvent auction: 0 -> -300
+   * @dev default insolvent auction: -100 -> -300
    */
   function _startDefaultInsolventAuction(uint acc) internal {
     // -300 maintenance margin

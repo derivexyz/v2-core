@@ -32,7 +32,7 @@ contract DutchAuctionBase is Test {
   MockLiquidatableManager manager;
   DutchAuction dutchAuction;
 
-  function setUp() public {
+  function setUp() public virtual {
     _deployMockSystem();
 
     _setupAccounts();
@@ -41,9 +41,7 @@ contract DutchAuctionBase is Test {
 
     dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
 
-    dutchAuction.setAuctionParams(_getDefaultSolventParams());
-
-    dutchAuction.setBufferMarginPercentage(0.1e18);
+    dutchAuction.setAuctionParams(_getDefaultAuctionParams());
   }
 
   /// @dev deploy mock system
@@ -91,14 +89,21 @@ contract DutchAuctionBase is Test {
   ///       Helpers      ///
   //////////////////////////
 
-  function _getDefaultSolventParams() internal pure returns (IDutchAuction.AuctionParams memory) {
+  function _getDefaultAuctionParams() internal pure returns (IDutchAuction.AuctionParams memory) {
     return IDutchAuction.AuctionParams({
       startingMtMPercentage: 1e18,
       fastAuctionCutoffPercentage: 0.8e18,
       fastAuctionLength: 10 minutes,
       slowAuctionLength: 2 hours,
       insolventAuctionLength: 10 minutes,
-      liquidatorFeeRate: 0
+      liquidatorFeeRate: 0,
+      bufferMarginPercentage: 0.1e18
     });
+  }
+
+  function _setAuctionParamsWithBufferMargin(uint bufferMargin) internal {
+    IDutchAuction.AuctionParams memory params = _getDefaultAuctionParams();
+    params.bufferMarginPercentage = bufferMargin;
+    dutchAuction.setAuctionParams(params);
   }
 }

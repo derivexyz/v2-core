@@ -124,7 +124,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     assertEq(bobCashAfter, 13500e18);
 
     assertTrue(auction.getAuction(aliceAcc).insolvent);
-    assertEq(auction.getCurrentBidPrice(aliceAcc), 0);
+    assertEq(auction.getCurrentBidPrice(aliceAcc), -3500e18);
   }
 
   function _getMarkPriceAndPNL(uint acc) internal view returns (uint, int) {

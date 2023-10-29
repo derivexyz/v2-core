@@ -26,8 +26,6 @@ function getDefaultInterestRateModel() pure returns (
 
 // Liquidations
 
-int constant BUFFER_MARGIN_SCALE = 0.3e18;
-
 function getDefaultAuctionParam() pure returns (IDutchAuction.AuctionParams memory param) {
   param = IDutchAuction.AuctionParams({
     startingMtMPercentage: 0.95e18,
@@ -35,7 +33,8 @@ function getDefaultAuctionParam() pure returns (IDutchAuction.AuctionParams memo
     fastAuctionLength: 20 minutes,
     slowAuctionLength: 3 hours,
     insolventAuctionLength: 10 minutes,
-    liquidatorFeeRate: 0
+    liquidatorFeeRate: 0,
+    bufferMarginPercentage: 0.3e18
   });
 }
 

@@ -172,7 +172,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     vm.stopPrank();
   }
 
-  function testCannotMakeBidderPayMoreThanMaxCash() public {
+  function testCannotMakeBidderPayMoreThanCashLimit() public {
     // Front running issue:
     // depositing (updating account with positive value) last second may result in making liquidator pay more than intended
 
@@ -209,8 +209,8 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
     // bid reverts
     vm.startPrank(charlie);
-    vm.expectRevert(IDutchAuction.DA_MaxCashExceeded.selector);
-    auction.bid(aliceAcc, liquidator2, percentageToBid, cashFromLiquidator1, 0);
+    vm.expectRevert(IDutchAuction.DA_CashLimitExceeded.selector);
+    auction.bid(aliceAcc, liquidator2, percentageToBid, int(cashFromLiquidator1), 0);
     vm.stopPrank();
   }
 
@@ -219,8 +219,9 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
     params.startingMtMPercentage = 0.8e18;
     params.liquidatorFeeRate = 0;
+    params.bufferMarginPercentage = 0.05e18;
     auction.setAuctionParams(params);
-    auction.setBufferMarginPercentage(0.05e18);
+
     markets["weth"].spotFeed.setHeartbeat(1 hours);
     markets["weth"].perpFeed.setHeartbeat(1 hours);
 
@@ -249,7 +250,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     auction.startAuction(acc1, 0);
 
     // BM = -21.75 + (0.05 * -51.75) = -24.33
-    assertEq(_getBufferMM(acc1) / 1e16, -2433);
+    assertApproxEqAbs(_getBufferMM(acc1), -24.33e18, 1e16);
 
     uint f_max = auction.getMaxProportion(acc1, 0);
     assertEq(f_max / 1e14, 5034);
@@ -260,7 +261,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
     // Bob bids remaining 40.34%
     vm.prank(bob);
-    (uint finalPercentage,,) = auction.bid(acc1, bobAcc, f_max, 0, 0);
+    (uint finalPercentage,,) = auction.bid(acc1, bobAcc, 1e18, 0, 0);
     assertEq(finalPercentage / 1e14, 4034);
 
     // Buffer margin after liquidating all is close to 0
@@ -271,6 +272,8 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     (int mm, int mtm) = srm.getMarginAndMarkToMarket(acc, false, 0);
     int mmBuffer = mm - mtm; // a negative number added to the mtm to become maintenance margin
 
-    bufferMargin = mm + (mmBuffer * auction.bufferMarginPercentage() / 1e18);
+    IDutchAuction.AuctionParams memory params = auction.getAuctionParams();
+
+    bufferMargin = mm + (mmBuffer * int(params.bufferMarginPercentage) / 1e18);
   }
 }
