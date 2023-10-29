@@ -5,7 +5,6 @@ import "../../../src/liquidation/DutchAuction.sol";
 
 contract PublicDutchAuction is DutchAuction {
   constructor(ISubAccounts _subAccounts, ISecurityModule _securityModule, ICashAsset _cash)
-    Ownable2Step()
     DutchAuction(_subAccounts, _securityModule, _cash)
   {}
 
