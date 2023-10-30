@@ -235,8 +235,7 @@ contract IntegrationTestBase is Test {
       stableFeed: stableFeed,
       forwardFeed: market.forwardFeed,
       interestRateFeed: market.rateFeed,
-      volFeed: market.volFeed,
-      settlementFeed: market.forwardFeed
+      volFeed: market.volFeed
     });
 
     market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);
@@ -595,7 +594,7 @@ contract IntegrationTestBase is Test {
 
   function hashFeedData(IBaseLyraFeed feed, IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
     bytes32 typeHash = feed.FEED_DATA_TYPEHASH();
-    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp));
+    return keccak256(abi.encode(typeHash, keccak256(feedData.data), feedData.deadline, feedData.timestamp));
   }
 
   function _setPMRMParams(PMRM pmrm, PMRMLib pmrmLib) internal {

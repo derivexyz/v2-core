@@ -19,8 +19,7 @@ import {IBaseLyraFeed} from "../interfaces/IBaseLyraFeed.sol";
  * @dev We inherit ERC712 for easy signature verification, but the TypeHash and object is not ERC712 compliant.
  */
 abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyraFeed {
-  bytes32 public constant FEED_DATA_TYPEHASH =
-    keccak256("FeedData(bytes data,uint256 deadline,uint64 timestamp,address signer,bytes signature)");
+  bytes32 public constant FEED_DATA_TYPEHASH = keccak256("FeedData(bytes data,uint256 deadline,uint64 timestamp)");
 
   ////////////////////////
   //     Variables      //
@@ -124,6 +123,6 @@ abstract contract BaseLyraFeed is EIP712, Ownable2Step, IDataReceiver, IBaseLyra
   }
 
   function hashFeedData(FeedData memory feedData) public pure returns (bytes32) {
-    return keccak256(abi.encode(FEED_DATA_TYPEHASH, feedData.data, feedData.deadline, feedData.timestamp));
+    return keccak256(abi.encode(FEED_DATA_TYPEHASH, keccak256(feedData.data), feedData.deadline, feedData.timestamp));
   }
 }

@@ -5,7 +5,6 @@ import {ISpotFeed} from "./ISpotFeed.sol";
 import {IForwardFeed} from "./IForwardFeed.sol";
 import {IInterestRateFeed} from "./IInterestRateFeed.sol";
 import {IVolFeed} from "./IVolFeed.sol";
-import {ISettlementFeed} from "./ISettlementFeed.sol";
 
 interface IPMRM {
   enum VolShockDirection {
@@ -20,7 +19,6 @@ interface IPMRM {
     IForwardFeed forwardFeed;
     IInterestRateFeed interestRateFeed;
     IVolFeed volFeed;
-    ISettlementFeed settlementFeed;
   }
 
   struct Portfolio {
@@ -93,7 +91,6 @@ interface IPMRM {
   event SpotFeedUpdated(ISpotFeed spotFeed);
   event StableFeedUpdated(ISpotFeed stableFeed);
   event ForwardFeedUpdated(IForwardFeed forwardFeed);
-  event SettlementFeedUpdated(ISettlementFeed settlementFeed);
   event ScenariosUpdated(IPMRM.Scenario[] scenarios);
 
   ////////////

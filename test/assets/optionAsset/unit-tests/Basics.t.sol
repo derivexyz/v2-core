@@ -45,6 +45,12 @@ contract UNIT_TestOptionBasics is Test {
   // Transfer //
   //////////////
 
+  function testCanChangeSettlementFeed() public {
+    assertEq(address(option.settlementFeed()), address(0));
+    option.setSettlementFeed(alice);
+    assertEq(address(option.settlementFeed()), alice);
+  }
+
   function testWhitelistedManagerCheck() public {
     option.setWhitelistManager(address(manager), true);
 

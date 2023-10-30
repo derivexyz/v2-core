@@ -23,7 +23,6 @@ import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
 import {IPMRM} from "../interfaces/IPMRM.sol";
 import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
-import {ISettlementFeed} from "../interfaces/ISettlementFeed.sol";
 import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
 import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
@@ -54,7 +53,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
   IVolFeed public volFeed;
   ISpotFeed public stableFeed;
   IForwardFeed public forwardFeed;
-  ISettlementFeed public settlementFeed;
 
   /// @dev lib contract
   IPMRMLib public immutable lib;
@@ -84,7 +82,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
     forwardFeed = feeds_.forwardFeed;
     interestRateFeed = feeds_.interestRateFeed;
     volFeed = feeds_.volFeed;
-    settlementFeed = feeds_.settlementFeed;
     lib = lib_;
 
     baseAsset = baseAsset_;
@@ -130,11 +127,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
   function setForwardFeed(IForwardFeed _forwardFeed) external onlyOwner {
     forwardFeed = _forwardFeed;
     emit ForwardFeedUpdated(_forwardFeed);
-  }
-
-  function setSettlementFeed(ISettlementFeed _settlementFeed) external onlyOwner {
-    settlementFeed = _settlementFeed;
-    emit SettlementFeedUpdated(_settlementFeed);
   }
 
   /**
