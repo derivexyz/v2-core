@@ -136,7 +136,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     int cashLimit = 10e18;
     // bid on the auction
     vm.prank(bob);
-    vm.expectRevert(IDutchAuction.DA_CashLimitExceeded.selector);
+    vm.expectRevert(IDutchAuction.DA_PriceLimitExceeded.selector);
     dutchAuction.bid(aliceAcc, bobAcc, percentage, cashLimit, 0);
   }
 

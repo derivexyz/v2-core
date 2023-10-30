@@ -261,13 +261,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
    * @param accountId Account ID of the liquidated account
    * @param bidderId Account ID of bidder, must be owned by msg.sender
    * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
-   * @param cashSent Maximum amount of cash to be paid from bidder to liquidated account (including negative amounts for insolvent auctions). This param is ignored if set to 0
+   * @param priceLimit Maximum amount of cash to be paid from bidder to liquidated account (including negative amounts for insolvent auctions). This param is ignored if set to 0
    * @param expectedLastTradeId The last trade id that the bidder expects the account to be on. Can be used to prevent frontrun
    * @return finalPercentage percentage of portfolio being liquidated
    * @return cashFromBidder Amount of cash paid from bidder to liquidated account
    * @return cashToBidder Amount of cash paid from security module for bidder to take on the risk
    */
-  function bid(uint accountId, uint bidderId, uint percentOfAccount, int cashSent, uint expectedLastTradeId)
+  function bid(uint accountId, uint bidderId, uint percentOfAccount, int priceLimit, uint expectedLastTradeId)
     external
     returns (uint finalPercentage, uint cashFromBidder, uint cashToBidder)
   {
@@ -297,13 +297,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     if (auctions[accountId].insolvent) {
       (canTerminateAfterwards, finalPercentage, cashToBidder) =
         _bidOnInsolventAuction(accountId, bidderId, percentOfAccount, mm, markToMarket);
-      if (cashSent != 0 && -cashToBidder.toInt256() > cashSent) revert DA_CashLimitExceeded();
+      if (priceLimit != 0 && -cashToBidder.toInt256() > priceLimit) revert DA_PriceLimitExceeded();
     } else {
       (canTerminateAfterwards, finalPercentage, cashFromBidder) =
         _bidOnSolventAuction(accountId, bidderId, percentOfAccount, bm, markToMarket);
 
       // if cash spent is higher than specified, revert the call
-      if (cashSent != 0 && cashFromBidder.toInt256() > cashSent) revert DA_CashLimitExceeded();
+      if (priceLimit != 0 && cashFromBidder.toInt256() > priceLimit) revert DA_PriceLimitExceeded();
     }
 
     if (canTerminateAfterwards) {

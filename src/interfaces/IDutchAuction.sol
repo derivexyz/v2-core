@@ -127,7 +127,7 @@ interface IDutchAuction {
   error DA_BidderInsolvent();
 
   /// @dev emitted when bidder specified max cash is exceeded by the bid
-  error DA_CashLimitExceeded();
+  error DA_PriceLimitExceeded();
 
   /// @dev emitted when owner trying to set a invalid buffer margin param
   error DA_InvalidBufferMarginParameter();
