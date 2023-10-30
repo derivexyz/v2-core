@@ -27,6 +27,6 @@ contract LyraFeedTestUtils is Test {
 
   function hashFeedData(IBaseLyraFeed feed, IBaseLyraFeed.FeedData memory feedData) public view returns (bytes32) {
     bytes32 typeHash = feed.FEED_DATA_TYPEHASH();
-    return keccak256(abi.encode(typeHash, feedData.data, feedData.deadline, feedData.timestamp));
+    return keccak256(abi.encode(typeHash, keccak256(feedData.data), feedData.deadline, feedData.timestamp));
   }
 }
