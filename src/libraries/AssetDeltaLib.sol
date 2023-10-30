@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import {IAsset} from "../interfaces/IAsset.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";

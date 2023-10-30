@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import {IBaseManager} from "./IBaseManager.sol";
 import {IPerpAsset} from "./IPerpAsset.sol";

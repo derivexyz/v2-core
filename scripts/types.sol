@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import {SubAccounts} from "../src/SubAccounts.sol";
 import {CashAsset} from "../src/assets/CashAsset.sol";

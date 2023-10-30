@@ -1,5 +1,5 @@
 //SPDX-License-Identifier:ISC
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "openzeppelin/token/ERC20/ERC20.sol";
 

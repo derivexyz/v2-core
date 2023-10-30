@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import {ISecurityModule} from "../../../src/interfaces/ISecurityModule.sol";
 import {ISubAccounts} from "../../../src/interfaces/ISubAccounts.sol";

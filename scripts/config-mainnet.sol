@@ -2,7 +2,7 @@
 
 // Config used for integration test, generating integration test anvil state, and more general testing scenarios
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import {IDutchAuction} from "../src/interfaces/IDutchAuction.sol";
 import {IStandardManager} from "../src/interfaces/IStandardManager.sol";

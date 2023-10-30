@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 interface IVolFeed {
   function getVol(uint128 strike, uint64 expiry) external view returns (uint vol, uint confidence);
