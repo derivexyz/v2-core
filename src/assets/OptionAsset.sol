@@ -45,6 +45,18 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
   }
 
   ///////////////////////
+  //  Admin Functions  //
+  ///////////////////////
+
+  /**
+   * @notice Set the settlement feed contract
+   */
+  function setSettlementFeed(address _settlementFeed) external onlyOwner {
+    settlementFeed = ISettlementFeed(_settlementFeed);
+    emit SettlementFeedSet(_settlementFeed);
+  }
+
+  ///////////////////////
   //   Transfer Hook   //
   ///////////////////////
 

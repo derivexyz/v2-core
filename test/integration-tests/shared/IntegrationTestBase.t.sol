@@ -235,8 +235,7 @@ contract IntegrationTestBase is Test {
       stableFeed: stableFeed,
       forwardFeed: market.forwardFeed,
       interestRateFeed: market.rateFeed,
-      volFeed: market.volFeed,
-      settlementFeed: market.forwardFeed
+      volFeed: market.volFeed
     });
 
     market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);

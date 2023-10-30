@@ -100,10 +100,6 @@ contract TestPMRM_Admin is PMRMTestBase {
     assertEq(address(pmrm.volFeed()), address(feed));
     pmrm.setVolFeed(IVolFeed(address(0)));
     assertEq(address(pmrm.volFeed()), address(0));
-
-    assertEq(address(pmrm.settlementFeed()), address(feed));
-    pmrm.setSettlementFeed(ISettlementFeed(address(0)));
-    assertEq(address(pmrm.settlementFeed()), address(0));
   }
 
   function testSetPMRMParametersBasisContingency() public {

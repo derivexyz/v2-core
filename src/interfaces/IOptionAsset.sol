@@ -23,6 +23,11 @@ interface IOptionAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled);
 
   ////////////////
+  //   Events   //
+  ////////////////
+  event SettlementFeedSet(address settlementFeed);
+
+  ////////////////
   //   Errors   //
   ////////////////
 

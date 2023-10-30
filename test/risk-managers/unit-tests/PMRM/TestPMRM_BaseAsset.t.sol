@@ -56,8 +56,7 @@ contract TestPMRM_BaseAsset is PMRMTestBase {
         stableFeed: ISpotFeed(stableFeed),
         forwardFeed: IForwardFeed(feed),
         interestRateFeed: IInterestRateFeed(feed),
-        volFeed: IVolFeed(feed),
-        settlementFeed: ISettlementFeed(feed)
+        volFeed: IVolFeed(feed)
       }),
       viewer,
       pmrmLib

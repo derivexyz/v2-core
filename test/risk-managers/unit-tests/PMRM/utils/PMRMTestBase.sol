@@ -103,8 +103,7 @@ contract PMRMTestBase is JsonMechIO {
         stableFeed: ISpotFeed(stableFeed),
         forwardFeed: IForwardFeed(feed),
         interestRateFeed: IInterestRateFeed(feed),
-        volFeed: IVolFeed(feed),
-        settlementFeed: ISettlementFeed(feed)
+        volFeed: IVolFeed(feed)
       }),
       viewer,
       lib
