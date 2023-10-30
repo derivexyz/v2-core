@@ -21,7 +21,7 @@ contract TestPMRM_PerpFeed is PMRMSimTest {
     assertEq(bobPort.perpValue, 0);
     assertEq(bobPort.perpPosition, 1e18, "bob should be long 1 perp");
 
-    // perp is trading 100 lower, so the unrealised PNL is +100 for alice
+    // perp is trading 100 lower, so the unrealized PNL is +100 for alice
     mockPerp.setMockPerpPrice(1400e18, 1e18);
     mockPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
     alicePort = pmrm.arrangePortfolio(aliceAcc);

@@ -18,6 +18,7 @@ import "../../../shared/mocks/MockCash.sol";
 
 import "../../../../scripts/config-local.sol";
 import "../../mocks/MockDutchAuction.sol";
+import "../../../../src/assets/WrappedERC20Asset.sol";
 
 /**
  * @dev shard contract setting up environment for testing StandardManager
@@ -35,8 +36,8 @@ contract TestStandardManagerBase is Test {
   MockOption ethOption;
   MockOption btcOption;
   // mocked base asset!
-  MockTrackableAsset wethAsset;
-  MockTrackableAsset wbtcAsset;
+  WrappedERC20Asset wethAsset;
+  WrappedERC20Asset wbtcAsset;
 
   SRMPortfolioViewer portfolioViewer;
 
@@ -86,12 +87,6 @@ contract TestStandardManagerBase is Test {
     btcPerp = new MockPerp(subAccounts);
     btcOption = new MockOption(subAccounts);
 
-    // setup mock base asset (only change mark to market)
-    weth = new MockERC20("weth", "weth");
-    wethAsset = new MockTrackableAsset(weth, subAccounts, false); // false as it cannot go negative
-    wbtc = new MockERC20("wbtc", "wbtc");
-    wbtcAsset = new MockTrackableAsset(wbtc, subAccounts, false); // false as it cannot go negative
-
     portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
 
     manager = new StandardManagerPublic(
@@ -100,6 +95,16 @@ contract TestStandardManagerBase is Test {
       IDutchAuction(new MockDutchAuction()),
       portfolioViewer
     );
+
+    // setup mock base asset (only change mark to market)
+    weth = new MockERC20("weth", "weth");
+    wethAsset = new WrappedERC20Asset(subAccounts, weth); // false as it cannot go negative
+    wethAsset.setWhitelistManager(address(manager), true);
+    wethAsset.setTotalPositionCap(manager, 1e36);
+    wbtc = new MockERC20("wbtc", "wbtc");
+    wbtcAsset = new WrappedERC20Asset(subAccounts, wbtc); // false as it cannot go negative
+    wbtcAsset.setWhitelistManager(address(manager), true);
+    wbtcAsset.setTotalPositionCap(manager, 1e36);
 
     ethMarketId = manager.createMarket("eth");
     btcMarketId = manager.createMarket("btc");

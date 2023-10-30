@@ -320,7 +320,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
-    // TODO: test max account size properly (previously, risk adding = false allowed creating unliquidatable portfolios)
     if (
       assetBalances.length > maxAccountSize //
         && viewer.getPreviousAssetsLength(assetBalances, assetDeltas) < assetBalances.length
@@ -344,8 +343,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     bool isPositiveCashDelta
   ) internal view {
     StandardManagerPortfolio memory portfolio = ISRMPortfolioViewer(address(viewer)).arrangeSRMPortfolio(assetBalances);
-
-    // TODO: add tests that we allow people to have neg cash if they already had it previously (only close neg cash)
 
     // account can only have negative cash if borrowing is enabled. However allow closing of negative positions if they
     // already had them.
@@ -543,7 +540,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
     // add oracle contingency for spot asset, only for IM
     if (!isInitial) return (baseMargin, baseMarkToMarket);
 
-    // TODO: test imFactor
     baseMargin = baseMargin.multiplyDecimal(baseMarginParams[marketId].IMScale.toInt256());
 
     if (baseMargin == 0) {

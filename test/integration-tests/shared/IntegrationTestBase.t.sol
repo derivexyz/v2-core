@@ -401,6 +401,11 @@ contract IntegrationTestBase is Test {
     return srm.getMargin(acc, false);
   }
 
+  function getAccMtm(uint acc) public view returns (int) {
+    (, int mtm) = srm.getMarginAndMarkToMarket(acc, true, 0);
+    return mtm;
+  }
+
   /**
    * @dev default parameters for rate model
    */
@@ -515,7 +520,7 @@ contract IntegrationTestBase is Test {
   }
 
   function _setPerpPrice(string memory key, uint price, uint64 conf) internal {
-    vm.warp(block.timestamp + 5);
+    vm.warp(block.timestamp + 1);
     LyraSpotDiffFeed perpFeed = markets[key].perpFeed;
 
     (uint spot,) = markets[key].spotFeed.getSpot();

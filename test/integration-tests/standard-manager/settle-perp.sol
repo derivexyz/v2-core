@@ -94,9 +94,42 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     assertLt(_getCashBalance(aliceAcc), 0);
   }
 
-  function _getEntryPriceAndPNL(uint acc) internal view returns (uint, int) {
-    (uint entryPrice,, int pnl,,) = markets["weth"].perp.positions(acc);
-    return (entryPrice, pnl);
+  function testCanSettleWhenOngoingAuction() public {
+    (uint mark, int pnl) = _getMarkPriceAndPNL(aliceAcc);
+    assertEq(mark, 1500e18);
+    assertEq(pnl, 0e18);
+
+    _setPerpPrice("weth", 10000e18, 1e18);
+    markets["weth"].perp.realizeAccountPNL(aliceAcc);
+
+    (mark, pnl) = _getMarkPriceAndPNL(aliceAcc);
+    assertEq(mark, 10000e18);
+    assertEq(pnl, -8500e18);
+
+    markets["weth"].perp.realizeAccountPNL(bobAcc);
+    (mark, pnl) = _getMarkPriceAndPNL(bobAcc);
+    assertEq(mark, 10000e18);
+    assertEq(pnl, 8500e18);
+
+    // start auction
+    auction.startAuction(aliceAcc, 0);
+
+    srm.settlePerpsWithIndex(aliceAcc);
+    srm.settlePerpsWithIndex(bobAcc);
+
+    int aliceCashAfter = _getCashBalance(aliceAcc);
+    int bobCashAfter = _getCashBalance(bobAcc);
+
+    assertEq(aliceCashAfter, -3500e18);
+    assertEq(bobCashAfter, 13500e18);
+
+    assertTrue(auction.getAuction(aliceAcc).insolvent);
+    assertEq(auction.getCurrentBidPrice(aliceAcc), 0);
+  }
+
+  function _getMarkPriceAndPNL(uint acc) internal view returns (uint, int) {
+    (uint markPrice,, int pnl,,) = markets["weth"].perp.positions(acc);
+    return (markPrice, pnl);
   }
 
   function _tradePerpContract(IPerpAsset perp, uint fromAcc, uint toAcc, int amount) internal {

@@ -231,6 +231,53 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     assertEq(im, 0);
   }
 
+  function testInitialMarginForBase() public {
+    _deposit(wbtc, wbtcAsset, aliceAcc, 100e18);
+
+    (int im, int mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
+    (int mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+
+    assertEq(im, 0);
+    assertEq(mm, 0);
+    assertEq(mtm, 20000 * 100e18);
+
+    manager.setBorrowingEnabled(true);
+
+    (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+
+    assertEq(im, 0);
+    assertEq(mm, 0);
+    assertEq(mtm, 20000 * 100e18);
+
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18, 1e18);
+
+    (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+
+    assertEq(im, 10000 * 100e18);
+    assertEq(mm, 10000 * 100e18);
+    assertEq(mtm, 20000 * 100e18);
+
+    manager.setBaseAssetMarginFactor(btcMarketId, 1e18, 0.5e18);
+
+    (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+
+    assertEq(im, 10000 * 100e18, "im");
+    assertEq(mm, 20000 * 100e18, "mm");
+    assertEq(mtm, 20000 * 100e18, "mtm");
+
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18, 0);
+
+    (im, mtm) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
+    (mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+
+    assertEq(im, 0, "im");
+    assertEq(mm, 10000 * 100e18, "mm");
+    assertEq(mtm, 20000 * 100e18, "mtm");
+  }
+
   function testPassMultipleManagerData() public {
     cash.deposit(aliceAcc, 10000e18);
 
@@ -255,9 +302,9 @@ contract UNIT_TestStandardManager_MultiAsset is TestStandardManagerBase {
     assertEq(_btcSpot, newBtcSpot);
   }
 
-  function _deposit(MockERC20 token, MockAsset asset, uint account, uint amount) internal {
+  function _deposit(MockERC20 token, WrappedERC20Asset asset, uint account, uint amount) internal {
     token.mint(address(this), amount);
     token.approve(address(asset), amount);
-    asset.deposit(account, 0, amount);
+    asset.deposit(account, amount);
   }
 }

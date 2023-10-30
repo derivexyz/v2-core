@@ -36,6 +36,17 @@ Running integration tests
 forge test --match-contract="INTEGRATION_" -vvv
 ```
 
+Run coverage and generate html report:
+
+```shell
+# Generate lcov.info
+forge coverage --report lcov
+
+# Create a html report
+brew install lcov
+genhtml lcov.info -out coverage/ --rc lcov_branch_coverage=1 --keep-going --include "src/"
+```
+
 ## Documentation
 
 Go to [docs](./docs) to understand the high level of the design, transaction flow and how different **Lyra v2 components** works together.

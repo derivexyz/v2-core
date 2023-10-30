@@ -230,14 +230,14 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
    * @notice Withdraws cash from a given account and sends the converted stable amount to the recipient
    */
   function _withdrawCashAmount(uint accountId, uint cashAmount, address recipient) internal {
+    uint stableAmount = cashAmount.from18Decimals(stableDecimals);
+
     // if the cash asset is insolvent,
     // each cash balance can only take out <100% amount of stable asset
     if (temporaryWithdrawFeeEnabled) {
       // if exchangeRate is 50% (0.5e18), we need to burn 2 cash asset for 1 stable to be withdrawn
       cashAmount = cashAmount.divideDecimal(_getExchangeRate());
     }
-
-    uint stableAmount = cashAmount.from18Decimals(stableDecimals);
 
     // transfer the asset out after potentially needing to calculate exchange rate
     wrappedAsset.safeTransfer(recipient, stableAmount);

@@ -40,7 +40,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   ICashAsset public immutable cashAsset;
 
   /// @dev Dutch auction contract address, can trigger execute bid
-  IDutchAuction public immutable liquidation;
+  IDutchAuction public liquidation;
 
   //////////////////////////
   //      Variables       //
@@ -91,6 +91,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   //////////////////////////
   // Owner-only Functions //
   //////////////////////////
+
+  function setLiquidation(IDutchAuction _liquidation) external onlyOwner {
+    if (address(_liquidation) == address(0)) revert BM_InvalidLiquidation();
+    liquidation = _liquidation;
+    emit LiquidationSet(address(_liquidation));
+  }
 
   /**
    * @dev Governance determined account to receive OI fee
@@ -256,7 +262,6 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   function _checkIfLiveAuction(uint accountId) internal view {
-    // TODO: add test case
     if (liquidation.isAuctionLive(accountId)) {
       revert BM_AccountUnderLiquidation();
     }
@@ -364,7 +369,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev calling function should make sure perp address is trusted
    */
   function _settlePerpUnrealizedPNL(IPerpAsset perp, uint accountId) internal {
-    perp.realizePNLWithMark(accountId);
+    perp.realizeAccountPNL(accountId);
 
     _settlePerpRealizedPNL(perp, accountId);
   }

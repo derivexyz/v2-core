@@ -24,12 +24,6 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
   }
 
   /**
-   * @notice This function update funding for an account and apply to position detail
-   * @param accountId Account Id
-   */
-  function applyFundingOnAccount(uint accountId) external;
-
-  /**
    * @notice Manager-only function to clear pnl and funding during settlement
    * @dev The manager should then update the cash balance of an account base on the returned netCash variable
    */
@@ -37,7 +31,7 @@ interface IPerpAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
 
   function getUnsettledAndUnrealizedCash(uint accountId) external view returns (int totalCash);
 
-  function realizePNLWithMark(uint account) external;
+  function realizeAccountPNL(uint account) external;
 
   function getIndexPrice() external view returns (uint, uint);
 

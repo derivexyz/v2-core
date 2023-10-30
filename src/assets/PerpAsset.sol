@@ -192,19 +192,14 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     _takeSubIdOISnapshotPreTrade(adjustment.subId, tradeId);
     _updateSubIdOI(adjustment.subId, preBalance, adjustment.amount);
 
-    // Must apply funding on each adjustment to ensure index is updated properly for
-    _applyFundingOnAccount(adjustment.acc);
+    // update last index price and settle unrealized pnl into position.pnl on the OLD balance
+    _realizePNLWithMark(adjustment.acc, preBalance);
 
     // calculate funding from the last period, reflect changes in position.funding
     _updateFunding();
+    _applyFundingOnAccount(adjustment.acc);
 
-    // update last index price and settle unrealized pnl into position.pnl
-    _realizePNLWithMark(adjustment.acc, preBalance);
-
-    // have a new position
-    finalBalance = preBalance + adjustment.amount;
-
-    needAllowance = true;
+    return (preBalance + adjustment.amount, true);
   }
 
   ///////////////////////////
@@ -230,19 +225,12 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
   //////////////////////////
 
   /**
-   * @notice This function update funding for an account and apply to position detail
-   * @param accountId Account Id to apply funding
-   */
-  function applyFundingOnAccount(uint accountId) external {
-    _updateFunding();
-    _applyFundingOnAccount(accountId);
-  }
-
-  /**
    * @notice Settle position with index, update lastIndex price and update position.PNL
    * @param accountId Account Id to settle
    */
-  function realizePNLWithMark(uint accountId) external {
+  function realizeAccountPNL(uint accountId) external {
+    _updateFunding();
+    _applyFundingOnAccount(accountId);
     _realizePNLWithMark(accountId, _getPositionSize(accountId));
   }
 
