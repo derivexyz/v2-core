@@ -427,7 +427,8 @@ contract IntegrationTestBase is Test {
       fastAuctionLength: 10 minutes,
       slowAuctionLength: 2 hours,
       insolventAuctionLength: 10 minutes,
-      liquidatorFeeRate: 0.05e18
+      liquidatorFeeRate: 0.05e18,
+      bufferMarginPercentage: 0
     });
   }
 

@@ -36,6 +36,8 @@ interface IDutchAuction {
     uint insolventAuctionLength;
     // Liquidator fee rate in percentage, 1e18 = 100%
     uint liquidatorFeeRate;
+    // Buffer margin percentage, 1.2e18 = 120%
+    uint bufferMarginPercentage;
   }
 
   function cash() external view returns (ICashAsset);
@@ -65,8 +67,6 @@ interface IDutchAuction {
   event InsolventAuctionStepIncremented(uint accountId, uint newStep);
 
   event ScenarioIdUpdated(uint accountId, uint newScenarioId);
-
-  event BufferMarginPercentageSet(int bufferMarginPercentage);
 
   event AuctionParamsSet(AuctionParams params);
 
@@ -127,7 +127,7 @@ interface IDutchAuction {
   error DA_BidderInsolvent();
 
   /// @dev emitted when bidder specified max cash is exceeded by the bid
-  error DA_MaxCashExceeded();
+  error DA_PriceLimitExceeded();
 
   /// @dev emitted when owner trying to set a invalid buffer margin param
   error DA_InvalidBufferMarginParameter();

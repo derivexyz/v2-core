@@ -119,8 +119,6 @@ contract DeployCore is Utils {
     // set SRM parameters
     deployment.srm.setDepegParameters(getDefaultDepegParam());
 
-    deployment.auction.setBufferMarginPercentage(BUFFER_MARGIN_SCALE);
-
     console2.log("Core contracts deployed and setup!");
   }
 

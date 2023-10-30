@@ -13,7 +13,8 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
         fastAuctionLength: 300,
         slowAuctionLength: 3600,
         insolventAuctionLength: 10 minutes,
-        liquidatorFeeRate: 0.05e18
+        liquidatorFeeRate: 0.05e18,
+        bufferMarginPercentage: 0.1e18
       })
     );
 
@@ -24,7 +25,8 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
       uint fastAuctionLength,
       uint slowAuctionLength,
       uint insolventAuctionLength,
-      uint liquidatorFeeRate
+      uint liquidatorFeeRate,
+      uint bufferMarginPercentage
     ) = dutchAuction.auctionParams();
     assertEq(startingMtMPercentage, 0.98e18);
     assertEq(cutoff, 0.8e18);
@@ -32,32 +34,34 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     assertEq(slowAuctionLength, 3600);
     assertEq(insolventAuctionLength, 600);
     assertEq(liquidatorFeeRate, 0.05e18);
+    assertEq(bufferMarginPercentage, 0.1e18);
   }
 
   function testCannotSetInvalidParams() public {
+    IDutchAuction.AuctionParams memory params = _getDefaultAuctionParams();
+
+    params.startingMtMPercentage = 1.01e18;
     vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
-    dutchAuction.setAuctionParams(
-      IDutchAuction.AuctionParams({
-        startingMtMPercentage: 1.02e18,
-        fastAuctionCutoffPercentage: 0.8e18,
-        fastAuctionLength: 300,
-        slowAuctionLength: 3600,
-        insolventAuctionLength: 600,
-        liquidatorFeeRate: 0.05e18
-      })
-    );
+    dutchAuction.setAuctionParams(params);
+
+    params.startingMtMPercentage = 0.99e18;
+    params.fastAuctionCutoffPercentage = 1e18;
 
     vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
-    dutchAuction.setAuctionParams(
-      IDutchAuction.AuctionParams({
-        startingMtMPercentage: 0.9e18,
-        fastAuctionCutoffPercentage: 0.91e18,
-        fastAuctionLength: 300,
-        slowAuctionLength: 3600,
-        insolventAuctionLength: 600,
-        liquidatorFeeRate: 0.05e18
-      })
-    );
+    dutchAuction.setAuctionParams(params);
+
+    params.fastAuctionCutoffPercentage = 0.99e18;
+    params.liquidatorFeeRate = 0.11e18;
+
+    vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
+    dutchAuction.setAuctionParams(params);
+
+    params.liquidatorFeeRate = 0.1e18;
+    dutchAuction.setAuctionParams(params);
+
+    params.bufferMarginPercentage = 4.1e18;
+    vm.expectRevert(IDutchAuction.DA_InvalidParameter.selector);
+    dutchAuction.setAuctionParams(params);
   }
 
   function testSetSMAccount() public {
@@ -65,16 +69,6 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
     assertEq(dutchAuction.smAccount(), 0);
     dutchAuction.setSMAccount(100000);
     assertEq(dutchAuction.smAccount(), 100000);
-  }
-
-  function testSetBufferMarginPercentage() public {
-    dutchAuction.setBufferMarginPercentage(0.2e18);
-    assertEq(dutchAuction.bufferMarginPercentage(), 0.2e18);
-  }
-
-  function testCannotSetBufferMarginPercentageOutOfBounds() public {
-    vm.expectRevert(IDutchAuction.DA_InvalidBufferMarginParameter.selector);
-    dutchAuction.setBufferMarginPercentage(4.1e18);
   }
 
   function testGetDiscountPercentage() public {
@@ -107,7 +101,7 @@ contract UNIT_DutchAuctionView is DutchAuctionBase {
 
   function testGetDiscountPercentage2() public {
     // new setting: fast auction 96% - 80%, slow auction 80% - 0%
-    IDutchAuction.AuctionParams memory params = _getDefaultSolventParams();
+    IDutchAuction.AuctionParams memory params = _getDefaultAuctionParams();
     params.startingMtMPercentage = 0.96e18;
     params.fastAuctionCutoffPercentage = 0.8e18;
     params.fastAuctionLength = 300;

@@ -61,8 +61,6 @@ interface IBaseManager is IManager {
 
   error BM_MinOIFeeTooHigh();
 
-  error BM_InvalidSettlementBuffer();
-
   /// @dev bad action
   error BN_InvalidAction();
 
