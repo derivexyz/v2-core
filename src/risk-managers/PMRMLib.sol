@@ -379,6 +379,5 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     scenarios[0] = IPMRM.Scenario({spotShock: basisContParams.scenarioSpotUp, volShock: IPMRM.VolShockDirection.None});
     scenarios[1] = IPMRM.Scenario({spotShock: basisContParams.scenarioSpotDown, volShock: IPMRM.VolShockDirection.None});
     scenarios[2] = IPMRM.Scenario({spotShock: DecimalMath.UNIT, volShock: IPMRM.VolShockDirection.None});
-    return scenarios;
   }
 }
