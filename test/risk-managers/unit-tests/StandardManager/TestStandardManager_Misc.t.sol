@@ -237,4 +237,43 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     manager.setBorrowingEnabled(true);
     cash.withdraw(bobAcc, 1e18, bob);
   }
+
+  function testTrustedRiskAssessorCanBypassIMButNotMM() public {
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
+      fromAcc: aliceAcc,
+      toAcc: bobAcc,
+      asset: ethOption,
+      subId: OptionEncoding.toSubId(expiry2, 1500e18, true),
+      amount: 1e18,
+      assetData: ""
+    });
+
+    // for single option: im ~-220, mm ~-120
+    // so start with 100
+    cash.deposit(aliceAcc, 100e18);
+
+    // set TRA to true
+    manager.setTrustedRiskAssessor(address(this), true);
+
+    // Will still fail as below MM requirements
+    vm.expectRevert(IStandardManager.SRM_PortfolioBelowMargin.selector);
+    subAccounts.submitTransfer(transfer, "");
+
+    cash.deposit(aliceAcc, 100e18);
+
+    manager.setTrustedRiskAssessor(address(this), false);
+
+    // Now above MM requirements, but below IM requirements, so will fail as not TRA
+    vm.expectRevert(IStandardManager.SRM_PortfolioBelowMargin.selector);
+    subAccounts.submitTransfer(transfer, "");
+
+    // But succeeds when TRA set to true
+    manager.setTrustedRiskAssessor(address(this), true);
+    subAccounts.submitTransfer(transfer, "");
+
+    (int im,) = manager.getMarginAndMarkToMarket(aliceAcc, true, 0);
+    assertLt(im, 0);
+    (int mm,) = manager.getMarginAndMarkToMarket(aliceAcc, false, 0);
+    assertGt(mm, 0);
+  }
 }

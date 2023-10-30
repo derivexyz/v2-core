@@ -285,4 +285,34 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
 
     assertEq(subAccounts.getAccountBalances(bobAcc).length, 13);
   }
+
+  function testPMRMCanGetScenarioMTM() public {
+    uint64 expiry = uint64(block.timestamp + 1 weeks);
+
+    _depositCash(aliceAcc, 10_000e18);
+    _depositCash(bobAcc, 10_000e18);
+
+    feed.setForwardPrice(expiry, 1300e18, 1e18);
+
+    ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](10);
+    for (uint i; i < 10; i++) {
+      transfers[i] = ISubAccounts.AssetTransfer({
+        fromAcc: aliceAcc,
+        toAcc: bobAcc,
+        asset: option,
+        subId: OptionEncoding.toSubId(expiry, 1500e18 + i * 1e18, true),
+        amount: 0.1e18,
+        assetData: ""
+      });
+      feed.setVol(expiry, uint128(1500e18 + i * 1e18), 0.5e18, 1e18);
+    }
+    subAccounts.submitTransfers(transfers, "");
+
+    IPMRM.Portfolio memory portfolio = pmrm.arrangePortfolio(aliceAcc);
+
+    int mtm = lib.getScenarioMtM(portfolio, lib.getBasisContingencyScenarios()[0]);
+    assertLt(mtm, 0);
+    mtm = lib.getScenarioMtM(portfolio, lib.getBasisContingencyScenarios()[1]);
+    assertGt(mtm, 0);
+  }
 }
