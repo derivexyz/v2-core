@@ -53,13 +53,13 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     _startDefaultInsolventAuction(aliceAcc);
 
     vm.startPrank(bob);
-    vm.expectRevert(IDutchAuction.DA_CashLimitExceeded.selector);
+    vm.expectRevert(IDutchAuction.DA_PriceLimitExceeded.selector);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18, -200e18, 0);
 
     // This increases the price by -100
     vm.warp(block.timestamp + _getDefaultAuctionParams().insolventAuctionLength / 2);
 
-    vm.expectRevert(IDutchAuction.DA_CashLimitExceeded.selector);
+    vm.expectRevert(IDutchAuction.DA_PriceLimitExceeded.selector);
     dutchAuction.bid(aliceAcc, bobAcc, 1e18, -201e18, 0);
 
     dutchAuction.bid(aliceAcc, bobAcc, 1e18, -200e18, 0);

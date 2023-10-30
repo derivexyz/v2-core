@@ -209,7 +209,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
     // bid reverts
     vm.startPrank(charlie);
-    vm.expectRevert(IDutchAuction.DA_CashLimitExceeded.selector);
+    vm.expectRevert(IDutchAuction.DA_PriceLimitExceeded.selector);
     auction.bid(aliceAcc, liquidator2, percentageToBid, int(cashFromLiquidator1), 0);
     vm.stopPrank();
   }
