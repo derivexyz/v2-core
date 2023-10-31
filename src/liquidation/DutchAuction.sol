@@ -353,7 +353,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     // Bidder must have enough cash to pay for the bid, and enough cash to cover the buffer margin
     _ensureBidderCashBalance(
       bidderId,
-      cashFromBidder + (SignedMath.abs(bufferMargin) - currentAuction.reservedCash).multiplyDecimal(percentLiquidated)
+      cashFromBidder
+        + (SignedMath.abs(bufferMargin - currentAuction.reservedCash.toInt256())).multiplyDecimal(convertedPercentage)
     );
 
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
@@ -503,7 +504,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     return _getDiscountPercentage(startTime, current);
   }
 
-  function getMarginAndMarkToMarket(uint accountId, uint scenarioId) external view returns (int, int, int) {
+  function getMarginAndMarkToMarket(uint accountId, uint scenarioId) external view returns (int mm, int bm, int mtm) {
     return _getMarginAndMarkToMarket(accountId, scenarioId);
   }
 

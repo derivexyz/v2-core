@@ -268,6 +268,82 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     assertEq(_getBufferMM(acc1) / 1e10, 0);
   }
 
+  /// Test that
+  function testBufferMarginReservedCashCondition() public {
+    _tradeCall(aliceAcc, bobAcc);
+    _refreshOracles(2600e18);
+
+    uint charlieAcc = subAccounts.createAccount(charlie, srm);
+    _depositCash(charlie, charlieAcc, 101e18);
+
+    address sean = address(0x9999);
+    uint seanAcc = subAccounts.createAccount(sean, srm);
+
+    // Make buffer margin large, for easy computation
+    _setAuctionParamsWithBufferMargin(0.8e18);
+
+    // setup initial env: MtM = 6000, MM = -10000, BM = -13200, discount = 0.2
+    auction.startAuction(aliceAcc, 0);
+
+    {
+      (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, 0);
+      assertApproxEqAbs(mm, -108e18, 1e18);
+      assertApproxEqAbs(bm, -264e18, 1e18);
+      assertApproxEqAbs(mtm, 86.9e18, 1e18);
+    }
+
+    // fast forward to all the way to the end of fast auction
+    vm.warp(block.timestamp + _getDefaultAuctionParams().fastAuctionLength);
+    _refreshOracles(2600e18);
+
+    // discount should be 20%
+    assertApproxEqAbs(auction.getCurrentBidPrice(aliceAcc), 69e18, 1e18);
+
+    // Alice liquidates 30% of the portfolio
+    vm.prank(charlie);
+    {
+      (uint finalPercentage, uint cashFromCharlie,) = auction.bid(aliceAcc, charlieAcc, 0.3e18, 0, 0);
+
+      assertEq(finalPercentage, 0.3e18);
+      assertApproxEqAbs(cashFromCharlie, 20e18, 1e18); // 30% of portfolio, priced at ~20
+
+      (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, 0);
+      assertApproxEqAbs(mm, -54e18, 1e18);
+      assertApproxEqAbs(bm, -164e18, 1e18);
+      assertApproxEqAbs(mtm, 82e18, 1e18);
+      IDutchAuction.Auction memory auctionStruct = auction.getAuction(aliceAcc);
+      assertApproxEqAbs(auctionStruct.reservedCash, 20e18, 1e18);
+
+      int bidPrice = auction.getCurrentBidPrice(aliceAcc);
+      assertApproxEqAbs(bidPrice, 69e18, 1e18);
+    }
+
+    // require ((|bm - reservedCash|)) * percentage_of_remaining + bidPrice
+    // collateral requirement == (-(-163.9 - 20.8)) * (0.1 / 0.7)) == 26.38
+    // bid price = 69 * 0.1 = 6.9
+    // total cash required ~= 33.3
+
+    // sean will liquidate 10%, so they need just over $33
+    // add just a bit below to see if it reverts
+    _depositCash(sean, seanAcc, 33e18);
+    vm.prank(sean);
+    {
+      // didn't have enough, so it reverts
+      vm.expectRevert(IDutchAuction.DA_InsufficientCash.selector);
+      auction.bid(aliceAcc, seanAcc, 0.1e18, 0, 0);
+    }
+
+    // add $1, should work now
+    _depositCash(sean, seanAcc, 1e18);
+
+    vm.prank(sean);
+    {
+      (uint finalPercentage, uint cashFromSean,) = auction.bid(aliceAcc, seanAcc, 0.1e18, 0, 0);
+      assertEq(finalPercentage, 0.1e18);
+      assertApproxEqAbs(cashFromSean, 6.9e18, 0.1e18);
+    }
+  }
+
   function _getBufferMM(uint acc) internal view returns (int bufferMargin) {
     (int mm, int mtm) = srm.getMarginAndMarkToMarket(acc, false, 0);
     int mmBuffer = mm - mtm; // a negative number added to the mtm to become maintenance margin
