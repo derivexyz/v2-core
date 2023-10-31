@@ -75,7 +75,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     console2.log("mtm", mtm);
 
     vm.warp(
-      block.timestamp + _getDefaultAuctionParam().fastAuctionLength + _getDefaultAuctionParam().slowAuctionLength + 1
+      block.timestamp + _getDefaultAuctionParams().fastAuctionLength + _getDefaultAuctionParams().slowAuctionLength + 1
     );
     _setDefaultFeedValues();
 
@@ -86,7 +86,7 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
     console2.log("mtm", mtm);
 
     auction.convertToInsolventAuction(aliceAcc);
-    vm.warp(block.timestamp + _getDefaultAuctionParam().insolventAuctionLength);
+    vm.warp(block.timestamp + _getDefaultAuctionParams().insolventAuctionLength);
     _setDefaultFeedValues();
 
     // uint supplyBefore = cash.totalSupply();

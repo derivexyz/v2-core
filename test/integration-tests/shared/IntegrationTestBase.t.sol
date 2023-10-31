@@ -158,7 +158,7 @@ contract IntegrationTestBase is Test {
 
   function _setupCoreContracts() internal {
     // set parameter for auction
-    auction.setAuctionParams(_getDefaultAuctionParam());
+    auction.setAuctionParams(_getDefaultAuctionParams());
 
     // allow liquidation to request payout from sm
     securityModule.setWhitelistModule(address(auction), true);
@@ -419,7 +419,7 @@ contract IntegrationTestBase is Test {
     optimalUtil = 0.6 * 1e18;
   }
 
-  function _getDefaultAuctionParam() internal pure returns (IDutchAuction.AuctionParams memory param) {
+  function _getDefaultAuctionParams() internal pure returns (IDutchAuction.AuctionParams memory param) {
     param = IDutchAuction.AuctionParams({
       startingMtMPercentage: 1e18,
       fastAuctionCutoffPercentage: 0.8e18,
@@ -429,6 +429,12 @@ contract IntegrationTestBase is Test {
       liquidatorFeeRate: 0.05e18,
       bufferMarginPercentage: 0
     });
+  }
+
+  function _setAuctionParamsWithBufferMargin(uint bufferMargin) internal {
+    IDutchAuction.AuctionParams memory param = _getDefaultAuctionParams();
+    param.bufferMarginPercentage = bufferMargin;
+    auction.setAuctionParams(param);
   }
 
   function getSubId(uint expiry, uint strike, bool isCall) public pure returns (uint96) {
