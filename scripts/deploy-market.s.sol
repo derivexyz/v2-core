@@ -177,9 +177,12 @@ contract DeployMarket is Utils {
     market.perp.setSpotFeed(market.spotFeed);
     market.perp.setPerpFeed(market.perpFeed);
     market.perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
+    // TODO: perp settings never set
   }
 
   function _setPermissionAndCaps(Deployment memory deployment, Market memory market) internal {
+    deployment.cash.setWhitelistManager(address(market.pmrm), true);
+
     // each asset whitelist the newly deployed PMRM
     _whitelistAndSetCapForManager(address(market.pmrm), market);
     // each asset whitelist the standard manager

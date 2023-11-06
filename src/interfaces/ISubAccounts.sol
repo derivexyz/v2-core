@@ -247,7 +247,7 @@ interface ISubAccounts is IERC721 {
   event BalanceAdjusted(
     uint indexed accountId,
     address indexed manager,
-    HeldAsset indexed assetAndSubId,
+    bytes32 indexed assetAndSubId,
     int amount,
     int preBalance,
     int postBalance,
