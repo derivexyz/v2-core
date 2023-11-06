@@ -494,7 +494,8 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
     emit BalanceAdjusted(
       adjustment.acc,
       address(manager[adjustment.acc]),
-      HeldAsset({asset: adjustment.asset, subId: uint96(adjustment.subId)}),
+      // pack address and subId into a single bytes32
+      bytes32(uint256(uint160(address(adjustment.asset))) << 96) | bytes32(adjustment.subId),
       delta,
       preBalance,
       postBalance,

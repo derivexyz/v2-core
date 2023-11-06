@@ -268,6 +268,32 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
     feed.acceptData(data);
   }
 
+  function testEncodeFwdFeedData() public {
+    uint64 expiry_ = 1698998400;
+    uint settlementStartAggregate_ = 1;
+    uint currentSpotAggregate_ = 3211595747743195673395200;
+    int96 fwdSpotDifference_ = 380023830429887040;
+    uint64 conf_ = 1000000000000000000;
+
+    bytes memory feedData = abi.encode(
+      expiry_, settlementStartAggregate_, currentSpotAggregate_, fwdSpotDifference_, conf_
+    );
+
+    address[] memory signers_ = new address[](1);
+    signers_[0] = 0x555eB362b5057e36f88cCb42b44D6dA5Fe7A0656;
+    bytes[] memory signatures_ = new bytes[](1);
+    signatures_[0] = hex'5636c18012cc803a53ee03097966c7132a6ebf06c6cfe15e71a8a1bd6c0968080ca1f2c131caf8462a8ee910b2166bb0670025974b859361d528bf0196ceed901c';
+
+    uint64 timestamp_ = 1698998400;
+    uint64 deadline_ = 1699013324;
+
+    bytes memory dataToSubmit = abi.encode(
+      feedData, timestamp_, deadline_, signers_, signatures_
+    );
+
+    console2.logBytes(dataToSubmit);
+  }
+
   function _getDefaultForwardData() internal view returns (IBaseLyraFeed.FeedData memory) {
     return IBaseLyraFeed.FeedData({
       data: abi.encode(
