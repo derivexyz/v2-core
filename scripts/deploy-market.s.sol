@@ -100,7 +100,7 @@ contract DeployMarket is Utils {
 
     market.volFeed.setHeartbeat(VOL_HEARTBEAT);
     market.volFeed.addSigner(config.feedSigner, true);
-    // market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
+
     market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
     market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT);
     market.forwardFeed.addSigner(config.feedSigner, true);
@@ -110,6 +110,7 @@ contract DeployMarket is Utils {
     market.perp = new PerpAsset(deployment.subAccounts);
     market.perp.setRateBounds(MAX_Abs_Rate_Per_Hour);
 
+    market.rateFeed.setRate(0, 1e18);
 
     market.base = new WrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
 
@@ -177,7 +178,6 @@ contract DeployMarket is Utils {
     market.perp.setSpotFeed(market.spotFeed);
     market.perp.setPerpFeed(market.perpFeed);
     market.perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
-    // TODO: perp settings never set
   }
 
   function _setPermissionAndCaps(Deployment memory deployment, Market memory market) internal {
