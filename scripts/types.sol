@@ -27,8 +27,10 @@ import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol"
 
 // Periphery Contracts
 import {OracleDataSubmitter} from "../src/periphery/OracleDataSubmitter.sol";
+import {OptionSettlementHelper} from "../src/periphery/OptionSettlementHelper.sol";
+import {PerpSettlementHelper} from "../src/periphery/PerpSettlementHelper.sol";
 
-struct ConfigJson { 
+  struct ConfigJson {
   address usdc;
   address wbtc; // needed if you want to use deploy-market.s.sol with market = wbtc
   address weth; // needed if you want to use deploy-market.s.sol with market = weth
@@ -48,6 +50,8 @@ struct Deployment {
 
   ISpotFeed stableFeed;
   OracleDataSubmitter dataSubmitter;
+  OptionSettlementHelper optionSettlementHelper;
+  PerpSettlementHelper perpSettlementHelper;
 }
 
 struct Market {

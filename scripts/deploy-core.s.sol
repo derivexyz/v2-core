@@ -13,8 +13,6 @@ import "../src/periphery/OracleDataSubmitter.sol";
 
 import "../src/feeds/LyraSpotFeed.sol";
 
-import "../test/shared/mocks/MockFeeds.sol";
-
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "forge-std/console2.sol";
@@ -23,6 +21,8 @@ import {Utils} from "./utils.sol";
 
 // Read from deployment config
 import "./config-mainnet.sol";
+import "../src/periphery/PerpSettlementHelper.sol";
+import "../src/periphery/OptionSettlementHelper.sol";
 
 contract DeployCore is Utils {
 
@@ -77,17 +77,13 @@ contract DeployCore is Utils {
     assert(address(deployment.srm) == address(srmAddr));
 
     // Deploy USDC stable feed
-    if (config.useMockedFeed) {
-      MockFeeds stableFeed = new MockFeeds();
-      stableFeed.setSpot(1e18, 1e18);
-      deployment.stableFeed = stableFeed;
-    } else {
-      LyraSpotFeed stableFeed = new LyraSpotFeed();
-      stableFeed.setHeartbeat(365 days);
-      deployment.stableFeed = stableFeed;
-    }
+    LyraSpotFeed stableFeed = new LyraSpotFeed();
+    stableFeed.setHeartbeat(365 days);
+    deployment.stableFeed = stableFeed;
 
     deployment.dataSubmitter = new OracleDataSubmitter();
+    deployment.perpSettlementHelper = new PerpSettlementHelper();
+    deployment.optionSettlementHelper = new OptionSettlementHelper();
 
     _setupCoreFunctions(deployment);
 
@@ -119,6 +115,10 @@ contract DeployCore is Utils {
     // set SRM parameters
     deployment.srm.setDepegParameters(getDefaultDepegParam());
 
+    deployment.srm.setWhitelistedCallee(address(deployment.stableFeed), true);
+    deployment.srm.setWhitelistedCallee(address(deployment.perpSettlementHelper), true);
+    deployment.srm.setWhitelistedCallee(address(deployment.optionSettlementHelper), true);
+
     console2.log("Core contracts deployed and setup!");
   }
 
@@ -137,6 +137,8 @@ contract DeployCore is Utils {
     vm.serializeAddress(objKey, "srm", address(deployment.srm));
     vm.serializeAddress(objKey, "srmViewer", address(deployment.srmViewer));
     vm.serializeAddress(objKey, "dataSubmitter", address(deployment.dataSubmitter));
+    vm.serializeAddress(objKey, "optionSettlementHelper", address(deployment.optionSettlementHelper));
+    vm.serializeAddress(objKey, "perpSettlementHelper", address(deployment.perpSettlementHelper));
 
     string memory finalObj = vm.serializeAddress(objKey, "stableFeed", address(deployment.stableFeed));
 

@@ -58,14 +58,13 @@ uint256 constant SRM_IM_BASE_DISCOUNT = 0.8e18;
 // Feeds
 
 uint64 constant SPOT_HEARTBEAT = 10 minutes;
-uint64 constant FORWARD_HEARTBEAT = 10 minutes;
-uint64 constant SETTLEMENT_HEARTBEAT = 1 hours;
+uint64 constant FORWARD_HEARTBEAT = 3 hours;
+uint64 constant SETTLEMENT_HEARTBEAT = 15 minutes;
 
-uint64 constant PERP_HEARTBEAT = 10 minutes;
-uint64 constant IMPACT_PRICE_HEARTBEAT = 20 minutes;
+uint64 constant PERP_HEARTBEAT = 3 hours;
+uint64 constant IMPACT_PRICE_HEARTBEAT = 3 hours;
 
 uint64 constant VOL_HEARTBEAT = 20 minutes;
-uint64 constant RATE_HEARTBEAT = 7 days;
 
 uint constant INIT_CAP_PERP = 100_000e18;
 uint constant INIT_CAP_OPTION = 1000_000e18;
@@ -74,7 +73,7 @@ uint constant INIT_CAP_BASE = 1_000e18;
 // ========== Standard Manager Params =========== //
 
 function getDefaultSRMOptionParam() pure returns (IStandardManager.OptionMarginParams memory param) {
-  param =IStandardManager.OptionMarginParams({
+  param = IStandardManager.OptionMarginParams({
       maxSpotReq: 0.15e18,
       minSpotReq: 0.12e18,
       mmCallSpotReq: 0.1e18,

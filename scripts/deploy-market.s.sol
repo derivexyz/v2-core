@@ -16,8 +16,6 @@ import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol"
 import {IPMRM} from "../src/interfaces/IPMRM.sol";
 import {IManager} from "../src/interfaces/IManager.sol";
 
-import {MockFeeds} from "../test/shared/mocks/MockFeeds.sol";
-
 import {MockSpotDiffFeed} from "../test/shared/mocks/MockSpotDiffFeed.sol";
 
 import "forge-std/console2.sol";
@@ -58,7 +56,7 @@ contract DeployMarket is Utils {
 
     _setupPerpAsset(market);
 
-    _setupPMRMParams(market);
+    _setupPMRMParams(market, deployment);
 
     _registerMarketToSRM(marketName, deployment, market);
 
@@ -75,52 +73,37 @@ contract DeployMarket is Utils {
 
     console2.log("target erc20:", marketERC20);
 
-    //todo: use mocked feeds?
-    if (config.useMockedFeed) {
-      MockFeeds mockFeed = new MockFeeds();
-      
-      market.spotFeed = LyraSpotFeed(address(mockFeed));
-      market.forwardFeed = LyraForwardFeed(address(mockFeed));
-      
-      market.perpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
-      market.iapFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
-      market.ibpFeed = LyraSpotDiffFeed(address(new MockSpotDiffFeed(mockFeed)));
-      
-      market.volFeed = LyraVolFeed(address(mockFeed));
-      market.rateFeed = LyraRateFeedStatic(address(mockFeed));      
-    } else {
-      market.spotFeed = new LyraSpotFeed();
-      market.forwardFeed = new LyraForwardFeed(market.spotFeed);
-      // feeds for perp
-      market.perpFeed = new LyraSpotDiffFeed(market.spotFeed);
-      market.iapFeed = new LyraSpotDiffFeed(market.spotFeed);
-      market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
+    market.spotFeed = new LyraSpotFeed();
+    market.forwardFeed = new LyraForwardFeed(market.spotFeed);
+    // feeds for perp
+    market.perpFeed = new LyraSpotDiffFeed(market.spotFeed);
+    market.iapFeed = new LyraSpotDiffFeed(market.spotFeed);
+    market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
 
-      // interest and vol feed
-      market.rateFeed = new LyraRateFeedStatic();
-      
-      market.volFeed = new LyraVolFeed();
+    // interest and vol feed
+    market.rateFeed = new LyraRateFeedStatic();
 
-      // init feeds
-      market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);   
-      market.spotFeed.addSigner(config.feedSigner, true);
+    market.volFeed = new LyraVolFeed();
 
-      market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
-      market.perpFeed.addSigner(config.feedSigner, true);
+    // init feeds
+    market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);
+    market.spotFeed.addSigner(config.feedSigner, true);
 
-      market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
-      market.iapFeed.addSigner(config.feedSigner, true);
+    market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
+    market.perpFeed.addSigner(config.feedSigner, true);
 
-      market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
-      market.ibpFeed.addSigner(config.feedSigner, true);
+    market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+    market.iapFeed.addSigner(config.feedSigner, true);
 
-      market.volFeed.setHeartbeat(VOL_HEARTBEAT);
-      market.volFeed.addSigner(config.feedSigner, true);
-      // market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
-      market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
-      market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT); 
-      market.forwardFeed.addSigner(config.feedSigner, true);
-    }
+    market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
+    market.ibpFeed.addSigner(config.feedSigner, true);
+
+    market.volFeed.setHeartbeat(VOL_HEARTBEAT);
+    market.volFeed.addSigner(config.feedSigner, true);
+    // market.rateFeed.setHeartbeat(RATE_HEARTBEAT);
+    market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
+    market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT);
+    market.forwardFeed.addSigner(config.feedSigner, true);
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
 
@@ -136,8 +119,7 @@ contract DeployMarket is Utils {
       stableFeed: deployment.stableFeed,
       forwardFeed: market.forwardFeed,
       interestRateFeed: market.rateFeed,
-      volFeed: market.volFeed,
-      settlementFeed: market.forwardFeed
+      volFeed: market.volFeed
     });
 
     market.pmrmLib = new PMRMLib();
@@ -156,7 +138,7 @@ contract DeployMarket is Utils {
     );
   }
 
-  function _setupPMRMParams(Market memory market) internal {
+  function _setupPMRMParams(Market memory market, Deployment memory deployment) internal {
     // set PMRM parameters
     (
       IPMRMLib.BasisContingencyParameters memory basisContParams,
@@ -178,6 +160,16 @@ contract DeployMarket is Utils {
     market.pmrmViewer.setOIFeeRateBPS(address(market.base), OI_FEE_BPS);
 
     market.pmrm.setMinOIFee(MIN_OI_FEE);
+
+    market.pmrm.setWhitelistedCallee(address(market.spotFeed), true);
+    market.pmrm.setWhitelistedCallee(address(market.iapFeed), true);
+    market.pmrm.setWhitelistedCallee(address(market.ibpFeed), true);
+    market.pmrm.setWhitelistedCallee(address(market.perpFeed), true);
+    market.pmrm.setWhitelistedCallee(address(market.forwardFeed), true);
+    market.pmrm.setWhitelistedCallee(address(market.volFeed), true);
+
+    market.pmrm.setWhitelistedCallee(address(deployment.perpSettlementHelper), true);
+    market.pmrm.setWhitelistedCallee(address(deployment.optionSettlementHelper), true);
   }
 
   function _setupPerpAsset(Market memory market) internal {
@@ -224,6 +216,13 @@ contract DeployMarket is Utils {
     deployment.srmViewer.setOIFeeRateBPS(address(market.option), OI_FEE_BPS);
     deployment.srmViewer.setOIFeeRateBPS(address(market.base), OI_FEE_BPS);
     deployment.srm.setMinOIFee(MIN_OI_FEE);
+
+    deployment.srm.setWhitelistedCallee(address(market.spotFeed), true);
+    deployment.srm.setWhitelistedCallee(address(market.iapFeed), true);
+    deployment.srm.setWhitelistedCallee(address(market.ibpFeed), true);
+    deployment.srm.setWhitelistedCallee(address(market.perpFeed), true);
+    deployment.srm.setWhitelistedCallee(address(market.forwardFeed), true);
+    deployment.srm.setWhitelistedCallee(address(market.volFeed), true);
   }
 
   function _whitelistAndSetCapForManager(address manager, Market memory market) internal {
