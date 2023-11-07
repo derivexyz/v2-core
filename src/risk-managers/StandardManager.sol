@@ -272,10 +272,12 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
   ) external override onlyAccounts nonReentrant {
     _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
+    // Block any transfers where an account is under liquidation
+    _checkIfLiveAuction(accountId);
+
     // if account is only reduce perp position, increasing cash, or increasing option position, bypass check
     bool riskAdding = false;
     bool isPositiveCashDelta = true;
-    bool cashOnly = true;
 
     // check assets are only cash or whitelisted perp and options
     for (uint i = 0; i < assetDeltas.length; i++) {
@@ -286,8 +288,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
         }
         continue;
       }
-
-      cashOnly = false;
 
       AssetDetail memory detail = _assetDetails[assetDeltas[i].asset];
 
@@ -312,10 +312,6 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
           riskAdding = true;
         }
       }
-    }
-
-    if (riskAdding || !cashOnly) {
-      _checkIfLiveAuction(accountId);
     }
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);

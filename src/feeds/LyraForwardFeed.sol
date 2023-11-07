@@ -33,6 +33,8 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
   ISpotFeed public spotFeed;
 
+  uint64 public maxExpiry = 365 days;
+
   /// @dev secondary heartbeat for when the forward price is close to expiry
   uint64 public settlementHeartbeat = 5 minutes;
 
@@ -63,6 +65,11 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
   function setSettlementHeartbeat(uint64 _settlementHeartbeat) external onlyOwner {
     settlementHeartbeat = _settlementHeartbeat;
     emit SettlementHeartbeatUpdated(_settlementHeartbeat);
+  }
+
+  function setMaxExpiry(uint64 _maxExpiry) external onlyOwner {
+    maxExpiry = _maxExpiry;
+    emit MaxExpiryUpdated(_maxExpiry);
   }
 
   /**
@@ -215,6 +222,10 @@ contract LyraForwardFeed is BaseLyraFeed, ILyraForwardFeed, IForwardFeed, ISettl
 
     if (feedData.timestamp > expiry) {
       revert LFF_InvalidFwdDataTimestamp();
+    }
+
+    if (expiry > block.timestamp + maxExpiry) {
+      revert LFF_ExpiryTooFarInFuture();
     }
 
     SettlementDetails memory settlementData;

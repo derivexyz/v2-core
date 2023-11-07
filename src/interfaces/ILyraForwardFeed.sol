@@ -22,6 +22,7 @@ interface ILyraForwardFeed is IBaseLyraFeed {
   ////////////////////////
   event SpotFeedUpdated(ISpotFeed spotFeed);
   event SettlementHeartbeatUpdated(uint64 settlementHeartbeat);
+  event MaxExpiryUpdated(uint64 maxExpiry);
   event ForwardDataUpdated(uint64 indexed expiry, ForwardDetails fwdDetails, SettlementDetails settlementDetails);
 
   ////////////////////////
@@ -33,4 +34,5 @@ interface ILyraForwardFeed is IBaseLyraFeed {
   error LFF_InvalidFwdDataTimestamp();
   error LFF_InvalidDataTimestampForSettlement();
   error LFF_SettlementDataTooOld();
+  error LFF_ExpiryTooFarInFuture();
 }

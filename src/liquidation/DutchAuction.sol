@@ -165,7 +165,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
       ongoing: true,
       cachedMM: 0,
       startTime: block.timestamp,
-      percentageLeft: 1e18,
       reservedCash: 0
     });
 
@@ -188,7 +187,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
       ongoing: true,
       cachedMM: insolventMM,
       startTime: block.timestamp,
-      percentageLeft: 1e18,
       reservedCash: 0
     });
     emit InsolventAuctionStarted(accountId, scenarioId, maintenanceMargin);
@@ -260,7 +258,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
    * @dev Takes in the auction and returns the account id
    * @param accountId Account ID of the liquidated account
    * @param bidderId Account ID of bidder, must be owned by msg.sender
-   * @param percentOfAccount Percentage of account to liquidate, in 18 decimals
+   * @param percentOfAccount Percentage of current account to liquidate, in 18 decimals
    * @param priceLimit Maximum amount of cash to be paid from bidder to liquidated account (including negative amounts for insolvent auctions). This param is ignored if set to 0
    * @param expectedLastTradeId The last trade id that the bidder expects the account to be on. Can be used to prevent frontrun
    * @return finalPercentage percentage of portfolio being liquidated
@@ -327,8 +325,6 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     int bufferMargin,
     int markToMarket
   ) internal returns (bool canTerminate, uint percentLiquidated, uint cashFromBidder) {
-    percentLiquidated = percentOfAccount;
-
     // calculate the max percentage of "current portfolio" that can be liquidated. Priced using original portfolio.
     int bidPrice = _getSolventAuctionBidPrice(accountId, markToMarket);
     if (bidPrice <= 0) revert DA_SolventAuctionEnded();
@@ -340,32 +336,28 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     // max percentage of the "current" portfolio that can be liquidated
     uint maxOfCurrent = _getMaxProportion(markToMarket, bufferMargin, discount, currentAuction.reservedCash);
 
-    // calculate percentage of the original portfolio, to percentage of current portfolio
-    uint convertedPercentage = percentOfAccount.divideDecimal(currentAuction.percentageLeft);
-    if (convertedPercentage >= maxOfCurrent) {
-      convertedPercentage = maxOfCurrent;
-      percentLiquidated = convertedPercentage.multiplyDecimal(currentAuction.percentageLeft);
+    if (percentOfAccount >= maxOfCurrent) {
+      percentOfAccount = maxOfCurrent;
       canTerminate = true;
     }
 
-    cashFromBidder = bidPrice.toUint256().multiplyDecimal(percentLiquidated);
+    cashFromBidder = bidPrice.toUint256().multiplyDecimal(percentOfAccount);
 
     // Bidder must have enough cash to pay for the bid, and enough cash to cover the buffer margin
     _ensureBidderCashBalance(
       bidderId,
       cashFromBidder
-        + (SignedMath.abs(bufferMargin - currentAuction.reservedCash.toInt256())).multiplyDecimal(convertedPercentage)
+        + (SignedMath.abs(bufferMargin - currentAuction.reservedCash.toInt256())).multiplyDecimal(percentOfAccount)
     );
 
     // risk manager transfers portion of the account to the bidder, liquidator pays cash to accountId
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
-      accountId, bidderId, convertedPercentage, cashFromBidder, currentAuction.reservedCash
+      accountId, bidderId, percentOfAccount, cashFromBidder, currentAuction.reservedCash
     );
 
     currentAuction.reservedCash += cashFromBidder;
-    currentAuction.percentageLeft -= percentLiquidated;
 
-    return (canTerminate, percentLiquidated, cashFromBidder);
+    return (canTerminate, percentOfAccount, cashFromBidder);
   }
 
   /**
@@ -383,16 +375,13 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   ) internal returns (bool canTerminate, uint percentLiquidated, uint cashToBidder) {
     Auction storage currentAuction = auctions[accountId];
 
-    uint percentageOfOriginalLeft = currentAuction.percentageLeft;
-    percentLiquidated = percentOfAccount > percentageOfOriginalLeft ? percentageOfOriginalLeft : percentOfAccount;
-
     // the account is insolvent when the bid price for the account falls below zero
     // someone get paid from security module to take on the risk
     cashToBidder = (-_getInsolventAuctionBidPrice(accountId, maintenanceMargin, markToMarket)).toUint256()
-      .multiplyDecimal(percentLiquidated);
+      .multiplyDecimal(percentOfAccount);
 
     _ensureBidderCashBalance(
-      bidderId, SignedMath.abs(maintenanceMargin).multiplyDecimal(percentLiquidated) - cashToBidder
+      bidderId, SignedMath.abs(maintenanceMargin).multiplyDecimal(percentOfAccount) - cashToBidder
     );
 
     // we first ask the security module to compensate the bidder
@@ -403,16 +392,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
       cash.socializeLoss(loss, bidderId);
     }
 
-    // risk manager transfers portion of the account to the bidder, liquidator pays 0
-    uint percentageOfCurrent = percentLiquidated.divideDecimal(percentageOfOriginalLeft);
-
-    currentAuction.percentageLeft -= percentLiquidated;
-
     ILiquidatableManager(address(subAccounts.manager(accountId))).executeBid(
-      accountId, bidderId, percentageOfCurrent, 0, currentAuction.reservedCash
+      accountId, bidderId, percentOfAccount, 0, currentAuction.reservedCash
     );
 
-    canTerminate = currentAuction.percentageLeft == 0;
+    // can terminate as soon as someone takes 100% of the account
+    return (percentOfAccount == 1e18, percentOfAccount, cashToBidder);
   }
 
   ////////////////////////
@@ -655,10 +640,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     // calculate Bid price using discount and MTM
     uint discount = _getDiscountPercentage(auction.startTime, block.timestamp);
 
-    // divide by percentage left to scale the MtM to the original portfolio size
-    int scaledMtM = (markToMarket - int(auction.reservedCash)).divideDecimal(int(auction.percentageLeft));
-
-    return scaledMtM.multiplyDecimal(int(discount));
+    // Discount the portfolio excluding reserved cash
+    return (markToMarket - int(auction.reservedCash)).multiplyDecimal(int(discount));
   }
 
   /**
