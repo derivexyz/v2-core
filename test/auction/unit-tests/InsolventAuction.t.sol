@@ -148,7 +148,7 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
 
     vm.warp(block.timestamp + 2 minutes);
     vm.prank(bob);
-    dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0, 0);
+    dutchAuction.bid(aliceAcc, bobAcc, 1e18, 0, 0);
 
     assertEq(dutchAuction.getIsWithdrawBlocked(), false);
   }

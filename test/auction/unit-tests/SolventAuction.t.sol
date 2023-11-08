@@ -453,9 +453,9 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     // check that Bob's max liquidatable percentage is capped
     vm.prank(bob);
     {
-      (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 0.5e18, 0, 0);
-      assertEq(finalPercentage / 1e14, 3756); // capped at 37.5675 of original
-      assertEq(cashFromBob / 1e18, 1803); // 37.5675% of portfolio, price at 4800
+      (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 1e18, 0, 0);
+      assertEq(finalPercentage / 1e14, 5366); // capped at 53.66 of current
+      assertEq(cashFromBob / 1e18, 1803); // 37.5675% of original portfolio, price at 4800
     }
   }
 
@@ -493,7 +493,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMockMargin(seanAcc, false, scenario, -10000e18);
     manager.setMarkToMarket(seanAcc, 9600e18);
 
-    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 7000e18);
+    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 5600e18); // 10000 * 0.7 *discount) * 0.8 (remaining)
     manager.setMarkToMarket(seanAcc, 1000e18);
 
     // Can restart auction

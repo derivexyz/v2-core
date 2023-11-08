@@ -119,10 +119,11 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     subAccounts.submitTransfers(newTransfers, "");
   }
 
-  function testPMRMCanOnlyDepositCashIfLiveAuction() public {
+  function testPMRMCannotInteractIfAuctionLive() public {
     _depositCash(bobAcc, 100_000e18);
     weth.mint(address(this), 1e18);
     weth.approve(address(baseAsset), 1e18);
+    usdc.approve(address(cash), 1e18);
     baseAsset.deposit(bobAcc, 1e18);
 
     uint expiry = block.timestamp + 1000;
@@ -131,14 +132,16 @@ contract UNIT_TestPMRM_EdgeCases is PMRMSimTest {
     pmrm.setLiquidation(mockAuction);
     mockAuction.startAuction(aliceAcc, 0);
 
-    // Can always deposit cash
-    _depositCash(aliceAcc, 1e18);
+    // CANNOT deposit cash
+    vm.expectRevert(IBaseManager.BM_AccountUnderLiquidation.selector);
+    cash.deposit(aliceAcc, 1e18);
 
     ISubAccounts.AssetTransfer[] memory transfers = new ISubAccounts.AssetTransfer[](1);
     transfers[0] =
       ISubAccounts.AssetTransfer({fromAcc: bobAcc, toAcc: aliceAcc, asset: cash, subId: 0, amount: 1e18, assetData: ""});
 
-    // can also transfer cash from another account (doesn't require approvals)
+    // can also CANNOT transfer cash from another account (doesn't require approvals)
+    vm.expectRevert(IBaseManager.BM_AccountUnderLiquidation.selector);
     subAccounts.submitTransfers(transfers, "");
 
     // CANNOT deposit base asset

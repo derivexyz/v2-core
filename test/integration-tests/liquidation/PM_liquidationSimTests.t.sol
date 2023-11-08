@@ -74,7 +74,9 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
       assertApproxEqAbs(int(cashToBidder), -data.Actions[actionId].Results.SMPayout, 1e6, "bid price insolvent");
     } else {
       assertApproxEqAbs(int(cashFromBidder), data.Actions[actionId].Results.ExpectedBidPrice, 1e6, "bid price solvent");
-      assertApproxEqAbs(finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 1e6, "final percentage");
+      assertApproxEqAbs(
+        finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 1e6, "liquidated of original"
+      );
     }
   }
 
