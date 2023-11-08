@@ -15,8 +15,6 @@ interface IDutchAuction {
     bool ongoing;
     /// For insolvent auctions, snapshot MM at the time the auction starts
     uint cachedMM;
-    /// The percentage of the portfolio that is left to be auctioned
-    uint percentageLeft;
     /// The startTime of the auction
     uint startTime;
     /// The total amount of cash paid into the account during the auction

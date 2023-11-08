@@ -395,7 +395,7 @@
           "ForwardsVariable": [1500833229340328329216]
         },
         "Liquidator": {
-          "PercentWant": 100000000000000000
+          "PercentWant": 111111111111111111
         },
         "Results": {
           "PreMtM": 118425834278252019712,
@@ -404,7 +404,7 @@
           "PreFMax": 524290585958138816,
           "ExpectedBidPrice": 11047987360634836992,
           "FinalPercentageReceived": 111111111111111120,
-          "fLiquidatedOfOriginal": 100000000000000000,
+          "fLiquidatedOfOriginal": 111111111111111111,
           "PostMtM": 117542949759151603712,
           "PostMM": -60374319541825396736,
           "PostBM": -95957773402020790272,
@@ -538,7 +538,7 @@
           "ForwardsVariable": [1450804537234727370752]
         },
         "Liquidator": {
-          "PercentWant": 500000000000000000
+          "PercentWant": 555555555555555555
         },
         "Results": {
           "PreMtM": 137373409208035049472,
@@ -546,8 +546,8 @@
           "PreBM": -82808316266041851904,
           "PreFMax": 433401449711588160,
           "ExpectedBidPrice": 42780683484503875584,
-          "FinalPercentageReceived": 433401449711588160,
-          "fLiquidatedOfOriginal": 390061304740429376,
+          "FinalPercentageReceived": 390061304740429376,
+          "fLiquidatedOfOriginal": 433401449711588543,
           "PostMtM": 124754646453613051904,
           "PostMM": 20792441075602169856,
           "PostBM": 0,
@@ -681,7 +681,7 @@
           "ForwardsVariable": [1439798433848808701952]
         },
         "Liquidator": {
-          "PercentWant": 200000000000000000
+          "PercentWant": 222222222222222222
         },
         "Results": {
           "PreMtM": 141241828744923119616,
@@ -689,8 +689,8 @@
           "PreBM": -74294435474072059904,
           "PreFMax": 400423865535404544,
           "ExpectedBidPrice": 22599203883285839872,
-          "FinalPercentageReceived": 222222222222222240,
-          "fLiquidatedOfOriginal": 200000000000000000,
+          "FinalPercentageReceived": 200000000000000000,
+          "fLiquidatedOfOriginal": 222222222222222240,
           "PostMtM": 134575876520356806656,
           "PostMM": -5123553991954907136,
           "PostBM": -33063440094417244160,
@@ -733,7 +733,7 @@
           "ForwardsVariable": [1522830289745930354688]
         },
         "Liquidator": {
-          "PercentWant": 300000000000000000
+          "PercentWant": 428571428571428608
         },
         "Results": {
           "PreMtM": 107989712946571624448,
@@ -741,8 +741,8 @@
           "PreBM": -85098725556266106880,
           "PreFMax": 606027945856190080,
           "ExpectedBidPrice": 9931675129055612928,
-          "FinalPercentageReceived": 428571428571428608,
-          "fLiquidatedOfOriginal": 300000000000000000,
+          "FinalPercentageReceived": 300000000000000000,
+          "fLiquidatedOfOriginal": 428571428571428608,
           "PostMtM": 85417724016899784704,
           "PostMM": -6529151460641997824,
           "PostBM": -24918526556150353920,

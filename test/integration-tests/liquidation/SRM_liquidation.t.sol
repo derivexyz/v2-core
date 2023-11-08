@@ -133,10 +133,11 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     (uint finalPercentage1, uint cashFromLiquidator1,) = auction.bid(aliceAcc, liquidator1, percentageToBid, 0, 0);
     assertEq(finalPercentage1, percentageToBid);
 
-    // liquidator 2 also bid 30%, but it is executed after liquidator 1
-    (uint finalPercentage2, uint cashFromLiquidator2,) = auction.bid(aliceAcc, liquidator2, percentageToBid, 0, 0);
-    assertEq(finalPercentage2, percentageToBid);
-    assertEq(cashFromLiquidator1, cashFromLiquidator2);
+    uint bidPercent2 = percentageToBid * 1e18 / (1e18 - percentageToBid);
+    // liquidator 2 also bid 30% of original, but it is executed after liquidator 1
+    (uint finalPercentage2, uint cashFromLiquidator2,) = auction.bid(aliceAcc, liquidator2, bidPercent2, 0, 0);
+    assertEq(finalPercentage2, bidPercent2);
+    assertApproxEqAbs(cashFromLiquidator1, cashFromLiquidator2, 10); // very very close
 
     vm.stopPrank();
   }
@@ -204,13 +205,12 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     assertEq(finalPercentage1, percentageToBid);
     vm.stopPrank();
 
-    // before liquidator 2 bids, alice deposit more cash to her account, making liquidator 2's bid revert
-    _depositCash(alice, aliceAcc, 50e18);
+    // make limit slightly lower so the bid will revert
 
     // bid reverts
     vm.startPrank(charlie);
     vm.expectRevert(IDutchAuction.DA_PriceLimitExceeded.selector);
-    auction.bid(aliceAcc, liquidator2, percentageToBid, int(cashFromLiquidator1), 0);
+    auction.bid(aliceAcc, liquidator2, percentageToBid * 10 / 9, int(cashFromLiquidator1) - 100, 0);
     vm.stopPrank();
   }
 
@@ -259,10 +259,10 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     vm.prank(alice);
     auction.bid(acc1, aliceAcc, 0.1e18, 0, 0);
 
-    // Bob bids remaining 40.34%
+    // Bob bids remaining 40.34% / 0.9 == 44.83%
     vm.prank(bob);
     (uint finalPercentage,,) = auction.bid(acc1, bobAcc, 1e18, 0, 0);
-    assertEq(finalPercentage / 1e14, 4034);
+    assertEq(finalPercentage / 1e14, 4483);
 
     // Buffer margin after liquidating all is close to 0
     assertEq(_getBufferMM(acc1) / 1e10, 0);
@@ -315,13 +315,14 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
       assertApproxEqAbs(auctionStruct.reservedCash, 20e18, 1e18);
 
       int bidPrice = auction.getCurrentBidPrice(aliceAcc);
-      assertApproxEqAbs(bidPrice, 69e18, 1e18);
+      // bid price drops from 69 -> 48 as only 70% of the remaining portfolio exists
+      assertApproxEqAbs(bidPrice, 48e18, 1e18);
     }
 
-    // require ((|bm - reservedCash|)) * percentage_of_remaining + bidPrice
-    // collateral requirement == (-(-163.9 - 20.8)) * (0.1 / 0.7)) == 26.38
-    // bid price = 69 * 0.1 = 6.9
-    // total cash required ~= 33.3
+    // require ((|bm - reservedCash|)) + bidPrice
+    // collateral requirement == (-(-163.9 - 20.8)) * 0.142) == 26.22
+    // bid price = 48 * 0.142 = 6.9
+    // total cash required ~= 33.1
 
     // sean will liquidate 10%, so they need just over $33
     // add just a bit below to see if it reverts
@@ -330,7 +331,7 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     {
       // didn't have enough, so it reverts
       vm.expectRevert(IDutchAuction.DA_InsufficientCash.selector);
-      auction.bid(aliceAcc, seanAcc, 0.1e18, 0, 0);
+      auction.bid(aliceAcc, seanAcc, 0.142e18, 0, 0);
     }
 
     // add $1, should work now
@@ -338,8 +339,8 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
     vm.prank(sean);
     {
-      (uint finalPercentage, uint cashFromSean,) = auction.bid(aliceAcc, seanAcc, 0.1e18, 0, 0);
-      assertEq(finalPercentage, 0.1e18);
+      (uint finalPercentage, uint cashFromSean,) = auction.bid(aliceAcc, seanAcc, 0.142e18, 0, 0);
+      assertEq(finalPercentage, 0.142e18);
       assertApproxEqAbs(cashFromSean, 6.9e18, 0.1e18);
     }
   }

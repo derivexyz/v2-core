@@ -172,13 +172,10 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMarkToMarket(aliceAcc, 270e18 + int(cashFromBob));
 
     vm.prank(charlie);
-    (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage, 0, 0);
+    (uint charliePercentage, uint cashFromCharlie,) = dutchAuction.bid(aliceAcc, charlieAcc, percentage * 10 / 9, 0, 0);
 
-    assertEq(cashFromCharlie, cashFromBob, "charlie and bob should pay the same amount");
-    assertEq(charliePercentage, bobPercentage, "charlie should receive the same percentage as bob");
-
-    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
-    assertEq(auction.percentageLeft, 0.8e18, "percentageLeft should be 0.8");
+    assertApproxEqAbs(cashFromCharlie, cashFromBob, 0.0001e18, "charlie and bob should pay the same amount");
+    assertEq(charliePercentage, bobPercentage * 10 / 9, "charlie should receive the same percentage as bob");
   }
 
   function testBidMarkToMarketChange() public {
@@ -456,9 +453,9 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     // check that Bob's max liquidatable percentage is capped
     vm.prank(bob);
     {
-      (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 0.5e18, 0, 0);
-      assertEq(finalPercentage / 1e14, 3756); // capped at 37.5675 of original
-      assertEq(cashFromBob / 1e18, 1803); // 37.5675% of portfolio, price at 4800
+      (uint finalPercentage, uint cashFromBob,) = dutchAuction.bid(seanAcc, bobAcc, 1e18, 0, 0);
+      assertEq(finalPercentage / 1e14, 5366); // capped at 53.66 of current
+      assertEq(cashFromBob / 1e18, 1803); // 37.5675% of original portfolio, price at 4800
     }
   }
 
@@ -496,7 +493,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     manager.setMockMargin(seanAcc, false, scenario, -10000e18);
     manager.setMarkToMarket(seanAcc, 9600e18);
 
-    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 7000e18);
+    assertEq(dutchAuction.getCurrentBidPrice(seanAcc), 5600e18); // 10000 * 0.7 *discount) * 0.8 (remaining)
     manager.setMarkToMarket(seanAcc, 1000e18);
 
     // Can restart auction

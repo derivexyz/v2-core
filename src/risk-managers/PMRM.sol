@@ -179,13 +179,11 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
   ) external onlyAccounts nonReentrant {
     _preAdjustmentHooks(accountId, tradeId, caller, assetDeltas, managerData);
 
-    bool riskAdding = false;
-    bool cashOnly = true;
-    for (uint i = 0; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset != cashAsset) {
-        cashOnly = false;
-      }
+    // Block any transfers where an account is under liquidation
+    _checkIfLiveAuction(accountId);
 
+    bool riskAdding = false;
+    for (uint i = 0; i < assetDeltas.length; i++) {
       if (assetDeltas[i].asset == perp) {
         // Settle perp PNL into cash if the user traded perp in this tx.
         _settlePerpRealizedPNL(perp, accountId);
@@ -199,10 +197,6 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
           riskAdding = true;
         }
       }
-    }
-
-    if (riskAdding || !cashOnly) {
-      _checkIfLiveAuction(accountId);
     }
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);

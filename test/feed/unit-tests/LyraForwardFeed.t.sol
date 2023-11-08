@@ -79,7 +79,7 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
     assertEq(confidence, 1e18);
   }
 
-  function testCannotGetInvalidForwardDiff() public {
+  function testCannotGetInvalidForwardDiff2() public {
     IBaseLyraFeed.FeedData memory feedData = _getDefaultForwardData();
 
     int newDiff = -1000e18;

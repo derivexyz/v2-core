@@ -21,7 +21,8 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     _depositCash(alice, aliceAcc, DEFAULT_DEPOSIT);
     _depositCash(bob, bobAcc, DEFAULT_DEPOSIT);
 
-    _setPerpPrice("weth", 1500e18, 1e18);
+    _setSpotPrice("weth", 2000e18, 1e18);
+    _setPerpPrice("weth", 2000e18, 1e18);
 
     // open trades: Alice is Short, Bob is Long
     _tradePerpContract(markets["weth"].perp, aliceAcc, bobAcc, oneContract);
@@ -30,7 +31,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
   function testSettleLongPosition() public {
     int cashBefore = _getCashBalance(bobAcc);
 
-    _setPerpPrice("weth", 1600e18, 1e18);
+    _setPerpPrice("weth", 2100e18, 1e18);
 
     // bobAcc close his position and has $100 in PNL
     _tradePerpContract(markets["weth"].perp, bobAcc, aliceAcc, oneContract);
@@ -45,7 +46,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     int cashBefore = _getCashBalance(aliceAcc);
 
     // alice is short, bob is long
-    _setPerpPrice("weth", 1600e18, 1e18);
+    _setPerpPrice("weth", 2100e18, 1e18);
 
     // alice close his position and has $100 in PNL
     _tradePerpContract(markets["weth"].perp, bobAcc, aliceAcc, oneContract);
@@ -60,7 +61,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     int cashBefore = _getCashBalance(aliceAcc);
 
     // alice is short, bob is long
-    _setPerpPrice("weth", 1600e18, 1e18);
+    _setPerpPrice("weth", 2100e18, 1e18);
 
     srm.settlePerpsWithIndex(aliceAcc);
 
@@ -73,7 +74,7 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     int bobCashBefore = _getCashBalance(bobAcc);
 
     // alice is short, bob is long
-    _setPerpPrice("weth", 1600e18, 1e18);
+    _setPerpPrice("weth", 2100e18, 1e18);
 
     srm.settlePerpsWithIndex(aliceAcc);
     srm.settlePerpsWithIndex(bobAcc);
@@ -89,27 +90,27 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
   }
 
   function testCanSettleIntoNegativeCash() public {
-    _setPerpPrice("weth", 200_000e18, 1e18);
+    _setSpotPrice("weth", 200_000e18, 1e18);
     srm.settlePerpsWithIndex(aliceAcc);
     assertLt(_getCashBalance(aliceAcc), 0);
   }
 
   function testCanSettleWhenOngoingAuction() public {
     (uint mark, int pnl) = _getMarkPriceAndPNL(aliceAcc);
-    assertEq(mark, 1500e18);
+    assertEq(mark, 2000e18);
     assertEq(pnl, 0e18);
 
-    _setPerpPrice("weth", 10000e18, 1e18);
+    _setSpotPrice("weth", 10000e18, 1e18);
     markets["weth"].perp.realizeAccountPNL(aliceAcc);
 
     (mark, pnl) = _getMarkPriceAndPNL(aliceAcc);
     assertEq(mark, 10000e18);
-    assertEq(pnl, -8500e18);
+    assertEq(pnl, -8000e18);
 
     markets["weth"].perp.realizeAccountPNL(bobAcc);
     (mark, pnl) = _getMarkPriceAndPNL(bobAcc);
     assertEq(mark, 10000e18);
-    assertEq(pnl, 8500e18);
+    assertEq(pnl, 8000e18);
 
     // start auction
     auction.startAuction(aliceAcc, 0);
@@ -120,11 +121,11 @@ contract INTEGRATION_SRM_PerpSettlement is IntegrationTestBase {
     int aliceCashAfter = _getCashBalance(aliceAcc);
     int bobCashAfter = _getCashBalance(bobAcc);
 
-    assertEq(aliceCashAfter, -3500e18);
-    assertEq(bobCashAfter, 13500e18);
+    assertEq(aliceCashAfter, -3000e18);
+    assertEq(bobCashAfter, 13000e18);
 
     assertTrue(auction.getAuction(aliceAcc).insolvent);
-    assertEq(auction.getCurrentBidPrice(aliceAcc), -3500e18);
+    assertEq(auction.getCurrentBidPrice(aliceAcc), -3000e18);
   }
 
   function _getMarkPriceAndPNL(uint acc) internal view returns (uint, int) {
