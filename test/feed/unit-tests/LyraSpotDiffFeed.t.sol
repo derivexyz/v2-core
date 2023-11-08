@@ -54,22 +54,37 @@ contract UNIT_LyraSpotDiffFeed is LyraFeedTestUtils {
     assertEq(confidence, 1e18);
   }
 
-  function testCannotGetInvalidForwardDiff() public {
+  function testCanGetSpotDiffOutsideBounds() public {
     IBaseLyraFeed.FeedData memory feedData = _getDefaultSpotDiffData();
-    feedData.data = abi.encode(-1000e18, 1e18);
-    feed.acceptData(_signFeedData(feed, pk, feedData));
 
-    vm.expectRevert("SafeCast: value must be positive");
-    feed.getResult();
+    // if 0 is expected, return the capped value
+    feedData.data = abi.encode(-990e18, 1e18);
+    feedData.timestamp = uint64(block.timestamp);
+    feed.acceptData(_signFeedData(feed, pk, feedData));
+    (uint res,) = feed.getResult();
+    // res is capped at spot - 10%
+    assertEq(res, 990e18 * 1e18 / 1.1e18);
 
     vm.warp(block.timestamp + 1);
 
-    // but can return 0
-    feedData.data = abi.encode(-990e18, 1e18);
-    feedData.timestamp += 1;
+    // even if the data would make the result negative, return the capped value
+    feedData.data = abi.encode(-1000e18, 1e18);
+    feedData.timestamp = uint64(block.timestamp);
     feed.acceptData(_signFeedData(feed, pk, feedData));
-    (uint res,) = feed.getResult();
-    assertEq(res, 0);
+
+    (res,) = feed.getResult();
+    // res is capped at spot - 10%
+    assertEq(res, 990e18 * 1e18 / 1.1e18);
+
+    vm.warp(block.timestamp + 1);
+
+    // also works for a positive result
+    feedData.data = abi.encode(1000e18, 1e18);
+    feedData.timestamp = uint64(block.timestamp);
+    feed.acceptData(_signFeedData(feed, pk, feedData));
+    (res,) = feed.getResult();
+    // res is capped at spot + 10%
+    assertEq(res, 990e18 * 1.1e18 / 1e18);
   }
 
   function testCannotUpdateSpotDiffFeedFromInvalidSigner() public {
