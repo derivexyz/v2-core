@@ -27,7 +27,7 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
 
   ISpotFeed public spotFeed;
   /// @dev spotDiffCap Cap the value returned based on a percentage of the spot price
-  int public constant SPOT_DIFF_CAP = 1.1e18;
+  int public spotDiffCap = 0.1e18;
 
   SpotDiffDetail public spotDiffDetails;
 
@@ -49,6 +49,12 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
     emit SpotFeedUpdated(_spotFeed);
   }
 
+  function setSpotDiffCap(uint _spotDiffCap) external onlyOwner {
+    if (_spotDiffCap > 1e18) revert LSDF_InvalidSpotDiffCap();
+    spotDiffCap = SafeCast.toInt256(_spotDiffCap);
+    emit SpotDiffCapUpdated(_spotDiffCap);
+  }
+
   ////////////////////////
   //  Public Functions  //
   ////////////////////////
@@ -64,12 +70,12 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
     _checkNotStale(diffDetails.timestamp);
 
     int spotDiff = int(diffDetails.spotDiff);
-    int res = spotInt + spotDiff;
-
-    if (spotDiff > 0) {
-      res = SignedMath.min(res, spotInt.multiplyDecimal(SPOT_DIFF_CAP));
+    int maxDiff = spotInt.multiplyDecimal(spotDiffCap);
+    int res = spotInt;
+    if (spotDiff >= 0) {
+      res += SignedMath.min(spotDiff, maxDiff);
     } else {
-      res = SignedMath.max(res, spotInt.divideDecimal(SPOT_DIFF_CAP));
+      res += SignedMath.max(spotDiff, -maxDiff);
     }
 
     return (SafeCast.toUint256(res), Math.min(spotConfidence, diffDetails.confidence));

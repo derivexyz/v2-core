@@ -63,7 +63,7 @@ contract UNIT_LyraSpotDiffFeed is LyraFeedTestUtils {
     feed.acceptData(_signFeedData(feed, pk, feedData));
     (uint res,) = feed.getResult();
     // res is capped at spot - 10%
-    assertEq(res, 990e18 * 1e18 / 1.1e18);
+    assertEq(res, 990e18 * 0.9e18 / 1e18);
 
     vm.warp(block.timestamp + 1);
 
@@ -74,7 +74,7 @@ contract UNIT_LyraSpotDiffFeed is LyraFeedTestUtils {
 
     (res,) = feed.getResult();
     // res is capped at spot - 10%
-    assertEq(res, 990e18 * 1e18 / 1.1e18);
+    assertEq(res, 990e18 * 0.9e18 / 1e18);
 
     vm.warp(block.timestamp + 1);
 
@@ -85,6 +85,53 @@ contract UNIT_LyraSpotDiffFeed is LyraFeedTestUtils {
     (res,) = feed.getResult();
     // res is capped at spot + 10%
     assertEq(res, 990e18 * 1.1e18 / 1e18);
+  }
+
+  function testCanUpdateSpotDiffCap() public {
+    // make sure the value returned is always == spot
+    feed.setSpotDiffCap(0);
+
+    IBaseLyraFeed.FeedData memory feedData = _getDefaultSpotDiffData();
+
+    // if 0 is expected, return the capped value
+    feedData.data = abi.encode(-990e18, 1e18);
+    feedData.timestamp = uint64(block.timestamp);
+    feed.acceptData(_signFeedData(feed, pk, feedData));
+    (uint res,) = feed.getResult();
+    // res is capped at spot, so diff is ignored
+    assertEq(res, 990e18);
+
+    // now 50% diff cap
+    feed.setSpotDiffCap(0.5e18);
+    (res,) = feed.getResult();
+    assertEq(res, 495e18);
+
+    // now 100% diff cap
+    feed.setSpotDiffCap(1e18);
+    (res,) = feed.getResult();
+    assertEq(res, 0, "b");
+
+    // cannot set cap beyond 100%
+    vm.expectRevert(ILyraSpotDiffFeed.LSDF_InvalidSpotDiffCap.selector);
+    feed.setSpotDiffCap(1.1e18);
+
+    vm.warp(block.timestamp + 1);
+
+    // also works for a positive result
+    feedData.data = abi.encode(1000e18, 1e18);
+    feedData.timestamp = uint64(block.timestamp);
+    feed.acceptData(_signFeedData(feed, pk, feedData));
+    (res,) = feed.getResult();
+    // res is capped at spot * 2, even though diff exceeds that
+    assertEq(res, 1980e18);
+
+    feed.setSpotDiffCap(0.5e18);
+    (res,) = feed.getResult();
+    assertEq(res, 1485e18);
+
+    feed.setSpotDiffCap(0);
+    (res,) = feed.getResult();
+    assertEq(res, 990e18);
   }
 
   function testCannotUpdateSpotDiffFeedFromInvalidSigner() public {
