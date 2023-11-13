@@ -429,8 +429,13 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
       ""
     );
 
-    // check if cash asset is insolvent
     uint exchangeRate = _getExchangeRate();
+    if (temporaryWithdrawFeeEnabled) {
+      emit WithdrawFeeEnabled(exchangeRate);
+      return;
+    }
+
+    // check if cash asset is insolvent
     if (exchangeRate < 1e18) {
       temporaryWithdrawFeeEnabled = true;
       previousSmFeePercentage = smFeePercentage;
