@@ -36,6 +36,25 @@ contract INTEGRATION_SRM_Example is IntegrationTestBase {
     // console2.log("bob im", getAccInitMargin(bobAcc) / 1e18);
   }
 
+  function testCannotTradeIfPaused() public {
+    uint64 expiry = uint64(block.timestamp) + 4 weeks;
+    uint strike = 2000e18;
+    uint96 callId = OptionEncoding.toSubId(expiry, strike, true);
+
+    vm.expectRevert(IBaseManager.BM_GuardianOnly.selector);
+    srm.setAdjustmentsPaused(true);
+
+    srm.setGuardian(address(this));
+    srm.setAdjustmentsPaused(true);
+
+    vm.expectRevert(IBaseManager.BM_AdjustmentsPaused.selector);
+    _tradeDefaultCall(callId, 1e18);
+
+    vm.prank(alice);
+    vm.expectRevert(IBaseManager.BM_AdjustmentsPaused.selector);
+    cash.withdraw(aliceAcc, 1e6, alice);
+  }
+
   ///@dev alice go short, bob go long
   function _tradeDefaultCall(uint96 subId, int amount) public {
     int premium = 50e18;

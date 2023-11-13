@@ -39,6 +39,10 @@ interface IBaseManager is IManager {
 
   event MinOIFeeSet(uint minOIFee);
 
+  event GuardianSet(address guardian);
+
+  event AdjustmentsPausedSet(bool paused);
+
   event CalleeWhitelisted(address callee);
 
   event PerpSettled(uint indexed accountId, address perp, int pnl, int funding);
@@ -61,8 +65,9 @@ interface IBaseManager is IManager {
 
   error BM_MinOIFeeTooHigh();
 
-  /// @dev bad action
-  error BN_InvalidAction();
+  error BM_GuardianOnly();
+
+  error BM_AdjustmentsPaused();
 
   error BM_InvalidBidPortion();
 
@@ -73,10 +78,6 @@ interface IBaseManager is IManager {
   error BM_OnlyAccounts();
 
   error BM_AssetCapExceeded();
-
-  error BM_OnlySubAccountOwner();
-
-  error BM_MergeOwnerMismatch();
 
   error BM_UnauthorizedCall();
 
