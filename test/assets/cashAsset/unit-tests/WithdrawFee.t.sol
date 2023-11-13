@@ -56,7 +56,7 @@ contract UNIT_CashAssetWithdrawFee is Test {
     cashAsset.socializeLoss(depositedAmount, accountId);
   }
 
-  function testCanTriggerInsolvency() public {
+  function testCanTriggerInsolvencyOnce() public {
     vm.startPrank(address(auction));
     cashAsset.socializeLoss(depositedAmount, accountId);
     vm.stopPrank();
@@ -65,6 +65,36 @@ contract UNIT_CashAssetWithdrawFee is Test {
 
     // now 1 cash asset = 0.5 stable (USDC)
     assertEq(cashAsset.getCashToStableExchangeRate(), 0.5e18);
+  }
+
+  function testCanTriggerInsolvencyMultipleTimes() public {
+    cashAsset.setSmFee(0.1e18);
+
+    vm.startPrank(address(auction));
+    assertEq(cashAsset.smFeePercentage(), 0.1e18);
+
+    cashAsset.socializeLoss(depositedAmount / 2, accountId);
+    assertEq(cashAsset.smFeePercentage(), 1e18);
+    assertEq(cashAsset.previousSmFeePercentage(), 0.1e18);
+    assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
+
+    cashAsset.socializeLoss(depositedAmount / 2, accountId);
+    assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
+    assertEq(cashAsset.smFeePercentage(), 1e18);
+    assertEq(cashAsset.previousSmFeePercentage(), 0.1e18);
+    vm.stopPrank();
+
+    cashAsset.setSmFee(0.1e18);
+
+    assertEq(cashAsset.temporaryWithdrawFeeEnabled(), true);
+
+    // now 1 cash asset = 0.5 stable (USDC)
+    assertEq(cashAsset.getCashToStableExchangeRate(), 0.5e18);
+
+    usdc.mint(address(cashAsset), depositedAmount);
+    cashAsset.disableWithdrawFee();
+    assertEq(cashAsset.temporaryWithdrawFeeEnabled(), false);
+    assertEq(cashAsset.smFeePercentage(), 0.1e18);
   }
 
   function testFeeIsAppliedToWithdrawAfterEnables() public {
