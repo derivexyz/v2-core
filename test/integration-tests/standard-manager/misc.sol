@@ -49,6 +49,10 @@ contract INTEGRATION_SRM_Example is IntegrationTestBase {
 
     vm.expectRevert(IBaseManager.BM_AdjustmentsPaused.selector);
     _tradeDefaultCall(callId, 1e18);
+
+    vm.prank(alice);
+    vm.expectRevert(IBaseManager.BM_AdjustmentsPaused.selector);
+    cash.withdraw(aliceAcc, 1e6, alice);
   }
 
   ///@dev alice go short, bob go long
