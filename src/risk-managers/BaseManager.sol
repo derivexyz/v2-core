@@ -62,10 +62,9 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   address public guardian;
 
   /**
-   * @dev Whether adjustments are paused or not. Note, this does not pause manager adjustments such as liquidations
-   *      or settlement. This does however block withdrawals, so funds held in this manager cannot exit the system.
+   * @dev If enabled, blocks "handleAdjustment" calls. Note, this does not pause manager adjustments such as
+   * liquidations or settlement. This does however block withdrawals, so funds held in the manager cannot exit.
    */
-
   bool public adjustmentsPaused;
 
   /// @dev minimum OI fee charged, given fee is > 0.
