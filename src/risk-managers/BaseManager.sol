@@ -58,6 +58,12 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   /// @dev account id that receive OI fee
   uint public feeRecipientAcc;
 
+  /// @dev The address of guardian, which can pause and unpause adjustments
+  address public guardian;
+
+  /// @dev Whether adjustments are paused or not
+  bool public adjustmentsPaused;
+
   /// @dev minimum OI fee charged, given fee is > 0.
   uint public minOIFee = 0;
 
@@ -155,6 +161,17 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     emit TrustedRiskAssessorUpdated(riskAssessor, trusted);
   }
 
+  function setGuardian(address _guardian) external onlyOwner {
+    guardian = _guardian;
+    emit GuardianSet(_guardian);
+  }
+
+  function setAdjustmentsPaused(bool _paused) external {
+    if (msg.sender != guardian) revert BM_GuardianOnly();
+    adjustmentsPaused = _paused;
+    emit AdjustmentsPausedSet(_paused);
+  }
+
   //////////////////////
   //   Liquidations   //
   //////////////////////
@@ -229,6 +246,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     ISubAccounts.AssetDelta[] memory assetDeltas,
     bytes calldata managerData
   ) internal {
+    if (adjustmentsPaused) revert BM_AdjustmentsPaused();
     _processManagerData(tradeId, managerData);
     viewer.checkAllAssetCaps(IManager(this), accountId, tradeId);
     _chargeAllOIFee(caller, accountId, tradeId, assetDeltas);
