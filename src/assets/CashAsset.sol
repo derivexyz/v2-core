@@ -429,13 +429,11 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
       ""
     );
 
-    uint exchangeRate = _getExchangeRate();
-    if (temporaryWithdrawFeeEnabled) {
-      emit WithdrawFeeEnabled(exchangeRate);
-      return;
-    }
+    // If the withdrawal fee is already enabled, we don't need to do anything
+    if (temporaryWithdrawFeeEnabled) return;
 
     // check if cash asset is insolvent
+    uint exchangeRate = _getExchangeRate();
     if (exchangeRate < 1e18) {
       temporaryWithdrawFeeEnabled = true;
       previousSmFeePercentage = smFeePercentage;
