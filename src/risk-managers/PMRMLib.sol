@@ -73,8 +73,8 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   function setVolShockParams(IPMRMLib.VolShockParameters memory _volShockParams) external onlyOwner {
     if (
       _volShockParams.volRangeUp > 2e18 //
-        || _volShockParams.volRangeDown > 2e18 || _volShockParams.shortTermPower > 2e18
-        || _volShockParams.longTermPower > 2e18 || _volShockParams.dteFloor > 100 days //
+        || _volShockParams.volRangeDown > 2e18 || _volShockParams.shortTermPower > 0.5e18
+        || _volShockParams.longTermPower > 0.5e18 || _volShockParams.dteFloor > 100 days //
         || _volShockParams.dteFloor < 0.01 days // 864 seconds
     ) {
       revert PMRML_InvalidVolShockParameters();
