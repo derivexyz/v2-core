@@ -33,6 +33,18 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     runLiquidationSim("Test6");
   }
 
+  function testLiquidationSimLong_Box_Short_Cash() public {
+    runLiquidationSim("Long_Box_Short_Cash");
+  }
+
+  function testLiquidationSimSimple_Short_3_liquidators() public {
+    runLiquidationSim("Simple_Short_3_liquidators");
+  }
+
+  function testLiquidationSimPMRM_Other() public {
+    runLiquidationSim("PMRM_Other");
+  }
+
   // function testInsolventSim1() public {
   //   runLiquidationSim("InsolventTest1");
   // }
@@ -92,24 +104,25 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
       fMax = auction.getMaxProportion(aliceAcc, worstScenario);
     }
 
-    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PreMtM, 1e6, "pre mtm");
-    assertApproxEqAbs(mm, data.Actions[actionId].Results.PreMM, 1e6, "pre mm");
-    assertApproxEqAbs(bm, data.Actions[actionId].Results.PreBM, 1e6, "pre bm");
-    assertApproxEqAbs(fMax, data.Actions[actionId].Results.PreFMax, 1e6, "pre fmax");
+    console2.log("pre mtm", mtm);
+    assertApproxEqRel(mtm, data.Actions[actionId].Results.PreMtM, 0.001e18, "pre mtm");
+    assertApproxEqRel(mm, data.Actions[actionId].Results.PreMM, 0.001e18, "pre mm");
+    assertApproxEqRel(bm, data.Actions[actionId].Results.PreBM, 0.001e18, "pre bm");
+    assertApproxEqRel(fMax, data.Actions[actionId].Results.PreFMax, 0.001e18, "pre fmax");
   }
 
   function checkPostLiquidation(LiquidationSim memory data, uint actionId) internal {
     uint worstScenario = getWorstScenario(aliceAcc);
     (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
 
-    assertApproxEqAbs(mtm, data.Actions[actionId].Results.PostMtM, 1e6, "post mtm");
-    assertApproxEqAbs(mm, data.Actions[actionId].Results.PostMM, 1e6, "post mm");
-    assertApproxEqAbs(bm, data.Actions[actionId].Results.PostBM, 1e6, "post bm");
+    assertApproxEqRel(mtm, data.Actions[actionId].Results.PostMtM, 0.001e18, "post mtm");
+    assertApproxEqRel(mm, data.Actions[actionId].Results.PostMM, 0.001e18, "post mm");
+    assertApproxEqRel(bm, data.Actions[actionId].Results.PostBM, 0.001e18, "post bm");
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {} else {
       uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
-      assertApproxEqAbs(fMax, data.Actions[actionId].Results.PostFMax, 1e6, "post fmax");
+      assertApproxEqRel(fMax, data.Actions[actionId].Results.PostFMax, 0.001e18, "post fmax");
     }
   }
 

@@ -50,10 +50,10 @@
       "RateConfidences": [
         1000000000000000000
       ],
-      "StableConfidence": 0,
       "StablePrice": 1000000000000000000,
-      "UnrealisedPerpPNL": 0,
-      "UnrealisedFunding": 0,
+      "StableConfidence": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
       "VolShockUp": [
         1.7370684514926746
       ],
@@ -122,10 +122,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.7370684514926746
           ],
@@ -213,10 +213,10 @@
       "RateConfidences": [
         1000000000000000000
       ],
-      "StableConfidence": 0,
       "StablePrice": 1000000000000000000,
-      "UnrealisedPerpPNL": 0,
-      "UnrealisedFunding": 0,
+      "StableConfidence": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
       "VolShockUp": [
         1.7370684514926746
       ],
@@ -285,10 +285,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.7370684514926746
           ],
@@ -376,10 +376,10 @@
       "RateConfidences": [
         1000000000000000000
       ],
-      "StableConfidence": 0,
       "StablePrice": 1000000000000000000,
-      "UnrealisedPerpPNL": 0,
-      "UnrealisedFunding": 0,
+      "StableConfidence": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
       "VolShockUp": [
         1.7370684514926746
       ],
@@ -402,7 +402,7 @@
         "Time": 30,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            500370
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -434,7 +434,7 @@
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            500370
           ],
           "Forwards": [
             1500833229340328329216
@@ -448,10 +448,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.737081708636119
           ],
@@ -539,10 +539,10 @@
       "RateConfidences": [
         1000000000000000000
       ],
-      "StableConfidence": 0,
       "StablePrice": 1000000000000000000,
-      "UnrealisedPerpPNL": 0,
-      "UnrealisedFunding": 0,
+      "StableConfidence": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
       "VolShockUp": [
         1.7370684514926746
       ],
@@ -565,7 +565,7 @@
         "Time": 30,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            500370
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -597,7 +597,7 @@
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            500370
           ],
           "Forwards": [
             1500833229340328329216
@@ -611,10 +611,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.737081708636119
           ],
@@ -653,7 +653,7 @@
         "Time": 30,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            500370
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -685,7 +685,7 @@
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            500370
           ],
           "Forwards": [
             1500833229340328329216
@@ -699,10 +699,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.737081708636119
           ],
@@ -719,7 +719,7 @@
           ]
         },
         "Liquidator": {
-          "PercentWant": 111111111111111111
+          "PercentWant": 100000000000000000
         },
         "Results": {
           "PreMtM": 118425834278252019712,
@@ -728,7 +728,7 @@
           "PreFMax": 524290585958138816,
           "ExpectedBidPrice": 11047987360634836992,
           "FinalPercentageReceived": 111111111111111120,
-          "fLiquidatedOfOriginal": 111111111111111111,
+          "fLiquidatedOfOriginal": 100000000000000000,
           "PostMtM": 117542949759151603712,
           "PostMM": -60374319541825396736,
           "PostBM": -95957773402020790272,
@@ -790,10 +790,10 @@
       "RateConfidences": [
         1000000000000000000
       ],
-      "StableConfidence": 0,
       "StablePrice": 1000000000000000000,
-      "UnrealisedPerpPNL": 0,
-      "UnrealisedFunding": 0,
+      "StableConfidence": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
       "VolShockUp": [
         1.7370684514926746
       ],
@@ -809,14 +809,14 @@
         1500833279310993817600
       ]
     },
-    "ActionCount": 2,
+    "ActionCount": 3,
     "LiquidationFee": 1.322084630165343,
     "Actions": [
       {
         "Time": 30,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            500370
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -828,7 +828,7 @@
             -1000000000000000000
           ],
           "OptionVols": [
-            1040549342988285696
+            1047884508458193792
           ],
           "SVIparams": [
             1,
@@ -843,15 +843,15 @@
           "Cash": 198677915369834676224,
           "Perps": 0,
           "Base": 0,
-          "SpotPrice": 1530000000000000000000,
+          "SpotPrice": 1500000000000000000000,
           "SpotConfidence": 1000000000000000000,
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            500370
           ],
           "Forwards": [
-            1530849893927134953472
+            1500833229340328329216
           ],
           "ForwardConfidences": [
             1000000000000000000
@@ -862,49 +862,49 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.737081708636119
           ],
           "VolShockDown": [
             0.5086121942425874
           ],
-          "SettlementPrice": 1530849893927134953472,
+          "SettlementPrice": 1500833229340328329216,
           "PercentFixed": 0,
           "ForwardsFixed": [
             0
           ],
           "ForwardsVariable": [
-            1530849893927134953472
+            1500833229340328329216
           ]
         },
         "Liquidator": {
           "PercentWant": 100000000000000000
         },
         "Results": {
-          "PreMtM": 103116914250414571520,
-          "PreMM": -129478717730831056896,
-          "PreBM": -175997844127080185856,
-          "PreFMax": 648280469348716416,
-          "ExpectedBidPrice": 9548626259588390912,
+          "PreMtM": 119308718797352435712,
+          "PreMM": -103087867828868841472,
+          "PreBM": -147567185154113110016,
+          "PreFMax": 571861527362324864,
+          "ExpectedBidPrice": 11047987360634836992,
           "FinalPercentageReceived": 100000000000000000,
           "fLiquidatedOfOriginal": 100000000000000000,
-          "PostMtM": 102353849084961488896,
-          "PostMM": -106982219698159517696,
-          "PostBM": -148849433454783692800,
-          "PostFMax": 609200521498573696,
+          "PostMtM": 118425834278252019712,
+          "PostMM": -81731093685347155968,
+          "PostBM": -121762479278066974720,
+          "PostFMax": 524290585958138816,
           "Lowerbound": 0,
           "SMPayout": 0
         }
       },
       {
-        "Time": 600,
+        "Time": 30,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            500370
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -916,7 +916,7 @@
             -900000000000000000
           ],
           "OptionVols": [
-            1064560547131661312
+            1047884508458193792
           ],
           "SVIparams": [
             1,
@@ -928,18 +928,18 @@
           "OptionVolConfidences": [
             1000000000000000000
           ],
-          "Cash": 188358750092439584768,
+          "Cash": 189858111193486032896,
           "Perps": 0,
           "Base": 0,
-          "SpotPrice": 1450000000000000000000,
+          "SpotPrice": 1500000000000000000000,
           "SpotConfidence": 1000000000000000000,
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            500370
           ],
           "Forwards": [
-            1450804537234727370752
+            1500833229340328329216
           ],
           "ForwardConfidences": [
             1000000000000000000
@@ -950,40 +950,128 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
-            1.7373337908573938
+            1.737081708636119
           ],
           "VolShockDown": [
-            0.508444139428404
+            0.5086121942425874
           ],
-          "SettlementPrice": 1450804537234727370752,
+          "SettlementPrice": 1500833229340328329216,
           "PercentFixed": 0,
           "ForwardsFixed": [
             0
           ],
           "ForwardsVariable": [
-            1450804537234727370752
+            1500833229340328329216
           ]
         },
         "Liquidator": {
-          "PercentWant": 555555555555555555
+          "PercentWant": 100000000000000000
         },
         "Results": {
-          "PreMtM": 137373409208035049472,
-          "PreMM": -46111362020362379264,
-          "PreBM": -82808316266041851904,
-          "PreFMax": 433401449711588160,
-          "ExpectedBidPrice": 42780683484503875584,
-          "FinalPercentageReceived": 390061304740429376,
-          "fLiquidatedOfOriginal": 433401449711588543,
-          "PostMtM": 124754646453613051904,
-          "PostMM": 20792441075602169856,
-          "PostBM": 0,
-          "PostFMax": 0,
+          "PreMtM": 118425834278252019712,
+          "PreMM": -81731093685347155968,
+          "PreBM": -121762479278066974720,
+          "PreFMax": 524290585958138816,
+          "ExpectedBidPrice": 11047987360634836992,
+          "FinalPercentageReceived": 111111111111111120,
+          "fLiquidatedOfOriginal": 100000000000000000,
+          "PostMtM": 117542949759151603712,
+          "PostMM": -60374319541825396736,
+          "PostBM": -95957773402020790272,
+          "PostFMax": 464826909202906112,
+          "Lowerbound": 0,
+          "SMPayout": 0
+        }
+      },
+      {
+        "Time": 30,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            500370
+          ],
+          "OptionStrikes": [
+            1500000000000000000000
+          ],
+          "OptionIsCall": [
+            1
+          ],
+          "OptionAmounts": [
+            -799999999999999872
+          ],
+          "OptionVols": [
+            1047884508458193792
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000
+          ],
+          "Cash": 181038307017137389568,
+          "Perps": 0,
+          "Base": 0,
+          "SpotPrice": 1500000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            500370
+          ],
+          "Forwards": [
+            1500833229340328329216
+          ],
+          "ForwardConfidences": [
+            1000000000000000000
+          ],
+          "Rates": [
+            40000000000000000
+          ],
+          "RateConfidences": [
+            1000000000000000000
+          ],
+          "StablePrice": 1000000000000000000,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
+          "VolShockUp": [
+            1.737081708636119
+          ],
+          "VolShockDown": [
+            0.5086121942425874
+          ],
+          "SettlementPrice": 1500833229340328329216,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0
+          ],
+          "ForwardsVariable": [
+            1500833229340328329216
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 100000000000000000
+        },
+        "Results": {
+          "PreMtM": 117542949759151603712,
+          "PreMM": -60374319541825396736,
+          "PreBM": -95957773402020790272,
+          "PreFMax": 464826909202906112,
+          "ExpectedBidPrice": 11047987360634834944,
+          "FinalPercentageReceived": 125000000000000000,
+          "fLiquidatedOfOriginal": 100000000000000000,
+          "PostMtM": 116660065240051187712,
+          "PostMM": -39017545398303694848,
+          "PostBM": -70153067525974679552,
+          "PostFMax": 388373610517607104,
           "Lowerbound": 0,
           "SMPayout": 0
         }
@@ -1041,10 +1129,10 @@
       "RateConfidences": [
         1000000000000000000
       ],
-      "StableConfidence": 0,
       "StablePrice": 1000000000000000000,
-      "UnrealisedPerpPNL": 0,
-      "UnrealisedFunding": 0,
+      "StableConfidence": 1000000000000000000,
+      "UnrealizedPerpPNL": 0,
+      "UnrealizedFunding": 0,
       "VolShockUp": [
         1.7370684514926746
       ],
@@ -1067,7 +1155,7 @@
         "Time": 30,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            500370
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -1099,7 +1187,7 @@
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            500370
           ],
           "Forwards": [
             1530849893927134953472
@@ -1113,10 +1201,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.737081708636119
           ],
@@ -1155,7 +1243,7 @@
         "Time": 600,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            499800
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -1187,7 +1275,7 @@
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            499800
           ],
           "Forwards": [
             1439798433848808701952
@@ -1201,10 +1289,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.7373337908573938
           ],
@@ -1221,7 +1309,7 @@
           ]
         },
         "Liquidator": {
-          "PercentWant": 222222222222222222
+          "PercentWant": 200000000000000000
         },
         "Results": {
           "PreMtM": 141241828744923119616,
@@ -1229,8 +1317,8 @@
           "PreBM": -74294435474072059904,
           "PreFMax": 400423865535404544,
           "ExpectedBidPrice": 22599203883285839872,
-          "FinalPercentageReceived": 200000000000000000,
-          "fLiquidatedOfOriginal": 222222222222222240,
+          "FinalPercentageReceived": 222222222222222240,
+          "fLiquidatedOfOriginal": 200000000000000000,
           "PostMtM": 134575876520356806656,
           "PostMM": -5123553991954907136,
           "PostBM": -33063440094417244160,
@@ -1243,7 +1331,7 @@
         "Time": 9000,
         "PortfolioAndFeeds": {
           "OptionExpiries": [
-            500400
+            491400
           ],
           "OptionStrikes": [
             1500000000000000000000
@@ -1275,7 +1363,7 @@
           "PerpPrice": 0,
           "PerpConfidence": 1000000000000000000,
           "FeedExpiries": [
-            500400
+            491400
           ],
           "Forwards": [
             1522830289745930354688
@@ -1289,10 +1377,10 @@
           "RateConfidences": [
             1000000000000000000
           ],
-          "StableConfidence": 0,
           "StablePrice": 1000000000000000000,
-          "UnrealisedPerpPNL": 0,
-          "UnrealisedFunding": 0,
+          "StableConfidence": 1000000000000000000,
+          "UnrealizedPerpPNL": 0,
+          "UnrealizedFunding": 0,
           "VolShockUp": [
             1.7410925838661393
           ],
@@ -1309,7 +1397,7 @@
           ]
         },
         "Liquidator": {
-          "PercentWant": 428571428571428608
+          "PercentWant": 300000000000000000
         },
         "Results": {
           "PreMtM": 107989712946571624448,
@@ -1317,8 +1405,8 @@
           "PreBM": -85098725556266106880,
           "PreFMax": 606027945856190080,
           "ExpectedBidPrice": 9931675129055612928,
-          "FinalPercentageReceived": 300000000000000000,
-          "fLiquidatedOfOriginal": 428571428571428608,
+          "FinalPercentageReceived": 428571428571428608,
+          "fLiquidatedOfOriginal": 300000000000000000,
           "PostMtM": 85417724016899784704,
           "PostMM": -6529151460641997824,
           "PostBM": -24918526556150353920,
@@ -1739,6 +1827,1237 @@
           "Lowerbound": -325872717274087686144,
           "FinalPercentageReceived": 1000000000000000000,
           "fLiquidatedOfOriginal": 0
+        }
+      }
+    ]
+  },
+  "Long_Box_Short_Cash": {
+    "StartTime": 0,
+    "IsForce": false,
+    "InitialPortfolio": {
+      "OptionExpiries": [
+        7758000,
+        7758000,
+        7758000,
+        7758000
+      ],
+      "OptionStrikes": [
+        1500000000000000000000,
+        2500000000000000000000,
+        1500000000000000000000,
+        2500000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "OptionAmounts": [
+        1000000000000000000,
+        -1000000000000000000,
+        -1000000000000000000,
+        1000000000000000000
+      ],
+      "OptionVols": [
+        1044583332004474880,
+        1322452025352536064,
+        1044583332004474880,
+        1322452025352536064
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": -950000000000000000000,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        7758000,
+        7758000,
+        7758000,
+        7758000
+      ],
+      "Forwards": [
+        1512971000787409567744,
+        1512971000787409567744,
+        1512971000787409567744,
+        1512971000787409567744
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StableConfidence": 0,
+      "StablePrice": 1000000000000000000,
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0,
+      "VolShockUp": [
+        1.3902272493224166,
+        1.3902272493224166,
+        1.3902272493224166,
+        1.3902272493224166
+      ],
+      "VolShockDown": [
+        0.7398485004517223,
+        0.7398485004517223,
+        0.7398485004517223,
+        0.7398485004517223
+      ],
+      "SettlementPrice": 1512971000787409567744,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1512971000787409567744,
+        1512971000787409567744,
+        1512971000787409567744,
+        1512971000787409567744
+      ]
+    },
+    "ActionCount": 1,
+    "LiquidationFee": 0.3237428736252539,
+    "Actions": [
+      {
+        "Time": 30,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            7757970,
+            7757970,
+            7757970,
+            7757970
+          ],
+          "OptionStrikes": [
+            1500000000000000000000,
+            2500000000000000000000,
+            1500000000000000000000,
+            2500000000000000000000
+          ],
+          "OptionIsCall": [
+            1,
+            1,
+            0,
+            0
+          ],
+          "OptionAmounts": [
+            1000000000000000000,
+            -1000000000000000000,
+            -1000000000000000000,
+            1000000000000000000
+          ],
+          "OptionVols": [
+            1044583344857694720,
+            1322452042270033152,
+            1044583344857694720,
+            1322452042270033152
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Cash": -950323742873625296896,
+          "Perps": 0,
+          "Base": 0,
+          "SpotPrice": 1500000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            7757970,
+            7757970,
+            7757970,
+            7757970
+          ],
+          "Forwards": [
+            1512970950412615024640,
+            1512970950412615024640,
+            1512970950412615024640,
+            1512970950412615024640
+          ],
+          "ForwardConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Rates": [
+            70000000000000008,
+            70000000000000008,
+            70000000000000008,
+            70000000000000008
+          ],
+          "RateConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "StableConfidence": 0,
+          "StablePrice": 1000000000000000000,
+          "UnrealisedPerpPNL": 0,
+          "UnrealisedFunding": 0,
+          "VolShockUp": [
+            1.3902274454927692,
+            1.3902274454927692,
+            1.3902274454927692,
+            1.3902274454927692
+          ],
+          "VolShockDown": [
+            0.7398483696714871,
+            0.7398483696714871,
+            0.7398483696714871,
+            0.7398483696714871
+          ],
+          "SettlementPrice": 1512970950412615024640,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "ForwardsVariable": [
+            1512970950412615024640,
+            1512970950412615024640,
+            1512970950412615024640,
+            1512970950412615024640
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 1000000000000000000
+        },
+        "Results": {
+          "PreMtM": 49676257126374711296,
+          "PreMM": -74398461842264735744,
+          "PreBM": -99213405635992616960,
+          "PreFMax": 683223831325438208,
+          "ExpectedBidPrice": 31428442518524915712,
+          "FinalPercentageReceived": 683223831325438208,
+          "fLiquidatedOfOriginal": 683223831325438208,
+          "PostMtM": 47164696925110321152,
+          "PostMM": 7860782820851682304,
+          "PostBM": -42632,
+          "PostFMax": 926,
+          "Lowerbound": 0,
+          "SMPayout": 0
+        }
+      }
+    ]
+  },
+  "Simple_Short_3_liquidators": {
+    "StartTime": 0,
+    "IsForce": false,
+    "InitialPortfolio": {
+      "OptionExpiries": [
+        500400
+      ],
+      "OptionStrikes": [
+        1500000000000000000000
+      ],
+      "OptionIsCall": [
+        1
+      ],
+      "OptionAmounts": [
+        -1000000000000000000
+      ],
+      "OptionVols": [
+        1047884494084986240
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000
+      ],
+      "Cash": 200000000000000000000,
+      "Perps": 0,
+      "Base": 0,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        500400
+      ],
+      "Forwards": [
+        1500833279310993817600
+      ],
+      "ForwardConfidences": [
+        1000000000000000000
+      ],
+      "Rates": [
+        0
+      ],
+      "RateConfidences": [
+        1000000000000000000
+      ],
+      "StableConfidence": 0,
+      "StablePrice": 1000000000000000000,
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0,
+      "VolShockUp": [
+        1.7370684514926746
+      ],
+      "VolShockDown": [
+        0.508621032338217
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0
+      ],
+      "ForwardsVariable": [
+        1500833279310993817600
+      ]
+    },
+    "ActionCount": 3,
+    "LiquidationFee": 1.322084630165343,
+    "Actions": [
+      {
+        "Time": 30,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            500370
+          ],
+          "OptionStrikes": [
+            1500000000000000000000
+          ],
+          "OptionIsCall": [
+            1
+          ],
+          "OptionAmounts": [
+            -1000000000000000000
+          ],
+          "OptionVols": [
+            1047884508458193792
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000
+          ],
+          "Cash": 198677915369834676224,
+          "Perps": 0,
+          "Base": 0,
+          "SpotPrice": 1500000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            500370
+          ],
+          "Forwards": [
+            1500833229340328329216
+          ],
+          "ForwardConfidences": [
+            1000000000000000000
+          ],
+          "Rates": [
+            40000000000000000
+          ],
+          "RateConfidences": [
+            1000000000000000000
+          ],
+          "StableConfidence": 0,
+          "StablePrice": 1000000000000000000,
+          "UnrealisedPerpPNL": 0,
+          "UnrealisedFunding": 0,
+          "VolShockUp": [
+            1.737081708636119
+          ],
+          "VolShockDown": [
+            0.5086121942425874
+          ],
+          "SettlementPrice": 1500833229340328329216,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0
+          ],
+          "ForwardsVariable": [
+            1500833229340328329216
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 190620509120774976
+        },
+        "Results": {
+          "PreMtM": 119308718797352435712,
+          "PreMM": -103087867828868841472,
+          "PreBM": -147567185154113110016,
+          "PreFMax": 571861527362324864,
+          "ExpectedBidPrice": 21059729754440994816,
+          "FinalPercentageReceived": 190620509120774976,
+          "fLiquidatedOfOriginal": 190620509120774976,
+          "PostMtM": 117625759832094736384,
+          "PostMM": -62377476224713719808,
+          "PostBM": -98378123436075417600,
+          "PostFMax": 471028760349993216,
+          "Lowerbound": 0,
+          "SMPayout": 0
+        }
+      },
+      {
+        "Time": 30,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            500370
+          ],
+          "OptionStrikes": [
+            1500000000000000000000
+          ],
+          "OptionIsCall": [
+            1
+          ],
+          "OptionAmounts": [
+            -809379490879224960
+          ],
+          "OptionVols": [
+            1047884508458193792
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000
+          ],
+          "Cash": 181865559745423540224,
+          "Perps": 0,
+          "Base": 0,
+          "SpotPrice": 1500000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            500370
+          ],
+          "Forwards": [
+            1500833229340328329216
+          ],
+          "ForwardConfidences": [
+            1000000000000000000
+          ],
+          "Rates": [
+            40000000000000000
+          ],
+          "RateConfidences": [
+            1000000000000000000
+          ],
+          "StableConfidence": 0,
+          "StablePrice": 1000000000000000000,
+          "UnrealisedPerpPNL": 0,
+          "UnrealisedFunding": 0,
+          "VolShockUp": [
+            1.737081708636119
+          ],
+          "VolShockDown": [
+            0.5086121942425874
+          ],
+          "SettlementPrice": 1500833229340328329216,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0
+          ],
+          "ForwardsVariable": [
+            1500833229340328329216
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 190620509120774976
+        },
+        "Results": {
+          "PreMtM": 117625759832094736384,
+          "PreMM": -62377476224713719808,
+          "PreBM": -98378123436075417600,
+          "PreFMax": 471028760349993216,
+          "ExpectedBidPrice": 21059729754440994816,
+          "FinalPercentageReceived": 235514380174996576,
+          "fLiquidatedOfOriginal": 190620509120774976,
+          "PostMtM": 115942800866837053440,
+          "PostMM": -21667084620558540800,
+          "PostBM": -49189061718037659648,
+          "PostFMax": 308069078171682880,
+          "Lowerbound": 0,
+          "SMPayout": 0
+        }
+      },
+      {
+        "Time": 30,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            500370
+          ],
+          "OptionStrikes": [
+            1500000000000000000000
+          ],
+          "OptionIsCall": [
+            1
+          ],
+          "OptionAmounts": [
+            -618758981758450048
+          ],
+          "OptionVols": [
+            1047884508458193792
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000
+          ],
+          "Cash": 165053204121012404224,
+          "Perps": 0,
+          "Base": 0,
+          "SpotPrice": 1500000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            500370
+          ],
+          "Forwards": [
+            1500833229340328329216
+          ],
+          "ForwardConfidences": [
+            1000000000000000000
+          ],
+          "Rates": [
+            40000000000000000
+          ],
+          "RateConfidences": [
+            1000000000000000000
+          ],
+          "StableConfidence": 0,
+          "StablePrice": 1000000000000000000,
+          "UnrealisedPerpPNL": 0,
+          "UnrealisedFunding": 0,
+          "VolShockUp": [
+            1.737081708636119
+          ],
+          "VolShockDown": [
+            0.5086121942425874
+          ],
+          "SettlementPrice": 1500833229340328329216,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0
+          ],
+          "ForwardsVariable": [
+            1500833229340328329216
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 190620509120774976
+        },
+        "Results": {
+          "PreMtM": 115942800866837053440,
+          "PreMM": -21667084620558540800,
+          "PreBM": -49189061718037659648,
+          "PreFMax": 308069078171682880,
+          "ExpectedBidPrice": 21059729754440986624,
+          "FinalPercentageReceived": 308069078171682880,
+          "fLiquidatedOfOriginal": 190620509120774816,
+          "PostMtM": 114259841901579370496,
+          "PostMM": 19043306983596552192,
+          "PostBM": -14210,
+          "PostFMax": 128,
+          "Lowerbound": 0,
+          "SMPayout": 0
+        }
+      }
+    ]
+  },
+  "PMRM_Other": {
+    "StartTime": 0,
+    "IsForce": false,
+    "InitialPortfolio": {
+      "OptionExpiries": [
+        1191600,
+        500400,
+        7758000,
+        500400,
+        2487600,
+        1191600
+      ],
+      "OptionStrikes": [
+        1600000000000000000000,
+        1200000000000000000000,
+        1900000000000000000000,
+        1150000000000000000000,
+        1550000000000000000000,
+        1000000000000000000000
+      ],
+      "OptionIsCall": [
+        1,
+        0,
+        1,
+        0,
+        1,
+        1
+      ],
+      "OptionAmounts": [
+        -1000000000000000000,
+        -21000000000000000000,
+        -3000000000000000000,
+        7000000000000000000,
+        -2000000000000000000,
+        -1600000000000000000
+      ],
+      "OptionVols": [
+        1081048412239005184,
+        1138939398828297472,
+        1175456212663501056,
+        1168496420216719616,
+        1062799243592622592,
+        1262509093212846848
+      ],
+      "SVIparams": [
+        1,
+        1.5,
+        -0.1,
+        -0.05,
+        0.05
+      ],
+      "OptionVolConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Cash": -4200000000000000000000,
+      "Perps": 0,
+      "Base": 5000000000000000000,
+      "SpotPrice": 1500000000000000000000,
+      "SpotConfidence": 1000000000000000000,
+      "PerpPrice": 1505000000000000000000,
+      "PerpConfidence": 1000000000000000000,
+      "FeedExpiries": [
+        1191600,
+        500400,
+        7758000,
+        500400,
+        2487600,
+        1191600
+      ],
+      "Forwards": [
+        1501985045187195830272,
+        1500833279310993817600,
+        1512971000787409567744,
+        1500833279310993817600,
+        1504146989085687808000,
+        1501985045187195830272
+      ],
+      "ForwardConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "Rates": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "RateConfidences": [
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000,
+        1000000000000000000
+      ],
+      "StableConfidence": 0,
+      "StablePrice": 1000000000000000000,
+      "UnrealisedPerpPNL": 0,
+      "UnrealisedFunding": 0,
+      "VolShockUp": [
+        1.5681511166375728,
+        1.7370684514926746,
+        1.3902272493224166,
+        1.7370684514926746,
+        1.4555844040146944,
+        1.5681511166375728
+      ],
+      "VolShockDown": [
+        0.6212325889082848,
+        0.508621032338217,
+        0.7398485004517223,
+        0.508621032338217,
+        0.6962770639902038,
+        0.6212325889082848
+      ],
+      "SettlementPrice": 1500833279310993817600,
+      "PercentFixed": 0,
+      "ForwardsFixed": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "ForwardsVariable": [
+        1501985045187195830272,
+        1500833279310993817600,
+        1512971000787409567744,
+        1500833279310993817600,
+        1504146989085687808000,
+        1501985045187195830272
+      ]
+    },
+    "ActionCount": 3,
+    "LiquidationFee": 15.6941169723226,
+    "Actions": [
+      {
+        "Time": 1,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            1191599,
+            500399,
+            7757999,
+            500399,
+            2487599,
+            1191599
+          ],
+          "OptionStrikes": [
+            1600000000000000000000,
+            1200000000000000000000,
+            1900000000000000000000,
+            1150000000000000000000,
+            1550000000000000000000,
+            1000000000000000000000
+          ],
+          "OptionIsCall": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            1
+          ],
+          "OptionAmounts": [
+            -1000000000000000000,
+            -21000000000000000000,
+            -3000000000000000000,
+            7000000000000000000,
+            -2000000000000000000,
+            -1600000000000000000
+          ],
+          "OptionVols": [
+            1077307287018514688,
+            1143578187182830720,
+            1171703284439064064,
+            1173072277125157120,
+            1059335143046964608,
+            1266806217053655296
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Cash": -4215694116972322095104,
+          "Perps": 0,
+          "Base": 5000000000000000000,
+          "SpotPrice": 1510000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            1191599,
+            500399,
+            7757999,
+            500399,
+            2487599,
+            1191599
+          ],
+          "Forwards": [
+            1511998277143696769024,
+            1510838832829607444480,
+            1523057472435638239232,
+            1510838832829607444480,
+            1514174633999096872960,
+            1511998277143696769024
+          ],
+          "ForwardConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Rates": [
+            50000000000000000,
+            40000000000000000,
+            70000000000000008,
+            40000000000000000,
+            60000000000000000,
+            50000000000000000
+          ],
+          "RateConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "StableConfidence": 0,
+          "StablePrice": 1000000000000000000,
+          "UnrealisedPerpPNL": 0,
+          "UnrealisedFunding": 0,
+          "VolShockUp": [
+            1.5681512596767035,
+            1.7370688933808094,
+            1.3902272558614146,
+            1.7370688933808094,
+            1.4555844589573526,
+            1.5681512596767035
+          ],
+          "VolShockDown": [
+            0.6212324935488645,
+            0.5086207377461271,
+            0.7398484960923903,
+            0.5086207377461271,
+            0.6962770273617649,
+            0.6212324935488645
+          ],
+          "SettlementPrice": 1510838832829607444480,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "ForwardsVariable": [
+            1511998277143696769024,
+            1510838832829607444480,
+            1523057472435638239232,
+            1510838832829607444480,
+            1514174633999096872960,
+            1511998277143696769024
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 200000000000000000
+        },
+        "Results": {
+          "PreMtM": 1320588088479097552896,
+          "PreMM": -1361157908172672335872,
+          "PreBM": -1897507107503025946624,
+          "PreFMax": 594959180462664448,
+          "ExpectedBidPrice": 258359853630050664448,
+          "FinalPercentageReceived": 200000000000000000,
+          "fLiquidatedOfOriginal": 200000000000000000,
+          "PostMtM": 1314830324413328523264,
+          "PostMM": -830566472908087230464,
+          "PostBM": -1259645832372370538496,
+          "PostFMax": 493698975578330752,
+          "Lowerbound": 0,
+          "SMPayout": 0
+        }
+      },
+      {
+        "Time": 300,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            1191300,
+            500100,
+            7757700,
+            500100,
+            2487300,
+            1191300
+          ],
+          "OptionStrikes": [
+            1600000000000000000000,
+            1200000000000000000000,
+            1900000000000000000000,
+            1150000000000000000000,
+            1550000000000000000000,
+            1000000000000000000000
+          ],
+          "OptionIsCall": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            1
+          ],
+          "OptionAmounts": [
+            -800000000000000000,
+            -16800000000000000000,
+            -2400000000000000512,
+            5600000000000001024,
+            -1600000000000000000,
+            -1280000000000000256
+          ],
+          "OptionVols": [
+            1073625031002286976,
+            1148178475668307328,
+            1167966725683237376,
+            1177605942516402432,
+            1055994002402481024,
+            1271061686714528000
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Cash": -3114195439947807195136,
+          "Perps": 0,
+          "Base": 4000000000000000000,
+          "SpotPrice": 1520000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            1191300,
+            500100,
+            7757700,
+            500100,
+            2487300,
+            1191300
+          ],
+          "Forwards": [
+            1522011005698423914496,
+            1520843883332469784576,
+            1533143437000065679360,
+            1520843883332469784576,
+            1524201774786140176384,
+            1522011005698423914496
+          ],
+          "ForwardConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Rates": [
+            50000000000000000,
+            40000000000000000,
+            70000000000000008,
+            40000000000000000,
+            60000000000000000,
+            50000000000000000
+          ],
+          "RateConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "StableConfidence": 0,
+          "StablePrice": 1000000000000000000,
+          "UnrealisedPerpPNL": 0,
+          "UnrealisedFunding": 0,
+          "VolShockUp": [
+            1.5681940353769965,
+            1.7372010694442017,
+            1.3902292110645202,
+            1.7372010694442017,
+            1.455600888100079,
+            1.5681940353769965
+          ],
+          "VolShockDown": [
+            0.6212039764153356,
+            0.5085326203705323,
+            0.7398471926236532,
+            0.5085326203705323,
+            0.6962660745999473,
+            0.6212039764153356
+          ],
+          "SettlementPrice": 1520843883332469784576,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "ForwardsVariable": [
+            1522011005698423914496,
+            1520843883332469784576,
+            1533143437000065679360,
+            1520843883332469784576,
+            1524201774786140176384,
+            1522011005698423914496
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 100000000000000000
+        },
+        "Results": {
+          "PreMtM": 1328127711998475239424,
+          "PreMM": -791807002400099401728,
+          "PreBM": -1215793945279814172672,
+          "PreFMax": 524482767533124608,
+          "ExpectedBidPrice": 105490997144664113152,
+          "FinalPercentageReceived": 125000000000000000,
+          "fLiquidatedOfOriginal": 100000000000000000,
+          "PostMtM": 1299897726847086755840,
+          "PostMM": -555045148251666448384,
+          "PostBM": -926033723271416905728,
+          "PostFMax": 456551734323570880,
+          "Lowerbound": 0,
+          "SMPayout": 0
+        }
+      },
+      {
+        "Time": 8000,
+        "PortfolioAndFeeds": {
+          "OptionExpiries": [
+            1183600,
+            492400,
+            7750000,
+            492400,
+            2479600,
+            1183600
+          ],
+          "OptionStrikes": [
+            1600000000000000000000,
+            1200000000000000000000,
+            1900000000000000000000,
+            1150000000000000000000,
+            1550000000000000000000,
+            1000000000000000000000
+          ],
+          "OptionIsCall": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            1
+          ],
+          "OptionAmounts": [
+            -700000000000000128,
+            -14700000000000002048,
+            -2100000000000000512,
+            4900000000000000000,
+            -1400000000000000256,
+            -1120000000000000128
+          ],
+          "OptionVols": [
+            1092574198714486144,
+            1124794262461757312,
+            1186817279412732672,
+            1154508913406808832,
+            1073774576826392448,
+            1249356163864710912
+          ],
+          "SVIparams": [
+            1,
+            1.5,
+            -0.1,
+            -0.05,
+            0.05
+          ],
+          "OptionVolConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Cash": -2587135031105910996992,
+          "Perps": 0,
+          "Base": 3500000000000000000,
+          "SpotPrice": 1470000000000000000000,
+          "SpotConfidence": 1000000000000000000,
+          "PerpPrice": 0,
+          "PerpConfidence": 1000000000000000000,
+          "FeedExpiries": [
+            1183600,
+            492400,
+            7750000,
+            492400,
+            2479600,
+            1183600
+          ],
+          "Forwards": [
+            1471932275318880206848,
+            1470803554781864656896,
+            1482698416216880447488,
+            1470803554781864656896,
+            1474050961528051204096,
+            1471932275318880206848
+          ],
+          "ForwardConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "Rates": [
+            50000000000000000,
+            40000000000000000,
+            70000000000000008,
+            40000000000000000,
+            60000000000000000,
+            50000000000000000
+          ],
+          "RateConfidences": [
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000,
+            1000000000000000000
+          ],
+          "StableConfidence": 0,
+          "StablePrice": 1000000000000000000,
+          "UnrealisedPerpPNL": 0,
+          "UnrealisedFunding": 0,
+          "VolShockUp": [
+            1.5693004485466155,
+            1.7406407439213831,
+            1.390279591802785,
+            1.7406407439213831,
+            1.4560248662409134,
+            1.5693004485466155
+          ],
+          "VolShockDown": [
+            0.6204663676355897,
+            0.5062395040524114,
+            0.7398136054648099,
+            0.5062395040524114,
+            0.6959834225060578,
+            0.6204663676355897
+          ],
+          "SettlementPrice": 1470803554781864656896,
+          "PercentFixed": 0,
+          "ForwardsFixed": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "ForwardsVariable": [
+            1471932275318880206848,
+            1470803554781864656896,
+            1482698416216880447488,
+            1470803554781864656896,
+            1474050961528051204096,
+            1471932275318880206848
+          ]
+        },
+        "Liquidator": {
+          "PercentWant": 990000000000000000
+        },
+        "Results": {
+          "PreMtM": 1238413245736269381632,
+          "PreMM": -724848959009338163200,
+          "PreBM": -1117501399958459383808,
+          "PreFMax": 621812965979813888,
+          "ExpectedBidPrice": 196377363269191630848,
+          "FinalPercentageReceived": 621812965979813888,
+          "fLiquidatedOfOriginal": 435269076185869696,
+          "PostMtM": 890976372260007051264,
+          "PostMM": 148496062043334508544,
+          "PostBM": 0,
+          "PostFMax": 0,
+          "Lowerbound": 0,
+          "SMPayout": 0
         }
       }
     ]
