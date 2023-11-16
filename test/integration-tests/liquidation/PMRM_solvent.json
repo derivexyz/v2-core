@@ -1378,7 +1378,7 @@
       }
     ]
   },
-  "Long_Box_Short_Cash": {
+  "test_Nov_01_long_box_neg_cash": {
     "StartTime": 0,
     "IsForce": false,
     "InitialPortfolio": {
@@ -1627,7 +1627,7 @@
       }
     ]
   },
-  "liqs_same_price_same_amount": {
+  "test_Nov_02_3_liqs_same_price_same_amount": {
     "StartTime": 0,
     "IsForce": false,
     "InitialPortfolio": {
@@ -1956,7 +1956,7 @@
       }
     ]
   },
-  "perp": {
+  "test_Nov_03_perp": {
     "StartTime": 0,
     "IsForce": false,
     "InitialPortfolio": {
