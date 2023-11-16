@@ -242,6 +242,7 @@ contract LiquidationSimBase is PMRMTestBase {
         subId: 0,
         balance: data.InitialPortfolio.BasePosition
       });
+      
     }
 
     setBalances(aliceAcc, balances);

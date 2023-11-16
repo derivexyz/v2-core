@@ -88,6 +88,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
   function runLiquidationSim(string memory fileName, string memory testName) internal {
     LiquidationSim memory data = LiquidationSimBase.getTestData(fileName, testName);
     setupTestScenario(data);
+    
 
     vm.warp(data.StartTime);
     startAuction();
@@ -148,6 +149,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
 
     assertApproxEqRel(mtm, data.Actions[actionId].Results.PostMtM, 0.001e18, "post mtm");
     assertApproxEqRel(mm, data.Actions[actionId].Results.PostMM, 0.001e18, "post mm");
+
     if (data.Actions[actionId].Results.PostBM == 0) {
       assertGt(bm, 0, "post bm");
     } else {
@@ -171,6 +173,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
         worstScenario = i;
       }
     }
+    console2.log("worst scenario", worstScenario);
   }
 
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {
