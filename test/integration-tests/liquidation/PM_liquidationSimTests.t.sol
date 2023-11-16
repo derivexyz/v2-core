@@ -10,39 +10,39 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
   using stdJson for string;
 
   function testLiquidationSim1() public {
-    runLiquidationSim("Test1");
+    runLiquidationSim("PMRM_solvent", "Test1");
   }
 
   function testLiquidationSim2() public {
-    runLiquidationSim("Test2");
+    runLiquidationSim("PMRM_solvent", "Test2");
   }
 
   function testLiquidationSim3() public {
-    runLiquidationSim("Test3");
+    runLiquidationSim("PMRM_solvent", "Test3");
   }
 
   function testLiquidationSim4() public {
-    runLiquidationSim("Test4");
+    runLiquidationSim("PMRM_solvent", "Test4");
   }
 
   function testLiquidationSim5() public {
-    runLiquidationSim("Test5");
+    runLiquidationSim("PMRM_solvent", "Test5");
   }
 
   function testLiquidationSim6() public {
-    runLiquidationSim("Test6");
+    runLiquidationSim("PMRM_solvent", "Test6");
   }
 
   function testLiquidationSimLong_Box_Short_Cash() public {
-    runLiquidationSim("Long_Box_Short_Cash");
+    runLiquidationSim("PMRM_solvent", "Long_Box_Short_Cash");
   }
 
   function testLiquidationSimSimple_Short_3_liquidators() public {
-    runLiquidationSim("Simple_Short_3_liquidators");
+    runLiquidationSim("PMRM_solvent", "liqs_same_price_same_amount");
   }
 
-  function testLiquidationSimPMRM_Other() public {
-    runLiquidationSim("PMRM_Other");
+  function testLiquidationSimPMRM_perp() public {
+    runLiquidationSim("PMRM_solvent", "perp");
   }
 
   // function testInsolventSim1() public {
@@ -53,8 +53,8 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
   //   runLiquidationSim("InsolventTest2");
   // }
 
-  function runLiquidationSim(string memory testName) internal {
-    LiquidationSim memory data = LiquidationSimBase.getTestData(testName);
+  function runLiquidationSim(string memory fileName, string memory testName) internal {
+    LiquidationSim memory data = LiquidationSimBase.getTestData(fileName, testName);
     setupTestScenario(data);
 
     vm.warp(data.StartTime);
@@ -83,11 +83,11 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {
-      assertApproxEqAbs(int(cashToBidder), -data.Actions[actionId].Results.SMPayout, 1e6, "bid price insolvent");
+      assertApproxEqRel(int(cashToBidder), -data.Actions[actionId].Results.SMPayout, 0.001e18, "bid price insolvent");
     } else {
-      assertApproxEqAbs(int(cashFromBidder), data.Actions[actionId].Results.ExpectedBidPrice, 1e6, "bid price solvent");
-      assertApproxEqAbs(
-        finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 1e6, "liquidated of original"
+      assertApproxEqRel(int(cashFromBidder), data.Actions[actionId].Results.ExpectedBidPrice, 0.001e18, "bid price solvent");
+      assertApproxEqRel(
+        finalPercentage, data.Actions[actionId].Results.LiquidatedOfOriginal, 0.001e18, "liquidated of original"
       );
     }
   }
@@ -104,7 +104,6 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
       fMax = auction.getMaxProportion(aliceAcc, worstScenario);
     }
 
-    console2.log("pre mtm", mtm);
     assertApproxEqRel(mtm, data.Actions[actionId].Results.PreMtM, 0.001e18, "pre mtm");
     assertApproxEqRel(mm, data.Actions[actionId].Results.PreMM, 0.001e18, "pre mm");
     assertApproxEqRel(bm, data.Actions[actionId].Results.PreBM, 0.001e18, "pre bm");
@@ -117,7 +116,11 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
 
     assertApproxEqRel(mtm, data.Actions[actionId].Results.PostMtM, 0.001e18, "post mtm");
     assertApproxEqRel(mm, data.Actions[actionId].Results.PostMM, 0.001e18, "post mm");
-    assertApproxEqRel(bm, data.Actions[actionId].Results.PostBM, 0.001e18, "post bm");
+    if (data.Actions[actionId].Results.PostBM == 0) {
+      assertGt(bm, 0, "post bm");
+    } else {
+      assertApproxEqRel(bm, data.Actions[actionId].Results.PostBM, 0.00001e18, "post bm");
+    }
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {} else {

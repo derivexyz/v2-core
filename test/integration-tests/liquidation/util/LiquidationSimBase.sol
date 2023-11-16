@@ -6,6 +6,12 @@ import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 
+contract TempReader {
+  function readInt(string memory json, string memory location) external pure returns (int) {
+    return stdJson.readInt(json, location);
+  }
+}
+
 contract LiquidationSimBase is PMRMTestBase {
   using stdJson for string;
 
@@ -66,13 +72,17 @@ contract LiquidationSimBase is PMRMTestBase {
     int PostBM;
     uint PostFMax;
     int SMPayout;
-    int LowerBound;
   }
-  //    uint PostFMax;
 
-  function getTestData(string memory testName) internal view returns (LiquidationSim memory sim) {
+  TempReader t;
+
+  constructor() {
+    t = new TempReader();
+  }
+
+  function getTestData(string memory fileName, string memory testName) internal view returns (LiquidationSim memory sim) {
     testName = string.concat(".", testName);
-    string memory json = JsonMechIO.jsonFromRelPath("/test/integration-tests/liquidation/liquidationTests.json");
+    string memory json = JsonMechIO.jsonFromRelPath(string.concat("/test/integration-tests/liquidation/", fileName, ".json"));
     sim.StartTime = json.readUint(string.concat(testName, ".StartTime"));
     sim.IsForce = json.readBool(string.concat(testName, ".IsForce"));
     sim.InitialPortfolio.Cash = json.readInt(string.concat(testName, ".InitialPortfolio.Cash"));
@@ -86,8 +96,8 @@ contract LiquidationSimBase is PMRMTestBase {
 
     sim.InitialPortfolio.initialFeeds.StablePrice =
       json.readUint(string.concat(testName, ".InitialPortfolio.StablePrice"));
-    sim.InitialPortfolio.initialFeeds.StableConfidence =
-      json.readUint(string.concat(testName, ".InitialPortfolio.StableConfidence"));
+    // TODO: no stable confidence
+    sim.InitialPortfolio.initialFeeds.StableConfidence = 1e18;
     sim.InitialPortfolio.initialFeeds.SpotPrice = json.readUint(string.concat(testName, ".InitialPortfolio.SpotPrice"));
     sim.InitialPortfolio.initialFeeds.SpotConfidence =
       json.readUint(string.concat(testName, ".InitialPortfolio.SpotConfidence"));
@@ -118,7 +128,7 @@ contract LiquidationSimBase is PMRMTestBase {
 
   function getActionData(string memory json, string memory testName, uint actionNum)
     internal
-    pure
+    view
     returns (LiquidationAction memory action)
   {
     // E.g. Test1.Actions[0]
@@ -127,7 +137,8 @@ contract LiquidationSimBase is PMRMTestBase {
 
     action.Time = json.readUint(string.concat(baseActionIndex, ".Time"));
     action.Feeds.StablePrice = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.StablePrice"));
-    action.Feeds.StableConfidence = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.StableConfidence"));
+    // TODO: no stable confidence
+    action.Feeds.StableConfidence = 1e18;
     action.Feeds.SpotPrice = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.SpotPrice"));
     action.Feeds.SpotConfidence = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.SpotConfidence"));
     action.Feeds.FeedExpiries = json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.FeedExpiries"));
@@ -156,10 +167,18 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.PostMM = json.readInt(string.concat(baseActionIndex, ".Results.PostMM"));
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));
     action.Results.PostFMax = json.readUint(string.concat(baseActionIndex, ".Results.PostFMax"));
-    action.Results.LowerBound = json.readInt(string.concat(baseActionIndex, ".Results.Lowerbound"));
-    action.Results.SMPayout = json.readInt(string.concat(baseActionIndex, ".Results.SMPayout"));
+
+    action.Results.SMPayout = getSMPayout(json, string.concat(baseActionIndex, ".Results.SMPayout"));
 
     return action;
+  }
+
+  function getSMPayout(string memory json, string memory location) internal view returns (int) {
+    try t.readInt(json, location) returns (int payout) {
+      return payout;
+    } catch {
+      return 0;
+    }
   }
 
   function lookupNum(uint num) internal pure returns (string memory) {
