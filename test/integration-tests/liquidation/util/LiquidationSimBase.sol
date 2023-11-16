@@ -65,7 +65,7 @@ contract LiquidationSimBase is PMRMTestBase {
     int PreBM;
     uint PreFMax;
     int ExpectedBidPrice;
-    uint FinalPercentageReceived;
+//    uint FinalPercentageReceived;
     uint LiquidatedOfOriginal;
     int PostMtM;
     int PostMM;
@@ -157,27 +157,25 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.PreMtM = json.readInt(string.concat(baseActionIndex, ".Results.PreMtM"));
     action.Results.PreMM = json.readInt(string.concat(baseActionIndex, ".Results.PreMM"));
     action.Results.PreBM = json.readInt(string.concat(baseActionIndex, ".Results.PreBM"));
-    action.Results.PreFMax = json.readUint(string.concat(baseActionIndex, ".Results.PreFMax"));
-    action.Results.ExpectedBidPrice = json.readInt(string.concat(baseActionIndex, ".Results.ExpectedBidPrice"));
-    action.Results.FinalPercentageReceived =
-      json.readUint(string.concat(baseActionIndex, ".Results.FinalPercentageReceived"));
-    action.Results.LiquidatedOfOriginal =
-      json.readUint(string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"));
     action.Results.PostMtM = json.readInt(string.concat(baseActionIndex, ".Results.PostMtM"));
     action.Results.PostMM = json.readInt(string.concat(baseActionIndex, ".Results.PostMM"));
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));
-    action.Results.PostFMax = json.readUint(string.concat(baseActionIndex, ".Results.PostFMax"));
 
-    action.Results.SMPayout = getSMPayout(json, string.concat(baseActionIndex, ".Results.SMPayout"));
+    // Ignored for insolvent so we just set to 0
+    action.Results.PreFMax = uint(tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.PreFMax"), 0));
+    action.Results.ExpectedBidPrice = tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.ExpectedBidPrice"), 0);
+    action.Results.LiquidatedOfOriginal = uint(tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"), 0));
+    action.Results.PostFMax = uint(tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.PostFMax"), 0));
+    action.Results.SMPayout = tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.SMPayout"), 0);
 
     return action;
   }
 
-  function getSMPayout(string memory json, string memory location) internal view returns (int) {
+  function tryGetWithDefault(string memory json, string memory location, int defaultVal) internal view returns (int) {
     try t.readInt(json, location) returns (int payout) {
       return payout;
     } catch {
-      return 0;
+      return defaultVal;
     }
   }
 
