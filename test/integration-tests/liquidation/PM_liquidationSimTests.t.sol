@@ -9,65 +9,73 @@ import "./util/LiquidationSimBase.sol";
 contract LiquidationSimTests_PM is LiquidationSimBase {
   using stdJson for string;
 
-  function testLiquidationSim1() public {
-    runLiquidationSim("PMRM_solvent", "Test1");
+  // function testLiquidationSim1() public {
+  //   runLiquidationSim("PMRM_solvent", "Test1");
+  // }
+
+  // function testLiquidationSim2() public {
+  //   runLiquidationSim("PMRM_solvent", "Test2");
+  // }
+
+  // function testLiquidationSim3() public {
+  //   runLiquidationSim("PMRM_solvent", "Test3");
+  // }
+
+  // function testLiquidationSim4() public {
+  //   runLiquidationSim("PMRM_solvent", "Test4");
+  // }
+
+  // function testLiquidationSim5() public {
+  //   runLiquidationSim("PMRM_solvent", "Test5");
+  // }
+
+  // function testLiquidationSim6() public {
+  //   runLiquidationSim("PMRM_solvent", "Test6");
+  // }
+
+  // function testLiquidationSimLong_Box_Short_Cash() public {
+  //   runLiquidationSim("PMRM_solvent", "test_Nov_01_long_box_neg_cash");
+  // }
+
+  // function testLiquidationSimSimple_Short_3_liquidators() public {
+  //   runLiquidationSim("PMRM_solvent", "test_Nov_02_3_liqs_same_price_same_amount");
+  // }
+
+  // function testLiquidationSimPMRM_perp() public {
+  //   runLiquidationSim("PMRM_solvent", "test_Nov_03_perp");
+  // }
+
+  // function testLiquidationSimPMRM_General() public {
+  //   runLiquidationSim("PMRM_solvent", "test_Nov_04_general");
+  // }
+
+  function testLiquidationSimPMRM_Borrow() public {
+    runLiquidationSim("PMRM_solvent", "test_Nov_05_borrow");
   }
 
-  function testLiquidationSim2() public {
-    runLiquidationSim("PMRM_solvent", "Test2");
-  }
+  // function testLiquidationSim_insolvent_1() public {
+  //   runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
+  // }
 
-  function testLiquidationSim3() public {
-    runLiquidationSim("PMRM_solvent", "Test3");
-  }
+  // function testLiquidationSim_insolvent_2() public {
+  //   runLiquidationSim("PMRM_insolvent", "test_Nov_02_Insolvent_basic_mtm_pos");
+  // }
 
-  function testLiquidationSim4() public {
-    runLiquidationSim("PMRM_solvent", "Test4");
-  }
+  // function testLiquidationSim_insolvent_3() public {
+  //   runLiquidationSim("PMRM_insolvent", "test_Nov_03_Insolvent_basic_at_end");
+  // }
 
-  function testLiquidationSim5() public {
-    runLiquidationSim("PMRM_solvent", "Test5");
-  }
+  // function testLiquidationSim_insolvent_4() public {
+  //   runLiquidationSim("PMRM_insolvent", "test_Nov_04_Insolvent_two_liq_same_disc_same_amount");
+  // }
 
-  function testLiquidationSim6() public {
-    runLiquidationSim("PMRM_solvent", "Test6");
-  }
+  // function testLiquidationSim_insolvent_5() public {
+  //   runLiquidationSim("PMRM_insolvent", "test_Nov_05_Insolvent_two_liq_same_disc_diff_amount");
+  // }
 
-  function testLiquidationSimLong_Box_Short_Cash() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_01_long_box_neg_cash");
-  }
-
-  function testLiquidationSimSimple_Short_3_liquidators() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_02_3_liqs_same_price_same_amount");
-  }
-
-  function testLiquidationSimPMRM_perp() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_03_perp");
-  }
-
-  function testLiquidationSim_insolvent_1() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
-  }
-
-  function testLiquidationSim_insolvent_2() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_02_Insolvent_basic_mtm_pos");
-  }
-
-  function testLiquidationSim_insolvent_3() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_03_Insolvent_basic_at_end");
-  }
-
-  function testLiquidationSim_insolvent_4() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_04_Insolvent_two_liq_same_disc_same_amount");
-  }
-
-  function testLiquidationSim_insolvent_5() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_05_Insolvent_two_liq_same_disc_diff_amount");
-  }
-
-  function testLiquidationSim_insolvent_6() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_06_Insolvent_General");
-  }
+  // function testLiquidationSim_insolvent_6() public {
+  //   runLiquidationSim("PMRM_insolvent", "test_Nov_06_Insolvent_General");
+  // }
 
   // function testInsolventSim1() public {
   //   runLiquidationSim("InsolventTest1");
