@@ -10,7 +10,7 @@ import {IAllowances} from "../interfaces/IAllowances.sol";
  */
 library PermitAllowanceLib {
   bytes32 public constant PERMIT_ALLOWANCE_TYPEHASH = keccak256(
-    "PermitAllowance(address delegate,uint256 nonce,uint256 accountId,uint256 deadline,(address asset,uint256 positive,uint256 negative)[] assetAllowances,(address asset,uint256 subId,uint256 positive,uint256 negative)[] subIdAllowances)"
+    "PermitAllowance(address delegate,uint256 nonce,uint256 accountId,uint256 deadline,AssetAllowance[] assetAllowances,SubIdAllowance[] subIdAllowances)AssetAllowance(address asset,uint256 positive,uint256 negative)SubIdAllowance(address asset,uint256 subId,uint256 positive,uint256 negative)"
   );
 
   bytes32 public constant ASSET_ALLOWANCE_TYPEHASH =
