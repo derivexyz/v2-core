@@ -203,7 +203,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     for (uint i; i < assetBalances.length; i++) {
       int ignoreAmount = 0;
       if (assetBalances[i].asset == cashAsset) {
-        ignoreAmount = int(reservedCash);
+        ignoreAmount = reservedCash.toInt256();
       }
 
       _symmetricManagerAdjustment(

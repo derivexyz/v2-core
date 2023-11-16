@@ -136,7 +136,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
    *                   Each Scenario struct contains relevant data for a specific scenario.
    */
   function setScenarios(IPMRM.Scenario[] memory _scenarios) external onlyOwner {
-    if (_scenarios.length == 0) {
+    if (_scenarios.length == 0 || _scenarios.length > 40) {
       revert PMRM_InvalidScenarios();
     }
     for (uint i = 0; i < _scenarios.length; i++) {
