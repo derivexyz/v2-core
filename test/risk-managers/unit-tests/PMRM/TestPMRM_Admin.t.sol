@@ -10,6 +10,10 @@ contract TestPMRM_Admin is PMRMTestBase {
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](0);
     vm.expectRevert(IPMRM.PMRM_InvalidScenarios.selector);
     pmrm.setScenarios(scenarios);
+
+    scenarios = new IPMRM.Scenario[](41);
+    vm.expectRevert(IPMRM.PMRM_InvalidScenarios.selector);
+    pmrm.setScenarios(scenarios);
   }
 
   function testAddScenarios() public {
