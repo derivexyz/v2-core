@@ -878,7 +878,7 @@
           ]
         },
         "Liquidator": {
-          "PercentWant": 100000000000000000
+          "PercentWant": 111111111111111120
         },
         "Results": {
           "PreMtM": -671041165721540886528,
@@ -1300,7 +1300,7 @@
           ]
         },
         "Liquidator": {
-          "PercentWant": 500000000000000000
+          "PercentWant": 555555555555555584
         },
         "Results": {
           "PreMtM": -671041165721540886528,
@@ -1767,7 +1767,7 @@
           ]
         },
         "Liquidator": {
-          "PercentWant": 532000000000000000
+          "PercentWant": 592691622103386880
         },
         "Results": {
           "PreMtM": 132518228046353661952,

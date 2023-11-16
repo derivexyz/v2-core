@@ -45,13 +45,13 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
   //   runLiquidationSim("PMRM_solvent", "test_Nov_03_perp");
   // }
 
-  // function testLiquidationSimPMRM_General() public {
-  //   runLiquidationSim("PMRM_solvent", "test_Nov_04_general");
-  // }
-
-  function testLiquidationSimPMRM_Borrow() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_05_borrow");
+  function testLiquidationSimPMRM_General() public {
+    runLiquidationSim("PMRM_solvent", "test_Nov_04_general");
   }
+
+  // function testLiquidationSimPMRM_Borrow() public {
+  //   runLiquidationSim("PMRM_solvent", "test_Nov_05_borrow");
+  // }
 
   // function testLiquidationSim_insolvent_1() public {
   //   runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
@@ -165,7 +165,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
 
   function getWorstScenario(uint account) internal view returns (uint worstScenario) {
     worstScenario = 0;
-    int worstMM = 0;
+    int worstMM = type(int).max;
     for (uint i = 0; i < pmrm.getScenarios().length; ++i) {
       (int mm_,,) = auction.getMarginAndMarkToMarket(account, i);
       if (mm_ < worstMM) {
