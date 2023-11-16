@@ -73,9 +73,9 @@ contract LyraSpotDiffFeed is BaseLyraFeed, ILyraSpotDiffFeed, ISpotDiffFeed {
     int maxDiff = spotInt.multiplyDecimal(spotDiffCap);
     int res = spotInt;
     if (spotDiff >= 0) {
-      res += SignedMath.min(spotDiff, maxDiff);
+      res += spotDiff < maxDiff ? spotDiff : maxDiff;
     } else {
-      res += SignedMath.max(spotDiff, -maxDiff);
+      res += spotDiff > -maxDiff ? spotDiff : -maxDiff;
     }
 
     return (SafeCast.toUint256(res), Math.min(spotConfidence, diffDetails.confidence));
