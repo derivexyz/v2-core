@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 // Config used for integration test, generating integration test anvil state, and more general testing scenarios
 
