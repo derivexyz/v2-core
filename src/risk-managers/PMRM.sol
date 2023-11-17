@@ -28,6 +28,8 @@ import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 
 import {BaseManager} from "./BaseManager.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title PMRM
  * @author Lyra

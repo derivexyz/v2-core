@@ -5,6 +5,8 @@ import "test/shared/utils/JsonMechIO.sol";
 import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
+import "forge-std/console2.sol";
+
 
 contract TempReader {
   function readInt(string memory json, string memory location) external pure returns (int) {
@@ -252,7 +254,10 @@ contract LiquidationSimBase is PMRMTestBase {
     stableFeed.setSpot(feedData.StablePrice, feedData.StableConfidence);
     feed.setSpot(feedData.SpotPrice, feedData.SpotConfidence);
 
+    console.log("AAAAAAA", feedData.FeedExpiries.length);
     for (uint i = 0; i < feedData.FeedExpiries.length; i++) {
+      console2.log("Setting expiry:", feedData.FeedExpiries[i]);
+      console2.log("fwd", feedData.Forwards[i]);
       feed.setForwardPrice(feedData.FeedExpiries[i], feedData.Forwards[i], feedData.ForwardConfidences[i]);
       feed.setInterestRate(feedData.FeedExpiries[i], int64(feedData.Rates[i]), uint64(feedData.RateConfidences[i]));
     }
