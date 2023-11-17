@@ -150,6 +150,9 @@
           "PostMM": 0,
           "PostBM": 0,
           "SMPayout": -29371585189059944448,
+          "ExpectedBidPrice": -29371585189059944448,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 1000000000000000000,
           "PercentReceivedCurrent": 1000000000000000000,
           "LiqPrice": -29371585189059944448
@@ -308,6 +311,9 @@
           "PostMM": 0,
           "PostBM": 0,
           "SMPayout": 0,
+          "ExpectedBidPrice": 0,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 1000000000000000000,
           "PercentReceivedCurrent": 1000000000000000000,
           "LiqPrice": 0
@@ -466,6 +472,9 @@
           "PostMM": 0,
           "PostBM": 0,
           "SMPayout": -211759362378998743040,
+          "ExpectedBidPrice": -211759362378998743040,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 1000000000000000000,
           "PercentReceivedCurrent": 1000000000000000000,
           "LiqPrice": -211759362378998743040
@@ -744,6 +753,9 @@
           "PostMM": -1105556759314385076224,
           "PostBM": -1192459878032953835520,
           "SMPayout": -89043982644377141248,
+          "ExpectedBidPrice": -890439826443771314176,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 100000000000000000,
           "PercentReceivedCurrent": 100000000000000000,
           "LiqPrice": -890439826443771314176
@@ -888,6 +900,9 @@
           "PostMM": -982717119390564614144,
           "PostBM": -1059964336029292560384,
           "SMPayout": -89043982644377141248,
+          "ExpectedBidPrice": -801395843799394156544,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 100000000000000000,
           "PercentReceivedCurrent": 111111111111111120,
           "LiqPrice": -801395843799394156544
@@ -1166,6 +1181,9 @@
           "PostMM": -1105556759314385076224,
           "PostBM": -1192459878032953835520,
           "SMPayout": -89043982644377141248,
+          "ExpectedBidPrice": -890439826443771314176,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 100000000000000000,
           "PercentReceivedCurrent": 100000000000000000,
           "LiqPrice": -890439826443771314176
@@ -1310,6 +1328,9 @@
           "PostMM": -491358559695282307072,
           "PostBM": -529982168014646280192,
           "SMPayout": -445219913221885657088,
+          "ExpectedBidPrice": -801395843799394156544,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 500000000000000000,
           "PercentReceivedCurrent": 555555555555555584,
           "LiqPrice": -801395843799394156544
@@ -1618,6 +1639,9 @@
           "PostMM": -809321691686003277824,
           "PostBM": -973166181123486777344,
           "SMPayout": -8216355276130061312,
+          "ExpectedBidPrice": -80237844493457637376,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 102400000000000000,
           "PercentReceivedCurrent": 102400000000000000,
           "LiqPrice": -80237844493457637376
@@ -1777,6 +1801,9 @@
           "PostMM": -286877640472253005824,
           "PostBM": -355048325468162359296,
           "SMPayout": -119853641897612836864,
+          "ExpectedBidPrice": -202219227382137716736,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 532000000000000000,
           "PercentReceivedCurrent": 592691622103386880,
           "LiqPrice": -202219227382137716736
@@ -1936,6 +1963,9 @@
           "PostMM": 0,
           "PostBM": 0,
           "SMPayout": -265651603747238150144,
+          "ExpectedBidPrice": -265651603747238150144,
+          "fLiquidatedOfOriginal": 0,
+          "PostFMax": 0,
           "PercentageReceived": 365599999999999936,
           "PercentReceivedCurrent": 1000000000000000000,
           "LiqPrice": -265651603747238150144
