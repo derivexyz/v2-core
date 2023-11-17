@@ -46,8 +46,8 @@ library PermitAllowanceLib {
         permit.nonce,
         permit.accountId,
         permit.deadline,
-        keccak256(abi.encode(assetAllowancesHashes)),
-        keccak256(abi.encode(subIdAllowancesHashes))
+        keccak256(abi.encodePacked(assetAllowancesHashes)),
+        keccak256(abi.encodePacked(subIdAllowancesHashes))
       )
     );
   }
