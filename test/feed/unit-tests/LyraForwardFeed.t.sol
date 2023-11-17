@@ -268,7 +268,7 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
     feed.acceptData(data);
   }
 
-  function testEncodeFwdFeedData() public {
+  function testEncodeFwdFeedData() public view {
     uint64 expiry_ = 1698998400;
     uint settlementStartAggregate_ = 1;
     uint currentSpotAggregate_ = 3211595747743195673395200;

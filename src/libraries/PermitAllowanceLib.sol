@@ -9,15 +9,15 @@ import {IAllowances} from "../interfaces/IAllowances.sol";
  * @notice hash function for PermitAllowance object
  */
 library PermitAllowanceLib {
-  bytes32 public constant _PERMIT_ALLOWANCE_TYPEHASH = keccak256(
-    "PermitAllowance(address delegate,uint256 nonce,uint256 accountId,uint256 deadline,AssetAllowance[] assetAllowances,SubIdAllowance[] subIdAllowances)"
+  bytes32 public constant PERMIT_ALLOWANCE_TYPEHASH = keccak256(
+    "PermitAllowance(address delegate,uint256 nonce,uint256 accountId,uint256 deadline,AssetAllowance[] assetAllowances,SubIdAllowance[] subIdAllowances)AssetAllowance(address asset,uint256 positive,uint256 negative)SubIdAllowance(address asset,uint256 subId,uint256 positive,uint256 negative)"
   );
 
-  bytes32 public constant _ASSET_ALLOWANCE_TYPEHASH =
-    keccak256("AssetAllowance(address delegate,uint256 positive,uint256 negative)");
+  bytes32 public constant ASSET_ALLOWANCE_TYPEHASH =
+    keccak256("AssetAllowance(address asset,uint256 positive,uint256 negative)");
 
-  bytes32 public constant _SUBID_ALLOWANCE_TYPEHASH =
-    keccak256("SubIdAllowance(address delegate,uint256 subId,uint256 positive,uint256 negative)");
+  bytes32 public constant SUBID_ALLOWANCE_TYPEHASH =
+    keccak256("SubIdAllowance(address asset,uint256 subId,uint256 positive,uint256 negative)");
 
   /**
    * @dev hash the permit struct
@@ -41,22 +41,22 @@ library PermitAllowanceLib {
 
     return keccak256(
       abi.encode(
-        _PERMIT_ALLOWANCE_TYPEHASH,
+        PERMIT_ALLOWANCE_TYPEHASH,
         permit.delegate,
         permit.nonce,
         permit.accountId,
         permit.deadline,
-        keccak256(abi.encode(assetAllowancesHashes)),
-        keccak256(abi.encode(subIdAllowancesHashes))
+        keccak256(abi.encodePacked(assetAllowancesHashes)),
+        keccak256(abi.encodePacked(subIdAllowancesHashes))
       )
     );
   }
 
   function _hashAssetAllowance(IAllowances.AssetAllowance memory allowance) private pure returns (bytes32) {
-    return keccak256(abi.encode(_ASSET_ALLOWANCE_TYPEHASH, allowance));
+    return keccak256(abi.encode(ASSET_ALLOWANCE_TYPEHASH, allowance));
   }
 
   function _hashSubIdAllowance(IAllowances.SubIdAllowance memory allowance) private pure returns (bytes32) {
-    return keccak256(abi.encode(_SUBID_ALLOWANCE_TYPEHASH, allowance));
+    return keccak256(abi.encode(SUBID_ALLOWANCE_TYPEHASH, allowance));
   }
 }
