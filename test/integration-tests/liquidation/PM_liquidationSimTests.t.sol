@@ -13,77 +13,70 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
      runLiquidationSim("PMRM_solvent", "Test1");
    }
 
-  //  function testLiquidationSim2() public {
-  //    runLiquidationSim("PMRM_solvent", "Test2");
-  //  }
+    function testLiquidationSim2() public {
+      runLiquidationSim("PMRM_solvent", "Test2");
+    }
 
-  //  function testLiquidationSim3() public {
-  //    runLiquidationSim("PMRM_solvent", "Test3");
-  //  }
+    function testLiquidationSim3() public {
+      runLiquidationSim("PMRM_solvent", "Test3");
+    }
 
-  //  function testLiquidationSim4() public {
-  //    runLiquidationSim("PMRM_solvent", "Test4");
-  //  }
+    function testLiquidationSim4() public {
+      runLiquidationSim("PMRM_solvent", "Test4");
+    }
 
-  //  function testLiquidationSim5() public {
-  //    runLiquidationSim("PMRM_solvent", "Test5");
-  //  }
+    function testLiquidationSim5() public {
+      runLiquidationSim("PMRM_solvent", "Test5");
+    }
 
-  //  function testLiquidationSim6() public {
-  //    runLiquidationSim("PMRM_solvent", "Test6");
-  //  }
+    function testLiquidationSim6() public {
+      runLiquidationSim("PMRM_solvent", "Test6");
+    }
 
-  //  function testLiquidationSimLong_Box_Short_Cash() public {
-  //    runLiquidationSim("PMRM_solvent", "test_Nov_01_long_box_neg_cash");
-  //  }
+    function testLiquidationSimLong_Box_Short_Cash() public {
+      runLiquidationSim("PMRM_solvent", "test_Nov_01_long_box_neg_cash");
+    }
 
-  //  function testLiquidationSimSimple_Short_3_liquidators() public {
-  //    runLiquidationSim("PMRM_solvent", "test_Nov_02_3_liqs_same_price_same_amount");
-  //  }
+    function testLiquidationSimSimple_Short_3_liquidators() public {
+      runLiquidationSim("PMRM_solvent", "test_Nov_02_3_liqs_same_price_same_amount");
+    }
 
-  //  function testLiquidationSimPMRM_perp() public {
-  //    runLiquidationSim("PMRM_solvent", "test_Nov_03_perp");
-  //  }
+    function testLiquidationSimPMRM_perp() public {
+      runLiquidationSim("PMRM_solvent", "test_Nov_03_perp");
+    }
 
   function testLiquidationSimPMRM_General() public {
     runLiquidationSim("PMRM_solvent", "test_Nov_04_general");
   }
 
-  //  function testLiquidationSimPMRM_Borrow() public {
-  //    runLiquidationSim("PMRM_solvent", "test_Nov_05_borrow");
-  //  }
+    function testLiquidationSimPMRM_Borrow() public {
+      runLiquidationSim("PMRM_solvent", "test_Nov_05_borrow");
+    }
 
-  //  function testLiquidationSim_insolvent_1() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
-  //  }
+    function testLiquidationSim_insolvent_1() public {
+      runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
+    }
 
-  //  function testLiquidationSim_insolvent_2() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_02_Insolvent_basic_mtm_pos");
-  //  }
+    function testLiquidationSim_insolvent_2() public {
+      runLiquidationSim("PMRM_insolvent", "test_Nov_02_Insolvent_basic_mtm_pos");
+    }
 
-  //  function testLiquidationSim_insolvent_3() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_03_Insolvent_basic_at_end");
-  //  }
+    function testLiquidationSim_insolvent_3() public {
+      runLiquidationSim("PMRM_insolvent", "test_Nov_03_Insolvent_basic_at_end");
+    }
 
-  //  function testLiquidationSim_insolvent_4() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_04_Insolvent_two_liq_same_disc_same_amount");
-  //  }
+    function testLiquidationSim_insolvent_4() public {
+      runLiquidationSim("PMRM_insolvent", "test_Nov_04_Insolvent_two_liq_same_disc_same_amount");
+    }
 
-  //  function testLiquidationSim_insolvent_5() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_05_Insolvent_two_liq_same_disc_diff_amount");
-  //  }
+    function testLiquidationSim_insolvent_5() public {
+      runLiquidationSim("PMRM_insolvent", "test_Nov_05_Insolvent_two_liq_same_disc_diff_amount");
+    }
 
-  //  function testLiquidationSim_insolvent_6() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_06_Insolvent_General");
-  //  }
-//
-//   function testInsolventSim1() public {
-//     runLiquidationSim("InsolventTest1");
-//   }
-//
-//   function testInsolventSim2() public {
-//     runLiquidationSim("InsolventTest2");
-//   }
+    function testLiquidationSim_insolvent_6() public {
+      runLiquidationSim("PMRM_insolvent", "test_Nov_06_Insolvent_General");
+    }
+
 
   function runLiquidationSim(string memory fileName, string memory testName) internal {
     LiquidationSim memory data = LiquidationSimBase.getTestData(fileName, testName);
@@ -94,10 +87,13 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     startAuction();
 
     for (uint i = 0; i < data.Actions.length; ++i) {
-      // console2.log("\n=== STEP:", i);
+      console2.log("\n=== STEP:", i);
       updateToActionState(data, i);
+      console2.log("Pre:", i);
       checkPreLiquidation(data, i);
+      console2.log("Liq:", i);
       doLiquidation(data, i);
+      console2.log("Post:", i);
       checkPostLiquidation(data, i);
     }
   }
@@ -150,8 +146,9 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     assertApproxEqRel(mtm, data.Actions[actionId].Results.PostMtM, 0.001e18, "post mtm");
     assertApproxEqRel(mm, data.Actions[actionId].Results.PostMM, 0.001e18, "post mm");
 
-    if (SignedMath.abs(data.Actions[actionId].Results.PostBM) < 1e10) {
-      assertLt(SignedMath.abs(bm), 1e8, "post bm dust check");
+    if (SignedMath.abs(data.Actions[actionId].Results.PostBM) < 1e10 || SignedMath.abs(bm) < 1e10) {
+      assertApproxEqAbs(SignedMath.abs(bm), 0, 1e8, "post bm dust check");
+      assertApproxEqAbs(SignedMath.abs(data.Actions[actionId].Results.PostBM), 0, 1e8, "post bm dust check");
     } else {
       assertApproxEqRel(bm, data.Actions[actionId].Results.PostBM, 0.00001e18, "post bm");
     }
@@ -159,8 +156,9 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {} else {
       uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
-      if (data.Actions[actionId].Results.PostFMax < 1e10) {
-        assertLt(fMax, 1e8, "post fmax dust check");
+      if (data.Actions[actionId].Results.PostFMax < 1e10 || fMax < 1e10) {
+        assertApproxEqAbs(fMax, 0, 1e8, "post fmax dust check");
+        assertApproxEqAbs(data.Actions[actionId].Results.PostFMax, 0, 1e8, "post fmax dust check");
       } else {
         assertApproxEqRel(fMax, data.Actions[actionId].Results.PostFMax, 0.001e18, "post fmax");
       }

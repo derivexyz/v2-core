@@ -2628,7 +2628,7 @@
           "PostMtM": 314444815500192514048,
           "PostMM": 52407469250032189440,
           "PostBM": 113686,
-          "PostFMax": -402,
+          "PostFMax": 0,
           "PercentLiquidated": 551167660609897664,
           "SMPayout": 0
         }

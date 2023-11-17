@@ -162,11 +162,12 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));
 
     // Ignored for insolvent so we just set to 0
-    action.Results.PreFMax = uint(tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.PreFMax"), 0));
-    action.Results.ExpectedBidPrice = tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.ExpectedBidPrice"), 0);
-    action.Results.LiquidatedOfOriginal = uint(tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"), 0));
-    action.Results.PostFMax = uint(tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.PostFMax"), 0));
-    action.Results.SMPayout = tryGetWithDefault(json, string.concat(baseActionIndex, ".Results.SMPayout"), 0);
+    action.Results.PreFMax = json.readUint(string.concat(baseActionIndex, ".Results.PreFMax"));
+    action.Results.ExpectedBidPrice = json.readInt(string.concat(baseActionIndex, ".Results.ExpectedBidPrice"));
+    action.Results.LiquidatedOfOriginal = json.readUint(string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"));
+    action.Results.PostFMax = json.readUint(string.concat(baseActionIndex, ".Results.PostFMax"));
+    console2.log("res", action.Results.PostFMax);
+    action.Results.SMPayout = json.readInt(string.concat(baseActionIndex, ".Results.SMPayout"));
 
     return action;
   }
