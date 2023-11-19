@@ -282,16 +282,20 @@ contract TestPMRM_Admin is PMRMTestBase {
 
   function testCannotSetInvalidMaxExpiries() public {
     vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
-    pmrm.setMaxExpiries(1);
+    pmrm.setMaxExpiries(11);
 
     vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
     pmrm.setMaxExpiries(31);
+
+    pmrm.setMaxExpiries(15);
+    vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
+    pmrm.setMaxExpiries(15);
   }
 
   function testCanSetMaxExpiries() public {
-    pmrm.setMaxExpiries(10);
+    pmrm.setMaxExpiries(12);
 
-    assertEq(pmrm.maxExpiries(), 10);
+    assertEq(pmrm.maxExpiries(), 12);
   }
 
   function testCannotSetInvalidMaxSize() public {
