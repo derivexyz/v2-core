@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
 import "../../../risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
@@ -282,16 +282,20 @@ contract TestPMRM_Admin is PMRMTestBase {
 
   function testCannotSetInvalidMaxExpiries() public {
     vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
-    pmrm.setMaxExpiries(1);
+    pmrm.setMaxExpiries(11);
 
     vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
     pmrm.setMaxExpiries(31);
+
+    pmrm.setMaxExpiries(15);
+    vm.expectRevert(IPMRM.PMRM_InvalidMaxExpiries.selector);
+    pmrm.setMaxExpiries(15);
   }
 
   function testCanSetMaxExpiries() public {
-    pmrm.setMaxExpiries(10);
+    pmrm.setMaxExpiries(12);
 
-    assertEq(pmrm.maxExpiries(), 10);
+    assertEq(pmrm.maxExpiries(), 12);
   }
 
   function testCannotSetInvalidMaxSize() public {

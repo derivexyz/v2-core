@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
 import "openzeppelin/utils/math/SafeCast.sol";
@@ -99,7 +99,7 @@ contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
    * @dev set max tradeable expiries in a single account
    */
   function setMaxExpiries(uint _maxExpiries) external onlyOwner {
-    if (_maxExpiries < 6 || _maxExpiries > 30) {
+    if (_maxExpiries <= maxExpiries || _maxExpiries > 30) {
       revert PMRM_InvalidMaxExpiries();
     }
     maxExpiries = _maxExpiries;
