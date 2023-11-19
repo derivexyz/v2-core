@@ -8,13 +8,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import "forge-std/console2.sol";
 
 
-contract TempReader {
-  function readInt(string memory json, string memory location) external pure returns (int) {
-    return stdJson.readInt(json, location);
-  }
-}
-
-contract LiquidationSimBase is PMRMTestBase {
+contract PMRMLiquidationSimBase is PMRMTestBase {
   using stdJson for string;
 
   struct LiquidationSim {
@@ -76,10 +70,7 @@ contract LiquidationSimBase is PMRMTestBase {
     int SMPayout;
   }
 
-  TempReader t;
-
   constructor() {
-    t = new TempReader();
   }
 
   function getTestData(string memory fileName, string memory testName) internal view returns (LiquidationSim memory sim) {
@@ -172,14 +163,6 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.SMPayout = json.readInt(string.concat(baseActionIndex, ".Results.SMPayout"));
 
     return action;
-  }
-
-  function tryGetWithDefault(string memory json, string memory location, int defaultVal) internal view returns (int) {
-    try t.readInt(json, location) returns (int payout) {
-      return payout;
-    } catch {
-      return defaultVal;
-    }
   }
 
   function lookupNum(uint num) internal pure returns (string memory) {

@@ -19,6 +19,8 @@ import "../../../shared/mocks/MockCash.sol";
 import "../../../../scripts/config-local.sol";
 import "../../mocks/MockDutchAuction.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
+import "../../../../src/liquidation/DutchAuction.sol";
+import "../../../../src/SecurityModule.sol";
 
 /**
  * @dev shard contract setting up environment for testing StandardManager
@@ -41,6 +43,8 @@ contract TestStandardManagerBase is Test {
 
   SRMPortfolioViewer portfolioViewer;
 
+  DutchAuction auction;
+
   uint ethSpot = 1500e18;
   uint btcSpot = 20000e18;
 
@@ -61,6 +65,8 @@ contract TestStandardManagerBase is Test {
   uint aliceAcc;
   uint bobAcc;
   uint charlieAcc;
+
+  SecurityModule sm;
 
   struct Trade {
     IAsset asset;
@@ -89,10 +95,13 @@ contract TestStandardManagerBase is Test {
 
     portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
 
+    sm = new SecurityModule(subAccounts, cash, IManager(manager));
+    auction = new DutchAuction(subAccounts, sm, cash);
+
     manager = new StandardManagerPublic(
       subAccounts,
       ICashAsset(address(cash)),
-      IDutchAuction(new MockDutchAuction()),
+      IDutchAuction(auction),
       portfolioViewer
     );
 
@@ -185,5 +194,15 @@ contract TestStandardManagerBase is Test {
 
   function _getPerpBalance(IPerpAsset perp, uint acc) public view returns (int) {
     return subAccounts.getBalance(acc, perp, 0);
+  }
+
+  function _depositCash(uint acc, uint amount) internal {
+    usdc.mint(address(this), amount);
+    usdc.approve(address(cash), amount);
+    cash.deposit(acc, amount);
+  }
+
+  function setBalances(uint acc, ISubAccounts.AssetBalance[] memory balances) internal {
+    manager.setBalances(acc, balances);
   }
 }
