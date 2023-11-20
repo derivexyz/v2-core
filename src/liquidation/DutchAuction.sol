@@ -314,9 +314,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   /**
    * @param accountId Account being liquidated
    * @param bidderId Account getting paid from security module to take the liquidated account
-   * @param percentOfAccount the percentage of the original portfolio that was put on auction
+   * @param percentOfAccount the percentage of the current portfolio being bid on
+   * @param bufferMargin the buffer margin of the current portfolio
+   * @param markToMarket the mark to market of the current portfolio
    * @return canTerminate can the auction be terminated afterwards
-   * @return percentLiquidated the percentage of the original portfolio account that was actually liquidated
+   * @return percentLiquidated the percentage of the current portfolio account that was actually liquidated
+   * @return cashFromBidder the amount of cash paid from bidder to liquidated account
    */
   function _bidOnSolventAuction(
     uint accountId,
@@ -364,7 +367,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
    * @dev Bidder got paid to take on an insolvent account
    * @param accountId Account being liquidated
    * @param bidderId Account getting paid from security module to take the liquidated account
-   * @param percentOfAccount the percentage of the original portfolio that was put on auction
+   * @param percentOfAccount the percentage of the current portfolio to be bid on
+   * @param maintenanceMargin the maintenance margin of the current portfolio
+   * @param markToMarket the mark to market of the current portfolio
+   * @return canTerminate can the auction be terminated afterwards
+   * @return percentLiquidated the percentage of the current portfolio account that was actually liquidated
+   * @return cashToBidder the amount of cash paid from security module to bidder to take on the risk
    */
   function _bidOnInsolventAuction(
     uint accountId,
