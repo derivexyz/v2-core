@@ -53,29 +53,29 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
      runLiquidationSim("PMRM_solvent", "test_Nov_05_borrow");
    }
 
-  //  function testLiquidationSim_insolvent_1() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
-  //  }
+   function testLiquidationSim_insolvent_1() public {
+     runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
+   }
 
-  //  function testLiquidationSim_insolvent_2() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_02_Insolvent_basic_mtm_pos");
-  //  }
+   function testLiquidationSim_insolvent_2() public {
+     runLiquidationSim("PMRM_insolvent", "test_Nov_02_Insolvent_basic_mtm_pos");
+   }
 
-  //  function testLiquidationSim_insolvent_3() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_03_Insolvent_basic_at_end");
-  //  }
+   function testLiquidationSim_insolvent_3() public {
+     runLiquidationSim("PMRM_insolvent", "test_Nov_03_Insolvent_basic_at_end");
+   }
 
-  //  function testLiquidationSim_insolvent_4() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_04_Insolvent_two_liq_same_disc_same_amount");
-  //  }
+   function testLiquidationSim_insolvent_4() public {
+     runLiquidationSim("PMRM_insolvent", "test_Nov_04_Insolvent_two_liq_same_disc_same_amount");
+   }
 
-  //  function testLiquidationSim_insolvent_5() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_05_Insolvent_two_liq_same_disc_diff_amount");
-  //  }
+   function testLiquidationSim_insolvent_5() public {
+     runLiquidationSim("PMRM_insolvent", "test_Nov_05_Insolvent_two_liq_same_disc_diff_amount");
+   }
 
-  //  function testLiquidationSim_insolvent_6() public {
-  //    runLiquidationSim("PMRM_insolvent", "test_Nov_06_Insolvent_General");
-  //  }
+   function testLiquidationSim_insolvent_6() public {
+     runLiquidationSim("PMRM_insolvent", "test_Nov_06_Insolvent_General");
+   }
 //
 //   function testInsolventSim1() public {
 //     runLiquidationSim("InsolventTest1");
