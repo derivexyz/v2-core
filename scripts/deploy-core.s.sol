@@ -112,6 +112,8 @@ contract DeployCore is Utils {
         deployment.cash.setWhitelistManager(address(deployment.srm), true);
 
         // global setting for SRM
+        deployment.srm.setMaxAccountSize(Config.MAX_ACCOUNT_SIZE_SRM);
+        deployment.srm.setBorrowingEnabled(Config.BORROW_ENABLED);
         deployment.srm.setStableFeed(deployment.stableFeed);
 
         // set SRM parameters
