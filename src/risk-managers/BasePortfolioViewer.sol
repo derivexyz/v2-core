@@ -52,7 +52,7 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
    * @param newFeeRate OI fee rate in BPS
    */
   function setOIFeeRateBPS(address asset, uint newFeeRate) external onlyOwner {
-    if (newFeeRate > 0.2e18) {
+    if (newFeeRate > 1e18) {
       revert BM_OIFeeRateTooHigh();
     }
 

@@ -52,11 +52,11 @@ contract DeployMarket is Utils {
     // deploy core contracts
     Market memory market = _deployMarketContracts(marketName, config, deployment);
 
-    _setPermissionAndCaps(deployment, market);
+    _setPermissionAndCaps(deployment, marketName, market);
 
     _setupPerpAsset(market);
 
-    _setupPMRMParams(market, deployment);
+    _setupPMRMParams(marketName, market, deployment);
 
     _registerMarketToSRM(marketName, deployment, market);
 
@@ -86,29 +86,37 @@ contract DeployMarket is Utils {
     market.volFeed = new LyraVolFeed();
 
     // init feeds
-    market.spotFeed.setHeartbeat(SPOT_HEARTBEAT);
-    market.spotFeed.addSigner(config.feedSigner, true);
+    market.spotFeed.setHeartbeat(Config.SPOT_HEARTBEAT);
 
-    market.perpFeed.setHeartbeat(PERP_HEARTBEAT);
-    market.perpFeed.addSigner(config.feedSigner, true);
+    market.perpFeed.setHeartbeat(Config.PERP_HEARTBEAT);
 
-    market.iapFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
-    market.iapFeed.addSigner(config.feedSigner, true);
+    market.iapFeed.setHeartbeat(Config.IMPACT_PRICE_HEARTBEAT);
 
-    market.ibpFeed.setHeartbeat(IMPACT_PRICE_HEARTBEAT);
-    market.ibpFeed.addSigner(config.feedSigner, true);
+    market.ibpFeed.setHeartbeat(Config.IMPACT_PRICE_HEARTBEAT);
 
-    market.volFeed.setHeartbeat(VOL_HEARTBEAT);
-    market.volFeed.addSigner(config.feedSigner, true);
+    market.volFeed.setHeartbeat(Config.VOL_HEARTBEAT);
 
-    market.forwardFeed.setHeartbeat(FORWARD_HEARTBEAT);
-    market.forwardFeed.setSettlementHeartbeat(SETTLEMENT_HEARTBEAT);
-    market.forwardFeed.addSigner(config.feedSigner, true);
+    market.forwardFeed.setHeartbeat(Config.FORWARD_HEARTBEAT);
+    market.forwardFeed.setSettlementHeartbeat(Config.SETTLEMENT_HEARTBEAT);
+    for (uint i=0; i<config.feedSigners.length; ++i) {
+      market.spotFeed.addSigner(config.feedSigners[i], true);
+      market.perpFeed.addSigner(config.feedSigners[i], true);
+      market.iapFeed.addSigner(config.feedSigners[i], true);
+      market.ibpFeed.addSigner(config.feedSigners[i], true);
+      market.volFeed.addSigner(config.feedSigners[i], true);
+      market.forwardFeed.addSigner(config.feedSigners[i], true);
+    }
 
-    market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
+  market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
+
+    (int staticInterestRate, int fundingRateCap, uint fundingConvergencePeriod) = Config.getPerpParams();
 
     market.perp = new PerpAsset(deployment.subAccounts);
-    market.perp.setRateBounds(MAX_Abs_Rate_Per_Hour);
+    market.perp.setRateBounds(fundingRateCap);
+    market.perp.setStaticInterestRate(staticInterestRate);
+    if (fundingConvergencePeriod != 8e18) {
+      market.perp.setConvergencePeriod(fundingConvergencePeriod);
+    }
 
     market.rateFeed.setRate(0, 1e18);
 
@@ -139,28 +147,28 @@ contract DeployMarket is Utils {
     );
   }
 
-  function _setupPMRMParams(Market memory market, Deployment memory deployment) internal {
+  function _setupPMRMParams(string memory marketName, Market memory market, Deployment memory deployment) internal {
     // set PMRM parameters
     (
       IPMRMLib.BasisContingencyParameters memory basisContParams,
       IPMRMLib.OtherContingencyParameters memory otherContParams,
       IPMRMLib.MarginParameters memory marginParams,
       IPMRMLib.VolShockParameters memory volShockParams
-    ) = getPMRMParams();
+    ) = Config.getPMRMParams();
     market.pmrmLib.setBasisContingencyParams(basisContParams);
     market.pmrmLib.setOtherContingencyParams(otherContParams);
     market.pmrmLib.setMarginParams(marginParams);
     market.pmrmLib.setVolShockParams(volShockParams);
 
     // set all scenarios!
-    market.pmrm.setScenarios(getDefaultScenarios());
+    market.pmrm.setScenarios(Config.getDefaultScenarios());
+    market.pmrm.setMaxAccountSize(Config.MAX_ACCOUNT_SIZE_PMRM);
 
     // set fees
-    market.pmrmViewer.setOIFeeRateBPS(address(market.perp), OI_FEE_BPS);
-    market.pmrmViewer.setOIFeeRateBPS(address(market.option), OI_FEE_BPS);
-    market.pmrmViewer.setOIFeeRateBPS(address(market.base), OI_FEE_BPS);
-
-    market.pmrm.setMinOIFee(MIN_OI_FEE);
+    market.pmrmViewer.setOIFeeRateBPS(address(market.perp), Config.OI_FEE_BPS);
+    market.pmrmViewer.setOIFeeRateBPS(address(market.option), Config.OI_FEE_BPS);
+    market.pmrmViewer.setOIFeeRateBPS(address(market.base), Config.OI_FEE_BPS);
+    market.pmrm.setMinOIFee(Config.MIN_OI_FEE);
 
     market.pmrm.setWhitelistedCallee(address(market.spotFeed), true);
     market.pmrm.setWhitelistedCallee(address(market.iapFeed), true);
@@ -180,13 +188,13 @@ contract DeployMarket is Utils {
     market.perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
   }
 
-  function _setPermissionAndCaps(Deployment memory deployment, Market memory market) internal {
+  function _setPermissionAndCaps(Deployment memory deployment, string memory marketName, Market memory market) internal {
     deployment.cash.setWhitelistManager(address(market.pmrm), true);
 
     // each asset whitelist the newly deployed PMRM
-    _whitelistAndSetCapForManager(address(market.pmrm), market);
+    _whitelistAndSetCapForManager(address(market.pmrm), marketName, market);
     // each asset whitelist the standard manager
-    _whitelistAndSetCapForManager(address(deployment.srm), market);
+    _whitelistAndSetCapForManager(address(deployment.srm), marketName, market);
     console2.log("All asset whitelist both managers!");
   }
 
@@ -196,6 +204,10 @@ contract DeployMarket is Utils {
 
     console2.log("market ID for newly created market:", marketId);
 
+    (IStandardManager.PerpMarginRequirements memory perpMarginRequirements,
+      IStandardManager.OptionMarginParams memory optionMarginParams,
+      IStandardManager.OracleContingencyParams memory oracleContingencyParams,
+      IStandardManager.BaseMarginParams memory baseMarginParams) = Config.getSRMParams(marketName);
 
     // set assets per market
     deployment.srm.whitelistAsset(market.perp, marketId, IStandardManager.AssetType.Perpetual);
@@ -206,19 +218,18 @@ contract DeployMarket is Utils {
     deployment.srm.setOraclesForMarket(marketId, market.spotFeed, market.forwardFeed, market.volFeed);
 
     // set params
-    deployment.srm.setOptionMarginParams(marketId, getDefaultSRMOptionParam());
+    deployment.srm.setOptionMarginParams(marketId, optionMarginParams);
 
-    deployment.srm.setOracleContingencyParams(marketId, getDefaultSRMOracleContingency());
+    deployment.srm.setOracleContingencyParams(marketId, oracleContingencyParams);
 
-    (uint mmReq, uint imReq) = getDefaultSRMPerpRequirements();
-    deployment.srm.setPerpMarginRequirements(marketId, mmReq, imReq);
+    deployment.srm.setPerpMarginRequirements(marketId, perpMarginRequirements.mmPerpReq, perpMarginRequirements.imPerpReq);
 
-    deployment.srm.setBaseAssetMarginFactor(marketId, SRM_BASE_DISCOUNT, SRM_IM_BASE_DISCOUNT);
+    deployment.srm.setBaseAssetMarginFactor(marketId, baseMarginParams.marginFactor, baseMarginParams.IMScale);
 
-    deployment.srmViewer.setOIFeeRateBPS(address(market.perp), OI_FEE_BPS);
-    deployment.srmViewer.setOIFeeRateBPS(address(market.option), OI_FEE_BPS);
-    deployment.srmViewer.setOIFeeRateBPS(address(market.base), OI_FEE_BPS);
-    deployment.srm.setMinOIFee(MIN_OI_FEE);
+    deployment.srmViewer.setOIFeeRateBPS(address(market.perp), Config.OI_FEE_BPS);
+    deployment.srmViewer.setOIFeeRateBPS(address(market.option), Config.OI_FEE_BPS);
+    deployment.srmViewer.setOIFeeRateBPS(address(market.base), Config.OI_FEE_BPS);
+    deployment.srm.setMinOIFee(Config.MIN_OI_FEE);
 
     deployment.srm.setWhitelistedCallee(address(market.spotFeed), true);
     deployment.srm.setWhitelistedCallee(address(market.iapFeed), true);
@@ -228,14 +239,16 @@ contract DeployMarket is Utils {
     deployment.srm.setWhitelistedCallee(address(market.volFeed), true);
   }
 
-  function _whitelistAndSetCapForManager(address manager, Market memory market) internal {
+  function _whitelistAndSetCapForManager(address manager, string memory marketName, Market memory market) internal {
     market.option.setWhitelistManager(manager, true);
     market.base.setWhitelistManager(manager, true);
     market.perp.setWhitelistManager(manager, true);
 
-    market.option.setTotalPositionCap(IManager(manager), INIT_CAP_OPTION);
-    market.perp.setTotalPositionCap(IManager(manager), INIT_CAP_PERP);
-    market.base.setTotalPositionCap(IManager(manager), INIT_CAP_BASE);
+    (uint perpCap, uint optionCap, uint baseCap) = Config.getSRMCaps(marketName);
+
+    market.option.setTotalPositionCap(IManager(manager), optionCap);
+    market.perp.setTotalPositionCap(IManager(manager), perpCap);
+    market.base.setTotalPositionCap(IManager(manager), baseCap);
   }
 
   /**

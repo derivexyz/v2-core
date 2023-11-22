@@ -14,7 +14,7 @@ contract Utils is Script {
     config.usdc = abi.decode(vm.parseJson(file, ".usdc"), (address));
     config.weth = abi.decode(vm.parseJson(file, ".weth"), (address));
     config.wbtc = abi.decode(vm.parseJson(file, ".wbtc"), (address));
-    config.feedSigner = abi.decode(vm.parseJson(file, ".feedSigner"), (address));
+    config.feedSigners = abi.decode(vm.parseJson(file, ".feedSigners"), (address[]));
     config.useMockedFeed = abi.decode(vm.parseJson(file, ".useMockedFeed"), (bool));
   }
 
@@ -71,9 +71,9 @@ contract Utils is Script {
   }
 
   function _getMarketERC20(string memory name, ConfigJson memory config) internal pure returns (address) {
-    if (keccak256(bytes(name)) == keccak256(bytes("weth"))) {
+    if (keccak256(bytes(name)) == keccak256(bytes("ETH"))) {
       return config.weth;
-    } else if (keccak256(bytes(name)) == keccak256(bytes("wbtc"))) {
+    } else if (keccak256(bytes(name)) == keccak256(bytes("BTC"))) {
       return config.wbtc;
     } else {
       revert("invalid market name");

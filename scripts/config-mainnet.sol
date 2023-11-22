@@ -9,156 +9,225 @@ import {IStandardManager} from "../src/interfaces/IStandardManager.sol";
 import {IPMRMLib} from "../src/interfaces/IPMRMLib.sol";
 import {IPMRM} from "../src/interfaces/IPMRMLib.sol";
 
-/**
- * @dev default interest rate params for interest rate model
- */
-function getDefaultInterestRateModel() pure returns (
-  uint minRate, 
-  uint rateMultiplier, 
-  uint highRateMultiplier, 
-  uint optimalUtil
-) {
-  minRate = 0.04e18;
-  rateMultiplier = 0.1e18;
-  highRateMultiplier = 1.25e18;
-  optimalUtil = 0.7e18;
-}
 
-// Liquidations
+library Config {
+    //////////
+    // FEES //
+    //////////
+    uint256 constant public MIN_OI_FEE = 800e18;
+    uint256 constant public OI_FEE_BPS = 0.7e18;
 
-function getDefaultAuctionParam() pure returns (IDutchAuction.AuctionParams memory param) {
-  param = IDutchAuction.AuctionParams({
-    startingMtMPercentage: 0.95e18,
-    fastAuctionCutoffPercentage: 0.7e18,
-    fastAuctionLength: 20 minutes,
-    slowAuctionLength: 3 hours,
-    insolventAuctionLength: 10 minutes,
-    liquidatorFeeRate: 0,
-    bufferMarginPercentage: 0.3e18
-  });
-}
+    //////////
+    // PMRM //
+    //////////
+    uint constant public MAX_ACCOUNT_SIZE_PMRM = 64;
 
-function getDefaultDepegParam() pure returns (IStandardManager.DepegParams memory param) {
-  param = IStandardManager.DepegParams({threshold: 0.98e18, depegFactor: 1.2e18});
-}
+    function getDefaultScenarios() public  pure returns (IPMRM.Scenario[] memory) {
+        IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](23);
+        scenarios[0] = IPMRM.Scenario({spotShock: 1.20e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
+        scenarios[3] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
+        scenarios[4] = IPMRM.Scenario({spotShock: 1.10e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[5] = IPMRM.Scenario({spotShock: 1.10e18, volShock: IPMRM.VolShockDirection.None});
+        scenarios[6] = IPMRM.Scenario({spotShock: 1.10e18, volShock: IPMRM.VolShockDirection.Down});
+        scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
+        scenarios[9] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
+        scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
+        scenarios[12] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
+        scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
+        scenarios[15] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
+        scenarios[16] = IPMRM.Scenario({spotShock: 0.90e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[17] = IPMRM.Scenario({spotShock: 0.90e18, volShock: IPMRM.VolShockDirection.None});
+        scenarios[18] = IPMRM.Scenario({spotShock: 0.90e18, volShock: IPMRM.VolShockDirection.Down});
+        scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
+        scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
+        scenarios[21] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
+        scenarios[22] = IPMRM.Scenario({spotShock: 0.80e18, volShock: IPMRM.VolShockDirection.Up});
+        return scenarios;
+    }
 
-// Cash Asset
-uint256 constant CASH_SM_FEE=0.2e18;
+    function getPMRMParams() public pure returns (
+        IPMRMLib.BasisContingencyParameters memory basisContParams,
+        IPMRMLib.OtherContingencyParameters memory otherContParams,
+        IPMRMLib.MarginParameters memory marginParams,
+        IPMRMLib.VolShockParameters memory volShockParams
+    ) {
+        basisContParams = IPMRMLib.BasisContingencyParameters({
+            scenarioSpotUp: 1.05e18,
+            scenarioSpotDown: 0.95e18,
+            basisContAddFactor: 0.4e18,
+            basisContMultFactor: 1.2e18
+        });
 
-// Assets
+        otherContParams = IPMRMLib.OtherContingencyParameters({
+            pegLossThreshold: 0.99e18,
+            pegLossFactor: 4e18,
+            confThreshold: 0.55e18,
+            confMargin: 1e18,
+            basePercent: 0.03e18,
+            perpPercent: 0.03e18,
+            optionPercent: 0.01e18
+        });
 
-int constant MAX_Abs_Rate_Per_Hour = 0.1e18;
+        marginParams = IPMRMLib.MarginParameters({
+            imFactor: 1.25e18,
+            baseStaticDiscount: 0.95e18,
+            rateMultScale: 1e18,
+            rateAddScale: 0.12e18
+        });
 
-uint256 constant MIN_OI_FEE = 2e18;
-uint256 constant OI_FEE_BPS = 0.001e18;
+        volShockParams = IPMRMLib.VolShockParameters({
+            volRangeUp: 0.6e18,
+            volRangeDown: 0.3e18,
+            shortTermPower: 0.3e18,
+            longTermPower: 0.13e18,
+            dteFloor: 1 days
+        });
+    }
 
-uint256 constant SRM_BASE_DISCOUNT = 0.75e18;
-uint256 constant SRM_IM_BASE_DISCOUNT = 0.8e18;
+    function getPMRMCaps(string memory market) public pure returns (uint perpCap, uint optionCap, uint baseCap) {
+        if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ETH"))) {
+            perpCap = 250_000e18;
+            optionCap = 2_000_000e18;
+            baseCap = 750e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("BTC"))) {
+            perpCap = 12_000e18;
+            optionCap = 100_000e18;
+            baseCap = 15e18;
+        } else {
+            revert("market not supported");
+        }
+    }
 
-// Feeds
+    /////////
+    // SRM //
+    /////////
 
-uint64 constant SPOT_HEARTBEAT = 10 minutes;
-uint64 constant FORWARD_HEARTBEAT = 3 hours;
-uint64 constant SETTLEMENT_HEARTBEAT = 15 minutes;
+    uint public constant MAX_ACCOUNT_SIZE_SRM = 48;
+    bool public constant BORROW_ENABLED = true;
 
-uint64 constant PERP_HEARTBEAT = 3 hours;
-uint64 constant IMPACT_PRICE_HEARTBEAT = 3 hours;
+    function getSRMDepegParams() public pure returns (
+        IStandardManager.DepegParams memory depegParams
+    ) {
+        depegParams = IStandardManager.DepegParams({
+            threshold: 0.99e18,
+            depegFactor: 2e18
+        });
+    }
 
-uint64 constant VOL_HEARTBEAT = 20 minutes;
+    function getSRMParams(string memory market) public pure returns (
+        IStandardManager.PerpMarginRequirements memory perpMarginRequirements,
+        IStandardManager.OptionMarginParams memory optionMarginParams,
+        IStandardManager.OracleContingencyParams memory oracleContingencyParams,
+        IStandardManager.BaseMarginParams memory baseMarginParams
+    ) {
+        perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+            mmPerpReq: 0.065e18,
+            imPerpReq: 0.1e18
+        });
 
-uint constant INIT_CAP_PERP = 100_000e18;
-uint constant INIT_CAP_OPTION = 1000_000e18;
-uint constant INIT_CAP_BASE = 1_000e18;
+        optionMarginParams = IStandardManager.OptionMarginParams({
+            maxSpotReq: 0.15e18,
+            minSpotReq: 0.13e18,
+            mmCallSpotReq: 0.09e18,
+            mmPutSpotReq: 0.09e18,
+            MMPutMtMReq: 0.09e18,
+            unpairedIMScale: 1.2e18,
+            unpairedMMScale: 1.1e18,
+            mmOffsetScale: 1.05e18
+        });
 
-// ========== Standard Manager Params =========== //
+        oracleContingencyParams = IStandardManager.OracleContingencyParams({
+            perpThreshold: 0.55e18,
+            optionThreshold: 0.55e18,
+            baseThreshold: 0.55e18,
+            OCFactor: 1e18
+        });
 
-function getDefaultSRMOptionParam() pure returns (IStandardManager.OptionMarginParams memory param) {
-  param = IStandardManager.OptionMarginParams({
-      maxSpotReq: 0.15e18,
-      minSpotReq: 0.12e18,
-      mmCallSpotReq: 0.1e18,
-      mmPutSpotReq: 0.1e18,
-      MMPutMtMReq: 0.1e18,
-      unpairedIMScale: 1.2e18,
-      unpairedMMScale: 1.1e18,
-      mmOffsetScale: 1.05e18
-    });
-}
+        if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.8e18,
+                IMScale: 0.9375e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("BTC"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.75e18,
+                IMScale: 0.93e18
+            });
+        } else {
+            revert("market not supported");
+        }
+    }
 
-function getDefaultSRMOracleContingency() pure returns (IStandardManager.OracleContingencyParams memory param) {
-  param = IStandardManager.OracleContingencyParams(0.4e18, 0.4e18, 0.4e18, 0.4e18);
-}
+    function getSRMCaps(string memory market) public pure returns (uint perpCap, uint optionCap, uint baseCap) {
+        if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ETH"))) {
+            perpCap = 250_000e18;
+            optionCap = 2_000_000e18;
+            baseCap = 250e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("BTC"))) {
+            perpCap = 12_000e18;
+            optionCap = 100_000e18;
+            baseCap = 5e18;
+        } else {
+            revert("market not supported");
+        }
+    }
 
-function getDefaultSRMPerpRequirements() pure returns (uint mmRequirement, uint imRequirement) {
-  mmRequirement = 0.05e18;
-  imRequirement = 0.065e18;
-}
+    //////////////
+    // Auctions //
+    //////////////
 
-// ========== Portfolio Margin Manager Params =========== //
+    function getDefaultAuctionParam() public pure returns (IDutchAuction.AuctionParams memory param) {
+        param = IDutchAuction.AuctionParams({
+            startingMtMPercentage: 0.95e18,
+            fastAuctionCutoffPercentage: 0.7e18,
+            fastAuctionLength: 15 minutes,
+            slowAuctionLength: 12 hours,
+            insolventAuctionLength: 60 minutes,
+            liquidatorFeeRate: 0.1e18,
+            bufferMarginPercentage: 0.15e18
+        });
+    }
 
-function getPMRMParams() pure returns (
-  IPMRMLib.BasisContingencyParameters memory basisContParams,
-  IPMRMLib.OtherContingencyParameters memory otherContParams,
-  IPMRMLib.MarginParameters memory marginParams,
-  IPMRMLib.VolShockParameters memory volShockParams
-) {
-  basisContParams = IPMRMLib.BasisContingencyParameters({
-        scenarioSpotUp: 1.05e18,
-        scenarioSpotDown: 0.95e18,
-        basisContAddFactor: 0.25e18,
-        basisContMultFactor: 0.01e18
-      });
 
-  otherContParams = IPMRMLib.OtherContingencyParameters({
-    pegLossThreshold: 0.98e18,
-    pegLossFactor: 4e18,
-    confThreshold: 0.6e18,
-    confMargin: 0.5e18,
-    basePercent: 0.025e18,
-    perpPercent: 0.025e18,
-    optionPercent: 0.01e18
-  });
+    ////////////
+    // Assets //
+    ////////////
 
-  marginParams = IPMRMLib.MarginParameters({
-    imFactor: 1.3e18,
-    baseStaticDiscount: 0.95e18,
-    rateMultScale: 2e18,
-    rateAddScale: 0.12e18
-  });
+    // cash
+    function getDefaultInterestRateModel() public pure returns (
+        uint minRate,
+        uint rateMultiplier,
+        uint highRateMultiplier,
+        uint optimalUtil
+    ) {
+        minRate = 0.02e18;
+        rateMultiplier = 0.08e18;
+        highRateMultiplier = 0.9e18;
+        optimalUtil = 0.85e18;
+    }
+    uint256 public constant CASH_SM_FEE = 0.2e18;
 
-  volShockParams = IPMRMLib.VolShockParameters({
-    volRangeUp: 0.45e18,
-    volRangeDown: 0.3e18,
-    shortTermPower: 0.3e18,
-    longTermPower: 0.13e18,
-    dteFloor: 1 days
-  });
-}
+    // perp
+    function getPerpParams() public pure returns (int staticInterestRate, int fundingRateCap, uint fundingConvergencePeriod) {
+        staticInterestRate = 0.0000125e18;
+        fundingRateCap = 0.004e18;
+        fundingConvergencePeriod = 8e18;
+    }
 
-function getDefaultScenarios() pure returns (IPMRM.Scenario[] memory) {
-  IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](21);
-
-  scenarios[0] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
-  scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
-  scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
-  scenarios[3] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
-  scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
-  scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
-  scenarios[6] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
-  scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
-  scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
-  scenarios[9] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
-  scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
-  scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
-  scenarios[12] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
-  scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
-  scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
-  scenarios[15] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
-  scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
-  scenarios[17] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
-  scenarios[18] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
-  scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
-  scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
-
-  return scenarios;
+    ///////////
+    // Feeds //
+    ///////////
+    uint64 public constant FORWARD_HEARTBEAT = 60 minutes;
+    uint64 public constant SPOT_HEARTBEAT = 3 minutes;
+    uint64 public constant SETTLEMENT_HEARTBEAT = 3 minutes;
+    uint64 public constant PERP_HEARTBEAT = 15 minutes;
+    uint64 public constant IMPACT_PRICE_HEARTBEAT = 20 minutes;
+    uint64 public constant PERP_MAX_PERCENT_DIFF = 0.075e18;
+    uint64 public constant VOL_HEARTBEAT = 20 minutes;
+    uint64 public constant STABLE_HEARTBEAT = 60 minutes;
 }
