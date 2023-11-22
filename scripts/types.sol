@@ -30,12 +30,12 @@ import {OracleDataSubmitter} from "../src/periphery/OracleDataSubmitter.sol";
 import {OptionSettlementHelper} from "../src/periphery/OptionSettlementHelper.sol";
 import {PerpSettlementHelper} from "../src/periphery/PerpSettlementHelper.sol";
 
-  struct ConfigJson {
+struct ConfigJson {
   address usdc;
   address wbtc; // needed if you want to use deploy-market.s.sol with market = wbtc
   address weth; // needed if you want to use deploy-market.s.sol with market = weth
   bool useMockedFeed;
-  address feedSigner;
+  address[] feedSigners;
 }
 
 struct Deployment {

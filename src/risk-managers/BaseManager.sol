@@ -120,7 +120,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   }
 
   function setMinOIFee(uint newMinOIFee) external onlyOwner {
-    if (newMinOIFee > 100e18) {
+    if (newMinOIFee > 10000e18) {
       revert BM_MinOIFeeTooHigh();
     }
     minOIFee = newMinOIFee;

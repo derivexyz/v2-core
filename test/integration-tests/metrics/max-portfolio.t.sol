@@ -23,6 +23,34 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
 
   uint randomEmptyAcc;
 
+  function _setScenarios(string memory marketName) internal {
+    IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](23);
+    scenarios[0] = IPMRM.Scenario({spotShock: 1.2e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[3] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[6] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[9] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[10] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[11] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[12] = IPMRM.Scenario({spotShock: 1e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[15] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[17] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[18] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[21] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[22] = IPMRM.Scenario({spotShock: 0.8e18, volShock: IPMRM.VolShockDirection.Up});
+    markets[marketName].pmrm.setScenarios(scenarios);
+  }
+
   function setUp() public {
     _setupIntegrationTestComplete();
 
@@ -54,11 +82,9 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     // don't need OI fee
     srm.setFeeBypassedCaller(address(this), true);
 
-    // comment out these 2 lines if don't want to simulate with trusted assessor
-    markets["weth"].pmrm.setTrustedRiskAssessor(address(this), true);
-    markets["wbtc"].pmrm.setTrustedRiskAssessor(address(this), true);
-
     srm.setMaxAccountSize(130);
+    _setScenarios("weth");
+    _setScenarios("wbtc");
   }
 
   /**
@@ -477,13 +503,21 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
   }
 
   function _logPMRMMarginGas(uint account) internal view {
+    uint totalAssets = subAccounts.getAccountBalances(account).length;
+
     uint gas = gasleft();
-    markets["weth"].pmrm.getMarginAndMarkToMarket(account, false, 0);
+    markets["weth"].pmrm.getMargin(account, false);
     uint gasUsed = gas - gasleft();
 
-    uint totalAssets = subAccounts.getAccountBalances(account).length;
     console2.log("Total asset per account: ", totalAssets);
-    console2.log("Margin check gas cost:", gasUsed);
+    console2.log("PMRM Margin check gas cost (not trusted):", gasUsed);
+
+    gas = gasleft();
+    // getting scenario 0 only also checks same scenarios as TRA
+    markets["weth"].pmrm.getMarginAndMarkToMarket(account, false, 0);
+    gasUsed = gas - gasleft();
+
+    console2.log("PMRM Margin check gas cost (trusted):", gasUsed);
   }
 
   function _logTradeGas(uint from) internal {
@@ -504,7 +538,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     );
     uint gasUsed = gas - gasleft();
 
-    console2.log("Trading gas cost (trusted):", gasUsed);
+    console2.log("Trading gas cost (not trusted):", gasUsed);
   }
 
   function _setupAllFeedsForMarket(string memory market, uint64 expiry, uint96 spot) internal {

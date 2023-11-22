@@ -101,11 +101,11 @@ contract UNIT_TestBaseManager is Test {
   function testSettingOIFeeTooHigh() public {
     viewer.setOIFeeRateBPS(address(option), 0.2e18);
     vm.expectRevert(IBasePortfolioViewer.BM_OIFeeRateTooHigh.selector);
-    viewer.setOIFeeRateBPS(address(option), 0.2e18 + 1);
+    viewer.setOIFeeRateBPS(address(option), 1e18 + 1);
 
-    tester.setMinOIFee(100e18);
+    tester.setMinOIFee(10000e18);
     vm.expectRevert(IBaseManager.BM_MinOIFeeTooHigh.selector);
-    tester.setMinOIFee(100e18 + 1);
+    tester.setMinOIFee(10000e18 + 1);
   }
 
   /* ------------------------- *
