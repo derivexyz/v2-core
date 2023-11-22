@@ -25,13 +25,13 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
 
   function _setScenarios(string memory marketName) internal {
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](23);
-    scenarios[0] = IPMRM.Scenario({spotShock: 1.20e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[0] = IPMRM.Scenario({spotShock: 1.2e18, volShock: IPMRM.VolShockDirection.Up});
     scenarios[1] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Up});
     scenarios[2] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.None});
     scenarios[3] = IPMRM.Scenario({spotShock: 1.15e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[4] = IPMRM.Scenario({spotShock: 1.10e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[5] = IPMRM.Scenario({spotShock: 1.10e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[6] = IPMRM.Scenario({spotShock: 1.10e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[4] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[5] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[6] = IPMRM.Scenario({spotShock: 1.1e18, volShock: IPMRM.VolShockDirection.Down});
     scenarios[7] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Up});
     scenarios[8] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.None});
     scenarios[9] = IPMRM.Scenario({spotShock: 1.05e18, volShock: IPMRM.VolShockDirection.Down});
@@ -41,13 +41,13 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     scenarios[13] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Up});
     scenarios[14] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.None});
     scenarios[15] = IPMRM.Scenario({spotShock: 0.95e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[16] = IPMRM.Scenario({spotShock: 0.90e18, volShock: IPMRM.VolShockDirection.Up});
-    scenarios[17] = IPMRM.Scenario({spotShock: 0.90e18, volShock: IPMRM.VolShockDirection.None});
-    scenarios[18] = IPMRM.Scenario({spotShock: 0.90e18, volShock: IPMRM.VolShockDirection.Down});
+    scenarios[16] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[17] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.None});
+    scenarios[18] = IPMRM.Scenario({spotShock: 0.9e18, volShock: IPMRM.VolShockDirection.Down});
     scenarios[19] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Up});
     scenarios[20] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.None});
     scenarios[21] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
-    scenarios[22] = IPMRM.Scenario({spotShock: 0.80e18, volShock: IPMRM.VolShockDirection.Up});
+    scenarios[22] = IPMRM.Scenario({spotShock: 0.8e18, volShock: IPMRM.VolShockDirection.Up});
     markets[marketName].pmrm.setScenarios(scenarios);
   }
 
