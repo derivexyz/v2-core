@@ -87,14 +87,14 @@ contract DeployMarket is Utils {
 
     // init feeds
     market.spotFeed.setHeartbeat(Config.SPOT_HEARTBEAT);
-
+    market.volFeed.setHeartbeat(Config.VOL_HEARTBEAT);
     market.perpFeed.setHeartbeat(Config.PERP_HEARTBEAT);
-
     market.iapFeed.setHeartbeat(Config.IMPACT_PRICE_HEARTBEAT);
-
     market.ibpFeed.setHeartbeat(Config.IMPACT_PRICE_HEARTBEAT);
 
-    market.volFeed.setHeartbeat(Config.VOL_HEARTBEAT);
+    market.perpFeed.setSpotDiffCap(Config.PERP_MAX_PERCENT_DIFF);
+    market.iapFeed.setSpotDiffCap(Config.PERP_MAX_PERCENT_DIFF);
+    market.ibpFeed.setSpotDiffCap(Config.PERP_MAX_PERCENT_DIFF);
 
     market.forwardFeed.setHeartbeat(Config.FORWARD_HEARTBEAT);
     market.forwardFeed.setSettlementHeartbeat(Config.SETTLEMENT_HEARTBEAT);

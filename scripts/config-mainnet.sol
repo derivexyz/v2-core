@@ -227,7 +227,8 @@ library Config {
     uint64 public constant SETTLEMENT_HEARTBEAT = 3 minutes;
     uint64 public constant PERP_HEARTBEAT = 15 minutes;
     uint64 public constant IMPACT_PRICE_HEARTBEAT = 20 minutes;
-    uint64 public constant PERP_MAX_PERCENT_DIFF = 0.075e18;
+    uint64 public constant PERP_MAX_PERCENT_DIFF = 0.06e18;
     uint64 public constant VOL_HEARTBEAT = 20 minutes;
     uint64 public constant STABLE_HEARTBEAT = 60 minutes;
+    uint64 public constant FWD_MAX_EXPIRY = 400 days;
 }
