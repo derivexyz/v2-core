@@ -98,6 +98,7 @@ contract DeployMarket is Utils {
 
     market.forwardFeed.setHeartbeat(Config.FORWARD_HEARTBEAT);
     market.forwardFeed.setSettlementHeartbeat(Config.SETTLEMENT_HEARTBEAT);
+    market.forwardFeed.setMaxExpiry(Config.FWD_MAX_EXPIRY);
     for (uint i=0; i<config.feedSigners.length; ++i) {
       market.spotFeed.addSigner(config.feedSigners[i], true);
       market.perpFeed.addSigner(config.feedSigners[i], true);
