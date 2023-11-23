@@ -33,12 +33,15 @@ contract DeployMocks is Utils {
 
     MockERC20 weth = new MockERC20("WETH", "WETH");
 
+    address[] memory feedSigners = new address[](1);
+    feedSigners[0] = deployer;
+
     // write to configs file: eg: input/31337/config.json
     string memory objKey = "network-config";
     vm.serializeAddress(objKey, "usdc", address(usdc));
     vm.serializeAddress(objKey, "wbtc", address(wbtc));
     vm.serializeAddress(objKey, "weth", address(weth));
-    vm.serializeAddress(objKey, "feedSigner", deployer);
+    vm.serializeAddress(objKey, "feedSigners", feedSigners);
     string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", false);
 
     // build path
