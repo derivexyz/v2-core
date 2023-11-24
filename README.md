@@ -10,7 +10,7 @@
     <br>
     <br>
     <img src='./docs/imgs/overall/logo.png' alt='lyra' width="300" />
-    <h5 align="center"> For those who dream of better options </h6>
+    <h5 align="center"> The framework to trade all derivatives </h6>
 </p> 
 </div>
 

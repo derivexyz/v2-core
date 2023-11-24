@@ -1,5 +1,9 @@
 # Contract Overview
 
+As DeFi continues to evolve, the industry has expanded well beyond basic token swapping. It now includes a range of advanced financial applications such as lending, perpetual contracts (perps), and options. However, each protocol's distinct contract architecture and accounting system make it increasingly challenging to integrate them all effectively.
+
+Lyra V2 core is a framework designed to handle various derivatives in an clean way. It currently supports instruments like spot trading, perps, and options, with the capability to include more in the future. To make this possible, we've completely revamped the underlying 'account' layer. Additionally, we've defined a new validation process, making it flexible enough to accommodate a wide range of trading scenarios.
+
 ## Agenda
 
 * [Base Layer Overview](#the-base-layer)
@@ -17,7 +21,7 @@ There are three big parts that compose of the **base layer**: `SubAccount`, `Man
 
 ### SubAccounts
 
-`SubAccounts` is a fully permission-less contract that allows anyone to create an account entity (represent as ERC721), which stores a list of `{asset, subId, balance}` for a user. Each `asset` can have multiple `subIds` that represent asset sub categories (e.g. asset: option, subId: "Jan 1st, $1000 Strike, ETH Call"). 
+`SubAccounts` is a fully permission-less contract data storage contract. It allows anyone to create an account entity (represent as ERC721), and stores a list of `{asset, subId, balance}` for an user. Each `asset` can have multiple `subIds` that represent asset sub categories (e.g. asset: option, subId: "Jan 1st, $1000 Strike, ETH Call"). 
 
 The primary goal of `SubAccounts` is to give different **Managers** and **Assets** the flexibility to create unique validation rules for various account actions.
 
@@ -87,7 +91,7 @@ It's worth mentioning that because the **account contract** is totally permissio
 
 ## Lyra V2
 
-The ultimate goal of Lyra v2 is to build a permission-less margin system for both traders and AMMs, with a modular framework for upgrading existing contracts and supplementing the Lyra ecosystem with new features. At the base layer, this will be composed of 2 manager and 4 assets at the launch of V2. You can find the more detailed documentation about each modules from the links below: 
+The goal of Lyra v2-core contracts is to build a margin layer that supports all derivatives, with a modular framework for upgrading existing contracts and supplementing the Lyra ecosystem with new features. At the base layer, this will be composed of 2 manager and 4 assets at the launch of V2. You can find the more detailed documentation about each modules from the links below: 
 
 * [Assets](assets.md) Overview
 * (Manager) [SRM: Standard Risk Manager](./managers/SRM.md) 
