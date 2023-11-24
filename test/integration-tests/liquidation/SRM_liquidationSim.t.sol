@@ -2,84 +2,46 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "forge-std/console2.sol";
-import "test/shared/utils/JsonMechIO.sol";
-import "./util/PMRMLiquidationSimBase.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
 
-contract LiquidationSimTests_PM is PMRMLiquidationSimBase {
+import "../shared/IntegrationTestBase.t.sol";
+
+import {getDefaultAuctionParam} from "../../../scripts/config-local.sol";
+import "./util/SRMLiquidationSimBase.sol";
+/**
+ * @dev testing liquidation process
+ */
+
+contract SRMLiqudationSimulationTests is SRMLiquidationSimBase {
   using stdJson for string;
 
-  function testLiquidationSim1() public {
-    runLiquidationSim("PMRM_solvent", "Test1");
+  function testSRMLiquidationSim1() public {
+    runLiquidationSim("SRM_liquidation", "Test1");
   }
-
-  function testLiquidationSim2() public {
-    runLiquidationSim("PMRM_solvent", "Test2");
-  }
-
-  function testLiquidationSim3() public {
-    runLiquidationSim("PMRM_solvent", "Test3");
-  }
-
-  function testLiquidationSim4() public {
-    runLiquidationSim("PMRM_solvent", "Test4");
-  }
-
-  function testLiquidationSim5() public {
-    runLiquidationSim("PMRM_solvent", "Test5");
-  }
-
-  function testLiquidationSim6() public {
-    runLiquidationSim("PMRM_solvent", "Test6");
-  }
-
-  function testLiquidationSimLong_Box_Short_Cash() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_01_long_box_neg_cash");
-  }
-
-  function testLiquidationSimSimple_Short_3_liquidators() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_02_3_liqs_same_price_same_amount");
-  }
-
-  function testLiquidationSimPMRM_perp() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_03_perp");
-  }
-
-  function testLiquidationSimPMRM_General() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_04_general");
-  }
-
-  function testLiquidationSimPMRM_Borrow() public {
-    runLiquidationSim("PMRM_solvent", "test_Nov_05_borrow");
-  }
-
-  function testLiquidationSim_insolvent_1() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_01_Insolvent_basic");
-  }
-
-  function testLiquidationSim_insolvent_2() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_02_Insolvent_basic_mtm_pos");
-  }
-
-  function testLiquidationSim_insolvent_3() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_03_Insolvent_basic_at_end");
-  }
-
-  function testLiquidationSim_insolvent_4() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_04_Insolvent_two_liq_same_disc_same_amount");
-  }
-
-  function testLiquidationSim_insolvent_5() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_05_Insolvent_two_liq_same_disc_diff_amount");
-  }
-
-  function testLiquidationSim_insolvent_6() public {
-    runLiquidationSim("PMRM_insolvent", "test_Nov_06_Insolvent_General");
-  }
+//
+//  function testLiquidationSim2() public {
+//    runLiquidationSim("PMRM_solvent", "Test2");
+//  }
+//
+//  function testLiquidationSim3() public {
+//    runLiquidationSim("PMRM_solvent", "Test3");
+//  }
+//
+//  function testLiquidationSim4() public {
+//    runLiquidationSim("PMRM_solvent", "Test4");
+//  }
+//
+//  function testLiquidationSim5() public {
+//    runLiquidationSim("PMRM_solvent", "Test5");
+//  }
+//
+//  function testLiquidationSim6() public {
+//    runLiquidationSim("PMRM_solvent", "Test6");
+//  }
 
 
   function runLiquidationSim(string memory fileName, string memory testName) internal {
-    LiquidationSim memory data = PMRMLiquidationSimBase.getTestData(fileName, testName);
+    LiquidationSim memory data = SRMLiquidationSimBase.getTestData(fileName, testName);
     setupTestScenario(data);
 
 
@@ -99,13 +61,12 @@ contract LiquidationSimTests_PM is PMRMLiquidationSimBase {
   }
 
   function startAuction() internal {
-    uint worstScenario = getWorstScenario(aliceAcc);
-    auction.startAuction(aliceAcc, worstScenario);
+    auction.startAuction(aliceAcc, 0);
 
   }
 
   function doLiquidation(LiquidationSim memory data, uint actionId) internal {
-    uint liqAcc = subAccounts.createAccount(address(this), IManager(address(pmrm)));
+    uint liqAcc = subAccounts.createAccount(address(this), IManager(address(manager)));
     _depositCash(liqAcc, 1000000000e18);
 
     (uint finalPercentage, uint cashFromBidder, uint cashToBidder) =
@@ -123,14 +84,13 @@ contract LiquidationSimTests_PM is PMRMLiquidationSimBase {
   }
 
   function checkPreLiquidation(LiquidationSim memory data, uint actionId) internal {
-    uint worstScenario = getWorstScenario(aliceAcc);
-    (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
+    (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, 0);
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {
       // todo: this needs to be changed to use MM as lower bound
       // assertApproxEqAbs(mm, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
     } else {
-      uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
+      uint fMax = auction.getMaxProportion(aliceAcc, 0);
       assertApproxEqRel(fMax, data.Actions[actionId].Results.PreFMax, 0.001e18, "pre fmax");
     }
 
@@ -142,8 +102,7 @@ contract LiquidationSimTests_PM is PMRMLiquidationSimBase {
   }
 
   function checkPostLiquidation(LiquidationSim memory data, uint actionId) internal {
-    uint worstScenario = getWorstScenario(aliceAcc);
-    (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, worstScenario);
+    (int mm, int bm, int mtm) = auction.getMarginAndMarkToMarket(aliceAcc, 0);
 
     assertApproxEqRel(mtm, data.Actions[actionId].Results.PostMtM, 0.001e18, "post mtm");
     assertApproxEqRel(mm, data.Actions[actionId].Results.PostMM, 0.001e18, "post mm");
@@ -157,7 +116,7 @@ contract LiquidationSimTests_PM is PMRMLiquidationSimBase {
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
     if (auctionDetails.insolvent) {} else {
-      uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
+      uint fMax = auction.getMaxProportion(aliceAcc, 0);
       if (data.Actions[actionId].Results.PostFMax < 1e10 || fMax < 1e10) {
         assertApproxEqAbs(fMax, 0, 1e8, "post fmax dust check");
         assertApproxEqAbs(data.Actions[actionId].Results.PostFMax, 0, 1e8, "post fmax dust check");
@@ -165,19 +124,6 @@ contract LiquidationSimTests_PM is PMRMLiquidationSimBase {
         assertApproxEqRel(fMax, data.Actions[actionId].Results.PostFMax, 0.001e18, "post fmax");
       }
     }
-  }
-
-  function getWorstScenario(uint account) internal view returns (uint worstScenario) {
-    worstScenario = 0;
-    int worstMM = type(int).max;
-    for (uint i = 0; i < pmrm.getScenarios().length; ++i) {
-      (int mm_,,) = auction.getMarginAndMarkToMarket(account, i);
-      if (mm_ < worstMM) {
-        worstMM = mm_;
-        worstScenario = i;
-      }
-    }
-    //console2.log("worst scenario", worstScenario);
   }
 
   function updateToActionState(LiquidationSim memory data, uint actionId) internal {

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 // libraries
+import "openzeppelin/utils/math/SignedMath.sol";
 import "openzeppelin/utils/math/Math.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";

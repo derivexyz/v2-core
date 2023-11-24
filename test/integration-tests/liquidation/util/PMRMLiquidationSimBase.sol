@@ -5,8 +5,10 @@ import "test/shared/utils/JsonMechIO.sol";
 import "test/risk-managers/unit-tests/PMRM/utils/PMRMTestBase.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
+import "forge-std/console2.sol";
 
-contract LiquidationSimBase is PMRMTestBase {
+
+contract PMRMLiquidationSimBase is PMRMTestBase {
   using stdJson for string;
 
   struct LiquidationSim {
@@ -59,20 +61,21 @@ contract LiquidationSimBase is PMRMTestBase {
     int PreBM;
     uint PreFMax;
     int ExpectedBidPrice;
-    uint FinalPercentageReceived;
+//    uint FinalPercentageReceived;
     uint LiquidatedOfOriginal;
     int PostMtM;
     int PostMM;
     int PostBM;
     uint PostFMax;
     int SMPayout;
-    int LowerBound;
   }
-  //    uint PostFMax;
 
-  function getTestData(string memory testName) internal view returns (LiquidationSim memory sim) {
+  constructor() {
+  }
+
+  function getTestData(string memory fileName, string memory testName) internal view returns (LiquidationSim memory sim) {
     testName = string.concat(".", testName);
-    string memory json = JsonMechIO.jsonFromRelPath("/test/integration-tests/liquidation/liquidationTests.json");
+    string memory json = JsonMechIO.jsonFromRelPath(string.concat("/test/integration-tests/liquidation/", fileName, ".json"));
     sim.StartTime = json.readUint(string.concat(testName, ".StartTime"));
     sim.IsForce = json.readBool(string.concat(testName, ".IsForce"));
     sim.InitialPortfolio.Cash = json.readInt(string.concat(testName, ".InitialPortfolio.Cash"));
@@ -86,8 +89,8 @@ contract LiquidationSimBase is PMRMTestBase {
 
     sim.InitialPortfolio.initialFeeds.StablePrice =
       json.readUint(string.concat(testName, ".InitialPortfolio.StablePrice"));
-    sim.InitialPortfolio.initialFeeds.StableConfidence =
-      json.readUint(string.concat(testName, ".InitialPortfolio.StableConfidence"));
+    // TODO: no stable confidence
+    sim.InitialPortfolio.initialFeeds.StableConfidence = 1e18;
     sim.InitialPortfolio.initialFeeds.SpotPrice = json.readUint(string.concat(testName, ".InitialPortfolio.SpotPrice"));
     sim.InitialPortfolio.initialFeeds.SpotConfidence =
       json.readUint(string.concat(testName, ".InitialPortfolio.SpotConfidence"));
@@ -118,7 +121,7 @@ contract LiquidationSimBase is PMRMTestBase {
 
   function getActionData(string memory json, string memory testName, uint actionNum)
     internal
-    pure
+    view
     returns (LiquidationAction memory action)
   {
     // E.g. Test1.Actions[0]
@@ -127,7 +130,8 @@ contract LiquidationSimBase is PMRMTestBase {
 
     action.Time = json.readUint(string.concat(baseActionIndex, ".Time"));
     action.Feeds.StablePrice = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.StablePrice"));
-    action.Feeds.StableConfidence = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.StableConfidence"));
+    // TODO: no stable confidence
+    action.Feeds.StableConfidence = 1e18;
     action.Feeds.SpotPrice = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.SpotPrice"));
     action.Feeds.SpotConfidence = json.readUint(string.concat(baseActionIndex, ".PortfolioAndFeeds.SpotConfidence"));
     action.Feeds.FeedExpiries = json.readUintArray(string.concat(baseActionIndex, ".PortfolioAndFeeds.FeedExpiries"));
@@ -146,17 +150,16 @@ contract LiquidationSimBase is PMRMTestBase {
     action.Results.PreMtM = json.readInt(string.concat(baseActionIndex, ".Results.PreMtM"));
     action.Results.PreMM = json.readInt(string.concat(baseActionIndex, ".Results.PreMM"));
     action.Results.PreBM = json.readInt(string.concat(baseActionIndex, ".Results.PreBM"));
-    action.Results.PreFMax = json.readUint(string.concat(baseActionIndex, ".Results.PreFMax"));
-    action.Results.ExpectedBidPrice = json.readInt(string.concat(baseActionIndex, ".Results.ExpectedBidPrice"));
-    action.Results.FinalPercentageReceived =
-      json.readUint(string.concat(baseActionIndex, ".Results.FinalPercentageReceived"));
-    action.Results.LiquidatedOfOriginal =
-      json.readUint(string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"));
     action.Results.PostMtM = json.readInt(string.concat(baseActionIndex, ".Results.PostMtM"));
     action.Results.PostMM = json.readInt(string.concat(baseActionIndex, ".Results.PostMM"));
     action.Results.PostBM = json.readInt(string.concat(baseActionIndex, ".Results.PostBM"));
+
+    // Ignored for insolvent so we just set to 0
+    action.Results.PreFMax = json.readUint(string.concat(baseActionIndex, ".Results.PreFMax"));
+    action.Results.ExpectedBidPrice = json.readInt(string.concat(baseActionIndex, ".Results.ExpectedBidPrice"));
+    action.Results.LiquidatedOfOriginal = json.readUint(string.concat(baseActionIndex, ".Results.fLiquidatedOfOriginal"));
     action.Results.PostFMax = json.readUint(string.concat(baseActionIndex, ".Results.PostFMax"));
-    action.Results.LowerBound = json.readInt(string.concat(baseActionIndex, ".Results.Lowerbound"));
+    console2.log("res", action.Results.PostFMax);
     action.Results.SMPayout = json.readInt(string.concat(baseActionIndex, ".Results.SMPayout"));
 
     return action;
@@ -223,6 +226,7 @@ contract LiquidationSimBase is PMRMTestBase {
         subId: 0,
         balance: data.InitialPortfolio.BasePosition
       });
+      
     }
 
     setBalances(aliceAcc, balances);
@@ -233,7 +237,10 @@ contract LiquidationSimBase is PMRMTestBase {
     stableFeed.setSpot(feedData.StablePrice, feedData.StableConfidence);
     feed.setSpot(feedData.SpotPrice, feedData.SpotConfidence);
 
+    console.log("AAAAAAA", feedData.FeedExpiries.length);
     for (uint i = 0; i < feedData.FeedExpiries.length; i++) {
+      console2.log("Setting expiry:", feedData.FeedExpiries[i]);
+      console2.log("fwd", feedData.Forwards[i]);
       feed.setForwardPrice(feedData.FeedExpiries[i], feedData.Forwards[i], feedData.ForwardConfidences[i]);
       feed.setInterestRate(feedData.FeedExpiries[i], int64(feedData.Rates[i]), uint64(feedData.RateConfidences[i]));
     }
