@@ -24,19 +24,19 @@ forge build
 
 ## Running different tests
 
-Only running unit tests
+### Only Running Unit Tests
 
 ```shell
 forge test --match-contract="UNIT_" -vvv
 ```
 
-Running integration tests
+### Running Integration Tests
 
 ```shell
 forge test --match-contract="INTEGRATION_" -vvv
 ```
 
-Run coverage and generate html report:
+### Run Coverage and Generate HTML Report
 
 ```shell
 # Generate lcov.info
@@ -49,7 +49,7 @@ genhtml lcov.info -out coverage/ --rc lcov_branch_coverage=1 --keep-going --incl
 
 ## Documentation
 
-Go to [docs](./docs) to understand the high level of the design, transaction flow and how different **Lyra v2 components** works together.
+Go to [docs](./docs) to understand the high-level design, transaction flow, and how different **Lyra V2 components** work together.
 
 ## Static Analysis - Slither
 
@@ -62,13 +62,13 @@ solc-select install 0.8.18
 solc-select use 0.8.18
 ```
 
-### Run analysis
+### Run Analysis
 
 ```shell
 slither src
 ```
 
-#### Triage issues
+#### Triage Issues
 
 ```shell
 slither src --triage-mode
@@ -80,4 +80,4 @@ Got to [scripts](./scripts) to understand how to deploy **Lyra v2** to different
 
 ## Gas Metrics
 
-See docs in [test/integration-tests/metrics](./test/integration-tests/metrics/) for more detail.
+See documentation in [test/integration-tests/metrics](./test/integration-tests/metrics/) for more detail.

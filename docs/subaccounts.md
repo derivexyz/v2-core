@@ -26,7 +26,7 @@ If `msg.sender` is not the owner or ERC721-approved, they will need **custom app
 
 The logic for custom approvals is defined in `Allowance.sol`.
 
-## Transfer Hooks
+## Updating Subaccounts
 
 There are three different flows that could update an account's balance. Each flow has a unique structure for how the `Asset` and `Manager` must be engaged for the flow to succeed.
 
