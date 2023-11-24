@@ -21,14 +21,6 @@ Also, it's easier to add the rpc network into `foundry.toml`, so we can use the 
 sepolia = https://sepolia.infura.io/v3/26251a7744c548a3adbc17880fc70764
 ```
 
-Currently we have the default RPC ready for:
-
-```
-sepolia
-conduit_prod
-conduit_staging
-```
-
 
 ## Deploying to a new network 
 

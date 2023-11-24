@@ -90,10 +90,7 @@ contract TestStandardManagerBase is Test {
     portfolioViewer = new SRMPortfolioViewer(subAccounts, cash);
 
     manager = new StandardManagerPublic(
-      subAccounts,
-      ICashAsset(address(cash)),
-      IDutchAuction(new MockDutchAuction()),
-      portfolioViewer
+      subAccounts, ICashAsset(address(cash)), IDutchAuction(new MockDutchAuction()), portfolioViewer
     );
 
     // setup mock base asset (only change mark to market)

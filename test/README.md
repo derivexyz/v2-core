@@ -1,5 +1,30 @@
 # Lyra V2 Testing Guideline
 
+## Running Different Tests
+
+### Only Running Unit Tests
+
+```shell
+forge test --match-contract="UNIT_" -vvv
+```
+
+### Running Integration Tests
+
+```shell
+forge test --match-contract="INTEGRATION_" -vvv
+```
+
+### Run Coverage and Generate HTML Report
+
+```shell
+# Generate lcov.info
+forge coverage --report lcov
+
+# Create a html report
+brew install lcov
+genhtml lcov.info -out coverage/ --rc lcov_branch_coverage=1 --keep-going --include "src/"
+```
+
 ## Folder structure
 
 You can find each big **modules** that compose Lyra-V2 in separate folders: list of modules:
@@ -34,3 +59,12 @@ There should also be a `mocks` folder which contain own mocks written for this m
 Any tests involving more than 1 real contracts should be put into `integration-tests` folder. All integration tests should be prefixed with `INTEGRATION_`.
 
 If you want to write integration test with a complete test environment setup, you should inherit `IntegrationTestBase`, which already have a standard manager (`srm`), 2 markets  (weth and wbtc), a portfolio margin manager set for **each** market, and all the feeds setup. A simple example can be found with [Misc standard manager test](integration-tests/standard-manager/misc.sol).
+
+
+### Gas Metrics
+
+The script run a few tests cases and log the gas cost. To run the script:
+
+```shell
+forge test --match-contract=GAS_ -vvv
+```
