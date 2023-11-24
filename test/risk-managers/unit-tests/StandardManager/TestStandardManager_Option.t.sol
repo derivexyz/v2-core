@@ -66,12 +66,7 @@ contract UNIT_TestStandardManager_Option is Test {
 
     viewer = new SRMPortfolioViewer(subAccounts, cash);
 
-    manager = new StandardManager(
-      subAccounts,
-      ICashAsset(address(cash)),
-      IDutchAuction(new MockDutchAuction()),
-      viewer
-    );
+    manager = new StandardManager(subAccounts, ICashAsset(address(cash)), IDutchAuction(new MockDutchAuction()), viewer);
 
     viewer.setStandardManager(manager);
 

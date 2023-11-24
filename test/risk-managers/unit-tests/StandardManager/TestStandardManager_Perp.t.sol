@@ -55,12 +55,7 @@ contract UNIT_TestStandardManager is Test {
     stableFeed = new MockFeeds();
     viewer = new SRMPortfolioViewer(subAccounts, cash);
 
-    manager = new StandardManager(
-      subAccounts,
-      ICashAsset(address(cash)),
-      IDutchAuction(address(auction)),
-      viewer
-    );
+    manager = new StandardManager(subAccounts, ICashAsset(address(cash)), IDutchAuction(address(auction)), viewer);
 
     marketId = manager.createMarket("eth");
 
