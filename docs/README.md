@@ -30,7 +30,7 @@ The two main missions of `SubAccounts` are:
 
 Additionally, balances of assets can be either positive or negative. For example: if Alice wants to long 1 call and Bob wants to short 1 call, they no longer need to "deposit and create an option token in another contract". An approved party just submits a transfer and changes each account's balance from [0, 0] to [1, -1].
 
-P.S. Go to [SubAccounts](./accounts) for some more detailed documentation about the approval system and the hooks.
+P.S. Go to [SubAccounts](./subaccounts.md) for some more detailed documentation about the approval system and the hooks.
   
 ### Managers
 
