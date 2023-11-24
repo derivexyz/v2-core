@@ -10,7 +10,7 @@
     <br>
     <br>
     <img src='./docs/imgs/overall/logo.png' alt='lyra' width="300" />
-    <h5 align="center"> Cool slogan goes here </h6>
+    <h5 align="center"> For those who dream of better options </h6>
 </p> 
 </div>
 
@@ -69,8 +69,6 @@ slither src
 ```
 
 #### Triage issues
-
-Make sure to triage all findings introduced by new PR. They should be appended to `slither.db.json` after the following:
 
 ```shell
 slither src --triage-mode
