@@ -91,9 +91,5 @@ The ultimate goal of Lyra v2 is to build a permission-less margin system for bot
 
 * (Manager) [SRM: Standard Risk Manager](./managers/SRM.md) 
 * (Manager) [PMRM: Portfolio Margining Risk Manager](./managers/PMRM.md) 
-* (Asset) [Cash Asset](./)
-* (Asset) [Option Asset](./)
-* (Asset) [Perp Asset](./)
-* (Asset) [BaseAsset Asset](./)
 
 ![scope](./imgs/overall/v2.png)
