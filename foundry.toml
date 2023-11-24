@@ -19,10 +19,11 @@ quote_style = 'double'
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [rpc_endpoints]
-conduit_prod = "https://l2-prod-testnet-0eakp60405.t.conduit.xyz"
-
-conduit_staging = "https://l2-staging-9ns7v94tpj.t.conduit.xyz"
 
 sepolia = "https://sepolia.infura.io/v3/26251a7744c548a3adbc17880fc70764"
+
+lyra_testnet = "https://l2-prod-testnet-0eakp60405.t.conduit.xyz"
+
+lyra_mainnet = "https://rpc.lyra.finance"
 
 local = "http://localhost:8545"
