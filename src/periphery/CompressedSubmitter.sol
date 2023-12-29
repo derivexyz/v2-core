@@ -8,9 +8,15 @@ import "../interfaces/IDataReceiver.sol";
 import "forge-std/console2.sol";
 
 contract CompressedSubmitter is IDataReceiver, Ownable2Step {
+  /// @dev id to feed address
   mapping(uint8 => address) public feedIds;
 
+  /// @dev id to signer address
+  mapping(uint8 => address) public signers;
+
   event FeedIdRegistered(uint8 id, address feed);
+
+  event SignerRegistered(uint8 id, address signer);
 
   /**
    * @dev submit compressed data directly (not through the manager)
@@ -44,6 +50,12 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     emit FeedIdRegistered(id, feed);
   }
 
+  function registerSigners(uint8 id, address signer) external onlyOwner {
+    signers[id] = signer;
+
+    emit FeedIdRegistered(id, signer);
+  }
+
   function _parseFeedDataArray(bytes calldata data) internal returns (IBaseManager.ManagerData[] memory) {
     bytes memory data2 = data[0:1];
     console2.logBytes(data2);
@@ -65,14 +77,21 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
       uint length = bytesToUint(lengthData);
 
       // [length] bytes of data
-      bytes calldata feedData = data[offset + 5:offset + 5 + length];
+      bytes calldata rawFeedData = data[offset + 5:offset + 5 + length];
 
-      feedDatas[i] = IBaseManager.ManagerData({receiver: feedIds[feedId], data: feedData});
+      feedDatas[i] = IBaseManager.ManagerData({receiver: feedIds[feedId], data: buildFeedDataFromRaw(rawFeedData)});
 
       offset += 5 + length;
     }
 
     return feedDatas;
+  }
+
+  /**
+   * The raw feed data doesn't have signer addresses encoded, so here we attach them, and build FeedData struct
+   */
+  function buildFeedDataFromRaw(bytes calldata data) internal view returns (bytes memory) {
+    return data;
   }
 
   /// read a single byte and return it as a uint8

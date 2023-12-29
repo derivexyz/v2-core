@@ -26,6 +26,9 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
 
     submitter.registerFeedIds(feedId1, address(spotFeed1));
     submitter.registerFeedIds(feedId2, address(spotFeed2));
+
+    submitter.registerSigners(feedId1, vm.addr(pk));
+    submitter.registerSigners(feedId2, vm.addr(pk));
   }
 
   function testSubmitBatchData() public {
@@ -43,6 +46,8 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
 
     // bytes[] memory managerDatas = new bytes[](2);
     bytes memory compressedData = abi.encodePacked(numOfFeeds, feedId1, data1Length, data1, feedId2, data2Length, data2);
+
+    console2.log("length", compressedData.length);
 
     submitter.submitCompressedData(compressedData);
 
