@@ -58,29 +58,39 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     emit FeedIdRegistered(id, signer);
   }
 
+  /**
+   *  Parse the following bytes format
+   *    1        byte:  num of feeds
+   *
+   *   ---       Each Feed Data      -----
+   *
+   *    1        byte:  feed ID
+   *    4        bytes: raw feedData length  -> l
+   *   [l]       bytes: raw feedData
+   */
   function _parseCompressedToFeedDatas(bytes calldata data) internal view returns (IBaseManager.ManagerData[] memory) {
     // first byte of each byte array is number of feeds
-    uint8 numFeeds = sliceUint8(data, 1);
+    uint offset = 0;
+
+    uint8 numFeeds = uint8(bytesToUint(data[offset:offset + 1]));
+    offset += 1;
 
     IBaseManager.ManagerData[] memory feedDatas = new IBaseManager.ManagerData[](numFeeds);
 
-    // how many bytes have been "used"
-    uint offset = 1;
-
     for (uint i; i < numFeeds; i++) {
       // 1 bytes of ID
-      uint8 feedId = sliceUint8(data, offset + 1);
+      uint8 feedId = uint8(bytesToUint(data[offset:offset + 1]));
+      offset += 1;
 
       // 4 bytes of data length
-      bytes calldata lengthData = data[offset + 1:offset + 5];
-      uint length = bytesToUint(lengthData);
+      uint length = bytesToUint(data[offset:offset + 4]);
+      offset += 4;
 
       // [length] bytes of data
-      bytes calldata rawFeedData = data[offset + 5:offset + 5 + length];
+      bytes calldata rawFeedData = data[offset:offset + length];
+      offset += length;
 
       feedDatas[i] = IBaseManager.ManagerData({receiver: feedIds[feedId], data: _buildFeedDataFromRaw(rawFeedData)});
-
-      offset += 5 + length;
     }
 
     return feedDatas;
@@ -145,13 +155,9 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     return abi.encode(feedData);
   }
 
-  /// read a single byte and return it as a uint8
-  function sliceUint8(bytes memory bs, uint location) internal pure returns (uint8 x) {
-    assembly {
-      x := mload(add(bs, location))
-    }
-  }
-
+  /**
+   * @dev Convert bytes to uint
+   */
   function bytesToUint(bytes memory b) internal pure returns (uint num) {
     for (uint i = 0; i < b.length; i++) {
       num = num + uint(uint8(b[i])) * (2 ** (8 * (b.length - (i + 1))));
