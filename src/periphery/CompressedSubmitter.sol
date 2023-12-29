@@ -21,17 +21,6 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
   event SignerRegistered(uint8 id, address signer);
 
   /**
-   * @dev submit compressed data directly (not through the manager)
-   */
-  function submitCompressedData(bytes calldata data) external {
-    IBaseManager.ManagerData[] memory feedDatas = _parseCompressedToFeedDatas(data);
-
-    for (uint i; i < feedDatas.length; i++) {
-      IDataReceiver(feedDatas[i].receiver).acceptData(feedDatas[i].data);
-    }
-  }
-
-  /**
    * @dev used as an "un-wrapper" for manager data to submit through the manager.
    *      Data is compressed into bytes
    */
