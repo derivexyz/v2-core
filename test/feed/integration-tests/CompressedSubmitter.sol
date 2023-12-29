@@ -16,7 +16,6 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
   uint8 feedId1 = 1;
   uint8 feedId2 = 2;
 
-
   function setUp() public {
     submitter = new CompressedSubmitter();
     spotFeed1 = new LyraSpotFeed();
@@ -30,11 +29,9 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
   }
 
   function testSubmitBatchData() public {
-
     // prepare raw data
     IBaseLyraFeed.FeedData memory spotData1 = _getDefaultSpotData();
     bytes memory data1 = _signFeedData(spotFeed1, pk, spotData1);
-
 
     IBaseLyraFeed.FeedData memory spotData2 = _getDefaultSpotData();
     bytes memory data2 = _signFeedData(spotFeed2, pk, spotData2);
@@ -45,16 +42,8 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
     uint8 numOfFeeds = 2;
 
     // bytes[] memory managerDatas = new bytes[](2);
-    bytes memory compressedData = abi.encodePacked(
-      numOfFeeds,
-      feedId1,
-      data1Length,
-      data1,
-      feedId2,
-      data2Length,
-      data2
-    );
-    
+    bytes memory compressedData = abi.encodePacked(numOfFeeds, feedId1, data1Length, data1, feedId2, data2Length, data2);
+
     submitter.submitCompressedData(compressedData);
 
     (uint spot1, uint confidence1) = spotFeed1.getSpot();
