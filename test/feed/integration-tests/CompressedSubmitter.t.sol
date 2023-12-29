@@ -34,10 +34,11 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
   function testSubmitBatchData() public {
     // prepare raw data
     IBaseLyraFeed.FeedData memory spotData1 = _getDefaultSpotData();
-    bytes memory data1 = _signFeedData(spotFeed1, pk, spotData1);
+
+    bytes memory data1 = _transformToCompressedFeedData(_signFeedData(spotFeed1, pk, spotData1));
 
     IBaseLyraFeed.FeedData memory spotData2 = _getDefaultSpotData();
-    bytes memory data2 = _signFeedData(spotFeed2, pk, spotData2);
+    bytes memory data2 = _transformToCompressedFeedData(_signFeedData(spotFeed2, pk, spotData2));
 
     uint32 data1Length = uint32(data1.length);
     uint32 data2Length = uint32(data2.length);
@@ -47,7 +48,7 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
     // bytes[] memory managerDatas = new bytes[](2);
     bytes memory compressedData = abi.encodePacked(numOfFeeds, feedId1, data1Length, data1, feedId2, data2Length, data2);
 
-    console2.log("length", compressedData.length);
+    console2.log("final compressed data length", compressedData.length);
 
     submitter.submitCompressedData(compressedData);
 
@@ -72,5 +73,53 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
       signers: new address[](1),
       signatures: new bytes[](1)
     });
+  }
+
+  /**
+   * Convert abi encoded bytes to the following format:
+   *
+   *    4        bytes: length of data (uint32) --> l
+   *   [l]       bytes: data;
+   *    8        bytes: deadline (uint64)
+   *    8        bytes: timestamp (uint64)
+   *    1        byte: number of signers (uint8) --> k
+   *    [20 x k] bytes address[] signers;
+   *    [65 x k] bytes[] signatures;
+   */
+  function _transformToCompressedFeedData(bytes memory data) internal view returns (bytes memory) {
+    IBaseLyraFeed.FeedData memory feedData = abi.decode(data, (IBaseLyraFeed.FeedData));
+    uint32 length = uint32(feedData.data.length);
+    uint8 numOfSigners = uint8(feedData.signers.length);
+
+    // put all signers into a single bytes array (20 bytes each)
+    bytes memory signers = new bytes(numOfSigners * 20);
+    for (uint i; i < numOfSigners; i++) {
+      bytes memory signer = abi.encodePacked(feedData.signers[i]);
+      for (uint j; j < signer.length; j++) {
+        signers[i * 20 + j] = signer[j];
+      }
+    }
+
+    // pad signatures to 65 bytes and form packed bytes
+    bytes memory signatures = new bytes(numOfSigners * 65);
+
+    for (uint i; i < numOfSigners; i++) {
+      bytes memory signature = feedData.signatures[i];
+      for (uint j; j < signature.length; j++) {
+        signatures[i * 65 + j] = signature[j];
+      }
+    }
+
+    bytes memory compressedData = abi.encodePacked(
+      length,
+      feedData.data,
+      uint64(feedData.deadline),
+      uint64(feedData.timestamp),
+      uint8(feedData.signers.length),
+      signers,
+      signatures
+    );
+
+    return compressedData;
   }
 }
