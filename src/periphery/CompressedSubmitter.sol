@@ -13,12 +13,7 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
   /// @dev id to feed address
   mapping(uint8 => address) public feedIds;
 
-  /// @dev id to signer address
-  mapping(uint8 => address) public signers;
-
   event FeedIdRegistered(uint8 id, address feed);
-
-  event SignerRegistered(uint8 id, address signer);
 
   /**
    * @dev used as a "proxy" to handle compressed managerData, decode them, and encode properly and relay to each feeds.
@@ -39,15 +34,6 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     feedIds[id] = feed;
 
     emit FeedIdRegistered(id, feed);
-  }
-
-  /**
-   * @dev register an ID for a signer address
-   */
-  function registerSigners(uint8 id, address signer) external onlyOwner {
-    signers[id] = signer;
-
-    emit FeedIdRegistered(id, signer);
   }
 
   /**
@@ -96,7 +82,7 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
    *    8        bytes: deadline (uint64)
    *    8        bytes: timestamp (uint64)
    *    1        byte: number of signers (uint8) --> k
-   *   [k]       bytes: k signer IDs
+   *  [20 x k]   bytes: k signer addresses
    *  [65 x k]   bytes: k signatures
    */
   function _buildFeedDataFromRaw(bytes calldata data) internal view returns (bytes memory) {
@@ -125,12 +111,11 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
       uint8 numSigners = uint8(bytesToUint(data[offset:offset + 1]));
       offset += 1;
 
-      // [k] bytes address[] signers;
+      // [20 x k] bytes of signer addresses;
       address[] memory _signers = new address[](numSigners);
       for (uint i; i < numSigners; i++) {
-        bytes calldata signerIdData = data[offset:offset + 1];
-        _signers[i] = signers[uint8(bytesToUint(signerIdData))];
-        offset += 1;
+        _signers[i] = address(uint160(bytesToUint(data[offset:offset + 20])));
+        offset += 20;
       }
       feedData.signers = _signers;
 

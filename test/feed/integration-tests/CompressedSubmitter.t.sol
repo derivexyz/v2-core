@@ -16,8 +16,6 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
   uint8 feedId1 = 1;
   uint8 feedId2 = 2;
 
-  mapping(address => uint8) signerToId;
-
   function setUp() public {
     submitter = new CompressedSubmitter();
     spotFeed1 = new LyraSpotFeed();
@@ -28,9 +26,6 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
 
     submitter.registerFeedIds(feedId1, address(spotFeed1));
     submitter.registerFeedIds(feedId2, address(spotFeed2));
-
-    submitter.registerSigners(1, vm.addr(pk));
-    signerToId[vm.addr(pk)] = 1;
   }
 
   function testSubmitBatchData() public {
@@ -72,12 +67,6 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
     assertEq(submitter.feedIds(2), address(spotFeed2));
   }
 
-  function testRegisterSigners() public {
-    submitter.registerSigners(2, vm.addr(1234));
-
-    assertEq(submitter.signers(2), vm.addr(1234));
-  }
-
   function _getDefaultSpotData() internal view returns (IBaseLyraFeed.FeedData memory) {
     uint96 price = 1000e18;
     uint64 confidence = 1e18;
@@ -98,19 +87,21 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
    *   [l]       bytes: data;
    *    8        bytes: deadline (uint64)
    *    8        bytes: timestamp (uint64)
-   *    1        byte: number of signers (uint8) --> k
-   *    [1 x k]  bytes uint8[] signers;
-   *    [65 x k] bytes[] signatures;
+   *    1        byte:  number of signers (uint8) --> k
+   *    [20 x k] bytes  signers addresses;
+   *    [65 x k] bytes: signatures;
    */
   function _transformToCompressedFeedData(bytes memory data) internal view returns (bytes memory) {
     IBaseLyraFeed.FeedData memory feedData = abi.decode(data, (IBaseLyraFeed.FeedData));
     uint32 length = uint32(feedData.data.length);
     uint8 numOfSigners = uint8(feedData.signers.length);
 
-    // put all signers into a single bytes array (1 bytes each)
-    bytes memory signers = new bytes(numOfSigners);
+    // put all signers addresses into a single bytes array (20 bytes each)
+    bytes memory signers = new bytes(numOfSigners * 20);
     for (uint i; i < numOfSigners; i++) {
-      signers[i] = bytes1(signerToId[feedData.signers[i]]);
+      for (uint j; j < 20; j++) {
+        signers[i * 20 + j] = bytes20(feedData.signers[i])[j];
+      }
     }
 
     // put all signatures into a single bytes array (65 bytes each)
