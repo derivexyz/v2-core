@@ -16,6 +16,8 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
   uint8 feedId1 = 1;
   uint8 feedId2 = 2;
 
+  mapping(address => uint8) signerToId;
+
   function setUp() public {
     submitter = new CompressedSubmitter();
     spotFeed1 = new LyraSpotFeed();
@@ -27,8 +29,8 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
     submitter.registerFeedIds(feedId1, address(spotFeed1));
     submitter.registerFeedIds(feedId2, address(spotFeed2));
 
-    submitter.registerSigners(feedId1, vm.addr(pk));
-    submitter.registerSigners(feedId2, vm.addr(pk));
+    submitter.registerSigners(1, vm.addr(pk));
+    signerToId[vm.addr(pk)] = 1;
   }
 
   function testSubmitBatchData() public {
@@ -83,7 +85,7 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
    *    8        bytes: deadline (uint64)
    *    8        bytes: timestamp (uint64)
    *    1        byte: number of signers (uint8) --> k
-   *    [20 x k] bytes address[] signers;
+   *    [1 x k]  bytes uint8[] signers;
    *    [65 x k] bytes[] signatures;
    */
   function _transformToCompressedFeedData(bytes memory data) internal view returns (bytes memory) {
@@ -91,16 +93,13 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
     uint32 length = uint32(feedData.data.length);
     uint8 numOfSigners = uint8(feedData.signers.length);
 
-    // put all signers into a single bytes array (20 bytes each)
-    bytes memory signers = new bytes(numOfSigners * 20);
+    // put all signers into a single bytes array (1 bytes each)
+    bytes memory signers = new bytes(numOfSigners);
     for (uint i; i < numOfSigners; i++) {
-      bytes memory signer = abi.encodePacked(feedData.signers[i]);
-      for (uint j; j < signer.length; j++) {
-        signers[i * 20 + j] = signer[j];
-      }
+      signers[i] = bytes1(signerToId[feedData.signers[i]]);
     }
 
-    // pad signatures to 65 bytes and form packed bytes
+    // put all signatures into a single bytes array (65 bytes each)
     bytes memory signatures = new bytes(numOfSigners * 65);
 
     for (uint i; i < numOfSigners; i++) {

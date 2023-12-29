@@ -58,7 +58,7 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     emit FeedIdRegistered(id, signer);
   }
 
-  function _parseCompressedToFeedDatas(bytes calldata data) internal returns (IBaseManager.ManagerData[] memory) {
+  function _parseCompressedToFeedDatas(bytes calldata data) internal view returns (IBaseManager.ManagerData[] memory) {
     // first byte of each byte array is number of feeds
     uint8 numFeeds = sliceUint8(data, 1);
 
@@ -78,7 +78,7 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
       // [length] bytes of data
       bytes calldata rawFeedData = data[offset + 5:offset + 5 + length];
 
-      feedDatas[i] = IBaseManager.ManagerData({receiver: feedIds[feedId], data: buildFeedDataFromRaw(rawFeedData)});
+      feedDatas[i] = IBaseManager.ManagerData({receiver: feedIds[feedId], data: _buildFeedDataFromRaw(rawFeedData)});
 
       offset += 5 + length;
     }
@@ -94,10 +94,10 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
    *    8        bytes: deadline (uint64)
    *    8        bytes: timestamp (uint64)
    *    1        byte: number of signers (uint8) --> k
-   *  [20 x k]   bytes address[] signers;
-   *  [65 x k]   bytes[] signatures;
+   *   [k]       bytes: k signer IDs
+   *  [65 x k]   bytes: k signatures
    */
-  function buildFeedDataFromRaw(bytes calldata data) internal view returns (bytes memory) {
+  function _buildFeedDataFromRaw(bytes calldata data) internal view returns (bytes memory) {
     IBaseLyraFeed.FeedData memory feedData;
 
     uint offset = 0;
@@ -123,12 +123,12 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
       uint8 numSigners = uint8(bytesToUint(data[offset:offset + 1]));
       offset += 1;
 
-      // [20 x k] bytes address[] signers;
+      // [k] bytes address[] signers;
       address[] memory _signers = new address[](numSigners);
       for (uint i; i < numSigners; i++) {
-        bytes calldata signerIdData = data[offset:offset + 20];
-        _signers[i] = address(uint160(bytesToUint(signerIdData)));
-        offset += 20;
+        bytes calldata signerIdData = data[offset:offset + 1];
+        _signers[i] = signers[uint8(bytesToUint(signerIdData))];
+        offset += 1;
       }
       feedData.signers = _signers;
 
