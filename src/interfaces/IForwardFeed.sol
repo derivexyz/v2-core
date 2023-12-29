@@ -6,7 +6,6 @@ pragma solidity ^0.8.18;
  * @author Lyra
  * @notice return forward feed for 1 asset
  */
-
 interface IForwardFeed {
   /**
    * @notice Gets forward price for a particular asset

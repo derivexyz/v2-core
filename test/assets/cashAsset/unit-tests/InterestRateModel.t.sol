@@ -9,7 +9,6 @@ import "lyra-utils/decimals/ConvertDecimals.sol";
 /**
  * @dev Simple testing for the InterestRateModel
  */
-
 contract UNIT_InterestRateModel is Test {
   using ConvertDecimals for uint;
   using SafeCast for uint;

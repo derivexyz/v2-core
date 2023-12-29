@@ -33,7 +33,6 @@ import {BaseManager} from "./BaseManager.sol";
  * @author Lyra
  * @notice Risk Manager that uses a SPAN like methodology to margin an options portfolio.
  */
-
 contract PMRM is IPMRM, ILiquidatableManager, BaseManager, ReentrancyGuard {
   using SignedDecimalMath for int;
   using DecimalMath for uint;

@@ -14,7 +14,6 @@ import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
  * @author Lyra
  * @notice Contract that implements the logic for calculating the borrow rate
  */
-
 contract InterestRateModel is IInterestRateModel {
   using ConvertDecimals for uint;
   using SafeCast for uint;

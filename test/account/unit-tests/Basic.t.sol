@@ -114,7 +114,6 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
    * test hook data pass to Manager.handleAdjustment |
    * =================================================
    */
-
   function testAdjustmentHookTriggeredCorrectly() public {
     uint thisAcc = subAccounts.createAccount(address(this), dumbManager);
     mintAndDeposit(address(this), thisAcc, usdc, usdcAsset, 0, 10000000e18);
@@ -219,7 +218,6 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
    * tests for call flow rom Manager => Account.adjustBalance() |
    * ========================================================== *
    */
-
   function testCanAdjustBalanceFromManager() public {
     uint newAccount = subAccounts.createAccount(address(this), dumbManager);
     int amount = 1000e18;
@@ -251,7 +249,6 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
    * tests for call flow from Asset => Account.adjustBalance()  |
    * ========================================================== *
    */
-
   function testCanAdjustBalanceFromAsset() public {
     uint newAccount = subAccounts.createAccount(address(this), dumbManager);
     int amount = 1000e18;
@@ -288,7 +285,6 @@ contract UNIT_AccountBasic is Test, AccountTestBase {
    * =============================== *
    *
    */
-
   function testAssetHeldArrayUpdateCorrectly() public {
     vm.prank(bob);
     subAccounts.approve(address(this), bobAcc);

@@ -251,7 +251,6 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
    *            PMRM
    * ----------------------------
    */
-
   function testGas_PMRM_1Expiry_Small() public {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 16, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
 
@@ -432,7 +431,6 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
    *       Helper Functions
    * ----------------------------
    */
-
   function _tradeOptionsPerMarketExpiry(
     Market storage market,
     uint expiry,

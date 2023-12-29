@@ -15,7 +15,6 @@ import {MockAsset} from "./MockAsset.sol";
 /**
  * @title MockCash
  */
-
 contract MockCash is ICashAsset, MockAsset {
   using DecimalMath for uint;
 
