@@ -21,8 +21,8 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
   event SignerRegistered(uint8 id, address signer);
 
   /**
-   * @dev used as an "un-wrapper" for manager data to submit through the manager.
-   *      Data is compressed into bytes
+   * @dev used as a "proxy" to handle compressed managerData, decode them, and encode properly and relay to each feeds.
+   * @param data compressed managerData
    */
   function acceptData(bytes calldata data) external {
     IBaseManager.ManagerData[] memory feedDatas = _parseCompressedToFeedDatas(data);
@@ -33,7 +33,7 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
   }
 
   /**
-   * Map ids to feed addresses
+   * @dev register an ID for a feed addresses
    */
   function registerFeedIds(uint8 id, address feed) external onlyOwner {
     feedIds[id] = feed;
@@ -41,6 +41,9 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     emit FeedIdRegistered(id, feed);
   }
 
+  /**
+   * @dev register an ID for a signer address
+   */
   function registerSigners(uint8 id, address signer) external onlyOwner {
     signers[id] = signer;
 

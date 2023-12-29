@@ -34,7 +34,7 @@ contract OracleDataSubmitterTest is LyraFeedTestUtils {
     managerDatas[1] = IBaseManager.ManagerData(address(spotFeed2), data2);
     bytes memory managerData = abi.encode(managerDatas);
 
-    submitter.acceptData(managerData);
+    submitter.submitData(managerData);
 
     (uint spot1, uint confidence1) = spotFeed1.getSpot();
     (uint spot2, uint confidence2) = spotFeed2.getSpot();

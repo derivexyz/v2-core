@@ -52,7 +52,7 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
 
     // console2.log("final compressed data length", compressedData.length);
 
-    submitter.submitCompressedData(compressedData);
+    submitter.acceptData(compressedData);
 
     (uint spot1, uint confidence1) = spotFeed1.getSpot();
     (uint spot2, uint confidence2) = spotFeed2.getSpot();
@@ -62,6 +62,20 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
 
     assertEq(spot2, 1000e18);
     assertEq(confidence2, 1e18);
+  }
+
+  function testRegisterFeedIds() public {
+    submitter.registerFeedIds(1, address(spotFeed1));
+    submitter.registerFeedIds(2, address(spotFeed2));
+
+    assertEq(submitter.feedIds(1), address(spotFeed1));
+    assertEq(submitter.feedIds(2), address(spotFeed2));
+  }
+
+  function testRegisterSigners() public {
+    submitter.registerSigners(2, vm.addr(1234));
+
+    assertEq(submitter.signers(2), vm.addr(1234));
   }
 
   function _getDefaultSpotData() internal view returns (IBaseLyraFeed.FeedData memory) {
