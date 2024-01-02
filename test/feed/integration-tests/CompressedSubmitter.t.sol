@@ -24,8 +24,8 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
     spotFeed1.addSigner(vm.addr(pk), true);
     spotFeed2.addSigner(vm.addr(pk), true);
 
-    submitter.registerFeedIds(feedId1, address(spotFeed1));
-    submitter.registerFeedIds(feedId2, address(spotFeed2));
+    submitter.registerFeedIds(feedId1, address(spotFeed1), address(0));
+    submitter.registerFeedIds(feedId2, address(spotFeed2), address(0));
   }
 
   function testSubmitBatchData() public {
@@ -60,11 +60,16 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
   }
 
   function testRegisterFeedIds() public {
-    submitter.registerFeedIds(1, address(spotFeed1));
-    submitter.registerFeedIds(2, address(spotFeed2));
+    submitter.registerFeedIds(1, address(spotFeed1), address(0));
+    submitter.registerFeedIds(2, address(spotFeed2), address(1));
 
-    assertEq(submitter.feedIds(1), address(spotFeed1));
-    assertEq(submitter.feedIds(2), address(spotFeed2));
+    (address _feed, address _decoder) = submitter.feeds(1);
+    assertEq(_feed, address(spotFeed1));
+    assertEq(_decoder, address(0));
+
+    (_feed, _decoder) = submitter.feeds(2);
+    assertEq(_feed, address(spotFeed2));
+    assertEq(_decoder, address(1));
   }
 
   function _getDefaultSpotData() internal view returns (IBaseLyraFeed.FeedData memory) {
@@ -91,7 +96,7 @@ contract CompressedSubmitterTest is LyraFeedTestUtils {
    *    [20 x k] bytes  signers addresses;
    *    [65 x k] bytes: signatures;
    */
-  function _transformToCompressedFeedData(bytes memory data) internal view returns (bytes memory) {
+  function _transformToCompressedFeedData(bytes memory data) internal pure returns (bytes memory) {
     IBaseLyraFeed.FeedData memory feedData = abi.decode(data, (IBaseLyraFeed.FeedData));
     uint32 length = uint32(feedData.data.length);
     uint8 numOfSigners = uint8(feedData.signers.length);

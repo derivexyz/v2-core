@@ -6,14 +6,20 @@ import "../interfaces/IBaseManager.sol";
 import "../interfaces/IDataReceiver.sol";
 
 import "../interfaces/IBaseLyraFeed.sol";
+import "../interfaces/IDecoder.sol";
 
 import "forge-std/console2.sol";
 
 contract CompressedSubmitter is IDataReceiver, Ownable2Step {
-  /// @dev id to feed address
-  mapping(uint8 => address) public feedIds;
+  struct FeedInfo {
+    address feed;
+    address decoder;
+  }
 
-  event FeedIdRegistered(uint8 id, address feed);
+  /// @dev id to feed and decoder address
+  mapping(uint8 => FeedInfo) public feeds;
+
+  event FeedIdRegistered(uint8 id, address feed, address decoder);
 
   /**
    * @dev used as a "proxy" to handle compressed managerData, decode them, and encode properly and relay to each feeds.
@@ -30,10 +36,10 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
   /**
    * @dev register an ID for a feed addresses
    */
-  function registerFeedIds(uint8 id, address feed) external onlyOwner {
-    feedIds[id] = feed;
+  function registerFeedIds(uint8 id, address feed, address decoder) external onlyOwner {
+    feeds[id] = FeedInfo(feed, decoder);
 
-    emit FeedIdRegistered(id, feed);
+    emit FeedIdRegistered(id, feed, decoder);
   }
 
   /**
@@ -68,7 +74,8 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
       bytes calldata rawFeedData = data[offset:offset + length];
       offset += length;
 
-      feedDatas[i] = IBaseManager.ManagerData({receiver: feedIds[feedId], data: _buildFeedDataFromRaw(rawFeedData)});
+      feedDatas[i] =
+        IBaseManager.ManagerData({receiver: feeds[feedId].feed, data: _buildFeedDataFromRaw(feedId, rawFeedData)});
     }
 
     return feedDatas;
@@ -85,7 +92,7 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
    *  [20 x k]   bytes: k signer addresses
    *  [65 x k]   bytes: k signatures
    */
-  function _buildFeedDataFromRaw(bytes calldata data) internal view returns (bytes memory) {
+  function _buildFeedDataFromRaw(uint8 feedId, bytes calldata data) internal view returns (bytes memory) {
     IBaseLyraFeed.FeedData memory feedData;
 
     uint offset = 0;
@@ -97,6 +104,10 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     // [length] bytes of data
     feedData.data = data[offset:offset + length];
     offset += length;
+
+    if (feeds[feedId].decoder != address(0)) {
+      feedData.data = IDecoder(feeds[feedId].decoder).decode(feedData.data);
+    }
 
     // 8 bytes of deadline
     feedData.deadline = uint64(bytesToUint(data[offset:offset + 8]));
