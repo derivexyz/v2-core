@@ -2,15 +2,14 @@
 pragma solidity ^0.8.18;
 
 import "openzeppelin/access/Ownable2Step.sol";
+import "../libraries/BytesLib.sol";
 import "../interfaces/IBaseManager.sol";
 import "../interfaces/IDataReceiver.sol";
-
 import "../interfaces/IBaseLyraFeed.sol";
 import "../interfaces/IDecoder.sol";
 
-import "forge-std/console2.sol";
-
 contract CompressedSubmitter is IDataReceiver, Ownable2Step {
+
   struct FeedInfo {
     address feed;
     address decoder;
@@ -56,18 +55,18 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     // first byte of each byte array is number of feeds
     uint offset = 0;
 
-    uint8 numFeeds = uint8(bytesToUint(data[offset:offset + 1]));
+    uint8 numFeeds = uint8(BytesLib.bytesToUint(data[offset:offset + 1]));
     offset += 1;
 
     IBaseManager.ManagerData[] memory feedDatas = new IBaseManager.ManagerData[](numFeeds);
 
     for (uint i; i < numFeeds; i++) {
       // 1 bytes of ID
-      uint8 feedId = uint8(bytesToUint(data[offset:offset + 1]));
+      uint8 feedId = uint8(BytesLib.bytesToUint(data[offset:offset + 1]));
       offset += 1;
 
       // 4 bytes of data length
-      uint length = bytesToUint(data[offset:offset + 4]);
+      uint length = BytesLib.bytesToUint(data[offset:offset + 4]);
       offset += 4;
 
       // [length] bytes of data
@@ -98,7 +97,7 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     uint offset = 0;
 
     // 4 bytes of data length
-    uint length = bytesToUint(data[offset:offset + 4]);
+    uint length = BytesLib.bytesToUint(data[offset:offset + 4]);
     offset += 4;
 
     // [length] bytes of data
@@ -110,22 +109,22 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     }
 
     // 8 bytes of deadline
-    feedData.deadline = uint64(bytesToUint(data[offset:offset + 8]));
+    feedData.deadline = uint64(BytesLib.bytesToUint(data[offset:offset + 8]));
     offset += 8;
 
     // 8 bytes of timestamp
-    feedData.timestamp = uint64(bytesToUint(data[offset:offset + 8]));
+    feedData.timestamp = uint64(BytesLib.bytesToUint(data[offset:offset + 8]));
     offset += 8;
 
     {
       // 1 byte of number of signers
-      uint8 numSigners = uint8(bytesToUint(data[offset:offset + 1]));
+      uint8 numSigners = uint8(BytesLib.bytesToUint(data[offset:offset + 1]));
       offset += 1;
 
       // [20 x k] bytes of signer addresses;
       address[] memory _signers = new address[](numSigners);
       for (uint i; i < numSigners; i++) {
-        _signers[i] = address(uint160(bytesToUint(data[offset:offset + 20])));
+        _signers[i] = address(uint160(BytesLib.bytesToUint(data[offset:offset + 20])));
         offset += 20;
       }
       feedData.signers = _signers;
@@ -143,12 +142,5 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     return abi.encode(feedData);
   }
 
-  /**
-   * @dev Convert bytes to uint
-   */
-  function bytesToUint(bytes memory b) internal pure returns (uint num) {
-    for (uint i = 0; i < b.length; i++) {
-      num = num + uint(uint8(b[i])) * (2 ** (8 * (b.length - (i + 1))));
-    }
-  }
+  
 }
