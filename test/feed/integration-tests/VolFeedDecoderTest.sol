@@ -6,7 +6,6 @@ import "../../../src/periphery/VolFeedDecoder.sol";
 import "../../../src/feeds/LyraSpotFeed.sol";
 import "../../../src/feeds/LyraVolFeed.sol";
 
-
 import "../unit-tests/LyraFeedTestUtils.sol";
 import "./CompressedDataUtils.t.sol";
 
@@ -68,5 +67,4 @@ contract VolFeedDecoderTest is LyraFeedTestUtils, CompressedDataUtils {
     // assertEq(spot2, 1000e18);
     // assertEq(confidence2, 1e18);
   }
-
 }

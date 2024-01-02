@@ -9,7 +9,6 @@ import "../interfaces/IBaseLyraFeed.sol";
 import "../interfaces/IDecoder.sol";
 
 contract CompressedSubmitter is IDataReceiver, Ownable2Step {
-
   struct FeedInfo {
     address feed;
     address decoder;
@@ -141,6 +140,4 @@ contract CompressedSubmitter is IDataReceiver, Ownable2Step {
     }
     return abi.encode(feedData);
   }
-
-  
 }

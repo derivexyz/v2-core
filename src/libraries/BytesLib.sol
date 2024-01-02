@@ -7,7 +7,6 @@ pragma solidity ^0.8.18;
  * @notice bytes to uint conversion
  */
 library BytesLib {
-  
   /**
    * @dev Convert bytes to uint
    */
