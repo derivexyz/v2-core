@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../../../src/interfaces/IBaseLyraFeed.sol";
 
+
 abstract contract CompressedDataUtils {
   /**
    * Convert abi encoded bytes to the following format:

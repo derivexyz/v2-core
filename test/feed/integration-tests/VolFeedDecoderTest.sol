@@ -9,62 +9,104 @@ import "../../../src/feeds/LyraVolFeed.sol";
 import "../unit-tests/LyraFeedTestUtils.sol";
 import "./CompressedDataUtils.t.sol";
 
-import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
+import "forge-std/console2.sol";
 
 contract VolFeedDecoderTest is LyraFeedTestUtils, CompressedDataUtils {
   uint pk = 0xBEEF;
 
   CompressedSubmitter submitter;
-  LyraSpotFeed spotFeed;
   LyraVolFeed volFeed;
   VolFeedDecoder decoder;
 
-  uint8 spotFeedId = 1;
-  uint8 volFeedId = 2;
+  uint8 volFeedId = 1;
+
+  uint64 defaultExpiry = uint64(block.timestamp + 180 days);
 
   function setUp() public {
     submitter = new CompressedSubmitter();
-    spotFeed = new LyraSpotFeed();
     volFeed = new LyraVolFeed();
     decoder = new VolFeedDecoder();
 
-    spotFeed.addSigner(vm.addr(pk), true);
     volFeed.addSigner(vm.addr(pk), true);
-
-    // spot feed has no decoder
-    submitter.registerFeedIds(spotFeedId, address(spotFeed), address(0));
 
     submitter.registerFeedIds(volFeedId, address(volFeed), address(decoder));
   }
 
-  function testSubmitBatchData() public {
+  function testSubmitCompressedVolData() public {
     // prepare raw data
-    // IBaseLyraFeed.FeedData memory spotData1 = _getDefaultSpotData();
+    IBaseLyraFeed.FeedData memory volData = _getDefaultVolData();
 
-    // bytes memory data1 = _transformToCompressedFeedData(_signFeedData(spotFeed1, pk, spotData1));
+    // sign the original format, and encode back to bytes
+    bytes memory signedBytes = _signFeedData(volFeed, pk, volData);
 
-    // IBaseLyraFeed.FeedData memory spotData2 = _getDefaultSpotData();
-    // bytes memory data2 = _transformToCompressedFeedData(_signFeedData(spotFeed2, pk, spotData2));
+    // decode the bytes, compress the data field, and encode back to bytes
+    bytes memory data = _transformToCompressedFeedData(_compressFeedData(signedBytes));
 
-    // uint32 data1Length = uint32(data1.length);
-    // uint32 data2Length = uint32(data2.length);
+    uint32 dataLength = uint32(data.length);
 
-    // uint8 numOfFeeds = 1;
+    uint8 numOfFeeds = 1;
 
-    // bytes[] memory managerDatas = new bytes[](2);
-    // bytes memory compressedData = abi.encodePacked(numOfFeeds, spotFeedId, data1Length, data1);
+    bytes memory compressedData = abi.encodePacked(numOfFeeds, volFeedId, dataLength, data);
 
-    // console2.log("final compressed data length", compressedData.length);
+    submitter.acceptData(compressedData);
 
-    // submitter.acceptData(compressedData);
+    (uint vol, uint confidence) = volFeed.getVol(uint128(uint(1500e18)), defaultExpiry);
+    assertApproxEqAbs(vol, 1.1728e18, 0.0001e18);
+    assertEq(confidence, 1e18);
+  }
 
-    // (uint spot1, uint confidence1) = spotFeed.getSpot();
-    // (uint spot2, uint confidence2) = spotFeed.getSpot();
+  function _getDefaultVolData() internal view returns (IBaseLyraFeed.FeedData memory) {
+    int SVI_a = 1e18;
+    uint SVI_b = 1.5e18;
+    int SVI_rho = -0.1e18;
+    int SVI_m = -0.05e18;
+    uint SVI_sigma = 0.05e18;
+    uint SVI_fwd = 1200e18;
+    uint64 SVI_refTau = 1e18; // 1 year
+    uint64 confidence = 1e18;
 
-    // assertEq(spot1, 1000e18);
-    // assertEq(confidence1, 1e18);
+    // constructed in the legacy way: not compressed
+    bytes memory volData =
+      abi.encode(defaultExpiry, SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd, SVI_refTau, confidence);
 
-    // assertEq(spot2, 1000e18);
-    // assertEq(confidence2, 1e18);
+    return IBaseLyraFeed.FeedData({
+      data: volData,
+      timestamp: uint64(block.timestamp),
+      deadline: block.timestamp + 5,
+      signers: new address[](1),
+      signatures: new bytes[](1)
+    });
+  }
+
+  /// @dev take the "FeedData" bytes, decode, compressed the "data" field according to the new format, and encode back to "FeedData" -> bytes
+  function _compressFeedData(bytes memory feedDataInput) internal pure returns (bytes memory) {
+    IBaseLyraFeed.FeedData memory input = abi.decode(feedDataInput, (IBaseLyraFeed.FeedData));
+
+    (
+      uint64 expiry,
+      int SVI_a,
+      uint SVI_b,
+      int SVI_rho,
+      int SVI_m,
+      uint SVI_sigma,
+      uint SVI_fwd,
+      uint64 SVI_refTau,
+      uint64 confidence
+    ) = abi.decode(input.data, (uint64, int, uint, int, int, uint, uint, uint64, uint64));
+
+    // override with new data (packed)
+    input.data = abi.encodePacked(
+      uint64(expiry),
+      int80(SVI_a),
+      uint80(SVI_b),
+      int80(SVI_rho),
+      int80(SVI_m),
+      uint80(SVI_sigma),
+      uint96(SVI_fwd),
+      uint64(SVI_refTau),
+      uint64(confidence)
+    );
+
+    return abi.encode(input);
   }
 }

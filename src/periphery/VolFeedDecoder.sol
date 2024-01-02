@@ -21,16 +21,16 @@ contract VolFeedDecoder is IDecoder {
     uint64 expiry = uint64(BytesLib.bytesToUint(data[offset:offset + 8]));
     offset += 8;
 
-    int SVI_a = int(BytesLib.bytesToUint(data[offset:offset + 10]));
+    int SVI_a = int80(uint80(BytesLib.bytesToUint(data[offset:offset + 10])));
     offset += 10;
 
     uint SVI_b = uint(BytesLib.bytesToUint(data[offset:offset + 10]));
     offset += 10;
 
-    int SVI_rho = int(BytesLib.bytesToUint(data[offset:offset + 10]));
+    int SVI_rho = int80(uint80(BytesLib.bytesToUint(data[offset:offset + 10])));
     offset += 10;
 
-    int SVI_m = int(BytesLib.bytesToUint(data[offset:offset + 10]));
+    int SVI_m = int80(uint80(BytesLib.bytesToUint(data[offset:offset + 10])));
     offset += 10;
 
     uint SVI_sigma = uint(BytesLib.bytesToUint(data[offset:offset + 10]));
@@ -40,8 +40,9 @@ contract VolFeedDecoder is IDecoder {
     uint SVI_fwd = uint(BytesLib.bytesToUint(data[offset:offset + 12]));
     offset += 12;
 
-    uint64 SVI_refTau = uint64(BytesLib.bytesToUint(data[offset:offset + 10]));
-    offset += 10;
+    // vol feed can be fit in uint64 (0, 1e18)
+    uint64 SVI_refTau = uint64(BytesLib.bytesToUint(data[offset:offset + 8]));
+    offset += 8;
 
     // confidence is between [0, 1e18]
     uint64 confidence = uint64(BytesLib.bytesToUint(data[offset:offset + 8]));

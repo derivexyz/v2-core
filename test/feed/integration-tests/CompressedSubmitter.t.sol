@@ -42,7 +42,6 @@ contract CompressedSubmitterTest is LyraFeedTestUtils, CompressedDataUtils {
 
     uint8 numOfFeeds = 2;
 
-    // bytes[] memory managerDatas = new bytes[](2);
     bytes memory compressedData = abi.encodePacked(numOfFeeds, feedId1, data1Length, data1, feedId2, data2Length, data2);
 
     // console2.log("final compressed data length", compressedData.length);
