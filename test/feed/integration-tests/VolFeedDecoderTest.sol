@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import "../../../src/periphery/CompressedSubmitter.sol";
 import "../../../src/periphery/VolFeedDecoder.sol";
-import "../../../src/feeds/LyraSpotFeed.sol";
 import "../../../src/feeds/LyraVolFeed.sol";
 
 import "../unit-tests/LyraFeedTestUtils.sol";
