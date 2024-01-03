@@ -20,7 +20,6 @@ import {BasePortfolioViewer} from "./BasePortfolioViewer.sol";
  * @author Lyra
  * @notice Read only contract that helps with converting portfolio and balances
  */
-
 contract SRMPortfolioViewer is BasePortfolioViewer, ISRMPortfolioViewer {
   using SafeCast for uint;
   using SafeCast for int;

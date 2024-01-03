@@ -21,7 +21,6 @@ import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
  * @author Lyra
  * @notice Read only contract that helps with converting portfolio and balances
  */
-
 contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
   using DecimalMath for uint;
   using SafeCast for uint;
