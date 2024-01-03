@@ -27,9 +27,6 @@ contract DeployERC20s is Utils {
 
     LyraERC20 weth = new LyraERC20("Lyra WETH", "WETH", 18);
 
-    console2.log("usdt", address(usdt));
-
-
     address[] memory feedSigners = new address[](1);
     feedSigners[0] = deployer;
 
