@@ -41,4 +41,8 @@ contract UNIT_LyraERC20_Test is Test {
     vm.expectRevert(LyraERC20.OnlyMinter.selector);
     usdc.mint(address(this), 100);
   }
+
+  function testDecimals() public {
+    assertEq(usdc.decimals(), 6);
+  }
 }
