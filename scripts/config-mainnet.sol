@@ -59,7 +59,7 @@ library Config {
         basisContParams = IPMRMLib.BasisContingencyParameters({
             scenarioSpotUp: 1.05e18,
             scenarioSpotDown: 0.95e18,
-            basisContAddFactor: 0.4e18,
+            basisContAddFactor: 1.0e18,
             basisContMultFactor: 1.2e18
         });
 
@@ -70,7 +70,7 @@ library Config {
             confMargin: 1e18,
             basePercent: 0.03e18,
             perpPercent: 0.03e18,
-            optionPercent: 0.01e18
+            optionPercent: 0.02e18
         });
 
         marginParams = IPMRMLib.MarginParameters({

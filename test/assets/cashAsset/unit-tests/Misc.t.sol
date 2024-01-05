@@ -11,6 +11,7 @@ import "../../../../src/assets/CashAsset.sol";
 import "../../../../src/SubAccounts.sol";
 
 import "../../../../src/interfaces/IDutchAuction.sol";
+import "../../../risk-managers/mocks/MockDutchAuction.sol";
 
 /**
  * @dev we deploy actual Account contract in these tests to simplify verification process
@@ -19,6 +20,7 @@ contract UNIT_CashAssetDeposit is Test {
   CashAsset cashAsset;
   MockERC20 usdc;
   MockManager manager;
+  MockDutchAuction auction;
   SubAccounts subAccounts;
   IInterestRateModel rateModel;
 
@@ -26,6 +28,7 @@ contract UNIT_CashAssetDeposit is Test {
     subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
     manager = new MockManager(address(subAccounts));
+    auction = new MockDutchAuction();
 
     usdc = new MockERC20("USDC", "USDC");
     usdc.setDecimals(6);
@@ -84,5 +87,30 @@ contract UNIT_CashAssetDeposit is Test {
     vm.prank(address(0xaa));
     vm.expectRevert(ICashAsset.CA_DonateBalanceNotAuthorized.selector);
     cashAsset.donateBalance(newId, 10e6);
+  }
+
+  /// @dev This test actually fails, this is a known issue
+  function testDepositCashFromHigherDecimals() public {
+    uint newId = subAccounts.createAccount(address(this), manager);
+
+    MockERC20 highDec = new MockERC20("HighDec", "HighDec");
+    highDec.setDecimals(30);
+
+    CashAsset newAsset = new CashAsset(subAccounts, highDec, rateModel);
+    newAsset.setWhitelistManager(address(manager), true);
+    newAsset.setLiquidationModule(auction);
+
+    highDec.mint(address(this), 100e30);
+    highDec.approve(address(newAsset), 100e30);
+
+    newAsset.deposit(newId, 99e30 + 1);
+
+    assertEq(highDec.balanceOf(address(newAsset)), 99e30 + 1);
+    assertEq(subAccounts.getBalance(newId, newAsset, 0), 99e18); // 18 decimals
+
+    // can withdraw, but expected result is not correct
+    newAsset.withdraw(newId, 98e30 + 9.99999e11, address(0xb0b));
+    // assertEq(highDec.balanceOf(address(0xb0b)), 98e30 + 9.99999e11);
+    // assertEq(subAccounts.getBalance(newId, newAsset, 0), 1e18 - 1); // 18 decimals
   }
 }

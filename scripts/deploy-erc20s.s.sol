@@ -30,6 +30,9 @@ contract DeployERC20s is Utils {
     address[] memory feedSigners = new address[](1);
     feedSigners[0] = deployer;
 
+    address[] memory feedSigners = new address[](1);
+    feedSigners[0] = deployer;
+
     // write to configs file: eg: input/31337/config.json
     string memory objKey = "network-config";
     vm.serializeAddress(objKey, "usdc", address(usdc));
