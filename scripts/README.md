@@ -45,7 +45,7 @@ mkdir scripts/input/999
 
 # deploy mocks and write (or override) config. 
 # Note: Replace sepolia with other network alias if needed
-forge script scripts/deploy-mocks.s.sol  --rpc-url sepolia --broadcast
+forge script scripts/deploy-erc20s.s.sol  --rpc-url sepolia --broadcast
 ```
 
 ## 2. Deploy Core contracts
