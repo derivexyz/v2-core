@@ -241,17 +241,7 @@ contract IntegrationTestBase is Test {
     market.pmrmViewer = new BasePortfolioViewer(subAccounts, cash);
     market.pmrmLib = new PMRMLib();
 
-    market.pmrm = new PMRM(
-      subAccounts, 
-      cash, 
-      option, 
-      perp, 
-      base, 
-      auction,
-      feeds,
-      market.pmrmViewer,
-      market.pmrmLib
-    );
+    market.pmrm = new PMRM(subAccounts, cash, option, perp, base, auction, feeds, market.pmrmViewer, market.pmrmLib);
 
     perp.setSpotFeed(market.spotFeed);
     perp.setPerpFeed(market.perpFeed);

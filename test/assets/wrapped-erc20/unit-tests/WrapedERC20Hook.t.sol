@@ -99,4 +99,24 @@ contract UNIT_WrappedBaseAssetHook is Test {
     );
     subAccounts.submitTransfer(assetTransfer, "");
   }
+
+  function testDepositFromHigherDecimals() public {
+    MockERC20 highDec = new MockERC20("HighDec", "HighDec");
+    highDec.setDecimals(30);
+
+    WrappedERC20Asset newAsset = new WrappedERC20Asset(subAccounts, highDec);
+    newAsset.setWhitelistManager(address(manager), true);
+
+    highDec.mint(address(this), 100e30);
+    highDec.approve(address(newAsset), 100e30);
+
+    newAsset.deposit(accId, 99e30 + 1);
+
+    assertEq(highDec.balanceOf(address(newAsset)), 99e30 + 1);
+    assertEq(subAccounts.getBalance(accId, newAsset, 0), 99e18); // 18 decimals
+
+    newAsset.withdraw(accId, 98e30 + 9.99999e11, address(0xb0b));
+    assertEq(highDec.balanceOf(address(0xb0b)), 98e30 + 9.99999e11);
+    assertEq(subAccounts.getBalance(accId, newAsset, 0), 1e18 - 1); // 18 decimals
+  }
 }
