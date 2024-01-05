@@ -11,7 +11,6 @@ import {IManagerWhitelist} from "../../../src/interfaces/IManagerWhitelist.sol";
  * @dev   Contract for assets to control whitelisted managers.
  * @author Lyra
  */
-
 abstract contract ManagerWhitelist is IManagerWhitelist, Ownable2Step {
   /// @dev Account contract address
   ISubAccounts public immutable subAccounts;

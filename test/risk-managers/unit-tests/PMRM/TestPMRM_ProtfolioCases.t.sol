@@ -218,7 +218,6 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   /**
    * Tests with some env settings
    */
-
   function testCase39() public {
     stableFeed.setSpot(0.2e18, 1e18);
     _runTestCase(".test_depeg_contingency_pm");

@@ -21,14 +21,6 @@ Also, it's easier to add the rpc network into `foundry.toml`, so we can use the 
 sepolia = https://sepolia.infura.io/v3/26251a7744c548a3adbc17880fc70764
 ```
 
-Currently we have the default RPC ready for:
-
-```
-sepolia
-conduit_prod
-conduit_staging
-```
-
 
 ## Deploying to a new network 
 
@@ -53,7 +45,7 @@ mkdir scripts/input/999
 
 # deploy mocks and write (or override) config. 
 # Note: Replace sepolia with other network alias if needed
-forge script scripts/deploy-mocks.s.sol  --rpc-url sepolia --broadcast
+forge script scripts/deploy-erc20s.s.sol  --rpc-url sepolia --broadcast
 ```
 
 ## 2. Deploy Core contracts

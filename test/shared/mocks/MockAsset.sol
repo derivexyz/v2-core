@@ -13,7 +13,6 @@ import {IManager} from "../../../src/interfaces/IManager.sol";
  * @dev   deployer can set MockAsset to not allow balance go negative.
  *        if set to "allowNegativeBalance = false", token must be deposited before using
  */
-
 contract MockAsset is IAsset {
   using DecimalMath for uint;
 

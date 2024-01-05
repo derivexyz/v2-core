@@ -11,7 +11,6 @@ import "../../../../src/interfaces/IInterestRateModel.sol";
  * @author Lyra
  * @notice Contract that implements the logic for calculating the borrow rate
  */
-
 contract MockInterestRateModel is IInterestRateModel {
   using SafeCast for uint;
   using DecimalMath for uint;
