@@ -37,8 +37,6 @@ contract ExploiterManager is ILiquidatableManager, BaseManager {
 
   function settleOptions(IOptionAsset _option, uint accountId) external override {}
 
-  function settleInterest(uint accountId) external override(BaseManager, IBaseManager) {}
-
   function getMargin(uint accountId, bool isInitial) external view returns (int) {
     return margin;
   }

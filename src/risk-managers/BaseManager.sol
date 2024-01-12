@@ -234,7 +234,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
    * @dev settle pending interest on an account
    * @param accountId account id
    */
-  function settleInterest(uint accountId) external virtual {
+  function settleInterest(uint accountId) external {
     subAccounts.managerAdjustment(ISubAccounts.AssetAdjustment(accountId, cashAsset, 0, 0, bytes32(0)));
   }
 
