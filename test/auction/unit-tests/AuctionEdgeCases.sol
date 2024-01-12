@@ -12,6 +12,7 @@ contract TestAuctionEdgeCases is DutchAuctionBase {
 
     publicAuction = new PublicDutchAuction(subAccounts, sm, usdcAsset);
     publicAuction.setAuctionParams(_getDefaultAuctionParams());
+    publicAuction.setWhitelistManager(address(manager), true);
   }
 
   function testGetInsolventBidPriceEdgeCases() public {

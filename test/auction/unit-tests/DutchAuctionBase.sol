@@ -42,6 +42,8 @@ contract DutchAuctionBase is Test {
     dutchAuction = new DutchAuction(subAccounts, sm, usdcAsset);
 
     dutchAuction.setAuctionParams(_getDefaultAuctionParams());
+    dutchAuction.setWhitelistManager(address(sm), true);
+    dutchAuction.setWhitelistManager(address(manager), true);
   }
 
   /// @dev deploy mock system

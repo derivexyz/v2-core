@@ -71,6 +71,8 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   /// @dev The parameters for the solvent auction phase
   AuctionParams public auctionParams;
 
+  mapping(address => bool) public managerWhitelisted;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -111,6 +113,15 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     emit SMAccountSet(_smAccount);
   }
 
+  /**
+   * @notice Enables or disables starting and bidding on auctions for a given manager
+   */
+  function setWhitelistManager(address manager, bool whitelisted) external onlyOwner {
+    managerWhitelisted[manager] = whitelisted;
+
+    emit ManagerWhitelisted(manager, whitelisted);
+  }
+
   /////////////////////
   //  Begin Auction  //
   /////////////////////
@@ -127,6 +138,11 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   function _startAuction(uint accountId, uint scenarioId) internal {
     // settle pending interest rate on an account
     ILiquidatableManager accountManager = ILiquidatableManager(address(subAccounts.manager(accountId)));
+
+    if (!managerWhitelisted[address(accountManager)]) {
+      revert DA_NotWhitelistedManager();
+    }
+
     accountManager.settleInterest(accountId);
     accountManager.settlePerpsWithIndex(accountId);
 
@@ -279,6 +295,15 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     }
 
     ILiquidatableManager accountManager = ILiquidatableManager(address(subAccounts.manager(accountId)));
+
+    if (!managerWhitelisted[address(accountManager)]) {
+      revert DA_NotWhitelistedManager();
+    }
+
+    if (address(accountManager) != address(subAccounts.manager(bidderId))) {
+      revert DA_CannotBidWithDifferentManager();
+    }
+
     // Settle perps to make sure all PNL is realized in cash.
     accountManager.settleInterest(accountId);
     accountManager.settlePerpsWithIndex(accountId);

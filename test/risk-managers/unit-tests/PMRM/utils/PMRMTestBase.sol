@@ -137,6 +137,8 @@ contract PMRMTestBase is JsonMechIO {
     lib.setOtherContingencyParams(otherContParams);
     lib.setMarginParams(marginParams);
     lib.setVolShockParams(volShockParams);
+
+    auction.setWhitelistManager(address(pmrm), true);
   }
 
   function _logPortfolio(IPMRM.Portfolio memory portfolio) internal view {
