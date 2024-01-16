@@ -15,6 +15,9 @@ import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
 import {IPMRM} from "../src/interfaces/IPMRM.sol";
 import {IManager} from "../src/interfaces/IManager.sol";
+import {IStandardManager} from "../src/interfaces/IStandardManager.sol";
+import {IForwardFeed} from "../src/interfaces/IForwardFeed.sol";
+import {IVolFeed} from "../src/interfaces/IVolFeed.sol";
 
 import {MockSpotDiffFeed} from "../test/shared/mocks/MockSpotDiffFeed.sol";
 
