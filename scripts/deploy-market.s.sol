@@ -108,7 +108,7 @@ contract DeployMarket is Utils {
       market.forwardFeed.addSigner(config.feedSigners[i], true);
     }
 
-  market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
+    market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
 
     (int staticInterestRate, int fundingRateCap, uint fundingConvergencePeriod) = Config.getPerpParams();
 

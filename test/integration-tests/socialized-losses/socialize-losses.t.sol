@@ -7,6 +7,49 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "../shared/IntegrationTestBase.t.sol";
 import {IManager} from "src/interfaces/IManager.sol";
+import {MockManager} from "../../shared/mocks/MockManager.sol";
+
+contract ExploiterManager is ILiquidatableManager, BaseManager {
+  int public margin = 0;
+  int public mtm = 0;
+
+  constructor(
+    ISubAccounts _subAccounts,
+    ICashAsset _cashAsset,
+    IDutchAuction _liquidation,
+    IBasePortfolioViewer _viewer
+  ) BaseManager(_subAccounts, _cashAsset, _liquidation, _viewer) {}
+
+  function handleAdjustment(
+    uint, /*accountId*/
+    uint, /*tradeId*/
+    address,
+    ISubAccounts.AssetDelta[] calldata, /*assetDeltas*/
+    bytes memory
+  ) public {}
+
+  function setMarginMtm(int _margin, int _mtm) public {
+    margin = _margin;
+    mtm = _mtm;
+  }
+
+  function settlePerpsWithIndex(uint accountId) external override {}
+
+  function settleOptions(IOptionAsset _option, uint accountId) external override {}
+
+  function getMargin(uint accountId, bool isInitial) external view returns (int) {
+    return margin;
+  }
+
+  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId)
+    external
+    view
+    override
+    returns (int, int)
+  {
+    return (margin, mtm);
+  }
+}
 
 /**
  * @dev insolvent auction leads to socialize losses
@@ -46,6 +89,27 @@ contract INTEGRATION_SocializeLosses is IntegrationTestBase {
 
     // charlie deposits into security module
     _depositCash(charlie, smAcc, initSMFund);
+  }
+
+  // whole flow from being insolvent => no enough fund in sm => socialized losses
+  function testCannotBidWithDifferentManager() public {
+    ExploiterManager exploiterManager = new ExploiterManager(subAccounts, cash, auction, portfolioViewer);
+    uint exploiterAcc = subAccounts.createAccount(address(alice), IManager(address(exploiterManager)));
+
+    exploiterManager.setMarginMtm(-1e18, -1e18);
+
+    // Cannot start auction with different manager
+    vm.expectRevert(IDutchAuction.DA_NotWhitelistedManager.selector);
+    auction.startAuction(exploiterAcc, 0);
+
+    _setSpotPrice("weth", 5000e18, 1e18);
+    _setDefaultFeedValues();
+    auction.startAuction(aliceAcc, 0);
+
+    // cannot bid on auction with different exploiterManager
+    vm.startPrank(alice);
+    vm.expectRevert(IDutchAuction.DA_CannotBidWithDifferentManager.selector);
+    auction.bid(aliceAcc, exploiterAcc, 1e18, 0, 0);
   }
 
   // whole flow from being insolvent => no enough fund in sm => socialized losses

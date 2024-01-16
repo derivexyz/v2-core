@@ -159,6 +159,7 @@ contract IntegrationTestBase is Test {
   function _setupCoreContracts() internal {
     // set parameter for auction
     auction.setAuctionParams(_getDefaultAuctionParams());
+    auction.setWhitelistManager(address(srm), true);
 
     // allow liquidation to request payout from sm
     securityModule.setWhitelistModule(address(auction), true);
@@ -184,6 +185,7 @@ contract IntegrationTestBase is Test {
     _setupAssetCapsForManager(key, markets[key].pmrm, 1000e18);
 
     cash.setWhitelistManager(address(markets[key].pmrm), true);
+    auction.setWhitelistManager(address(markets[key].pmrm), true);
 
     // setup feeds
     _setSignerForFeeds(key, keeper);

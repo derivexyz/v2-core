@@ -70,6 +70,8 @@ interface IDutchAuction {
 
   event SMAccountSet(uint smAccount);
 
+  event ManagerWhitelisted(address manager, bool whitelisted);
+
   ////////////
   // ERRORS //
   ////////////
@@ -111,6 +113,12 @@ interface IDutchAuction {
 
   /// @dev emitted when a bid is submitted and the lastTradeId of the account mismatches the expected value
   error DA_InvalidLastTradeId();
+
+  /// @dev emitted when the manager of the account being liquidated is not whitelisted
+  error DA_NotWhitelistedManager();
+
+  /// @dev emitted when the bidder has a different manager to the account being liquidated
+  error DA_CannotBidWithDifferentManager();
 
   /// @dev emitted when a bid is submitted for 0% of the portfolio
   error DA_AmountIsZero();
