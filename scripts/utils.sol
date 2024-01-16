@@ -84,7 +84,7 @@ contract Utils is Script {
     console2.log("Written to deployment ", string.concat(deploymentDir, chainDir, file));
   }
 
-  function _getMarketERC20(string memory name) internal pure returns (address) {
+  function _getMarketERC20(string memory name) internal view returns (address) {
     string memory file = _readInput("config");
     return abi.decode(vm.parseJson(file, string.concat(".", _toLower(name))), (address));
   }
