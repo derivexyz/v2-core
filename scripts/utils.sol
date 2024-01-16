@@ -26,8 +26,6 @@ contract Utils is Script {
     string memory file = _readInput("config");
 
     config.usdc = abi.decode(vm.parseJson(file, ".usdc"), (address));
-    config.weth = abi.decode(vm.parseJson(file, ".weth"), (address));
-    config.wbtc = abi.decode(vm.parseJson(file, ".wbtc"), (address));
     config.feedSigners = abi.decode(vm.parseJson(file, ".feedSigners"), (address[]));
     config.useMockedFeed = abi.decode(vm.parseJson(file, ".useMockedFeed"), (bool));
   }

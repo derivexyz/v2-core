@@ -32,8 +32,6 @@ import {PerpSettlementHelper} from "../src/periphery/PerpSettlementHelper.sol";
 
 struct ConfigJson {
   address usdc;
-  address wbtc; // needed if you want to use deploy-market.s.sol with market = wbtc
-  address weth; // needed if you want to use deploy-market.s.sol with market = weth
   bool useMockedFeed;
   address[] feedSigners;
 }
