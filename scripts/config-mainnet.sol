@@ -158,6 +158,11 @@ library Config {
                 marginFactor: 0.75e18,
                 IMScale: 0.93e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("USDT"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.98e18,
+                IMScale: 0.98e18
+            });
         } else {
             revert("market not supported");
         }
@@ -172,6 +177,10 @@ library Config {
             perpCap = 12_000e18;
             optionCap = 100_000e18;
             baseCap = 5e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("USDT"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 100_000e18;
         } else {
             revert("market not supported");
         }

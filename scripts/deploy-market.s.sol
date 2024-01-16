@@ -69,7 +69,7 @@ contract DeployMarket is Utils {
   /// @dev deploy all contract needed for a single market
   function _deployMarketContracts(string memory marketName, ConfigJson memory config, Deployment memory deployment) internal returns (Market memory market)  {
     // get the market ERC20 from config (it should be added to the config)
-    address marketERC20 = _getMarketERC20(marketName, config);
+    address marketERC20 = _getMarketERC20(marketName);
 
     console2.log("target erc20:", marketERC20);
 
@@ -190,6 +190,7 @@ contract DeployMarket is Utils {
   }
 
   function _setPermissionAndCaps(Deployment memory deployment, string memory marketName, Market memory market) internal {
+    deployment.auction.setWhitelistManager(address(market.pmrm), true);
     deployment.cash.setWhitelistManager(address(market.pmrm), true);
 
     // each asset whitelist the newly deployed PMRM
