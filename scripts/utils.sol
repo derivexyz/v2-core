@@ -6,6 +6,20 @@ import "./types.sol";
 
 contract Utils is Script {
 
+  function _toLower(string memory str) internal pure returns (string memory) {
+    bytes memory bStr = bytes(str);
+    bytes memory bLower = new bytes(bStr.length);
+    for (uint i = 0; i < bStr.length; i++) {
+      // Uppercase character...
+      if ((uint8(bStr[i]) >= 65) && (uint8(bStr[i]) <= 90)) {
+        // So we add 32 to make it lowercase
+        bLower[i] = bytes1(uint8(bStr[i]) + 32);
+      } else {
+        bLower[i] = bStr[i];
+      }
+    }
+    return string(bLower);
+  }
 
   /// @dev get config from current chainId
   function _loadConfig() internal view returns (ConfigJson memory config) {
@@ -70,13 +84,8 @@ contract Utils is Script {
     console2.log("Written to deployment ", string.concat(deploymentDir, chainDir, file));
   }
 
-  function _getMarketERC20(string memory name, ConfigJson memory config) internal pure returns (address) {
-    if (keccak256(bytes(name)) == keccak256(bytes("ETH"))) {
-      return config.weth;
-    } else if (keccak256(bytes(name)) == keccak256(bytes("BTC"))) {
-      return config.wbtc;
-    } else {
-      revert("invalid market name");
-    }
+  function _getMarketERC20(string memory name) internal pure returns (address) {
+    string memory file = _readInput("config");
+    return abi.decode(vm.parseJson(file, string.concat(".", _toLower(name))), (address));
   }
 }

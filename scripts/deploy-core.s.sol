@@ -97,6 +97,7 @@ contract DeployCore is Utils {
         deployment.srmViewer.setStandardManager(deployment.srm);
 
         deployment.auction.setSMAccount(deployment.securityModule.accountId());
+        deployment.auction.setWhitelistManager(address(deployment.srm), true);
 
         // setup cash
         deployment.cash.setLiquidationModule(deployment.auction);
