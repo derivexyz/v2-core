@@ -96,11 +96,7 @@ contract UNIT_TestStandardManager_Option is Test {
     // set init perp trading parameters
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.1e18);
 
-    (
-      ,
-      IStandardManager.OptionMarginParams memory params,
-      ,
-    ) = Config.getSRMParams();
+    (, IStandardManager.OptionMarginParams memory params,,) = Config.getSRMParams();
     params.unpairedIMScale = 1.4e18;
     params.unpairedMMScale = 1.2e18;
     manager.setOptionMarginParams(ethMarketId, params);
@@ -172,14 +168,12 @@ contract UNIT_TestStandardManager_Option is Test {
   }
 
   function testCannotSetOptionParamsForInvalidMarketId() public {
-    vm.expectRevert(IStandardManager.SRM_MarketNotCreated.selector);
-    (
-      ,
-      IStandardManager.OptionMarginParams memory params,
-      ,
-    ) = Config.getSRMParams();
+    uint lastId = manager.lastMarketId();
 
-    manager.setOptionMarginParams(5, params);
+    (, IStandardManager.OptionMarginParams memory params,,) = Config.getSRMParams();
+
+    vm.expectRevert(IStandardManager.SRM_MarketNotCreated.selector);
+    manager.setOptionMarginParams(lastId + 1, params);
   }
 
   function testSetOracles() public {

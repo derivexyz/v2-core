@@ -19,11 +19,7 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
   function setUp() public override {
     super.setUp();
 
-    (
-      ,
-      ,
-      IStandardManager.OracleContingencyParams memory oracleContingencyParams,
-    ) = Config.getSRMParams();
+    (,, IStandardManager.OracleContingencyParams memory oracleContingencyParams,) = Config.getSRMParams();
 
     manager.setOracleContingencyParams(ethMarketId, oracleContingencyParams);
     manager.setOracleContingencyParams(btcMarketId, oracleContingencyParams);

@@ -27,12 +27,8 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   }
 
   function testCannotSetInvalidMarginParams() public {
-    (
-      ,
-      IStandardManager.OptionMarginParams memory params,
-      ,
-    ) = Config.getSRMParams();
-    
+    (, IStandardManager.OptionMarginParams memory params,,) = Config.getSRMParams();
+
     vm.expectRevert(IStandardManager.SRM_InvalidOptionMarginParams.selector);
     params.maxSpotReq = 1.5e18;
     manager.setOptionMarginParams(ethMarketId, params);

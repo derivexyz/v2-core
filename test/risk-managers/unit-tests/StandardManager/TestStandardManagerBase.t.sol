@@ -150,11 +150,7 @@ contract TestStandardManagerBase is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
 
-    (
-      ,
-      IStandardManager.OptionMarginParams memory optionParams,
-      ,
-    ) = Config.getSRMParams();
+    (, IStandardManager.OptionMarginParams memory optionParams,,) = Config.getSRMParams();
 
     // set init option trading params
     manager.setOptionMarginParams(ethMarketId, optionParams);

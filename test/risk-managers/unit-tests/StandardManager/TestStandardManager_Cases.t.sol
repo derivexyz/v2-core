@@ -22,11 +22,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
   function setUp() public override {
     super.setUp();
 
-    (
-      ,
-      ,
-      IStandardManager.OracleContingencyParams memory oracleContingencyParams,
-    ) = Config.getSRMParams();
+    (,, IStandardManager.OracleContingencyParams memory oracleContingencyParams,) = Config.getSRMParams();
 
     // override settings
     manager.setOracleContingencyParams(ethMarketId, oracleContingencyParams);
