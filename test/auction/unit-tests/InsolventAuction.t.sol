@@ -153,6 +153,21 @@ contract UNIT_TestInsolventAuction is DutchAuctionBase {
     assertEq(dutchAuction.getIsWithdrawBlocked(), false);
   }
 
+  function testCannotStartAuctionOnUnWhitelistedManager() public {
+    dutchAuction.setWhitelistManager(address(manager), false);
+
+    vm.expectRevert(IDutchAuction.DA_NotWhitelistedManager.selector);
+    dutchAuction.startAuction(aliceAcc, scenario);
+  }
+
+  function testCannotBidOnAuctionOnUnWhitelistedManager() public {
+    _startDefaultInsolventAuction(aliceAcc);
+    dutchAuction.setWhitelistManager(address(manager), false);
+
+    vm.expectRevert(IDutchAuction.DA_NotWhitelistedManager.selector);
+    dutchAuction.bid(aliceAcc, bobAcc, 0.5e18, 0, 0);
+  }
+
   function testTerminatesInsolventAuction() public {
     _startDefaultInsolventAuction(aliceAcc);
 
