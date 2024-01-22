@@ -15,6 +15,8 @@ import "../../../src/liquidation/DutchAuction.sol";
 
 import "test/shared/mocks/MockFeeds.sol";
 
+import {Config} from "../../config-test.sol";
+
 contract DutchAuctionBase is Test {
   address alice;
   address bob;
@@ -92,15 +94,7 @@ contract DutchAuctionBase is Test {
   //////////////////////////
 
   function _getDefaultAuctionParams() internal pure returns (IDutchAuction.AuctionParams memory) {
-    return IDutchAuction.AuctionParams({
-      startingMtMPercentage: 1e18,
-      fastAuctionCutoffPercentage: 0.8e18,
-      fastAuctionLength: 10 minutes,
-      slowAuctionLength: 2 hours,
-      insolventAuctionLength: 10 minutes,
-      liquidatorFeeRate: 0,
-      bufferMarginPercentage: 0.1e18
-    });
+    return Config.getDefaultAuctionParam();
   }
 
   function _setAuctionParamsWithBufferMargin(uint bufferMargin) internal {

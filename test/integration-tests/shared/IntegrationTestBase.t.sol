@@ -33,7 +33,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 import {IPMRMLib} from "../../../src/interfaces/IPMRMLib.sol";
 import {IBaseManager} from "../../../src/interfaces/IBaseManager.sol";
 
-import "../../../scripts/config-local.sol";
+import {Config} from "../../config-test.sol";
 
 /**
  * @dev real Accounts contract
@@ -288,10 +288,14 @@ contract IntegrationTestBase is Test {
     srm.setOraclesForMarket(marketId, market.spotFeed, market.forwardFeed, market.volFeed);
 
     // set params
-    srm.setOptionMarginParams(marketId, getDefaultSRMOptionParam());
+    (
+      ,
+      IStandardManager.OptionMarginParams memory optionParams,
+      IStandardManager.OracleContingencyParams memory oracleContingencyParams,
+    ) = Config.getSRMParams();
 
-    srm.setOracleContingencyParams(marketId, getDefaultSRMOracleContingency());
-
+    srm.setOptionMarginParams(marketId, optionParams);
+    srm.setOracleContingencyParams(marketId, oracleContingencyParams);
     srm.setPerpMarginRequirements(marketId, 0.05e18, 0.065e18);
   }
 
@@ -601,7 +605,7 @@ contract IntegrationTestBase is Test {
       IPMRMLib.OtherContingencyParameters memory otherContParams,
       IPMRMLib.MarginParameters memory marginParams,
       IPMRMLib.VolShockParameters memory volShockParams
-    ) = getPMRMParams();
+    ) = Config.getPMRMParams();
 
     pmrmLib.setBasisContingencyParams(basisContParams);
     pmrmLib.setOtherContingencyParams(otherContParams);
@@ -609,7 +613,7 @@ contract IntegrationTestBase is Test {
     pmrmLib.setVolShockParams(volShockParams);
 
     // _addScenarios(pmrm);
-    pmrm.setScenarios(getDefaultScenarios());
+    pmrm.setScenarios(Config.getDefaultScenarios());
   }
 
   function _getDefaultVolData(uint64 expiry, uint fwdPrice) internal view returns (IBaseLyraFeed.FeedData memory) {

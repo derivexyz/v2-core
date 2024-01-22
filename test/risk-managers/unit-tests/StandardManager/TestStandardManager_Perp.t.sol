@@ -57,7 +57,7 @@ contract UNIT_TestStandardManager is Test {
 
     manager = new StandardManager(subAccounts, ICashAsset(address(cash)), IDutchAuction(address(auction)), viewer);
 
-    marketId = manager.createMarket("eth");
+    marketId = manager.createMarket("weth");
 
     viewer.setStandardManager(manager);
 

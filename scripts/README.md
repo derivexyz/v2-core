@@ -60,7 +60,7 @@ forge script scripts/deploy-core.s.sol  --rpc-url sepolia --broadcast
 ```
 
 
-To change parameters: goes to `scripts/config-local.sol` and update the numbers.
+To change parameters: goes to `scripts/config-mainnet.sol` and update the numbers.
 
 Example Output 
 ```
@@ -89,7 +89,7 @@ The configs will now be written as something like this: (example `deployment/901
 
 Running this script will create a new set of "Assets" for this market, create a new PMRM, and link everything to the shared standard manager + setup default parameters
 
-Not that you need to pass in the "market" you want to deploy with env variables. Similarly you can update default params in `scripts/config-local.sol` before running the script.
+Not that you need to pass in the "market" you want to deploy with env variables. Similarly you can update default params in `scripts/config-mainnet.sol` before running the script.
 
 ```shell
 MARKET_NAME=weth forge script scripts/deploy-market.s.sol  --rpc-url sepolia --broadcast

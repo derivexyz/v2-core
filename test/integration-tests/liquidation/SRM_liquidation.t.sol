@@ -6,7 +6,7 @@ import "lyra-utils/encoding/OptionEncoding.sol";
 
 import "../shared/IntegrationTestBase.t.sol";
 
-import {getDefaultAuctionParam} from "../../../scripts/config-local.sol";
+import {Config} from "../../config-test.sol";
 /**
  * @dev testing liquidation process
  */
@@ -216,9 +216,8 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
 
   function test_BMAfterLiquidation() public {
     // start liquidation on acc1, discount = 20%
-    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
+    IDutchAuction.AuctionParams memory params = Config.getDefaultAuctionParam();
     params.startingMtMPercentage = 0.8e18;
-    params.liquidatorFeeRate = 0;
     params.bufferMarginPercentage = 0.05e18;
     auction.setAuctionParams(params);
 

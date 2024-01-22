@@ -22,9 +22,11 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
   function setUp() public override {
     super.setUp();
 
+    (,, IStandardManager.OracleContingencyParams memory oracleContingencyParams,) = Config.getSRMParams();
+
     // override settings
-    manager.setOracleContingencyParams(ethMarketId, getDefaultSRMOracleContingency());
-    manager.setOracleContingencyParams(btcMarketId, getDefaultSRMOracleContingency());
+    manager.setOracleContingencyParams(ethMarketId, oracleContingencyParams);
+    manager.setOracleContingencyParams(btcMarketId, oracleContingencyParams);
     manager.setDepegParameters(IStandardManager.DepegParams(0.98e18, 1.2e18));
 
     // base asset contribute 10% of its value to margin
