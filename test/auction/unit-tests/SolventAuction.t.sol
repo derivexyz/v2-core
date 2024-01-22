@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import "./DutchAuctionBase.sol";
-import {Config} from "../../config-test.sol";
 
 contract UNIT_TestSolventAuction is DutchAuctionBase {
   uint scenario = 1;

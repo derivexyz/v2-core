@@ -218,7 +218,6 @@ contract INTEGRATION_Liquidation is IntegrationTestBase {
     // start liquidation on acc1, discount = 20%
     IDutchAuction.AuctionParams memory params = Config.getDefaultAuctionParam();
     params.startingMtMPercentage = 0.8e18;
-    params.liquidatorFeeRate = 0;
     params.bufferMarginPercentage = 0.05e18;
     auction.setAuctionParams(params);
 

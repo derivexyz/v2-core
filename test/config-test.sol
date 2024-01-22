@@ -138,8 +138,8 @@ library Config {
       fastAuctionLength: 10 minutes,
       slowAuctionLength: 2 hours,
       insolventAuctionLength: 10 minutes,
-      liquidatorFeeRate: 0.05e18,
-      bufferMarginPercentage: 0.3e18
+      liquidatorFeeRate: 0.0,
+      bufferMarginPercentage: 0.1e18
     });
   }
 }
