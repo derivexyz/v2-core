@@ -16,7 +16,7 @@ import "../../../shared/mocks/MockFeeds.sol";
 import "../../../shared/mocks/MockTrackableAsset.sol";
 import "../../../shared/mocks/MockCash.sol";
 
-import "../../../../scripts/config-local.sol";
+import "../../../config-test.sol";
 import "../../mocks/MockDutchAuction.sol";
 import "../../../../src/assets/WrappedERC20Asset.sol";
 
@@ -103,8 +103,8 @@ contract TestStandardManagerBase is Test {
     wbtcAsset.setWhitelistManager(address(manager), true);
     wbtcAsset.setTotalPositionCap(manager, 1e36);
 
-    ethMarketId = manager.createMarket("eth");
-    btcMarketId = manager.createMarket("btc");
+    ethMarketId = manager.createMarket("weth");
+    btcMarketId = manager.createMarket("wbtc");
 
     portfolioViewer.setStandardManager(manager);
 
@@ -150,9 +150,15 @@ contract TestStandardManagerBase is Test {
     manager.setPerpMarginRequirements(ethMarketId, 0.05e18, 0.065e18);
     manager.setPerpMarginRequirements(btcMarketId, 0.05e18, 0.065e18);
 
+    (
+      ,
+      IStandardManager.OptionMarginParams memory optionParams,
+      ,
+    ) = Config.getSRMParams();
+
     // set init option trading params
-    manager.setOptionMarginParams(ethMarketId, getDefaultSRMOptionParam());
-    manager.setOptionMarginParams(btcMarketId, getDefaultSRMOptionParam());
+    manager.setOptionMarginParams(ethMarketId, optionParams);
+    manager.setOptionMarginParams(btcMarketId, optionParams);
 
     // the rest can vary in tests
   }

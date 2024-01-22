@@ -12,7 +12,7 @@ import "./utils/PMRMTestBase.sol";
 
 import "../TestCaseExpiries.t.sol";
 
-import {getPMRMParams} from "../../../../scripts/config-local.sol";
+import {Config} from "../../../config-test.sol";
 
 contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
   using SignedDecimalMath for int;
@@ -36,7 +36,7 @@ contract UNIT_TestPMRM_PortfolioCases is TestCaseExpiries, PMRMTestBase {
     _setupPerpPrices();
 
     (, IPMRMLib.OtherContingencyParameters memory otherContParams, IPMRMLib.MarginParameters memory marginParams,) =
-      getPMRMParams();
+      Config.getPMRMParams();
 
     marginParams.rateAddScale = 0.12e18;
     lib.setMarginParams(marginParams);

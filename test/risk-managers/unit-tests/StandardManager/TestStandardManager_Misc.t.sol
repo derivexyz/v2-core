@@ -6,7 +6,7 @@ import {ISRMPortfolioViewer} from "../../../../src/interfaces/ISRMPortfolioViewe
 import {IStandardManager} from "../../../../src/interfaces/IStandardManager.sol";
 import {MockManager} from "../../../shared/mocks/MockManager.sol";
 import {MockOption} from "../../../shared/mocks/MockOptionAsset.sol";
-import "../../../../scripts/config-local.sol";
+import "../../../config-test.sol";
 
 contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   function testCanTransferCash() public {
@@ -27,15 +27,15 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
   }
 
   function testCannotSetInvalidMarginParams() public {
-    IStandardManager.OptionMarginParams memory params = getDefaultSRMOptionParam();
-
+    (
+      ,
+      IStandardManager.OptionMarginParams memory params,
+      ,
+    ) = Config.getSRMParams();
+    
     vm.expectRevert(IStandardManager.SRM_InvalidOptionMarginParams.selector);
     params.maxSpotReq = 1.5e18;
     manager.setOptionMarginParams(ethMarketId, params);
-
-    //    vm.expectRevert(IStandardManager.SRM_InvalidOptionMarginParams.selector);
-    //    params.maxSpotReq = -1;
-    //    manager.setOptionMarginParams(ethMarketId, params);
   }
 
   function testCanEnableBorrowing() public {

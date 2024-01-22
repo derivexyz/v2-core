@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./DutchAuctionBase.sol";
-import {getDefaultAuctionParam} from "../../../scripts/config-local.sol";
+import {Config} from "../../config-test.sol";
 
 contract UNIT_TestSolventAuction is DutchAuctionBase {
   uint scenario = 1;
@@ -22,7 +22,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
   /////////////////////////
 
   function testStartAuctionPaysFee() public {
-    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
+    IDutchAuction.AuctionParams memory params = _getDefaultAuctionParams();
     params.liquidatorFeeRate = 0.01e18;
     dutchAuction.setAuctionParams(params);
     // start auction
@@ -471,7 +471,7 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     _setAuctionParamsWithBufferMargin(0);
 
     // set fast auction cutoff to be 70%
-    IDutchAuction.AuctionParams memory params = getDefaultAuctionParam();
+    IDutchAuction.AuctionParams memory params = _getDefaultAuctionParams();
     params.fastAuctionCutoffPercentage = 0.7e18;
     dutchAuction.setAuctionParams(params);
 

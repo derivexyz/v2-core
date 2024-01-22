@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "./TestStandardManagerBase.t.sol";
 
 import "lyra-utils/decimals/SignedDecimalMath.sol";
-import "../../../../scripts/config-local.sol";
+import "../../../config-test.sol";
 import "../TestCaseExpiries.t.sol";
 
 /**
@@ -19,8 +19,14 @@ contract UNIT_TestStandardManager_Portfolio_Cases is TestCaseExpiries, TestStand
   function setUp() public override {
     super.setUp();
 
-    manager.setOracleContingencyParams(ethMarketId, getDefaultSRMOracleContingency());
-    manager.setOracleContingencyParams(btcMarketId, getDefaultSRMOracleContingency());
+    (
+      ,
+      ,
+      IStandardManager.OracleContingencyParams memory oracleContingencyParams,
+    ) = Config.getSRMParams();
+
+    manager.setOracleContingencyParams(ethMarketId, oracleContingencyParams);
+    manager.setOracleContingencyParams(btcMarketId, oracleContingencyParams);
 
     // base asset contribute 80% of its value to margin
     manager.setBaseAssetMarginFactor(ethMarketId, 0.8e18, 1e18);

@@ -38,7 +38,7 @@ import {PMRMPublic} from "../../../../risk-managers/unit-tests/PMRM/utils/PMRMPu
 import {IPMRMLib} from "../../../../../src/interfaces/IPMRMLib.sol";
 
 import "../../../../shared/utils/JsonMechIO.sol";
-import {getPMRMParams, getDefaultScenarios} from "../../../../../scripts/config-local.sol";
+import {Config} from "../../../../config-test.sol";
 
 contract PMRMTestBase is JsonMechIO {
   using stdJson for string;
@@ -131,7 +131,7 @@ contract PMRMTestBase is JsonMechIO {
       IPMRMLib.OtherContingencyParameters memory otherContParams,
       IPMRMLib.MarginParameters memory marginParams,
       IPMRMLib.VolShockParameters memory volShockParams
-    ) = getPMRMParams();
+    ) = Config.getPMRMParams();
 
     lib.setBasisContingencyParams(basisContParams);
     lib.setOtherContingencyParams(otherContParams);
@@ -192,7 +192,7 @@ contract PMRMTestBase is JsonMechIO {
 
   function addScenarios() internal {
     // Scenario Number	Spot Shock (of max)	Vol Shock (of max)
-    IPMRM.Scenario[] memory scenarios = getDefaultScenarios();
+    IPMRM.Scenario[] memory scenarios = Config.getDefaultScenarios();
     pmrm.setScenarios(scenarios);
   }
 
