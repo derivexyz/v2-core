@@ -20,12 +20,10 @@ contract DeployERC20s is Utils {
     console2.log("Start deploying ERC20 contracts! deployer: ", deployer);
 
     LyraERC20 usdc = new LyraERC20("USDC", "USDC", 6);
-
     LyraERC20 usdt = new LyraERC20("Lyra USDT", "USDT", 6);
-
     LyraERC20 wbtc = new LyraERC20("Lyra WBTC", "WBTC", 8);
-
     LyraERC20 weth = new LyraERC20("Lyra WETH", "WETH", 18);
+    LyraERC20 snx = new LyraERC20("Lyra SNX", "SNX", 18);
 
     address[] memory feedSigners = new address[](1);
     feedSigners[0] = deployer;
@@ -36,6 +34,7 @@ contract DeployERC20s is Utils {
     vm.serializeAddress(objKey, "btc", address(wbtc));
     vm.serializeAddress(objKey, "eth", address(weth));
     vm.serializeAddress(objKey, "usdt", address(usdt));
+    vm.serializeAddress(objKey, "snx", address(snx));
     vm.serializeAddress(objKey, "feedSigners", feedSigners);
     string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", false);
 
