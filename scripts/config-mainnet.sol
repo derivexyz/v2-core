@@ -163,6 +163,22 @@ library Config {
                 marginFactor: 0.98e18,
                 IMScale: 0.98e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SNX"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.7e18,
+                IMScale: 0.65e18
+            });
+
+            optionMarginParams = IStandardManager.OptionMarginParams({
+                maxSpotReq: 0.25e18,
+                minSpotReq: 0.225e18,
+                mmCallSpotReq: 0.15e18,
+                mmPutSpotReq: 0.15e18,
+                MMPutMtMReq: 0.15e18,
+                unpairedIMScale: 1.4e18,
+                unpairedMMScale: 1.3e18,
+                mmOffsetScale: 1.05e18
+            });
         } else {
             revert("market not supported");
         }
@@ -181,6 +197,10 @@ library Config {
             perpCap = 0;
             optionCap = 0;
             baseCap = 100_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SNX"))) {
+            perpCap = 0;
+            optionCap = 3_000_000e18;
+            baseCap = 3_000_000e18;
         } else {
             revert("market not supported");
         }
