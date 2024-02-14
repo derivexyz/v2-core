@@ -4,3 +4,4 @@ openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 chainlink/=lib/chainlink/
 lyra-utils/=lib/lyra-utils/src/
 src/decimals/=lib/lyra-utils/src/decimals/
+sfp-pilot/=lib/sfp-pilot/contracts/

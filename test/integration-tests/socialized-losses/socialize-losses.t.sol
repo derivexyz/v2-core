@@ -33,15 +33,15 @@ contract ExploiterManager is ILiquidatableManager, BaseManager {
     mtm = _mtm;
   }
 
-  function settlePerpsWithIndex(uint accountId) external override {}
+  function settlePerpsWithIndex(uint ) external override {}
 
-  function settleOptions(IOptionAsset _option, uint accountId) external override {}
+  function settleOptions(IOptionAsset , uint ) external override {}
 
-  function getMargin(uint accountId, bool isInitial) external view returns (int) {
+  function getMargin(uint , bool) external view returns (int) {
     return margin;
   }
 
-  function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId)
+  function getMarginAndMarkToMarket(uint, bool, uint)
     external
     view
     override
