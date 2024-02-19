@@ -12,12 +12,11 @@ contract StrandsAPI is ERC20, AccessControl {
     _grantRole(MINTER_ROLE, minter);
   }
 
-  function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
+  function mint(address to, uint amount) public onlyRole(MINTER_ROLE) {
     _mint(to, amount);
   }
 
-  function burn(uint256 amount) public onlyRole(MINTER_ROLE) {
-    _burn(_msgSender(),amount);
+  function burn(uint amount) public onlyRole(MINTER_ROLE) {
+    _burn(_msgSender(), amount);
   }
-
 }

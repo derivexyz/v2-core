@@ -5,9 +5,15 @@ import "src/feeds/SFPSpotFeed.sol";
 import "./sfp-contracts/StrandsAPI.sol";
 import "./sfp-contracts/StrandsSFP.sol";
 import {
-  IntegrationTestBase, IStandardManager, Config, WrappedERC20Asset, IForwardFeed, IVolFeed, ISpotFeed, IManager
+  IntegrationTestBase,
+  IStandardManager,
+  Config,
+  WrappedERC20Asset,
+  IForwardFeed,
+  IVolFeed,
+  ISpotFeed,
+  IManager
 } from "../../integration-tests/shared/IntegrationTestBase.t.sol";
-
 
 contract SFPTest is IntegrationTestBase {
   address deployer;
@@ -35,10 +41,7 @@ contract SFPTest is IntegrationTestBase {
     srm.whitelistAsset(wrappedSFP, marketId, IStandardManager.AssetType.Base);
     srm.setOraclesForMarket(marketId, ISpotFeed(sfpSpotFeed), IForwardFeed(address(0)), IVolFeed(address(0)));
 
-    (
-      ,,,
-      IStandardManager.BaseMarginParams memory baseMarginParams
-    ) = Config.getSRMParams();
+    (,,, IStandardManager.BaseMarginParams memory baseMarginParams) = Config.getSRMParams();
 
     srm.setBaseAssetMarginFactor(marketId, 0.95e18, 0.9475e18);
     srm.setBorrowingEnabled(true);
@@ -47,7 +50,6 @@ contract SFPTest is IntegrationTestBase {
     _setupAliceAndBob();
     _depositCash(bob, bobAcc, 10000e18);
   }
-
 
   function test_sfpSpotFeed() public {
     _mintSFP(alice, 100e18);
@@ -77,7 +79,6 @@ contract SFPTest is IntegrationTestBase {
     vm.stopPrank();
 
     assertEq(usdc.balanceOf(alice), 50e6);
-
   }
 
   function _mintSFP(address user, uint amount) internal {
