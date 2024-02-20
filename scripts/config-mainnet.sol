@@ -199,8 +199,8 @@ library Config {
             baseCap = 100_000e18;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SNX"))) {
             perpCap = 0;
-            optionCap = 3_000_000e18;
-            baseCap = 3_000_000e18;
+            optionCap = 30_000e18;
+            baseCap = 30_000e18;
         } else {
             revert("market not supported");
         }

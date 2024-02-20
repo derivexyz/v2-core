@@ -64,10 +64,6 @@ contract DeploySRMOptionOnlyMarket is Utils {
 
     market.spotFeed = new LyraSpotFeed();
     market.forwardFeed = new LyraForwardFeed(market.spotFeed);
-
-    // interest and vol feed
-    market.rateFeed = new LyraRateFeedStatic();
-
     market.volFeed = new LyraVolFeed();
 
     // init feeds
@@ -84,8 +80,6 @@ contract DeploySRMOptionOnlyMarket is Utils {
     }
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
-
-    market.rateFeed.setRate(0, 1e18);
 
     market.base = new WrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
   }
@@ -151,7 +145,6 @@ contract DeploySRMOptionOnlyMarket is Utils {
     vm.serializeAddress(objKey, "base", address(market.base));
     vm.serializeAddress(objKey, "spotFeed", address(market.spotFeed));
     vm.serializeAddress(objKey, "volFeed", address(market.volFeed));
-    vm.serializeAddress(objKey, "rateFeed", address(market.rateFeed));
     string memory finalObj = vm.serializeAddress(objKey, "forwardFeed", address(market.forwardFeed));
 
     // build path
