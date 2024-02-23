@@ -28,7 +28,9 @@ contract SFPSpotFeed is ISpotFeed, Ownable2Step {
 
   /// @notice Set the price bounds
   function setPriceBounds(uint _minPrice, uint _maxPrice) external onlyOwner {
-    require(_minPrice < _maxPrice, "Invalid bounds");
+    if (_minPrice > _maxPrice) {
+      revert LSSSF_InvalidPriceBounds();
+    }
     minPrice = _minPrice;
     maxPrice = _maxPrice;
   }
@@ -44,4 +46,5 @@ contract SFPSpotFeed is ISpotFeed, Ownable2Step {
   }
 
   error LSSSF_InvalidPrice();
+  error LSSSF_InvalidPriceBounds();
 }

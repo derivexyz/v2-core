@@ -12,7 +12,8 @@ import {
   IForwardFeed,
   IVolFeed,
   ISpotFeed,
-  IManager
+  IManager,
+  IBaseManager
 } from "../../integration-tests/shared/IntegrationTestBase.t.sol";
 
 contract SFPTest is IntegrationTestBase {
@@ -77,7 +78,6 @@ contract SFPTest is IntegrationTestBase {
     // 6 decimals for USDC
     cash.withdraw(subAcc, 50e6, alice);
     vm.stopPrank();
-
     assertEq(usdc.balanceOf(alice), 50e6);
   }
 
@@ -87,5 +87,42 @@ contract SFPTest is IntegrationTestBase {
     strandsAPI.approve(address(strandsSFP), amount);
     strandsSFP.deposit(amount, user);
     vm.stopPrank();
+  }
+
+  function test_upperSfpPriceBoundHit() public {
+    // Test if the upper price bound of SFPs is hit. Expect a revert
+    _mintSFP(alice, 100e18);
+    assertEq(strandsSFP.balanceOf(alice), 100e18);
+    assertEq(strandsSFP.totalSupply(), 100e18);
+    (uint spot, uint confidence) = sfpSpotFeed.getSpot();
+    assertEq(spot, 1e18);
+    assertEq(confidence, 1e18);
+    strandsAPI.mint(address(strandsSFP), 40e18);
+    vm.expectRevert(SFPSpotFeed.LSSSF_InvalidPrice.selector);
+    (spot, confidence) = sfpSpotFeed.getSpot();
+  }
+
+  function test_lowerSfpPriceBoundHit() public {
+    // As above but for hitting the lower bound
+    sfpSpotFeed.setPriceBounds(1.1e18, 1.2e18); // Set lower bound > 1
+    _mintSFP(alice, 100e18);
+    assertEq(strandsSFP.balanceOf(alice), 100e18);
+    assertEq(strandsSFP.totalSupply(), 100e18);
+    vm.expectRevert(SFPSpotFeed.LSSSF_InvalidPrice.selector);
+    (uint spot, uint confidence) = sfpSpotFeed.getSpot();
+  }
+
+  function test_positionCapHit() public {
+    _mintSFP(alice, 1200e18);
+    vm.startPrank(alice);
+    uint subAcc = subAccounts.createAccount(alice, srm);
+    strandsSFP.approve(address(wrappedSFP), 1200e18);
+    vm.expectRevert(IBaseManager.BM_AssetCapExceeded.selector);
+    wrappedSFP.deposit(subAcc, 1200e18);
+  }
+
+  function test_invalidSfpPriceBounds() public {
+    vm.expectRevert(SFPSpotFeed.LSSSF_InvalidPriceBounds.selector);
+    sfpSpotFeed.setPriceBounds(1.5e18, 1.2e18); // Set lower bound > upper bound
   }
 }
