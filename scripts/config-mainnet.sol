@@ -14,8 +14,8 @@ library Config {
     //////////
     // FEES //
     //////////
-    uint256 constant public MIN_OI_FEE = 800e18;
-    uint256 constant public OI_FEE_BPS = 0.7e18;
+    uint256 constant public MIN_OI_FEE = 50e18;
+    uint256 constant public OI_FEE_BPS = 0.1e18;
 
     //////////
     // PMRM //
@@ -163,6 +163,11 @@ library Config {
                 marginFactor: 0.98e18,
                 IMScale: 0.98e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("WSTETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.8e18,
+                IMScale: 0.9375e18
+            });
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SNX"))) {
             baseMarginParams = IStandardManager.BaseMarginParams({
                 marginFactor: 0.7e18,
@@ -197,6 +202,10 @@ library Config {
             perpCap = 0;
             optionCap = 0;
             baseCap = 100_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("WSTETH"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 500e18;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SNX"))) {
             perpCap = 0;
             optionCap = 30_000e18;
