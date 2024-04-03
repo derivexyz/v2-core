@@ -450,7 +450,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   {
     if (!auctions[accountId].ongoing) revert DA_NotOngoingAuction();
 
-    if (auctions[accountId].insolvent) {
+    uint timeElapsed = block.timestamp - auctions[accountId].startTime;
+
+    // If the auction is insolvent OR the solvent auction has ended (so it can be converted to insolvent)
+    if (
+      auctions[accountId].insolvent || timeElapsed >= auctionParams.fastAuctionLength + auctionParams.slowAuctionLength
+    ) {
       // get maintenance margin and mark to market
       (maintenanceMargin, bufferMargin, markToMarket) =
         _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);

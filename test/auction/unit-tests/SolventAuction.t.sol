@@ -328,8 +328,15 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // assume MM is back above 0
     manager.setMockMargin(aliceAcc, false, scenario, 1e18);
+
+    (, int bm,) = dutchAuction.getMarginAndMarkToMarket(aliceAcc, scenario);
+    assertLt(bm, 0);
+
     vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
     dutchAuction.convertToInsolventAuction(aliceAcc);
+
+    // are able to terminate solvent auction if MM > 0 after the auction has finished
+    dutchAuction.terminateAuction(aliceAcc);
   }
 
   function testCanUpdateScenarioID() public {
