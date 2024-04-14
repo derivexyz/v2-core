@@ -19,22 +19,37 @@ contract DeployERC20s is Utils {
 
     console2.log("Start deploying ERC20 contracts! deployer: ", deployer);
 
+<<<<<<< Updated upstream
     LyraERC20 usdc = new LyraERC20("USDC", "USDC", 6);
     LyraERC20 usdt = new LyraERC20("Lyra USDT", "USDT", 6);
     LyraERC20 wbtc = new LyraERC20("Lyra WBTC", "WBTC", 8);
     LyraERC20 weth = new LyraERC20("Lyra WETH", "WETH", 18);
     LyraERC20 snx = new LyraERC20("Lyra SNX", "SNX", 18);
 
+=======
+>>>>>>> Stashed changes
     address[] memory feedSigners = new address[](1);
     feedSigners[0] = deployer;
 
     // write to configs file: eg: input/31337/config.json
     string memory objKey = "network-config";
+<<<<<<< Updated upstream
     vm.serializeAddress(objKey, "usdc", address(usdc));
     vm.serializeAddress(objKey, "btc", address(wbtc));
     vm.serializeAddress(objKey, "eth", address(weth));
     vm.serializeAddress(objKey, "usdt", address(usdt));
     vm.serializeAddress(objKey, "snx", address(snx));
+=======
+    vm.serializeAddress(objKey, "usdc", address(new LyraERC20("USDC", "USDC", 6)));
+    vm.serializeAddress(objKey, "btc", address(new LyraERC20("Lyra WBTC", "WBTC", 8)));
+    vm.serializeAddress(objKey, "eth", address(new LyraERC20("Lyra WETH", "WETH", 18)));
+    vm.serializeAddress(objKey, "usdt", address(new LyraERC20("Lyra USDT", "USDT", 6)));
+    vm.serializeAddress(objKey, "snx", address(new LyraERC20("Lyra SNX", "SNX", 18)));
+    vm.serializeAddress(objKey, "wsteth", address(new LyraERC20("Lyra x Lido wstETH", "wstETH", 18)));
+//    vm.serializeAddress(objKey, "rsweth", address(new LyraERC20("Lyra rswETH", "wstETH", 18)));
+//    vm.serializeAddress(objKey, "susde", address(new LyraERC20("Lyra Staked USDe", "sUSDe", 18)));
+
+>>>>>>> Stashed changes
     vm.serializeAddress(objKey, "feedSigners", feedSigners);
     string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", false);
 

@@ -184,6 +184,16 @@ library Config {
                 unpairedMMScale: 1.3e18,
                 mmOffsetScale: 1.05e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SOL"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.1e18,
+                imPerpReq: 0.2e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DOGE"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.1e18,
+                imPerpReq: 0.2e18
+            });
         } else {
             revert("market not supported");
         }
@@ -210,6 +220,14 @@ library Config {
             perpCap = 0;
             optionCap = 30_000e18;
             baseCap = 30_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SOL"))) {
+            perpCap = 1_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DOGE"))) {
+            perpCap = 10_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
         } else {
             revert("market not supported");
         }
