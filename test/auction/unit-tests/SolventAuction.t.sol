@@ -392,6 +392,25 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     dutchAuction.terminateAuction(aliceAcc);
   }
 
+  function testTerminateToOpenInsolventAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true);
+
+    manager.setMarkToMarket(aliceAcc, int(-1));
+
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+    // check that the auction is terminated
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+
+    dutchAuction.startAuction(aliceAcc, scenario);
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, true);
+    assertEq(dutchAuction.getAuction(aliceAcc).insolvent, true);
+  }
+
   function testCanRevertAuctionWithHighCashReserve() public {
     _startDefaultSolventAuction(aliceAcc);
 
