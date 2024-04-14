@@ -296,7 +296,7 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
     return IBaseLyraFeed.FeedData({
       data: abi.encode(
         defaultExpiry, settlementStartAggregate, currentSpotAggregate, fwdSpotDifference, defaultConfidence
-        ),
+      ),
       timestamp: uint64(block.timestamp),
       deadline: block.timestamp + 5,
       signers: new address[](1),
