@@ -328,8 +328,15 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
 
     // assume MM is back above 0
     manager.setMockMargin(aliceAcc, false, scenario, 1e18);
+
+    (, int bm,) = dutchAuction.getMarginAndMarkToMarket(aliceAcc, scenario);
+    assertLt(bm, 0);
+
     vm.expectRevert(IDutchAuction.DA_AccountIsAboveMaintenanceMargin.selector);
     dutchAuction.convertToInsolventAuction(aliceAcc);
+
+    // are able to terminate solvent auction if MM > 0 after the auction has finished
+    dutchAuction.terminateAuction(aliceAcc);
   }
 
   function testCanUpdateScenarioID() public {
@@ -383,6 +390,25 @@ contract UNIT_TestSolventAuction is DutchAuctionBase {
     vm.expectRevert(IDutchAuction.DA_AuctionCannotTerminate.selector);
     // terminate the auction
     dutchAuction.terminateAuction(aliceAcc);
+  }
+
+  function testTerminateToOpenInsolventAuction() public {
+    _startDefaultSolventAuction(aliceAcc);
+
+    // testing that the view returns the correct auction.
+    DutchAuction.Auction memory auction = dutchAuction.getAuction(aliceAcc);
+    assertEq(auction.ongoing, true);
+
+    manager.setMarkToMarket(aliceAcc, int(-1));
+
+    // terminate the auction
+    dutchAuction.terminateAuction(aliceAcc);
+    // check that the auction is terminated
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, false);
+
+    dutchAuction.startAuction(aliceAcc, scenario);
+    assertEq(dutchAuction.getAuction(aliceAcc).ongoing, true);
+    assertEq(dutchAuction.getAuction(aliceAcc).insolvent, true);
   }
 
   function testCanRevertAuctionWithHighCashReserve() public {

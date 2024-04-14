@@ -450,7 +450,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   {
     if (!auctions[accountId].ongoing) revert DA_NotOngoingAuction();
 
-    if (auctions[accountId].insolvent) {
+    uint timeElapsed = block.timestamp - auctions[accountId].startTime;
+
+    // If the auction is insolvent OR the solvent auction has ended (so it can be converted to insolvent)
+    if (
+      auctions[accountId].insolvent || timeElapsed >= auctionParams.fastAuctionLength + auctionParams.slowAuctionLength
+    ) {
       // get maintenance margin and mark to market
       (maintenanceMargin, bufferMargin, markToMarket) =
         _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
@@ -459,6 +464,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
       // get buffer margin and mark to market
       (maintenanceMargin, bufferMargin, markToMarket) =
         _getMarginAndMarkToMarket(accountId, auctions[accountId].scenarioId);
+
+      // In the case of a solvent auction falling below MtM, we terminate the auction and restart it as insolvent
+      if (markToMarket < 0) {
+        return (true, markToMarket, maintenanceMargin, bufferMargin);
+      }
+
       // Handle edge case where MTM moves a lot and then reserved cash is worth more than MTM.
       // In this case, the original portfolio margin would've been negative, but reserved cash is held by the account.
       // We terminate the auction and allow it to restart in this rare case. In the case MTM < 0, we would start an
