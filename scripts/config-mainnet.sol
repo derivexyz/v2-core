@@ -168,6 +168,11 @@ library Config {
                 marginFactor: 0.8e18,
                 IMScale: 0.9375e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SFP"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.98e18,
+                IMScale: 0.98e18
+            });
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SNX"))) {
             baseMarginParams = IStandardManager.BaseMarginParams({
                 marginFactor: 0.7e18,
@@ -216,6 +221,10 @@ library Config {
             perpCap = 0;
             optionCap = 0;
             baseCap = 500e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SFP"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 250000e18;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SNX"))) {
             perpCap = 0;
             optionCap = 30_000e18;
