@@ -37,8 +37,6 @@ contract UNIT_WLWrappedBaseAssetHook is Test {
     wbtc.approve(address(asset), 1000e8);
   }
 
-  function _mintAndDeposit(uint amount) public {}
-
   function testDeposit() public {
     vm.expectRevert(WLWrappedERC20Asset.WLWERC_NotWhitelisted.selector);
     asset.deposit(accId1, 100e8);
