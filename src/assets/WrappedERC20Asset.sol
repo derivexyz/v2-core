@@ -43,7 +43,7 @@ contract WrappedERC20Asset is ManagerWhitelist, PositionTracking, IWrappedERC20A
    * @param recipientAccount account id to receive the cash asset
    * @param assetAmount amount of the wrapped asset to deposit
    */
-  function deposit(uint recipientAccount, uint assetAmount) external {
+  function deposit(uint recipientAccount, uint assetAmount) external virtual {
     wrappedAsset.safeTransferFrom(msg.sender, address(this), assetAmount);
     uint adjustmentAmount = assetAmount.to18Decimals(assetDecimals);
 
