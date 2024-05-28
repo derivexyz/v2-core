@@ -52,11 +52,25 @@ contract UNIT_WLWrappedBaseAssetHook is Test {
     vm.expectRevert(WLWrappedERC20Asset.WLWERC_NotWhitelisted.selector);
     asset.deposit(accId2, 100e8);
 
+    // even though not WL can still be transferred to
+    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
+      fromAcc: accId1, toAcc: accId2, asset: asset, subId: 0, amount: 20e18, assetData: ""
+    });
+    subAccounts.submitTransfer(transfer, "");
+
+    assertEq(subAccounts.getBalance(accId1, asset, 0), 80e18); // 18 decimals
+    assertEq(subAccounts.getBalance(accId2, asset, 0), 20e18); // 18 decimals
+
+    // acc 2 can also still withdraw
+    asset.withdraw(accId2, 10e8, address(this));
+    assertEq(subAccounts.getBalance(accId2, asset, 0), 10e18); // 18 decimals
+    assertEq(wbtc.balanceOf(address(asset)), 90e8); // 100 deposited and 10 withdrawn
+
     // now enable it for anyone
     asset.setWhitelistEnabled(false);
     asset.deposit(accId2, 100e8);
 
-    assertEq(wbtc.balanceOf(address(asset)), 200e8);
-    assertEq(subAccounts.getBalance(accId2, asset, 0), 100e18); // 18 decimals
+    assertEq(wbtc.balanceOf(address(asset)), 190e8); // 200 deposited and 10 withdrawn
+    assertEq(subAccounts.getBalance(accId2, asset, 0), 110e18); // 18 decimals
   }
 }
