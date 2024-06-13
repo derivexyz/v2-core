@@ -23,7 +23,7 @@ contract Utils is Script {
 
   /// @dev get config from current chainId
   function _loadConfig() internal view returns (ConfigJson memory config) {
-    string memory file = _readInput("config");
+    string memory file = _readDeploymentFile("shared");
 
     config.usdc = abi.decode(vm.parseJson(file, ".usdc"), (address));
     config.feedSigners = abi.decode(vm.parseJson(file, ".feedSigners"), (address[]));
@@ -42,6 +42,11 @@ contract Utils is Script {
     deployment.srm = StandardManager(abi.decode(vm.parseJson(content, ".srm"), (address)));
     deployment.srmViewer = SRMPortfolioViewer(abi.decode(vm.parseJson(content, ".srmViewer"), (address)));
     deployment.stableFeed = ISpotFeed(abi.decode(vm.parseJson(content, ".stableFeed"), (address)));
+  }
+
+  function _getContract(string memory filename, string memory key) internal view returns (address) {
+    string memory content = _readDeploymentFile(filename);
+    return abi.decode(vm.parseJson(content, string.concat(".", key)), (address));
   }
 
   ///@dev read input from json 
@@ -83,7 +88,7 @@ contract Utils is Script {
   }
 
   function _getMarketERC20(string memory name) internal view returns (address) {
-    string memory file = _readInput("config");
+    string memory file = _readDeploymentFile("shared");
     return abi.decode(vm.parseJson(file, string.concat(".", _toLower(name))), (address));
   }
 }

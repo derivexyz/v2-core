@@ -199,6 +199,11 @@ library Config {
                 mmPerpReq: 0.1e18,
                 imPerpReq: 0.2e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.7e18,
+                IMScale: 0.9e18
+            });
         } else {
             revert("market not supported");
         }
@@ -237,6 +242,10 @@ library Config {
             perpCap = 10_000_000e18;
             optionCap = 0;
             baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 10_000_000e18;
         } else {
             revert("market not supported");
         }
