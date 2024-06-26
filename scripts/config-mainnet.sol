@@ -201,8 +201,18 @@ library Config {
             });
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
             baseMarginParams = IStandardManager.BaseMarginParams({
-                marginFactor: 0.7e18,
-                IMScale: 0.9e18
+                marginFactor: 0.65e18,
+                IMScale: 0.77e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rsETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.65e18,
+                IMScale: 0.77e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("weETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.65e18,
+                IMScale: 0.77e18
             });
         } else {
             revert("market not supported");
@@ -243,6 +253,14 @@ library Config {
             optionCap = 0;
             baseCap = 0;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 10_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rsETH"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 10_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("weETH"))) {
             perpCap = 0;
             optionCap = 0;
             baseCap = 10_000_000e18;
