@@ -8,6 +8,7 @@ node_modules
 yarn-error.log
 .husky
 .vscode
+.DS_Store
 
 .env
 coverage

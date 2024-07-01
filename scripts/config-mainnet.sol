@@ -20,7 +20,7 @@ library Config {
     //////////
     // PMRM //
     //////////
-    uint constant public MAX_ACCOUNT_SIZE_PMRM = 64;
+    uint constant public MAX_ACCOUNT_SIZE_PMRM = 128;
 
     function getDefaultScenarios() public  pure returns (IPMRM.Scenario[] memory) {
         IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](23);
@@ -107,6 +107,8 @@ library Config {
     // SRM //
     /////////
 
+    // The reason that this is not the same size as PMRM is because we don't expect SRM users to have as many positions as PMRM users
+    // so to reduce risk latency for latency-sensitive PMRM users, we are keeping the size of the SRM users smaller for now.
     uint public constant MAX_ACCOUNT_SIZE_SRM = 48;
     bool public constant BORROW_ENABLED = true;
 
