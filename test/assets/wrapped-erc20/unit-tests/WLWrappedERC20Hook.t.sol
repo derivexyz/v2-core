@@ -53,9 +53,8 @@ contract UNIT_WLWrappedBaseAssetHook is Test {
     asset.deposit(accId2, 100e8);
 
     // even though not WL can still be transferred to
-    ISubAccounts.AssetTransfer memory transfer = ISubAccounts.AssetTransfer({
-      fromAcc: accId1, toAcc: accId2, asset: asset, subId: 0, amount: 20e18, assetData: ""
-    });
+    ISubAccounts.AssetTransfer memory transfer =
+      ISubAccounts.AssetTransfer({fromAcc: accId1, toAcc: accId2, asset: asset, subId: 0, amount: 20e18, assetData: ""});
     subAccounts.submitTransfer(transfer, "");
 
     assertEq(subAccounts.getBalance(accId1, asset, 0), 80e18); // 18 decimals
