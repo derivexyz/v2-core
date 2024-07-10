@@ -51,6 +51,11 @@ contract MockOption is MockPositionTracking, MockGlobalSubIdOITracking, IOptionA
     needAllowance = true;
   }
 
+  function getSettlement(uint expiry) external view returns (bool isSettled, uint settlementPrice) {
+    // not using the settlement Price right now. Returning 0 for now
+    return (expiry > block.timestamp, 0);
+  }
+
   function setRevertAdjustmentFromManager(address _manager, bool _revert) external {
     revertFromManager[_manager] = _revert;
   }

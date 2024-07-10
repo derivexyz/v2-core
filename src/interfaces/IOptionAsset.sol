@@ -22,6 +22,14 @@ interface IOptionAsset is IAsset, IPositionTracking, IGlobalSubIdOITracking {
    */
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled);
 
+  /**
+   * @notice Will return if an expiry is settled and the settlement price.
+   * @param expiry of a particular option.
+   * @return isSettled Whether or not the expiry has settled yet.
+   * @return settlementPrice The estimated price of the settlement.
+   */
+  function getSettlement(uint expiry) external view returns (bool isSettled, uint settlementPrice);
+
   ////////////////
   //   Events   //
   ////////////////

@@ -124,15 +124,22 @@ contract OptionAsset is IOptionAsset, PositionTracking, GlobalSubIdOITracking, M
   function calcSettlementValue(uint subId, int balance) external view returns (int payout, bool priceSettled) {
     (uint expiry, uint strike, bool isCall) = OptionEncoding.fromSubId(subId.toUint96());
 
-    // Return false if settlement price has not been locked in
-    if (expiry > block.timestamp) {
-      return (0, false);
-    }
-
-    (bool isSettled, uint settlementPrice) = settlementFeed.getSettlementPrice(uint64(expiry));
+    (bool isSettled, uint settlementPrice) = _getSettlement(expiry);
     if (!isSettled) return (0, false);
 
     return (_getSettlementValue(strike, balance, settlementPrice, isCall), true);
+  }
+
+  function getSettlement(uint expiry) external view returns (bool isSettled, uint settlementPrice) {
+    return _getSettlement(expiry);
+  }
+
+  function _getSettlement(uint expiry) internal view returns (bool isSettled, uint settlementPrice) {
+    if (expiry > block.timestamp) {
+      return (false, 0);
+    }
+
+    return settlementFeed.getSettlementPrice(uint64(expiry));
   }
 
   /**
