@@ -20,7 +20,7 @@ library Config {
     //////////
     // PMRM //
     //////////
-    uint constant public MAX_ACCOUNT_SIZE_PMRM = 64;
+    uint constant public MAX_ACCOUNT_SIZE_PMRM = 128;
 
     function getDefaultScenarios() public  pure returns (IPMRM.Scenario[] memory) {
         IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](23);
@@ -107,6 +107,8 @@ library Config {
     // SRM //
     /////////
 
+    // The reason that this is not the same size as PMRM is because we don't expect SRM users to have as many positions as PMRM users
+    // so to reduce risk latency for latency-sensitive PMRM users, we are keeping the size of the SRM users smaller for now.
     uint public constant MAX_ACCOUNT_SIZE_SRM = 48;
     bool public constant BORROW_ENABLED = true;
 
@@ -199,6 +201,21 @@ library Config {
                 mmPerpReq: 0.1e18,
                 imPerpReq: 0.2e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.65e18,
+                IMScale: 0.77e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rsETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.65e18,
+                IMScale: 0.77e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("weETH"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.65e18,
+                IMScale: 0.77e18
+            });
         } else {
             revert("market not supported");
         }
@@ -237,6 +254,18 @@ library Config {
             perpCap = 10_000_000e18;
             optionCap = 0;
             baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 10_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rsETH"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 10_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("weETH"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 10_000_000e18;
         } else {
             revert("market not supported");
         }

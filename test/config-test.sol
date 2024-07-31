@@ -19,7 +19,7 @@ library Config {
   //////////
   // PMRM //
   //////////
-  uint public constant MAX_ACCOUNT_SIZE_PMRM = 64;
+  uint public constant MAX_ACCOUNT_SIZE_PMRM = 128;
 
   function getDefaultScenarios() public pure returns (IPMRM.Scenario[] memory) {
     IPMRM.Scenario[] memory scenarios = new IPMRM.Scenario[](21);
