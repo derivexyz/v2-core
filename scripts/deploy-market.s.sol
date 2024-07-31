@@ -8,7 +8,7 @@ import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
+import {LyraRateFeedStatic} from "../src/feeds/static/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {PMRM} from "../src/risk-managers/PMRM.sol";
 import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";

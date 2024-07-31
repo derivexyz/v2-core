@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin/access/Ownable2Step.sol";
 
 // interfaces
-import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
+import {IInterestRateFeed} from "../../interfaces/IInterestRateFeed.sol";
 
 /**
  * @title LyraRateFeedStatic
