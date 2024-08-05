@@ -73,6 +73,9 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
 
   mapping(address => bool) public managerWhitelisted;
 
+  /// @dev Threshold below which an account gets fully liquidated instead of partially
+  int public mtmCutoff;
+
   ////////////////////////
   //    Constructor     //
   ////////////////////////
@@ -102,6 +105,17 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
     auctionParams = _params;
 
     emit AuctionParamsSet(_params);
+  }
+
+  /**
+   * @notice Sets the threshold, below which a bid can liquidate 100% of the account
+   */
+  function setMtmCutoff(int _mtmCutoff) external onlyOwner {
+    if (_mtmCutoff > 1_000e18) revert DA_InvalidParameter();
+
+    mtmCutoff = _mtmCutoff;
+
+    emit MtmCutOffSet(_mtmCutoff);
   }
 
   /**
@@ -231,7 +245,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
 
   /**
    * @notice Function used to begin insolvency logic for an auction that started as solvent
-   * @dev This function can only be called on auctions that has already started as solvent
+   * @dev This function can only be called on auctions that have already started as solvent and passed the timer
    * @param accountId the accountID being liquidated
    */
   function convertToInsolventAuction(uint accountId) external nonReentrant {
@@ -603,9 +617,12 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
    */
   function _getMaxProportion(int markToMarket, int bufferMargin, uint discountPercentage, uint reservedCash)
     internal
-    pure
+    view
     returns (uint)
   {
+    if (markToMarket < mtmCutoff) {
+      return DecimalMath.UNIT;
+    }
     if (bufferMargin > 0) {
       bufferMargin = 0;
     }

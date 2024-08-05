@@ -68,6 +68,8 @@ interface IDutchAuction {
 
   event AuctionParamsSet(AuctionParams params);
 
+  event MtmCutOffSet(int mtmCutOff);
+
   event SMAccountSet(uint smAccount);
 
   event ManagerWhitelisted(address manager, bool whitelisted);
