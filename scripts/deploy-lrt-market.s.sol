@@ -8,7 +8,6 @@ import {WLWrappedERC20Asset} from "../src/assets/WLWrappedERC20Asset.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {PMRM} from "../src/risk-managers/PMRM.sol";
 import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";
@@ -60,17 +59,15 @@ contract DeployMarket is Utils {
     _setPermissionAndCaps(deployment, marketName, market);
     if (chainId != MAINNET_CHAIN) {
       _registerMarketToSRM(marketName, deployment, market);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
     }
     _writeToMarketJson(marketName, market);
 
     if (chainId == MAINNET_CHAIN) {
       market.base.transferOwnership(0xB176A44D819372A38cee878fB0603AEd4d26C5a5);
       market.spotFeed.transferOwnership(0xB176A44D819372A38cee878fB0603AEd4d26C5a5);
-    } else {
-      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
-      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
     }
-
 
     vm.stopBroadcast();
   }
