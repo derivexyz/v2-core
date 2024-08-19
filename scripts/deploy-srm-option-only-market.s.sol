@@ -6,7 +6,7 @@ import {OptionAsset} from "../src/assets/OptionAsset.sol";
 import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
 import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeedStatic} from "../src/feeds/LyraRateFeedStatic.sol";
+import {LyraRateFeedStatic} from "../src/feeds/static/LyraRateFeedStatic.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
 import {IManager} from "../src/interfaces/IManager.sol";

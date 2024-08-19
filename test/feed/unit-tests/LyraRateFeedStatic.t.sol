@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import "../../../src/feeds/LyraRateFeedStatic.sol";
+import "../../../src/feeds/static/LyraRateFeedStatic.sol";
 
 import "forge-std/Test.sol";
 
