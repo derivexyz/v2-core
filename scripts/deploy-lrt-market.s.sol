@@ -33,12 +33,12 @@ import "../src/feeds/SFPSpotFeed.sol";
  * MARKET_NAME=usdt forge script scripts/deploy-base-only-market.s.sol --private-key {} --rpc {} --broadcast
  **/
 contract DeployMarket is Utils {
+  uint256 constant MAINNET_CHAIN = 957;
 
   /// @dev main function
   function run() external {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     vm.startBroadcast(deployerPrivateKey);
-
     // revert if not found
     string memory marketName = vm.envString("MARKET_NAME");
 
@@ -55,12 +55,22 @@ contract DeployMarket is Utils {
     // deploy core contracts
     Market memory market = _deployMarketContracts(marketName, config, deployment);
 
+    uint256 chainId = block.chainid;
+
     _setPermissionAndCaps(deployment, marketName, market);
-    _registerMarketToSRM(marketName, deployment, market);
+    if (chainId != MAINNET_CHAIN) {
+      _registerMarketToSRM(marketName, deployment, market);
+    }
     _writeToMarketJson(marketName, market);
 
-    PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
-    PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+    if (chainId == MAINNET_CHAIN) {
+      market.base.transferOwnership(0xB176A44D819372A38cee878fB0603AEd4d26C5a5);
+      market.spotFeed.transferOwnership(0xB176A44D819372A38cee878fB0603AEd4d26C5a5);
+    } else {
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+    }
+
 
     vm.stopBroadcast();
   }
@@ -69,23 +79,17 @@ contract DeployMarket is Utils {
   function _deployMarketContracts(string memory marketName, ConfigJson memory config, Deployment memory deployment) internal returns (Market memory market)  {
     // get the market ERC20 from config (it should be added to the config)
     address marketERC20;
-    if ((keccak256(abi.encodePacked(marketName)) == keccak256(abi.encodePacked("SFP")))) {
-      marketERC20 = vm.parseJsonAddress(_readDeploymentFile("strands"), ".sfp");
-      // cast as LyraSpotFeed for simplicity
-      market.spotFeed = LyraSpotFeed(address(new SFPSpotFeed(IStrandsSFP(marketERC20))));
-    } else {
-      marketERC20 = _getMarketERC20(marketName);
+    marketERC20 = _getMarketERC20(marketName);
 
-      console2.log("target erc20:", marketERC20);
+    console2.log("target erc20:", marketERC20);
 
-      market.spotFeed = new LyraSpotFeed();
+    market.spotFeed = new LyraSpotFeed();
 
-      // init feeds
-      market.spotFeed.setHeartbeat(Config.SPOT_HEARTBEAT);
+    // init feeds
+    market.spotFeed.setHeartbeat(Config.SPOT_HEARTBEAT);
 
-      for (uint i = 0; i < config.feedSigners.length; ++i) {
-        market.spotFeed.addSigner(config.feedSigners[i], true);
-      }
+    for (uint i = 0; i < config.feedSigners.length; ++i) {
+      market.spotFeed.addSigner(config.feedSigners[i], true);
     }
 
     market.base = new WLWrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));

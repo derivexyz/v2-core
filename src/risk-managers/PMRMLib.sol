@@ -35,11 +35,10 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
 
   function setBasisContingencyParams(IPMRMLib.BasisContingencyParameters memory _basisContParams) external onlyOwner {
     if (
+      //
       _basisContParams.scenarioSpotUp <= 1e18 || _basisContParams.scenarioSpotUp > 3e18
         || _basisContParams.scenarioSpotDown >= 1e18 //
-        || _basisContParams.basisContMultFactor > 5e18
-      //
-      || _basisContParams.basisContAddFactor > 5e18
+        || _basisContParams.basisContMultFactor > 5e18 || _basisContParams.basisContAddFactor > 5e18
     ) {
       revert PMRML_InvalidBasisContingencyParameters();
     }
