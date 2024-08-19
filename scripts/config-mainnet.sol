@@ -216,6 +216,26 @@ library Config {
                 marginFactor: 0.65e18,
                 IMScale: 0.77e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DAI"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.925e18,
+                IMScale: 0.92e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("sDAI"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.875e18,
+                IMScale: 0.915e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("USDe"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.8e18,
+                IMScale: 0.875e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("PYUSD"))) {
+            baseMarginParams = IStandardManager.BaseMarginParams({
+                marginFactor: 0.925e18,
+                IMScale: 0.92e18
+            });
         } else {
             revert("market not supported");
         }
@@ -266,6 +286,22 @@ library Config {
             perpCap = 0;
             optionCap = 0;
             baseCap = 10_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DAI"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 3_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("sDAI"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 3_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("USDe"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 500_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("PYUSD"))) {
+            perpCap = 0;
+            optionCap = 0;
+            baseCap = 1_000_000e18;
         } else {
             revert("market not supported");
         }
