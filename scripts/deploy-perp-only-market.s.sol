@@ -83,6 +83,11 @@ contract DeployPerpOnlyMarket is Utils {
       market.ibpFeed.addSigner(config.feedSigners[i], true);
     }
 
+    market.spotFeed.setRequiredSigners(config.feedSigners.length);
+    market.perpFeed.setRequiredSigners(config.feedSigners.length);
+    market.iapFeed.setRequiredSigners(config.feedSigners.length);
+    market.ibpFeed.setRequiredSigners(config.feedSigners.length);
+
     // Deploy and configure perp
     (int staticInterestRate, int fundingRateCap, uint fundingConvergencePeriod) = Config.getPerpParams();
 

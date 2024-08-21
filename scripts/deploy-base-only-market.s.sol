@@ -83,6 +83,7 @@ contract DeployMarket is Utils {
       for (uint i = 0; i < config.feedSigners.length; ++i) {
         market.spotFeed.addSigner(config.feedSigners[i], true);
       }
+      market.spotFeed.setRequiredSigners(config.feedSigners.length);
     }
 
     market.base = new WrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
