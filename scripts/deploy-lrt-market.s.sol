@@ -17,6 +17,7 @@ import {IManager} from "../src/interfaces/IManager.sol";
 import {IStandardManager} from "../src/interfaces/IStandardManager.sol";
 import {IForwardFeed} from "../src/interfaces/IForwardFeed.sol";
 import {IVolFeed} from "../src/interfaces/IVolFeed.sol";
+import {SafeCast} from "openzeppelin/utils/math/SafeCast.sol";
 
 import {MockSpotDiffFeed} from "../test/shared/mocks/MockSpotDiffFeed.sol";
 
@@ -32,6 +33,7 @@ import "../src/feeds/SFPSpotFeed.sol";
  * MARKET_NAME=usdt forge script scripts/deploy-base-only-market.s.sol --private-key {} --rpc {} --broadcast
  **/
 contract DeployMarket is Utils {
+  using SafeCast for uint;
   uint256 constant MAINNET_CHAIN = 957;
 
   /// @dev main function
@@ -88,7 +90,8 @@ contract DeployMarket is Utils {
     for (uint i = 0; i < config.feedSigners.length; ++i) {
       market.spotFeed.addSigner(config.feedSigners[i], true);
     }
-    market.spotFeed.setRequiredSigners(config.feedSigners.length);
+    
+    market.spotFeed.setRequiredSigners(config.feedSigners.length.toUint8());
 
     market.base = new WLWrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
   }
