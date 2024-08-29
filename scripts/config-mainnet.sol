@@ -238,8 +238,8 @@ library Config {
             });
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("LBTC"))) {
             baseMarginParams = IStandardManager.BaseMarginParams({
-                marginFactor: 0.75e18,
-                IMScale: 0.93e18
+                marginFactor: 0.65e18,
+                IMScale: 0.77e18
             });
         } else {
             revert("market not supported");
