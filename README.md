@@ -1,17 +1,18 @@
-# Lyra V2
+# Derive V2
 
 [![foundry-rs - foundry](https://img.shields.io/static/v1?label=foundry-rs&message=foundry&color=blue&logo=github)](https://github.com/foundry-rs/foundry "Go to GitHub repo")
 [![CI](https://github.com/lyra-finance/v2-core/actions/workflows/ci.yml/badge.svg)](https://github.com/lyra-finance/v2-core/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/lyra-finance/v2-core/branch/master/graph/badge.svg?token=43B951MYIN)](https://codecov.io/gh/lyra-finance/v2-core)
 
 <div align="center">
-  <p align='center'>
-    <br>
-    <br>
+    <br/>
     <img src='./docs/imgs/overall/logo.png' alt='lyra' width="300" />
-    <h5 align="center"> The framework to trade all derivatives </h6>
-</p> 
+    <h5 align="center"> The framework to trade all derivatives </h5>
 </div>
+
+## Depolyments
+
+- Protocol deployments can be found [here](https://github.com/lyra-finance/v2-matching)
 
 
 ## Build
