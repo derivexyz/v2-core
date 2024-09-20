@@ -28,6 +28,7 @@ contract Utils is Script {
     config.usdc = abi.decode(vm.parseJson(file, ".usdc"), (address));
     config.feedSigners = abi.decode(vm.parseJson(file, ".feedSigners"), (address[]));
     config.useMockedFeed = abi.decode(vm.parseJson(file, ".useMockedFeed"), (bool));
+    config.requiredSigners = abi.decode(vm.parseJson(file, ".requiredSigners"), (uint8));
   }
 
   /// @dev get config from current chainId
