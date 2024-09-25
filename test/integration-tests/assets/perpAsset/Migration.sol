@@ -28,6 +28,12 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
 
     // open trades: Alice is Short, Bob is Long
     _tradePerpContract(markets["weth"].perp, aliceAcc, charlieAcc, 1e18);
+
+    // increase price to have something to settle
+    _setSpotPrice("weth", 2500e18, 1e18);
+    _setPerpPrice("weth", 2500e18, 1e18);
+
+    // disable market
     markets["weth"].perp.disable();
 
     // asset beginning with 1e18 balances
@@ -36,20 +42,7 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
     assertEq(subAccounts.getBalance(charlieAcc, markets["weth"].perp, 0), 1e18);
   }
 
-  function testTradeIfClosingOutBalance() public {
-    _setPerpPrice("weth", 2500e18, 1e18);
-
-    // trade should revert
-    _tradePerpContract(markets["weth"].perp, charlieAcc, aliceAcc, 1e18);
-
-    // alice and charlie should both have 0 balances
-    assertEq(subAccounts.getBalance(aliceAcc, markets["weth"].perp, 0), 0);
-    assertEq(subAccounts.getBalance(charlieAcc, markets["weth"].perp, 0), 0);
-  }
-
   function testCannotTradeAfterDisabled() public {
-    _setPerpPrice("weth", 2500e18, 1e18);
-
     // trade should revert
     vm.expectRevert(bytes("ReentrancyGuard: reentrant call"));
     _tradePerpContract(markets["weth"].perp, charlieAcc, aliceAcc, 2e18);
@@ -57,11 +50,13 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
     // alice and charlie balances should not have changed
     assertEq(subAccounts.getBalance(aliceAcc, markets["weth"].perp, 0), -1e18);
     assertEq(subAccounts.getBalance(charlieAcc, markets["weth"].perp, 0), 1e18);
+
+    // no settlements should have happened
+    assertEq(_getCashBalance(aliceAcc), int(DEFAULT_DEPOSIT));
+    assertEq(_getCashBalance(charlieAcc), int(DEFAULT_DEPOSIT));
   }
 
   function testCanSettleOpenBalance() public {
-
-    _setPerpPrice("weth", 2500e18, 1e18);
 
     // close out and settle all perps
     vm.prank(address(srm));
@@ -72,8 +67,26 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
     // alice and charlie should both have 0 balances
     assertEq(subAccounts.getBalance(aliceAcc, markets["weth"].perp, 0), 0);
     assertEq(subAccounts.getBalance(charlieAcc, markets["weth"].perp, 0), 0);
+
+    // confirm correct settlement
+    assertEq(int(DEFAULT_DEPOSIT) - 500e18, _getCashBalance(aliceAcc));
+    assertEq(int(DEFAULT_DEPOSIT) + 500e18, _getCashBalance(charlieAcc));
   }
 
+  function testTradeIfClosingOutBalance() public {
+    // trade should revert
+    _tradePerpContract(markets["weth"].perp, charlieAcc, aliceAcc, 1e18);
+
+    // alice and charlie should both have 0 balances
+    assertEq(subAccounts.getBalance(aliceAcc, markets["weth"].perp, 0), 0);
+    assertEq(subAccounts.getBalance(charlieAcc, markets["weth"].perp, 0), 0);
+
+    // confirm alice settled properly
+    console2.log("cashAfter", _getCashBalance(aliceAcc));
+
+    assertEq(int(DEFAULT_DEPOSIT) - 500e18, _getCashBalance(aliceAcc));
+    assertEq(int(DEFAULT_DEPOSIT) + 500e18, _getCashBalance(charlieAcc));
+  }
 
 
   function _tradePerpContract(IPerpAsset perp, uint fromAcc, uint toAcc, int amount) internal {
