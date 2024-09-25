@@ -11,7 +11,7 @@ import "../../shared/IntegrationTestBase.t.sol";
 contract INTEGRATION_PerpMigration is IntegrationTestBase {
   address charlie = address(0xca1e);
   uint charlieAcc;
-  
+
   uint initPrice = 1500e18;
 
   function setUp() public {
@@ -57,7 +57,6 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
   }
 
   function testCanSettleOpenBalance() public {
-
     // close out and settle all perps
     vm.prank(address(srm));
     srm.settlePerpsWithIndex(aliceAcc);
@@ -87,7 +86,6 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
     assertEq(int(DEFAULT_DEPOSIT) - 500e18, _getCashBalance(aliceAcc));
     assertEq(int(DEFAULT_DEPOSIT) + 500e18, _getCashBalance(charlieAcc));
   }
-
 
   function _tradePerpContract(IPerpAsset perp, uint fromAcc, uint toAcc, int amount) internal {
     ISubAccounts.AssetTransfer memory transfer =

@@ -221,7 +221,7 @@ contract UNIT_PerpAssetMigration is Test {
 
   function testMockSettleWithOpenBalance() public {
     perp.disable();
-    
+
     // mock settle
     vm.prank(address(manager));
     perp.settleRealizedPNLAndFunding(aliceAcc);
