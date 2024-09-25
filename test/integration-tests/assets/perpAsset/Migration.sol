@@ -88,6 +88,12 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
     assertEq(int(DEFAULT_DEPOSIT) + 200e18, _getCashBalance(charlieAcc));
   }
 
+  function testCannotPartiallyReduceBalances() public {
+    // trade should revert
+    vm.expectRevert(bytes("ReentrancyGuard: reentrant call"));
+    _tradePerpContract(markets["weth"].perp, charlieAcc, aliceAcc, 5e17);
+  }
+
   function testTradeIfClosingOutBalance() public {
     // trade should revert
     _tradePerpContract(markets["weth"].perp, charlieAcc, aliceAcc, 1e18);
