@@ -201,7 +201,7 @@ contract LiquidationSimBase is PMRMTestBase {
           data.InitialPortfolio.OptionExpiries[i],
           data.InitialPortfolio.OptionStrikes[i],
           data.InitialPortfolio.OptionIsCall[i] == 1
-          ),
+        ),
         balance: data.InitialPortfolio.OptionAmounts[i]
       });
     }

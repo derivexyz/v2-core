@@ -45,7 +45,6 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
     assertEq(subAccounts.getBalance(bobAcc, markets["weth"].perp, 0), 0);
     assertEq(subAccounts.getBalance(charlieAcc, markets["weth"].perp, 0), 1e18);
     assertEq(subAccounts.getBalance(danielAcc, markets["weth"].perp, 0), 0);
-
   }
 
   function testCannotOpenNewTrade() public {
