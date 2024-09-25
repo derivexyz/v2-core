@@ -88,8 +88,9 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     if (auctionDetails.insolvent) {
       // todo: this needs to be changed to use MM as lower bound
       // assertApproxEqAbs(mm, data.Actions[actionId].Results.LowerBound, 1e6, "lowerbound");
+    } else {
+      fMax = auction.getMaxProportion(aliceAcc, worstScenario);
     }
-    else fMax = auction.getMaxProportion(aliceAcc, worstScenario);
 
     assertApproxEqAbs(mtm, data.Actions[actionId].Results.PreMtM, 1e6, "pre mtm");
     assertApproxEqAbs(mm, data.Actions[actionId].Results.PreMM, 1e6, "pre mm");
@@ -106,8 +107,7 @@ contract LiquidationSimTests_PM is LiquidationSimBase {
     assertApproxEqAbs(bm, data.Actions[actionId].Results.PostBM, 1e6, "post bm");
 
     IDutchAuction.Auction memory auctionDetails = auction.getAuction(aliceAcc);
-    if (auctionDetails.insolvent) {}
-    else {
+    if (auctionDetails.insolvent) {} else {
       uint fMax = auction.getMaxProportion(aliceAcc, worstScenario);
       assertApproxEqAbs(fMax, data.Actions[actionId].Results.PostFMax, 1e6, "post fmax");
     }

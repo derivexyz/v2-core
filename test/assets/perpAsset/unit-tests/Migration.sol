@@ -206,6 +206,7 @@ contract UNIT_PerpAssetMigration is Test {
 
     // alice trade with charlie to completely close her short position
     _tradePerpContract(charlieAcc, aliceAcc, oneContract);
+    assertEq(subAccounts.getBalance(aliceAcc, perp, 0), 0);
     assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 100e18);
 
     perp.disable();
@@ -216,6 +217,22 @@ contract UNIT_PerpAssetMigration is Test {
     perp.settleRealizedPNLAndFunding(aliceAcc);
     assertEq(perp.getUnsettledAndUnrealizedCash(aliceAcc), 0);
     assertEq(subAccounts.getBalance(aliceAcc, perp, 0), 0);
+  }
+
+  function testMockSettleWithOpenBalance() public {
+    perp.disable();
+
+    // mock settle
+    vm.prank(address(manager));
+    perp.settleRealizedPNLAndFunding(aliceAcc);
+    vm.prank(address(manager));
+    perp.settleRealizedPNLAndFunding(bobAcc);
+    vm.prank(address(manager));
+    perp.settleRealizedPNLAndFunding(charlieAcc);
+
+    assertEq(subAccounts.getBalance(aliceAcc, perp, 0), 0);
+    assertEq(subAccounts.getBalance(bobAcc, perp, 0), 0);
+    assertEq(subAccounts.getBalance(charlieAcc, perp, 0), 0);
   }
 
   function testFeedFreezing() public {
