@@ -317,14 +317,16 @@ contract PerpAsset is IPerpAsset, PositionTracking, GlobalSubIdOITracking, Manag
     position.funding = 0;
     position.pnl = 0;
 
-    if (isDisabled) {
+    int positionSize = _getPositionSize(accountId);
+
+    if (isDisabled && positionSize != 0) {
       // If the perp has been disabled/migration enabled delete the position after realising PNL/funding
       subAccounts.assetAdjustment(
         ISubAccounts.AssetAdjustment({
           acc: accountId,
           asset: IAsset(address(this)),
           subId: 0,
-          amount: -_getPositionSize(accountId),
+          amount: -positionSize,
           assetData: bytes32(0)
         }),
         false,
