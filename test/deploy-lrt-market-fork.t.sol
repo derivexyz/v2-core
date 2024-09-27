@@ -22,8 +22,8 @@ contract LyraForkTest is Utils {
     vm.startPrank(0xB176A44D819372A38cee878fB0603AEd4d26C5a5);
     StandardManager srm = StandardManager(0x28c9ddF9A3B29c2E6a561c1BC520954e5A33de5D);
 
-    uint marketId = srm.createMarket("LBTC");
-    string memory marketName = "LBTC";
+    uint marketId = srm.createMarket("eBTC");
+    string memory marketName = "eBTC";
 
     console.log("marketId:", marketId);
     ConfigJson memory config = _loadConfig();
@@ -34,8 +34,8 @@ contract LyraForkTest is Utils {
       IStandardManager.BaseMarginParams memory baseMarginParams
     ) = Config.getSRMParams(marketName);
 
-    LyraSpotFeed spotFeed = LyraSpotFeed(0x5a15efb885C8974A8F3d4b04DaA76b279157fECB);
-    WrappedERC20Asset base = WrappedERC20Asset(0xeaF03Bb3280C609d35E7F84d24a996c7C0b74F5f);
+    LyraSpotFeed spotFeed = LyraSpotFeed(0xb147274cB65D5285d18245594E0Bec791De7Cb46);
+    WrappedERC20Asset base = WrappedERC20Asset(0x95FE344A0f420A7aC1B1E69CB1474179a40db882);
     SRMPortfolioViewer viewer = SRMPortfolioViewer(0xAA8f9D05599F1a5d5929c40342c06a5Da063a4dE);
     // THE IMPORTANT COMMANDS START HERE
     srm.whitelistAsset(base, marketId, IStandardManager.AssetType.Base);

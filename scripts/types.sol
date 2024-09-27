@@ -34,6 +34,7 @@ struct ConfigJson {
   address usdc;
   bool useMockedFeed;
   address[] feedSigners;
+  uint8 requiredSigners;
 }
 
 struct Deployment {
