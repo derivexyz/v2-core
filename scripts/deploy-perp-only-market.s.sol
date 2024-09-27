@@ -21,7 +21,7 @@ import "./config-mainnet.sol";
 
 
 /**
- * MARKET_NAME=weth forge script scripts/deploy-market.s.sol --private-key {} --rpc {} --broadcast
+ * MARKET_NAME={} forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc {} --broadcast
  **/
 contract DeployPerpOnlyMarket is Utils {
 
