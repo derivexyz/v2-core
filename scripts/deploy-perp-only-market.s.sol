@@ -21,12 +21,13 @@ import "./config-mainnet.sol";
 
 
 /**
- * MARKET_NAME={} forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc {} --broadcast
+ * IS_MAINNET=False MARKET_NAME=AAVE forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc {} --broadcast
  **/
 contract DeployPerpOnlyMarket is Utils {
 
   /// @dev main function
   function run() external {
+    bool memory isMainnet = vm.envBool("IS_MAINNET");
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     vm.startBroadcast(deployerPrivateKey);
 
@@ -46,9 +47,10 @@ contract DeployPerpOnlyMarket is Utils {
     // deploy core contracts
     Market memory market = _deployMarketContracts(marketName, config, deployment);
 
-    _setPermissionAndCaps(deployment, marketName, market);
-
-    _registerMarketToSRM(marketName, deployment, market);
+    if (!isMainnet) {
+      _setPermissionAndCaps(deployment, marketName, market);
+      _registerMarketToSRM(marketName, deployment, market);    
+    }
 
     _writeToMarketJson(marketName, market);
 
