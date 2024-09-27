@@ -21,7 +21,7 @@ import "./config-mainnet.sol";
 
 
 /**
- * IS_MAINNET=False MARKET_NAME=AAVE PRIVATE_KEY={} forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc-url {} --verifier-url {} --broadcast
+ * IS_MAINNET=False MARKET_NAME=AAVE PRIVATE_KEY={} forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc-url {} --verify --verifier blockscout--verifier-url {} --broadcast --priority-gas-price 1
  **/
 
 // MAINNET 
@@ -31,6 +31,8 @@ import "./config-mainnet.sol";
 // TESTNET
 // RPC: https://rpc-prod-testnet-0eakp60405.t.conduit.xyz
 // VERIFIER: https://explorer.derive.xyz/api
+
+// will need to use an API key endpoint as limits will get hit
 contract DeployPerpOnlyMarket is Utils {
 
   /// @dev main function
