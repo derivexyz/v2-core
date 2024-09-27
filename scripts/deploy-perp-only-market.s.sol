@@ -21,13 +21,21 @@ import "./config-mainnet.sol";
 
 
 /**
- * IS_MAINNET=False MARKET_NAME=AAVE forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc {} --broadcast
+ * IS_MAINNET=False MARKET_NAME=AAVE PRIVATE_KEY={} forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc-url {} --verifier-url {} --broadcast
  **/
+
+// MAINNET 
+// RPC: https://rpc.lyra.finance
+// VERIFIER: https://explorer-prod-testnet-0eakp60405.t.conduit.xyz/api
+
+// TESTNET
+// RPC: https://rpc-prod-testnet-0eakp60405.t.conduit.xyz
+// VERIFIER: https://explorer.derive.xyz/api
 contract DeployPerpOnlyMarket is Utils {
 
   /// @dev main function
   function run() external {
-    bool memory isMainnet = vm.envBool("IS_MAINNET");
+    bool isMainnet = vm.envBool("IS_MAINNET");
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     vm.startBroadcast(deployerPrivateKey);
 
@@ -85,10 +93,10 @@ contract DeployPerpOnlyMarket is Utils {
       market.ibpFeed.addSigner(config.feedSigners[i], true);
     }
 
-    market.spotFeed.setRequiredSigners(config.feedSigners.length);
-    market.perpFeed.setRequiredSigners(config.feedSigners.length);
-    market.iapFeed.setRequiredSigners(config.feedSigners.length);
-    market.ibpFeed.setRequiredSigners(config.feedSigners.length);
+    market.spotFeed.setRequiredSigners(uint8(config.feedSigners.length));
+    market.perpFeed.setRequiredSigners(uint8(config.feedSigners.length));
+    market.iapFeed.setRequiredSigners(uint8(config.feedSigners.length));
+    market.ibpFeed.setRequiredSigners(uint8(config.feedSigners.length));
 
     // Deploy and configure perp
     (int staticInterestRate, int fundingRateCap, uint fundingConvergencePeriod) = Config.getPerpParams();
