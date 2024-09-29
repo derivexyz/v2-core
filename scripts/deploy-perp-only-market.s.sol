@@ -56,11 +56,13 @@ contract DeployPerpOnlyMarket is Utils {
 
     // deploy core contracts
     Market memory market = _deployMarketContracts(marketName, config, deployment);
+    _setCapForManager(address(deployment.srm), marketName, market);
 
     if (!isMainnet) {
-      _setPermissionAndCaps(deployment, marketName, market);
+      _whitelistManager(address(deployment.srm));
       _registerMarketToSRM(marketName, deployment, market);    
-    }
+    } 
+    // NOTE: don't forget to nominate new owner in mainnet
 
     _writeToMarketJson(marketName, market);
 
@@ -117,11 +119,6 @@ contract DeployPerpOnlyMarket is Utils {
 
   }
 
-  function _setPermissionAndCaps(Deployment memory deployment, string memory marketName, Market memory market) internal {
-    // each asset whitelist the standard manager
-    _whitelistAndSetCapForManager(address(deployment.srm), marketName, market);
-  }
-
   function _registerMarketToSRM(string memory marketName, Deployment memory deployment, Market memory market) internal {
     // find market ID
     uint marketId = deployment.srm.createMarket(marketName);
@@ -152,10 +149,12 @@ contract DeployPerpOnlyMarket is Utils {
     deployment.srm.setWhitelistedCallee(address(market.perpFeed), true);
   }
 
-  function _whitelistAndSetCapForManager(address manager, string memory marketName, Market memory market) internal {
+  function _whitelistManager(address manager) internal {
     market.perp.setWhitelistManager(manager, true);
+  }
 
-    (uint perpCap, , ) = Config.getSRMCaps(marketName);
+  functiion _setCapForManager(address manager, string memory marketName, Market memory market) internal {
+    (, uint perpCap, ) = Config.getSRMCaps(marketName);
 
     market.perp.setTotalPositionCap(IManager(manager), perpCap);
   }
