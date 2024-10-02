@@ -37,7 +37,6 @@ contract DeployPerpOnlyMarket is Utils {
 
   /// @dev main function
   function run() external {
-    bool isMainnet = vm.envBool("IS_MAINNET");
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     vm.startBroadcast(deployerPrivateKey);
 
@@ -57,10 +56,20 @@ contract DeployPerpOnlyMarket is Utils {
     // deploy core contracts
     Market memory market = _deployMarketContracts(marketName, config, deployment);
     _setCapForManager(address(deployment.srm), marketName, market);
+    _whitelistManager(address(deployment.srm));
 
-    if (!isMainnet) {
-      _whitelistManager(address(deployment.srm));
-      _registerMarketToSRM(marketName, deployment, market);    
+    if (block.chainid != 957) {
+      _registerMarketToSRM(marketName, deployment, market);
+
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
+
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
     } 
     // NOTE: don't forget to nominate new owner in mainnet
 
