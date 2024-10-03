@@ -27,11 +27,11 @@ import "./config-mainnet.sol";
 
 // MAINNET 
 // RPC: https://rpc.lyra.finance
-// VERIFIER: https://explorer-prod-testnet-0eakp60405.t.conduit.xyz/api
+// VERIFIER: https://explorer.derive.xyz/api
 
 // TESTNET
 // RPC: https://rpc-prod-testnet-0eakp60405.t.conduit.xyz
-// VERIFIER: https://explorer.derive.xyz/api
+// VERIFIER: https://explorer-prod-testnet-0eakp60405.t.conduit.xyz/api
 
 // will need to use an API key endpoint as limits will get hit
 contract DeployPerpOnlyMarket is Utils {
