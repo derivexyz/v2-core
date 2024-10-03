@@ -191,16 +191,6 @@ library Config {
                 unpairedMMScale: 1.3e18,
                 mmOffsetScale: 1.05e18
             });
-        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SOL"))) {
-            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
-                mmPerpReq: 0.1e18,
-                imPerpReq: 0.2e18
-            });
-        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DOGE"))) {
-            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
-                mmPerpReq: 0.1e18,
-                imPerpReq: 0.2e18
-            });
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
             baseMarginParams = IStandardManager.BaseMarginParams({
                 marginFactor: 0.65e18,
@@ -248,8 +238,68 @@ library Config {
             });
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("eBTC"))) {
             baseMarginParams = IStandardManager.BaseMarginParams({
-                marginFactor: 0.65e18,
-                IMScale: 0.77e18
+                marginFactor: 0.9e18,
+                IMScale: 0.945e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SOL"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DOGE"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("TIA"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SUI"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("NEAR"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("PEPE"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.143e18,
+                imPerpReq: 0.2e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("WIF"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.143e18,
+                imPerpReq: 0.2e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("WLD"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("BNB"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("AAVE"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("OP"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ARB"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
             });
         } else {
             revert("market not supported");
@@ -281,14 +331,6 @@ library Config {
             perpCap = 0;
             optionCap = 30_000e18;
             baseCap = 30_000e18;
-        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SOL"))) {
-            perpCap = 1_000_000e18;
-            optionCap = 0;
-            baseCap = 0;
-        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DOGE"))) {
-            perpCap = 10_000_000e18;
-            optionCap = 0;
-            baseCap = 0;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("rswETH"))) {
             perpCap = 0;
             optionCap = 0;
@@ -329,6 +371,54 @@ library Config {
             perpCap = 0;
             optionCap = 0;
             baseCap = 10_000_000e18;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SOL"))) {
+            perpCap = 1_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DOGE"))) {
+            perpCap = 10_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("TIA"))) {
+            perpCap = 200_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SUI"))) {
+            perpCap = 500_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("NEAR"))) {
+            perpCap = 80_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("PEPE"))) {
+            perpCap = 40_000_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("WIF"))) {
+            perpCap = 200_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("WLD"))) {
+            perpCap = 200_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("BNB"))) {
+            perpCap = 1_600e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("AAVE"))) {
+            perpCap = 6_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("OP"))) {
+            perpCap = 500_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ARB"))) {
+            perpCap = 1_500_000e18;
+            optionCap = 0;
+            baseCap = 0;
         } else {
             revert("market not supported");
         }

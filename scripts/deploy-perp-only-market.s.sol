@@ -8,6 +8,7 @@ import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {PerpAsset} from "../src/assets/PerpAsset.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
+import {PMRM} from "../src/risk-managers/PMRM.sol";
 import {IManager} from "../src/interfaces/IManager.sol";
 import {IVolFeed} from "../src/interfaces/IVolFeed.sol";
 import {IForwardFeed} from "../src/interfaces/IForwardFeed.sol";
@@ -21,8 +22,18 @@ import "./config-mainnet.sol";
 
 
 /**
- * MARKET_NAME=weth forge script scripts/deploy-market.s.sol --private-key {} --rpc {} --broadcast
+ * MARKET_NAME=AAVE PRIVATE_KEY={} MAINNET_OWNER={} forge script scripts/deploy-perp-only-market.s.sol --private-key {} --rpc-url {} --verify --verifier blockscout --verifier-url {} --broadcast --priority-gas-price 1
  **/
+
+// MAINNET 
+// RPC: https://rpc.lyra.finance
+// VERIFIER: https://explorer.derive.xyz/api
+
+// TESTNET
+// RPC: https://rpc-prod-testnet-0eakp60405.t.conduit.xyz
+// VERIFIER: https://explorer-prod-testnet-0eakp60405.t.conduit.xyz/api
+
+// will need to use an API key endpoint as limits will get hit
 contract DeployPerpOnlyMarket is Utils {
 
   /// @dev main function
@@ -44,11 +55,26 @@ contract DeployPerpOnlyMarket is Utils {
     Deployment memory deployment = _loadDeployment();
 
     // deploy core contracts
-    Market memory market = _deployMarketContracts(marketName, config, deployment);
+    Market memory market = _deployMarketContracts(config, deployment);
+    _setCapForManager(address(deployment.srm), marketName, market);
+    _whitelistManager(address(deployment.srm), market);
 
-    _setPermissionAndCaps(deployment, marketName, market);
+    if (block.chainid != 957) {
+      _registerMarketToSRM(marketName, deployment, market);
 
-    _registerMarketToSRM(marketName, deployment, market);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
+      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
+
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
+      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
+
+    } else {
+      _transferOwner(market, vm.envAddress("MAINNET_OWNER"));
+    }
 
     _writeToMarketJson(marketName, market);
 
@@ -57,7 +83,7 @@ contract DeployPerpOnlyMarket is Utils {
 
 
   /// @dev deploy all contract needed for a single market
-  function _deployMarketContracts(string memory marketName, ConfigJson memory config, Deployment memory deployment) internal returns (Market memory market)  {
+  function _deployMarketContracts(ConfigJson memory config, Deployment memory deployment) internal returns (Market memory market)  {
     market.spotFeed = new LyraSpotFeed();
 
     // feeds for perp
@@ -83,10 +109,10 @@ contract DeployPerpOnlyMarket is Utils {
       market.ibpFeed.addSigner(config.feedSigners[i], true);
     }
 
-    market.spotFeed.setRequiredSigners(config.feedSigners.length);
-    market.perpFeed.setRequiredSigners(config.feedSigners.length);
-    market.iapFeed.setRequiredSigners(config.feedSigners.length);
-    market.ibpFeed.setRequiredSigners(config.feedSigners.length);
+    market.spotFeed.setRequiredSigners(uint8(config.feedSigners.length));
+    market.perpFeed.setRequiredSigners(uint8(config.feedSigners.length));
+    market.iapFeed.setRequiredSigners(uint8(config.feedSigners.length));
+    market.ibpFeed.setRequiredSigners(uint8(config.feedSigners.length));
 
     // Deploy and configure perp
     (int staticInterestRate, int fundingRateCap, uint fundingConvergencePeriod) = Config.getPerpParams();
@@ -103,11 +129,6 @@ contract DeployPerpOnlyMarket is Utils {
     market.perp.setPerpFeed(market.perpFeed);
     market.perp.setImpactFeeds(market.iapFeed, market.ibpFeed);
 
-  }
-
-  function _setPermissionAndCaps(Deployment memory deployment, string memory marketName, Market memory market) internal {
-    // each asset whitelist the standard manager
-    _whitelistAndSetCapForManager(address(deployment.srm), marketName, market);
   }
 
   function _registerMarketToSRM(string memory marketName, Deployment memory deployment, Market memory market) internal {
@@ -140,12 +161,24 @@ contract DeployPerpOnlyMarket is Utils {
     deployment.srm.setWhitelistedCallee(address(market.perpFeed), true);
   }
 
-  function _whitelistAndSetCapForManager(address manager, string memory marketName, Market memory market) internal {
+  function _whitelistManager(address manager, Market memory market) internal {
     market.perp.setWhitelistManager(manager, true);
+  }
 
-    (uint perpCap, , ) = Config.getSRMCaps(marketName);
+  function _setCapForManager(address manager, string memory marketName, Market memory market) internal {
+    (uint perpCap,, ) = Config.getSRMCaps(marketName);
 
     market.perp.setTotalPositionCap(IManager(manager), perpCap);
+  }
+
+  function _transferOwner(Market memory market, address newOwner) internal {
+    market.perp.transferOwnership(newOwner);
+    market.spotFeed.transferOwnership(newOwner);
+    market.iapFeed.transferOwnership(newOwner);
+    market.ibpFeed.transferOwnership(newOwner);
+    market.perpFeed.transferOwnership(newOwner);
+
+    console2.log("New owner for market: ", newOwner);
   }
 
   /**
