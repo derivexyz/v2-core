@@ -81,7 +81,7 @@ contract DeployCore is Utils {
         for (uint i = 0; i < config.feedSigners.length; ++i) {
             stableFeed.addSigner(config.feedSigners[i], true);
         }
-        stableFeed.setRequiredSigners(config.feedSigners.length);
+        stableFeed.setRequiredSigners(config.requiredSigners);
         deployment.stableFeed = stableFeed;
 
         deployment.dataSubmitter = new OracleDataSubmitter();
