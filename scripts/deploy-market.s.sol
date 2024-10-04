@@ -107,12 +107,12 @@ contract DeployMarket is Utils {
       market.volFeed.addSigner(config.feedSigners[i], true);
       market.forwardFeed.addSigner(config.feedSigners[i], true);
     }
-    market.spotFeed.setRequiredSigners(config.feedSigners.length);
-    market.perpFeed.setRequiredSigners(config.feedSigners.length);
-    market.iapFeed.setRequiredSigners(config.feedSigners.length);
-    market.ibpFeed.setRequiredSigners(config.feedSigners.length);
-    market.volFeed.setRequiredSigners(config.feedSigners.length);
-    market.forwardFeed.setRequiredSigners(config.feedSigners.length);
+    market.spotFeed.setRequiredSigners(config.requiredSigners);
+    market.perpFeed.setRequiredSigners(config.requiredSigners);
+    market.iapFeed.setRequiredSigners(config.requiredSigners);
+    market.ibpFeed.setRequiredSigners(config.requiredSigners);
+    market.volFeed.setRequiredSigners(config.requiredSigners);
+    market.forwardFeed.setRequiredSigners(config.requiredSigners);
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
 

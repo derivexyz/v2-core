@@ -78,9 +78,9 @@ contract DeploySRMOptionOnlyMarket is Utils {
       market.volFeed.addSigner(config.feedSigners[i], true);
       market.forwardFeed.addSigner(config.feedSigners[i], true);
     }
-    market.spotFeed.setRequiredSigners(config.feedSigners.length);
-    market.volFeed.setRequiredSigners(config.feedSigners.length);
-    market.forwardFeed.setRequiredSigners(config.feedSigners.length);
+    market.spotFeed.setRequiredSigners(config.requiredSigners);
+    market.volFeed.setRequiredSigners(config.requiredSigners);
+    market.forwardFeed.setRequiredSigners(config.requiredSigners);
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
 
