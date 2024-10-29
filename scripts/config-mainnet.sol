@@ -301,6 +301,56 @@ library Config {
                 mmPerpReq: 0.067e18,
                 imPerpReq: 0.1e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("LINK"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("XRP"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("AVAX"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("UNI"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ENA"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.067e18,
+                imPerpReq: 0.1e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("TAO"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.143e18,
+                imPerpReq: 0.2e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SEI"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.143e18,
+                imPerpReq: 0.2e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("EIGEN"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.143e18,
+                imPerpReq: 0.2e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("BITCOIN"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.2e18,
+                imPerpReq: 0.33333e18
+            });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DEGEN"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.2e18,
+                imPerpReq: 0.33333e18
+            });
         } else {
             revert("market not supported");
         }
@@ -417,6 +467,46 @@ library Config {
             baseCap = 0;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ARB"))) {
             perpCap = 1_500_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("LINK"))) {
+            perpCap = 100_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("XRP"))) {
+            perpCap = 2_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("AVAX"))) {
+            perpCap = 40_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("UNI"))) {
+            perpCap = 120_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("TAO"))) {
+            perpCap = 2_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("SEI"))) {
+            perpCap = 2_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("EIGEN"))) {
+            perpCap = 300_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("ENA"))) {
+            perpCap = 2_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("BITCOIN"))) {
+            perpCap = 1_200_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DEGEN"))) {
+            perpCap = 40_000_000e18;
             optionCap = 0;
             baseCap = 0;
         } else {
