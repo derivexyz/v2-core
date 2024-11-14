@@ -306,8 +306,8 @@ contract StandardManager is IStandardManager, ILiquidatableManager, BaseManager,
             riskAdding = true;
           }
         }
-      } else if (detail.assetType == AssetType.Option) {
-        // if the user is shorting more options, we need to check margin
+      } else {
+        // if the user is shorting more options, or removing collateral, we need to check margin
         if (assetDeltas[i].delta < 0) {
           riskAdding = true;
         }
