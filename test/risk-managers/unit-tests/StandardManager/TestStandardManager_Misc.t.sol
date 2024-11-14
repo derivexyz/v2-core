@@ -70,16 +70,13 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     wbtcAsset.deposit(bobAcc, uint(1e18));
 
     vm.startPrank(bob);
-    // bob can borrow against this long call
+    // bob can borrow against this spot asset
     cash.withdraw(bobAcc, uint(btcSpot / 2), bob);
 
     assertEq(_getCashBalance(bobAcc), -int(btcSpot / 2));
 
+    vm.expectRevert(IStandardManager.SRM_PortfolioBelowMargin.selector);
     wbtcAsset.withdraw(bobAcc, uint(1e18), bob);
-
-    (int margin, int mtm) = manager.getMarginAndMarkToMarket(bobAcc, false, 0);
-    assertEq(margin, -10000e18);
-    assertEq(mtm, -10000e18);
   }
 
   function testCannotTradeMoreThanMaxAccountSize() public {
