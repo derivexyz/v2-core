@@ -57,7 +57,6 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     assertEq(_getCashBalance(bobAcc), -int(btcSpot / 2));
   }
 
-
   function testCannotWithdrawBaseIfNegativeCash() public {
     manager.setBorrowingEnabled(true);
     cash.deposit(aliceAcc, uint(50000e18));
