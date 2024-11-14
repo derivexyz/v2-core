@@ -57,6 +57,32 @@ contract UNIT_TestStandardManager_Misc is TestStandardManagerBase {
     assertEq(_getCashBalance(bobAcc), -int(btcSpot / 2));
   }
 
+
+  function testCannotWithdrawBaseIfNegativeCash() public {
+    manager.setBorrowingEnabled(true);
+    cash.deposit(aliceAcc, uint(50000e18));
+
+    // can only borrow 50% of base asset's value
+    manager.setBaseAssetMarginFactor(btcMarketId, 0.5e18, 1e18);
+
+    // bob deposit 1 WBTC
+    wbtc.mint(address(this), 1e18);
+    wbtc.approve(address(wbtcAsset), 1e18);
+    wbtcAsset.deposit(bobAcc, uint(1e18));
+
+    vm.startPrank(bob);
+    // bob can borrow against this long call
+    cash.withdraw(bobAcc, uint(btcSpot / 2), bob);
+
+    assertEq(_getCashBalance(bobAcc), -int(btcSpot / 2));
+
+    wbtcAsset.withdraw(bobAcc, uint(1e18), bob);
+
+    (int margin, int mtm) = manager.getMarginAndMarkToMarket(bobAcc, false, 0);
+    assertEq(margin, -10000e18);
+    assertEq(mtm, -10000e18);
+  }
+
   function testCannotTradeMoreThanMaxAccountSize() public {
     manager.setMaxAccountSize(10);
 

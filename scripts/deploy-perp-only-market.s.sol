@@ -71,7 +71,6 @@ contract DeployPerpOnlyMarket is Utils {
       PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
       PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
       PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
-
     } else {
       _transferOwner(market, vm.envAddress("MAINNET_OWNER"));
     }
