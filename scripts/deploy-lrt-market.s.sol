@@ -61,8 +61,8 @@ contract DeployMarket is Utils {
     _setPermissionAndCaps(deployment, marketName, market);
     if (chainId != MAINNET_CHAIN) {
       _registerMarketToSRM(marketName, deployment, market);
-      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
-      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getV2CoreContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getV2CoreContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
     }
     _writeToMarketJson(marketName, market);
 

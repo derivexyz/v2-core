@@ -62,15 +62,15 @@ contract DeployPerpOnlyMarket is Utils {
     if (block.chainid != 957) {
       _registerMarketToSRM(marketName, deployment, market);
 
-      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
-      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
-      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
-      PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
+      PMRM(_getV2CoreContract("ETH", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getV2CoreContract("ETH", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
+      PMRM(_getV2CoreContract("ETH", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
+      PMRM(_getV2CoreContract("ETH", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
 
-      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
-      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
-      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
-      PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
+      PMRM(_getV2CoreContract("BTC", "pmrm")).setWhitelistedCallee(address(market.spotFeed), true);
+      PMRM(_getV2CoreContract("BTC", "pmrm")).setWhitelistedCallee(address(market.iapFeed), true);
+      PMRM(_getV2CoreContract("BTC", "pmrm")).setWhitelistedCallee(address(market.ibpFeed), true);
+      PMRM(_getV2CoreContract("BTC", "pmrm")).setWhitelistedCallee(address(market.perpFeed), true);
     } else {
       _transferOwner(market, vm.envAddress("MAINNET_OWNER"));
     }

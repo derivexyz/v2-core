@@ -45,7 +45,7 @@ contract Utils is Script {
     deployment.stableFeed = ISpotFeed(abi.decode(vm.parseJson(content, ".stableFeed"), (address)));
   }
 
-  function _getContract(string memory filename, string memory key) internal view returns (address) {
+  function _getV2CoreContract(string memory filename, string memory key) internal view returns (address) {
     string memory content = _readDeploymentFile(filename);
     return abi.decode(vm.parseJson(content, string.concat(".", key)), (address));
   }

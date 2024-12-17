@@ -47,7 +47,7 @@ contract LyraForkTest is Utils {
     srm.setMinOIFee(Config.MIN_OI_FEE);
 
     srm.setWhitelistedCallee(address(spotFeed), true);
-    PMRM(_getContract("ETH", "pmrm")).setWhitelistedCallee(address(spotFeed), true);
-    PMRM(_getContract("BTC", "pmrm")).setWhitelistedCallee(address(spotFeed), true);
+    PMRM(_getV2CoreContract("ETH", "pmrm")).setWhitelistedCallee(address(spotFeed), true);
+    PMRM(_getV2CoreContract("BTC", "pmrm")).setWhitelistedCallee(address(spotFeed), true);
   }
 }
