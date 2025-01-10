@@ -41,7 +41,7 @@ interface IPMRMLib {
     uint basePercent;
     /// @dev Contingency applied to perps held in the portfolio, multiplied by spot.
     uint perpPercent;
-    /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio, multipled by spot.
+    /// @dev Factor for multiplying number of naked shorts (per strike) in the portfolio, multiplied by spot.
     uint optionPercent;
   }
 
