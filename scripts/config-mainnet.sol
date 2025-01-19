@@ -351,6 +351,11 @@ library Config {
                 mmPerpReq: 0.2e18,
                 imPerpReq: 0.33333e18
             });
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("TRUMP"))) {
+            perpMarginRequirements = IStandardManager.PerpMarginRequirements({
+                mmPerpReq: 0.4545e18,
+                imPerpReq: 0.5e18
+            });
         } else {
             revert("market not supported");
         }
@@ -507,6 +512,10 @@ library Config {
             baseCap = 0;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("DEGEN"))) {
             perpCap = 40_000_000e18;
+            optionCap = 0;
+            baseCap = 0;
+        } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("TRUMP"))) {
+            perpCap = 7_000e18;
             optionCap = 0;
             baseCap = 0;
         } else {
