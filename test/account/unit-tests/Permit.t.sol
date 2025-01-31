@@ -292,7 +292,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
     // depost 1000 coolToken for account2
     mintAndDeposit(alice, accountId2, coolToken, coolAsset, tokenSubId, tradeAmount);
 
-    // premits and signature arrays
+    // permits and signature arrays
     IAllowances.PermitAllowance[] memory permits = new IAllowances.PermitAllowance[](2);
     bytes[] memory signatures = new bytes[](2);
 
