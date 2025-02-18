@@ -1,3 +1,5 @@
+TODO: adjust dates for newer changes
+
 Business Source License 1.1
 
 License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
@@ -7,18 +9,23 @@ License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
 
 Parameters
 
-Licensor:             Lyra Foundation
+Licensor:
+Lyra Foundation
 
-Licensed Work:        Lyra V2 Core
-                      The Licensed Work is (c) 2023 Lyra Foundation
+Licensed Work:
+Lyra V2 Core The Licensed Work is (c) 2023-2025 Lyra Foundation
 
-Additional Use Grant: Any uses listed and defined at
-                      v2-core-license-grants.lyra.eth
+Additional Use Grant:
+Any uses listed and defined at v2-core-license-grants.lyra.eth
 
-Change Date:          The earlier of 2025-11-16 or a date specified at
-                      v2-core-license-date.lyra.eth
+Change Date:
+- For code released before 2025-02-17:
+  The earlier of 2025-11-16 or a date specified at v2-core-license-date.lyra.eth
+- For code released on or after 2025-02-17:
+  The earlier of 2028-02-17 or a date specified at v2-core-license-date.lyra.eth
 
-Change License:       GNU General Public License v3.0 or later
+Change License:
+GNU General Public License v3.0 or later
 
 -----------------------------------------------------------------------------
 
