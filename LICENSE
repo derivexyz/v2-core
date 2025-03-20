@@ -1,5 +1,3 @@
-TODO: adjust dates for newer changes
-
 Business Source License 1.1
 
 License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
@@ -22,7 +20,7 @@ Change Date:
 - For code released before 2025-02-17:
   The earlier of 2025-11-16 or a date specified at v2-core-license-date.lyra.eth
 - For code released on or after 2025-02-17:
-  The earlier of 2029-02-17 or a date specified at v2-core-license-date.lyra.eth
+  The earlier of 2029-03-20 or a date specified at v2-core-license-date.lyra.eth
 
 Change License:
 GNU General Public License v3.0 or later

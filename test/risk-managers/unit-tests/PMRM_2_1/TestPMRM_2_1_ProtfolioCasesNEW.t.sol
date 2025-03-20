@@ -563,11 +563,9 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
       string memory name = JSON.readString(string.concat(basePath, "Name"));
 
       IPMRMLib_2_1.CollateralParameters memory collatParams = IPMRMLib_2_1.CollateralParameters({
-        enabled: true,
         isRiskCancelling: JSON.readBool(string.concat(basePath, "IsRiskCancelling")),
-        marginHaircut: _readBNUint(JSON, basePath, "MMHaircut"),
-        initialMarginHaircut: _readBNUint(JSON, basePath, "IMHaircut"),
-        confidenceFactor: _readBNUint(JSON, basePath, "ConfidenceFactor")
+        MMHaircut: _readBNUint(JSON, basePath, "MMHaircut"),
+        IMHaircut: _readBNUint(JSON, basePath, "IMHaircut")
       });
 
       MockERC20 erc20 = new MockERC20(name, name);

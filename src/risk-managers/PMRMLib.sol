@@ -281,8 +281,9 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
     );
 
     expiry.volShockUp = DecimalMath.UNIT + volShockParams.volRangeUp.multiplyDecimal(multShock);
-    int volShockDown = SignedDecimalMath.UNIT - int(volShockParams.volRangeDown.multiplyDecimal(multShock));
-    expiry.volShockDown = SignedMath.max(0, volShockDown).toUint256();
+    expiry.volShockDown = SignedMath.max(
+      0, SignedDecimalMath.UNIT - int(volShockParams.volRangeDown.multiplyDecimal(multShock))
+    ).toUint256();
   }
 
   ///////////////////

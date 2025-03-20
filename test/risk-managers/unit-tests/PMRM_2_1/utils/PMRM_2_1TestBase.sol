@@ -142,13 +142,7 @@ contract PMRM_2_1TestBase is JsonMechIO {
     pmrm_2_1.setCollateralSpotFeed(address(baseAsset), ISpotFeed(feed));
     lib.setCollateralParameters(
       address(baseAsset),
-      IPMRMLib_2_1.CollateralParameters({
-        enabled: true,
-        isRiskCancelling: true,
-        marginHaircut: 0.02e18,
-        initialMarginHaircut: 0.01e18,
-        confidenceFactor: 0.55e18
-      })
+      IPMRMLib_2_1.CollateralParameters({isRiskCancelling: true, MMHaircut: 0.02e18, IMHaircut: 0.01e18})
     );
 
     _setupAliceAndBob();

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import "../assets/WrappedERC20Asset.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/math/Black76.sol";
@@ -13,6 +12,7 @@ import {Math} from "openzeppelin/utils/math/Math.sol";
 import {Ownable2Step} from "openzeppelin/access/Ownable2Step.sol";
 import {SafeCast} from "openzeppelin/utils/math/SafeCast.sol";
 import {SignedMath} from "openzeppelin/utils/math/SignedMath.sol";
+import {WrappedERC20Asset} from "../assets/WrappedERC20Asset.sol";
 import {PMRM_2_1} from "./PMRM_2_1.sol";
 
 /**
@@ -76,13 +76,6 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
       PMRM_2_1L_InvalidMarginParameters()
     );
 
-    if (
-      // TODO: mmFactor bounds
-      _marginParams.longRateMultScale > 5e18 || _marginParams.longRateAddScale > 5e18 || _marginParams.imFactor < 1e18
-        || _marginParams.imFactor > 4e18
-    ) {
-      revert PMRM_2_1L_InvalidMarginParameters();
-    }
     marginParams = _marginParams;
   }
 
@@ -108,11 +101,11 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
 
   function setCollateralParameters(address asset, CollateralParameters memory params) external onlyOwner {
     require(
-      params.marginHaircut <= 1e18,
+      params.MMHaircut <= 1e18,
       // TODO: any others?
       PMRM_2_1L_InvalidCollateralParameters()
     );
-    // TODO: check if asset exists in pmrm?
+    // Note: asset must be added to pmrm to be used as collateral. If
     collaterals[asset] = params;
   }
 
@@ -130,7 +123,7 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     bool isInitial,
     IPMRM_2_1.Scenario[] memory scenarios
   ) external view returns (int margin, int markToMarket, uint worstScenario) {
-    if (scenarios.length == 0) revert PMRM_2_1L_InvalidGetMarginState();
+    require(scenarios.length > 0, PMRM_2_1L_InvalidGetMarginState());
 
     int minSPAN = portfolio.basisContingency;
     worstScenario = scenarios.length;
@@ -170,13 +163,11 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     view
     returns (int scenarioMtM)
   {
-    //////////
-    // Perp
+    // Perp - we ignore mark value it is unaffected by any shock, and we only care about the difference to mtm
     scenarioMtM += _getShockedPerpValue(portfolio.perpPosition, portfolio.perpPrice, scenario.spotShock).multiplyDecimal(
       scenario.dampeningFactor.toInt256()
     );
 
-    ////////////
     // Option
     for (uint j = 0; j < portfolio.expiries.length; ++j) {
       IPMRM_2_1.ExpiryHoldings memory expiry = portfolio.expiries[j];
@@ -205,25 +196,23 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
         shockedExpiryMTM = _getExpiryShockedMTM(expiry, scenario.spotShock, scenario.volShock);
       }
 
-      int scenarioPnL;
-      if (shockedExpiryMTM >= 0) {
-        scenarioPnL = shockedExpiryMTM.multiplyDecimal(expiry.staticDiscountPos.toInt256());
-      } else {
-        scenarioPnL = shockedExpiryMTM.multiplyDecimal(expiry.staticDiscountNeg.toInt256());
-      }
+      int scenarioPnL = shockedExpiryMTM.multiplyDecimal(
+        shockedExpiryMTM >= 0 ? expiry.staticDiscountPos.toInt256() : expiry.staticDiscountNeg.toInt256()
+      );
 
       scenarioPnL = (scenarioPnL - expiry.mtm).multiplyDecimal(scenario.dampeningFactor.toInt256());
 
       if (
         scenario.volShock == IPMRM_2_1.VolShockDirection.Linear || scenario.volShock == IPMRM_2_1.VolShockDirection.Abs
       ) {
+        // for skew scenarios we use *negative* absolute value to maximise the loss for each expiry.
+        // TODO @sean are you really sure this is correct? Should we instead make it a param between -1 and 1?
         scenarioMtM += scenarioPnL > 0 ? -scenarioPnL : scenarioPnL;
       } else {
         scenarioMtM += scenarioPnL;
       }
     }
 
-    ////////////////
     // Collateral
     for (uint j = 0; j < portfolio.collaterals.length; ++j) {
       IPMRM_2_1.CollateralHoldings memory collateral = portfolio.collaterals[j];
@@ -381,8 +370,8 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
 
       portfolio.totalMtM += collateral.value.toInt256();
 
-      portfolio.MMDiscount += collateral.value.multiplyDecimal(params.marginHaircut);
-      portfolio.IMDiscount += collateral.value.multiplyDecimal(params.initialMarginHaircut);
+      portfolio.MMDiscount += collateral.value.multiplyDecimal(params.MMHaircut);
+      portfolio.IMDiscount += collateral.value.multiplyDecimal(params.IMHaircut);
       portfolio.IMDiscount += _getConfidenceContingency(collateral.minConfidence, collateral.value);
     }
 
