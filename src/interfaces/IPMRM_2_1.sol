@@ -60,6 +60,7 @@ interface IPMRM_2_1 {
     uint forwardVariablePortion;
     // We always assume the rate is >= 0
     uint rate;
+    uint64 discount;
     uint minConfidence;
     uint netOptions;
     int mtm;
@@ -67,7 +68,8 @@ interface IPMRM_2_1 {
     int basisScenarioDownMtM;
     uint volShockUp;
     uint volShockDown;
-    uint staticDiscount;
+    uint staticDiscountPos;
+    uint staticDiscountNeg;
   }
 
   struct StrikeHolding {
@@ -105,13 +107,14 @@ interface IPMRM_2_1 {
   ////////////
   // Errors //
   ////////////
-  error PMRM_InvalidSpotShock();
-  error PMRM_UnsupportedAsset();
-  error PMRM_InsufficientMargin();
-  error PMRM_InvalidScenarios();
-  error PMRM_InvalidMaxExpiries();
-  error PMRM_FindInArrayError();
-  error PMRM_OptionExpired();
-  error PMRM_TooManyExpiries();
-  error PMRM_TooManyAssets();
+  error PMRM_2_1_InvalidSpotShock();
+  error PMRM_2_1_UnsupportedAsset();
+  error PMRM_2_1_InsufficientMargin();
+  error PMRM_2_1_InvalidScenarios();
+  error PMRM_2_1_InvalidMaxExpiries();
+  error PMRM_2_1_FindInArrayError();
+  error PMRM_2_1_OptionExpired();
+  error PMRM_2_1_TooManyExpiries();
+  error PMRM_2_1_TooManyAssets();
+  error PMRM_2_1_InvalidCollateralAsset();
 }

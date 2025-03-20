@@ -1,36 +1,38 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import "openzeppelin/utils/math/SafeCast.sol";
-import "openzeppelin/utils/math/Math.sol";
-import "openzeppelin/utils/math/SignedMath.sol";
-import "openzeppelin/security/ReentrancyGuard.sol";
-
-import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 
-import {IManager} from "../interfaces/IManager.sol";
-import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
-import {ICashAsset} from "../interfaces/ICashAsset.sol";
-import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
-import {IPMRMLib_2_1} from "../interfaces/IPMRMLib_2_1.sol";
-import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
-import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
-import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
-import {IVolFeed} from "../interfaces/IVolFeed.sol";
-import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
-import {IPMRM_2_1} from "../interfaces/IPMRM_2_1.sol";
-import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
-import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
-import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
-import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
+import "lyra-utils/encoding/OptionEncoding.sol";
+import "openzeppelin/security/ReentrancyGuard.sol";
+import "openzeppelin/utils/math/Math.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import "openzeppelin/utils/math/SignedMath.sol";
 
 import {BaseManager} from "./BaseManager.sol";
+import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
+import {ICashAsset} from "../interfaces/ICashAsset.sol";
+import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
+import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
+import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
+import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
+import {IManager} from "../interfaces/IManager.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
+import {IAsset} from "../interfaces/IAsset.sol";
+import {IPMRMLib_2_1} from "../interfaces/IPMRMLib_2_1.sol";
+import {IPMRM_2_1} from "../interfaces/IPMRM_2_1.sol";
+import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
+import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
+
+import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
+import {IVolFeed} from "../interfaces/IVolFeed.sol";
+import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
+import {FixedPointMathLib} from "lyra-utils/math/FixedPointMathLib.sol";
 
 /**
- * @title PMRM
- * @author Lyra
+ * @title PMRM_2_1
+ * @author Derive
  * @notice Risk Manager that uses a SPAN like methodology to margin an options portfolio.
  */
 contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGuard {
@@ -95,9 +97,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
    * @dev set max tradeable expiries in a single account
    */
   function setMaxExpiries(uint _maxExpiries) external onlyOwner {
-    if (_maxExpiries <= maxExpiries || _maxExpiries > 30) {
-      revert PMRM_InvalidMaxExpiries();
-    }
+    require(_maxExpiries <= 30 && _maxExpiries > maxExpiries, PMRM_2_1_InvalidMaxExpiries());
     maxExpiries = _maxExpiries;
     emit MaxExpiriesUpdated(_maxExpiries);
   }
@@ -126,9 +126,12 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
     forwardFeed = _forwardFeed;
     emit ForwardFeedUpdated(_forwardFeed);
   }
-  
+
   function setCollateralSpotFeed(address asset, ISpotFeed _feed) external onlyOwner {
-    // TODO: make sure collateral assets are not the option/cash/perp assets
+    require(
+      asset != address(option) && asset != address(perp) && asset != address(cashAsset),
+      PMRM_2_1_InvalidCollateralAsset()
+    );
     collateralSpotFeeds[asset] = _feed;
   }
 
@@ -139,11 +142,9 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
    *                   Each Scenario struct contains relevant data for a specific scenario.
    */
   function setScenarios(IPMRM_2_1.Scenario[] memory _scenarios) external onlyOwner {
-    if (_scenarios.length == 0 || _scenarios.length > 40) {
-      revert PMRM_InvalidScenarios();
-    }
+    require(_scenarios.length > 0 && _scenarios.length <= 40, PMRM_2_1_InvalidScenarios());
+
     for (uint i = 0; i < _scenarios.length; i++) {
-      // TODO: check that abs/linear vol shocks have 0 spotShock. only one of each too
       if (marginScenarios.length <= i) {
         marginScenarios.push(_scenarios[i]);
       } else {
@@ -185,17 +186,17 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
 
     bool riskAdding = false;
     for (uint i = 0; i < assetDeltas.length; i++) {
-      if (assetDeltas[i].asset == perp) {
+      IAsset asset = assetDeltas[i].asset;
+
+      if (asset == perp) {
         // Settle perp PNL into cash if the user traded perp in this tx.
         _settlePerpRealizedPNL(perp, accountId);
         riskAdding = true;
-      } else if (
-        assetDeltas[i].asset != cashAsset  //
-        && assetDeltas[i].asset != option  //
-        && address(collateralSpotFeeds[address(assetDeltas[i].asset)]) == address(0)
-      ) {
-        revert PMRM_UnsupportedAsset();
       } else {
+        require(
+          asset == cashAsset || asset == option || address(collateralSpotFeeds[address(asset)]) != address(0),
+          PMRM_2_1_UnsupportedAsset()
+        );
         if (assetDeltas[i].delta < 0) {
           riskAdding = true;
         }
@@ -204,12 +205,11 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
 
     ISubAccounts.AssetBalance[] memory assetBalances = subAccounts.getAccountBalances(accountId);
 
-    if (
-      assetBalances.length > maxAccountSize //
-        && viewer.getPreviousAssetsLength(assetBalances, assetDeltas) < assetBalances.length
-    ) {
-      revert PMRM_TooManyAssets();
-    }
+    require(
+      assetBalances.length <= maxAccountSize
+        || assetBalances.length <= viewer.getPreviousAssetsLength(assetBalances, assetDeltas),
+      PMRM_2_1_TooManyAssets()
+    );
 
     if (!riskAdding) {
       // Early exit if only adding cash/option/baseAsset
@@ -234,7 +234,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
       (int postIM,,) = lib.getMarginAndMarkToMarket(portfolio, true, marginScenarios);
       if (postIM >= 0) return;
     }
-    revert PMRM_InsufficientMargin();
+    revert PMRM_2_1_InsufficientMargin();
   }
 
   /**
@@ -248,9 +248,11 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
     view
     returns (IPMRM_2_1.Portfolio memory portfolio)
   {
-    (uint seenExpiries, uint collateralCount, PortfolioExpiryData[] memory expiryCount) = _countExpiriesAndOptions(assets);
+    (uint seenExpiries, uint collateralCount, PortfolioExpiryData[] memory expiryCount) =
+      _countExpiriesAndOptions(assets);
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
+    portfolio.collaterals = new CollateralHoldings[](collateralCount);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
     (uint stablePrice,) = stableFeed.getSpot();
     portfolio.stablePrice = stablePrice;
@@ -295,9 +297,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
           }
         }
         if (!found) {
-          if (seenExpiries == maxExpiries) {
-            revert PMRM_TooManyExpiries();
-          }
+          require(seenExpiries < maxExpiries, PMRM_2_1_TooManyExpiries());
           expiryCount[seenExpiries++] = PortfolioExpiryData({expiry: uint64(optionExpiry), optionCount: 1});
         }
       } else if (address(collateralSpotFeeds[address(currentAsset.asset)]) != address(0)) {
@@ -331,8 +331,9 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
         options: new StrikeHolding[](expiryCount[i].optionCount),
         forwardFixedPortion: forwardFixedPortion,
         forwardVariablePortion: forwardVariablePortion,
-        // We assume the rate is always positive. TODO: this should be checked
+        // We assume the rate is always positive.
         rate: SignedMath.max(0, rate).toUint256(),
+        discount: FixedPointMathLib.exp(-rate * int(uint(secToExpiry)) / 365 days).toUint64(),
         minConfidence: minConfidence,
         netOptions: 0,
         // vol shocks are added in addPrecomputes
@@ -341,7 +342,8 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
         basisScenarioDownMtM: 0,
         volShockUp: 0,
         volShockDown: 0,
-        staticDiscount: 0
+        staticDiscountPos: 0,
+        staticDiscountNeg: 0
       });
     }
   }
@@ -378,10 +380,9 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
         portfolio.perpValue = perp.getUnsettledAndUnrealizedCash(accountId);
       } else {
         (uint price, uint conf) = collateralSpotFeeds[address(currentAsset.asset)].getSpot();
-        // todo safecast
-        portfolio.collaterals[--collateralCount] = IPMRM_2_1.CollateralHoldings({
+        portfolio.collaterals[--collateralCount] = CollateralHoldings({
           asset: address(currentAsset.asset),
-          value: uint(currentAsset.balance) * price / portfolio.stablePrice,
+          value: currentAsset.balance.toUint256() * price / portfolio.stablePrice,
           minConfidence: Math.min(conf, portfolio.minConfidence)
         });
       }
@@ -404,7 +405,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
           return i;
         }
       }
-      revert PMRM_FindInArrayError();
+      revert PMRM_2_1_FindInArrayError();
     }
   }
 
@@ -445,7 +446,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
    * @notice Can be called by anyone to settle a perp asset in an account
    */
   function settleOptions(IOptionAsset _option, uint accountId) external {
-    if (_option != option) revert PMRM_UnsupportedAsset();
+    require(_option == option, PMRM_2_1_UnsupportedAsset());
     _settleAccountOptions(_option, accountId);
   }
 

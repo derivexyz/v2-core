@@ -50,10 +50,33 @@ interface IPMRMLib_2_1 {
     uint IMOptionPercent;
   }
 
-  function getMarginAndMarkToMarket(IPMRM_2_1.Portfolio memory portfolio, bool isInitial, IPMRM_2_1.Scenario[] memory scenarios)
-    external
-    view
-    returns (int margin, int markToMarket, uint worstScenario);
+  struct SkewShockParameters {
+    uint linearBaseCap;
+    uint absBaseCap;
+    int linearCBase;
+    int absCBase;
+    int minKStar;
+    int widthScale;
+    int volParamStatic;
+    int volParamScale;
+  }
+
+  // Defined once per collateral
+  struct CollateralParameters {
+    bool enabled;
+    bool isRiskCancelling;
+    // must be <= 1
+    uint marginHaircut;
+    // added ON TOP OF marginHaircut
+    uint initialMarginHaircut;
+    uint confidenceFactor;
+  }
+
+  function getMarginAndMarkToMarket(
+    IPMRM_2_1.Portfolio memory portfolio,
+    bool isInitial,
+    IPMRM_2_1.Scenario[] memory scenarios
+  ) external view returns (int margin, int markToMarket, uint worstScenario);
 
   function getScenarioMtM(IPMRM_2_1.Portfolio memory portfolio, IPMRM_2_1.Scenario memory scenario)
     external
@@ -69,13 +92,15 @@ interface IPMRMLib_2_1 {
   ////////////
 
   /// @dev emitted when provided forward contingency parameters are invalid
-  error PMRML_InvalidBasisContingencyParameters();
+  error PMRM_2_1L_InvalidBasisContingencyParameters();
   /// @dev emitted when provided other contingency parameters are invalid
-  error PMRML_InvalidOtherContingencyParameters();
+  error PMRM_2_1L_InvalidOtherContingencyParameters();
   /// @dev emitted when provided static discount parameters are invalid
-  error PMRML_InvalidMarginParameters();
+  error PMRM_2_1L_InvalidMarginParameters();
   /// @dev emitted when provided vol shock parameters are invalid
-  error PMRML_InvalidVolShockParameters();
+  error PMRM_2_1L_InvalidVolShockParameters();
   /// @dev emitted when invalid parameters passed into _getMarginAndMarkToMarket
-  error PMRML_InvalidGetMarginState();
+  error PMRM_2_1L_InvalidGetMarginState();
+  error PMRM_2_1L_InvalidSkewShockParameters();
+  error PMRM_2_1L_InvalidCollateralParameters();
 }

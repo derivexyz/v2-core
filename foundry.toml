@@ -6,9 +6,11 @@ optimizer = true
 optimizer_runs = 800
 fs_permissions = [{ access = "read-write", path = "./"}]
 
-solc_version="0.8.20"
+solc_version="0.8.27"
 
 evm_version="shanghai"
+gas_limit = "18446744073709551615"
+memory_limit=8796093022208
 
 [fmt]
 line_length = 120

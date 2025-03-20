@@ -4,10 +4,11 @@
 
 pragma solidity ^0.8.0;
 
+import "../src/interfaces/IPMRMLib_2_1.sol";
 import {IDutchAuction} from "../src/interfaces/IDutchAuction.sol";
-import {IStandardManager} from "../src/interfaces/IStandardManager.sol";
 import {IPMRMLib} from "../src/interfaces/IPMRMLib.sol";
 import {IPMRM} from "../src/interfaces/IPMRMLib.sol";
+import {IStandardManager} from "../src/interfaces/IStandardManager.sol";
 
 library Config {
   //////////
@@ -87,6 +88,114 @@ library Config {
       shortTermPower: 0.3e18,
       longTermPower: 0.13e18,
       dteFloor: 1 days
+    });
+  }
+
+  function get_2_1DefaultScenarios() public pure returns (IPMRM_2_1.Scenario[] memory) {
+    // TODO: abs/linear scenarios
+    IPMRM_2_1.Scenario[] memory scenarios = new IPMRM_2_1.Scenario[](21);
+    scenarios[0] =
+      IPMRM_2_1.Scenario({spotShock: 1.15e18, volShock: IPMRM_2_1.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[1] =
+      IPMRM_2_1.Scenario({spotShock: 1.15e18, volShock: IPMRM_2_1.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[2] =
+      IPMRM_2_1.Scenario({spotShock: 1.15e18, volShock: IPMRM_2_1.VolShockDirection.Down, dampeningFactor: 1e18});
+    scenarios[3] =
+      IPMRM_2_1.Scenario({spotShock: 1.1e18, volShock: IPMRM_2_1.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[4] =
+      IPMRM_2_1.Scenario({spotShock: 1.1e18, volShock: IPMRM_2_1.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[5] =
+      IPMRM_2_1.Scenario({spotShock: 1.1e18, volShock: IPMRM_2_1.VolShockDirection.Down, dampeningFactor: 1e18});
+    scenarios[6] =
+      IPMRM_2_1.Scenario({spotShock: 1.05e18, volShock: IPMRM_2_1.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[7] =
+      IPMRM_2_1.Scenario({spotShock: 1.05e18, volShock: IPMRM_2_1.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[8] =
+      IPMRM_2_1.Scenario({spotShock: 1.05e18, volShock: IPMRM_2_1.VolShockDirection.Down, dampeningFactor: 1e18});
+    scenarios[9] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[10] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[11] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.Down, dampeningFactor: 1e18});
+    scenarios[12] =
+      IPMRM_2_1.Scenario({spotShock: 0.95e18, volShock: IPMRM_2_1.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[13] =
+      IPMRM_2_1.Scenario({spotShock: 0.95e18, volShock: IPMRM_2_1.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[14] =
+      IPMRM_2_1.Scenario({spotShock: 0.95e18, volShock: IPMRM_2_1.VolShockDirection.Down, dampeningFactor: 1e18});
+    scenarios[15] =
+      IPMRM_2_1.Scenario({spotShock: 0.9e18, volShock: IPMRM_2_1.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[16] =
+      IPMRM_2_1.Scenario({spotShock: 0.9e18, volShock: IPMRM_2_1.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[17] =
+      IPMRM_2_1.Scenario({spotShock: 0.9e18, volShock: IPMRM_2_1.VolShockDirection.Down, dampeningFactor: 1e18});
+    scenarios[18] =
+      IPMRM_2_1.Scenario({spotShock: 0.85e18, volShock: IPMRM_2_1.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[19] =
+      IPMRM_2_1.Scenario({spotShock: 0.85e18, volShock: IPMRM_2_1.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[20] =
+      IPMRM_2_1.Scenario({spotShock: 0.85e18, volShock: IPMRM_2_1.VolShockDirection.Down, dampeningFactor: 1e18});
+    return scenarios;
+  }
+
+  function getPMRM_2_1Params()
+    public
+    pure
+    returns (
+      IPMRMLib_2_1.BasisContingencyParameters memory basisContParams,
+      IPMRMLib_2_1.OtherContingencyParameters memory otherContParams,
+      IPMRMLib_2_1.MarginParameters memory marginParams,
+      IPMRMLib_2_1.VolShockParameters memory volShockParams,
+      IPMRMLib_2_1.SkewShockParameters memory skewSockParams
+    )
+  {
+    basisContParams = IPMRMLib_2_1.BasisContingencyParameters({
+      scenarioSpotUp: 1.05e18,
+      scenarioSpotDown: 0.95e18,
+      basisContAddFactor: 0.25e18,
+      basisContMultFactor: 0.01e18
+    });
+
+    otherContParams = IPMRMLib_2_1.OtherContingencyParameters({
+      pegLossThreshold: 0.98e18,
+      pegLossFactor: 2e18,
+      confThreshold: 0.6e18,
+      confMargin: 0.5e18,
+      MMPerpPercent: 0.01e18,
+      IMPerpPercent: 0.01e18,
+      MMOptionPercent: 0.01e18,
+      IMOptionPercent: 0.01e18
+    });
+
+    marginParams = IPMRMLib_2_1.MarginParameters({
+      imFactor: 1e18,
+      mmFactor: 0.8e18,
+      shortRateMultScale: 4e18,
+      longRateMultScale: 4e18,
+      shortRateAddScale: 0.05e18,
+      longRateAddScale: 0.05e18,
+      baseStaticDiscount: 0.95e18
+    });
+
+    volShockParams = IPMRMLib_2_1.VolShockParameters({
+      volRangeUp: 0.45e18,
+      volRangeDown: 0.3e18,
+      shortTermPower: 0.3e18,
+      longTermPower: 0.13e18,
+      dteFloor: 1 days,
+      minVolUpShock: 0.4e18
+    });
+
+    skewSockParams = IPMRMLib_2_1.SkewShockParameters({
+      linearBaseCap: 0.15e18,
+      absBaseCap: 0.2e18,
+      linearCBase: 0.1e18,
+      absCBase: 0.1e18,
+      minKStar: 0.01e18,
+      widthScale: 4e18,
+      volParamStatic: 1.0e18,
+      volParamScale: -0.2e18
     });
   }
 
