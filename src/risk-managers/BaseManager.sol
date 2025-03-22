@@ -1,43 +1,43 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import "openzeppelin/access/Ownable2Step.sol";
-import "openzeppelin/utils/math/SafeCast.sol";
-import "openzeppelin/utils/math/Math.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
+import {Ownable2StepUpgradeable} from "openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "openzeppelin/utils/math/Math.sol";
 
-import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
-import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
-import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
-import {ICashAsset} from "../interfaces/ICashAsset.sol";
-import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
+import "openzeppelin/utils/math/SafeCast.sol";
+import {IAsset} from "../interfaces/IAsset.sol";
 import {IBaseManager} from "../interfaces/IBaseManager.sol";
-
-import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
+import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
+import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IDataReceiver} from "../interfaces/IDataReceiver.sol";
 
-import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
-import {IAsset} from "../interfaces/IAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
+import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
+
+import {IForwardFeed} from "../interfaces/IForwardFeed.sol";
+import {IGlobalSubIdOITracking} from "../interfaces/IGlobalSubIdOITracking.sol";
 import {IManager} from "../interfaces/IManager.sol";
-import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
+import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
+import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
+import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 
 /**
  * @title BaseManager
  * @notice Base contract for all managers. Handles OI fee, settling, liquidations and other utility functions.
  */
-abstract contract BaseManager is IBaseManager, Ownable2Step {
+abstract contract BaseManager is IBaseManager, Ownable2StepUpgradeable {
   using DecimalMath for uint;
   using SignedDecimalMath for int;
   using SafeCast for uint;
 
   /// @dev Account contract address
-  ISubAccounts public immutable subAccounts;
+  ISubAccounts public subAccounts;
 
   /// @dev Cash asset address
-  ICashAsset public immutable cashAsset;
+  ICashAsset public cashAsset;
 
   /// @dev Dutch auction contract address, can trigger execute bid
   IDutchAuction public liquidation;
@@ -50,7 +50,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
   IBasePortfolioViewer public viewer;
 
   /// @dev the accountId controlled by this manager as intermediate to pay cash if needed
-  uint public immutable accId;
+  uint public accId;
 
   /// @dev Must be set to a value that the deployment environment can handle the gas cost of the given size.
   uint public maxAccountSize = 128;
@@ -88,13 +88,20 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     ICashAsset _cashAsset,
     IDutchAuction _liquidation,
     IBasePortfolioViewer _viewer
-  ) Ownable2Step() {
+  ) {
+    // In the case this is in a proxy, this function is completely ignored, so these must be set/initialised via the
+    // init function in BaseManagerUpgradeable
+    _transferOwnership(msg.sender);
+
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;
     viewer = _viewer;
 
-    accId = subAccounts.createAccount(address(this), IManager(address(this)));
+    // We add this check for the case where this is a proxy, as we don't want to create an account in the implementation
+    if (address(subAccounts) != address(0)) {
+      accId = subAccounts.createAccount(address(this), IManager(address(this)));
+    }
   }
 
   //////////////////////////

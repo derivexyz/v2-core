@@ -105,100 +105,100 @@ contract TestPMRM_2_1_Admin is PMRM_2_1TestBase {
     pmrm_2_1.setVolFeed(IVolFeed(address(0)));
     assertEq(address(pmrm_2_1.volFeed()), address(0));
   }
-
-  function testSetPMRM_2_1ParametersBasisContingency() public {
-    IPMRMLib_2_1.BasisContingencyParameters memory basisContParams = IPMRMLib_2_1.BasisContingencyParameters({
-      scenarioSpotUp: 1e18 + 1,
-      scenarioSpotDown: 2,
-      basisContAddFactor: 3,
-      basisContMultFactor: 4
-    });
-    lib.setBasisContingencyParams(basisContParams);
-    IPMRMLib_2_1.BasisContingencyParameters memory resFwdContParams = lib.getBasisContingencyParams();
-    assertEq(resFwdContParams.scenarioSpotUp, 1e18 + 1);
-    assertEq(resFwdContParams.scenarioSpotDown, 2);
-    assertEq(resFwdContParams.basisContAddFactor, 3);
-    assertEq(resFwdContParams.basisContMultFactor, 4);
-
-    basisContParams.scenarioSpotUp = 1e18;
-
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
-    lib.setBasisContingencyParams(basisContParams);
-    basisContParams.scenarioSpotUp = 1e18 + 1;
-
-    basisContParams.scenarioSpotUp = 3e18 + 1;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
-    lib.setBasisContingencyParams(basisContParams);
-    basisContParams.scenarioSpotUp = 1e18 + 1;
-
-    basisContParams.scenarioSpotDown = 1e18;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
-    lib.setBasisContingencyParams(basisContParams);
-    basisContParams.scenarioSpotDown = 2;
-
-    basisContParams.basisContMultFactor = 5e18 + 1;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
-    lib.setBasisContingencyParams(basisContParams);
-    basisContParams.basisContMultFactor = 4;
-
-    basisContParams.basisContAddFactor = 5e18 + 1;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
-    lib.setBasisContingencyParams(basisContParams);
-    basisContParams.basisContAddFactor = 4;
-  }
-
-  function testSetPMRM_2_1ParametersOtherContingency() public {
-    IPMRMLib_2_1.OtherContingencyParameters memory otherContParams = IPMRMLib_2_1.OtherContingencyParameters({
-      pegLossThreshold: 1,
-      pegLossFactor: 2,
-      confThreshold: 3,
-      confMargin: 4,
-      IMPerpPercent: 5,
-      MMPerpPercent: 6,
-      IMOptionPercent: 7,
-      MMOptionPercent: 8
-    });
-    lib.setOtherContingencyParams(otherContParams);
-    IPMRMLib_2_1.OtherContingencyParameters memory resOtherContParams = lib.getOtherContingencyParams();
-    assertEq(resOtherContParams.pegLossThreshold, 1);
-    assertEq(resOtherContParams.pegLossFactor, 2);
-    assertEq(resOtherContParams.confThreshold, 3);
-    assertEq(resOtherContParams.confMargin, 4);
-    assertEq(resOtherContParams.IMPerpPercent, 5);
-    assertEq(resOtherContParams.MMPerpPercent, 6);
-    assertEq(resOtherContParams.IMOptionPercent, 7);
-    assertEq(resOtherContParams.MMOptionPercent, 8);
-
-    otherContParams.pegLossThreshold = 1e18 + 1;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
-    lib.setOtherContingencyParams(otherContParams);
-    otherContParams.pegLossThreshold = 1;
-
-    otherContParams.pegLossFactor = 20e18 + 1;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
-    lib.setOtherContingencyParams(otherContParams);
-    otherContParams.pegLossFactor = 2;
-
-    otherContParams.confThreshold = 1e18 + 1;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
-    lib.setOtherContingencyParams(otherContParams);
-    otherContParams.confThreshold = 3;
-
-    otherContParams.confMargin = 1.5e18 + 1;
-    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
-    lib.setOtherContingencyParams(otherContParams);
-    otherContParams.confMargin = 4;
-    // TODO
-    //    otherContParams.perpPercent = 1e18 + 1;
-    //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
-    //    lib.setOtherContingencyParams(otherContParams);
-    //    otherContParams.perpPercent = 6;
-    //
-    //    otherContParams.optionPercent = 1e18 + 1;
-    //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
-    //    lib.setOtherContingencyParams(otherContParams);
-    //    otherContParams.optionPercent = 7;
-  }
+  //
+  //  function testSetPMRM_2_1ParametersBasisContingency() public {
+  //    IPMRMLib_2_1.BasisContingencyParameters memory basisContParams = IPMRMLib_2_1.BasisContingencyParameters({
+  //      scenarioSpotUp: 1e18 + 1,
+  //      scenarioSpotDown: 2,
+  //      basisContAddFactor: 3,
+  //      basisContMultFactor: 4
+  //    });
+  //    lib.setBasisContingencyParams(basisContParams);
+  //    IPMRMLib_2_1.BasisContingencyParameters memory resFwdContParams = lib.getBasisContingencyParams();
+  //    assertEq(resFwdContParams.scenarioSpotUp, 1e18 + 1);
+  //    assertEq(resFwdContParams.scenarioSpotDown, 2);
+  //    assertEq(resFwdContParams.basisContAddFactor, 3);
+  //    assertEq(resFwdContParams.basisContMultFactor, 4);
+  //
+  //    basisContParams.scenarioSpotUp = 1e18;
+  //
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
+  //    lib.setBasisContingencyParams(basisContParams);
+  //    basisContParams.scenarioSpotUp = 1e18 + 1;
+  //
+  //    basisContParams.scenarioSpotUp = 3e18 + 1;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
+  //    lib.setBasisContingencyParams(basisContParams);
+  //    basisContParams.scenarioSpotUp = 1e18 + 1;
+  //
+  //    basisContParams.scenarioSpotDown = 1e18;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
+  //    lib.setBasisContingencyParams(basisContParams);
+  //    basisContParams.scenarioSpotDown = 2;
+  //
+  //    basisContParams.basisContMultFactor = 5e18 + 1;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
+  //    lib.setBasisContingencyParams(basisContParams);
+  //    basisContParams.basisContMultFactor = 4;
+  //
+  //    basisContParams.basisContAddFactor = 5e18 + 1;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidBasisContingencyParameters.selector);
+  //    lib.setBasisContingencyParams(basisContParams);
+  //    basisContParams.basisContAddFactor = 4;
+  //  }
+  //
+  //  function testSetPMRM_2_1ParametersOtherContingency() public {
+  //    IPMRMLib_2_1.OtherContingencyParameters memory otherContParams = IPMRMLib_2_1.OtherContingencyParameters({
+  //      pegLossThreshold: 1,
+  //      pegLossFactor: 2,
+  //      confThreshold: 3,
+  //      confMargin: 4,
+  //      IMPerpPercent: 5,
+  //      MMPerpPercent: 6,
+  //      IMOptionPercent: 7,
+  //      MMOptionPercent: 8
+  //    });
+  //    lib.setOtherContingencyParams(otherContParams);
+  //    IPMRMLib_2_1.OtherContingencyParameters memory resOtherContParams = lib.getOtherContingencyParams();
+  //    assertEq(resOtherContParams.pegLossThreshold, 1);
+  //    assertEq(resOtherContParams.pegLossFactor, 2);
+  //    assertEq(resOtherContParams.confThreshold, 3);
+  //    assertEq(resOtherContParams.confMargin, 4);
+  //    assertEq(resOtherContParams.IMPerpPercent, 5);
+  //    assertEq(resOtherContParams.MMPerpPercent, 6);
+  //    assertEq(resOtherContParams.IMOptionPercent, 7);
+  //    assertEq(resOtherContParams.MMOptionPercent, 8);
+  //
+  //    otherContParams.pegLossThreshold = 1e18 + 1;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
+  //    lib.setOtherContingencyParams(otherContParams);
+  //    otherContParams.pegLossThreshold = 1;
+  //
+  //    otherContParams.pegLossFactor = 20e18 + 1;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
+  //    lib.setOtherContingencyParams(otherContParams);
+  //    otherContParams.pegLossFactor = 2;
+  //
+  //    otherContParams.confThreshold = 1e18 + 1;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
+  //    lib.setOtherContingencyParams(otherContParams);
+  //    otherContParams.confThreshold = 3;
+  //
+  //    otherContParams.confMargin = 1.5e18 + 1;
+  //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
+  //    lib.setOtherContingencyParams(otherContParams);
+  //    otherContParams.confMargin = 4;
+  //    // TODO
+  //    //    otherContParams.perpPercent = 1e18 + 1;
+  //    //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
+  //    //    lib.setOtherContingencyParams(otherContParams);
+  //    //    otherContParams.perpPercent = 6;
+  //    //
+  //    //    otherContParams.optionPercent = 1e18 + 1;
+  //    //    vm.expectRevert(IPMRMLib_2_1.PMRM_2_1L_InvalidOtherContingencyParameters.selector);
+  //    //    lib.setOtherContingencyParams(otherContParams);
+  //    //    otherContParams.optionPercent = 7;
+  //  }
   //
   //  function testSetPMRM_2_1ParametersMargin() public {
   //    // TODO

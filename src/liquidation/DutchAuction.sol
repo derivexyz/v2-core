@@ -9,7 +9,7 @@ import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 
 // inherited
-import "openzeppelin/security/ReentrancyGuard.sol";
+import "openzeppelin/utils/ReentrancyGuard.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
 import "lyra-utils/decimals/DecimalMath.sol";
@@ -80,7 +80,7 @@ contract DutchAuction is IDutchAuction, Ownable2Step, ReentrancyGuard {
   //    Constructor     //
   ////////////////////////
 
-  constructor(ISubAccounts _subAccounts, ISecurityModule _securityModule, ICashAsset _cash) Ownable2Step() {
+  constructor(ISubAccounts _subAccounts, ISecurityModule _securityModule, ICashAsset _cash) Ownable(msg.sender) {
     subAccounts = _subAccounts;
     securityModule = _securityModule;
     cash = _cash;

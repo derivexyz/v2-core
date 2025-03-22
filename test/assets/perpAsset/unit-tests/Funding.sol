@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
+import "openzeppelin/access/Ownable.sol";
 import "../../../../src/SubAccounts.sol";
 import "../../../../src/assets/PerpAsset.sol";
 import {ISubAccounts} from "../../../../src/interfaces/ISubAccounts.sol";
@@ -88,7 +89,7 @@ contract UNIT_PerpAssetFunding is Test {
 
   function testCannotSetSpotFeedFromNonOwner() public {
     vm.prank(alice);
-    vm.expectRevert(bytes("Ownable: caller is not the owner"));
+    vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
     perp.setSpotFeed(ISpotFeed(address(0)));
   }
 

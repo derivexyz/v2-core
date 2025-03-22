@@ -9,6 +9,6 @@ contract StrandsSFP is ERC4626 {
   constructor(IERC20 depositToken) ERC4626(depositToken) ERC20("Strands Segregated Fund Proxy", "Strands.sfp") {}
 
   function getSharePrice() external view returns (uint) {
-    return _convertToAssets(1 ether, Math.Rounding.Down);
+    return _convertToAssets(1 ether, Math.Rounding.Floor);
   }
 }

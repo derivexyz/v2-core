@@ -23,7 +23,7 @@ contract LyraERC20 is Ownable2Step, ERC20 {
 
   event MinterConfigured(address indexed minter, bool enabled);
 
-  constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_) {
+  constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_) Ownable(msg.sender) {
     _decimals = decimals_;
   }
 

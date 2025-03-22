@@ -32,8 +32,10 @@ interface IPMRMLib_2_1 {
     uint shortRateAddScale;
     /// @dev Additive factor for static discount calculation, for positive expiry MtM discounting
     uint longRateAddScale;
+    /// @dev The baseStaticDiscount for computing static discount for negative expiry MtM discounting
+    uint shortBaseStaticDiscount;
     /// @dev The baseStaticDiscount for computing static discount for positive expiry MtM discounting
-    uint baseStaticDiscount;
+    uint longBaseStaticDiscount;
   }
 
   struct BasisContingencyParameters {
@@ -81,7 +83,6 @@ interface IPMRMLib_2_1 {
 
   // Defined once per collateral
   struct CollateralParameters {
-    bool enabled;
     bool isRiskCancelling;
     /// @dev % value of collateral to subtract from MM. Must be <= 1
     uint MMHaircut;

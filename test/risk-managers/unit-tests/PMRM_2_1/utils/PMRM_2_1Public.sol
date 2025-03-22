@@ -1,19 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.27;
 
 import "../../../../../src/risk-managers/PMRM_2_1.sol";
 
 contract PMRM_2_1Public is PMRM_2_1 {
-  constructor(
-    ISubAccounts subAccounts_,
-    ICashAsset cashAsset_,
-    IOptionAsset option_,
-    IPerpAsset perp_,
-    IDutchAuction liquidation_,
-    Feeds memory feeds_,
-    IBasePortfolioViewer viewer_,
-    IPMRMLib_2_1 lib_
-  ) PMRM_2_1(subAccounts_, cashAsset_, option_, perp_, liquidation_, feeds_, viewer_, lib_) {}
+  constructor() {}
 
   function arrangePortfolioByBalances(ISubAccounts.AssetBalance[] memory assets)
     external

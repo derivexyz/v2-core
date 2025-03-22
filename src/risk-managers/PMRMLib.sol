@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import {Ownable2Step} from "openzeppelin/access/Ownable2Step.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 import {SafeCast} from "openzeppelin/utils/math/SafeCast.sol";
 import {SignedMath} from "openzeppelin/utils/math/SignedMath.sol";
 import {Math} from "openzeppelin/utils/math/Math.sol";
@@ -27,7 +27,7 @@ contract PMRMLib is IPMRMLib, Ownable2Step {
   MarginParameters internal marginParams;
   VolShockParameters internal volShockParams;
 
-  constructor() Ownable2Step() {}
+  constructor() Ownable(msg.sender) {}
 
   ///////////
   // Admin //

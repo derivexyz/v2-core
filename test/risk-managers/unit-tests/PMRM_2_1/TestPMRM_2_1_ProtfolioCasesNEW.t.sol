@@ -291,9 +291,29 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
     _runTestCase(".test_64_general_random_5");
   }
 
+  function test_65_misc_post_expiry() public {
+    _runTestCase(".test_65_misc_post_expiry");
+  }
+  // REMOVED
+  //  function test_66_misc_skew_scenario_with_spot_move() public {
+  //    _runTestCase(".test_66_misc_skew_scenario_with_spot_move");
+  //  }
+
+  function test_67_misc_syn_forward() public {
+    _runTestCase(".test_67_misc_syn_forward");
+  }
+
+  function test_68_misc_change_dte_min() public {
+    _runTestCase(".test_68_misc_change_dte_min");
+  }
+
+  function test_69_misc_extreme_static_disc_neg_value() public {
+    _runTestCase(".test_69_misc_extreme_static_disc_neg_value");
+  }
+
   function _runTestCase(string memory testName) internal {
     TEST_NAME = testName;
-    REF_TIME = 0;
+    REF_TIME = 1630000000;
     JSON = jsonParser.jsonFromRelPath(FILE_PATH);
     vm.warp(REF_TIME);
     ISubAccounts.AssetBalance[] memory balances = _loadTestData();
@@ -435,7 +455,8 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
         break;
       }
 
-      uint expiry = REF_TIME + JSON.readUint(string.concat(basePath, "FeedExpiry"));
+      uint secToExpiry = JSON.readUint(string.concat(basePath, "FeedExpiry"));
+      uint expiry = REF_TIME + secToExpiry;
 
       feed.setVolSviParams(
         uint64(expiry),
@@ -458,11 +479,11 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
       );
 
       uint fwdPrice = _readBNUint(JSON, basePath, "Forward");
-      if (expiry < 30 minutes) {
+      if (secToExpiry < 30 minutes) {
         feed.setForwardPricePortions(
           expiry,
-          fwdPrice * (30 minutes - expiry) / 30 minutes,
-          fwdPrice * expiry / 30 minutes,
+          fwdPrice * (30 minutes - secToExpiry) / 30 minutes,
+          fwdPrice * secToExpiry / 30 minutes,
           _readBNUint(JSON, basePath, "ForwardConfidence")
         );
       } else {
@@ -633,7 +654,7 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
         volRangeDown: _readBNUint(JSON, TEST_NAME, ".Parameters.VolShock.VOLRANGEDOWN"),
         shortTermPower: _readBNInt(JSON, TEST_NAME, ".Parameters.VolShock.SHORTTERMPOWER"),
         longTermPower: _readBNInt(JSON, TEST_NAME, ".Parameters.VolShock.LONGTERMPOWER"),
-        dteFloor: 1 days, // TODO: do we need to test different values?
+        dteFloor: _readBNUint(JSON, TEST_NAME, ".Parameters.VolShock.DTE_FLOOR") * 1 days / 1e18,
         minVolUpShock: _readBNUint(JSON, TEST_NAME, ".Parameters.VolShock.MIN_VOL_EVAL_SHOCKED")
       })
     );
@@ -646,7 +667,8 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
         longRateMultScale: _readBNUint(JSON, TEST_NAME, ".Parameters.Margin.LONG_RATE_MULTSCALE"),
         shortRateAddScale: _readBNUint(JSON, TEST_NAME, ".Parameters.Margin.SHORT_RATE_ADDSCALE"),
         longRateAddScale: _readBNUint(JSON, TEST_NAME, ".Parameters.Margin.LONG_RATE_ADDSCALE"),
-        baseStaticDiscount: _readBNUint(JSON, TEST_NAME, ".Parameters.Margin.BASE_STATIC_DISCOUNT")
+        shortBaseStaticDiscount: _readBNUint(JSON, TEST_NAME, ".Parameters.Margin.BASE_STATIC_DISCOUNT_NEG"),
+        longBaseStaticDiscount: _readBNUint(JSON, TEST_NAME, ".Parameters.Margin.BASE_STATIC_DISCOUNT")
       })
     );
 

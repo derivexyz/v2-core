@@ -87,7 +87,7 @@ contract UNIT_LyraForwardFeed is LyraFeedTestUtils {
       abi.encode(defaultExpiry, settlementStartAggregate, currentSpotAggregate, newDiff, defaultConfidence);
     feed.acceptData(_signFeedData(feed, pk, feedData));
 
-    vm.expectRevert("SafeCast: value must be positive");
+    vm.expectRevert(abi.encodeWithSelector(SafeCast.SafeCastOverflowedIntToUint.selector, -10e18));
     feed.getForwardPrice(defaultExpiry);
 
     vm.warp(block.timestamp + 1);

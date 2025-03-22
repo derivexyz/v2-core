@@ -89,7 +89,7 @@ interface IPMRM_2_1 {
   struct Scenario {
     uint spotShock; // i.e. 1.2e18 = 20% spot shock up
     VolShockDirection volShock; // i.e. [None, Up, Down, Linear, Abs]
-    // Multiply the result by this percentage 0-1, where 1 is no dampening.
+    // Multiply the result by this percentage. Can be > 1
     uint dampeningFactor;
   }
 

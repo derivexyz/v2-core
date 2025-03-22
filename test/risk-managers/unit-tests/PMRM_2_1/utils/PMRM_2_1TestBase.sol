@@ -39,6 +39,7 @@ import {IPMRMLib_2_1} from "../../../../../src/interfaces/IPMRMLib_2_1.sol";
 
 import "../../../../shared/utils/JsonMechIO.sol";
 import {Config} from "../../../../config-test.sol";
+import {TransparentUpgradeableProxy} from "openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 library StringUtils {
   function uintToString(uint value) internal pure returns (string memory) {
@@ -116,23 +117,34 @@ contract PMRM_2_1TestBase is JsonMechIO {
     viewer = new BasePortfolioViewer(subAccounts, cash);
     lib = new PMRMLib_2_1();
 
-    pmrm_2_1 = new PMRM_2_1Public(
-      subAccounts,
-      cash,
-      option,
-      mockPerp,
-      //      baseAsset, TODO: add as collateral asset seperately
-      auction,
-      IPMRM_2_1.Feeds({
-        spotFeed: ISpotFeed(feed),
-        stableFeed: ISpotFeed(stableFeed),
-        forwardFeed: IForwardFeed(feed),
-        interestRateFeed: IInterestRateFeed(feed),
-        volFeed: IVolFeed(feed)
-      }),
-      viewer,
-      lib
+    PMRM_2_1Public imp = new PMRM_2_1Public();
+
+    TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+      address(imp),
+      address(this),
+      abi.encodeWithSelector(
+        PMRM_2_1.initialize.selector,
+        subAccounts,
+        cash,
+        option,
+        mockPerp,
+        //      baseAsset, TODO: add as collateral asset seperately
+        auction,
+        IPMRM_2_1.Feeds({
+          spotFeed: ISpotFeed(feed),
+          stableFeed: ISpotFeed(stableFeed),
+          forwardFeed: IForwardFeed(feed),
+          interestRateFeed: IInterestRateFeed(feed),
+          volFeed: IVolFeed(feed)
+        }),
+        viewer,
+        lib,
+        11
+      )
     );
+
+    pmrm_2_1 = PMRM_2_1Public(address(proxy));
+
     setDefaultParameters();
     addScenarios();
 

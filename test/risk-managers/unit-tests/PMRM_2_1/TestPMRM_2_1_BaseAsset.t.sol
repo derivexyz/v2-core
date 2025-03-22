@@ -44,23 +44,32 @@ contract TestPMRM_2_1_BaseAsset is PMRM_2_1TestBase {
     PMRMLib_2_1 newLib = new PMRMLib_2_1();
 
     // other PMRM_2_1
-    PMRM_2_1 newManager = new PMRM_2_1Public(
-      subAccounts,
-      cash,
-      option,
-      mockPerp,
-      //      baseAsset,
-      IDutchAuction(new MockDutchAuction()),
-      IPMRM_2_1.Feeds({
-        spotFeed: ISpotFeed(feed),
-        stableFeed: ISpotFeed(stableFeed),
-        forwardFeed: IForwardFeed(feed),
-        interestRateFeed: IInterestRateFeed(feed),
-        volFeed: IVolFeed(feed)
-      }),
-      viewer,
-      newLib
+    PMRM_2_1 newImp = new PMRM_2_1Public();
+    TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+      address(newImp),
+      address(this),
+      abi.encodeWithSelector(
+        newImp.initialize.selector,
+        subAccounts,
+        cash,
+        option,
+        mockPerp,
+        //      baseAsset,
+        IDutchAuction(new MockDutchAuction()),
+        IPMRM_2_1.Feeds({
+          spotFeed: ISpotFeed(feed),
+          stableFeed: ISpotFeed(stableFeed),
+          forwardFeed: IForwardFeed(feed),
+          interestRateFeed: IInterestRateFeed(feed),
+          volFeed: IVolFeed(feed)
+        }),
+        viewer,
+        newLib,
+        11
+      )
     );
+
+    PMRM_2_1Public newManager = PMRM_2_1Public(address(proxy));
 
     newManager.setScenarios(Config.get_2_1DefaultScenarios());
     baseAsset.setWhitelistManager(address(newManager), true);

@@ -49,7 +49,7 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
 
   function testCannotOpenNewTrade() public {
     // trade should revert
-    vm.expectRevert(bytes("ReentrancyGuard: reentrant call"));
+    vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
     _tradePerpContract(markets["weth"].perp, danielAcc, bobAcc, 1e18);
 
     // daniel and bob balances should not have changed
@@ -59,7 +59,7 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
 
   function testCannotTradeAfterDisabled() public {
     // trade should revert
-    vm.expectRevert(bytes("ReentrancyGuard: reentrant call"));
+    vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
     _tradePerpContract(markets["weth"].perp, charlieAcc, aliceAcc, 2e18);
 
     // alice and charlie balances should not have changed
@@ -89,7 +89,7 @@ contract INTEGRATION_PerpMigration is IntegrationTestBase {
 
   function testCannotPartiallyReduceBalances() public {
     // trade should revert
-    vm.expectRevert(bytes("ReentrancyGuard: reentrant call"));
+    vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
     _tradePerpContract(markets["weth"].perp, charlieAcc, aliceAcc, 5e17);
   }
 

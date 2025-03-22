@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.27;
 
 import "lyra-utils/decimals/DecimalMath.sol";
-import "lyra-utils/decimals/SignedDecimalMath.sol";
 
+import "lyra-utils/decimals/SignedDecimalMath.sol";
 import "lyra-utils/encoding/OptionEncoding.sol";
-import "openzeppelin/security/ReentrancyGuard.sol";
+import "openzeppelin/utils/ReentrancyGuard.sol";
 import "openzeppelin/utils/math/Math.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "openzeppelin/utils/math/SignedMath.sol";
 
+import "openzeppelin/utils/math/SignedMath.sol";
 import {BaseManager} from "./BaseManager.sol";
+import {FixedPointMathLib} from "lyra-utils/math/FixedPointMathLib.sol";
+import {IAsset} from "../interfaces/IAsset.sol";
 import {IBasePortfolioViewer} from "../interfaces/IBasePortfolioViewer.sol";
 import {ICashAsset} from "../interfaces/ICashAsset.sol";
 import {IDutchAuction} from "../interfaces/IDutchAuction.sol";
@@ -19,30 +21,30 @@ import {IInterestRateFeed} from "../interfaces/IInterestRateFeed.sol";
 import {ILiquidatableManager} from "../interfaces/ILiquidatableManager.sol";
 import {IManager} from "../interfaces/IManager.sol";
 import {IOptionAsset} from "../interfaces/IOptionAsset.sol";
-import {IAsset} from "../interfaces/IAsset.sol";
 import {IPMRMLib_2_1} from "../interfaces/IPMRMLib_2_1.sol";
 import {IPMRM_2_1} from "../interfaces/IPMRM_2_1.sol";
+
 import {IPerpAsset} from "../interfaces/IPerpAsset.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
-
 import {ISubAccounts} from "../interfaces/ISubAccounts.sol";
 import {IVolFeed} from "../interfaces/IVolFeed.sol";
 import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
-import {FixedPointMathLib} from "lyra-utils/math/FixedPointMathLib.sol";
+import {ReentrancyGuardUpgradeable} from "openzeppelin-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {BaseManagerUpgradeable} from "./BaseManagerUpgradeable.sol";
 
 /**
  * @title PMRM_2_1
  * @author Derive
  * @notice Risk Manager that uses a SPAN like methodology to margin an options portfolio.
  */
-contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGuard {
+contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, ReentrancyGuardUpgradeable {
   using SignedDecimalMath for int;
   using DecimalMath for uint;
   using SafeCast for uint;
   using SafeCast for int;
 
-  IOptionAsset public immutable option;
-  IPerpAsset public immutable perp;
+  IOptionAsset public option;
+  IPerpAsset public perp;
 
   /////////////////
   //  Variables  //
@@ -55,12 +57,14 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
   IForwardFeed public forwardFeed;
 
   /// @dev lib contract
-  IPMRMLib_2_1 public immutable lib;
+  IPMRMLib_2_1 public lib;
 
   /// @dev Value to help optimise the arranging of portfolio. Should be minimised if possible.
-  uint public maxExpiries = 11;
+  uint public maxExpiries;
 
   IPMRM_2_1.Scenario[] internal marginScenarios;
+
+  bytes[49] private __gap;
 
   mapping(address => ISpotFeed) public collateralSpotFeeds;
 
@@ -68,7 +72,12 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
   //    Constructor     //
   ////////////////////////
 
-  constructor(
+  // For backwards compatibility with the proxy setup, we pass in the addresses of the contracts, which are set to zero
+  constructor() BaseManager(subAccounts, cashAsset, liquidation, viewer) {
+    _disableInitializers();
+  }
+
+  function initialize(
     ISubAccounts subAccounts_,
     ICashAsset cashAsset_,
     IOptionAsset option_,
@@ -76,8 +85,13 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
     IDutchAuction liquidation_,
     Feeds memory feeds_,
     IBasePortfolioViewer viewer_,
-    IPMRMLib_2_1 lib_
-  ) BaseManager(subAccounts_, cashAsset_, liquidation_, viewer_) {
+    IPMRMLib_2_1 lib_,
+    uint maxExpiries_
+  ) public initializer {
+    __ReentrancyGuard_init();
+
+    __BaseManagerUpgradeable_init(subAccounts_, cashAsset_, liquidation_, viewer_, 128);
+
     spotFeed = feeds_.spotFeed;
     stableFeed = feeds_.stableFeed;
     forwardFeed = feeds_.forwardFeed;
@@ -87,6 +101,10 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
 
     option = option_;
     perp = perp_;
+
+    require(maxExpiries_ <= 30 && maxExpiries_ > 0, PMRM_2_1_InvalidMaxExpiries());
+    maxExpiries = maxExpiries_;
+    emit MaxExpiriesUpdated(maxExpiries_);
   }
 
   /////////////////////
@@ -144,7 +162,20 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManager, ReentrancyGua
   function setScenarios(IPMRM_2_1.Scenario[] memory _scenarios) external onlyOwner {
     require(_scenarios.length > 0 && _scenarios.length <= 40, PMRM_2_1_InvalidScenarios());
 
+    bool seenAbs = false;
+    bool seenLinear = false;
+
     for (uint i = 0; i < _scenarios.length; i++) {
+      if (_scenarios[i].volShock == VolShockDirection.Abs) {
+        require(!seenAbs, PMRM_2_1_InvalidScenarios());
+        require(_scenarios[i].spotShock == DecimalMath.UNIT, PMRM_2_1_InvalidScenarios());
+        seenAbs = true;
+      } else if (_scenarios[i].volShock == VolShockDirection.Linear) {
+        require(!seenLinear, PMRM_2_1_InvalidScenarios());
+        require(_scenarios[i].spotShock == DecimalMath.UNIT, PMRM_2_1_InvalidScenarios());
+        seenLinear = true;
+      }
+
       if (marginScenarios.length <= i) {
         marginScenarios.push(_scenarios[i]);
       } else {

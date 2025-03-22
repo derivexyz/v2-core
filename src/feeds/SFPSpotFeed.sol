@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 // inherited
-import {Ownable2Step} from "openzeppelin/access/Ownable2Step.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 
 // interfaces
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
@@ -22,7 +22,7 @@ contract SFPSpotFeed is ISpotFeed, Ownable2Step {
   uint public minPrice = 0.98e18;
   uint public maxPrice = 1.2e18;
 
-  constructor(IStrandsSFP _strandsSFP) {
+  constructor(IStrandsSFP _strandsSFP) Ownable(msg.sender) {
     strandsSFP = _strandsSFP;
   }
 

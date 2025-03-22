@@ -5,7 +5,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 
-import {LyraERC20} from "../../src/l2/LyraERC20.sol";
+import {LyraERC20, Ownable} from "../../src/l2/LyraERC20.sol";
 
 contract UNIT_LyraERC20_Test is Test {
   LyraERC20 public usdc;
@@ -32,7 +32,7 @@ contract UNIT_LyraERC20_Test is Test {
 
   function testCanOnlyConfigureMinterByOwner() public {
     vm.prank(address(0xaa));
-    vm.expectRevert(bytes("Ownable: caller is not the owner"));
+    vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0xaa)));
     usdc.configureMinter(address(this), true);
   }
 

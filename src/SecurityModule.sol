@@ -44,14 +44,14 @@ contract SecurityModule is Ownable2Step, ISecurityModule {
   /// @dev Mapping of (address => isWhitelistedModule)
   mapping(address => bool) public isWhitelisted;
 
-  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IManager accountManager) {
+  constructor(ISubAccounts _subAccounts, ICashAsset _cashAsset, IManager accountManager) Ownable(msg.sender) {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     stableAsset = cashAsset.wrappedAsset();
     stableDecimals = stableAsset.decimals();
 
     accountId = ISubAccounts(_subAccounts).createAccount(address(this), accountManager);
-    stableAsset.safeApprove(address(_cashAsset), type(uint).max);
+    stableAsset.approve(address(_cashAsset), type(uint).max);
   }
 
   /////////////////////////////

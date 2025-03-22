@@ -175,7 +175,8 @@ library Config {
       longRateMultScale: 4e18,
       shortRateAddScale: 0.05e18,
       longRateAddScale: 0.05e18,
-      baseStaticDiscount: 0.95e18
+      shortBaseStaticDiscount: 0.95e18,
+      longBaseStaticDiscount: 0.95e18
     });
 
     volShockParams = IPMRMLib_2_1.VolShockParameters({

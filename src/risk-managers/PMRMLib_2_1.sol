@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.27;
 
 import "lyra-utils/decimals/DecimalMath.sol";
 import "lyra-utils/decimals/SignedDecimalMath.sol";
@@ -9,7 +9,7 @@ import {IPMRM_2_1} from "../interfaces/IPMRM_2_1.sol";
 import {ISpotFeed} from "../interfaces/ISpotFeed.sol";
 
 import {Math} from "openzeppelin/utils/math/Math.sol";
-import {Ownable2Step} from "openzeppelin/access/Ownable2Step.sol";
+import "openzeppelin/access/Ownable2Step.sol";
 import {SafeCast} from "openzeppelin/utils/math/SafeCast.sol";
 import {SignedMath} from "openzeppelin/utils/math/SignedMath.sol";
 import {WrappedERC20Asset} from "../assets/WrappedERC20Asset.sol";
@@ -32,7 +32,7 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
   SkewShockParameters internal skewShockParams;
   mapping(address => CollateralParameters) public collaterals;
 
-  constructor() Ownable2Step() {}
+  constructor() Ownable(msg.sender) {}
 
   ///////////
   // Admin //
@@ -44,8 +44,8 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
   {
     require(
       _basisContParams.scenarioSpotUp > 1e18 && _basisContParams.scenarioSpotUp < 3e18
-        && _basisContParams.scenarioSpotDown < 1e18 && _basisContParams.basisContMultFactor <= 5e18
-        && _basisContParams.basisContAddFactor <= 5e18,
+        && _basisContParams.scenarioSpotDown < 1e18 && _basisContParams.basisContMultFactor <= 20e18
+        && _basisContParams.basisContAddFactor <= 20e18,
       PMRM_2_1L_InvalidBasisContingencyParameters()
     );
 
@@ -59,9 +59,10 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     onlyOwner
   {
     require(
-      _otherContParams.pegLossThreshold <= 1e18 && _otherContParams.pegLossFactor <= 20e18
-        && _otherContParams.confThreshold <= 1e18 && _otherContParams.confMargin <= 1.5e18,
-      // TODO: any others?
+      _otherContParams.pegLossThreshold <= 100e18 && _otherContParams.pegLossFactor <= 10e18
+        && _otherContParams.confThreshold <= 1e18 && _otherContParams.confMargin <= 20e18
+        && _otherContParams.MMPerpPercent <= 3e18 && _otherContParams.IMPerpPercent <= 3e18
+        && _otherContParams.MMOptionPercent <= 2e18 && _otherContParams.IMOptionPercent <= 2e18,
       PMRM_2_1L_InvalidOtherContingencyParameters()
     );
 
@@ -70,9 +71,11 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
 
   function setMarginParams(IPMRMLib_2_1.MarginParameters memory _marginParams) external onlyOwner {
     require(
-      _marginParams.longRateMultScale <= 5e18 && _marginParams.longRateAddScale <= 5e18
-        && _marginParams.imFactor <= 4e18 && _marginParams.imFactor >= 1e18,
-      // TODO: any others?
+      _marginParams.imFactor >= 0.5e18 && _marginParams.imFactor <= 10e18 && _marginParams.mmFactor >= 0.5e18
+        && _marginParams.mmFactor <= 10e18 && _marginParams.shortRateMultScale <= 10e18
+        && _marginParams.longRateMultScale <= 10e18 && _marginParams.shortRateAddScale <= 10e18
+        && _marginParams.longRateAddScale <= 10e18 && _marginParams.shortBaseStaticDiscount <= 4e18
+        && _marginParams.longBaseStaticDiscount <= 4e18,
       PMRM_2_1L_InvalidMarginParameters()
     );
 
@@ -81,10 +84,9 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
 
   function setVolShockParams(IPMRMLib_2_1.VolShockParameters memory _volShockParams) external onlyOwner {
     require(
-      _volShockParams.volRangeUp <= 2e18 && _volShockParams.volRangeDown <= 2e18
-        && _volShockParams.shortTermPower <= 0.5e18 && _volShockParams.longTermPower <= 0.5e18
-        && _volShockParams.dteFloor <= 100 days && _volShockParams.dteFloor >= 0.01 days, // 864 seconds
-      // TODO: any others?
+      _volShockParams.volRangeUp <= 10e18 && _volShockParams.volRangeDown <= 10e18
+        && _volShockParams.shortTermPower <= 10e18 && _volShockParams.longTermPower <= 10e18
+        && _volShockParams.dteFloor <= 400 days && _volShockParams.minVolUpShock <= 20e18,
       PMRM_2_1L_InvalidVolShockParameters()
     );
     volShockParams = _volShockParams;
@@ -92,19 +94,19 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
 
   function setSkewShockParameters(SkewShockParameters memory _skewShockParams) external onlyOwner {
     require(
-      true,
-      // TODO: what bounds?
+      _skewShockParams.linearBaseCap <= 10e18 && _skewShockParams.absBaseCap <= 10e18
+        && _skewShockParams.linearCBase >= -10e18 && _skewShockParams.linearCBase <= 10e18
+        && _skewShockParams.absCBase >= -10e18 && _skewShockParams.absCBase <= 10e18 && _skewShockParams.minKStar >= 0
+        && _skewShockParams.minKStar <= 10e18 && _skewShockParams.widthScale >= 0 && _skewShockParams.widthScale <= 10e18
+        && _skewShockParams.volParamStatic >= 0 && _skewShockParams.volParamStatic <= 10e18
+        && _skewShockParams.volParamScale >= -20e18 && _skewShockParams.volParamScale <= 20e18,
       PMRM_2_1L_InvalidSkewShockParameters()
     );
     skewShockParams = _skewShockParams;
   }
 
   function setCollateralParameters(address asset, CollateralParameters memory params) external onlyOwner {
-    require(
-      params.MMHaircut <= 1e18,
-      // TODO: any others?
-      PMRM_2_1L_InvalidCollateralParameters()
-    );
+    require(params.MMHaircut <= 1e18 && params.MMHaircut <= 1e18, PMRM_2_1L_InvalidCollateralParameters());
     // Note: asset must be added to pmrm to be used as collateral. If
     collaterals[asset] = params;
   }
@@ -206,7 +208,6 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
         scenario.volShock == IPMRM_2_1.VolShockDirection.Linear || scenario.volShock == IPMRM_2_1.VolShockDirection.Abs
       ) {
         // for skew scenarios we use *negative* absolute value to maximise the loss for each expiry.
-        // TODO @sean are you really sure this is correct? Should we instead make it a param between -1 and 1?
         scenarioMtM += scenarioPnL > 0 ? -scenarioPnL : scenarioPnL;
       } else {
         scenarioMtM += scenarioPnL;
@@ -306,11 +307,11 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
       int k = FixedPointMathLib.ln(option.strike.divideDecimal(uint(forwardPrice)).toInt256());
       k = isLinear ? k : int(SignedMath.abs(k));
 
-      int skewMultiplier;
+      int skewMultiplier = SignedDecimalMath.UNIT;
       if (k >= 0) {
-        skewMultiplier = 1e18 + SignedMath.min(multCap, k * multCap / kStar);
+        skewMultiplier += SignedMath.min(multCap, k * multCap / kStar);
       } else {
-        skewMultiplier = 1e18 + SignedMath.max(-multCap, k * multCap / kStar);
+        skewMultiplier += SignedMath.max(-multCap, k * multCap / kStar);
       }
 
       inputs.volatility = option.vol.multiplyDecimal(skewMultiplier < 0 ? 0 : skewMultiplier.toUint256()).toUint128();
@@ -384,14 +385,15 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     uint tau = Black76.annualise(expiry.secToExpiry.toUint64());
 
     uint shockRfrPos = expiry.rate.multiplyDecimal(marginParams.longRateMultScale) + marginParams.longRateAddScale;
-    expiry.staticDiscountPos = marginParams.baseStaticDiscount.multiplyDecimal(
+    expiry.staticDiscountPos = marginParams.longBaseStaticDiscount.multiplyDecimal(
       FixedPointMathLib.exp(-(tau.multiplyDecimal(shockRfrPos).toInt256()))
     );
 
     uint shockRfrNeg = expiry.rate.multiplyDecimal(marginParams.shortRateMultScale) + marginParams.shortRateAddScale;
+    expiry.staticDiscountNeg = marginParams.shortBaseStaticDiscount.divideDecimal(
+      FixedPointMathLib.exp(-(tau.multiplyDecimal(shockRfrNeg).toInt256()))
+    );
 
-    expiry.staticDiscountNeg =
-      DecimalMath.UNIT.divideDecimal(FixedPointMathLib.exp(-(tau.multiplyDecimal(shockRfrNeg).toInt256())));
     expiry.staticDiscountNeg = Math.min(DecimalMath.UNIT.divideDecimal(uint(expiry.discount)), expiry.staticDiscountNeg);
   }
 

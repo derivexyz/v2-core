@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin/utils/math/SafeCast.sol";
 import "openzeppelin/utils/math/Math.sol";
 import "openzeppelin/utils/math/SignedMath.sol";
-import "openzeppelin/security/ReentrancyGuard.sol";
+import "openzeppelin/utils/ReentrancyGuard.sol";
 
 import "lyra-utils/encoding/OptionEncoding.sol";
 import "lyra-utils/decimals/DecimalMath.sol";

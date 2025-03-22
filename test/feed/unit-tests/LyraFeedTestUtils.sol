@@ -16,7 +16,7 @@ contract LyraFeedTestUtils is Test {
   {
     bytes32 structHash = hashFeedData(feed, feedData);
     bytes32 domainSeparator = feed.domainSeparator();
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ECDSA.toTypedDataHash(domainSeparator, structHash));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, MessageHashUtils.toTypedDataHash(domainSeparator, structHash));
     feedData.signatures[0] = bytes.concat(r, s, bytes1(v));
 
     // fill in signer if not set yet
