@@ -32,6 +32,8 @@ import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
 import {ReentrancyGuardUpgradeable} from "openzeppelin-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {BaseManagerUpgradeable} from "./BaseManagerUpgradeable.sol";
 
+import "forge-std/console.sol";
+
 /**
  * @title PMRM_2_1
  * @author Derive
@@ -101,6 +103,8 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
 
     option = option_;
     perp = perp_;
+
+    console.log("maxExpiries_:", maxExpiries_);
 
     require(maxExpiries_ <= 30 && maxExpiries_ > 0, PMRM_2_1_InvalidMaxExpiries());
     maxExpiries = maxExpiries_;

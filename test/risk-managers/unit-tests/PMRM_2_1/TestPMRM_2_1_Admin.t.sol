@@ -69,6 +69,40 @@ contract TestPMRM_2_1_Admin is PMRM_2_1TestBase {
     assertEq(res[1].spotShock, 2);
     assertEq(uint8(res[1].volShock), uint8(IPMRM_2_1.VolShockDirection.Down));
 
+    ////
+    // Abs/Linear checks
+    scenarios = new IPMRM_2_1.Scenario[](1);
+    // spot shock must be 1
+    scenarios[0] =
+      IPMRM_2_1.Scenario({spotShock: 0.99e18, volShock: IPMRM_2_1.VolShockDirection.Abs, dampeningFactor: 1e18});
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidScenarios.selector);
+    pmrm_2_1.setScenarios(scenarios);
+
+    scenarios[0] =
+      IPMRM_2_1.Scenario({spotShock: 0.99e18, volShock: IPMRM_2_1.VolShockDirection.Linear, dampeningFactor: 1e18});
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidScenarios.selector);
+    pmrm_2_1.setScenarios(scenarios);
+
+    // multiple abs/linear also reverts (one of each passes)
+    scenarios = new IPMRM_2_1.Scenario[](2);
+    scenarios[0] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.Abs, dampeningFactor: 1e18});
+    scenarios[1] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.Linear, dampeningFactor: 1e18});
+    pmrm_2_1.setScenarios(scenarios);
+
+    scenarios[1] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.Abs, dampeningFactor: 1e18});
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidScenarios.selector);
+    pmrm_2_1.setScenarios(scenarios);
+
+    scenarios[0] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.Linear, dampeningFactor: 1e18});
+    scenarios[1] =
+      IPMRM_2_1.Scenario({spotShock: 1e18, volShock: IPMRM_2_1.VolShockDirection.Linear, dampeningFactor: 1e18});
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidScenarios.selector);
+    pmrm_2_1.setScenarios(scenarios);
+
     /////
     // Update equal amount of scenarios
     scenarios = new IPMRM_2_1.Scenario[](2);

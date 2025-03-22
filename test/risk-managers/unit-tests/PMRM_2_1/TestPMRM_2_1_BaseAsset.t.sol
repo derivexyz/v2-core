@@ -5,6 +5,17 @@ import "../../../risk-managers/unit-tests/PMRM_2_1/utils/PMRM_2_1TestBase.sol";
 import {IBaseManager} from "../../../../src/interfaces/IBaseManager.sol";
 
 contract TestPMRM_2_1_BaseAsset is PMRM_2_1TestBase {
+  function testCannotSetInvalidFeeds() public {
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidCollateralAsset.selector);
+    pmrm_2_1.setCollateralSpotFeed(address(option), ISpotFeed(address(0)));
+
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidCollateralAsset.selector);
+    pmrm_2_1.setCollateralSpotFeed(address(mockPerp), ISpotFeed(address(0)));
+
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidCollateralAsset.selector);
+    pmrm_2_1.setCollateralSpotFeed(address(cash), ISpotFeed(address(0)));
+  }
+
   function testCanDepositBase() public {
     baseAsset.setTotalPositionCap(pmrm_2_1, 0);
     baseAsset.setWhitelistManager(address(pmrm_2_1), true);
@@ -45,7 +56,10 @@ contract TestPMRM_2_1_BaseAsset is PMRM_2_1TestBase {
 
     // other PMRM_2_1
     PMRM_2_1 newImp = new PMRM_2_1Public();
-    TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+    TransparentUpgradeableProxy proxy;
+
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidMaxExpiries.selector);
+    proxy = new TransparentUpgradeableProxy(
       address(newImp),
       address(this),
       abi.encodeWithSelector(
@@ -54,8 +68,54 @@ contract TestPMRM_2_1_BaseAsset is PMRM_2_1TestBase {
         cash,
         option,
         mockPerp,
-        //      baseAsset,
-        IDutchAuction(new MockDutchAuction()),
+        auction,
+        IPMRM_2_1.Feeds({
+          spotFeed: ISpotFeed(feed),
+          stableFeed: ISpotFeed(stableFeed),
+          forwardFeed: IForwardFeed(feed),
+          interestRateFeed: IInterestRateFeed(feed),
+          volFeed: IVolFeed(feed)
+        }),
+        viewer,
+        newLib,
+        31
+      )
+    );
+
+    vm.expectRevert(IPMRM_2_1.PMRM_2_1_InvalidMaxExpiries.selector);
+    proxy = new TransparentUpgradeableProxy(
+      address(newImp),
+      address(this),
+      abi.encodeWithSelector(
+        newImp.initialize.selector,
+        subAccounts,
+        cash,
+        option,
+        mockPerp,
+        auction,
+        IPMRM_2_1.Feeds({
+          spotFeed: ISpotFeed(feed),
+          stableFeed: ISpotFeed(stableFeed),
+          forwardFeed: IForwardFeed(feed),
+          interestRateFeed: IInterestRateFeed(feed),
+          volFeed: IVolFeed(feed)
+        }),
+        viewer,
+        newLib,
+        0
+      )
+    );
+
+    proxy = new TransparentUpgradeableProxy(
+      address(newImp),
+      address(this),
+      abi.encodeWithSelector(
+        newImp.initialize.selector,
+        subAccounts,
+        cash,
+        option,
+        mockPerp,
+        auction,
         IPMRM_2_1.Feeds({
           spotFeed: ISpotFeed(feed),
           stableFeed: ISpotFeed(stableFeed),

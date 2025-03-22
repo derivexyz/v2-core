@@ -401,7 +401,7 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
       }
     }
 
-    (int mm,, uint worstScenario) = pmrm_2_1.getMarginAndMarkToMarketPub(portfolio, false, scenarios);
+    (int mm,,) = pmrm_2_1.getMarginAndMarkToMarketPub(portfolio, false, scenarios);
     assertApproxEqRel(mm, _readBNInt(JSON, TEST_NAME, ".Result.MM"), 1e10, "MM");
 
     (int im,,) = pmrm_2_1.getMarginAndMarkToMarketPub(portfolio, true, scenarios);
