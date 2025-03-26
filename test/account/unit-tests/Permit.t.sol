@@ -387,7 +387,7 @@ contract UNIT_AccountPermit is Test, AccountTestBase {
 
   function _signPermit(uint pk, IAllowances.PermitAllowance memory permit) internal view returns (bytes memory) {
     bytes32 structHash = PermitAllowanceLib.hash(permit);
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, ECDSA.toTypedDataHash(domainSeparator, structHash));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, MessageHashUtils.toTypedDataHash(domainSeparator, structHash));
     return bytes.concat(r, s, bytes1(v));
   }
 }

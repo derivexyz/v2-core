@@ -92,6 +92,7 @@ contract CashAsset is ICashAsset, Ownable2Step, ManagerWhitelist {
 
   constructor(ISubAccounts _subAccounts, IERC20Metadata _wrappedAsset, IInterestRateModel _rateModel)
     ManagerWhitelist(_subAccounts)
+    Ownable(msg.sender)
   {
     wrappedAsset = _wrappedAsset;
     stableDecimals = _wrappedAsset.decimals();

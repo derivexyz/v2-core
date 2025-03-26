@@ -28,6 +28,8 @@ contract PositionTracking is Ownable2Step, IPositionTracking {
   /// @dev Snapshot of total position before a trade, used to determine if a trade increases or decreases total position
   mapping(IManager manager => mapping(uint tradeId => OISnapshot)) public totalPositionBeforeTrade;
 
+  constructor() Ownable(msg.sender) {}
+
   /////////////////////
   //   Owner-only    //
   /////////////////////
