@@ -88,7 +88,7 @@ abstract contract BaseManager is IBaseManager, Ownable2Step {
     ICashAsset _cashAsset,
     IDutchAuction _liquidation,
     IBasePortfolioViewer _viewer
-  ) Ownable2Step() {
+  ) Ownable(msg.sender) {
     subAccounts = _subAccounts;
     cashAsset = _cashAsset;
     liquidation = _liquidation;

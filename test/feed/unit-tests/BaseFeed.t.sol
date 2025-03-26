@@ -62,11 +62,11 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
     bytes32 structHash = hashFeedData(feed, spotData);
 
     // signed by pk
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[0] = bytes.concat(r, s, bytes1(v));
     spotData.signers[0] = pkOwner;
     // signed by pk2
-    (v, r, s) = vm.sign(pk2, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (v, r, s) = vm.sign(pk2, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[1] = bytes.concat(r, s, bytes1(v));
     spotData.signers[1] = pkOwner2;
 
@@ -93,7 +93,7 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
     bytes32 structHash = hashFeedData(feed, spotData);
 
     // signed by pk
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[0] = bytes.concat(r, s, bytes1(v));
     spotData.signers[0] = pkOwner;
 
@@ -110,11 +110,11 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
     bytes32 structHash = hashFeedData(feed, spotData);
 
     // signatures[0]: signed by pk
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[0] = bytes.concat(r, s, bytes1(v));
     spotData.signers[0] = pkOwner;
     // signatures[1]: signed by pk
-    (v, r, s) = vm.sign(pk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (v, r, s) = vm.sign(pk, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[1] = bytes.concat(r, s, bytes1(v));
     spotData.signers[1] = pkOwner;
 
@@ -140,15 +140,15 @@ contract UNIT_LyraSpotFeed is LyraFeedTestUtils {
     bytes32 structHash = hashFeedData(feed, spotData);
 
     // signed by pk
-    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[0] = bytes.concat(r, s, bytes1(v));
     spotData.signers[0] = pkOwner;
     // signed by pk2 (valid)
-    (v, r, s) = vm.sign(pk2, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (v, r, s) = vm.sign(pk2, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[1] = bytes.concat(r, s, bytes1(v));
     spotData.signers[1] = pkOwner2;
     // signatures[2]: signed by pk again
-    (v, r, s) = vm.sign(pk, ECDSA.toTypedDataHash(feed.domainSeparator(), structHash));
+    (v, r, s) = vm.sign(pk, MessageHashUtils.toTypedDataHash(feed.domainSeparator(), structHash));
     spotData.signatures[2] = bytes.concat(r, s, bytes1(v));
     spotData.signers[2] = pkOwner;
 

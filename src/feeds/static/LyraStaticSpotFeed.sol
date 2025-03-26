@@ -20,7 +20,7 @@ contract LyraStaticSpotFeed is Ownable2Step, ISpotFeed {
   //    Constructor     //
   ////////////////////////
 
-  constructor() {}
+  constructor() Ownable(msg.sender) {}
 
   ////////////////////////
   //  Public Functions  //

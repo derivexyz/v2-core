@@ -23,7 +23,7 @@ contract LyraStaticSpotDiffFeed is Ownable2Step, ISpotDiffFeed {
   //    Constructor     //
   ////////////////////////
 
-  constructor() {}
+  constructor() Ownable(msg.sender) {}
 
   ////////////////////////
   //  Public Functions  //

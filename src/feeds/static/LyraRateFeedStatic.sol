@@ -23,6 +23,8 @@ contract LyraRateFeedStatic is Ownable2Step, IInterestRateFeed {
   int64 public rate;
   uint64 public confidence;
 
+  constructor() Ownable(msg.sender) {}
+
   ////////////////////////
   //  Public Functions  //
   ////////////////////////

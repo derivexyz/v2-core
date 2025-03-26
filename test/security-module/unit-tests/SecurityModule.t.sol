@@ -62,7 +62,9 @@ contract UNIT_SecurityModule is Test {
   function testWithdrawWithNoShare() public {
     // cover the line where total supply is 0
     uint shares = 1000e6;
-    vm.expectRevert("ERC20: transfer amount exceeds balance");
+    vm.expectRevert(
+      abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, address(mockCash), 0, shares)
+    );
     securityModule.withdraw(shares, address(this));
   }
 

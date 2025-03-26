@@ -36,7 +36,7 @@ contract BasePortfolioViewer is Ownable2Step, IBasePortfolioViewer {
   /// @dev OI fee rate in BPS. Charged fee = contract traded * OIFee * future price
   mapping(address asset => uint) public OIFeeRateBPS;
 
-  constructor(ISubAccounts _subAccounts, ICashAsset _cash) {
+  constructor(ISubAccounts _subAccounts, ICashAsset _cash) Ownable(msg.sender) {
     subAccounts = _subAccounts;
     cashAsset = _cash;
   }

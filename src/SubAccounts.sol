@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/utils/math/SafeCast.sol";
-import "openzeppelin/security/ReentrancyGuard.sol";
+import "openzeppelin/utils/ReentrancyGuard.sol";
 import {ISubAccounts} from "./interfaces/ISubAccounts.sol";
 import "openzeppelin/utils/cryptography/EIP712.sol";
 import "openzeppelin/utils/cryptography/SignatureChecker.sol";
@@ -83,7 +83,7 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
    */
   function createAccountWithApproval(address owner, address spender, IManager _manager) external returns (uint newId) {
     newId = _createAccount(owner, _manager);
-    _approve(spender, newId);
+    _approve(spender, newId, address(0));
   }
 
   /**
@@ -659,14 +659,18 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
   // Access //
   ////////////
 
+  function _isApprovedOrOwner(address spender, uint accountId) internal view returns (bool) {
+    address owner = _ownerOf(accountId);
+    return _isAuthorized(owner, spender, accountId);
+  }
+
   /**
    * @dev giving managers exclusive rights to transfer account ownerships
    * @dev this function overrides ERC721._isApprovedOrOwner(spender, tokenId);
    *
    */
-  function _isApprovedOrOwner(address spender, uint accountId) internal view override returns (bool) {
-    if (super._isApprovedOrOwner(spender, accountId)) return true;
-
+  function _isAuthorized(address owner, address spender, uint accountId) internal view override returns (bool) {
+    if (super._isAuthorized(owner, spender, accountId)) return true;
     // check if caller is manager
     return address(manager[accountId]) == msg.sender;
   }
