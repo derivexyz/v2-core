@@ -671,7 +671,6 @@ contract SubAccounts is Allowances, ERC721, EIP712, ReentrancyGuard, ISubAccount
    */
   function _isAuthorized(address owner, address spender, uint accountId) internal view override returns (bool) {
     if (super._isAuthorized(owner, spender, accountId)) return true;
-
     // check if caller is manager
     return address(manager[accountId]) == msg.sender;
   }

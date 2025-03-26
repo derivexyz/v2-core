@@ -1,9 +1,8 @@
-pragma solidity ^0.8.18;
-
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import "openzeppelin/access/Ownable.sol";
 
 import {LyraERC20, Ownable} from "../../src/l2/LyraERC20.sol";
 
