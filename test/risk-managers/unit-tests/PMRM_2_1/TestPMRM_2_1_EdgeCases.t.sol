@@ -314,9 +314,9 @@ contract UNIT_TestPMRM_2_1_EdgeCases is PMRM_2_1SimTest {
 
     IPMRM_2_1.Portfolio memory portfolio = pmrm_2_1.arrangePortfolio(aliceAcc);
 
-    int mtm = lib.getScenarioMtM(portfolio, lib.getBasisContingencyScenarios()[0]);
+    int mtm = lib.getScenarioMtMDiff(portfolio, lib.getBasisContingencyScenarios()[0]);
     assertLt(mtm, 0);
-    mtm = lib.getScenarioMtM(portfolio, lib.getBasisContingencyScenarios()[1]);
+    mtm = lib.getScenarioMtMDiff(portfolio, lib.getBasisContingencyScenarios()[1]);
     assertGt(mtm, 0);
   }
 }

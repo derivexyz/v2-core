@@ -137,7 +137,7 @@ contract TestPMRM_2_1_BaseAsset is PMRM_2_1TestBase {
     newManager.setCollateralSpotFeed(address(baseAsset), ISpotFeed(feed));
     newLib.setCollateralParameters(
       address(baseAsset),
-      IPMRMLib_2_1.CollateralParameters({isRiskCancelling: true, MMHaircut: 0.02e18, IMHaircut: 0.01e18})
+      IPMRMLib_2_1.CollateralParameters({isEnabled: true, isRiskCancelling: true, MMHaircut: 0.02e18, IMHaircut: 0.01e18})
     );
 
     // create new account for that manager

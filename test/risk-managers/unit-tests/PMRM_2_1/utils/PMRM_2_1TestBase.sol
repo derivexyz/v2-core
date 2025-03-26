@@ -39,7 +39,7 @@ import {IPMRMLib_2_1} from "../../../../../src/interfaces/IPMRMLib_2_1.sol";
 
 import "../../../../shared/utils/JsonMechIO.sol";
 import {Config} from "../../../../config-test.sol";
-import {TransparentUpgradeableProxy} from "openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy, ProxyAdmin, ITransparentUpgradeableProxy} from "openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 library StringUtils {
   function uintToString(uint value) internal pure returns (string memory) {
@@ -89,6 +89,7 @@ contract PMRM_2_1TestBase is JsonMechIO {
 
   BasePortfolioViewer viewer;
   PMRMLib_2_1 lib;
+  ProxyAdmin proxyAdmin;
 
   mapping(address => string) assetLabel;
 
@@ -119,6 +120,9 @@ contract PMRM_2_1TestBase is JsonMechIO {
 
     PMRM_2_1Public imp = new PMRM_2_1Public();
 
+    // record logs
+    vm.recordLogs();
+
     TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
       address(imp),
       address(this),
@@ -143,6 +147,16 @@ contract PMRM_2_1TestBase is JsonMechIO {
       )
     );
 
+    Vm.Log[] memory logs = vm.getRecordedLogs();
+    proxyAdmin;
+    for (uint i = 0; i < logs.length; i++) {
+      if (logs[i].topics[0] == keccak256("AdminChanged(address,address)")) {
+        (address oldAdmin, address newAdmin) = abi.decode(logs[i].data, (address, address));
+        proxyAdmin = ProxyAdmin(newAdmin);
+        break;
+      }
+    }
+
     pmrm_2_1 = PMRM_2_1Public(address(proxy));
 
     setDefaultParameters();
@@ -154,7 +168,7 @@ contract PMRM_2_1TestBase is JsonMechIO {
     pmrm_2_1.setCollateralSpotFeed(address(baseAsset), ISpotFeed(feed));
     lib.setCollateralParameters(
       address(baseAsset),
-      IPMRMLib_2_1.CollateralParameters({isRiskCancelling: true, MMHaircut: 0.02e18, IMHaircut: 0.01e18})
+      IPMRMLib_2_1.CollateralParameters({isEnabled: true, isRiskCancelling: true, MMHaircut: 0.02e18, IMHaircut: 0.01e18})
     );
 
     _setupAliceAndBob();

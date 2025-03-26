@@ -83,6 +83,7 @@ interface IPMRMLib_2_1 {
 
   // Defined once per collateral
   struct CollateralParameters {
+    bool isEnabled;
     bool isRiskCancelling;
     /// @dev % value of collateral to subtract from MM. Must be <= 1
     uint MMHaircut;
@@ -96,7 +97,7 @@ interface IPMRMLib_2_1 {
     IPMRM_2_1.Scenario[] memory scenarios
   ) external view returns (int margin, int markToMarket, uint worstScenario);
 
-  function getScenarioMtM(IPMRM_2_1.Portfolio memory portfolio, IPMRM_2_1.Scenario memory scenario)
+  function getScenarioMtMDiff(IPMRM_2_1.Portfolio memory portfolio, IPMRM_2_1.Scenario memory scenario)
     external
     view
     returns (int scenarioMtM);
@@ -123,4 +124,6 @@ interface IPMRMLib_2_1 {
   error PMRM_2_1L_InvalidCollateralParameters();
   /// @dev emitted when invalid parameters passed into _getMarginAndMarkToMarket
   error PMRM_2_1L_InvalidGetMarginState();
+  /// @dev emitted when doing a risk check on a disabled collateral
+  error PMRM_2_1L_CollateralDisabled();
 }

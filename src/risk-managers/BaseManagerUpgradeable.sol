@@ -12,7 +12,7 @@ abstract contract BaseManagerUpgradeable is BaseManager {
     IDutchAuction _liquidation,
     IBasePortfolioViewer _viewer,
     uint _maxAccountSize
-  ) internal initializer {
+  ) internal onlyInitializing {
     __Ownable_init(msg.sender);
 
     subAccounts = _subAccounts;

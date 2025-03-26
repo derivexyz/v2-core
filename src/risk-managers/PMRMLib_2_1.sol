@@ -106,7 +106,10 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
   }
 
   function setCollateralParameters(address asset, CollateralParameters memory params) external onlyOwner {
-    require(params.MMHaircut <= 1e18 && params.MMHaircut <= 1e18, PMRM_2_1L_InvalidCollateralParameters());
+    // once enabled cannot be disabled, must have haircuts set to 100% instead. Otherwise subaccoutns may be frozen
+    require(
+      params.isEnabled && params.MMHaircut <= 1e18 && params.MMHaircut <= 1e18, PMRM_2_1L_InvalidCollateralParameters()
+    );
     // Note: asset must be added to pmrm to be used as collateral. If
     collaterals[asset] = params;
   }
@@ -134,7 +137,7 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
       IPMRM_2_1.Scenario memory scenario = scenarios[i];
 
       // SPAN value with discounting applied, and only the *difference from MtM*
-      int scenarioMTM = getScenarioMtM(portfolio, scenario);
+      int scenarioMTM = getScenarioMtMDiff(portfolio, scenario);
       if (scenarioMTM < minSPAN) {
         minSPAN = scenarioMTM;
         worstScenario = i;
@@ -160,7 +163,7 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
   }
 
   // @dev Calculates the DIFFERENCE to the atm MTM
-  function getScenarioMtM(IPMRM_2_1.Portfolio memory portfolio, IPMRM_2_1.Scenario memory scenario)
+  function getScenarioMtMDiff(IPMRM_2_1.Portfolio memory portfolio, IPMRM_2_1.Scenario memory scenario)
     public
     view
     returns (int scenarioMtM)
@@ -368,6 +371,8 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     for (uint i = 0; i < portfolio.collaterals.length; ++i) {
       IPMRM_2_1.CollateralHoldings memory collateral = portfolio.collaterals[i];
       CollateralParameters memory params = collaterals[address(collateral.asset)];
+
+      require(params.isEnabled, PMRM_2_1L_CollateralDisabled());
 
       portfolio.totalMtM += collateral.value.toInt256();
 

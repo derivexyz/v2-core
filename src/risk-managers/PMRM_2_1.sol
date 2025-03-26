@@ -32,8 +32,6 @@ import {IWrappedERC20Asset} from "../interfaces/IWrappedERC20Asset.sol";
 import {ReentrancyGuardUpgradeable} from "openzeppelin-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {BaseManagerUpgradeable} from "./BaseManagerUpgradeable.sol";
 
-import "forge-std/console.sol";
-
 /**
  * @title PMRM_2_1
  * @author Derive
@@ -66,9 +64,9 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
 
   IPMRM_2_1.Scenario[] internal marginScenarios;
 
-  bytes[49] private __gap;
-
   mapping(address => ISpotFeed) public collateralSpotFeeds;
+
+  bytes[49] private __gap;
 
   ////////////////////////
   //    Constructor     //
@@ -89,7 +87,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
     IBasePortfolioViewer viewer_,
     IPMRMLib_2_1 lib_,
     uint maxExpiries_
-  ) public initializer {
+  ) external virtual initializer {
     __ReentrancyGuard_init();
 
     __BaseManagerUpgradeable_init(subAccounts_, cashAsset_, liquidation_, viewer_, 128);
@@ -103,8 +101,6 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
 
     option = option_;
     perp = perp_;
-
-    console.log("maxExpiries_:", maxExpiries_);
 
     require(maxExpiries_ <= 30 && maxExpiries_ > 0, PMRM_2_1_InvalidMaxExpiries());
     maxExpiries = maxExpiries_;
@@ -284,7 +280,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
     returns (IPMRM_2_1.Portfolio memory portfolio)
   {
     (uint seenExpiries, uint collateralCount, PortfolioExpiryData[] memory expiryCount) =
-      _countExpiriesAndOptions(assets);
+            _countExpiriesAndAssets(assets);
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     portfolio.collaterals = new CollateralHoldings[](collateralCount);
@@ -293,7 +289,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
     portfolio.stablePrice = stablePrice;
 
     _initialiseExpiries(portfolio, expiryCount);
-    _arrangeOptions(accountId, portfolio, assets, collateralCount, expiryCount);
+    _arrangeAssets(accountId, portfolio, assets, collateralCount, expiryCount);
 
     if (portfolio.perpPosition != 0) {
       (uint perpPrice, uint perpConfidence) = perp.getPerpPrice();
@@ -306,7 +302,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
     return portfolio;
   }
 
-  function _countExpiriesAndOptions(ISubAccounts.AssetBalance[] memory assets)
+  function _countExpiriesAndAssets(ISubAccounts.AssetBalance[] memory assets)
     internal
     view
     returns (uint seenExpiries, uint collateralCount, IPMRM_2_1.PortfolioExpiryData[] memory expiryCount)
@@ -383,7 +379,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
     }
   }
 
-  function _arrangeOptions(
+  function _arrangeAssets(
     uint accountId,
     IPMRM_2_1.Portfolio memory portfolio,
     ISubAccounts.AssetBalance[] memory assets,

@@ -370,7 +370,7 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
         revert("Invalid vol shock");
       }
       _logBN("Dampening factor: ", scenarios[i].dampeningFactor);
-      int scenarioMtM = lib.getScenarioMtM(portfolio, scenarios[i]);
+      int scenarioMtM = lib.getScenarioMtMDiff(portfolio, scenarios[i]);
       _logBN("Scenario MTM: ", scenarioMtM);
 
       string memory basePath = string.concat(TEST_NAME, ".Result.reg_losses[", vm.toString(i), "]");
@@ -584,6 +584,7 @@ contract UNIT_TestPMRM_2_1_PortfolioCasesNEW is PMRM_2_1TestBase {
       string memory name = JSON.readString(string.concat(basePath, "Name"));
 
       IPMRMLib_2_1.CollateralParameters memory collatParams = IPMRMLib_2_1.CollateralParameters({
+        isEnabled: true,
         isRiskCancelling: JSON.readBool(string.concat(basePath, "IsRiskCancelling")),
         MMHaircut: _readBNUint(JSON, basePath, "MMHaircut"),
         IMHaircut: _readBNUint(JSON, basePath, "IMHaircut")
