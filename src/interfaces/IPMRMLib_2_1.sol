@@ -106,6 +106,8 @@ interface IPMRMLib_2_1 {
 
   function getBasisContingencyScenarios() external view returns (IPMRM_2_1.Scenario[] memory);
 
+  function getCollateralParameters(address collateral) external view returns (CollateralParameters memory);
+
   ////////////
   // Errors //
   ////////////

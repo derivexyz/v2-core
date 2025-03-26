@@ -169,7 +169,7 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     returns (int scenarioMtM)
   {
     // Perp - we ignore mark value it is unaffected by any shock, and we only care about the difference to mtm
-    scenarioMtM += _getShockedPerpValue(portfolio.perpPosition, portfolio.perpPrice, scenario.spotShock).multiplyDecimal(
+    scenarioMtM += _getShockedPerpDiff(portfolio.perpPosition, portfolio.perpPrice, scenario.spotShock).multiplyDecimal(
       scenario.dampeningFactor.toInt256()
     );
 
@@ -220,10 +220,12 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     // Collateral
     for (uint j = 0; j < portfolio.collaterals.length; ++j) {
       IPMRM_2_1.CollateralHoldings memory collateral = portfolio.collaterals[j];
+      // We only care about the difference to mtm, so we ignore those that are not risk cancelling
       if (!collaterals[address(collateral.asset)].isRiskCancelling) {
         continue;
       }
 
+      // Otherwise, we calculate the difference to the mtm, by shocking the cached value by the spot shock (i.e. -0.2)
       scenarioMtM += collateral.value.toInt256().multiplyDecimal(scenario.spotShock.toInt256() - 1e18).multiplyDecimal(
         scenario.dampeningFactor.toInt256()
       );
@@ -270,13 +272,15 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     return totalMTM;
   }
 
+  /// @dev kstar is an estimate of where the vol surface flattens out and, hence, the approximate point where we cap
+  /// the vol multiplier
   function _getKStar(int sqrtTau) internal view returns (int) {
     int volParam = skewShockParams.volParamStatic + sqrtTau.multiplyDecimal(skewShockParams.volParamScale);
     int kStar = sqrtTau.multiplyDecimal(skewShockParams.widthScale).multiplyDecimal(volParam);
     return SignedMath.max(skewShockParams.minKStar, kStar);
   }
 
-  // calculate MTM with given shock
+  /// @dev calculate MTM with given skew shock, where the "wings" of the vol surface are raised/reduced
   function _getExpirySkewedShockedMTM(
     IPMRM_2_1.ExpiryHoldings memory expiry,
     IPMRM_2_1.VolShockDirection volShockDirection
@@ -327,7 +331,7 @@ contract PMRMLib_2_1 is IPMRMLib_2_1, Ownable2Step {
     return totalMTM;
   }
 
-  function _getShockedPerpValue(int position, uint perpPrice, uint spotShock) internal pure returns (int) {
+  function _getShockedPerpDiff(int position, uint perpPrice, uint spotShock) internal pure returns (int) {
     if (position == 0) {
       return 0;
     }

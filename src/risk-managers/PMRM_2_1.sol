@@ -225,7 +225,7 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
         riskAdding = true;
       } else {
         require(
-          asset == cashAsset || asset == option || address(collateralSpotFeeds[address(asset)]) != address(0),
+          asset == cashAsset || asset == option || _isCollateralEnabled(address(asset)),
           PMRM_2_1_UnsupportedAsset()
         );
         if (assetDeltas[i].delta < 0) {
@@ -247,6 +247,10 @@ contract PMRM_2_1 is IPMRM_2_1, ILiquidatableManager, BaseManagerUpgradeable, Re
       return;
     }
     _assessRisk(caller, accountId, assetBalances);
+  }
+
+  function _isCollateralEnabled(address asset) internal view returns (bool) {
+    return address(collateralSpotFeeds[asset]) != address(0) && lib.getCollateralParameters(asset).isEnabled;
   }
 
   ///////////////////////
