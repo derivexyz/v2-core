@@ -1,0 +1,1223 @@
+{
+  "Scenario": {
+    "Cash": 0,
+    "Collaterals": [
+      {
+        "Name": "WEETH",
+        "Amount": 16.92851633906639,
+        "Price": 2840.575164415104,
+        "Confidence": 1.0,
+        "IsRiskCancelling": true,
+        "IMHaircut": 0.009999999999999995,
+        "MMHaircut": 0.05,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "RSWETH",
+        "Amount": 0.02134205908028619,
+        "Price": 2765.7082515126017,
+        "Confidence": 1.0,
+        "IsRiskCancelling": true,
+        "IMHaircut": 0.010000000000000002,
+        "MMHaircut": 0.03,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "DAI",
+        "Amount": 0.8551211137026016,
+        "Price": 1.0000421948282698,
+        "Confidence": 1.0,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.020000000000000004,
+        "MMHaircut": 0.08,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "SDAI",
+        "Amount": 11.496680995862555,
+        "Price": 1.1470506863329273,
+        "Confidence": 1.0,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.03,
+        "MMHaircut": 0.12,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "BTC",
+        "Amount": 7.564125495155549,
+        "Price": 95663.50604855,
+        "Confidence": 1.0,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.04999999999999999,
+        "MMHaircut": 0.25,
+        "ConfidenceFactor": 0.55
+      }
+    ],
+    "SpotPrice": 2681.6029850999994,
+    "SpotConfidence": 1.0,
+    "NumPerps": -0.3840176337968124,
+    "PerpPrice": 2681.633263239055,
+    "PerpConfidence": 1.0,
+    "UnrealisedPerpPNL": 122.25844093055078,
+    "UnrealisedFunding": 0.0,
+    "StablePrice": 1.00019088635,
+    "StableConfidence": 1.0,
+    "Options": [
+      {
+        "Expiry": 8657252,
+        "ExiryTs": 1748592000,
+        "Strike": 4168.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9336721541894722,
+        "MarkVol": 0.7139521467830713,
+        "Amount": 53.7481866347446,
+        "k": 0.4230296184374619,
+        "linear_mult_cap": 0.12380268811161009,
+        "abs_mult_cap": 0.12380268811161009,
+        "k_star": 1.1476631066143033,
+        "linear_multiplier": 1.0456337784246534,
+        "abs_multiplier": 1.0456337784246534
+      },
+      {
+        "Expiry": 18938852,
+        "ExiryTs": 1758873600,
+        "Strike": 1249.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.8401635979647669,
+        "MarkVol": 0.7501908342988203,
+        "Amount": -37.37652126244244,
+        "k": -0.8076992581364058,
+        "linear_mult_cap": 0.1112525143612097,
+        "abs_mult_cap": 0.1112525143612097,
+        "k_star": 1.619660487729412,
+        "linear_multiplier": 0.9445201176443275,
+        "abs_multiplier": 1.0554798823556726
+      },
+      {
+        "Expiry": 18938852,
+        "ExiryTs": 1758873600,
+        "Strike": 9317.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.8401635979647669,
+        "MarkVol": 0.8247106542980789,
+        "Amount": 15.229295766083297,
+        "k": 1.2017981991884417,
+        "linear_mult_cap": 0.1112525143612097,
+        "abs_mult_cap": 0.1112525143612097,
+        "k_star": 1.619660487729412,
+        "linear_multiplier": 1.082550060600617,
+        "abs_multiplier": 1.082550060600617
+      },
+      {
+        "Expiry": 2004452,
+        "ExiryTs": 1741939200,
+        "Strike": 573.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9879960851581324,
+        "MarkVol": 1.0901587610163772,
+        "Amount": -90.23083367571398,
+        "k": -1.5465677981730812,
+        "linear_mult_cap": 0.1373943707057679,
+        "abs_mult_cap": 0.1373943707057679,
+        "k_star": 0.579645903738564,
+        "linear_multiplier": 0.8626056292942321,
+        "abs_multiplier": 1.1373943707057679
+      },
+      {
+        "Expiry": 3214052,
+        "ExiryTs": 1743148800,
+        "Strike": 8602.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9788248561009755,
+        "MarkVol": 0.9247166607631531,
+        "Amount": 45.27427442041332,
+        "k": 1.160306592713147,
+        "linear_mult_cap": 0.13403778521437246,
+        "abs_mult_cap": 0.13403778521437246,
+        "k_star": 0.7254195415721207,
+        "linear_multiplier": 1.1340377852143724,
+        "abs_multiplier": 1.1340377852143724
+      },
+      {
+        "Expiry": 8657252,
+        "ExiryTs": 1748592000,
+        "Strike": 8829.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9336721541894722,
+        "MarkVol": 0.9022314233782807,
+        "Amount": 75.92345381118554,
+        "k": 1.1736350719058415,
+        "linear_mult_cap": 0.12380268811161009,
+        "abs_mult_cap": 0.12380268811161009,
+        "k_star": 1.1476631066143033,
+        "linear_multiplier": 1.12380268811161,
+        "abs_multiplier": 1.12380268811161
+      },
+      {
+        "Expiry": 11076452,
+        "ExiryTs": 1751011200,
+        "Strike": 8416.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9095251425997705,
+        "MarkVol": 0.8646217846970377,
+        "Amount": 38.27693768225035,
+        "k": 1.1202628648243314,
+        "linear_mult_cap": 0.12036758578692273,
+        "abs_mult_cap": 0.12036758578692273,
+        "k_star": 1.281863086692447,
+        "linear_multiplier": 1.1051932440254433,
+        "abs_multiplier": 1.1051932440254433
+      },
+      {
+        "Expiry": 8657252,
+        "ExiryTs": 1748592000,
+        "Strike": 7309.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9336721541894722,
+        "MarkVol": 0.8549319709565842,
+        "Amount": -38.405173988634075,
+        "k": 0.9846997794846506,
+        "linear_mult_cap": 0.12380268811161009,
+        "abs_mult_cap": 0.12380268811161009,
+        "k_star": 1.1476631066143033,
+        "linear_multiplier": 1.1062232278623552,
+        "abs_multiplier": 1.1062232278623552
+      },
+      {
+        "Expiry": 3214052,
+        "ExiryTs": 1743148800,
+        "Strike": 7544.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9788248561009755,
+        "MarkVol": 0.9247166607631531,
+        "Amount": 1.5360421709572876,
+        "k": 1.029064403682759,
+        "linear_mult_cap": 0.13403778521437246,
+        "abs_mult_cap": 0.13403778521437246,
+        "k_star": 0.7254195415721207,
+        "linear_multiplier": 1.1340377852143724,
+        "abs_multiplier": 1.1340377852143724
+      },
+      {
+        "Expiry": 2004452,
+        "ExiryTs": 1741939200,
+        "Strike": 9979.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9879960851581324,
+        "MarkVol": 0.8908872650169892,
+        "Amount": 13.525248686980888,
+        "k": 1.3107846489964918,
+        "linear_mult_cap": 0.1373943707057679,
+        "abs_mult_cap": 0.1373943707057679,
+        "k_star": 0.579645903738564,
+        "linear_multiplier": 1.1373943707057679,
+        "abs_multiplier": 1.1373943707057679
+      },
+      {
+        "Expiry": 11076452,
+        "ExiryTs": 1751011200,
+        "Strike": 3446.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9095251425997705,
+        "MarkVol": 0.6722004917538676,
+        "Amount": 28.035013948859557,
+        "k": 0.22734234693471525,
+        "linear_mult_cap": 0.12036758578692273,
+        "abs_mult_cap": 0.12036758578692273,
+        "k_star": 1.281863086692447,
+        "linear_multiplier": 1.0213475602283493,
+        "abs_multiplier": 1.0213475602283493
+      },
+      {
+        "Expiry": 2004452,
+        "ExiryTs": 1741939200,
+        "Strike": 8544.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9879960851581324,
+        "MarkVol": 0.8908872650169892,
+        "Amount": 76.95498700898702,
+        "k": 1.1555310463121553,
+        "linear_mult_cap": 0.1373943707057679,
+        "abs_mult_cap": 0.1373943707057679,
+        "k_star": 0.579645903738564,
+        "linear_multiplier": 1.1373943707057679,
+        "abs_multiplier": 1.1373943707057679
+      },
+      {
+        "Expiry": 2004452,
+        "ExiryTs": 1741939200,
+        "Strike": 2340.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9879960851581324,
+        "MarkVol": 0.6740457373896178,
+        "Amount": 57.83740767000859,
+        "k": -0.13954730653607372,
+        "linear_mult_cap": 0.1373943707057679,
+        "abs_mult_cap": 0.1373943707057679,
+        "k_star": 0.579645903738564,
+        "linear_multiplier": 0.9669228847447247,
+        "abs_multiplier": 1.0330771152552753
+      },
+      {
+        "Expiry": 2004452,
+        "ExiryTs": 1741939200,
+        "Strike": 7417.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9879960851581324,
+        "MarkVol": 0.8908872650169892,
+        "Amount": 80.26951694674642,
+        "k": 1.0140764268487372,
+        "linear_mult_cap": 0.1373943707057679,
+        "abs_mult_cap": 0.1373943707057679,
+        "k_star": 0.579645903738564,
+        "linear_multiplier": 1.1373943707057679,
+        "abs_multiplier": 1.1373943707057679
+      },
+      {
+        "Expiry": 11076452,
+        "ExiryTs": 1751011200,
+        "Strike": 1299.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9095251425997705,
+        "MarkVol": 0.8110590397916607,
+        "Amount": -97.62434561792193,
+        "k": -0.7482770534825601,
+        "linear_mult_cap": 0.12036758578692273,
+        "abs_mult_cap": 0.12036758578692273,
+        "k_star": 1.281863086692447,
+        "linear_multiplier": 0.9297364099469871,
+        "abs_multiplier": 1.0702635900530129
+      },
+      {
+        "Expiry": 2004452,
+        "ExiryTs": 1741939200,
+        "Strike": 4646.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9879960851581324,
+        "MarkVol": 0.8452569339158514,
+        "Amount": -96.44776823873784,
+        "k": 0.5463083984425336,
+        "linear_mult_cap": 0.1373943707057679,
+        "abs_mult_cap": 0.1373943707057679,
+        "k_star": 0.579645903738564,
+        "linear_multiplier": 1.1294923299400073,
+        "abs_multiplier": 1.1294923299400073
+      },
+      {
+        "Expiry": 3214052,
+        "ExiryTs": 1743148800,
+        "Strike": 3834.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9788248561009755,
+        "MarkVol": 0.7545629226296127,
+        "Amount": 74.28709597967543,
+        "k": 0.35222050297505525,
+        "linear_mult_cap": 0.13403778521437246,
+        "abs_mult_cap": 0.13403778521437246,
+        "k_star": 0.7254195415721207,
+        "linear_multiplier": 1.0650807614357256,
+        "abs_multiplier": 1.0650807614357256
+      },
+      {
+        "Expiry": 5633252,
+        "ExiryTs": 1745568000,
+        "Strike": 6793.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9597478096662714,
+        "MarkVol": 0.8813984557120379,
+        "Amount": 98.87044739495579,
+        "k": 0.9183144527791768,
+        "linear_mult_cap": 0.12886772319932577,
+        "abs_mult_cap": 0.12886772319932577,
+        "k_star": 0.942897586787513,
+        "linear_multiplier": 1.1255078964767316,
+        "abs_multiplier": 1.1255078964767316
+      },
+      {
+        "Expiry": 26801252,
+        "ExiryTs": 1766736000,
+        "Strike": 3750.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.7683904635099059,
+        "MarkVol": 0.6570907541958019,
+        "Amount": -73.67237195125313,
+        "k": 0.27132985859814485,
+        "linear_mult_cap": 0.10390601650365704,
+        "abs_mult_cap": 0.10390601650365704,
+        "k_star": 1.8725663574946798,
+        "linear_multiplier": 1.0150557039821826,
+        "abs_multiplier": 1.0150557039821826
+      },
+      {
+        "Expiry": 11076452,
+        "ExiryTs": 1751011200,
+        "Strike": 6009.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9095251425997705,
+        "MarkVol": 0.7866267778962237,
+        "Amount": -56.34613925508158,
+        "k": 0.7833865541807683,
+        "linear_mult_cap": 0.12036758578692273,
+        "abs_mult_cap": 0.12036758578692273,
+        "k_star": 1.281863086692447,
+        "linear_multiplier": 1.0735603897511241,
+        "abs_multiplier": 1.0735603897511241
+      },
+      {
+        "Expiry": 11076452,
+        "ExiryTs": 1751011200,
+        "Strike": 9401.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9095251425997705,
+        "MarkVol": 0.8898185509072365,
+        "Amount": 8.783010906899875,
+        "k": 1.230944275425391,
+        "linear_mult_cap": 0.12036758578692273,
+        "abs_mult_cap": 0.12036758578692273,
+        "k_star": 1.281863086692447,
+        "linear_multiplier": 1.1155862839092239,
+        "abs_multiplier": 1.1155862839092239
+      },
+      {
+        "Expiry": 26801252,
+        "ExiryTs": 1766736000,
+        "Strike": 4556.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.7683904635099059,
+        "MarkVol": 0.6815071938107864,
+        "Amount": 14.762712600524821,
+        "k": 0.4660190642007611,
+        "linear_mult_cap": 0.10390601650365704,
+        "abs_mult_cap": 0.10390601650365704,
+        "k_star": 1.8725663574946798,
+        "linear_multiplier": 1.025858728253907,
+        "abs_multiplier": 1.025858728253907
+      },
+      {
+        "Expiry": 5633252,
+        "ExiryTs": 1745568000,
+        "Strike": 6526.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9597478096662714,
+        "MarkVol": 0.8699955636156982,
+        "Amount": 6.2503432012129,
+        "k": 0.8782159807411407,
+        "linear_mult_cap": 0.12886772319932577,
+        "abs_mult_cap": 0.12886772319932577,
+        "k_star": 0.942897586787513,
+        "linear_multiplier": 1.1200275570764378,
+        "abs_multiplier": 1.1200275570764378
+      },
+      {
+        "Expiry": 8657252,
+        "ExiryTs": 1748592000,
+        "Strike": 5387.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9336721541894722,
+        "MarkVol": 0.7769892614290032,
+        "Amount": 30.98171688443466,
+        "k": 0.6795819576847928,
+        "linear_mult_cap": 0.12380268811161009,
+        "abs_mult_cap": 0.12380268811161009,
+        "k_star": 1.1476631066143033,
+        "linear_multiplier": 1.0733090335209345,
+        "abs_multiplier": 1.0733090335209345
+      },
+      {
+        "Expiry": 3214052,
+        "ExiryTs": 1743148800,
+        "Strike": 4696.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9788248561009755,
+        "MarkVol": 0.8289479417821224,
+        "Amount": -19.819392087450012,
+        "k": 0.5550229408773979,
+        "linear_mult_cap": 0.13403778521437246,
+        "abs_mult_cap": 0.13403778521437246,
+        "k_star": 0.7254195415721207,
+        "linear_multiplier": 1.1025531316362778,
+        "abs_multiplier": 1.1025531316362778
+      },
+      {
+        "Expiry": 18938852,
+        "ExiryTs": 1758873600,
+        "Strike": 4175.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.8401635979647669,
+        "MarkVol": 0.6787504334595637,
+        "Amount": -76.97801393126329,
+        "k": 0.39907186902297254,
+        "linear_mult_cap": 0.1112525143612097,
+        "abs_mult_cap": 0.1112525143612097,
+        "k_star": 1.619660487729412,
+        "linear_multiplier": 1.027411762635436,
+        "abs_multiplier": 1.027411762635436
+      },
+      {
+        "Expiry": 18938852,
+        "ExiryTs": 1758873600,
+        "Strike": 1895.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.8401635979647669,
+        "MarkVol": 0.673942784280004,
+        "Amount": 2.4392533610303673,
+        "k": -0.3908236507454566,
+        "linear_mult_cap": 0.1112525143612097,
+        "abs_mult_cap": 0.1112525143612097,
+        "k_star": 1.619660487729412,
+        "linear_multiplier": 0.973154797473504,
+        "abs_multiplier": 1.026845202526496
+      },
+      {
+        "Expiry": 26801252,
+        "ExiryTs": 1766736000,
+        "Strike": 7580.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.7683904635099059,
+        "MarkVol": 0.7651637550777353,
+        "Amount": 88.13550897024825,
+        "k": 0.9750872182701058,
+        "linear_mult_cap": 0.10390601650365704,
+        "abs_mult_cap": 0.10390601650365704,
+        "k_star": 1.8725663574946798,
+        "linear_multiplier": 1.054106188647772,
+        "abs_multiplier": 1.054106188647772
+      },
+      {
+        "Expiry": 18938852,
+        "ExiryTs": 1758873600,
+        "Strike": 4110.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.8401635979647669,
+        "MarkVol": 0.6766193276860947,
+        "Amount": -22.67628459469381,
+        "k": 0.3833805392282969,
+        "linear_mult_cap": 0.1112525143612097,
+        "abs_mult_cap": 0.1112525143612097,
+        "k_star": 1.619660487729412,
+        "linear_multiplier": 1.0263339442243837,
+        "abs_multiplier": 1.0263339442243837
+      },
+      {
+        "Expiry": 5633252,
+        "ExiryTs": 1745568000,
+        "Strike": 7316.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9597478096662714,
+        "MarkVol": 0.9022508224884299,
+        "Amount": -1.8342103782710666,
+        "k": 0.9924855130986312,
+        "linear_mult_cap": 0.12886772319932577,
+        "abs_mult_cap": 0.12886772319932577,
+        "k_star": 0.942897586787513,
+        "linear_multiplier": 1.1288677231993258,
+        "abs_multiplier": 1.1288677231993258
+      }
+    ],
+    "OptionFeeds": [
+      {
+        "FeedExpiry": 8657252,
+        "Forward": 2730.2868747813686,
+        "ForwardConfidence": 1.0,
+        "Rate": 0.25,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.037574082463560592",
+          "0.16849493188097248",
+          "-0.210633086165414528",
+          "-0.114253608478606368",
+          "0.48027331501752384",
+          2730.2868747813686,
+          "0.27452181633688"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 18938852,
+        "Forward": 2801.18485249767,
+        "ForwardConfidence": 1.0,
+        "Rate": 0.29,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.051252167297758784",
+          "0.25382695424078288",
+          "-0.07902495377539872",
+          "-0.083279458781217952",
+          "0.790699139407959168",
+          2801.18485249767,
+          "0.600549213597159936"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 2004452,
+        "Forward": 2690.422476937813,
+        "ForwardConfidence": 1.0,
+        "Rate": 0.19,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.013247160300999274",
+          "0.076884552028962688",
+          "-0.386659718191614976",
+          "-0.095073882757906",
+          "0.180724559364235648",
+          2690.422476937813,
+          "0.063562278082191784"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 3214052,
+        "Forward": 2695.7814942763334,
+        "ForwardConfidence": 1.0,
+        "Rate": 0.21000000000000002,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.024537690770119612",
+          "0.109352002425581584",
+          "-0.415043334267211712",
+          "-0.119132790857374784",
+          "0.172435504151341056",
+          2695.7814942763334,
+          "0.10191907661086"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 11076452,
+        "Forward": 2745.2490272903915,
+        "ForwardConfidence": 1.0,
+        "Rate": 0.27,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.046070200405977232",
+          "0.195834452450896224",
+          "-0.208147474605539104",
+          "-0.13536259372264304",
+          "0.540183983238939136",
+          2745.2490272903915,
+          "0.351234145104010048"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 5633252,
+        "Forward": 2711.706705878741,
+        "ForwardConfidence": 1.0,
+        "Rate": 0.22999999999999998,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.03238616829727426",
+          "0.136118440184388432",
+          "-0.29971908142941248",
+          "-0.12737532672416784",
+          "0.32482571527434912",
+          2711.706705878741,
+          "0.17863077118214"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 26801252,
+        "Forward": 2858.868683553629,
+        "ForwardConfidence": 1.0,
+        "Rate": 0.31,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.184651883600824896",
+          "0.27007198857772224",
+          "-0.018780576719822544",
+          "-0.03283364005471412",
+          "0.608952685023779584",
+          2858.868683553629,
+          "0.849864282090310016"
+        ],
+        "OptionVolConfidences": 0.95
+      }
+    ],
+    "LastEntryPrice": 3000.0,
+    "FundingIndex": -0.0,
+    "SystemFundingIndex": 0.0
+  },
+  "Parameters": {
+    "Scenarios": [
+      {
+        "SpotShock": 1.18,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.135,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.135,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.135,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.09,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.09,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.09,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.045,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.045,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.045,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.955,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.955,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.955,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.91,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.91,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.91,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.865,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.865,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.865,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.8200000000000001,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.33999999999999997,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.054545454545454536
+      },
+      {
+        "SpotShock": 0.6699999999999999,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.10909090909090907
+      },
+      {
+        "SpotShock": 1.5,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.072
+      },
+      {
+        "SpotShock": 2.0,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.036
+      },
+      {
+        "SpotShock": 3.0,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.018
+      },
+      {
+        "SpotShock": 4.0,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.011999999999999999
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "LINEAR",
+        "DampeningFactor": 1.0
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "ABS",
+        "DampeningFactor": 1.0
+      }
+    ],
+    "SkewShock": {
+      "LINEAR_SCALE_CAP": 0.15,
+      "LINEAR_CBASE": -0.05,
+      "ABS_SCALE_CAP": 0.15,
+      "ABS_CBASE": -0.05,
+      "MIN_K_STAR": 0.01,
+      "MIN_WIDTH_SCALE": 4.0,
+      "VOL_PARAM_STATIC": 0.6,
+      "VOL_PARAM_SCALE": -0.1
+    },
+    "VolShock": {
+      "VOLRANGEUP": 0.5,
+      "MIN_VOL_EVAL_SHOCKED": 0.45,
+      "VOLRANGEDOWN": 10,
+      "SHORTTERMPOWER": 0.3,
+      "LONGTERMPOWER": 0.13,
+      "DTE_FLOOR": 1.0
+    },
+    "Margin": {
+      "MM_LOSS_FACTOR": 0.8,
+      "IM_LOSS_FACTOR": 1.0,
+      "SHORT_RATE_MULTSCALE": 0.5,
+      "LONG_RATE_MULTSCALE": 1,
+      "SHORT_RATE_ADDSCALE": 0.08,
+      "LONG_RATE_ADDSCALE": 0.08,
+      "BASE_STATIC_DISCOUNT": 0.95,
+      "BASE_STATIC_DISCOUNT_NEG": 1.04
+    },
+    "BasisContingency": {
+      "SCENARIO_SPOT_UP": 1.045,
+      "SCENARIO_SPOT_DOWN": 0.955,
+      "BASIS_CONT_ADD_FACTOR": 0.5,
+      "BASIS_CONT_MULT_FACTOR": 2.0
+    },
+    "OtherContingency": {
+      "PEG_LOSS_THRESHOLD": 0.98,
+      "PEG_LOSS_FACTOR": 2.0,
+      "CONF_THRESHOLD": 0.55,
+      "CONF_MARGIN": 1.0,
+      "MM_PERP_PERCENT": 0.015,
+      "IM_PERP_PERCENT": 0.005000000000000001,
+      "IM_PERP_PERCENT_NORMAL": 0.02,
+      "MM_OPTION_PERCENT": 0.003,
+      "IM_OPTION_PERCENT": 0.002,
+      "IM_OPTION_PERCENT_NORMAL": 0.005
+    }
+  },
+  "Result": {
+    "worst_reg_loss": -309232.32513299986,
+    "worst_tail_loss": -35477.252492597036,
+    "worst_skew_loss": -204535.28438641957,
+    "reg_losses": [
+      [
+        "0.179999999999999993",
+        1,
+        "-309232.325132999860215932"
+      ],
+      [
+        "0.135000000000000009",
+        -1,
+        "-262122.325554798153461888"
+      ],
+      [
+        "0.135000000000000009",
+        0,
+        "-288287.967909627768676728"
+      ],
+      [
+        "0.135000000000000009",
+        1,
+        "-284294.565878847031854093"
+      ],
+      [
+        "0.089999999999999997",
+        -1,
+        "-236588.194669415504904464"
+      ],
+      [
+        "0.089999999999999997",
+        0,
+        "-261161.079363962140632793"
+      ],
+      [
+        "0.089999999999999997",
+        1,
+        "-258939.841824678442208096"
+      ],
+      [
+        "0.044999999999999998",
+        -1,
+        "-211054.063784032594412565"
+      ],
+      [
+        "0.044999999999999998",
+        0,
+        "-233612.389609653997467831"
+      ],
+      [
+        "0.044999999999999998",
+        1,
+        "-233129.663834388367831707"
+      ],
+      [
+        0,
+        -1,
+        "-185519.932898649771232158"
+      ],
+      [
+        0,
+        0,
+        "-205586.135292697057593614"
+      ],
+      [
+        0,
+        1,
+        "-206824.271732770226662979"
+      ],
+      [
+        "-0.044999999999999998",
+        -1,
+        "-159985.802013266860740259"
+      ],
+      [
+        "-0.044999999999999998",
+        0,
+        "-177020.961983919201884419"
+      ],
+      [
+        "-0.044999999999999998",
+        1,
+        "-179986.093654720025369897"
+      ],
+      [
+        "-0.089999999999999997",
+        -1,
+        "-134451.671127884299494326"
+      ],
+      [
+        "-0.089999999999999997",
+        0,
+        "-147858.577871640300145373"
+      ],
+      [
+        "-0.089999999999999997",
+        1,
+        "-152584.505467035894980654"
+      ],
+      [
+        "-0.135000000000000009",
+        -1,
+        "-108178.114581454967265017"
+      ],
+      [
+        "-0.135000000000000009",
+        0,
+        "-118061.784294630488147959"
+      ],
+      [
+        "-0.135000000000000009",
+        1,
+        "-124601.945920706333708949"
+      ],
+      [
+        "-0.179999999999999993",
+        1,
+        "-96041.19834397682279814"
+      ]
+    ],
+    "tail_losses": [
+      [
+        "-0.660000000000000031",
+        1,
+        "11641.397016574832377955"
+      ],
+      [
+        "-0.330000000000000016",
+        1,
+        "290.354990290777550399"
+      ],
+      [
+        "0.5",
+        1,
+        "-35477.25249259703559801"
+      ],
+      [
+        "1",
+        1,
+        "-28392.385168905075261137"
+      ],
+      [
+        "2",
+        1,
+        "-22710.573805252806778299"
+      ],
+      [
+        "3",
+        1,
+        "-18528.877928893958596746"
+      ]
+    ],
+    "skew_losses": [
+      [
+        "LINEAR",
+        "-203291.45531402510823682"
+      ],
+      [
+        "ABS",
+        "-204535.284386419574730098"
+      ]
+    ],
+    "worst_reg_scenario": [
+      0.18,
+      1
+    ],
+    "worst_tail_scenario": [
+      0.5,
+      1,
+      0.072
+    ],
+    "worst_skew_scenario": "ABS",
+    "ForwardContingency": -67695.78640842799,
+    "Cash": 0.0,
+    "PortfolioMTM": 1252855.5732126904,
+    "OptionMTM": 481110.05063734925,
+    "OptionMTMPerExpiry": [
+      -159272.48457885327,
+      -68438.09563199084,
+      -352388.4173356389,
+      231894.42997238727,
+      142150.20138564202,
+      379526.67731499055,
+      307637.7395108125
+    ],
+    "OptionMTMPerExpiryDiscounted": [
+      -170587.1636678711,
+      -81458.05864212278,
+      -356669.8518640768,
+      213883.83137628957,
+      119421.56121276102,
+      341127.57539410936,
+      209806.021535563
+    ],
+    "CollateralMTM": 771623.2641344107,
+    "PerpMTM": 122.25844093055078,
+    "MMLossFactor": 0.8,
+    "IMLossFactor": 1.0,
+    "MMPerpCont": -15.446742496808557,
+    "IMPerpCont": -5.148914165602854,
+    "IMPerpContNormal": -20.59565666241141,
+    "MMBaseCont": -183275.4642971261,
+    "IMBaseCont": -36655.411446530634,
+    "IMBaseContNormal": -219930.87574365674,
+    "MMOptionCont": -4918.685130484295,
+    "IMOptionCont": -3279.1234203228632,
+    "IMOptionContNormal": -8197.808550807158,
+    "OracleCont": 0.0,
+    "discount_factors": [
+      [
+        0.8677212276479015,
+        1.071039760062361
+      ],
+      [
+        0.7607156031658348,
+        1.1902443790976243
+      ],
+      [
+        0.9338357633088189,
+        1.012149759520501
+      ],
+      [
+        0.9223327675518455,
+        1.0216332306714941
+      ],
+      [
+        0.8401082801759806,
+        1.09947482830614
+      ],
+      [
+        0.89882370801299,
+        1.0419403825966795
+      ],
+      [
+        0.6819905186833847,
+        1.26990019748112
+      ]
+    ],
+    "UnrealisedFunding": 0.0,
+    "UnrealisedPerpPNL": 122.25844093055078,
+    "IMHand": 715473.9681285643,
+    "MMHand": 817260.1169361833,
+    "IM": 715473.9681285642,
+    "MM": 817260.1169361833,
+    "im_loss_factor": 1.0,
+    "worst_all_scenarios": "regular",
+    "VolShockUpMultiplier": [
+      1.4274478591209656,
+      1.3860882452894718,
+      1.3860882452894718,
+      1.5400846140462012,
+      1.4862120042860796,
+      1.4274478591209656,
+      1.4139715227699674,
+      1.4274478591209656,
+      1.4862120042860796,
+      1.5400846140462012,
+      1.4139715227699674,
+      1.5400846140462012,
+      1.5400846140462012,
+      1.5400846140462012,
+      1.4139715227699674,
+      1.5400846140462012,
+      1.4862120042860796,
+      1.4520056470549552,
+      1.3690476067333361,
+      1.4139715227699674,
+      1.4139715227699674,
+      1.3690476067333361,
+      1.4520056470549552,
+      1.4274478591209656,
+      1.4862120042860796,
+      1.3860882452894718,
+      1.3860882452894718,
+      1.3690476067333361,
+      1.3860882452894718,
+      1.4520056470549552
+    ],
+    "VolShockDownMultiplier": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "VolShockUpEvaluated": [
+      1.0191294634403125,
+      1.0398306971454967,
+      1.1431217436875565,
+      1.6789367347089923,
+      1.3743250017895365,
+      1.2878883137329882,
+      1.2225505815281572,
+      1.2203708116360437,
+      1.3743250017895365,
+      1.3720417697023657,
+      0.9504723529319371,
+      1.3720417697023657,
+      1.0380874693171767,
+      1.3720417697023657,
+      1.1468143855505621,
+      1.3017671988396695,
+      1.1214404736013186,
+      1.279795534999396,
+      0.8995885244383655,
+      1.1122678629935563,
+      1.258178091415271,
+      0.933015792658209,
+      1.2632384712827522,
+      1.1091116577868108,
+      1.2319923820048286,
+      0.940807997303435,
+      0.9341441712881717,
+      1.047545607648266,
+      0.9378540966413611,
+      1.3100732893131781
+    ],
+    "VolShockDownEvaluated": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}
