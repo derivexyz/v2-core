@@ -56,10 +56,10 @@ contract UNIT_TestPMRM_2_EdgeCases is PMRM_2SimTest {
     IPMRM_2.Scenario[] memory scenarios = new IPMRM_2.Scenario[](0);
 
     IPMRM_2.Portfolio memory portfolio;
-    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidGetMarginState.selector);
+    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidGetMarginState.selector);
     pmrm_2.getMarginAndMarkToMarketPub(portfolio, true, scenarios);
 
-    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidGetMarginState.selector);
+    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidGetMarginState.selector);
     pmrm_2.getMarginAndMarkToMarketPub(portfolio, true, scenarios);
   }
 

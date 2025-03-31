@@ -231,8 +231,7 @@ contract PMRM_2SimTest is PMRM_2TestBase {
     returns (ISubAccounts.AssetBalance[] memory balances)
   {
     uint referenceTime = block.timestamp;
-    string memory json =
-      JsonMechIO.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM_2/testAndVerifyScenarios.json");
+    string memory json = JsonMechIO.jsonFromRelPath("/test/risk-managers/unit-tests/PMRM_2/testAndVerifyScenarios.json");
 
     FeedData memory feedData = readFeedData(json, testId);
     OptionData[] memory optionData = readOptionData(json, testId);
@@ -299,8 +298,6 @@ contract PMRM_2SimTest is PMRM_2TestBase {
     //      "asset contingencies"
     //    );
     assertApproxEqAbs(pmrm_2.getMargin(aliceAcc, true), results.initialMarginHand, 1e8, "Initial Margin Hand");
-    assertApproxEqAbs(
-      pmrm_2.getMargin(aliceAcc, false), results.maintenanceMarginHand, 1e8, "Maintenance Margin Hand"
-    );
+    assertApproxEqAbs(pmrm_2.getMargin(aliceAcc, false), results.maintenanceMarginHand, 1e8, "Maintenance Margin Hand");
   }
 }

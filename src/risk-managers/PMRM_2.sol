@@ -147,8 +147,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
 
   function setCollateralSpotFeed(address asset, ISpotFeed _feed) external onlyOwner {
     require(
-      asset != address(option) && asset != address(perp) && asset != address(cashAsset),
-      PMRM_2_InvalidCollateralAsset()
+      asset != address(option) && asset != address(perp) && asset != address(cashAsset), PMRM_2_InvalidCollateralAsset()
     );
     collateralSpotFeeds[asset] = _feed;
   }
@@ -225,8 +224,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
         riskAdding = true;
       } else {
         require(
-          asset == cashAsset || asset == option || _isCollateralEnabled(address(asset)),
-          PMRM_2_UnsupportedAsset()
+          asset == cashAsset || asset == option || _isCollateralEnabled(address(asset)), PMRM_2_UnsupportedAsset()
         );
         if (assetDeltas[i].delta < 0) {
           riskAdding = true;
@@ -284,7 +282,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
     returns (IPMRM_2.Portfolio memory portfolio)
   {
     (uint seenExpiries, uint collateralCount, PortfolioExpiryData[] memory expiryCount) =
-            _countExpiriesAndAssets(assets);
+      _countExpiriesAndAssets(assets);
 
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     portfolio.collaterals = new CollateralHoldings[](collateralCount);

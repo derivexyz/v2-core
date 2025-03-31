@@ -531,7 +531,7 @@
       0
     ],
     "worst_skew_scenario": "ABS",
-    "ForwardContingency": -111460.62911185576,
+    "ForwardContingency": -158238.38616076758,
     "Cash": 10000.0,
     "PortfolioMTM": -639625.8889244442,
     "OptionMTM": -1088683.9697825133,

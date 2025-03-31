@@ -674,7 +674,7 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
       }
 
       _logBN("Expected MTM: ", scenarioLoss);
-      if ((scenarioMtM < 1e8 && scenarioMtM > - 1e8) || (scenarioLoss < 1e8 && scenarioLoss > - 1e8)) {
+      if ((scenarioMtM < 1e8 && scenarioMtM > -1e8) || (scenarioLoss < 1e8 && scenarioLoss > -1e8)) {
         assertApproxEqAbs(scenarioMtM, scenarioLoss, 1e10, "Scenario MTM");
       } else {
         assertApproxEqRel(scenarioMtM, scenarioLoss, 1e10, "Scenario MTM");
@@ -716,17 +716,13 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
 
     mockPerp.setMockPerpPrice(perpSpot, _readBNUint(JSON, ".Scenario.PerpConfidence"));
     mockPerp.mockAccountPnlAndFunding(
-      0,
-      _readBNInt(JSON, ".Scenario.UnrealisedPerpPNL"),
-      _readBNInt(JSON, ".Scenario.UnrealisedFunding")
+      0, _readBNInt(JSON, ".Scenario.UnrealisedPerpPNL"), _readBNInt(JSON, ".Scenario.UnrealisedFunding")
     );
 
     console.log("Setting perp spot", perpSpot);
     console.log("perp conf", _readBNUint(JSON, ".Scenario.PerpConfidence"));
 
-    stableFeed.setSpot(
-      _readBNUint(JSON, ".Scenario.StablePrice"), _readBNUint(JSON, ".Scenario.StableConfidence")
-    );
+    stableFeed.setSpot(_readBNUint(JSON, ".Scenario.StablePrice"), _readBNUint(JSON, ".Scenario.StableConfidence"));
 
     uint expiryCount = 0;
     while (true) {
@@ -775,8 +771,8 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
   }
 
   function _loadAssets(ISubAccounts.AssetBalance[] memory options, ISubAccounts.AssetBalance[] memory collaterals)
-  internal
-  returns (ISubAccounts.AssetBalance[] memory)
+    internal
+    returns (ISubAccounts.AssetBalance[] memory)
   {
     uint assetCount = options.length + collaterals.length;
 
@@ -811,8 +807,7 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
   function _loadOptionData() internal returns (ISubAccounts.AssetBalance[] memory) {
     uint optionCount = 0;
     while (true) {
-      if (JSON.keyExists(string.concat(".Scenario.Options[", vm.toString(optionCount), "].Expiry")) == false)
-      {
+      if (JSON.keyExists(string.concat(".Scenario.Options[", vm.toString(optionCount), "].Expiry")) == false) {
         break;
       }
       optionCount++;
@@ -844,9 +839,7 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
   function _loadCollateralData() internal returns (ISubAccounts.AssetBalance[] memory) {
     uint collatCount = 0;
     while (true) {
-      if (
-        JSON.keyExists(string.concat(".Scenario.Collaterals[", vm.toString(collatCount), "].Name")) == false
-      ) {
+      if (JSON.keyExists(string.concat(".Scenario.Collaterals[", vm.toString(collatCount), "].Name")) == false) {
         break;
       }
       collatCount++;
@@ -892,8 +885,7 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
   function _setScenarios() internal {
     uint scenariosCount = 0;
     while (true) {
-      if (JSON.keyExists(string.concat(".Parameters.Scenarios[", vm.toString(scenariosCount), "]")) == false)
-      {
+      if (JSON.keyExists(string.concat(".Parameters.Scenarios[", vm.toString(scenariosCount), "]")) == false) {
         break;
       }
       scenariosCount++;
@@ -1025,7 +1017,7 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
     }
 
     // Find decimal point position
-    int decimalPos = - 1;
+    int decimalPos = -1;
     for (uint i = startIndex; i < strBytes.length; i++) {
       if (strBytes[i] == ".") {
         decimalPos = int(i);
@@ -1041,22 +1033,22 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
       bytes1 char = strBytes[i];
       if (char >= bytes1("0") && char <= bytes1("9")) {
         // If we're past decimal, we're adding decimals
-        if (decimalPos != - 1 && int(i) > decimalPos) {
+        if (decimalPos != -1 && int(i) > decimalPos) {
           result = result * 10 + (int(int8(uint8(char))) - 48);
         }
-          // Otherwise adding to the integer part
-        else if (decimalPos == - 1 || int(i) < decimalPos) {
+        // Otherwise adding to the integer part
+        else if (decimalPos == -1 || int(i) < decimalPos) {
           result = result * 10 + (int(int8(uint8(char))) - 48);
         }
       }
     }
 
     // Scale result to 18 decimals
-    if (decimalPos == - 1) {
+    if (decimalPos == -1) {
       // No decimal point, just add 18 zeros
       result *= 10 ** 18;
     } else {
-      uint decimalPlaces = (decimalPos == - 1) ? 0 : strBytes.length - uint(decimalPos) - 1;
+      uint decimalPlaces = (decimalPos == -1) ? 0 : strBytes.length - uint(decimalPos) - 1;
       if (decimalPlaces < 18) {
         result *= int(10 ** (18 - decimalPlaces));
       } else if (decimalPlaces > 18) {
@@ -1067,7 +1059,7 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
 
     // Apply negative sign if needed
     if (negative) {
-      result = - result;
+      result = -result;
     }
 
     return result;

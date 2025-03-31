@@ -441,7 +441,7 @@
       0.10909090909090907
     ],
     "worst_skew_scenario": "LINEAR",
-    "ForwardContingency": 0.0,
+    "ForwardContingency": -2.03772963907141,
     "Cash": 0.0,
     "PortfolioMTM": 9.145695406770592,
     "OptionMTM": 9.145695406770592,

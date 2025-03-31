@@ -94,38 +94,31 @@ library Config {
   function get_2_1DefaultScenarios() public pure returns (IPMRM_2.Scenario[] memory) {
     // TODO: abs/linear scenarios
     IPMRM_2.Scenario[] memory scenarios = new IPMRM_2.Scenario[](21);
-    scenarios[0] =
-      IPMRM_2.Scenario({spotShock: 1.15e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[0] = IPMRM_2.Scenario({spotShock: 1.15e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
     scenarios[1] =
       IPMRM_2.Scenario({spotShock: 1.15e18, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
     scenarios[2] =
       IPMRM_2.Scenario({spotShock: 1.15e18, volShock: IPMRM_2.VolShockDirection.Down, dampeningFactor: 1e18});
-    scenarios[3] =
-      IPMRM_2.Scenario({spotShock: 1.1e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[3] = IPMRM_2.Scenario({spotShock: 1.1e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
     scenarios[4] =
       IPMRM_2.Scenario({spotShock: 1.1e18, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
     scenarios[5] =
       IPMRM_2.Scenario({spotShock: 1.1e18, volShock: IPMRM_2.VolShockDirection.Down, dampeningFactor: 1e18});
-    scenarios[6] =
-      IPMRM_2.Scenario({spotShock: 1.05e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[6] = IPMRM_2.Scenario({spotShock: 1.05e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
     scenarios[7] =
       IPMRM_2.Scenario({spotShock: 1.05e18, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
     scenarios[8] =
       IPMRM_2.Scenario({spotShock: 1.05e18, volShock: IPMRM_2.VolShockDirection.Down, dampeningFactor: 1e18});
-    scenarios[9] =
-      IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
-    scenarios[10] =
-      IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
-    scenarios[11] =
-      IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Down, dampeningFactor: 1e18});
+    scenarios[9] = IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[10] = IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
+    scenarios[11] = IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Down, dampeningFactor: 1e18});
     scenarios[12] =
       IPMRM_2.Scenario({spotShock: 0.95e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
     scenarios[13] =
       IPMRM_2.Scenario({spotShock: 0.95e18, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
     scenarios[14] =
       IPMRM_2.Scenario({spotShock: 0.95e18, volShock: IPMRM_2.VolShockDirection.Down, dampeningFactor: 1e18});
-    scenarios[15] =
-      IPMRM_2.Scenario({spotShock: 0.9e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
+    scenarios[15] = IPMRM_2.Scenario({spotShock: 0.9e18, volShock: IPMRM_2.VolShockDirection.Up, dampeningFactor: 1e18});
     scenarios[16] =
       IPMRM_2.Scenario({spotShock: 0.9e18, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
     scenarios[17] =

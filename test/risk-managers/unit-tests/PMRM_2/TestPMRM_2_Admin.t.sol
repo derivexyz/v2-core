@@ -85,14 +85,12 @@ contract TestPMRM_2_Admin is PMRM_2TestBase {
 
     // multiple abs/linear also reverts (one of each passes)
     scenarios = new IPMRM_2.Scenario[](2);
-    scenarios[0] =
-      IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Abs, dampeningFactor: 1e18});
+    scenarios[0] = IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Abs, dampeningFactor: 1e18});
     scenarios[1] =
       IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Linear, dampeningFactor: 1e18});
     pmrm_2.setScenarios(scenarios);
 
-    scenarios[1] =
-      IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Abs, dampeningFactor: 1e18});
+    scenarios[1] = IPMRM_2.Scenario({spotShock: 1e18, volShock: IPMRM_2.VolShockDirection.Abs, dampeningFactor: 1e18});
     vm.expectRevert(IPMRM_2.PMRM_2_InvalidScenarios.selector);
     pmrm_2.setScenarios(scenarios);
 
@@ -156,27 +154,27 @@ contract TestPMRM_2_Admin is PMRM_2TestBase {
   //
   //    basisContParams.scenarioSpotUp = 1e18;
   //
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidBasisContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidBasisContingencyParameters.selector);
   //    lib.setBasisContingencyParams(basisContParams);
   //    basisContParams.scenarioSpotUp = 1e18 + 1;
   //
   //    basisContParams.scenarioSpotUp = 3e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidBasisContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidBasisContingencyParameters.selector);
   //    lib.setBasisContingencyParams(basisContParams);
   //    basisContParams.scenarioSpotUp = 1e18 + 1;
   //
   //    basisContParams.scenarioSpotDown = 1e18;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidBasisContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidBasisContingencyParameters.selector);
   //    lib.setBasisContingencyParams(basisContParams);
   //    basisContParams.scenarioSpotDown = 2;
   //
   //    basisContParams.basisContMultFactor = 5e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidBasisContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidBasisContingencyParameters.selector);
   //    lib.setBasisContingencyParams(basisContParams);
   //    basisContParams.basisContMultFactor = 4;
   //
   //    basisContParams.basisContAddFactor = 5e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidBasisContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidBasisContingencyParameters.selector);
   //    lib.setBasisContingencyParams(basisContParams);
   //    basisContParams.basisContAddFactor = 4;
   //  }
@@ -204,32 +202,32 @@ contract TestPMRM_2_Admin is PMRM_2TestBase {
   //    assertEq(resOtherContParams.MMOptionPercent, 8);
   //
   //    otherContParams.pegLossThreshold = 1e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidOtherContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidOtherContingencyParameters.selector);
   //    lib.setOtherContingencyParams(otherContParams);
   //    otherContParams.pegLossThreshold = 1;
   //
   //    otherContParams.pegLossFactor = 20e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidOtherContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidOtherContingencyParameters.selector);
   //    lib.setOtherContingencyParams(otherContParams);
   //    otherContParams.pegLossFactor = 2;
   //
   //    otherContParams.confThreshold = 1e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidOtherContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidOtherContingencyParameters.selector);
   //    lib.setOtherContingencyParams(otherContParams);
   //    otherContParams.confThreshold = 3;
   //
   //    otherContParams.confMargin = 1.5e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidOtherContingencyParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidOtherContingencyParameters.selector);
   //    lib.setOtherContingencyParams(otherContParams);
   //    otherContParams.confMargin = 4;
   //    // TODO
   //    //    otherContParams.perpPercent = 1e18 + 1;
-  //    //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidOtherContingencyParameters.selector);
+  //    //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidOtherContingencyParameters.selector);
   //    //    lib.setOtherContingencyParams(otherContParams);
   //    //    otherContParams.perpPercent = 6;
   //    //
   //    //    otherContParams.optionPercent = 1e18 + 1;
-  //    //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidOtherContingencyParameters.selector);
+  //    //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidOtherContingencyParameters.selector);
   //    //    lib.setOtherContingencyParams(otherContParams);
   //    //    otherContParams.optionPercent = 7;
   //  }
@@ -249,27 +247,27 @@ contract TestPMRM_2_Admin is PMRM_2TestBase {
   //    assertEq(resStaticDiscountParams.baseStaticDiscount, 3);
   //
   //    marginParams.imFactor = 1e18 - 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidMarginParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidMarginParameters.selector);
   //    lib.setMarginParams(marginParams);
   //    marginParams.imFactor = 1e18;
   //
   //    marginParams.imFactor = 4e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidMarginParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidMarginParameters.selector);
   //    lib.setMarginParams(marginParams);
   //    marginParams.imFactor = 1e18;
   //
   //    marginParams.rateMultScale = 5e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidMarginParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidMarginParameters.selector);
   //    lib.setMarginParams(marginParams);
   //    marginParams.rateMultScale = 1;
   //
   //    marginParams.rateAddScale = 5e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidMarginParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidMarginParameters.selector);
   //    lib.setMarginParams(marginParams);
   //    marginParams.rateAddScale = 2;
   //
   //    marginParams.baseStaticDiscount = 1e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidMarginParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidMarginParameters.selector);
   //    lib.setMarginParams(marginParams);
   //    marginParams.baseStaticDiscount = 3;
   //  }
@@ -287,32 +285,32 @@ contract TestPMRM_2_Admin is PMRM_2TestBase {
   //    assertEq(resVolShockParams.dteFloor, 864);
   //
   //    volShockParams.volRangeUp = 2e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidVolShockParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidVolShockParameters.selector);
   //    lib.setVolShockParams(volShockParams);
   //    volShockParams.volRangeUp = 1;
   //
   //    volShockParams.volRangeDown = 2e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidVolShockParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidVolShockParameters.selector);
   //    lib.setVolShockParams(volShockParams);
   //    volShockParams.volRangeDown = 2;
   //
   //    volShockParams.shortTermPower = 2e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidVolShockParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidVolShockParameters.selector);
   //    lib.setVolShockParams(volShockParams);
   //    volShockParams.shortTermPower = 3;
   //
   //    volShockParams.longTermPower = 2e18 + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidVolShockParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidVolShockParameters.selector);
   //    lib.setVolShockParams(volShockParams);
   //    volShockParams.longTermPower = 4;
   //
   //    volShockParams.dteFloor = 100 days + 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidVolShockParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidVolShockParameters.selector);
   //    lib.setVolShockParams(volShockParams);
   //    volShockParams.dteFloor = 864;
   //
   //    volShockParams.dteFloor = 0.01 days - 1;
-  //    vm.expectRevert(IPMRMLib_2.PMRM_2L_InvalidVolShockParameters.selector);
+  //    vm.expectRevert(IPMRMLib_2.PMRML2_InvalidVolShockParameters.selector);
   //    lib.setVolShockParams(volShockParams);
   //    volShockParams.dteFloor = 864;
   //  }

@@ -38,15 +38,12 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
   // Admin //
   ///////////
 
-  function setBasisContingencyParams(IPMRMLib_2.BasisContingencyParameters memory _basisContParams)
-    external
-    onlyOwner
-  {
+  function setBasisContingencyParams(IPMRMLib_2.BasisContingencyParameters memory _basisContParams) external onlyOwner {
     require(
       _basisContParams.scenarioSpotUp > 1e18 && _basisContParams.scenarioSpotUp < 3e18
         && _basisContParams.scenarioSpotDown < 1e18 && _basisContParams.basisContMultFactor <= 20e18
         && _basisContParams.basisContAddFactor <= 20e18,
-      PMRM_2L_InvalidBasisContingencyParameters()
+      PMRML2_InvalidBasisContingencyParameters()
     );
 
     basisContParams = _basisContParams;
@@ -54,16 +51,13 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
 
   /// @dev Note: sufficiently large spot shock down and basePercent means adding base to the portfolio will always
   /// decrease MM -
-  function setOtherContingencyParams(IPMRMLib_2.OtherContingencyParameters memory _otherContParams)
-    external
-    onlyOwner
-  {
+  function setOtherContingencyParams(IPMRMLib_2.OtherContingencyParameters memory _otherContParams) external onlyOwner {
     require(
       _otherContParams.pegLossThreshold <= 100e18 && _otherContParams.pegLossFactor <= 10e18
         && _otherContParams.confThreshold <= 1e18 && _otherContParams.confMargin <= 20e18
         && _otherContParams.MMPerpPercent <= 3e18 && _otherContParams.IMPerpPercent <= 3e18
         && _otherContParams.MMOptionPercent <= 2e18 && _otherContParams.IMOptionPercent <= 2e18,
-      PMRM_2L_InvalidOtherContingencyParameters()
+      PMRML2_InvalidOtherContingencyParameters()
     );
 
     otherContParams = _otherContParams;
@@ -76,7 +70,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
         && _marginParams.longRateMultScale <= 10e18 && _marginParams.shortRateAddScale <= 10e18
         && _marginParams.longRateAddScale <= 10e18 && _marginParams.shortBaseStaticDiscount <= 4e18
         && _marginParams.longBaseStaticDiscount <= 4e18,
-      PMRM_2L_InvalidMarginParameters()
+      PMRML2_InvalidMarginParameters()
     );
 
     marginParams = _marginParams;
@@ -87,7 +81,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
       _volShockParams.volRangeUp <= 10e18 && _volShockParams.volRangeDown <= 10e18
         && _volShockParams.shortTermPower <= 10e18 && _volShockParams.longTermPower <= 10e18
         && _volShockParams.dteFloor <= 400 days && _volShockParams.minVolUpShock <= 20e18,
-      PMRM_2L_InvalidVolShockParameters()
+      PMRML2_InvalidVolShockParameters()
     );
     volShockParams = _volShockParams;
   }
@@ -100,7 +94,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
         && _skewShockParams.minKStar <= 10e18 && _skewShockParams.widthScale >= 0 && _skewShockParams.widthScale <= 10e18
         && _skewShockParams.volParamStatic >= 0 && _skewShockParams.volParamStatic <= 10e18
         && _skewShockParams.volParamScale >= -20e18 && _skewShockParams.volParamScale <= 20e18,
-      PMRM_2L_InvalidSkewShockParameters()
+      PMRML2_InvalidSkewShockParameters()
     );
     skewShockParams = _skewShockParams;
   }
@@ -108,7 +102,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
   function setCollateralParameters(address asset, CollateralParameters memory params) external onlyOwner {
     // once enabled cannot be disabled, must have haircuts set to 100% instead. Otherwise subaccoutns may be frozen
     require(
-      params.isEnabled && params.MMHaircut <= 1e18 && params.MMHaircut <= 1e18, PMRM_2L_InvalidCollateralParameters()
+      params.isEnabled && params.MMHaircut <= 1e18 && params.MMHaircut <= 1e18, PMRML2_InvalidCollateralParameters()
     );
     // Note: asset must be added to pmrm to be used as collateral. If
     collaterals[asset] = params;
@@ -128,7 +122,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
     bool isInitial,
     IPMRM_2.Scenario[] memory scenarios
   ) external view returns (int margin, int markToMarket, uint worstScenario) {
-    require(scenarios.length > 0, PMRM_2L_InvalidGetMarginState());
+    require(scenarios.length > 0, PMRML2_InvalidGetMarginState());
 
     int minSPAN = portfolio.basisContingency;
     worstScenario = scenarios.length;
@@ -209,9 +203,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
 
       // To maximise loss we work out the worst case pnl for each expiry in skew scenarios. Inverting positive values
       // gives an approximation of rotating the vol skew in the opposite direction.
-      if (
-        scenario.volShock == IPMRM_2.VolShockDirection.Linear || scenario.volShock == IPMRM_2.VolShockDirection.Abs
-      ) {
+      if (scenario.volShock == IPMRM_2.VolShockDirection.Linear || scenario.volShock == IPMRM_2.VolShockDirection.Abs) {
         // for skew scenarios we use *negative* absolute value to maximise the loss for each expiry.
         scenarioPnL += expiryPnL > 0 ? -expiryPnL : expiryPnL;
       } else {
@@ -283,10 +275,11 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
   }
 
   /// @dev calculate MTM with given skew shock, where the "wings" of the vol surface are raised/reduced
-  function _getExpirySkewedShockedMTM(
-    IPMRM_2.ExpiryHoldings memory expiry,
-    IPMRM_2.VolShockDirection volShockDirection
-  ) internal view returns (int mtm) {
+  function _getExpirySkewedShockedMTM(IPMRM_2.ExpiryHoldings memory expiry, IPMRM_2.VolShockDirection volShockDirection)
+    internal
+    view
+    returns (int mtm)
+  {
     // either linear or abs
     bool isLinear = volShockDirection == IPMRM_2.VolShockDirection.Linear;
 
@@ -378,7 +371,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
       IPMRM_2.CollateralHoldings memory collateral = portfolio.collaterals[i];
       CollateralParameters memory params = collaterals[address(collateral.asset)];
 
-      require(params.isEnabled, PMRM_2L_CollateralDisabled());
+      require(params.isEnabled, PMRML2_CollateralDisabled());
 
       portfolio.totalMtM += collateral.value.toInt256();
 
@@ -425,10 +418,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
   // Contingencies //
   ///////////////////
 
-  function _addBasisContingency(IPMRM_2.Portfolio memory portfolio, IPMRM_2.ExpiryHoldings memory expiry)
-    internal
-    view
-  {
+  function _addBasisContingency(IPMRM_2.Portfolio memory portfolio, IPMRM_2.ExpiryHoldings memory expiry) internal view {
     expiry.basisScenarioUpMtM =
       _getExpiryShockedMTM(expiry, basisContParams.scenarioSpotUp, IPMRM_2.VolShockDirection.None);
     expiry.basisScenarioDownMtM =
@@ -537,10 +527,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
       volShock: IPMRM_2.VolShockDirection.None,
       dampeningFactor: 1e18
     });
-    scenarios[2] = IPMRM_2.Scenario({
-      spotShock: DecimalMath.UNIT,
-      volShock: IPMRM_2.VolShockDirection.None,
-      dampeningFactor: 1e18
-    });
+    scenarios[2] =
+      IPMRM_2.Scenario({spotShock: DecimalMath.UNIT, volShock: IPMRM_2.VolShockDirection.None, dampeningFactor: 1e18});
   }
 }

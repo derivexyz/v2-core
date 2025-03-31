@@ -113,19 +113,19 @@ interface IPMRMLib_2 {
   ////////////
 
   /// @dev emitted when provided forward contingency parameters are invalid
-  error PMRM_2L_InvalidBasisContingencyParameters();
+  error PMRML2_InvalidBasisContingencyParameters();
   /// @dev emitted when provided other contingency parameters are invalid
-  error PMRM_2L_InvalidOtherContingencyParameters();
+  error PMRML2_InvalidOtherContingencyParameters();
   /// @dev emitted when provided static discount parameters are invalid
-  error PMRM_2L_InvalidMarginParameters();
+  error PMRML2_InvalidMarginParameters();
   /// @dev emitted when provided vol shock parameters are invalid
-  error PMRM_2L_InvalidVolShockParameters();
+  error PMRML2_InvalidVolShockParameters();
   /// @dev emitted when provided skew shock parameters are invalid
-  error PMRM_2L_InvalidSkewShockParameters();
+  error PMRML2_InvalidSkewShockParameters();
   /// @dev emitted when provided collateral parameters are invalid
-  error PMRM_2L_InvalidCollateralParameters();
+  error PMRML2_InvalidCollateralParameters();
   /// @dev emitted when invalid parameters passed into _getMarginAndMarkToMarket
-  error PMRM_2L_InvalidGetMarginState();
+  error PMRML2_InvalidGetMarginState();
   /// @dev emitted when doing a risk check on a disabled collateral
-  error PMRM_2L_CollateralDisabled();
+  error PMRML2_CollateralDisabled();
 }
