@@ -150,6 +150,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
       asset != address(option) && asset != address(perp) && asset != address(cashAsset), PMRM_2_InvalidCollateralAsset()
     );
     collateralSpotFeeds[asset] = _feed;
+    emit CollateralSpotFeedUpdated(asset, _feed);
   }
 
   /**

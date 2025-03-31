@@ -102,6 +102,7 @@ interface IPMRM_2 {
   event SpotFeedUpdated(ISpotFeed spotFeed);
   event StableFeedUpdated(ISpotFeed stableFeed);
   event ForwardFeedUpdated(IForwardFeed forwardFeed);
+  event CollateralSpotFeedUpdated(address asset, ISpotFeed feed);
   event ScenariosUpdated(Scenario[] scenarios);
 
   ////////////

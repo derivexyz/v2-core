@@ -47,6 +47,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
     );
 
     basisContParams = _basisContParams;
+    emit BasisContingencyParamsUpdated(_basisContParams);
   }
 
   /// @dev Note: sufficiently large spot shock down and basePercent means adding base to the portfolio will always
@@ -61,6 +62,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
     );
 
     otherContParams = _otherContParams;
+    emit OtherContingencyParamsUpdated(_otherContParams);
   }
 
   function setMarginParams(IPMRMLib_2.MarginParameters memory _marginParams) external onlyOwner {
@@ -74,6 +76,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
     );
 
     marginParams = _marginParams;
+    emit MarginParamsUpdated(_marginParams);
   }
 
   function setVolShockParams(IPMRMLib_2.VolShockParameters memory _volShockParams) external onlyOwner {
@@ -84,6 +87,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
       PMRML2_InvalidVolShockParameters()
     );
     volShockParams = _volShockParams;
+    emit VolShockParamsUpdated(_volShockParams);
   }
 
   function setSkewShockParameters(SkewShockParameters memory _skewShockParams) external onlyOwner {
@@ -97,6 +101,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
       PMRML2_InvalidSkewShockParameters()
     );
     skewShockParams = _skewShockParams;
+    emit SkewShockParamsUpdated(_skewShockParams);
   }
 
   function setCollateralParameters(address asset, CollateralParameters memory params) external onlyOwner {
@@ -106,6 +111,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
     );
     // Note: asset must be added to pmrm to be used as collateral. If
     collaterals[asset] = params;
+    emit CollateralParametersUpdated(asset, params);
   }
 
   //////////////////////

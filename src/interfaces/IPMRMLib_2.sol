@@ -109,6 +109,16 @@ interface IPMRMLib_2 {
   function getCollateralParameters(address collateral) external view returns (CollateralParameters memory);
 
   ////////////
+  // Events //
+  ////////////
+  event BasisContingencyParamsUpdated(IPMRMLib_2.BasisContingencyParameters basisContParams);
+  event OtherContingencyParamsUpdated(IPMRMLib_2.OtherContingencyParameters otherContParams);
+  event MarginParamsUpdated(IPMRMLib_2.MarginParameters marginParams);
+  event VolShockParamsUpdated(IPMRMLib_2.VolShockParameters volShockParams);
+  event SkewShockParamsUpdated(IPMRMLib_2.SkewShockParameters skewShockParams);
+  event CollateralParametersUpdated(address asset, IPMRMLib_2.CollateralParameters params);
+
+  ////////////
   // Errors //
   ////////////
 
