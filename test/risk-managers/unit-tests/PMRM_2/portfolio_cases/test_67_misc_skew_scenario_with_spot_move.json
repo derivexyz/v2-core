@@ -197,11 +197,6 @@
       },
       {
         "SpotShock": 1,
-        "VolShockDirection": "LINEAR",
-        "DampeningFactor": 1.0
-      },
-      {
-        "SpotShock": 1,
         "VolShockDirection": "ABS",
         "DampeningFactor": 1.0
       },
@@ -261,7 +256,7 @@
   "Result": {
     "worst_reg_loss": -468.0288972891901,
     "worst_tail_loss": -95.59109570817094,
-    "worst_skew_loss": -34.89009873175803,
+    "worst_skew_loss": -31.43014864208368,
     "reg_losses": [
       [
         "0.179999999999999993",
@@ -413,10 +408,6 @@
     ],
     "skew_losses": [
       [
-        "LINEAR",
-        "-34.890098731758030226"
-      ],
-      [
         "ABS",
         "-7.438370015065913776"
       ],
@@ -434,7 +425,7 @@
       1,
       0.011999999999999999
     ],
-    "worst_skew_scenario": "LINEAR",
+    "worst_skew_scenario": "LINEAR_SPOT_SHOCK",
     "ForwardContingency": -60.02060217250662,
     "Cash": 0.0,
     "PortfolioMTM": -317.201576245238,
