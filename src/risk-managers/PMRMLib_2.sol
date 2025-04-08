@@ -105,9 +105,10 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
   }
 
   function setCollateralParameters(address asset, CollateralParameters memory params) external onlyOwner {
-    // once enabled cannot be disabled, must have haircuts set to 100% instead. Otherwise subaccoutns may be frozen
+    // once enabled cannot be disabled, must have haircuts set to 100% instead. Otherwise subaccounts may be frozen
     require(
-      params.isEnabled && params.MMHaircut <= 1e18 && params.MMHaircut <= 1e18, PMRML2_InvalidCollateralParameters()
+      params.isEnabled && (params.IMHaircut + params.MMHaircut) <= 1e18 && params.MMHaircut <= 1e18,
+      PMRML2_InvalidCollateralParameters()
     );
     // Note: asset must be added to pmrm to be used as collateral. If
     collaterals[asset] = params;
@@ -137,9 +138,9 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
       IPMRM_2.Scenario memory scenario = scenarios[i];
 
       // SPAN value with discounting applied, and only the *difference from MtM*
-      int scenarioMTM = getScenarioPnL(portfolio, scenario);
-      if (scenarioMTM < minSPAN) {
-        minSPAN = scenarioMTM;
+      int scenarioPnL = getScenarioPnL(portfolio, scenario);
+      if (scenarioPnL < minSPAN) {
+        minSPAN = scenarioPnL;
         worstScenario = i;
       }
     }

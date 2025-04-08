@@ -288,8 +288,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
     portfolio.expiries = new ExpiryHoldings[](seenExpiries);
     portfolio.collaterals = new CollateralHoldings[](collateralCount);
     (portfolio.spotPrice, portfolio.minConfidence) = spotFeed.getSpot();
-    (uint stablePrice,) = stableFeed.getSpot();
-    portfolio.stablePrice = stablePrice;
+    (portfolio.stablePrice,) = stableFeed.getSpot();
 
     _initialiseExpiries(portfolio, expiryCount);
     _arrangeAssets(accountId, portfolio, assets, collateralCount, expiryCount);
@@ -356,7 +355,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
       // We assume the rate is always positive.
       rate = SignedMath.max(rate, 0);
 
-      // We dont compare this to the portfolio.minConfidence yet - we do that in preComputes
+      // We don't compare this to the portfolio.minConfidence yet - we do that in preComputes
       uint minConfidence = Math.min(fwdConfidence, rateConfidence);
 
       // if an option expired, also set secToExpiry to 0
@@ -479,7 +478,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
   }
 
   /**
-   * @notice Can be called by anyone to settle a perp asset in an account
+   * @notice Can be called by anyone to settle an option asset in an account
    */
   function settleOptions(IOptionAsset _option, uint accountId) external {
     require(_option == option, PMRM_2_UnsupportedAsset());

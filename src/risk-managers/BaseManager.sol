@@ -83,6 +83,8 @@ abstract contract BaseManager is IBaseManager, Ownable2StepUpgradeable {
 
   mapping(address => bool) public trustedRiskAssessor;
 
+  bytes[49] private __gap;
+
   constructor(
     ISubAccounts _subAccounts,
     ICashAsset _cashAsset,
