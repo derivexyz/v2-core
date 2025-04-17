@@ -299,10 +299,10 @@ contract UNIT_TestPMRM_2_PortfolioCasesNEW is PMRM_2TestBase {
     _runTestCase("test_66_misc_post_expiry");
   }
 
-// Invalid param setup so skipping
-//  function test_67_misc_skew_scenario_with_spot_move() public {
-//    _runTestCase("test_67_misc_skew_scenario_with_spot_move");
-//  }
+  // Invalid param setup so skipping
+  //  function test_67_misc_skew_scenario_with_spot_move() public {
+  //    _runTestCase("test_67_misc_skew_scenario_with_spot_move");
+  //  }
 
   function test_68_misc_syn_forward() public {
     _runTestCase("test_68_misc_syn_forward");
