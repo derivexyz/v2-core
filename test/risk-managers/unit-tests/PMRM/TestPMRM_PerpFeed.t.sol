@@ -12,6 +12,8 @@ contract TestPMRM_PerpFeed is PMRMSimTest {
 
     IPMRM.Portfolio memory alicePort = pmrm.arrangePortfolio(aliceAcc);
 
+    _logPortfolio(alicePort);
+
     assertEq(alicePort.perpValue, 0);
     assertEq(alicePort.perpPosition, -1e18, "alice should be short 1 perp");
     int mmPre = pmrm.getMargin(aliceAcc, false);
@@ -26,6 +28,8 @@ contract TestPMRM_PerpFeed is PMRMSimTest {
     mockPerp.mockAccountPnlAndFunding(aliceAcc, 0, 100e18);
     alicePort = pmrm.arrangePortfolio(aliceAcc);
     assertEq(alicePort.perpValue, 100e18);
+
+    _logPortfolio(alicePort);
 
     int mmPost = pmrm.getMargin(aliceAcc, false);
     // spot diff of 100 => spot shock is $15 worse (15%) for alice, so MM has increased by 15

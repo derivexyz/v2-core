@@ -234,7 +234,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
       }
 
       // set mocked pnl
-      {
+      if (ethPerpBalance != 0) {
         int ethEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryETH"));
         (uint perpPrice,) = ethPerp.getPerpPrice();
         int pnl = (int(perpPrice) - ethEntryPrice).multiplyDecimal(ethPerpBalance);
@@ -242,7 +242,7 @@ contract UNIT_TestStandardManager_TestCases is TestStandardManagerBase {
         ethPerp.mockAccountPnlAndFunding(aliceAcc, pnl, funding);
       }
 
-      {
+      if (btcPerpBalance != 0) {
         int btcEntryPrice = json.readInt(string.concat(testId, ".Scenario.LastEntryBTC"));
         (uint perpPrice,) = btcPerp.getPerpPrice();
         int pnl = (int(perpPrice) - btcEntryPrice).multiplyDecimal(btcPerpBalance);

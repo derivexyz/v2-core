@@ -23,11 +23,10 @@ contract LyraRateFeedStatic is Ownable2Step, IInterestRateFeed {
   int64 public rate;
   uint64 public confidence;
 
-  constructor() Ownable(msg.sender) {}
-
   ////////////////////////
   //  Public Functions  //
   ////////////////////////
+  constructor() Ownable(msg.sender) {}
 
   function setRate(int64 _rate, uint64 _confidence) external onlyOwner {
     if (_rate > 1e18 || _rate < -1e18) revert LRFS_StaticRateOutOfRange();

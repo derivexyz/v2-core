@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
-import {IVolFeed} from "../../../src/interfaces/IVolFeed.sol";
-import {IInterestRateFeed} from "../../../src/interfaces/IInterestRateFeed.sol";
+import {SVITestParams} from "../../../lib/lyra-utils/test/math/SVI.t.sol";
+import {IDataReceiver} from "../../../src/interfaces/IDataReceiver.sol";
 import {IForwardFeed} from "../../../src/interfaces/IForwardFeed.sol";
+import {IInterestRateFeed} from "../../../src/interfaces/IInterestRateFeed.sol";
 import {ISettlementFeed} from "../../../src/interfaces/ISettlementFeed.sol";
 
-import {IDataReceiver} from "../../../src/interfaces/IDataReceiver.sol";
+import {ISpotFeed} from "../../../src/interfaces/ISpotFeed.sol";
+import {IVolFeed} from "../../../src/interfaces/IVolFeed.sol";
+
+import {SVI} from "lyra-utils/math/SVI.sol";
+
+import "forge-std/console.sol";
 
 contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISettlementFeed, IDataReceiver {
   uint public spot;
   uint public spotConfidence;
+  bool public useSVI = false;
   mapping(uint => uint) forwardPrices;
   mapping(uint => uint) fwdFixedPortion;
   mapping(uint => uint) forwardPriceConfidences;
@@ -20,6 +26,11 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   mapping(uint => uint) settlementPrice;
   mapping(uint64 => mapping(uint128 => uint)) vols;
   mapping(uint64 => uint) volConfidences;
+  mapping(uint64 => SVITestParams) public sviParams;
+
+  function setUseSVI(bool _useSVI) external {
+    useSVI = _useSVI;
+  }
 
   function setSpot(uint _spot, uint _confidence) external {
     spot = _spot;
@@ -32,6 +43,11 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
 
   function setVol(uint64 expiry, uint128 strike, uint vol, uint confidence) external {
     vols[expiry][strike] = vol;
+    volConfidences[expiry] = confidence;
+  }
+
+  function setVolSviParams(uint64 expiry, SVITestParams memory params, uint confidence) external {
+    sviParams[expiry] = params;
     volConfidences[expiry] = confidence;
   }
 
@@ -93,6 +109,21 @@ contract MockFeeds is ISpotFeed, IVolFeed, IForwardFeed, IInterestRateFeed, ISet
   // IVolFeed
 
   function getVol(uint128 strike, uint64 expiry) external view returns (uint vol, uint confidence) {
+    if (useSVI) {
+      return (
+        SVI.getVol(
+          strike,
+          sviParams[expiry].a,
+          sviParams[expiry].b,
+          sviParams[expiry].rho,
+          sviParams[expiry].m,
+          sviParams[expiry].sigma,
+          sviParams[expiry].forwardPrice,
+          sviParams[expiry].tau
+        ),
+        volConfidences[expiry]
+      );
+    }
     return (vols[expiry][strike], volConfidences[expiry]);
   }
 

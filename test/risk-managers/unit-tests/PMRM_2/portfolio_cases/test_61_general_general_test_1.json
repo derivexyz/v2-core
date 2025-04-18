@@ -1,0 +1,846 @@
+{
+  "Scenario": {
+    "Cash": -12312324.0,
+    "Collaterals": [
+      {
+        "Name": "RSWETH",
+        "Amount": 25.0,
+        "Price": 3124.0,
+        "Confidence": 0.1456,
+        "IsRiskCancelling": true,
+        "IMHaircut": 0.010000000000000002,
+        "MMHaircut": 0.03,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "ETH",
+        "Amount": 100.0,
+        "Price": 1234.0,
+        "Confidence": 0.1269,
+        "IsRiskCancelling": true,
+        "IMHaircut": 0.005000000000000001,
+        "MMHaircut": 0.015,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "BTC",
+        "Amount": 23.0,
+        "Price": 112468.0,
+        "Confidence": 0.25478,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.04999999999999999,
+        "MMHaircut": 0.25,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "CBBTC",
+        "Amount": 4.0,
+        "Price": 122106.0,
+        "Confidence": 0.5395,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.10000000000000003,
+        "MMHaircut": 0.35,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "SDAI",
+        "Amount": 11111.0,
+        "Price": 1.42,
+        "Confidence": 0.999,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.03,
+        "MMHaircut": 0.12,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "USDE",
+        "Amount": 45654.0,
+        "Price": 1.1,
+        "Confidence": 0.26,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.04999999999999999,
+        "MMHaircut": 0.2,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "WEETH",
+        "Amount": 49.0,
+        "Price": 4329.0,
+        "Confidence": 0.38953,
+        "IsRiskCancelling": true,
+        "IMHaircut": 0.009999999999999995,
+        "MMHaircut": 0.05,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "DAI",
+        "Amount": 99853.0,
+        "Price": 1.01,
+        "Confidence": 0.8423,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.020000000000000004,
+        "MMHaircut": 0.08,
+        "ConfidenceFactor": 0.55
+      },
+      {
+        "Name": "SUSDE",
+        "Amount": 45654.0,
+        "Price": 2.4,
+        "Confidence": 0.9,
+        "IsRiskCancelling": false,
+        "IMHaircut": 0.09999999999999998,
+        "MMHaircut": 0.25,
+        "ConfidenceFactor": 0.55
+      }
+    ],
+    "SpotPrice": 1234.0,
+    "SpotConfidence": 0.1269,
+    "NumPerps": -123.0,
+    "PerpPrice": 4000.0,
+    "PerpConfidence": 0.2123,
+    "UnrealisedPerpPNL": -123000.0,
+    "UnrealisedFunding": 20049.0,
+    "StablePrice": 0.56,
+    "StableConfidence": 0.9,
+    "Options": [
+      {
+        "Expiry": 794852,
+        "ExiryTs": 1740729600,
+        "Strike": 100.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9867303943632149,
+        "MarkVol": 1886.2946496130742,
+        "Amount": -1.0,
+        "k": -2.853015971352396,
+        "linear_mult_cap": 3.9920620229941943,
+        "abs_mult_cap": 0.1420620229941944,
+        "k_star": 1.1226441536105631,
+        "linear_multiplier": -2.9920620229941943,
+        "abs_multiplier": 1.1420620229941945
+      },
+      {
+        "Expiry": 794852,
+        "ExiryTs": 1740729600,
+        "Strike": 5600.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9867303943632149,
+        "MarkVol": 1861.087694981364,
+        "Amount": -12.0,
+        "k": 1.1723357193827535,
+        "linear_mult_cap": 3.9920620229941943,
+        "abs_mult_cap": 0.1420620229941944,
+        "k_star": 1.1226441536105631,
+        "linear_multiplier": 4.992062022994194,
+        "abs_multiplier": 1.1420620229941945
+      },
+      {
+        "Expiry": 1399652,
+        "ExiryTs": 1741334400,
+        "Strike": 2300.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9101996859882594,
+        "MarkVol": 0.6547716024217306,
+        "Amount": 52.0,
+        "k": 0.07491097005554248,
+        "linear_mult_cap": 3.9894664021139903,
+        "abs_mult_cap": 0.1394664021139902,
+        "k_star": 1.4602064637233878,
+        "linear_multiplier": 1.204666124696026,
+        "abs_multiplier": 1.0071548535991788
+      },
+      {
+        "Expiry": 1399652,
+        "ExiryTs": 1741334400,
+        "Strike": 3000.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9101996859882594,
+        "MarkVol": 0.7835591639303785,
+        "Amount": -23.0,
+        "k": 0.3406141357885481,
+        "linear_mult_cap": 3.9894664021139903,
+        "abs_mult_cap": 0.1394664021139902,
+        "k_star": 1.4602064637233878,
+        "linear_multiplier": 1.9306003531504161,
+        "abs_multiplier": 1.0325325419437357
+      },
+      {
+        "Expiry": 1399652,
+        "ExiryTs": 1741334400,
+        "Strike": 3100.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9101996859882594,
+        "MarkVol": 0.8006130306474406,
+        "Amount": -23.0,
+        "k": 0.37340395861153897,
+        "linear_mult_cap": 3.9894664021139903,
+        "abs_mult_cap": 0.1394664021139902,
+        "k_star": 1.4602064637233878,
+        "linear_multiplier": 2.0201862437305946,
+        "abs_multiplier": 1.0356643446912845
+      },
+      {
+        "Expiry": 3214052,
+        "ExiryTs": 1743148800,
+        "Strike": 5000.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9788248561009755,
+        "MarkVol": 0.9247166607631531,
+        "Amount": 3.0,
+        "k": 1.5041774017766074,
+        "linear_mult_cap": 3.9840377852143725,
+        "abs_mult_cap": 0.13403778521437246,
+        "k_star": 2.1191565329126236,
+        "linear_multiplier": 3.827870198010839,
+        "abs_multiplier": 1.0951400259359505
+      },
+      {
+        "Expiry": 3214052,
+        "ExiryTs": 1743148800,
+        "Strike": 20000.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9788248561009755,
+        "MarkVol": 0.9247166607631531,
+        "Amount": -23.0,
+        "k": 2.890471762896498,
+        "linear_mult_cap": 3.9840377852143725,
+        "abs_mult_cap": 0.13403778521437246,
+        "k_star": 2.1191565329126236,
+        "linear_multiplier": 4.9840377852143725,
+        "abs_multiplier": 1.1340377852143724
+      },
+      {
+        "Expiry": 11076452,
+        "ExiryTs": 1751011200,
+        "Strike": 10000.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.9095251425997705,
+        "MarkVol": 0.9622808571129519,
+        "Amount": -200.0,
+        "k": 2.7952434128045875,
+        "linear_mult_cap": 3.970367585786923,
+        "abs_mult_cap": 0.12036758578692273,
+        "k_star": 3.4965357620985755,
+        "linear_multiplier": 4.17403984849358,
+        "abs_multiplier": 1.0962257286006278
+      },
+      {
+        "Expiry": 11076452,
+        "ExiryTs": 1751011200,
+        "Strike": 2000.0,
+        "IsCall": 0,
+        "MarkDiscount": 0.9095251425997705,
+        "MarkVol": 0.8795820739028171,
+        "Amount": 1000.0,
+        "k": 1.185805500370487,
+        "linear_mult_cap": 3.970367585786923,
+        "abs_mult_cap": 0.12036758578692273,
+        "k_star": 3.4965357620985755,
+        "linear_multiplier": 2.346499518967623,
+        "abs_multiplier": 1.0408211312578663
+      },
+      {
+        "Expiry": 18938852,
+        "ExiryTs": 1758873600,
+        "Strike": 3000.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.8401635979647669,
+        "MarkVol": 347.26350790300535,
+        "Amount": -1.0,
+        "k": 0.2948185880211008,
+        "linear_mult_cap": 3.9612525143612096,
+        "abs_mult_cap": 0.1112525143612097,
+        "k_star": 4.190645791024023,
+        "linear_multiplier": 1.2786804066286004,
+        "abs_multiplier": 1.0078267911041354
+      },
+      {
+        "Expiry": 18938852,
+        "ExiryTs": 1758873600,
+        "Strike": 4000.0,
+        "IsCall": 1,
+        "MarkDiscount": 0.8401635979647669,
+        "MarkVol": 339.8353974095024,
+        "Amount": -200.0,
+        "k": 0.5825006604728816,
+        "linear_mult_cap": 3.9612525143612096,
+        "abs_mult_cap": 0.1112525143612097,
+        "k_star": 4.190645791024023,
+        "linear_multiplier": 1.5506149459965273,
+        "abs_multiplier": 1.0154641232703272
+      }
+    ],
+    "OptionFeeds": [
+      {
+        "FeedExpiry": 794852,
+        "Forward": 1734.0,
+        "ForwardConfidence": 0.6,
+        "Rate": 0.53,
+        "RateConfidence": 0.51,
+        "SVIparam": [
+          "10.813917021071565824",
+          "0.158139184423882584",
+          "-0.0035144021250414",
+          "0.1",
+          "0.05",
+          1734.0,
+          "0.000003170958904109"
+        ],
+        "OptionVolConfidences": 0.4
+      },
+      {
+        "FeedExpiry": 1399652,
+        "Forward": 2134.0,
+        "ForwardConfidence": 0.69,
+        "Rate": 2.12,
+        "RateConfidence": 0.2,
+        "SVIparam": [
+          "0.00895535718037856",
+          "0.066742226044678232",
+          "-0.395012519727674624",
+          "-0.068372460489298664",
+          "0.15012448505089136",
+          2134.0,
+          "0.04438419583968"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 3214052,
+        "Forward": 1111.0,
+        "ForwardConfidence": 0.31,
+        "Rate": 0.21000000000000002,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.024537690770119612",
+          "0.109352002425581584",
+          "-0.415043334267211712",
+          "-0.119132790857374784",
+          "0.172435504151341056",
+          1111.0,
+          "0.10191907661086"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 11076452,
+        "Forward": 611.0,
+        "ForwardConfidence": 0.11,
+        "Rate": 0.27,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          "0.046070200405977232",
+          "0.195834452450896224",
+          "-0.208147474605539104",
+          "-0.13536259372264304",
+          "0.540183983238939136",
+          611.0,
+          "0.351234145104010048"
+        ],
+        "OptionVolConfidences": 0.95
+      },
+      {
+        "FeedExpiry": 18938852,
+        "Forward": 2234.0,
+        "ForwardConfidence": 0.51,
+        "Rate": 0.29,
+        "RateConfidence": 1.0,
+        "SVIparam": [
+          ".23813917021071565824",
+          "0.3158139184423882584",
+          "-0.035144021250414",
+          "0.5",
+          "0.4",
+          2234.0,
+          "0.000003170958904109"
+        ],
+        "OptionVolConfidences": 0.9
+      }
+    ],
+    "LastEntryPrice": 3000.0,
+    "FundingIndex": -43.0,
+    "SystemFundingIndex": 120.0
+  },
+  "Parameters": {
+    "Scenarios": [
+      {
+        "SpotShock": 1.18,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.135,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.135,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.135,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.09,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.09,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.09,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.045,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.045,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1.045,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.955,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.955,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.955,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.91,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.91,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.91,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.865,
+        "VolShockDirection": "Down",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.865,
+        "VolShockDirection": "None",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.865,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.8200000000000001,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 1
+      },
+      {
+        "SpotShock": 0.33999999999999997,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.25
+      },
+      {
+        "SpotShock": 0.6699999999999999,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.5
+      },
+      {
+        "SpotShock": 1.5,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.3333333333333333
+      },
+      {
+        "SpotShock": 2.0,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.2
+      },
+      {
+        "SpotShock": 3.0,
+        "VolShockDirection": "Up",
+        "DampeningFactor": 0.1
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "LINEAR",
+        "DampeningFactor": 3.0
+      },
+      {
+        "SpotShock": 1,
+        "VolShockDirection": "ABS",
+        "DampeningFactor": 1.0
+      }
+    ],
+    "SkewShock": {
+      "LINEAR_SCALE_CAP": 4,
+      "LINEAR_CBASE": -0.05,
+      "ABS_SCALE_CAP": 0.15,
+      "ABS_CBASE": -0.05,
+      "MIN_K_STAR": 0.01,
+      "MIN_WIDTH_SCALE": 3.0,
+      "VOL_PARAM_STATIC": 2.5,
+      "VOL_PARAM_SCALE": -0.9
+    },
+    "VolShock": {
+      "VOLRANGEUP": 0.5,
+      "MIN_VOL_EVAL_SHOCKED": 0.45,
+      "VOLRANGEDOWN": 0.275,
+      "SHORTTERMPOWER": 0.3,
+      "LONGTERMPOWER": 0.13,
+      "DTE_FLOOR": 1.0
+    },
+    "Margin": {
+      "MM_LOSS_FACTOR": 0.8,
+      "IM_LOSS_FACTOR": 1.0,
+      "SHORT_RATE_MULTSCALE": 0.5,
+      "LONG_RATE_MULTSCALE": 1,
+      "SHORT_RATE_ADDSCALE": 0.08,
+      "LONG_RATE_ADDSCALE": 0.08,
+      "BASE_STATIC_DISCOUNT": 0.95,
+      "BASE_STATIC_DISCOUNT_NEG": 1.04
+    },
+    "BasisContingency": {
+      "SCENARIO_SPOT_UP": 1.045,
+      "SCENARIO_SPOT_DOWN": 0.955,
+      "BASIS_CONT_ADD_FACTOR": 0.5,
+      "BASIS_CONT_MULT_FACTOR": 2.0
+    },
+    "OtherContingency": {
+      "PEG_LOSS_THRESHOLD": 0.98,
+      "PEG_LOSS_FACTOR": 2.0,
+      "CONF_THRESHOLD": 0.55,
+      "CONF_MARGIN": 1.0,
+      "MM_PERP_PERCENT": 0.015,
+      "IM_PERP_PERCENT": 0.005000000000000001,
+      "IM_PERP_PERCENT_NORMAL": 0.02,
+      "MM_OPTION_PERCENT": 0.003,
+      "IM_OPTION_PERCENT": 0.002,
+      "IM_OPTION_PERCENT_NORMAL": 0.005
+    }
+  },
+  "Result": {
+    "worst_reg_loss": -382576.11486095615,
+    "worst_tail_loss": -189993.70077265264,
+    "worst_skew_loss": -721717.3384291362,
+    "reg_losses": [
+      [
+        "0.179999999999999993",
+        1,
+        "-382576.114860956149641424"
+      ],
+      [
+        "0.135000000000000009",
+        -1,
+        "-378356.232821662037167698"
+      ],
+      [
+        "0.135000000000000009",
+        0,
+        "-373968.226487810432445258"
+      ],
+      [
+        "0.135000000000000009",
+        1,
+        "-355126.37320249411277473"
+      ],
+      [
+        "0.089999999999999997",
+        -1,
+        "-348904.075702228583395481"
+      ],
+      [
+        "0.089999999999999997",
+        0,
+        "-344669.73968952929135412"
+      ],
+      [
+        "0.089999999999999997",
+        1,
+        "-327287.495156124816276133"
+      ],
+      [
+        "0.044999999999999998",
+        -1,
+        "-318597.549047104897908866"
+      ],
+      [
+        "0.044999999999999998",
+        0,
+        "-314802.015815710066817701"
+      ],
+      [
+        "0.044999999999999998",
+        1,
+        "-299018.788656932068988681"
+      ],
+      [
+        0,
+        -1,
+        "-287408.284834196325391531"
+      ],
+      [
+        0,
+        0,
+        "-284312.21312676154775545"
+      ],
+      [
+        0,
+        1,
+        "-270286.833326584252063185"
+      ],
+      [
+        "-0.044999999999999998",
+        -1,
+        "-255490.272179826162755489"
+      ],
+      [
+        "-0.044999999999999998",
+        0,
+        "-253212.259879655728582293"
+      ],
+      [
+        "-0.044999999999999998",
+        1,
+        "-241069.93147853430127725"
+      ],
+      [
+        "-0.089999999999999997",
+        -1,
+        "-223099.529062668210826814"
+      ],
+      [
+        "-0.089999999999999997",
+        0,
+        "-221577.156041323964018375"
+      ],
+      [
+        "-0.089999999999999997",
+        1,
+        "-211361.931732326163910329"
+      ],
+      [
+        "-0.135000000000000009",
+        -1,
+        "-190473.108759001595899463"
+      ],
+      [
+        "-0.135000000000000009",
+        0,
+        "-189524.755076212459243834"
+      ],
+      [
+        "-0.135000000000000009",
+        1,
+        "-181174.549439894210081547"
+      ],
+      [
+        "-0.179999999999999993",
+        1,
+        "-150717.369954681489616632"
+      ]
+    ],
+    "tail_losses": [
+      [
+        "-0.660000000000000031",
+        1,
+        "46364.452941062321770005"
+      ],
+      [
+        "-0.330000000000000016",
+        1,
+        "-23877.905121705931378528"
+      ],
+      [
+        "0.5",
+        1,
+        "-189993.700772652635350823"
+      ],
+      [
+        "1",
+        1,
+        "-169106.833768837415846065"
+      ],
+      [
+        "2",
+        1,
+        "-132838.68380849965615198"
+      ]
+    ],
+    "skew_losses": [
+      [
+        "LINEAR",
+        "-721717.338429136201739311"
+      ],
+      [
+        "ABS",
+        "-283725.272080439492128789"
+      ]
+    ],
+    "worst_reg_scenario": [
+      0.18,
+      1
+    ],
+    "worst_tail_scenario": [
+      0.5,
+      1,
+      0.3333333333333333
+    ],
+    "worst_skew_scenario": "LINEAR",
+    "ForwardContingency": -60108.63544509119,
+    "Cash": -12312324.0,
+    "PortfolioMTM": -5258774.975987909,
+    "OptionMTM": 432880.1132978054,
+    "OptionMTMPerExpiry": [
+      -22242.87654973559,
+      -7707.240526529409,
+      -425247.52219390497,
+      1265339.7736164865,
+      -377262.02104851115
+    ],
+    "OptionMTMPerExpiryDiscounted": [
+      -22542.0,
+      -8431.520946160335,
+      -434446.99993400706,
+      1063022.4210512112,
+      -449034.0
+    ],
+    "CollateralMTM": 6723619.910714285,
+    "PerpMTM": -123000.0,
+    "MMLossFactor": 0.8,
+    "IMLossFactor": 1.8399999999999999,
+    "MMPerpCont": -2276.73,
+    "IMPerpCont": -758.9099999999999,
+    "IMPerpContNormal": -3035.64,
+    "MMBaseCont": -1571137.797857143,
+    "IMBaseCont": -352960.8914285712,
+    "IMBaseContNormal": -1924098.6892857142,
+    "MMOptionCont": -1788.0659999999998,
+    "IMOptionCont": -1192.0440000000003,
+    "IMOptionContNormal": -2980.11,
+    "OracleCont": -7684988.433444644,
+    "discount_factors": [
+      [
+        0.935505648582832,
+        1.0134480560369772
+      ],
+      [
+        0.8616249664789267,
+        1.0939740257408408
+      ],
+      [
+        0.9223327675518455,
+        1.0216332306714941
+      ],
+      [
+        0.8401082801759806,
+        1.09947482830614
+      ],
+      [
+        0.7607156031658348,
+        1.1902443790976243
+      ]
+    ],
+    "UnrealisedFunding": 20049.0,
+    "UnrealisedPerpPNL": -123000.0,
+    "IMHand": -16201837.75142788,
+    "MMHand": -7411351.440588362,
+    "IM": -16201837.75142788,
+    "MM": -7411351.440588361,
+    "im_loss_factor": 1.8399999999999999,
+    "worst_all_scenarios": "skew",
+    "VolShockUpMultiplier": [
+      1.712811375927374,
+      1.712811375927374,
+      1.6015261094358761,
+      1.6015261094358761,
+      1.6015261094358761,
+      1.4862120042860796,
+      1.4862120042860796,
+      1.4139715227699674,
+      1.4139715227699674,
+      1.3860882452894718,
+      1.3860882452894718
+    ],
+    "VolShockDownMultiplier": [
+      0.6079537432399443,
+      0.6079537432399443,
+      0.6691606398102681,
+      0.6691606398102681,
+      0.6691606398102681,
+      0.7325833976426561,
+      0.7325833976426561,
+      0.7723156624765178,
+      0.7723156624765178,
+      0.7876514650907905,
+      0.7876514650907905
+    ],
+    "VolShockUpEvaluated": [
+      3230.8669342082135,
+      3187.692175562535,
+      1.0486338169955685,
+      1.254890459322247,
+      1.2822026721364614,
+      1.3743250017895365,
+      1.3743250017895365,
+      1.36063772886439,
+      1.2437040044375323,
+      481.3378663223433,
+      471.0418496825875
+    ],
+    "VolShockDownEvaluated": [
+      1146.7798930857477,
+      1131.45523066172,
+      0.4381473844061197,
+      0.5243269514648508,
+      0.5357387278284791,
+      0.6774320731986421,
+      0.6774320731986421,
+      0.7431845776496608,
+      0.6793150121087236,
+      273.5226107723695,
+      267.67184865930557
+    ]
+  }
+}

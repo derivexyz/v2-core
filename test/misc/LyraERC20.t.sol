@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "openzeppelin/access/Ownable.sol";
 
-import {LyraERC20} from "../../src/l2/LyraERC20.sol";
+import {LyraERC20, Ownable} from "../../src/l2/LyraERC20.sol";
 
 contract UNIT_LyraERC20_Test is Test {
   LyraERC20 public usdc;
