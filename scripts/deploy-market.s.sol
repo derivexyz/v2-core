@@ -9,6 +9,7 @@ import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
 import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
 import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
 import {LyraRateFeedStatic} from "../src/feeds/static/LyraRateFeedStatic.sol";
+import {LyraRateFeed} from "../src/feeds/LyraRateFeed.sol";
 import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
 import {PMRM} from "../src/risk-managers/PMRM.sol";
 import {PMRMLib} from "../src/risk-managers/PMRMLib.sol";
@@ -81,7 +82,7 @@ contract DeployMarket is Utils {
     market.ibpFeed = new LyraSpotDiffFeed(market.spotFeed);
 
     // interest and vol feed
-    market.rateFeed = new LyraRateFeedStatic();
+    market.rateFeed = new LyraRateFeed();
 
     market.volFeed = new LyraVolFeed();
 
@@ -91,6 +92,7 @@ contract DeployMarket is Utils {
     market.perpFeed.setHeartbeat(Config.PERP_HEARTBEAT);
     market.iapFeed.setHeartbeat(Config.IMPACT_PRICE_HEARTBEAT);
     market.ibpFeed.setHeartbeat(Config.IMPACT_PRICE_HEARTBEAT);
+    market.rateFeed.setHeartbeat(Config.RATE_HEARTBEAT);
 
     market.perpFeed.setSpotDiffCap(Config.PERP_MAX_PERCENT_DIFF);
     market.iapFeed.setSpotDiffCap(Config.PERP_MAX_PERCENT_DIFF);
@@ -106,6 +108,7 @@ contract DeployMarket is Utils {
       market.ibpFeed.addSigner(config.feedSigners[i], true);
       market.volFeed.addSigner(config.feedSigners[i], true);
       market.forwardFeed.addSigner(config.feedSigners[i], true);
+      market.rateFeed.addSigner(config.feedSigners[i], true);
     }
     market.spotFeed.setRequiredSigners(config.requiredSigners);
     market.perpFeed.setRequiredSigners(config.requiredSigners);
@@ -113,6 +116,7 @@ contract DeployMarket is Utils {
     market.ibpFeed.setRequiredSigners(config.requiredSigners);
     market.volFeed.setRequiredSigners(config.requiredSigners);
     market.forwardFeed.setRequiredSigners(config.requiredSigners);
+    market.rateFeed.setRequiredSigners(config.requiredSigners);
 
     market.option = new OptionAsset(deployment.subAccounts, address(market.forwardFeed));
 
@@ -124,8 +128,6 @@ contract DeployMarket is Utils {
     if (fundingConvergencePeriod != 8e18) {
       market.perp.setConvergencePeriod(fundingConvergencePeriod);
     }
-
-    market.rateFeed.setRate(0, 1e18);
 
     market.base = new WrappedERC20Asset(deployment.subAccounts, IERC20Metadata(marketERC20));
 
@@ -176,13 +178,6 @@ contract DeployMarket is Utils {
     market.pmrmViewer.setOIFeeRateBPS(address(market.option), Config.OI_FEE_BPS);
     market.pmrmViewer.setOIFeeRateBPS(address(market.base), Config.OI_FEE_BPS);
     market.pmrm.setMinOIFee(Config.MIN_OI_FEE);
-
-    market.pmrm.setWhitelistedCallee(address(market.spotFeed), true);
-    market.pmrm.setWhitelistedCallee(address(market.iapFeed), true);
-    market.pmrm.setWhitelistedCallee(address(market.ibpFeed), true);
-    market.pmrm.setWhitelistedCallee(address(market.perpFeed), true);
-    market.pmrm.setWhitelistedCallee(address(market.forwardFeed), true);
-    market.pmrm.setWhitelistedCallee(address(market.volFeed), true);
 
     market.pmrm.setWhitelistedCallee(address(deployment.perpSettlementHelper), true);
     market.pmrm.setWhitelistedCallee(address(deployment.optionSettlementHelper), true);
@@ -238,13 +233,6 @@ contract DeployMarket is Utils {
     deployment.srmViewer.setOIFeeRateBPS(address(market.option), Config.OI_FEE_BPS);
     deployment.srmViewer.setOIFeeRateBPS(address(market.base), Config.OI_FEE_BPS);
     deployment.srm.setMinOIFee(Config.MIN_OI_FEE);
-
-    deployment.srm.setWhitelistedCallee(address(market.spotFeed), true);
-    deployment.srm.setWhitelistedCallee(address(market.iapFeed), true);
-    deployment.srm.setWhitelistedCallee(address(market.ibpFeed), true);
-    deployment.srm.setWhitelistedCallee(address(market.perpFeed), true);
-    deployment.srm.setWhitelistedCallee(address(market.forwardFeed), true);
-    deployment.srm.setWhitelistedCallee(address(market.volFeed), true);
   }
 
   function _whitelistAndSetCapForManager(address manager, string memory marketName, Market memory market) internal {

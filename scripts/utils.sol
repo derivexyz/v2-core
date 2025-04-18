@@ -45,6 +45,23 @@ contract Utils is Script {
     deployment.stableFeed = ISpotFeed(abi.decode(vm.parseJson(content, ".stableFeed"), (address)));
   }
 
+  function _loadMarket(string memory marketName) internal view returns (Market memory market) {
+    string memory content = _readDeploymentFile(marketName);
+    market.option = OptionAsset(vm.parseJsonAddress(content, ".option"));
+    market.perp = PerpAsset(vm.parseJsonAddress(content, ".perp"));
+    market.base = WrappedERC20Asset(vm.parseJsonAddress(content, ".base"));
+    market.spotFeed = LyraSpotFeed(vm.parseJsonAddress(content, ".spotFeed"));
+    market.perpFeed = LyraSpotDiffFeed(vm.parseJsonAddress(content, ".perpFeed"));
+    market.iapFeed = LyraSpotDiffFeed(vm.parseJsonAddress(content, ".iapFeed"));
+    market.ibpFeed = LyraSpotDiffFeed(vm.parseJsonAddress(content, ".ibpFeed"));
+    market.volFeed = LyraVolFeed(vm.parseJsonAddress(content, ".volFeed"));
+    market.rateFeed = LyraRateFeed(vm.parseJsonAddress(content, ".rateFeed"));
+    market.forwardFeed = LyraForwardFeed(vm.parseJsonAddress(content, ".forwardFeed"));
+    market.pmrm = PMRM(vm.parseJsonAddress(content, ".pmrm"));
+    market.pmrmLib = PMRMLib(vm.parseJsonAddress(content, ".pmrmLib"));
+    market.pmrmViewer = BasePortfolioViewer(vm.parseJsonAddress(content, ".pmrmViewer"));
+  }
+
   function _getV2CoreContract(string memory filename, string memory key) internal view returns (address) {
     string memory content = _readDeploymentFile(filename);
     return abi.decode(vm.parseJson(content, string.concat(".", key)), (address));
