@@ -55,7 +55,7 @@ contract Utils is Script {
     market.iapFeed = LyraSpotDiffFeed(vm.parseJsonAddress(content, ".iapFeed"));
     market.ibpFeed = LyraSpotDiffFeed(vm.parseJsonAddress(content, ".ibpFeed"));
     market.volFeed = LyraVolFeed(vm.parseJsonAddress(content, ".volFeed"));
-    market.rateFeed = LyraRateFeed(vm.parseJsonAddress(content, ".rateFeed"));
+    market.rateFeed = LyraRateFeedStatic(vm.parseJsonAddress(content, ".rateFeed"));
     market.forwardFeed = LyraForwardFeed(vm.parseJsonAddress(content, ".forwardFeed"));
     market.pmrm = PMRM(vm.parseJsonAddress(content, ".pmrm"));
     market.pmrmLib = PMRMLib(vm.parseJsonAddress(content, ".pmrmLib"));

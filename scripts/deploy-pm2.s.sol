@@ -1,41 +1,42 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+import "./config-mainnet.sol";
+import "forge-std/console2.sol";
 import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import {OptionAsset} from "../src/assets/OptionAsset.sol";
-import {PerpAsset} from "../src/assets/PerpAsset.sol";
-import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
-import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
-import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
-import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
-import {LyraRateFeedStatic} from "../src/feeds/static/LyraRateFeedStatic.sol";
-import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
-import {PMRM_2} from "../src/risk-managers/PMRM_2.sol";
-import {PMRMLib_2} from "../src/risk-managers/PMRMLib_2.sol";
 import {BasePortfolioViewer} from "../src/risk-managers/BasePortfolioViewer.sol";
-import {IPMRM_2} from "../src/interfaces/IPMRM_2.sol";
+import {Deployment, ConfigJson, Market} from "./types.sol";
 import {IManager} from "../src/interfaces/IManager.sol";
-
+import {IPMRM_2} from "../src/interfaces/IPMRM_2.sol";
+import {LyraForwardFeed} from "../src/feeds/LyraForwardFeed.sol";
+import {LyraRateFeedStatic} from "../src/feeds/static/LyraRateFeedStatic.sol";
+import {LyraSpotDiffFeed} from "../src/feeds/LyraSpotDiffFeed.sol";
+import {LyraSpotFeed} from "../src/feeds/LyraSpotFeed.sol";
+import {LyraRateFeed} from "../src/feeds/LyraRateFeed.sol";
+import {LyraVolFeed} from "../src/feeds/LyraVolFeed.sol";
 import {MockSpotDiffFeed} from "../test/shared/mocks/MockSpotDiffFeed.sol";
 
-import "forge-std/console2.sol";
-import {Deployment, ConfigJson, Market} from "./types.sol";
-import {Utils} from "./utils.sol";
+import {OptionAsset} from "../src/assets/OptionAsset.sol";
+
+import {PMRMLib_2} from "../src/risk-managers/PMRMLib_2.sol";
+import {PMRM_2} from "../src/risk-managers/PMRM_2.sol";
+import {PerpAsset} from "../src/assets/PerpAsset.sol";
 
 // get all default params
-import "./config-mainnet.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
-
+import {Utils} from "./utils.sol";
+import {WrappedERC20Asset} from "../src/assets/WrappedERC20Asset.sol";
 
 /**
  * MARKET_NAME=weth forge script scripts/deploy-market.s.sol --private-key {} --rpc {} --broadcast
  **/
-contract DeployMarket is Utils {
+contract DeployPm2Market is Utils {
   struct PM2Contracts {
     PMRM_2 pmrm2;
     PMRM_2 pmrm_imp;
     PMRMLib_2 pmrmLib_2;
     BasePortfolioViewer pmrmViewer;
+    LyraRateFeed rateFeed;
   }
 
   /// @dev main function
@@ -78,15 +79,19 @@ contract DeployMarket is Utils {
     Market memory deployedMarket
   ) internal returns (PM2Contracts memory pm2Contracts)  {
     // get the market ERC20 from config (it should be added to the config)
-    address marketERC20 = _getMarketERC20(marketName);
 
-    console2.log("target erc20:", marketERC20);
+    pm2Contracts.rateFeed = new LyraRateFeed();
+    pm2Contracts.rateFeed.setHeartbeat(Config.RATE_HEARTBEAT);
+    for (uint i=0; i<config.feedSigners.length; ++i) {
+      pm2Contracts.rateFeed.addSigner(config.feedSigners[i], true);
+    }
+    pm2Contracts.rateFeed.setRequiredSigners(config.requiredSigners);
 
     IPMRM_2.Feeds memory feeds = IPMRM_2.Feeds({
       spotFeed: deployedMarket.spotFeed,
       stableFeed: deployment.stableFeed,
       forwardFeed: deployedMarket.forwardFeed,
-      interestRateFeed: deployedMarket.rateFeed,
+      interestRateFeed: pm2Contracts.rateFeed,
       volFeed: deployedMarket.volFeed
     });
 
@@ -168,6 +173,7 @@ contract DeployMarket is Utils {
     string memory file = string.concat(marketName, "_2.json");
 
     string memory path = string.concat(deploymentDir, chainDir, file);
+    vm.serializeAddress("PMRM2", "rateFeed", address(pm2Contracts.rateFeed));
     vm.serializeAddress("PMRM2", "pmrm2", address(pm2Contracts.pmrm2));
     vm.serializeAddress("PMRM2", "pmrmLib2", address(pm2Contracts.pmrmLib_2));
     string memory json = vm.serializeAddress("PMRM2", "pmrmViewer", address(pm2Contracts.pmrmViewer));
