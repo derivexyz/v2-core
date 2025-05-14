@@ -176,7 +176,7 @@ contract DeployPm2Market is Utils {
     vm.serializeAddress("PMRM2", "rateFeed", address(pm2Contracts.rateFeed));
     vm.serializeAddress("PMRM2", "pmrm2", address(pm2Contracts.pmrm2));
     vm.serializeAddress("PMRM2", "pmrmLib2", address(pm2Contracts.pmrmLib_2));
-    string memory json = vm.serializeAddress("PMRM2", "pmrmViewer", address(pm2Contracts.pmrmViewer));
+    string memory json = vm.serializeAddress("PMRM2", "pmrmViewer2", address(pm2Contracts.pmrmViewer));
     vm.writeJson(json, path);
   }
 }

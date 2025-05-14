@@ -22,7 +22,7 @@ contract DeployERC20s is Utils {
     address[] memory feedSigners = new address[](1);
     feedSigners[0] = deployer;
 
-    // write to configs file: eg: input/31337/config.json
+    // write to shared file: eg: deployments/31337/shared.json
     string memory objKey = "network-config";
     vm.serializeAddress(objKey, "usdc", address(new LyraERC20("USDC", "USDC", 6)));
     vm.serializeAddress(objKey, "btc", address(new LyraERC20("Lyra WBTC", "WBTC", 8)));
@@ -34,10 +34,11 @@ contract DeployERC20s is Utils {
 //    vm.serializeAddress(objKey, "susde", address(new LyraERC20("Lyra Staked USDe", "sUSDe", 18)));
 
     vm.serializeAddress(objKey, "feedSigners", feedSigners);
+    vm.serializeUint(objKey, "requiredSigners", 1);
     string memory finalObj = vm.serializeBool(objKey, "useMockedFeed", false);
 
     // build path
-    _writeToInput("config", finalObj);
+    _writeToDeployments("shared", finalObj);
 
     vm.stopBroadcast();
   }

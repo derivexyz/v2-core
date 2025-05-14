@@ -47,9 +47,6 @@ contract DeployCore is Utils {
     /// @dev deploy and initiate contracts
     function _deployCoreContracts(address deployer, ConfigJson memory config) internal returns (Deployment memory deployment)  {
 
-        uint nonce = vm.getNonce(deployer);
-
-        // nonce: nonce
         deployment.subAccounts = new SubAccounts("Lyra Margin Accounts", "LyraMarginNFTs");
 
         (uint minRate, uint rateMultiplier, uint highRateMultiplier, uint optimalUtil) = Config.getDefaultInterestRateModel();
@@ -59,21 +56,19 @@ contract DeployCore is Utils {
         // nonce + 2
         deployment.cash = new CashAsset(deployment.subAccounts, IERC20Metadata(config.usdc), deployment.rateModel);
 
-        // nonce + 3: Deploy SM
-        address srmAddr = computeCreateAddress(deployer, nonce + 6);
-        console2.log("predicted SRM addr", srmAddr);
-        deployment.securityModule = new SecurityModule(deployment.subAccounts, deployment.cash, IManager(srmAddr));
-
-        // nonce + 4: Deploy Auction
-        deployment.auction = new DutchAuction(deployment.subAccounts, deployment.securityModule, deployment.cash);
-
-        // nonce + 5: Deploy Viewer
+        // nonce + 3: Deploy Viewer
         deployment.srmViewer = new SRMPortfolioViewer(deployment.subAccounts, deployment.cash);
 
-        // nonce + 6: Deploy Standard Manager. Shared by all assets
-        deployment.srm = new StandardManager(deployment.subAccounts, deployment.cash, deployment.auction, deployment.srmViewer);
+        // nonce + 4: Deploy Standard Manager. Shared by all assets
+        deployment.srm = new StandardManager(deployment.subAccounts, deployment.cash, IDutchAuction(address(0)), deployment.srmViewer);
 
-        assert(address(deployment.srm) == address(srmAddr));
+        // nonce + 5: Deploy SM
+        deployment.securityModule = new SecurityModule(deployment.subAccounts, deployment.cash, deployment.srm);
+
+        // nonce + 6: Deploy Auction
+        deployment.auction = new DutchAuction(deployment.subAccounts, deployment.securityModule, deployment.cash);
+
+        deployment.srm.setLiquidation(deployment.auction);
 
         // Deploy USDC stable feed
         LyraSpotFeed stableFeed = new LyraSpotFeed();
