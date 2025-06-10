@@ -561,9 +561,9 @@ library Config {
             optionCap = 0;
             baseCap = 0;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("AAVE"))) {
-            perpCap = 6_000e18;
-            optionCap = 0;
-            baseCap = 0;
+            perpCap = 24_000e18;
+            optionCap = 20_000e18;
+            baseCap = 10_000e18;
         } else if (keccak256(abi.encodePacked(market)) == keccak256(abi.encodePacked("OP"))) {
             perpCap = 500_000e18;
             optionCap = 0;
