@@ -83,7 +83,7 @@ contract TestPMRM_2_1_Upgrade is PMRM_2SimTest {
     // 5) Deploy a new lib with DIFFERENT parameters, whitelist it for accA,
     //    and show the margin requirement changes.
     PMRMLib_2 newLib = deployNewLib();
-    pmrmUpgraded.setWlLib(accA, IPMRMLib_2(address(newLib)));
+    pmrmUpgraded.setLibOverride(accA, IPMRMLib_2(address(newLib)));
 
     int mmNewLib = pmrmUpgraded.getMargin(accA, false);
 
@@ -109,7 +109,7 @@ contract TestPMRM_2_1_Upgrade is PMRM_2SimTest {
 
     ISubAccounts.AssetBalance[] memory balances = setupTestScenarioAndGetAssetBalances(".BigOne");
     setBalances(acc, balances);
-    pmrmUpgraded.setWlLib(acc, IPMRMLib_2(address(newLib)));
+    pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(newLib)));
 
     (int mm, int mtm, uint worstScenario) = pmrmUpgraded.getMarginAndMtM(acc, false);
 
@@ -137,7 +137,7 @@ contract TestPMRM_2_1_Upgrade is PMRM_2SimTest {
 
     // Remove from WL (permissionless once the account is in liquidation)
     vm.prank(alice);
-    pmrmUpgraded.removeFromWL(acc);
+    pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(0)));
     assertEq(address(pmrmUpgraded.getAccountLib(acc)), address(lib));
 
     uint maxPropNoWl = auction.getMaxProportion(acc, worstScenario);
@@ -161,26 +161,27 @@ contract TestPMRM_2_1_Upgrade is PMRM_2SimTest {
 
     // Non-owner/guardian cannot set WL lib
     vm.prank(bob);
-    vm.expectRevert(PMRM_2_1.PM21_OnlyOwnerOrGuardian.selector);
-    pmrmUpgraded.setWlLib(acc, IPMRMLib_2(address(newLib)));
+    vm.expectRevert(PMRM_2_1.PM21_CannotChangeLib.selector);
+    pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(newLib)));
 
     // Owner can set WL lib
     vm.prank(address(this));
-    pmrmUpgraded.setWlLib(acc, IPMRMLib_2(address(newLib)));
+    pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(newLib)));
     assertEq(address(pmrmUpgraded.getAccountLib(acc)), address(newLib));
 
-
-    vm.expectRevert(PMRM_2_1.PM21_AccountNotInLiquidation.selector);
-    pmrmUpgraded.removeFromWL(acc);
+    // cant remove from WL if not owner/guardian or in liquidation
+    vm.prank(alice);
+    vm.expectRevert(PMRM_2_1.PM21_CannotChangeLib.selector);
+    pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(0)));
 
     // Non-owner/non-guardian cannot remove from WL
     vm.prank(alice);
-    vm.expectRevert(PMRM_2_1.PM21_OnlyOwnerOrGuardian.selector);
-    pmrmUpgraded.setWlLib(acc, IPMRMLib_2(address(0)));
+    vm.expectRevert(PMRM_2_1.PM21_CannotChangeLib.selector);
+    pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(0)));
 
     // Guardian can remove from WL
     vm.prank(bob);
-    pmrmUpgraded.setWlLib(acc, IPMRMLib_2(address(0)));
+    pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(0)));
     // Resets to default lib
     assertEq(address(pmrmUpgraded.getAccountLib(acc)), address(lib));
   }

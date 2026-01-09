@@ -6,7 +6,7 @@ import "./PMRM_2.sol";
 /**
  * @title PMRM_2_1
  * @author Derive
- * @notice Upgrade to PMRM_2 adding per-account whitelisted risk libraries
+ * @notice Upgrade to PMRM_2 adding per-account risk library overrides
  */
 contract PMRM_2_1 is PMRM_2 {
   /// @notice Optional per-account risk lib override (0-address => use default `lib`).
@@ -14,47 +14,39 @@ contract PMRM_2_1 is PMRM_2 {
 
   bytes[48] private __gap;
 
-  ///////////////////
-  // WL management //
-  ///////////////////
+  //////////////////
+  // Lib Override //
+  //////////////////
 
   /// @notice Set (or clear) a per-account risk lib override.
   /// @dev Owner can set any lib; guardian may only clear back to default (set to 0).
-  function setWlLib(uint accountId, IPMRMLib_2 _wlLib) external {
+  /// Anyone can clear it during liquidation.
+  function setLibOverride(uint accountId, IPMRMLib_2 _libOverride) external {
     bool allowed = msg.sender == owner();
-    if (address(_wlLib) == address(0)) {
-      allowed = allowed || msg.sender == guardian;
+    if (address(_libOverride) == address(0)) {
+      // Allow guardian to clear overridden lib at any time, or anyone if account is in liquidation
+      allowed = allowed || msg.sender == guardian || liquidation.isAuctionLive(accountId);
     }
-    require(allowed, PM21_OnlyOwnerOrGuardian());
-    accountLibOverride[accountId] = _wlLib;
-    emit WlLibUpdated(accountId, _wlLib);
+    require(allowed, PM21_CannotChangeLib());
+    accountLibOverride[accountId] = _libOverride;
+    emit LibOverrideUpdated(accountId, _libOverride);
   }
 
-  /// @notice Permissionless removal of a WL override once the account is already in liquidation.
-  /// @dev Prevents an account from remaining on a special lib while being liquidated.
-  function removeFromWL(uint accountId) external {
-    require(liquidation.isAuctionLive(accountId), PM21_AccountNotInLiquidation());
-    IPMRMLib_2 zeroLib = IPMRMLib_2(address(0));
-    accountLibOverride[accountId] = zeroLib;
-    emit WlLibUpdated(accountId, zeroLib);
-  }
-
-  /// @notice Returns the lib used for this account (WL override if set, otherwise default `lib`).
+  /// @notice Returns the lib used for this account (override if set, otherwise default `lib`).
   function getAccountLib(uint accountId) public view returns (IPMRMLib_2) {
-    IPMRMLib_2 wlLib = accountLibOverride[accountId];
-    return address(wlLib) == address(0) ? lib : wlLib;
+    IPMRMLib_2 libOverride = accountLibOverride[accountId];
+    return address(libOverride) == address(0) ? lib : libOverride;
   }
 
   ////////////
   // Events //
   ////////////
-  event WlLibUpdated(uint indexed accountId, IPMRMLib_2 wlLib);
+  event LibOverrideUpdated(uint indexed accountId, IPMRMLib_2 libOverride);
 
   ////////////
   // Errors //
   ////////////
-  error PM21_AccountNotInLiquidation();
-  error PM21_OnlyOwnerOrGuardian();
+  error PM21_CannotChangeLib();
 
   /////////////////////////////////////////////
   // Overwritten functions - refer to PMRM_2 //
