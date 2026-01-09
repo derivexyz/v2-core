@@ -256,7 +256,11 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
   // Arrange Portfolio //
   ///////////////////////
 
-  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetBalance[] memory assetBalances) internal view {
+  function _assessRisk(address caller, uint accountId, ISubAccounts.AssetBalance[] memory assetBalances)
+    internal
+    view
+    virtual
+  {
     IPMRM_2.Portfolio memory portfolio = _arrangePortfolio(accountId, assetBalances);
 
     if (trustedRiskAssessor[caller]) {
@@ -280,6 +284,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
   function _arrangePortfolio(uint accountId, ISubAccounts.AssetBalance[] memory assets)
     internal
     view
+    virtual
     returns (IPMRM_2.Portfolio memory portfolio)
   {
     (uint seenExpiries, uint collateralCount, PortfolioExpiryData[] memory expiryCount) =
@@ -507,7 +512,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
    * @notice Get the initial margin or maintenance margin of an account
    * @dev if the returned value is negative, it means the account is under margin requirement
    */
-  function getMargin(uint accountId, bool isInitial) external view returns (int) {
+  function getMargin(uint accountId, bool isInitial) external view virtual returns (int) {
     IPMRM_2.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId));
     (int margin,,) = lib.getMarginAndMarkToMarket(portfolio, isInitial, marginScenarios);
     return margin;
@@ -519,6 +524,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
   function getMarginAndMtM(uint accountId, bool isInitial)
     external
     view
+    virtual
     returns (int margin, int mtm, uint worstScenario)
   {
     IPMRM_2.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId));
@@ -531,6 +537,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
   function getMarginAndMarkToMarket(uint accountId, bool isInitial, uint scenarioId)
     external
     view
+    virtual
     returns (int margin, int mtm)
   {
     IPMRM_2.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId));
@@ -542,7 +549,7 @@ contract PMRM_2 is IPMRM_2, ILiquidatableManager, BaseManagerUpgradeable, Reentr
     return (margin, mtm);
   }
 
-  function getScenarioPnL(uint accountId, uint scenarioId) external view returns (int scenarioMtM) {
+  function getScenarioPnL(uint accountId, uint scenarioId) external view virtual returns (int scenarioMtM) {
     IPMRM_2.Portfolio memory portfolio = _arrangePortfolio(accountId, subAccounts.getAccountBalances(accountId));
     if (scenarioId == marginScenarios.length) {
       // basis scenario
