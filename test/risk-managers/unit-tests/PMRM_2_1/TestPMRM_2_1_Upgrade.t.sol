@@ -161,7 +161,7 @@ contract TestPMRM_2_1_Upgrade is PMRM_2SimTest {
 
     // Non-owner/guardian cannot set WL lib
     vm.prank(bob);
-    vm.expectRevert(PMRM_2_1.PM21_CannotChangeLib.selector);
+    vm.expectRevert(PMRM_2_1.PM21_NotAllowedToChangeLib.selector);
     pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(newLib)));
 
     // Owner can set WL lib
@@ -171,12 +171,12 @@ contract TestPMRM_2_1_Upgrade is PMRM_2SimTest {
 
     // cant remove from WL if not owner/guardian or in liquidation
     vm.prank(alice);
-    vm.expectRevert(PMRM_2_1.PM21_CannotChangeLib.selector);
+    vm.expectRevert(PMRM_2_1.PM21_NotAllowedToChangeLib.selector);
     pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(0)));
 
     // Non-owner/non-guardian cannot remove from WL
     vm.prank(alice);
-    vm.expectRevert(PMRM_2_1.PM21_CannotChangeLib.selector);
+    vm.expectRevert(PMRM_2_1.PM21_NotAllowedToChangeLib.selector);
     pmrmUpgraded.setLibOverride(acc, IPMRMLib_2(address(0)));
 
     // Guardian can remove from WL

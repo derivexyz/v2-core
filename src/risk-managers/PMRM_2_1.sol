@@ -27,7 +27,7 @@ contract PMRM_2_1 is PMRM_2 {
       // Allow guardian to clear overridden lib at any time, or anyone if account is in liquidation
       allowed = allowed || msg.sender == guardian || liquidation.isAuctionLive(accountId);
     }
-    require(allowed, PM21_CannotChangeLib());
+    require(allowed, PM21_NotAllowedToChangeLib());
     accountLibOverride[accountId] = _libOverride;
     emit LibOverrideUpdated(accountId, _libOverride);
   }
@@ -46,7 +46,7 @@ contract PMRM_2_1 is PMRM_2 {
   ////////////
   // Errors //
   ////////////
-  error PM21_CannotChangeLib();
+  error PM21_NotAllowedToChangeLib();
 
   /////////////////////////////////////////////
   // Overwritten functions - refer to PMRM_2 //
