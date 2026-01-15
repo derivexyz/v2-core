@@ -67,7 +67,7 @@ contract PMRMLib_2 is IPMRMLib_2, Ownable2Step {
 
   function setMarginParams(IPMRMLib_2.MarginParameters memory _marginParams) external onlyOwner {
     require(
-      _marginParams.imFactor >= 0.5e18 && _marginParams.imFactor <= 10e18 && _marginParams.mmFactor >= 0.5e18
+      _marginParams.imFactor >= 0.5e18 && _marginParams.imFactor <= 10e18 && _marginParams.mmFactor >= 0.1e18
         && _marginParams.mmFactor <= 10e18 && _marginParams.shortRateMultScale <= 10e18
         && _marginParams.longRateMultScale <= 10e18 && _marginParams.shortRateAddScale <= 10e18
         && _marginParams.longRateAddScale <= 10e18 && _marginParams.shortBaseStaticDiscount <= 4e18
