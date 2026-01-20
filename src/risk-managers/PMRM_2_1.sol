@@ -12,7 +12,8 @@ contract PMRM_2_1 is PMRM_2 {
   /// @notice Optional per-account risk lib override (0-address => use default `lib`).
   mapping(uint => IPMRMLib_2) internal accountLibOverride; // accountId => lib
 
-  bytes[48] private __gap;
+  // Independent gap per contract, to allow underlying contracts to be expanded individually as well
+  bytes[49] private __gap;
 
   //////////////////
   // Lib Override //
