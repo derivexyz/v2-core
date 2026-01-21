@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import {SVITestParams} from "../../../lib/lyra-utils/test/math/SVI.t.sol";
+import {SVITestParams} from "lyra-utils-test/math/SVI.t.sol";
 import {IDataReceiver} from "../../../src/interfaces/IDataReceiver.sol";
 import {IForwardFeed} from "../../../src/interfaces/IForwardFeed.sol";
 import {IInterestRateFeed} from "../../../src/interfaces/IInterestRateFeed.sol";

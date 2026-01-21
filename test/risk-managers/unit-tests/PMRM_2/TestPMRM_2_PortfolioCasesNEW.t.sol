@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.18;
 
-import {SVITestParams} from "../../../../lib/lyra-utils/test/math/SVI.t.sol";
+import {SVITestParams} from "lyra-utils-test/math/SVI.t.sol";
 import "../../../shared/utils/JsonMechIO.sol";
 
 import "lyra-utils/decimals/SignedDecimalMath.sol";

@@ -6,7 +6,6 @@
     "openzeppelin/=lib/openzeppelin-contracts/contracts/",
     "forge-std/=lib/forge-std/src/",
     "openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
-    "chainlink/=lib/chainlink/",
     "lyra-utils/=lib/lyra-utils/src/",
     "src/decimals/=lib/lyra-utils/src/decimals/"
   ]

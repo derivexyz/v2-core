@@ -9,15 +9,18 @@
     <br>
     <br>
     <img src='./docs/imgs/overall/logo.png' alt='lyra' width="300" />
-    <h5 align="center"> The framework to trade all derivatives </h6>
-</p> 
+  </p>
+  <h5 align="center"> The framework to trade all derivatives </h5>
 </div>
 
 
 ## Build
 
 ```shell
-git submodule update --init --recursive
+# installs git dependencies pinned in foundry.toml (into ./lib)
+# (this repo does not use git submodules)
+forge install
+
 forge build
 ```
 

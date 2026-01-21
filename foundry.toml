@@ -8,8 +8,6 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 
 solc_version = "0.8.27"
 
-evm_version = "shanghai"
-
 # for tests:
 gas_limit = "18446744073709551615"
 memory_limit = 8796093022208
