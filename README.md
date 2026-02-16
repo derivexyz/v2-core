@@ -1,4 +1,4 @@
-# Lyra V2
+# Derive V2
 
 [![foundry-rs - foundry](https://img.shields.io/static/v1?label=foundry-rs&message=foundry&color=blue&logo=github)](https://github.com/foundry-rs/foundry "Go to GitHub repo")
 [![CI](https://github.com/lyra-finance/v2-core/actions/workflows/ci.yml/badge.svg)](https://github.com/lyra-finance/v2-core/actions/workflows/ci.yml)
@@ -33,7 +33,7 @@ Go to [test](./test/) folder for more details on how to run different tests.
 
 ## Documentation
 
-Go to [docs](./docs) to understand the high-level design, transaction flow, and how different **Lyra V2 components** work together.
+Go to [docs](./docs) to understand the high-level design, transaction flow, and how different **Derive V2 components** work together.
 
 ## Static Analysis - [Slither](https://github.com/crytic/slither)
 
@@ -46,4 +46,13 @@ slither src
 
 ## Deployment
 
-Got to [scripts](./scripts) to understand how to deploy **Lyra v2** to different networks.
+Got to [scripts](./scripts) to understand how to deploy **Derive v2** to different networks.
+
+### Finding addresses
+Mainnet: 957
+Testnet: 901
+
+Within each chain, the structure is:
+- <TOKEN_NAME>.json -> feed contracts / asset addresses / currency specific managers (e.g. PMRM2)
+- core.json -> Standard Manager / Cash Asset / Liquidations / main account deployment / helpers
+- shared.json -> underlying erc20s / feed signers
