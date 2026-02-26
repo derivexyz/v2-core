@@ -49,7 +49,8 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     scenarios[21] = IPMRM.Scenario({spotShock: 0.85e18, volShock: IPMRM.VolShockDirection.Down});
     scenarios[22] = IPMRM.Scenario({spotShock: 0.8e18, volShock: IPMRM.VolShockDirection.Up});
     markets[marketName].pmrm.setScenarios(scenarios);
-    markets[marketName].pmrm.setMaxAccountSize(257);
+    markets[marketName].pmrm.setMaxAccountSize(500);
+    markets[marketName].pmrm.setMaxExpiries(14);
   }
 
   function setUp() public {
@@ -83,7 +84,7 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     // don't need OI fee
     srm.setFeeBypassedCaller(address(this), true);
 
-    srm.setMaxAccountSize(257);
+    srm.setMaxAccountSize(500);
     _setScenarios("weth");
     _setScenarios("wbtc");
   }
@@ -469,7 +470,55 @@ contract GAS_MAX_PORTFOLIO is IntegrationTestBase {
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry4, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry5, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
     _tradeOptionsPerMarketExpiry(markets["weth"], expiry6, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry7, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry8, 2000e18, 32, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
     console2.log("Gas Usage: (1 market, 8 expiry, 256 options)");
+    _logPMRMMarginGas(bobPMRMAccEth);
+    _logTradeGas(bobPMRMAccEth);
+  }
+
+  function testGas_PMRM_14Expiries_499Options() public {
+    uint64 expiry3 = uint64(block.timestamp) + 6 weeks;
+    uint64 expiry4 = uint64(block.timestamp) + 8 weeks;
+    uint64 expiry5 = uint64(block.timestamp) + 9 weeks;
+    uint64 expiry6 = uint64(block.timestamp) + 10 weeks;
+    uint64 expiry7 = uint64(block.timestamp) + 11 weeks;
+    uint64 expiry8 = uint64(block.timestamp) + 12 weeks;
+    uint64 expiry9 = uint64(block.timestamp) + 13 weeks;
+    uint64 expiry10 = uint64(block.timestamp) + 14 weeks;
+    uint64 expiry11 = uint64(block.timestamp) + 15 weeks;
+    uint64 expiry12 = uint64(block.timestamp) + 16 weeks;
+    uint64 expiry13 = uint64(block.timestamp) + 17 weeks;
+    uint64 expiry14 = uint64(block.timestamp) + 18 weeks;
+
+    _setupAllFeedsForMarket("weth", expiry3, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry4, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry5, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry6, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry7, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry8, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry9, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry10, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry11, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry12, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry13, 2020e18);
+    _setupAllFeedsForMarket("weth", expiry14, 2020e18);
+
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry1, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry2, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry3, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry4, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry5, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry6, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry7, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry8, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry9, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry10, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry11, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry12, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry13, 2000e18, 35, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    _tradeOptionsPerMarketExpiry(markets["weth"], expiry14, 2000e18, 44, aliceAcc, bobPMRMAccEth, 1e18, 10e18);
+    console2.log("Gas Usage: (1 market, 14 expiry, 499 options)");
     _logPMRMMarginGas(bobPMRMAccEth);
     _logTradeGas(bobPMRMAccEth);
   }
