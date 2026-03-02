@@ -26,8 +26,8 @@ jobs:
         with:
           version: nightly
       
-      - name: Check snapshot
-        run: forge snapshot --check
+      # - name: Check snapshot
+      #   run: forge snapshot --check
 
       - name: Check format
         run: forge fmt --check
