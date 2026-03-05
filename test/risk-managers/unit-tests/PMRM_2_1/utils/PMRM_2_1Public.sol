@@ -22,4 +22,3 @@ contract PMRM_2_1Public is PMRM_2_1 {
     }
   }
 }
-
